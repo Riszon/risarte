@@ -45,6 +45,8 @@ import {
 import { FORMAS_DE_PAGAR } from "@/lib/finance/formas-de-pagar";
 import {
   createEntryFromTransaction,
+  setDefaultBankAccount,
+  transferWithCashBox,
   deleteImport,
   ignoreTransaction,
   payPayableFromTransaction,
@@ -55,6 +57,11 @@ import {
   unreconcileTransaction,
 } from "./actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  lancamentosDaConta,
+  lancamentosSemConta,
+  type ContaDaUnidade,
+} from "@/lib/finance/conta-do-dinheiro";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
 
 export type ImportRow = {
@@ -74,6 +81,8 @@ export type ImportRow = {
 export type BankAccountRow = {
   id: string;
   alias: string;
+  /** AP51: a conta principal da unidade (lido à parte — nasce na 0317). */
+  isDefault?: boolean;
   bankName: string | null;
   agency: string | null;
   accountNumber: string | null;
@@ -176,6 +185,8 @@ export function ReconciliationBoard({
   const [variosSel, setVariosSel] = useState<string[]>([]);
   const [transferFor, setTransferFor] = useState<BankTxRow | null>(null);
   const [transferDesc, setTransferDesc] = useState("");
+  // AP51 (L4): a transferência é com o Caixa (depósito ou saque de dinheiro)?
+  const [transferCaixa, setTransferCaixa] = useState(false);
   // OC-00110: a linha de saída paga uma conta a pagar.
   const [pagarFor, setPagarFor] = useState<BankTxRow | null>(null);
   const [pagarSel, setPagarSel] = useState("");
@@ -201,14 +212,41 @@ export function ReconciliationBoard({
     [accountTx, filter]
   );
 
-  // Só os lançamentos a partir da abertura da conta entram na conta do saldo.
+  // AP51: cada conta soma SÓ o que é dela (o sem conta é da principal). O
+  // Caixa não tem extrato nem data de abertura: conta tudo o que é dele.
+  const contasDaRegra = useMemo<ContaDaUnidade[]>(
+    () =>
+      accounts.map((a) => ({
+        id: a.id,
+        clinicId,
+        alias: a.alias,
+        kind: a.kind,
+        active: a.active,
+        isDefault: Boolean(a.isDefault),
+      })),
+    [accounts, clinicId]
+  );
   const scopedEntries = useMemo(
     () =>
       account
-        ? entries.filter((e) => e.cashDate >= account.openingDate)
+        ? lancamentosDaConta(
+            entries.map((e) => ({ ...e, bankAccountId: e.bankAccountId ?? null })),
+            { id: account.id, kind: account.kind, clinicId },
+            contasDaRegra
+          ).filter((e) => account.kind === "caixa" || e.cashDate >= account.openingDate)
         : [],
-    [entries, account]
+    [entries, account, contasDaRegra, clinicId]
   );
+  const semConta = useMemo(
+    () =>
+      lancamentosSemConta(
+        entries.map((e) => ({ bankAccountId: e.bankAccountId ?? null })),
+        contasDaRegra,
+        clinicId
+      ),
+    [entries, contasDaRegra, clinicId]
+  );
+  const ehCaixa = account?.kind === "caixa";
 
   const summary = useMemo(
     () =>
@@ -394,16 +432,25 @@ export function ReconciliationBoard({
   function doTransfer() {
     if (!transferFor) return;
     startTransition(async () => {
-      const r = await createEntryFromTransaction({
-        transactionId: transferFor.id,
-        accountCode: CONTA_DE_TRANSFERENCIA,
-        costCenterId: null,
-        description: transferDesc,
-      });
+      const r = transferCaixa
+        ? await transferWithCashBox({ transactionId: transferFor.id })
+        : await createEntryFromTransaction({
+            transactionId: transferFor.id,
+            accountCode: CONTA_DE_TRANSFERENCIA,
+            costCenterId: null,
+            description: transferDesc,
+          });
       if (r.ok) {
-        toast.success("Lançado como transferência e conciliado.");
+        toast.success(
+          transferCaixa
+            ? transferFor.amountCents >= 0
+              ? "Depósito lançado: entrou no banco e saiu do Caixa."
+              : "Saque lançado: saiu do banco e entrou no Caixa."
+            : "Lançado como transferência e conciliado."
+        );
         setTransferFor(null);
         setTransferDesc("");
+        setTransferCaixa(false);
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -464,6 +511,11 @@ export function ReconciliationBoard({
         openingDate: editingAccount.openingDate || today,
         active: editingAccount.active,
       });
+      // AP51 (L2): marcar a principal desmarca as outras (no banco, de uma vez).
+      if (r.ok && editingAccount.isDefault && editingAccount.kind !== "caixa" && r.id) {
+        const d = await setDefaultBankAccount({ accountId: r.id });
+        if (!d.ok) toast.error(d.error ?? "Não foi possível marcar a conta principal.");
+      }
       if (r.ok) {
         toast.success("Conta bancária salva.");
         setEditingAccount(null);
@@ -518,6 +570,7 @@ export function ReconciliationBoard({
             <option key={a.id} value={a.id}>
               {a.alias}
               {a.bankName ? ` · ${a.bankName}` : ""}
+              {a.isDefault ? " (principal)" : ""}
               {a.active ? "" : " (inativa)"}
             </option>
           ))}
@@ -535,15 +588,18 @@ export function ReconciliationBoard({
                 e.target.value = "";
               }}
             />
-            <Button
-              size="sm"
-              className="h-9"
-              disabled={isPending || !accountId}
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="mr-1 size-4" />
-              Importar extrato
-            </Button>
+            {/* O Caixa não tem extrato: o que se confere é a gaveta. */}
+            {!ehCaixa && (
+              <Button
+                size="sm"
+                className="h-9"
+                disabled={isPending || !accountId}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="mr-1 size-4" />
+                Importar extrato
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -626,8 +682,38 @@ export function ReconciliationBoard({
         </Card>
       )}
 
+      {/* AP51: lançamentos com dinheiro que não caem em conta nenhuma. */}
+      {semConta > 0 && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+          {semConta} lançamento(s) com dinheiro ainda não têm conta e não entram
+          em nenhum saldo. Marque a <strong>conta principal</strong> da unidade
+          (Editar conta) — eles passam a contar nela.
+        </p>
+      )}
+
+      {/* O Caixa: sem extrato, o saldo é o que deve estar na gaveta. */}
+      {ehCaixa && (
+        <Card>
+          <CardContent className="space-y-1 p-3">
+            <p className="text-[11px] font-medium text-muted-foreground">
+              No Caixa, pelo sistema
+            </p>
+            <p className="text-xl font-semibold tabular-nums">
+              {formatBRL(summary.systemBalanceCents)}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              É o dinheiro em espécie que deve estar na gaveta: o que entrou em
+              dinheiro, menos o que foi pago em dinheiro e o que foi depositado
+              no banco. Conte o dinheiro e compare. O depósito no banco se lança
+              na conta do banco, pela linha do extrato: <strong>Transferência</strong>{" "}
+              → <strong>com o Caixa</strong>.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Saldos. */}
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className={cn("grid gap-2 sm:grid-cols-3", ehCaixa && "hidden")}>
         <Card>
           <CardContent className="p-3">
             <p className="text-[11px] font-medium text-muted-foreground">
@@ -1282,14 +1368,31 @@ export function ReconciliationBoard({
                 {CONTA_DE_TRANSFERENCIA} (aplicações e transferências), já
                 conciliada.
               </p>
-              <label className="block">
-                <Label className="text-[11px]">Descrição</Label>
-                <Input
-                  className="h-9"
-                  value={transferDesc}
-                  onChange={(e) => setTransferDesc(e.target.value)}
+              {/* AP51 (L4): com o Caixa, as DUAS pontas são lançadas. */}
+              <label className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 accent-primary"
+                  checked={transferCaixa}
+                  onChange={(e) => setTransferCaixa(e.target.checked)}
                 />
+                <span className="text-xs">
+                  É com o <strong>Caixa</strong> (dinheiro em espécie):{" "}
+                  {transferFor.amountCents >= 0
+                    ? "depósito do dinheiro do caixa — entra no banco e sai do Caixa."
+                    : "saque para o caixa — sai do banco e entra no Caixa."}
+                </span>
               </label>
+              {!transferCaixa && (
+                <label className="block">
+                  <Label className="text-[11px]">Descrição</Label>
+                  <Input
+                    className="h-9"
+                    value={transferDesc}
+                    onChange={(e) => setTransferDesc(e.target.value)}
+                  />
+                </label>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2">
@@ -1504,6 +1607,26 @@ export function ReconciliationBoard({
                 />
                 <span className="text-xs">Ativa</span>
               </label>
+              {editingAccount.kind !== "caixa" && (
+                <label className="flex items-start gap-2 sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 size-4 accent-primary"
+                    checked={Boolean(editingAccount.isDefault)}
+                    onChange={(e) =>
+                      setEditingAccount({
+                        ...editingAccount,
+                        isDefault: e.target.checked,
+                      })
+                    }
+                  />
+                  <span className="text-xs">
+                    <strong>Conta principal</strong> da unidade — é a que vem
+                    preenchida em cartão, Pix e boleto ao receber e ao pagar
+                    (dinheiro vai para o Caixa). Só uma por unidade.
+                  </span>
+                </label>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2">

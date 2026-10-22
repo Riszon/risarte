@@ -363,6 +363,8 @@ export type LedgerEntry = {
   description: string;
   accountCode: string;
   reconciled: boolean;
+  /** AP51: a conta em que o dinheiro está (nulo = antes da 0317 / sem conta). */
+  bankAccountId?: string | null;
 };
 
 export type MatchCandidate = {

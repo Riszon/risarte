@@ -390,6 +390,33 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**22/10/2026 (4ª) — PC Administrador (core 0.341.2 → 0.342.0, migração 0317)**
+
+- **AP51 (pedido do dono): em qual conta o dinheiro entrou ou saiu.** Plano e
+  decisões L1–L4 em `docs/Financeiro/AP51-PLANO.md` (as quatro como
+  recomendado; a maquininha casada sozinha ficou para depois).
+- ⚠️ **A CONTA DO DINHEIRO É DECIDIDA POR UM GATILHO** no razão
+  (`financial_entry_bank_account`, 0317). Caminho novo que grave dinheiro no
+  razão NÃO precisa saber de conta — o gatilho resolve. Para a tela escolher,
+  usar as portas `register_payment_receipt_to` / `register_payable_payment_from`
+  / `pay_stock_purchase_from` (marcam a escolha e LIMPAM depois — sem limpar,
+  ela vazava para a baixa seguinte na mesma transação; achado no ensaio).
+- ⚠️ **Casar com o extrato move o lançamento para a conta da linha**
+  (gatilhos em `bank_transactions` e `bank_transaction_matches`). O Desfazer
+  não devolve a conta anterior (limite anotado no AP51).
+- ⚠️ **O Caixa é `bank_accounts.kind = 'caixa'`**, criado sozinho
+  (`_cash_box_for`), um ativo por unidade (índice). A principal é
+  `is_default` (uma por unidade; `set_default_bank_account`).
+- ⚠️ **Código antes da migração:** a tela cai na função de sempre quando a
+  porta não existe (`portaAusente`) e lê `bank_account_id`/`is_default` à
+  parte.
+- **Não visto na tela:** a janela do recebimento (o cliente de teste não tem
+  parcela aberta). Visto: Conciliação, Editar conta, Transferência e o Pagar.
+- ⏳ **0317 aplicada no treino; falta a produção.** Na produção há 0 contas
+  bancárias: nada muda lá até alguém cadastrar a primeira (e o Caixa nasce na
+  primeira baixa em dinheiro).
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **22/10/2026 (3ª) — PC Administrador (core 0.341.1 → 0.341.2, migração 0316)**
 
 - **Checklist das pendências abertas** no topo do `docs/BACKLOG.md` (pedido do

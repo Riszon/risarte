@@ -15,7 +15,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP53** — tirar do Planner a gestão das especialidades?
 - [ ] **AP24** — Indica +Risos: implementar ou tirar da tela os 3 parâmetros que nada usa
 - [ ] **AP66** — como anonimizar um paciente no núcleo (LGPD)
-- [ ] **AP51** — conciliação com duas contas bancárias na mesma unidade; maquininha casada à mão
+- [x] **AP51** — em qual conta o dinheiro entrou (duas contas e o Caixa) — corrigido na 0317 (0.342.0); a maquininha casada sozinha ficou para depois (decisão do dono)
 - [x] **AP49** — Franqueadora/Rede gestora no Empresarial: decidido MANTER (16/10/2026)
 
 **Defeitos confirmados, a corrigir**
@@ -2771,7 +2771,19 @@ pessoa conta no grupo das DUAS unidades. Decidir com o dono: impedir a segunda
 matrícula da mesma função (a turma nova pula quem já está em turma aberta com
 aquela função) ou aceitar uma missão valendo para as duas unidades.
 
-### AP51. Conciliação: o que ficou depois do OC-00108 (16/10/2026)
+### AP51. Conciliação: o que ficou depois do OC-00108 (16/10/2026) — ✅ ITEM 1 CORRIGIDO na 0317 (0.342.0, 22/10/2026)
+
+**✅ Item 1 corrigido (22/10/2026, plano `docs/Financeiro/AP51-PLANO.md`).**
+Todo lançamento com dinheiro passou a ter conta, o Caixa (dinheiro em
+espécie) virou conta da unidade, e cada conta da Conciliação soma só a sua.
+**Item 2 (maquininha casada sozinha): decisão do dono — depois.** Item 3
+(lentidão do "Casar"): segue suspeita, não medida.
+**Limite conhecido, novo:** o **Desfazer** da Conciliação solta a linha mas
+não devolve o lançamento à conta em que estava antes de ser casado (o casar
+leva para a conta da linha; desfazer não sabe de onde veio). O saldo do
+banco e o do sistema continuam coerentes; só a conta anterior se perde.
+
+*Registro original:*
 
 *(Achado no diagnóstico do OC-00108; o relato foi resolvido na 0301 / core
 0.325.0.)*

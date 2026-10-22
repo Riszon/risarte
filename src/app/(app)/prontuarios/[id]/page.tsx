@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/card";
 import { ClientDataSection } from "./client-data-section";
 import { ReceivablesSection } from "./receivables-section";
+import { carregarContasDaUnidade } from "../../financeiro/contas-da-unidade";
 import { CancelPlanCard } from "./cancel-plan-card";
 import { loadClientReceivables } from "./receivables-loader";
 import { viewInstallment } from "@/lib/finance/receivables";
@@ -566,6 +567,13 @@ export default async function ClientDetailPage(
         boletoIssuableIds: [] as string[],
       };
   const financeToday = todayInBrazil();
+  // AP51: as contas da unidade de cada cobrança, para o "Entrou em" da baixa.
+  const contasDoDinheiro = canReceivePayment
+    ? await carregarContasDaUnidade(supabase, [
+        client.clinic_id,
+        ...receivables.installments.map((i) => i.clinicId ?? ""),
+      ])
+    : [];
 
   /**
    * 0207 — cancelar tratamento mora AQUI, não na tela de apresentação: quem
@@ -3544,6 +3552,8 @@ export default async function ClientDetailPage(
               canReverse={canReverseReceipt}
               canRenegotiate={canRenegotiate}
               canAuthorize={canAuthorizeRenegotiation}
+              contas={contasDoDinheiro}
+              clinicIdPadrao={client.clinic_id}
             />
           </TabPanel>
         )}

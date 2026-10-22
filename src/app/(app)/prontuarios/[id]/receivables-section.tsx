@@ -63,6 +63,8 @@ import {
 } from "./receivables-actions";
 import { RenegotiationDialog } from "./renegotiation-dialog";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { contaPadrao, type ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
+import { CampoDaConta } from "../../financeiro/campo-da-conta";
 
 const STATUS_STYLE: Record<InstallmentStatus, string> = {
   em_aberto: "border-border bg-muted text-muted-foreground",
@@ -116,6 +118,8 @@ export function ReceivablesSection({
   canReverse,
   canRenegotiate,
   canAuthorize,
+  contas = [],
+  clinicIdPadrao,
 }: {
   clientId: string;
   installments: Installment[];
@@ -133,6 +137,10 @@ export function ReceivablesSection({
   canRenegotiate: boolean;
   /** Gerente da unidade / Admin Master — quem libera desconto acima do teto. */
   canAuthorize: boolean;
+  /** AP51: as contas das unidades das cobranças (vazia = quem não as enxerga). */
+  contas?: ContaDaUnidade[];
+  /** A unidade do cliente — usada quando a cobrança não diz a dela. */
+  clinicIdPadrao: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -155,6 +163,8 @@ export function ReceivablesSection({
   const [amount, setAmount] = useState("");
   const [receivedAt, setReceivedAt] = useState(today);
   const [method, setMethod] = useState<string>("pix");
+  // AP51: em qual conta o dinheiro entrou ("caixa", um id ou "" = a principal).
+  const [conta, setConta] = useState<string>("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
@@ -248,6 +258,7 @@ export function ReceivablesSection({
     setAmount(centsToInput(v.updatedBalanceCents));
     setReceivedAt(today);
     setMethod(v.paymentMethod ?? "pix");
+    setConta(contaPadrao(contas, v.clinicId ?? clinicIdPadrao, v.paymentMethod ?? "pix"));
     setReference("");
     setNotes("");
   }
@@ -265,6 +276,7 @@ export function ReceivablesSection({
         reference,
         notes,
         clientToken: crypto.randomUUID(),
+        conta,
       });
       if (r.ok) {
         const base = quita
@@ -1377,7 +1389,13 @@ export function ReceivablesSection({
                   </span>
                   <select
                     value={method}
-                    onChange={(e) => setMethod(e.target.value)}
+                    onChange={(e) => {
+                      setMethod(e.target.value);
+                      // Trocar a forma troca a conta sugerida (dinheiro → Caixa).
+                      setConta(
+                        contaPadrao(contas, paying.clinicId ?? clinicIdPadrao, e.target.value)
+                      );
+                    }}
                     className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
                   >
                     {METHODS.map((m) => (
@@ -1387,6 +1405,13 @@ export function ReceivablesSection({
                     ))}
                   </select>
                 </label>
+                <CampoDaConta
+                  rotulo="Entrou em"
+                  contas={contas}
+                  clinicId={paying.clinicId ?? clinicIdPadrao}
+                  value={conta}
+                  onChange={setConta}
+                />
                 <label className="block">
                   <span className="text-[11px] font-medium text-muted-foreground">
                     Comprovante (nº/autenticação)

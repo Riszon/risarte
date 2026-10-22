@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/10/2026 · Versão do sistema: **0.341.2** · Última migração: **0316** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 22/10/2026 · Versão do sistema: **0.342.0** · Última migração: **0317** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🏦 0.342.0 / 0317 — AP51: EM QUAL CONTA O DINHEIRO ENTROU (22/10/2026)
+>
+> ⚠️ **Todo lançamento com dinheiro tem conta** (`financial_entries.bank_account_id`),
+> decidida por UM gatilho (`financial_entry_bank_account`): estorno = o
+> original; a escolha da tela (portas `*_to`/`*_from`, que limpam a escolha);
+> a linha do extrato; taxa da adquirente = o recebimento; sem escolha, dinheiro
+> → Caixa e o resto → a principal. **Casar com o extrato move o lançamento para
+> a conta da linha.** O Caixa (tipo `caixa`) nasce sozinho; a principal é
+> `bank_accounts.is_default`. A regra em TS é `conta-do-dinheiro.ts`.
+> DRE, Fluxo de caixa e Painel da rede não mudam.
 
 > ## 🔔 0.341.2 / 0316 — AP58: OS AVISOS QUE O BANCO RECUSAVA (22/10/2026)
 >

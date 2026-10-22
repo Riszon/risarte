@@ -77,7 +77,31 @@ quando há uma escolha óbvia.
 | L3 | O lançamento antigo **sem conta conta como da principal**; os recebimentos antigos **em dinheiro** passam para o Caixa |
 | L4 | O depósito do dinheiro no banco vira **"Transferência do Caixa"** na Conciliação (entra no banco e sai do Caixa, conta 6.3.01) |
 
-⏳ Aguardando o OK do dono para começar o código.
+✅ OK do dono em 22/10/2026 ("pode começar o código do AP51").
+
+---
+
+## O que foi feito (0.342.0, migração 0317)
+
+- **Um gatilho decide a conta de todo lançamento com dinheiro**
+  (`financial_entry_bank_account`), em vez de mexer função por função —
+  assim nenhum caminho fica de fora (inclusive os de dentro do banco, como
+  Pagar conta pela conciliação e Pagar a nota). As funções de sempre não
+  mudaram de assinatura; a escolha da tela entra por três portas novas
+  (`register_payment_receipt_to`, `register_payable_payment_from`,
+  `pay_stock_purchase_from`), que marcam a escolha e a limpam depois — o
+  ensaio pegou que, sem limpar, a escolha vazava para a baixa seguinte da
+  mesma transação.
+- **Casar com o extrato move o lançamento para a conta da linha** (o extrato
+  é a prova de onde o dinheiro está). Não estava no plano; resolve sozinho o
+  "Pagar conta" pela conciliação e o caso de alguém casar dinheiro do caixa
+  com o depósito.
+- **Pagamento em dinheiro também vai para o Caixa** (o plano falava de
+  recebimento): sai da gaveta do mesmo jeito.
+- Antes da 0317 num banco, a tela segue pela função de sempre e lê a conta e
+  a principal à parte — tudo conta como antes.
+- Provado: ensaio 24/24, quebra da migração 10/10, 13 testes com quebra 7/7,
+  tela no treino (EV-208).
 
 ## 6. Como vai ser provado
 

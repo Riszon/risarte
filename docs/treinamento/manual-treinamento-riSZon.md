@@ -267,6 +267,7 @@ certo é o que impede o mesmo dinheiro de entrar duas vezes:
 | Um pagamento de uma **conta a pagar que ainda está em aberto**, com o mesmo valor | **Pagar conta (N)** — aparece quando há conta em aberto com o saldo exato da linha | a conta recebe a baixa com a **data do extrato** e a linha fica conciliada com o pagamento, de uma vez. A despesa já estava na DRE desde que a conta foi lançada: pagar não lança de novo |
 | **Vários lançamentos juntos** — o depósito da maquininha é a soma das vendas menos as taxas | **Vários** | você marca os lançamentos (até 7 dias da data da linha) e só concilia quando a soma bate no centavo |
 | Dinheiro **entre contas da própria clínica** — resgate ou aplicação de investimento, transferência de uma conta para outra | **Transferência** | lança na conta **6.3.01** (aplicações e transferências), já conciliada. **Não é receita nem despesa:** fica fora da DRE e, no Fluxo de caixa, aparece como investimento |
+| O **depósito do dinheiro do caixa** no banco (ou um **saque** para o caixa) | **Transferência** → marque **É com o Caixa** | lança as **duas pontas** de uma vez: entra no banco e sai do Caixa (ou o contrário), na conta 6.3.01 — fora da DRE |
 | Algo que o sistema **não sabia** — rendimento da aplicação, tarifa do banco, uma receita que não passou pelos Recebíveis | **Lançar** | cria o lançamento, na conta que você escolher, já conciliado. **Na DRE ele entra no mês da linha do extrato** — a janela diz qual |
 | Uma linha que **não pertence** a esta conciliação (linha repetida no extrato, lançamento que o próprio banco desfez) | **×** (Ignorar) | a linha sai desta conta, com o motivo registrado |
 
@@ -297,6 +298,42 @@ certo é o que impede o mesmo dinheiro de entrar duas vezes:
 - A tela lê o extrato e os lançamentos **inteiros**, por maior que seja a
   conta (antes parava nas primeiras 1.000 linhas). Se a leitura falhar, um
   aviso vermelho diz que os saldos podem estar incompletos.
+
+#### Em qual conta o dinheiro está *(desde a 0.342.0, AP51)*
+
+Cada recebimento e cada pagamento passa a dizer **em qual conta** o dinheiro
+entrou ou saiu — e por isso cada conta da Conciliação soma **só o que é dela**.
+Antes, com duas contas na unidade (corrente e aplicação, por exemplo), o
+"Saldo pelo sistema" de cada uma somava o dinheiro das duas, e o dinheiro
+recebido **em espécie** no balcão aparecia como diferença contra o banco.
+
+- **Ao receber** (aba Financeiro da ficha do cliente) e **ao pagar** (Contas a
+  pagar → **Pagar** e **Pagar a nota**) aparece o campo **Entrou em** /
+  **Saiu de**, já preenchido: **Dinheiro** vem com o **Caixa (dinheiro)**;
+  cartão, Pix e boleto vêm com a **conta principal** da unidade. Dá para
+  trocar antes de confirmar. Trocar a forma de pagamento troca a sugestão.
+- **A conta principal** se marca em Conciliação → **Editar conta** → **Conta
+  principal**. É uma por unidade; marcar uma desmarca a outra. Com uma conta
+  bancária só, ela já é a principal.
+- **O Caixa** é uma conta da unidade que **o sistema cria sozinho** na primeira
+  baixa em dinheiro. Na Conciliação ele não tem extrato: o número **No Caixa,
+  pelo sistema** é o dinheiro que deve estar na gaveta — o que entrou em
+  dinheiro, menos o que foi pago em dinheiro e o que foi depositado. Conte e
+  compare.
+- **Depositou o dinheiro no banco?** Na linha do depósito no extrato:
+  **Transferência** → **É com o Caixa**. O dinheiro sai do Caixa e entra no
+  banco, sem mexer no resultado.
+- **O extrato manda.** Casar um lançamento com a linha de uma conta (Casar,
+  Vários, Pagar conta) leva o lançamento para aquela conta — o extrato é a
+  prova de onde o dinheiro está. Estorno volta pela mesma conta do original, e
+  a taxa da maquininha sai da conta em que o recebimento entrou.
+- **O que já estava lançado** antes desta versão conta como da conta principal;
+  os recebimentos e pagamentos antigos **em dinheiro** passaram para o Caixa.
+  Se a unidade tiver várias contas e nenhuma principal, a tela avisa quantos
+  lançamentos ficaram sem conta: marque a principal e eles passam a contar
+  nela.
+- **Nada muda na DRE, no Fluxo de caixa nem no Painel da rede** — eles somam
+  todas as contas da unidade, como antes.
 
 **As contas pagas** (Contas a pagar; relato OC-00110, desde a versão 0.326.0).
 Na lista, o filtro **Pagas** mostra as contas já quitadas — mas o período da

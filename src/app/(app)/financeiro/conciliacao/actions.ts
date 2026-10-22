@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import type { ParsedBankTx } from "@/lib/finance/reconciliation";
+import { erroDaConta, portaAusente } from "@/lib/finance/conta-do-dinheiro";
 
 export type ReconcileResult = { ok: boolean; error?: string };
 
@@ -371,6 +372,65 @@ export async function deleteImport(input: {
   return { ok: true, deleted: result.deleted ?? 0 };
 }
 
+/** AP51 (L2): a conta principal da unidade — uma só; o banco desmarca as outras. */
+export async function setDefaultBankAccount(input: {
+  accountId: string;
+}): Promise<ReconcileResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_default_bank_account", {
+    p_account_id: input.accountId,
+  });
+  if (error) {
+    if (portaAusente(error)) {
+      return { ok: false, error: "O banco ainda não recebeu a atualização 0317." };
+    }
+    console.error("set_default_bank_account failed:", error.message);
+    return {
+      ok: false,
+      error:
+        erroDaConta(error.message) ??
+        (error.message.includes("NOT_ALLOWED")
+          ? "Sua função não permite mudar a conta principal."
+          : "Não foi possível marcar a conta principal."),
+    };
+  }
+  await logAudit({ action: "update", entityType: "bank_account", entityId: input.accountId });
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * AP51 (L4): a linha do extrato é depósito do dinheiro do Caixa (ou saque
+ * para ele). O banco lança as duas pontas — entra num lado, sai do outro —
+ * pela conta de transferência, fora do resultado.
+ */
+export async function transferWithCashBox(input: {
+  transactionId: string;
+}): Promise<ReconcileResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("transfer_bank_transaction_with_cash_box", {
+    p_transaction_id: input.transactionId,
+  });
+  if (error) {
+    if (portaAusente(error)) {
+      return { ok: false, error: "O banco ainda não recebeu a atualização 0317." };
+    }
+    console.error("transfer_bank_transaction_with_cash_box failed:", error.message);
+    if (error.message.includes("ALREADY_RECONCILED")) {
+      return { ok: false, error: "Esta linha já está conciliada." };
+    }
+    return {
+      ok: false,
+      error: erroDaConta(error.message) ?? "Não foi possível lançar a transferência.",
+    };
+  }
+  await logAudit({ action: "create", entityType: "bank_reconciliation", entityId: input.transactionId });
+  refresh();
+  return { ok: true };
+}
+
 /** Conta bancária da unidade — o saldo de abertura ancora a conciliação. */
 export async function saveBankAccount(input: {
   id: string | null;
@@ -383,7 +443,7 @@ export async function saveBankAccount(input: {
   openingBalanceCents: number;
   openingDate: string;
   active: boolean;
-}): Promise<ReconcileResult> {
+}): Promise<ReconcileResult & { id?: string }> {
   const session = await getSessionContext();
   const supabase = await createClient();
 
@@ -405,11 +465,14 @@ export async function saveBankAccount(input: {
     updated_by: session.userId,
   };
 
-  const { error } = input.id
-    ? await supabase.from("bank_accounts").update(row).eq("id", input.id)
+  // O id volta para marcar a principal logo em seguida (AP51).
+  const { data: salva, error } = input.id
+    ? await supabase.from("bank_accounts").update(row).eq("id", input.id).select("id").single()
     : await supabase
         .from("bank_accounts")
-        .insert({ ...row, created_by: session.userId });
+        .insert({ ...row, created_by: session.userId })
+        .select("id")
+        .single();
   if (error) {
     console.error("saveBankAccount failed:", error.message);
     return { ok: false, error: "Não foi possível salvar a conta bancária." };
@@ -421,5 +484,5 @@ export async function saveBankAccount(input: {
     entityId: input.id ?? input.clinicId,
   });
   refresh();
-  return { ok: true };
+  return { ok: true, id: (salva as { id?: string } | null)?.id ?? input.id ?? undefined };
 }

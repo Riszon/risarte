@@ -62,6 +62,8 @@ import {
   savePayable,
 } from "../payables-actions";
 import { FORMAS_DE_PAGAR } from "@/lib/finance/formas-de-pagar";
+import { contaPadrao, type ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
+import { CampoDaConta } from "../campo-da-conta";
 import { ApprovalRulesDialog } from "./approval-rules-dialog";
 import {
   RecurrencesDialog,
@@ -118,6 +120,7 @@ export function PayablesBoard({
   canConfigureNetworkRules,
   currentUserId,
   isFinanceStaff,
+  contas = [],
 }: {
   clinicId: string;
   payables: Payable[];
@@ -135,6 +138,8 @@ export function PayablesBoard({
   canConfigureNetworkRules: boolean;
   currentUserId: string;
   isFinanceStaff: boolean;
+  /** AP51: as contas da unidade, para o "Saiu de". */
+  contas?: ContaDaUnidade[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -177,6 +182,13 @@ export function PayablesBoard({
   const [payInterest, setPayInterest] = useState("0,00");
   const [paidAt, setPaidAt] = useState(today);
   const [payMethod, setPayMethod] = useState("pix");
+  // AP51: de qual conta o dinheiro saiu ("caixa", um id ou "" = a principal).
+  const [payConta, setPayConta] = useState("");
+  // Trocar a forma troca a conta sugerida (dinheiro → Caixa).
+  function trocarForma(m: string) {
+    setPayMethod(m);
+    setPayConta(contaPadrao(contas, clinicId, m));
+  }
   const [payReference, setPayReference] = useState("");
   const [payNotes, setPayNotes] = useState("");
   // Abatimento aplicado nesta baixa. A tela sugere; a régua que vale é a do
@@ -301,6 +313,7 @@ export function PayablesBoard({
     setPayInterest("0,00");
     setPaidAt(today);
     setPayMethod("pix");
+    setPayConta(contaPadrao(contas, clinicId, "pix"));
     setPayReference("");
     setPayNotes("");
   }
@@ -309,6 +322,7 @@ export function PayablesBoard({
     setNotaParaPagar(purchaseId);
     setPaidAt(today);
     setPayMethod("pix");
+    setPayConta(contaPadrao(contas, clinicId, "pix"));
     setPayReference("");
     setPayNotes("");
   }
@@ -322,6 +336,7 @@ export function PayablesBoard({
         paymentMethod: payMethod,
         reference: payReference,
         notes: payNotes,
+        conta: payConta,
       });
       if (r.ok) {
         toast.success(
@@ -350,6 +365,7 @@ export function PayablesBoard({
         reference: payReference,
         notes: payNotes,
         clientToken: crypto.randomUUID(),
+        conta: payConta,
       });
       if (r.ok) {
         toast.success(
@@ -1034,7 +1050,7 @@ export function PayablesBoard({
                   <Label className="text-[11px]">Forma</Label>
                   <select
                     value={payMethod}
-                    onChange={(e) => setPayMethod(e.target.value)}
+                    onChange={(e) => trocarForma(e.target.value)}
                     className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
                   >
                     {METHODS.map((m) => (
@@ -1044,6 +1060,13 @@ export function PayablesBoard({
                     ))}
                   </select>
                 </label>
+                <CampoDaConta
+                  rotulo="Saiu de"
+                  contas={contas}
+                  clinicId={clinicId}
+                  value={payConta}
+                  onChange={setPayConta}
+                />
                 <label className="block">
                   <Label className="text-[11px]">Comprovante</Label>
                   <Input
@@ -1113,7 +1136,7 @@ export function PayablesBoard({
                 <Label className="text-[11px]">Forma</Label>
                 <select
                   value={payMethod}
-                  onChange={(e) => setPayMethod(e.target.value)}
+                  onChange={(e) => trocarForma(e.target.value)}
                   className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
                 >
                   {METHODS.map((m) => (
@@ -1123,6 +1146,13 @@ export function PayablesBoard({
                   ))}
                 </select>
               </label>
+              <CampoDaConta
+                rotulo="Saiu de"
+                contas={contas}
+                clinicId={clinicId}
+                value={payConta}
+                onChange={setPayConta}
+              />
               <label className="block sm:col-span-2">
                 <Label className="text-[11px]">Comprovante</Label>
                 <Input

@@ -74,6 +74,8 @@ export type Installment = {
   renegotiatedById: string | null;
   /** Já esteve em atraso (sobrevive à renegociação — indicador 9.28). */
   wasOverdue: boolean;
+  /** A unidade da cobrança (AP51: as contas oferecidas na baixa são as dela). */
+  clinicId?: string;
 };
 
 export type InstallmentView = Installment & {

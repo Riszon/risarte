@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { modalityOf } from "@/lib/finance/acquirers";
+import { erroDaConta, portaAusente } from "@/lib/finance/conta-do-dinheiro";
 
 export type ReceivableResult = { ok: boolean; error?: string };
 
@@ -137,13 +138,15 @@ export async function registerReceipt(input: {
   reference: string;
   notes: string;
   clientToken: string;
+  /** AP51: a conta em que o dinheiro entrou — id, 'caixa' ou vazio (a principal). */
+  conta?: string;
 }): Promise<
   ReceivableResult & { fee?: FeeOutcome; feeSkipped?: FeeSkipReason }
 > {
   await getSessionContext();
   const supabase = await createClient();
 
-  const { data: receiptId, error } = await supabase.rpc("register_payment_receipt", {
+  const args = {
     p_installment_id: input.installmentId,
     p_amount_cents: Math.round(input.amountCents),
     p_received_at: input.receivedAt,
@@ -151,9 +154,21 @@ export async function registerReceipt(input: {
     p_reference: input.reference || null,
     p_notes: input.notes || null,
     p_client_token: input.clientToken,
+  };
+  // AP51: a porta da 0317 grava a conta escolhida. Antes de a 0317 rodar neste
+  // banco ela não existe — aí a baixa segue pela função de sempre (sem conta,
+  // como era).
+  let { data: receiptId, error } = await supabase.rpc("register_payment_receipt_to", {
+    p_conta: input.conta ?? "",
+    ...args,
   });
+  if (portaAusente(error)) {
+    ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt", args));
+  }
   if (error) {
     const m = error.message;
+    const daConta = erroDaConta(m);
+    if (daConta) return { ok: false, error: daConta };
     if (m.includes("AMOUNT_OVER_BALANCE")) {
       return {
         ok: false,

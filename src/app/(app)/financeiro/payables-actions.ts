@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import type { ApprovalMode } from "@/lib/finance/payables";
+import { erroDaConta, portaAusente } from "@/lib/finance/conta-do-dinheiro";
 
 export type PayableResult = { ok: boolean; error?: string };
 
@@ -133,11 +134,13 @@ export async function registerPayablePayment(input: {
   reference: string;
   notes: string;
   clientToken: string;
+  /** AP51: de qual conta o dinheiro saiu — id, 'caixa' ou vazio (a principal). */
+  conta?: string;
 }): Promise<PayableResult> {
   await getSessionContext();
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("register_payable_payment", {
+  const args = {
     p_payable_id: input.payableId,
     p_amount_cents: Math.round(input.amountCents),
     p_paid_at: input.paidAt,
@@ -148,8 +151,19 @@ export async function registerPayablePayment(input: {
     p_reference: input.reference || null,
     p_notes: input.notes || null,
     p_client_token: input.clientToken,
+  };
+  // AP51: a porta da 0317 grava a conta; antes de a 0317 rodar neste banco ela
+  // não existe e o pagamento segue pela função de sempre.
+  let { error } = await supabase.rpc("register_payable_payment_from", {
+    p_conta: input.conta ?? "",
+    ...args,
   });
+  if (portaAusente(error)) {
+    ({ error } = await supabase.rpc("register_payable_payment", args));
+  }
   if (error) {
+    const daConta = erroDaConta(error.message);
+    if (daConta) return { ok: false, error: daConta };
     console.error("register_payable_payment failed:", error.message);
     return {
       ok: false,
@@ -177,18 +191,29 @@ export async function payStockPurchase(input: {
   paymentMethod: string;
   reference: string;
   notes: string;
+  /** AP51: de qual conta o dinheiro saiu — id, 'caixa' ou vazio (a principal). */
+  conta?: string;
 }): Promise<PayableResult & { pagas?: number; totalCents?: number; aguardando?: number }> {
   await getSessionContext();
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("pay_stock_purchase", {
+  const args = {
     p_purchase_id: input.purchaseId,
     p_paid_at: input.paidAt,
     p_payment_method: input.paymentMethod || null,
     p_reference: input.reference || null,
     p_notes: input.notes || null,
+  };
+  let { data, error } = await supabase.rpc("pay_stock_purchase_from", {
+    p_conta: input.conta ?? "",
+    ...args,
   });
+  if (portaAusente(error)) {
+    ({ data, error } = await supabase.rpc("pay_stock_purchase", args));
+  }
   if (error) {
+    const daConta = erroDaConta(error.message);
+    if (daConta) return { ok: false, error: daConta };
     console.error("pay_stock_purchase failed:", error.message);
     if (error.message.includes("NOTHING_TO_PAY")) {
       return { ok: false, error: "Esta nota não tem parcela em aberto para pagar." };

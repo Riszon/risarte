@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.342.0",
+    data: "2026-10-22",
+    migracao: "0317",
+    titulo: "Em qual conta o dinheiro entrou: cada conta da Conciliação soma só o que é dela",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao receber e ao pagar aparece o campo \"Entrou em\" / \"Saiu de\", já preenchido: dinheiro vem com o Caixa, cartão, Pix e boleto vêm com a conta principal da unidade. Dá para trocar antes de confirmar.",
+        papeis: ["receptionist", "unit_manager", "finance_franchisor"],
+        manual: "Em qual conta o dinheiro está",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na Conciliação, cada conta bancária passa a somar só o dinheiro dela. Antes, com duas contas na unidade, o \"Saldo pelo sistema\" de cada uma somava o das duas, e o dinheiro recebido em espécie aparecia como diferença contra o banco.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "Em qual conta o dinheiro está",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Caixa (dinheiro em espécie) vira uma conta da unidade, criada sozinha na primeira baixa em dinheiro, com o saldo que deve estar na gaveta. O depósito no banco se lança pela linha do extrato: Transferência → É com o Caixa.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "Em qual conta o dinheiro está",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Marque a conta principal da unidade em Conciliação → Editar conta. Com uma conta só, ela já é a principal.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "Em qual conta o dinheiro está",
+      },
+    ],
+  },
+  {
     versao: "0.341.2",
     data: "2026-10-22",
     migracao: "0316",

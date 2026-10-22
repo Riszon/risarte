@@ -11,6 +11,7 @@ import type {
   PayablePaymentEntry,
 } from "@/lib/finance/payables";
 import { PayablesBoard, type PaymentRow } from "./payables-board";
+import { carregarContasDaUnidade } from "../contas-da-unidade";
 import type { RecurrenceRow } from "./recurrences-dialog";
 import { RelatorioDePagas } from "./relatorio-de-pagas";
 import { todayInBrazil } from "@/lib/dates";
@@ -225,6 +226,10 @@ export default async function PayablesPage() {
     Object.values(session.rolesByClinic).some((r) =>
       r.includes("finance_franchisor")
     );
+  // AP51: as contas da unidade, para o "Saiu de" do pagamento.
+  const contasDoDinheiro = canManage
+    ? await carregarContasDaUnidade(supabase, [clinicId])
+    : [];
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
@@ -244,6 +249,7 @@ export default async function PayablesPage() {
 
       <PayablesBoard
         clinicId={clinicId}
+        contas={contasDoDinheiro}
         payables={payables}
         payments={payments}
         paymentEntries={paymentEntries}

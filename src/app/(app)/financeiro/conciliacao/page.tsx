@@ -120,6 +120,34 @@ export default async function ReconciliationPage() {
   const leituraFalhou =
     !leituraDasLinhas.ok || !leituraDosLancamentos.ok || !leituraDasContas.ok;
   const txRows = leituraDasLinhas.ok ? leituraDasLinhas.linhas : null;
+
+  // AP51: a conta de cada lançamento e a principal nascem na 0317 — lidas À
+  // PARTE, para a tela abrir igual nos bancos que ainda não a receberam (sem
+  // elas, tudo conta como da principal: o comportamento de antes).
+  const [contaDosLancamentos, principais] = await Promise.all([
+    lerTodasAsPaginas<{ id: string; bank_account_id: string | null }>((de, ate) =>
+      supabase
+        .from("financial_entries")
+        .select("id, bank_account_id")
+        .eq("clinic_id", clinicId)
+        .not("cash_date", "is", null)
+        .neq("status", "cancelled")
+        .order("cash_date")
+        .order("id")
+        .range(de, ate)
+    ),
+    supabase.from("bank_accounts").select("id, is_default").eq("clinic_id", clinicId),
+  ]);
+  const contaDe = new Map(
+    (contaDosLancamentos.ok ? contaDosLancamentos.linhas : []).map((r) => [r.id, r.bank_account_id])
+  );
+  const principal = new Set(
+    principais.error
+      ? []
+      : ((principais.data ?? []) as { id: string; is_default: boolean }[])
+          .filter((r) => r.is_default)
+          .map((r) => r.id)
+  );
   const entryRows = leituraDosLancamentos.ok ? leituraDosLancamentos.linhas : null;
 
   type PersonEmbed = { full_name: string } | { full_name: string }[] | null;
@@ -136,6 +164,7 @@ export default async function ReconciliationPage() {
     openingBalanceCents: Number(a.opening_balance_cents ?? 0),
     openingDate: a.opening_date as string,
     active: Boolean(a.active),
+    isDefault: principal.has(a.id as string),
   }));
 
   const transactions: BankTxRow[] = (
@@ -181,6 +210,7 @@ export default async function ReconciliationPage() {
     description: (e.description as string) ?? "",
     accountCode: e.account_code as string,
     reconciled: e.reconciled_at !== null,
+    bankAccountId: contaDe.get(e.id as string) ?? null,
   }));
 
   type NameEmbed = { name: string } | { name: string }[] | null;
