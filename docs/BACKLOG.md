@@ -2524,6 +2524,18 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP68. A aba Fluxo de caixa do Painel da rede lê unidade por unidade (22/10/2026)
+
+**Suspeita de lentidão futura, não defeito.** Desde a 0.341.0 (OC-00121) a aba
+chama `cash_flow_series` e `cash_balance_before` para CADA unidade (em lotes
+de 8) — com 4 unidades é instantâneo; com 200 serão 400 chamadas. Não medido
+com rede grande. Se ficar lenta: uma função da rede no banco que REUSE a conta
+de `cash_flow_series_raw` (nunca reescrevê-la). As outras abas já leem a rede
+de uma vez. **De carona (confirmado, pequeno):** a conversão da linha de
+`network_receivables` existe em três lugares (`recebiveis-da-rede/page.tsx`,
+`recebiveis/relatorio-dados.ts` e a nova `unidadeRecebivelDoBanco`); as duas
+antigas podem passar a usar a nova.
+
 ### AP67. O banco ignora o escopo "Específicas" do Financeiro da Franqueadora (21/10/2026)
 
 **Lido no código (não executado).** A regra diz "Financeiro da Franqueadora,

@@ -107,3 +107,33 @@ export function totaisDaRede(unidades: UnidadeRecebivel[]): TotaisDaRede {
     atrasadas: soma4((u) => u.atrasadas),
   };
 }
+
+/**
+ * Uma linha de `network_receivables` no formato da tela. Os números saem do
+ * banco; aqui só se troca o nome dos campos e se trata o vazio.
+ */
+export function unidadeRecebivelDoBanco(r: Record<string, unknown>): UnidadeRecebivel {
+  return {
+    clinicId: String(r.clinic_id),
+    nome: String(r.clinic_name),
+    ownership: r.ownership === "own" ? "own" : "franchised",
+    abertoCents: Number(r.open_cents ?? 0),
+    vencidoCents: Number(r.overdue_cents ?? 0),
+    vencidoQuantidade: Number(r.overdue_count ?? 0),
+    abertoQuantidade: Number(r.open_count ?? 0),
+    taxaPercent: r.overdue_percent == null ? null : Number(r.overdue_percent),
+    limitePercent: r.limit_percent == null ? null : Number(r.limit_percent),
+    aVencer: [
+      Number(r.due_30_cents ?? 0),
+      Number(r.due_60_cents ?? 0),
+      Number(r.due_90_cents ?? 0),
+      Number(r.due_more_cents ?? 0),
+    ],
+    atrasadas: [
+      Number(r.late_30_cents ?? 0),
+      Number(r.late_60_cents ?? 0),
+      Number(r.late_90_cents ?? 0),
+      Number(r.late_more_cents ?? 0),
+    ],
+  };
+}

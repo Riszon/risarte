@@ -162,6 +162,7 @@ export default async function ConsolidatedPage(
         units={units}
         totals={networkTotals(units)}
         clinics={clinics}
+        podeAbrir={session.clinics.map((c) => c.id)}
       />
     </div>
   );

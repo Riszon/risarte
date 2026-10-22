@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 21/10/2026 · Versão do sistema: **0.340.1** · Última migração: **0315** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 22/10/2026 · Versão do sistema: **0.341.0** · Última migração: **0315** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 📊 0.341.0 — OC-00121: O PAINEL DA REDE POR ÁREA (22/10/2026, sem migração)
+>
+> Abas Contas a pagar · Recebíveis · Fluxo de caixa · DRE no Painel da rede,
+> com o total da rede e as unidades na ordem de atenção, cor + frase
+> (`src/lib/finance/network-areas.ts`). ⚠️ **Sem função nova no banco** (o
+> plano previa duas): cada unidade é lida pelas MESMAS tabelas e funções da
+> tela dela e somada pelas MESMAS funções puras — o número bate por
+> construção. O fluxo de caixa são 2 chamadas por unidade (AP68). DRE pela
+> margem contra a margem PONDERADA da rede (K3). **Abrir na unidade** troca a
+> unidade ativa e abre o relatório do mesmo assunto/mês; a marca
+> `risarte_veio_da_rede` traz a faixa **Voltar para a rede**, que devolve à
+> franqueadora de onde se saiu.
 
 > ## 💼 0.340.1 — OC-00120: FINANCEIRO DA FRANQUEADORA NAS UNIDADES (21/10/2026, sem migração)
 >

@@ -390,6 +390,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**22/10/2026 — PC Administrador (core 0.340.1 → 0.341.0, sem migração)**
+
+- **OC-00121 (sugestão do Admin Master): o Painel da rede por área.** Plano e
+  decisões K1–K4 em `docs/Financeiro/OC-00121-PLANO.md` (as quatro como
+  recomendado): abas Contas a pagar · Recebíveis · Fluxo de caixa · DRE, o mês
+  no alto, cor + frase por unidade, e **Abrir na unidade** com a faixa
+  **Voltar para a rede**.
+- ⚠️ **Sem migração, contra o plano:** a rede soma pelas MESMAS tabelas,
+  funções e regras puras da tela da unidade (`dados-por-area.ts` +
+  `network-areas.ts`). Ao mudar a conta de uma tela da unidade, a aba da rede
+  muda junto — não criar conta paralela no banco sem reusar a mesma.
+- ⚠️ **A marca `risarte_veio_da_rede`** (unidade|origem|aba|de|ate|franqueadora)
+  é o que faz a faixa aparecer; ela só vale na unidade marcada. **O treino tem
+  DUAS franqueadoras** ("RISARTE Franchising" e "Risarte Franqueadora Teste"):
+  "a primeira da lista" não serve para voltar — achado na tela.
+- **AP68 (BACKLOG):** a aba de caixa lê unidade por unidade (2 chamadas cada).
+- Visto na tela no treino como Admin de teste e Financeiro da Franqueadora de
+  teste (só leitura, nada gravado). O cookie de unidade ativa das duas contas
+  de teste mudou só no navegador; o Admin de teste ficou na RISARTE
+  Franchising, o Financeiro de teste na Risarte Franqueadora Teste.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **21/10/2026 (2ª) — PC Administrador (core 0.340.0 → 0.340.1, sem migração)**
 
 - **OC-00120 (TREINO; vale para a produção):** o Financeiro da Franqueadora

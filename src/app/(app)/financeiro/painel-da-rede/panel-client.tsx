@@ -1,11 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronDown, ChevronRight, Lock, RefreshCw } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -22,9 +19,7 @@ import {
   type UnitStatus,
 } from "@/lib/finance/network-panel";
 import { checkAllAlerts } from "./actions";
-
-const selectClass =
-  "h-8 rounded-md border border-input bg-background px-2 text-xs";
+import { BotaoAbrirNaUnidade } from "../abrir-na-unidade";
 
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -53,24 +48,23 @@ export function NetworkPanelView({
   rows,
   totals,
   points,
+  de,
+  ate,
+  podeAbrir,
 }: {
   year: number;
   month: number;
   rows: UnitPanelRow[];
   totals: PanelTotals;
   points: MonthPoint[];
+  /** O mês escolhido, para o "Abrir na unidade" (OC-00121). */
+  de: string;
+  ate: string;
+  /** As unidades que quem olha pode abrir (o seletor dele). */
+  podeAbrir: string[];
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState<string | null>(null);
-
-  function apply(next: Partial<{ ano: number; mes: number }>) {
-    const params = new URLSearchParams({
-      ano: String(next.ano ?? year),
-      mes: String(next.mes ?? month),
-    });
-    startTransition(() => router.push(`/financeiro/painel-da-rede?${params}`));
-  }
 
   function apurar() {
     startTransition(async () => {
@@ -89,42 +83,15 @@ export function NetworkPanelView({
 
   return (
     <div className={cn("space-y-4", isPending && "opacity-70")}>
-      {/* -- FILTROS ------------------------------------------------------ */}
-      <Card>
-        <CardContent className="flex flex-wrap items-end gap-3 p-4">
-          <label className="block">
-            <Label className="text-[11px]">Ano</Label>
-            <Input
-              className="h-8 w-24"
-              type="number"
-              value={year}
-              onChange={(e) => apply({ ano: Number(e.target.value) })}
-            />
-          </label>
-          <label className="block">
-            <Label className="text-[11px]">Mês (taxas)</Label>
-            <select
-              value={month}
-              onChange={(e) => apply({ mes: Number(e.target.value) })}
-              className={cn(selectClass, "w-36")}
-            >
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i + 1}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto"
-            onClick={apurar}
-          >
-            <RefreshCw className="mr-1 size-3" /> Apurar alertas agora
-          </Button>
-        </CardContent>
-      </Card>
+      {/* -- APURAR (o mês escolhido no alto vale para as taxas) ---------- */}
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-xs text-muted-foreground">
+          Alertas da última apuração; as taxas são de {MONTHS[month - 1]}/{year}.
+        </p>
+        <Button size="sm" variant="outline" className="ml-auto" onClick={apurar}>
+          <RefreshCw className="mr-1 size-3" /> Apurar alertas agora
+        </Button>
+      </div>
 
       {/* -- O RESUMO ----------------------------------------------------- */}
       <Card>
@@ -296,6 +263,18 @@ export function NetworkPanelView({
                           </strong>
                         )}
                       </p>
+                      {podeAbrir.includes(u.clinicId) && (
+                        <div className="flex justify-end border-t pt-1">
+                          <BotaoAbrirNaUnidade
+                            clinicId={u.clinicId}
+                            nome={u.clinicName}
+                            aba="visao"
+                            de={de}
+                            ate={ate}
+                            origem="painel"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -8,6 +8,8 @@ import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
 import { AbasDeRecebiveis } from "../recebiveis/abas";
+import { BotaoAbrirNaUnidade } from "../abrir-na-unidade";
+import { todayInBrazil, monthRangeOf } from "@/lib/dates";
 import { Card, CardContent } from "@/components/ui/card";
 import { AGING_LABELS } from "@/lib/finance/aging";
 import {
@@ -177,6 +179,9 @@ export default async function RecebiveisDaRedePage() {
 
   const totais = totaisDaRede(unidades);
   const ordenadas = [...unidades].sort(porAtencao);
+  // OC-00121: "Abrir na unidade" só para as do seletor de quem olha.
+  const podeAbrir = new Set(session.clinics.map((c) => c.id));
+  const mes = monthRangeOf(todayInBrazil());
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
@@ -283,6 +288,7 @@ export default async function RecebiveisDaRedePage() {
               <th className="px-2 py-2 text-right font-medium">Vencido</th>
               <th className="px-2 py-2 text-right font-medium">Taxa</th>
               <th className="px-2 py-2 text-right font-medium">Limite</th>
+              <th className="px-2 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -332,12 +338,24 @@ export default async function RecebiveisDaRedePage() {
                       ? "—"
                       : `${u.limitePercent.toLocaleString("pt-BR")}%`}
                   </td>
+                  <td className="px-2 py-1 text-right">
+                    {podeAbrir.has(u.clinicId) && (
+                      <BotaoAbrirNaUnidade
+                        clinicId={u.clinicId}
+                        nome={u.nome}
+                        aba="receber"
+                        de={mes.from}
+                        ate={mes.to}
+                        origem="recebiveis-da-rede"
+                      />
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {ordenadas.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="py-8 text-center text-muted-foreground">
                   Nenhuma unidade ativa na rede.
                 </td>
               </tr>

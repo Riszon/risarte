@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { canViewFinance, isFinanceFranchisor } from "@/lib/finance/access";
 import { FinanceNav } from "./finance-nav";
+import { FaixaVoltarParaRede } from "./abrir-na-unidade";
+import { marcaDaRedeAtiva } from "./marca-da-rede";
 
 /**
  * FIN0 — casca do módulo Financeiro. A navegação entre as telas fica aqui: sem
@@ -26,9 +28,21 @@ export default async function FinanceLayout({
     session.activeClinic?.type === "franchisor" &&
     (session.isAdminMaster || isFinanceFranchisor(session));
 
+  // OC-00121: aberta pelo Painel da rede, a unidade mostra a faixa de volta.
+  // A marca só vale para a unidade que foi aberta; trocar pelo seletor a apaga.
+  const marca =
+    session.isAdminMaster || isFinanceFranchisor(session)
+      ? await marcaDaRedeAtiva(session.activeClinic?.id ?? null)
+      : null;
+
   return (
     <div>
       <FinanceNav veRede={veRede} />
+      {marca && session.activeClinic && (
+        <div className="px-4">
+          <FaixaVoltarParaRede unidade={session.activeClinic.name} />
+        </div>
+      )}
       {children}
     </div>
   );

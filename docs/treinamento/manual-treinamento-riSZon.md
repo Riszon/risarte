@@ -343,6 +343,54 @@ pedem atenção primeiro e por quê, e quanto das taxas está em aberto. Esse
 resumo mostra o **retrato da última apuração dos alertas**, e diz na tela
 quando ela foi; apurar na hora é botão do Painel da rede.
 
+#### O Painel da rede por área *(desde a 0.341.0, relato OC-00121)*
+
+Em **Rede → Painel da rede** (Admin Master e Financeiro da Franqueadora), no
+alto, o **mês e o ano** — valem para todas as abas — e cinco abas:
+
+| Aba | O que mostra de cada unidade | Vermelho | Amarelo |
+|---|---|---|---|
+| **Visão geral** | os alertas e as taxas da rede (o painel de sempre) | caixa negativo previsto ou taxa vencida | o que ainda dá para resolver |
+| **Contas a pagar** | o que deve **hoje**, o que vence no mês e o que pagou no mês | conta vencida | conta esperando autorização |
+| **Recebíveis** | o que tem a receber **hoje** e o que recebeu no mês | inadimplência acima do limite da unidade | vencido dentro do limite |
+| **Fluxo de caixa** | saldo no início, entradas, saídas e saldo no fim do mês | o saldo fica negativo em algum dia do mês | sai mais do que entra, com o saldo aguentando |
+| **DRE** | receita líquida, resultado e **margem** do mês | prejuízo | margem mais de 2 pontos abaixo da margem da rede |
+
+Cada aba tem o **total da rede** no alto e as unidades **na ordem de atenção**
+(a pior primeiro), cada uma com uma bolinha e a **frase que explica a cor** —
+por exemplo *"Saldo fica negativo em 08/10 (-R$ 2.000,00)"* ou *"Puxa a rede
+para baixo: margem de 12%, −8 p.p. da média"*. Bolinha cinza é **sem dado**
+(nenhuma conta, nada a receber, sem receita): unidade calada não é unidade em
+dia.
+
+> **Os números são os da tela da unidade.** A rede soma as mesmas contas que o
+> Contas a pagar, os Recebíveis, o Fluxo de caixa e a DRE de cada unidade
+> fazem — por isso, ao abrir a unidade, o número é o mesmo.
+
+> **No DRE a cor é a margem, não o valor.** Em reais a unidade grande sempre
+> pareceria melhor e a pequena sempre pior. A margem da rede é o resultado de
+> todas dividido pela receita de todas — não a média das margens. A soma da
+> aba é **comparação**: ela não é o resultado da Franqueadora (esse está no
+> **Consolidado**).
+
+> **No Fluxo de caixa não existe "saldo da rede".** O dinheiro de uma unidade
+> não paga a conta da outra; por isso o total conta **quantas unidades ficam
+> negativas** no mês.
+
+**Abrir na unidade.** Cada linha tem o botão **Abrir na unidade** (na Visão
+geral, ele aparece ao clicar na unidade). Ele troca a unidade de trabalho —
+como o **Trabalhar na clínica** — e abre o relatório do **mesmo assunto e do
+mesmo mês** naquela unidade. No alto do Financeiro aparece a faixa *"Você abriu
+… pelo Painel da rede"* com o botão **Voltar para a rede**, que devolve à
+franqueadora de onde você saiu, na mesma aba e no mesmo mês. Trocar de unidade
+pelo seletor apaga a faixa. Os **Recebíveis** abrem sem filtro de data (lá a
+data filtra pelo vencimento, e esconderia o atrasado). O mesmo botão está nas
+telas **Recebíveis da rede** e **Consolidado**.
+
+O Financeiro da Franqueadora com escopo **Específicas** vê todas as unidades
+nas abas (o número vem do banco), mas só tem o **Abrir na unidade** nas do
+escopo dele.
+
 **A barra de abas encolheu.** As telas de todo dia ficaram à mostra (Painel,
 DRE, Fluxo de caixa, Recebíveis, Contas a pagar, Conciliação) e o resto entrou
 em três menus: **Análise**, **Rede** (só na Franqueadora) e **Cadastros**. O
@@ -485,6 +533,8 @@ com quem passou do próprio limite.
 **Na Franqueadora há a visão da rede:** menu **Rede → Recebíveis da rede**. Ela
 mostra todas as unidades lado a lado — a receber, vencido, a taxa de cada uma e
 o limite dela — mais os totais da rede e as duas escadas de prazo somadas.
+Cada linha tem **Abrir na unidade** (desde a 0.341.0): entra na unidade e abre
+os Recebíveis dela, com a faixa **Voltar para a rede**.
 
 > **A ordem da lista é "quem pede atenção primeiro".** Quem estourou o limite
 > vem na frente e, entre essas, **quem tem mais dinheiro vencido** — não quem
@@ -1419,6 +1469,9 @@ cancelado, com o motivo.
   conciliação, DRE — passa a ser o dela, como para o Gerente. Fora do
   Financeiro, as telas da unidade continuam seguindo o que a função dele
   permite (ele não vira gerente nem recepção ali).
+- **Pela rede (desde a 0.341.0, OC-00121):** no **Painel da rede**, as abas
+  Contas a pagar, Recebíveis, Fluxo de caixa e DRE comparam as unidades, e
+  **Abrir na unidade** faz a troca e abre o relatório dela (seção 2.3).
 - **Não pode:** aprovar a própria conta lançada (regra de alçada, FIN3).
 - **Compras:** entra na mesa de negociação; **aprova a compra da própria
   Franqueadora** (desde a versão 0.318.0) e recebe a entrega. **Não aprova a

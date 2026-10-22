@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import { verticalPercent } from "@/lib/finance/dre";
+import { BotaoAbrirNaUnidade } from "../abrir-na-unidade";
 import {
   unitMargin,
   versusAverage,
@@ -71,6 +72,7 @@ export function ConsolidatedView({
   units,
   totals,
   clinics,
+  podeAbrir,
 }: {
   from: string;
   to: string;
@@ -79,6 +81,8 @@ export function ConsolidatedView({
   units: UnitSummary[];
   totals: NetworkTotals;
   clinics: { id: string; name: string; ownership: "own" | "franchised" }[];
+  /** OC-00121: as unidades que quem olha pode abrir (o seletor dele). */
+  podeAbrir: string[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -441,6 +445,7 @@ export function ConsolidatedView({
                   <span className="w-20 text-right">vs média</span>
                   <span className="w-28 text-right">Resultado</span>
                   <span className="w-16 text-right">Margem</span>
+                  <span className="w-32" />
                 </span>
               </div>
               {units.length === 0 ? (
@@ -489,6 +494,18 @@ export function ConsolidatedView({
                         </span>
                         <span className="w-16 text-right text-xs text-muted-foreground">
                           {pct(unitMargin(u))}
+                        </span>
+                        <span className="w-32 text-right">
+                          {podeAbrir.includes(u.clinicId) && (
+                            <BotaoAbrirNaUnidade
+                              clinicId={u.clinicId}
+                              nome={u.clinicName}
+                              aba="dre"
+                              de={from}
+                              ate={to}
+                              origem="consolidado"
+                            />
+                          )}
                         </span>
                       </span>
                     </div>

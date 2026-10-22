@@ -110,7 +110,40 @@ fluxo de caixa, o **saldo previsto negativo**; no DRE, a **margem** (K3).
 | K3 | No DRE, **margem (%) contra a média da rede**; o valor em R$ ao lado |
 | K4 | **Mês corrente, com seletor de ano/mês** |
 
-⏳ Aguardando o OK do dono para começar o código.
+✅ OK do dono em 22/10/2026 ("pode começar o código do OC-00121").
+
+---
+
+## O que foi feito (0.341.0, 22/10/2026)
+
+⚠️ **Desvio do §3: NÃO houve migração.** Ao escrever, ficou claro que as
+duas funções novas (`network_payables`, `network_cash_flow`) seriam uma
+SEGUNDA conta para números que a tela da unidade já calcula — e duas contas
+para o mesmo indicador é como a rede e a unidade passam a discordar. Cada
+unidade é lida pelas mesmas tabelas e funções da tela dela (a RLS e
+`can_see_clinic_finance` já deixam Admin e Financeiro da Franqueadora ler
+todas) e somada pelas mesmas funções puras.
+
+| Aba | De onde vem |
+|---|---|
+| Contas a pagar | `payables` + `payable_payments` → `viewPayable` / `summarizePayables` (aberto e vencido HOJE; pago e "vence no mês" no mês escolhido) |
+| Recebíveis | `network_receivables` (hoje) + `payment_receipts` do mês (estornos fora) |
+| Fluxo de caixa | `cash_flow_series` + `cash_balance_before` por unidade, série diária (`buildCashFlow`, `firstNegative`) |
+| DRE | `network_units_summary` do mês; margem contra a margem ponderada da rede, faixa de 2 p.p. |
+
+- Cores e frases: `src/lib/finance/network-areas.ts` (cinza = sem dado,
+  nunca verde; leitura que falha vira aviso, nunca zero).
+- K2: `abrirNaUnidade` (só Admin e Financeiro da Franqueadora, só unidade do
+  seletor) troca a unidade ativa e grava a marca `risarte_veio_da_rede`; a
+  faixa "Voltar para a rede" aparece só na unidade marcada e volta à
+  franqueadora de onde se saiu (o treino tem duas — achado na tela). Os
+  Recebíveis abrem sem período (lá a data filtra pelo vencimento). O botão
+  também está em Recebíveis da rede e Consolidado.
+- O seletor de mês saiu de dentro da Visão geral e passou para o alto (vale
+  para todas as abas).
+- Provado: 24 testes com prova de quebra (8/8); na tela, no treino, como Admin
+  e como Financeiro da Franqueadora de teste (EV-205).
+- Limite anotado: AP68 (a aba de caixa lê unidade por unidade).
 
 ---
 

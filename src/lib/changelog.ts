@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.341.0",
+    data: "2026-10-22",
+    migracao: null,
+    titulo: "Painel da rede por área: contas a pagar, recebíveis, caixa e DRE, unidade por unidade",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O Painel da rede ganhou abas: Contas a pagar, Recebíveis, Fluxo de caixa e DRE. Cada uma mostra o total da rede e todas as unidades na ordem de atenção, com uma cor e a frase que explica a cor. O mês escolhido no alto vale para todas as abas.",
+        papeis: ["finance_franchisor"],
+        manual: "O Painel da rede por área",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No DRE da rede a cor compara a margem de cada unidade com a margem da rede: verde puxa para cima, amarelo puxa para baixo, vermelho é prejuízo. O valor em reais aparece ao lado.",
+        papeis: ["finance_franchisor"],
+        manual: "O Painel da rede por área",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "\"Abrir na unidade\": no Painel da rede, nos Recebíveis da rede e no Consolidado, o botão entra na unidade e abre o relatório do mesmo assunto e do mesmo mês. Uma faixa no alto do Financeiro traz o \"Voltar para a rede\", que devolve à mesma aba e ao mesmo mês.",
+        papeis: ["finance_franchisor"],
+        manual: "O Painel da rede por área",
+      },
+    ],
+  },
+  {
     versao: "0.340.1",
     data: "2026-10-21",
     migracao: null,
