@@ -145,6 +145,16 @@ todas) e somada pelas mesmas funções puras.
   e como Financeiro da Franqueadora de teste (EV-205).
 - Limite anotado: AP68 (a aba de caixa lê unidade por unidade).
 
+## OC-00122 (0.341.1, 22/10/2026) — as abas em colunas
+
+Sugestão do Admin Master logo depois da entrega: organizar em colunas para
+comparar com a rede. Não era defeito nem regra — o formato de lista (números
+corridos sob o nome) foi escolha minha pensando no celular. Decisões do dono:
+**linha "Rede" dentro da tabela**, nas mesmas colunas; **"% da rede"** na
+coluna principal; no celular, **a mesma tabela rolando de lado** com o nome
+fixo. Nas colunas sem sentido para a rede (saldo do caixa, limite dos
+recebíveis, distância da margem) a linha Rede mostra um traço.
+
 ---
 
 ## 6. Como vai ser provado

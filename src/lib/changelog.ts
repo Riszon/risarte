@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.341.1",
+    data: "2026-10-22",
+    migracao: null,
+    titulo: "Painel da rede: as abas em colunas, com a linha Rede no topo",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "As abas Contas a pagar, Recebíveis, Fluxo de caixa e DRE do Painel da rede viraram tabelas em colunas. A primeira linha, Rede, traz o total nas mesmas colunas das unidades, e a coluna principal mostra quanto cada unidade representa da rede. No celular a tabela rola para o lado, com o nome da unidade fixo.",
+        papeis: ["finance_franchisor"],
+        manual: "O Painel da rede por área",
+      },
+    ],
+  },
+  {
     versao: "0.341.0",
     data: "2026-10-22",
     migracao: null,

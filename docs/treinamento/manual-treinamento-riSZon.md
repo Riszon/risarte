@@ -356,7 +356,13 @@ alto, o **mês e o ano** — valem para todas as abas — e cinco abas:
 | **Fluxo de caixa** | saldo no início, entradas, saídas e saldo no fim do mês | o saldo fica negativo em algum dia do mês | sai mais do que entra, com o saldo aguentando |
 | **DRE** | receita líquida, resultado e **margem** do mês | prejuízo | margem mais de 2 pontos abaixo da margem da rede |
 
-Cada aba tem o **total da rede** no alto e as unidades **na ordem de atenção**
+Cada aba é uma **tabela em colunas** (desde a 0.341.1, relato OC-00122). A
+primeira linha, **Rede**, traz o total nas **mesmas colunas** das unidades —
+o número de cada unidade fica logo abaixo do número da rede. Na coluna
+principal (a pagar, a receber, entradas, receita líquida) aparece também
+**quanto a unidade representa da rede** (*"60% da rede"*). No celular a tabela
+rola para o lado com o dedo, e o nome da unidade fica fixo à esquerda. Abaixo
+da linha Rede vêm as unidades **na ordem de atenção**
 (a pior primeiro), cada uma com uma bolinha e a **frase que explica a cor** —
 por exemplo *"Saldo fica negativo em 08/10 (-R$ 2.000,00)"* ou *"Puxa a rede
 para baixo: margem de 12%, −8 p.p. da média"*. Bolinha cinza é **sem dado**
@@ -374,8 +380,9 @@ dia.
 > **Consolidado**).
 
 > **No Fluxo de caixa não existe "saldo da rede".** O dinheiro de uma unidade
-> não paga a conta da outra; por isso o total conta **quantas unidades ficam
-> negativas** no mês.
+> não paga a conta da outra; por isso a linha Rede mostra um traço nos saldos
+> e diz **quantas unidades ficam negativas** no mês. Nos Recebíveis, a coluna
+> **Limite** também fica com traço na linha Rede: cada unidade tem o seu.
 
 **Abrir na unidade.** Cada linha tem o botão **Abrir na unidade** (na Visão
 geral, ele aparece ao clicar na unidade). Ele troca a unidade de trabalho —

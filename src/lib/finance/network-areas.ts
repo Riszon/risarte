@@ -418,6 +418,23 @@ export function fmtPp(d: number | null): string {
   return `${d > 0 ? "+" : d < 0 ? "−" : ""}${v} p.p.`;
 }
 
+/**
+ * OC-00122 — QUANTO A UNIDADE REPRESENTA DA REDE, na coluna principal de cada
+ * aba. `null` quando a rede não tem nada naquela coluna (0% de nada não é
+ * informação) ou quando o valor é negativo (resultado negativo não é "parte"
+ * de nada — no DRE quem compara é a margem).
+ */
+export function participacao(valorCents: number, totalCents: number): number | null {
+  if (totalCents <= 0 || valorCents < 0) return null;
+  return valorCents / totalCents;
+}
+
+export function fmtParticipacao(p: number | null): string {
+  if (p === null) return "";
+  if (p > 0 && p < 0.005) return "<1% da rede";
+  return `${Math.round(p * 100)}% da rede`;
+}
+
 export function porAtencaoDre(mediaDaRede: number | null) {
   return (a: UnidadeDre, b: UnidadeDre): number => {
     const d = RANK[farolDre(a, mediaDaRede).farol] - RANK[farolDre(b, mediaDaRede).farol];

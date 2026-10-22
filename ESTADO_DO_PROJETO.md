@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/10/2026 · Versão do sistema: **0.341.0** · Última migração: **0315** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 22/10/2026 · Versão do sistema: **0.341.1** · Última migração: **0315** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 📊 0.341.1 — OC-00122: AS ABAS DO PAINEL DA REDE EM COLUNAS (22/10/2026, sem migração)
+>
+> Cada aba por área virou tabela, com a linha **Rede** no topo nas mesmas
+> colunas das unidades, "% da rede" na coluna principal (`participacao` em
+> `network-areas.ts`) e nome fixo ao rolar de lado no celular (decisões do
+> dono). Só apresentação: nenhuma conta mudou.
 
 > ## 📊 0.341.0 — OC-00121: O PAINEL DA REDE POR ÁREA (22/10/2026, sem migração)
 >

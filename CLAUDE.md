@@ -390,6 +390,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**22/10/2026 (2ª) — PC Administrador (core 0.341.0 → 0.341.1, sem migração)**
+
+- **OC-00122 (sugestão do Admin Master): as abas do Painel da rede em
+  colunas.** Não era defeito nem regra: a lista com números corridos foi
+  escolha minha no OC-00121. Decisões do dono: linha "Rede" dentro da tabela
+  (mesmas colunas), "% da rede" na coluna principal, tabela que rola de lado
+  no celular com o nome fixo. Só `areas.tsx` e `participacao`; nenhuma conta
+  mudou.
+- Visto na tela no treino (Admin de teste, só leitura). No treino há agora
+  uma conta a pagar de R$ 8.200,00 na Londrina vencendo em 22/10 (não é minha)
+  — ela deixa o caixa da Londrina negativo em outubro, e a aba mostra isso.
+- Cache do servidor de teste limpo ao encerrar (AP40).
+
 **22/10/2026 — PC Administrador (core 0.340.1 → 0.341.0, sem migração)**
 
 - **OC-00121 (sugestão do Admin Master): o Painel da rede por área.** Plano e

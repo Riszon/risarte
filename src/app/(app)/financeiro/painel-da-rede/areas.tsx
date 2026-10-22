@@ -9,8 +9,10 @@ import {
   farolPagar,
   farolReceber,
   fmtMargem,
+  fmtParticipacao,
   fmtPp,
   margem,
+  participacao,
   porAtencaoCaixa,
   porAtencaoDre,
   porAtencaoPagar,
@@ -30,10 +32,14 @@ import {
 import { BotaoAbrirNaUnidade } from "../abrir-na-unidade";
 
 /**
- * OC-00121 — as quatro abas por área do Painel da rede. Cada uma: o total da
- * rede no alto e uma linha por unidade, na ordem de atenção, com a cor e a
- * frase que explica a cor. A conta mora em `network-areas.ts`; aqui só se
- * desenha.
+ * OC-00121 — as quatro abas por área do Painel da rede. A conta mora em
+ * `network-areas.ts`; aqui só se desenha.
+ *
+ * OC-00122 (decisões do dono, 22/10/2026): cada aba é uma TABELA, com a linha
+ * "Rede" no topo nas MESMAS colunas das unidades — o número da unidade fica
+ * logo abaixo do número da rede, e comparar vira olhar para baixo. A coluna
+ * principal traz quanto a unidade representa da rede. No celular a tabela rola
+ * de lado, com o nome da unidade fixo à esquerda.
  */
 
 const DOT: Record<Farol, string> = {
@@ -57,90 +63,157 @@ type Contexto = {
   podeAbrir: Set<string>;
 };
 
-function Numero({ rotulo, valor, destaque }: { rotulo: string; valor: ReactNode; destaque?: boolean }) {
-  return (
-    <div>
-      <p className="text-[11px] text-muted-foreground">{rotulo}</p>
-      <p className={cn("text-lg font-semibold tabular-nums", destaque && "text-destructive")}>
-        {valor}
-      </p>
-    </div>
-  );
-}
+type Base = { clinicId: string; nome: string; ownership: "own" | "franchised" };
+
+type Coluna<U> = {
+  rotulo: string;
+  /** O valor da unidade (já formatado). */
+  unidade: (u: U) => ReactNode;
+  /** O valor da linha "Rede" (já formatado). */
+  rede: ReactNode;
+  /** Pinta o valor da unidade de vermelho. */
+  alerta?: (u: U) => boolean;
+  /** A linha "Rede" também em vermelho. */
+  redeAlerta?: boolean;
+};
 
 function Farois({ c }: { c: ContagemDeFarol }) {
   return (
-    <span className="flex items-center gap-1 text-xs font-normal">
+    <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
       <span className={cn("size-2 rounded-full", DOT.vermelho)} />
       {c.vermelho}
       <span className={cn("ml-1 size-2 rounded-full", DOT.amarelo)} />
       {c.amarelo}
       <span className={cn("ml-1 size-2 rounded-full", DOT.verde)} />
       {c.verde}
+      <span className={cn("ml-1 size-2 rounded-full", DOT.sem_dado)} />
+      {c.sem_dado}
     </span>
   );
 }
 
-function Linha({
-  nome,
-  ownership,
+/** Valor em R$ com o "% da rede" embaixo (só na coluna principal). */
+function ComParte({ cents, totalCents }: { cents: number; totalCents: number }) {
+  const p = fmtParticipacao(participacao(cents, totalCents));
+  return (
+    <>
+      {formatBRL(cents)}
+      {p && <span className="block text-[11px] text-muted-foreground">{p}</span>}
+    </>
+  );
+}
+
+function TabelaDaArea<U extends Base>({
+  unidades,
+  colunas,
   farol,
-  motivo,
-  numeros,
-  abrir,
+  farois,
+  redeNota,
+  aba,
+  ctx,
 }: {
-  nome: string;
-  ownership: "own" | "franchised";
-  farol: Farol;
-  motivo: string;
-  numeros: ReactNode;
-  abrir: ReactNode;
+  unidades: U[];
+  colunas: Coluna<U>[];
+  farol: (u: U) => { farol: Farol; motivo: string };
+  farois: ContagemDeFarol;
+  /** Uma frase sob "Rede" (ex.: quantas ficam negativas). */
+  redeNota?: string;
+  aba: NetworkTab;
+  ctx: Contexto;
 }) {
-  return (
-    <li className="flex flex-wrap items-start gap-x-3 gap-y-1 px-4 py-3">
-      <span className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", DOT[farol])} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">
-          {nome}
-          {ownership === "own" && (
-            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
-              própria
-            </span>
-          )}
-        </p>
-        <p className={cn("text-xs", TEXTO[farol])}>{motivo}</p>
-        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
-          {numeros}
-        </div>
-      </div>
-      {abrir}
-    </li>
-  );
-}
-
-function Abrir({ ctx, aba, clinicId, nome }: { ctx: Contexto; aba: NetworkTab; clinicId: string; nome: string }) {
-  if (!ctx.podeAbrir.has(clinicId)) return null;
-  return (
-    <BotaoAbrirNaUnidade
-      clinicId={clinicId}
-      nome={nome}
-      aba={aba}
-      de={ctx.de}
-      ate={ctx.ate}
-      origem="painel"
-    />
-  );
-}
-
-function Lista({ vazia, children }: { vazia: boolean; children: ReactNode }) {
+  // ⚠️ A primeira coluna é FIXA ao rolar de lado (celular), e por isso tem
+  // fundo próprio: sem ele, os números passariam por baixo do nome.
+  const fixa = "sticky left-0 z-10 min-w-[10.5rem] max-w-[18rem] px-3 text-left sm:min-w-[13rem]";
   return (
     <Card>
-      <CardContent className="p-0">
-        {vazia ? (
-          <p className="p-4 text-sm text-muted-foreground">Nenhuma unidade ativa na rede.</p>
-        ) : (
-          <ul className="divide-y">{children}</ul>
-        )}
+      <CardContent className="overflow-x-auto p-0">
+        <table className="w-full min-w-[46rem] text-sm">
+          <thead className="border-b text-[11px] uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className={cn(fixa, "bg-card py-2 font-medium")}>Unidade</th>
+              {colunas.map((c) => (
+                <th key={c.rotulo} className="px-3 py-2 text-right font-medium whitespace-nowrap">
+                  {c.rotulo}
+                </th>
+              ))}
+              <th className="px-3 py-2" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b bg-muted font-semibold">
+              <td className={cn(fixa, "bg-muted py-2.5")}>
+                <span className="block">Rede ({unidades.length})</span>
+                <Farois c={farois} />
+                {redeNota && (
+                  <span className="block text-[11px] font-normal text-muted-foreground">
+                    {redeNota}
+                  </span>
+                )}
+              </td>
+              {colunas.map((c) => (
+                <td
+                  key={c.rotulo}
+                  className={cn(
+                    "px-3 py-2.5 text-right align-top tabular-nums whitespace-nowrap",
+                    c.redeAlerta && "text-destructive"
+                  )}
+                >
+                  {c.rede}
+                </td>
+              ))}
+              <td className="px-3" />
+            </tr>
+            {unidades.length === 0 && (
+              <tr>
+                <td colSpan={colunas.length + 2} className="p-4 text-muted-foreground">
+                  Nenhuma unidade ativa na rede.
+                </td>
+              </tr>
+            )}
+            {unidades.map((u) => {
+              const f = farol(u);
+              return (
+                <tr key={u.clinicId} className="border-b last:border-0">
+                  <td className={cn(fixa, "bg-card py-2.5 align-top")}>
+                    <span className="flex items-center gap-2 font-medium">
+                      <span className={cn("size-2.5 shrink-0 rounded-full", DOT[f.farol])} />
+                      {u.nome}
+                      {u.ownership === "own" && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+                          própria
+                        </span>
+                      )}
+                    </span>
+                    <span className={cn("mt-0.5 block text-xs", TEXTO[f.farol])}>{f.motivo}</span>
+                  </td>
+                  {colunas.map((c) => (
+                    <td
+                      key={c.rotulo}
+                      className={cn(
+                        "px-3 py-2.5 text-right align-top tabular-nums whitespace-nowrap",
+                        c.alerta?.(u) && "text-destructive"
+                      )}
+                    >
+                      {c.unidade(u)}
+                    </td>
+                  ))}
+                  <td className="px-2 py-2 text-right align-top">
+                    {ctx.podeAbrir.has(u.clinicId) && (
+                      <BotaoAbrirNaUnidade
+                        clinicId={u.clinicId}
+                        nome={u.nome}
+                        aba={aba}
+                        de={ctx.de}
+                        ate={ctx.ate}
+                        origem="painel"
+                      />
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </CardContent>
     </Card>
   );
@@ -155,145 +228,173 @@ export function AvisoDeLeitura({ erro }: { erro: string }) {
   );
 }
 
+function Explica({ children }: { children: ReactNode }) {
+  return <p className="text-sm text-muted-foreground">{children}</p>;
+}
+
 // ---------------------------------------------------------------------------
 
 export function AbaPagar({ unidades, ctx }: { unidades: UnidadePagar[]; ctx: Contexto }) {
   const t = totaisPagar(unidades);
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <Explica>
         O que cada unidade deve aos fornecedores <strong>hoje</strong>, e o que
         pagou no mês escolhido. Vermelho é conta vencida; amarelo, conta
         esperando autorização.
-      </p>
-      <Card>
-        <CardContent className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-          <Numero rotulo="Unidades" valor={<span className="flex items-center gap-2">{t.unidades}<Farois c={t.farois} /></span>} />
-          <Numero rotulo="A pagar (rede)" valor={formatBRL(t.aPagarCents)} />
-          <Numero rotulo={`Vencido (${t.vencidoQuantidade})`} valor={formatBRL(t.vencidoCents)} destaque={t.vencidoCents > 0} />
-          <Numero rotulo="Pago no mês" valor={formatBRL(t.pagoNoMesCents)} />
-        </CardContent>
-      </Card>
-      <Lista vazia={!unidades.length}>
-        {[...unidades].sort(porAtencaoPagar).map((u) => {
-          const f = farolPagar(u);
-          return (
-            <Linha
-              key={u.clinicId}
-              nome={u.nome}
-              ownership={u.ownership}
-              farol={f.farol}
-              motivo={f.motivo}
-              numeros={
-                <>
-                  <span>A pagar {formatBRL(u.aPagarCents)}</span>
-                  <span>Vence no mês {formatBRL(u.venceNoMesCents)}</span>
-                  <span>Pago no mês {formatBRL(u.pagoNoMesCents)}</span>
-                </>
-              }
-              abrir={<Abrir ctx={ctx} aba="pagar" clinicId={u.clinicId} nome={u.nome} />}
-            />
-          );
-        })}
-      </Lista>
+      </Explica>
+      <TabelaDaArea
+        unidades={[...unidades].sort(porAtencaoPagar)}
+        farol={farolPagar}
+        farois={t.farois}
+        aba="pagar"
+        ctx={ctx}
+        colunas={[
+          {
+            rotulo: "A pagar",
+            unidade: (u) => <ComParte cents={u.aPagarCents} totalCents={t.aPagarCents} />,
+            rede: formatBRL(t.aPagarCents),
+          },
+          {
+            rotulo: "Vencido",
+            unidade: (u) => formatBRL(u.vencidoCents),
+            rede: formatBRL(t.vencidoCents),
+            alerta: (u) => u.vencidoCents > 0,
+            redeAlerta: t.vencidoCents > 0,
+          },
+          {
+            rotulo: "A autorizar",
+            unidade: (u) => formatBRL(u.aAutorizarCents),
+            rede: formatBRL(t.aAutorizarCents),
+          },
+          {
+            rotulo: "Vence no mês",
+            unidade: (u) => formatBRL(u.venceNoMesCents),
+            rede: formatBRL(t.venceNoMesCents),
+          },
+          {
+            rotulo: "Pago no mês",
+            unidade: (u) => formatBRL(u.pagoNoMesCents),
+            rede: formatBRL(t.pagoNoMesCents),
+          },
+        ]}
+      />
     </div>
   );
+}
+
+function fmtTaxa(v: number | null): string {
+  return v === null ? "—" : `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 }
 
 export function AbaReceber({ unidades, ctx }: { unidades: UnidadeReceber[]; ctx: Contexto }) {
   const t = totaisReceber(unidades);
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <Explica>
         O que os pacientes devem a cada unidade <strong>hoje</strong>, e o que
         ela recebeu no mês escolhido. Vermelho é inadimplência acima do limite
         da unidade; amarelo, vencido dentro dele. O detalhe por prazo está em{" "}
         <em>Recebíveis da rede</em>.
-      </p>
-      <Card>
-        <CardContent className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-          <Numero rotulo="Unidades" valor={<span className="flex items-center gap-2">{t.unidades}<Farois c={t.farois} /></span>} />
-          <Numero rotulo="A receber (rede)" valor={formatBRL(t.abertoCents)} />
-          <Numero
-            rotulo={`Vencido${t.taxaPercent === null ? "" : ` (${t.taxaPercent.toLocaleString("pt-BR")}%)`}`}
-            valor={formatBRL(t.vencidoCents)}
-            destaque={t.vencidoCents > 0}
-          />
-          <Numero rotulo="Recebido no mês" valor={formatBRL(t.recebidoNoMesCents)} />
-        </CardContent>
-      </Card>
-      <Lista vazia={!unidades.length}>
-        {[...unidades].sort(porAtencaoReceber).map((u) => {
-          const f = farolReceber(u);
-          return (
-            <Linha
-              key={u.clinicId}
-              nome={u.nome}
-              ownership={u.ownership}
-              farol={f.farol}
-              motivo={f.motivo}
-              numeros={
-                <>
-                  <span>A receber {formatBRL(u.abertoCents)}</span>
-                  <span>Recebido no mês {formatBRL(u.recebidoNoMesCents)}</span>
-                </>
-              }
-              abrir={<Abrir ctx={ctx} aba="receber" clinicId={u.clinicId} nome={u.nome} />}
-            />
-          );
-        })}
-      </Lista>
+      </Explica>
+      <TabelaDaArea
+        unidades={[...unidades].sort(porAtencaoReceber)}
+        farol={farolReceber}
+        farois={t.farois}
+        aba="receber"
+        ctx={ctx}
+        colunas={[
+          {
+            rotulo: "A receber",
+            unidade: (u) => <ComParte cents={u.abertoCents} totalCents={t.abertoCents} />,
+            rede: formatBRL(t.abertoCents),
+          },
+          {
+            rotulo: "Vencido",
+            unidade: (u) => formatBRL(u.vencidoCents),
+            rede: formatBRL(t.vencidoCents),
+            alerta: (u) => u.vencidoCents > 0,
+            redeAlerta: t.vencidoCents > 0,
+          },
+          {
+            rotulo: "Inadimplência",
+            unidade: (u) => fmtTaxa(u.taxaPercent),
+            rede: fmtTaxa(t.taxaPercent),
+            alerta: (u) => farolReceber(u).farol === "vermelho",
+          },
+          {
+            rotulo: "Limite",
+            unidade: (u) => fmtTaxa(u.limitePercent),
+            // Cada unidade tem o seu teto (cascata rede → unidade): não há um
+            // limite "da rede" para pôr aqui.
+            rede: "—",
+          },
+          {
+            rotulo: "Recebido no mês",
+            unidade: (u) => formatBRL(u.recebidoNoMesCents),
+            rede: formatBRL(t.recebidoNoMesCents),
+          },
+        ]}
+      />
     </div>
   );
 }
 
 export function AbaCaixa({ unidades, ctx }: { unidades: UnidadeCaixa[]; ctx: Contexto }) {
   const t = totaisCaixa(unidades);
+  // ⚠️ SALDO DA REDE NÃO EXISTE: o dinheiro de uma unidade não cobre a conta
+  // da outra. A linha "Rede" mostra entradas e saídas; nos saldos, um traço.
+  const semSaldo = (
+    <span className="font-normal text-muted-foreground" title="O dinheiro de uma unidade não cobre a conta da outra.">
+      —
+    </span>
+  );
+  const se = (u: UnidadeCaixa, v: number) => (u.falhou ? "—" : formatBRL(v));
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <Explica>
         O caixa de cada unidade no mês escolhido — o que já entrou e saiu, e o
         que está previsto (o vencido não entra na previsão, como no Fluxo de
         caixa da unidade). Vermelho é o saldo ficar negativo em algum dia do
-        mês; amarelo, sair mais do que entra com o saldo aguentando.
-      </p>
-      <Card>
-        <CardContent className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-          <Numero rotulo="Unidades" valor={<span className="flex items-center gap-2">{t.unidades}<Farois c={t.farois} /></span>} />
-          <Numero rotulo="Ficam negativas no mês" valor={t.negativas} destaque={t.negativas > 0} />
-          <Numero rotulo="Entradas (rede)" valor={formatBRL(t.entradasCents)} />
-          <Numero rotulo="Saídas (rede)" valor={formatBRL(t.saidasCents)} />
-        </CardContent>
-      </Card>
-      <p className="text-xs text-muted-foreground">
-        Não existe saldo da rede: o dinheiro de uma unidade não cobre a conta
-        da outra. Por isso o total conta quantas ficam negativas.
-      </p>
-      <Lista vazia={!unidades.length}>
-        {[...unidades].sort(porAtencaoCaixa).map((u) => {
-          const f = farolCaixa(u);
-          return (
-            <Linha
-              key={u.clinicId}
-              nome={u.nome}
-              ownership={u.ownership}
-              farol={f.farol}
-              motivo={f.motivo}
-              numeros={
-                u.falhou ? null : (
-                  <>
-                    <span>Saldo no início {formatBRL(u.saldoInicialCents)}</span>
-                    <span>Entradas {formatBRL(u.entradasCents)}</span>
-                    <span>Saídas {formatBRL(u.saidasCents)}</span>
-                    <span>Saldo no fim {formatBRL(u.saldoFinalCents)}</span>
-                  </>
-                )
-              }
-              abrir={<Abrir ctx={ctx} aba="caixa" clinicId={u.clinicId} nome={u.nome} />}
-            />
-          );
-        })}
-      </Lista>
+        mês; amarelo, sair mais do que entra com o saldo aguentando. Não existe
+        saldo da rede: o dinheiro de uma unidade não cobre a conta da outra.
+      </Explica>
+      <TabelaDaArea
+        unidades={[...unidades].sort(porAtencaoCaixa)}
+        farol={farolCaixa}
+        farois={t.farois}
+        redeNota={
+          t.negativas === 0
+            ? "Nenhuma fica negativa no mês"
+            : `${t.negativas} ${t.negativas === 1 ? "fica negativa" : "ficam negativas"} no mês`
+        }
+        aba="caixa"
+        ctx={ctx}
+        colunas={[
+          {
+            rotulo: "Saldo no início",
+            unidade: (u) => se(u, u.saldoInicialCents),
+            rede: semSaldo,
+          },
+          {
+            rotulo: "Entradas",
+            unidade: (u) =>
+              u.falhou ? "—" : <ComParte cents={u.entradasCents} totalCents={t.entradasCents} />,
+            rede: formatBRL(t.entradasCents),
+          },
+          {
+            rotulo: "Saídas",
+            unidade: (u) => se(u, u.saidasCents),
+            rede: formatBRL(t.saidasCents),
+          },
+          {
+            rotulo: "Saldo no fim",
+            unidade: (u) => se(u, u.saldoFinalCents),
+            rede: semSaldo,
+            alerta: (u) => !u.falhou && u.saldoFinalCents < 0,
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -302,49 +403,50 @@ export function AbaDre({ unidades, ctx }: { unidades: UnidadeDre[]; ctx: Context
   const t = totaisDre(unidades);
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <Explica>
         O resultado de cada unidade no mês escolhido, por competência (a mesma
         DRE da unidade). A cor compara a <strong>margem</strong> de cada uma com
-        a margem da rede: assim unidade grande e pequena se comparam igual. O
-        valor em R$ aparece ao lado.
-      </p>
-      <Card>
-        <CardContent className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-          <Numero rotulo="Unidades" valor={<span className="flex items-center gap-2">{t.unidades}<Farois c={t.farois} /></span>} />
-          <Numero rotulo="Receita líquida (soma)" valor={formatBRL(t.receitaLiquidaCents)} />
-          <Numero rotulo="Resultado (soma)" valor={formatBRL(t.resultadoCents)} destaque={t.resultadoCents < 0} />
-          <Numero rotulo="Margem da rede" valor={fmtMargem(t.margem)} />
-        </CardContent>
-      </Card>
+        a margem da rede: assim unidade grande e pequena se comparam igual.
+      </Explica>
+      <TabelaDaArea
+        unidades={[...unidades].sort(porAtencaoDre(t.margem))}
+        farol={(u) => farolDre(u, t.margem)}
+        farois={t.farois}
+        aba="dre"
+        ctx={ctx}
+        colunas={[
+          {
+            rotulo: "Receita líquida",
+            unidade: (u) => (
+              <ComParte cents={u.receitaLiquidaCents} totalCents={t.receitaLiquidaCents} />
+            ),
+            rede: formatBRL(t.receitaLiquidaCents),
+          },
+          {
+            rotulo: "Resultado",
+            unidade: (u) => formatBRL(u.resultadoCents),
+            rede: formatBRL(t.resultadoCents),
+            alerta: (u) => u.resultadoCents < 0,
+            redeAlerta: t.resultadoCents < 0,
+          },
+          {
+            rotulo: "Margem",
+            unidade: (u) => fmtMargem(margem(u)),
+            rede: fmtMargem(t.margem),
+          },
+          {
+            rotulo: "vs margem da rede",
+            unidade: (u) => fmtPp(distanciaDaMedia(u, t.margem)),
+            rede: "—",
+          },
+        ]}
+      />
       <p className="text-xs text-muted-foreground">
-        ⚠️ Esta soma é <strong>comparação</strong>, não o resultado da
-        Franqueadora: a Franqueadora ganha as taxas das franqueadas, não o
-        faturamento delas. O resultado do grupo está no <em>Consolidado</em>.
+        ⚠️ A linha <strong>Rede</strong> é <strong>comparação</strong>, não o
+        resultado da Franqueadora: a Franqueadora ganha as taxas das franqueadas,
+        não o faturamento delas. O resultado do grupo está no{" "}
+        <em>Consolidado</em>.
       </p>
-      <Lista vazia={!unidades.length}>
-        {[...unidades].sort(porAtencaoDre(t.margem)).map((u) => {
-          const f = farolDre(u, t.margem);
-          const d = distanciaDaMedia(u, t.margem);
-          return (
-            <Linha
-              key={u.clinicId}
-              nome={u.nome}
-              ownership={u.ownership}
-              farol={f.farol}
-              motivo={f.motivo}
-              numeros={
-                <>
-                  <span>Receita líquida {formatBRL(u.receitaLiquidaCents)}</span>
-                  <span>Resultado {formatBRL(u.resultadoCents)}</span>
-                  <span>Margem {fmtMargem(margem(u))}</span>
-                  {d !== null && <span>{fmtPp(d)} da média</span>}
-                </>
-              }
-              abrir={<Abrir ctx={ctx} aba="dre" clinicId={u.clinicId} nome={u.nome} />}
-            />
-          );
-        })}
-      </Lista>
     </div>
   );
 }

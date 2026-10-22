@@ -303,3 +303,29 @@ describe("as frases", () => {
     expect(f.motivo).not.toContain("-R$");
   });
 });
+
+describe("OC-00122 — quanto a unidade representa da rede", () => {
+  it("é a parte do total, arredondada para a frase", async () => {
+    const { participacao, fmtParticipacao } = await import("@/lib/finance/network-areas");
+    expect(participacao(1250000, 2070000)).toBeCloseTo(0.6039, 3);
+    expect(fmtParticipacao(participacao(1250000, 2070000))).toBe("60% da rede");
+    expect(fmtParticipacao(participacao(1, 100000))).toBe("<1% da rede");
+    expect(fmtParticipacao(participacao(0, 100000))).toBe("0% da rede");
+  });
+
+  it("rede sem nada na coluna, ou valor negativo, não vira percentual", async () => {
+    const { participacao, fmtParticipacao } = await import("@/lib/finance/network-areas");
+    expect(participacao(0, 0)).toBeNull();
+    expect(participacao(-500, 1000)).toBeNull();
+    expect(fmtParticipacao(null)).toBe("");
+  });
+
+  it("as quatro abas são tabela com a linha Rede nas mesmas colunas", () => {
+    const tela = ler("app/(app)/financeiro/painel-da-rede/areas.tsx");
+    expect(tela).toContain("<table");
+    expect(tela).toContain("Rede ({unidades.length})");
+    // A coluna do nome fica fixa ao rolar de lado (celular).
+    expect(tela).toMatch(/sticky left-0/);
+    expect((tela.match(/<TabelaDaArea/g) ?? []).length).toBe(4);
+  });
+});
