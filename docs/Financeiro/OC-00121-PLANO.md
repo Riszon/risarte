@@ -101,6 +101,17 @@ fluxo de caixa, o **saldo previsto negativo**; no DRE, a **margem** (K3).
 | **K3** | "Puxando para cima ou para baixo" no DRE | **Pela margem (%) contra a média da rede** — unidade grande e pequena comparam igual; o valor em R$ aparece ao lado |
 | **K4** | Período | **Mês corrente, com seletor de mês** (o mesmo do Painel) |
 
+### Decisões do dono (22/10/2026) — as quatro como recomendado
+
+| # | Decisão |
+|---|---|
+| K1 | **Abas no Painel da Rede**: Visão geral · Contas a pagar · Recebíveis · Fluxo de caixa · DRE |
+| K2 | O clique **entra na unidade** (troca a unidade de trabalho) e abre o relatório do mesmo assunto, no mesmo mês; faixa "voltar para a rede" |
+| K3 | No DRE, **margem (%) contra a média da rede**; o valor em R$ ao lado |
+| K4 | **Mês corrente, com seletor de ano/mês** |
+
+⏳ Aguardando o OK do dono para começar o código.
+
 ---
 
 ## 6. Como vai ser provado
