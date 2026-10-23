@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/10/2026 · Versão do sistema: **0.342.0** · Última migração: **0317** (aplicada no treino; ⏳ produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 22/10/2026 · Versão do sistema: **0.342.0** · Última migração: **0317** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🏦 0.342.0 / 0317 — AP51: EM QUAL CONTA O DINHEIRO ENTROU (22/10/2026)
 >

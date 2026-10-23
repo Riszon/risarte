@@ -2782,6 +2782,7 @@ espécie) virou conta da unidade, e cada conta da Conciliação soma só a sua.
 não devolve o lançamento à conta em que estava antes de ser casado (o casar
 leva para a conta da linha; desfazer não sabe de onde veio). O saldo do
 banco e o do sistema continuam coerentes; só a conta anterior se perde.
+✅ **0317 APLICADA nos dois bancos** (o dono rodou na produção em 23/10/2026 e a conferência deu o esperado — 2 colunas, 3 gatilhos, 5 portas, 0 sem login, 0 regras internas abertas, 0 contas bancárias, 0 lançamentos com conta; conferido de fora: sem login as 5 portas e as 2 regras internas recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é pessoa, para antes de gravar (INSTALLMENT_NOT_FOUND, PAYABLE_NOT_FOUND, ACCOUNT_NOT_FOUND, TRANSACTION_NOT_FOUND); a produção tem 0 contas bancárias e 0 lançamentos com dinheiro — nada mudou lá; o Caixa nasce na primeira baixa em dinheiro).
 
 *Registro original:*
 
