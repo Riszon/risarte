@@ -1134,13 +1134,24 @@ unidade, o indicador e **"Só as metas em que participo"**. Cada cartão mostra:
 | **Reduzir** até um valor (ex.: faltas de 8% para 5%) | quanto já caiu ÷ quanto precisava cair. Em 6,5%, a barra mostra 50% |
 | **Individual** | a média dos participantes, cada um contando até 100% |
 | **Mensal**, depois de encerrada | meses atingidos ÷ meses |
+| **No máximo** (limite — ex.: cancelamentos do Riso+) | quanto do limite já foi usado ("3 de 5" = 60%). Aqui **menos é melhor**: verde enquanto o uso acompanha o prazo, âmbar quando passa dele, vermelho quando estoura o limite |
 
 > **O ritmo conta os dias já encerrados — até ontem.** No primeiro dia a meta
 > aparece "Começando", não "atrás": o dia ainda está acontecendo.
 
-> **Valores em R$ só para a gestão.** Numa meta de dinheiro (vendas, ticket
-> médio), quem não enxerga o financeiro da unidade vê **o percentual**, com o
-> aviso "Valores em R$ só para a gestão". O seu próprio número você sempre vê.
+> **Números do financeiro só para a gestão.** Numa meta financeira (vendas,
+> ticket médio, receita, produção do dentista, inadimplência — inclusive a taxa
+> em %), quem não enxerga o financeiro da unidade vê **o percentual da meta**,
+> com o aviso "Números do financeiro só para a gestão". O seu próprio número
+> você sempre vê.
+
+> **Fotografia: inadimplência e vidas.** Alguns indicadores não somam: valem
+> **o número de cada dia** (a taxa de inadimplência de hoje, as vidas ativas no
+> Riso+ hoje). Neles o cartão diz **"Hoje (fotografia do dia)"**; o sistema
+> guarda uma foto por dia, o gráfico mostra a evolução, e o **resultado da
+> meta é o valor do último dia do prazo**. Como não existe histórico guardado
+> de antes, a linha de base é o valor do dia em que a meta foi criada. Essas
+> metas valem para o período inteiro (não mês a mês).
 
 #### Criar uma meta — os cinco passos do SMART
 
@@ -1152,7 +1163,8 @@ R$ 15.000,00 em vendas por mês na Risarte Centro, de 01/01/2027 a
 
 1. **S — Específica.** O nome; **o que vai ser medido** (o indicador — veja a
    lista abaixo); o **recorte** opcional (tipo de agendamento, especialidade,
-   plano do Riso+, origem do cliente, origem da venda); **de onde os números
+   plano do Riso+, origem do cliente, origem da venda, especialidade nas
+   vendas e na produção); **de onde os números
    vêm** (rede toda, unidades escolhidas ou a sua unidade); **quem participa**
    (toda a equipe, por função, pessoas escolhidas — dá para combinar); e
    **como** a meta vai ser alcançada.
@@ -1216,12 +1228,25 @@ letras do SMART e o **histórico**.
 | Procedimentos executados | Sessões de tratamento concluídas (recorte por especialidade) | O dentista que executou |
 | Novos clientes | Cadastros, pela unidade onde nasceram (recorte por origem) | Quem cadastrou |
 | Adesões ao Riso+ | Adesões **ativadas** (contrato + 1º pagamento); transferência não conta | Quem vendeu |
+| Vendas por especialidade | Recorte em Vendas (R$ e quantidade): em R$, a **parte** da venda que é da especialidade (o desconto se reparte na mesma proporção); em quantidade, a venda com ao menos um procedimento dela | O consultor |
+| Taxa de conversão | Das negociações abertas no período, quantas % já foram aceitas (a mesma conta do painel do Comercial) | O consultor |
+| Receita recebida (caixa) | Recebimentos do período, sem os estornados | A unidade (só coletiva) |
+| Receita faturada (DRE) | Receita bruta − deduções, pela conta da DRE. Sem gráfico dia a dia (a DRE é por período) | A unidade (só coletiva) |
+| Taxa de inadimplência / Valor inadimplente | **Fotografia** — a mesma conta da tela do Financeiro | A unidade (só coletiva) |
+| Recuperação de inadimplência | Recebido **depois do vencimento**, de parcelas que ficaram vencidas | A unidade (só coletiva) |
+| Produção do dentista (R$) | O repasse das sessões concluídas (o mesmo da tela de Repasses) | O dentista |
+| Opções de plano aprovadas | Aprovadas pelo Coordenador | O Planner que montou o plano |
+| Novos clientes que avaliaram | Cadastrados no período que já fizeram a avaliação | Quem cadastrou |
+| Cancelamentos do Riso+ | Adesões canceladas — meta de **no máximo**. Transferência não conta | A unidade (só coletiva) |
+| Vidas no Riso+ | **Fotografia** — titulares e dependentes das adesões ativas | A unidade (só coletiva) |
+| Indica +Risos — indicações recebidas / convertidas / novos Embaixadores | Registradas; convertidas pela data do fechamento (a régua do Indica); Embaixadores cadastrados | Quem registrou / converteu / cadastrou |
+| Empresarial — empresas que aderiram | Empresas que entraram em **Fechado (ganho)** no funil, pela unidade principal da empresa | O consultor RisLife |
+| Empresarial — vidas incluídas | Titulares e dependentes incluídos no convênio | A unidade (só coletiva) |
 
-Indicadores financeiros (receita, inadimplência, margem, ponto de equilíbrio),
-de programas (Indica +Risos, Empresarial) e de cadeira (ocupação, tempo
-ocioso) chegam nas próximas etapas.
+Ocupação e tempo ocioso da cadeira, margens e ponto de equilíbrio chegam na
+próxima etapa.
 
-**Evidência:** EV-184 e EV-185.
+**Evidência:** EV-209 e EV-210 (etapa 1); EV-211 e EV-212 (etapa 2).
 
 ## A barra de cima
 

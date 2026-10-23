@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.344.0",
+    data: "2026-10-23",
+    migracao: "0319",
+    titulo: "Metas: receita, inadimplência, produção, Riso+, Indica +Risos e Empresarial",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "16 indicadores novos nas Metas: receita recebida e faturada, inadimplência (taxa e valor), recuperação, conversão, produção do dentista, opções de plano aprovadas, novos clientes que avaliaram, cancelamentos e vidas do Riso+, indicações e Embaixadores do Indica +Risos, empresas e vidas do Empresarial. E vendas por especialidade (ex.: Ortodontia).",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Metas de \"no máximo\" (como cancelamentos do Riso+): a barra mostra quanto do limite já foi usado — verde enquanto acompanha o prazo, vermelha se estourar.",
+        papeis: "todos",
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Inadimplência e vidas são fotografias: valem o número de cada dia. O sistema guarda uma foto por dia e o resultado da meta é o valor do último dia do prazo.",
+        papeis: "todos",
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Nas metas financeiras (inclusive a taxa de inadimplência), quem não vê o financeiro da unidade vê só o percentual da meta, com o aviso \"Números do financeiro só para a gestão\".",
+        papeis: "todos",
+        manual: "2.7. Metas (SMART)",
+      },
+    ],
+  },
+  {
     versao: "0.343.0",
     data: "2026-10-23",
     migracao: "0318",

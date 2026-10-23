@@ -4,6 +4,7 @@ import { formatIsoDateBr } from "@/lib/dates";
 import {
   DESFECHO_LABEL,
   FAROL_LABEL,
+  FAROL_LABEL_LIMITE,
   SITUACAO_COR,
   SITUACAO_LABEL,
   formatarPct,
@@ -64,12 +65,13 @@ export function CartaoDaMeta({
               pct={resumo.pct}
               pctSuper={resumo.pctSuper}
               farol={resumo.farol}
+              limite={resumo.limite}
               esperado={s === "active" && ind?.tipo === "sum" ? resumo.esperado : null}
             />
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               {resumo.escondido ? (
                 <span className="inline-flex items-center gap-1">
-                  <Lock className="size-3" aria-hidden /> Valores em R$ só para a gestão
+                  <Lock className="size-3" aria-hidden /> Números do financeiro só para a gestão
                 </span>
               ) : resumo.alvo != null ? (
                 <span className="tabular-nums">
@@ -104,9 +106,13 @@ export function CartaoDaMeta({
             )}
             {!compacto && s === "active" && (
               <p className="text-xs">
-                <span className="font-medium">{FAROL_LABEL[resumo.farol]}</span>
+                <span className="font-medium">{(resumo.limite ? FAROL_LABEL_LIMITE : FAROL_LABEL)[resumo.farol]}</span>
                 {resumo.projecao != null && (
-                  <span className="text-muted-foreground"> · no ritmo atual, termina em {formatarPct(resumo.projecao)}</span>
+                  <span className="text-muted-foreground">
+                    {resumo.limite
+                      ? ` · no ritmo atual, chega a ${formatarPct(resumo.projecao)} do limite`
+                      : ` · no ritmo atual, termina em ${formatarPct(resumo.projecao)}`}
+                  </span>
                 )}
                 {resumo.diasRestantes != null && (
                   <span className="text-muted-foreground">

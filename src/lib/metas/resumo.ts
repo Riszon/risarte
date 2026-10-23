@@ -3,6 +3,7 @@ import { indicadorDe, type Indicador } from "./indicadores";
 import {
   alvoDoSujeito,
   diasEntre,
+  ehLimite,
   farol as calcularFarol,
   fracaoEsperada,
   percentual,
@@ -46,6 +47,8 @@ export type ResumoDaMeta = {
   alvo: number | null;
   /** Valores em R$ escondidos para quem vê (D3). */
   escondido: boolean;
+  /** Meta de LIMITE (N2): `pct` é o uso do limite e menos é melhor. */
+  limite: boolean;
   esperado: number;
   farol: Farol;
   projecao: number | null;
@@ -110,9 +113,10 @@ export function resumirMeta(
   const foto = medicao?.live ?? final?.snapshot ?? null;
   const escondido = Boolean(medicao?.money_hidden);
   const mensalEncerrada = meta.periodicity === "monthly" && Boolean(final);
+  const limite = ehLimite(meta);
 
   const pctDoColetivo = (f: Fotografia | null) =>
-    f ? percentualDaMedida(f.total, meta.direction, meta.target_value, meta.baseline_value) : null;
+    f ? percentualDaMedida(f.total, meta.direction, meta.target_value, limite ? null : meta.baseline_value, limite) : null;
   const pctDasPessoas = (f: Fotografia | null) => {
     if (!f) return null;
     if (f.n_participants === 0) return null;
@@ -149,7 +153,7 @@ export function resumirMeta(
   }
 
   const pctSuper =
-    meta.stretch_value != null && meta.target_mode !== "individual" && !mensalEncerrada
+    meta.stretch_value != null && meta.target_mode !== "individual" && !mensalEncerrada && !limite
       ? percentual(meta.direction, meta.stretch_value, meta.target_value, meta.baseline_value)
       : null;
 
@@ -157,7 +161,7 @@ export function resumirMeta(
   const ativa = situacao === "active" || situacao === "paused";
   const esperado = ativa ? fracaoEsperada(periodo, hoje, pausas) : situacao === "scheduled" ? 0 : 1;
   const tipo = indicador?.tipo ?? "sum";
-  const farol = situacao === "active" && !mensalEncerrada ? calcularFarol(tipo, pct, esperado) : "neutro";
+  const farol = situacao === "active" && !mensalEncerrada ? calcularFarol(tipo, pct, esperado, limite) : "neutro";
   const projecao = situacao === "active" ? calcularProjecao(tipo, pct, esperado) : null;
 
   let pessoas: ResumoDaMeta["pessoas"] = null;
@@ -174,11 +178,17 @@ export function resumirMeta(
   }
 
   const rotuloDoPeriodo =
-    meta.periodicity === "monthly"
-      ? mensalEncerrada
-        ? "Meses atingidos"
-        : `Mês de ${nomeDoMes(periodo.from)}`
-      : "Período inteiro";
+    tipo === "point"
+      ? medicao?.live
+        ? "Hoje (fotografia do dia)"
+        : "Último dia do prazo"
+      : meta.periodicity === "monthly"
+        ? mensalEncerrada
+          ? "Meses atingidos"
+          : `Mês de ${nomeDoMes(periodo.from)}`
+        : limite
+          ? "Limite usado no período"
+          : "Período inteiro";
 
   return {
     situacao,
@@ -189,6 +199,7 @@ export function resumirMeta(
     valor: foto && !escondido ? valorDe(foto.total) : null,
     alvo: meta.target_mode === "individual" ? null : meta.target_value,
     escondido,
+    limite,
     esperado,
     farol,
     projecao,
@@ -201,29 +212,61 @@ export function resumirMeta(
 }
 
 /**
- * A série do gráfico realizado × esperado, dia a dia, em % da meta. Só para
- * indicador que SOMA e com alvo coletivo: uma taxa não acumula, e a média de
- * pessoas não tem "esperado" de um número só.
+ * A série do gráfico, dia a dia, em % da meta.
+ *   * SOMA (e LIMITE): o realizado ACUMULADO contra o esperado para estar no
+ *     ritmo (no limite, o quanto dele já "podia" ter sido usado).
+ *   * FOTOGRAFIA: o percentual de cada dia guardado, contra a meta (100%).
+ * Taxa não tem gráfico (não acumula, e um dia sozinho engana); meta só
+ * individual também não (a média de pessoas não tem um esperado só); a DRE
+ * é por período (N3).
  */
+export type SerieDoGrafico = {
+  pontos: { dia: string; realizado: number | null; esperado: number }[];
+  legendaRealizado: string;
+  legendaEsperado: string;
+};
+
 export function serieDoGrafico(
   meta: Meta,
   foto: Fotografia | null,
   periodo: { from: string; to: string },
   hoje: string,
   pausas: Pausa[]
-): { dia: string; realizado: number | null; esperado: number }[] {
+): SerieDoGrafico {
   const ind = indicadorDe(meta.indicator);
-  if (!foto || ind?.tipo !== "sum" || meta.target_mode === "individual" || !meta.target_value) return [];
+  const vazio: SerieDoGrafico = { pontos: [], legendaRealizado: "", legendaEsperado: "" };
+  if (!foto || !ind || ind.semDiaADia || meta.target_mode === "individual" || !meta.target_value) return vazio;
+  const limite = ehLimite(meta);
+
+  if (ind.tipo === "point") {
+    return {
+      pontos: foto.by_day
+        .filter((d) => d.day >= periodo.from && d.day <= periodo.to)
+        .map((d) => ({
+          dia: d.day,
+          realizado: percentualDaMedida(d, meta.direction, meta.target_value, meta.baseline_value),
+          esperado: 100,
+        })),
+      legendaRealizado: "Percentual da meta em cada dia",
+      legendaEsperado: "A meta (100%)",
+    };
+  }
+  if (ind.tipo !== "sum") return vazio;
+
   const ate = hoje < periodo.to ? hoje : periodo.to;
-  if (ate < periodo.from) return [];
+  if (ate < periodo.from) return vazio;
   const porDia = new Map(foto.by_day.map((d) => [d.day, d]));
-  const out: { dia: string; realizado: number | null; esperado: number }[] = [];
+  const pontos: SerieDoGrafico["pontos"] = [];
   let acumulado = 0;
   for (let d = periodo.from, n = 0; d <= ate && n < 400; d = addDaysIso(d, 1), n++) {
     const e = porDia.get(d);
     // Valor escondido (D3) vem como percentual do alvo, já somável.
     if (e) acumulado += e.pct !== undefined ? Number(e.pct ?? 0) : (Number(e.num ?? 0) / meta.target_value) * 100;
-    out.push({ dia: d, realizado: acumulado, esperado: fracaoEsperada(periodo, d, pausas) * 100 });
+    pontos.push({ dia: d, realizado: acumulado, esperado: fracaoEsperada(periodo, d, pausas) * 100 });
   }
-  return out;
+  return {
+    pontos,
+    legendaRealizado: limite ? "Limite usado (acumulado)" : "Realizado (acumulado)",
+    legendaEsperado: limite ? "Uso do limite proporcional ao prazo" : "Esperado para estar no ritmo",
+  };
 }

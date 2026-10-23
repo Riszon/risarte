@@ -6,6 +6,7 @@ import {
   atingiu,
   baseParaOPeriodo,
   diasEntre,
+  ehLimite,
   farol,
   fracaoEsperada,
   fraseSmart,
@@ -20,6 +21,8 @@ import {
   situacaoEfetiva,
   valorDe,
 } from "@/lib/metas/regras";
+import type { Meta, Medicao } from "@/lib/metas/regras";
+import { resumirMeta, serieDoGrafico } from "@/lib/metas/resumo";
 
 describe("valor de uma medida (espelho de _goal_value)", () => {
   it("soma: o número", () => expect(valorDe({ num: 12, den: null })).toBe(12));
@@ -261,5 +264,82 @@ describe("a frase SMART", () => {
     expect(f).toBe(
       "Fechar 15 adesões ao Riso+ do plano Familiar por participante na Unidade Centro, com os Consultores Comerciais, com prazo a definir."
     );
+  });
+});
+
+// ============================================================ ETAPA M2 (0319)
+
+function metaDe(over: Partial<Meta>): Meta {
+  return {
+    id: "m", code: "MT-1", name: "x", indicator: "sales_count", filters: {}, scope: "clinics", clinic_ids: ["u1"],
+    how_text: "x", direction: "increase", target_mode: "collective", target_value: 10, individual_rule: null,
+    individual_value: null, stretch_value: null, baseline_value: null, baseline_from: null, baseline_to: null,
+    resources_text: "x", attainable_note: null, strategic_objective: "growth", relevance_text: "x",
+    periodicity: "whole", starts_on: "2026-11-01", ends_on: "2026-11-30", status: "active", outcome: null,
+    status_reason: null, published_at: null, finished_at: null, cancelled_at: null, created_by: "a", created_at: "",
+    ...over,
+  };
+}
+const foto = (total: { num: number; den?: number | null }, kind: "sum" | "point" = "sum", by_day: { day: string; num: number; den?: number | null }[] = []) =>
+  ({ from: "2026-11-01", to: "2026-11-16", kind, n_clinics: 1, n_participants: 0, restricted: false, total, by_clinic: [], by_user: [], by_day });
+const medicao = (live: ReturnType<typeof foto>): Medicao => ({ today: "2026-11-16", money_hidden: false, live, frozen: [], milestones: [] });
+
+describe("M2 — limite (N2: soma de 'no máximo')", () => {
+  it("o percentual é o USO do limite (espelho de _goal_percent)", () => {
+    expect(percentual("decrease", 2, 5, null, true)).toBe(40);
+    expect(percentual("decrease", 7, 5, null, true)).toBe(140);
+    expect(percentual("decrease", 0, 0, null, true)).toBe(0);
+  });
+  it("só é limite a soma que o catálogo marca — e com 'reduzir'", () => {
+    expect(ehLimite({ indicator: "ppr_cancellations", direction: "decrease" })).toBe(true);
+    expect(ehLimite({ indicator: "sales_count", direction: "decrease" })).toBe(false);
+  });
+  it("farol: verde enquanto o uso não passa do prazo corrido; vermelho passou", () => {
+    expect(farol("sum", 30, 0.5, true)).toBe("verde");
+    expect(farol("sum", 70, 0.5, true)).toBe("amarelo");
+    expect(farol("sum", 120, 0.5, true)).toBe("vermelho");
+  });
+  it("o resumo usa o uso do limite, sem Super Meta", () => {
+    const m = metaDe({ indicator: "ppr_cancellations", direction: "decrease", target_value: 5, stretch_value: 3 });
+    const r = resumirMeta(m, medicao(foto({ num: 2 })), [], "2026-11-16");
+    expect(r.limite).toBe(true);
+    expect(r.pct).toBe(40);
+    expect(r.pctSuper).toBeNull();
+    expect(r.farol).toBe("verde");
+  });
+  it("a frase diz 'no máximo'", () => {
+    const f = fraseSmart({
+      indicador: indicadorDe("ppr_cancellations"), direction: "decrease", target_mode: "collective", target_value: 3,
+      individual_rule: null, individual_value: null, periodicity: "whole", starts_on: "2026-11-01", ends_on: "2026-11-30",
+      onde: "na Unidade Centro",
+    });
+    expect(f).toBe("Ter no máximo 3 cancelamentos do Riso+ na Unidade Centro, de 01/11/2026 a 30/11/2026.");
+  });
+});
+
+describe("M2 — fotografia (N1)", () => {
+  const m = metaDe({ indicator: "overdue_rate", direction: "decrease", target_value: 5, baseline_value: 8 });
+  it("percentual pela linha de base (de 8% para 5%; hoje 6,5% → 50%)", () => {
+    const r = resumirMeta(m, medicao(foto({ num: 650, den: 100 }, "point")), [], "2026-11-16");
+    expect(r.pct).toBeCloseTo(50);
+    expect(r.farol).toBe("vermelho");
+    expect(r.projecao).toBeNull();
+    expect(r.rotuloDoPeriodo).toMatch(/Hoje/);
+  });
+  it("taxa e fotografia não se dividem entre unidades", () => {
+    expect(alvoDoSujeito({ ...m, individual_rule: null, individual_value: null }, "clinic", "u1", 4, [])).toBe(5);
+    expect(baseParaOPeriodo("point", 8, 30, 90)).toBe(8);
+  });
+  it("o gráfico mostra o % de cada dia guardado contra a meta (100%)", () => {
+    const s = serieDoGrafico(m, foto({ num: 650, den: 100 }, "point", [
+      { day: "2026-11-14", num: 800, den: 100 },
+      { day: "2026-11-15", num: 650, den: 100 },
+    ]), { from: "2026-11-01", to: "2026-11-30" }, "2026-11-16", []);
+    expect(s.pontos.map((p) => Math.round(p.realizado ?? -1))).toEqual([0, 50]);
+    expect(s.pontos.every((p) => p.esperado === 100)).toBe(true);
+  });
+  it("receita da DRE não tem gráfico dia a dia (N3)", () => {
+    const s = serieDoGrafico(metaDe({ indicator: "revenue_billed" }), foto({ num: 5 }), { from: "2026-11-01", to: "2026-11-30" }, "2026-11-16", []);
+    expect(s.pontos).toEqual([]);
   });
 });

@@ -12,16 +12,17 @@ import { canViewMetas, podeEditarMeta } from "@/lib/metas/access";
 import { lerAlvos, lerMeta, lerParticipantes, lerPausas, medirMetas, nomesDasUnidades, type MedicaoLida } from "@/lib/metas/dados";
 import { APPOINTMENT_TYPE_LABELS } from "@/lib/appointments";
 import {
-  DIRECAO_LABEL,
   ORIGENS_DA_VENDA,
   ORIGENS_DO_CLIENTE,
   ROTULO_DO_RECORTE,
   indicadorDe,
+  rotuloDaDirecao,
   type Recorte,
 } from "@/lib/metas/indicadores";
 import {
   DESFECHO_LABEL,
   FAROL_LABEL,
+  FAROL_LABEL_LIMITE,
   MODO_LABEL,
   SITUACAO_COR,
   SITUACAO_LABEL,
@@ -169,7 +170,7 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
                   <p className="text-sm text-muted-foreground">
                     {resumo.escondido ? (
                       <span className="inline-flex items-center gap-1">
-                        <Lock className="size-3.5" aria-hidden /> Os valores em R$ ficam com a gestão; você vê o percentual.
+                        <Lock className="size-3.5" aria-hidden /> Os números do financeiro ficam com a gestão; você vê o percentual da meta.
                       </span>
                     ) : resumo.alvo != null && foto && meta.periodicity === "whole" ? (
                       <>
@@ -187,9 +188,15 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
                 <div className="text-right text-sm">
                   {s === "active" && (
                     <p>
-                      <span className="font-medium">{FAROL_LABEL[resumo.farol]}</span>
+                      <span className="font-medium">
+                        {(resumo.limite ? FAROL_LABEL_LIMITE : FAROL_LABEL)[resumo.farol]}
+                      </span>
                       {resumo.projecao != null && (
-                        <span className="block text-muted-foreground">No ritmo atual, termina em {formatarPct(resumo.projecao)}</span>
+                        <span className="block text-muted-foreground">
+                          {resumo.limite
+                            ? `No ritmo atual, chega a ${formatarPct(resumo.projecao)} do limite`
+                            : `No ritmo atual, termina em ${formatarPct(resumo.projecao)}`}
+                        </span>
                       )}
                     </p>
                   )}
@@ -213,6 +220,7 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
                 pct={resumo.pct}
                 pctSuper={resumo.pctSuper}
                 farol={resumo.farol}
+                limite={resumo.limite}
                 esperado={s === "active" && ind?.tipo === "sum" ? resumo.esperado : null}
               />
               {resumo.pctSuper != null && (
@@ -220,7 +228,13 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
                   Super Meta: {formatarValor(unidade, meta.stretch_value)} ({formatarPct(resumo.pctSuper)} da meta) — o traço dourado marca a meta.
                 </p>
               )}
-              {serie.length > 1 && <GraficoDaMeta pontos={serie} />}
+              {serie.pontos.length > 1 && (
+                <GraficoDaMeta
+                  pontos={serie.pontos}
+                  legendaRealizado={serie.legendaRealizado}
+                  legendaEsperado={serie.legendaEsperado}
+                />
+              )}
             </>
           )}
         </section>
@@ -326,9 +340,13 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
             {[...unidadesDaMeta]
               .map((u) => {
                 const alvo = alvoDoSujeito(meta, "clinic", u.id, foto?.n_clinics ?? 1, meusAlvos);
-                return { u, alvo, pct: percentualDaMedida(u, meta.direction, alvo, meta.baseline_value) };
+                return {
+                  u,
+                  alvo,
+                  pct: percentualDaMedida(u, meta.direction, alvo, resumo.limite ? null : meta.baseline_value, resumo.limite),
+                };
               })
-              .sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1))
+              .sort((a, b) => (resumo.limite ? -1 : 1) * ((b.pct ?? -1) - (a.pct ?? -1)))
               .map(({ u, alvo, pct }) => (
                 <li key={u.id} className="grid items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[1fr_12rem_12rem]">
                   <span className="truncate">{nomes.get(u.id) ?? "Unidade"}</span>
@@ -336,13 +354,20 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
                     {u.pct !== undefined ? "" : `${formatarValor(unidade, valorDe(u))} de ${formatarValor(unidade, alvo)}`}
                   </span>
                   <span className="flex items-center gap-2">
-                    <BarraDaMeta pct={pct} tamanho="sm" farol={(pct ?? 0) >= 100 ? "verde" : "neutro"} />
+                    <BarraDaMeta
+                      pct={pct}
+                      tamanho="sm"
+                      farol={resumo.limite ? ((pct ?? 0) > 100 ? "vermelho" : "verde") : (pct ?? 0) >= 100 ? "verde" : "neutro"}
+                    />
                     <span className="w-12 text-right text-xs tabular-nums">{formatarPct(pct)}</span>
                   </span>
                 </li>
               ))}
           </ul>
-          <p className="text-xs text-muted-foreground">Unidade sem nenhum registro no período não aparece aqui.</p>
+          <p className="text-xs text-muted-foreground">
+            Unidade sem nenhum registro no período não aparece aqui.
+            {resumo.limite ? " No limite, o percentual é o quanto dele cada unidade já usou." : ""}
+          </p>
         </section>
       )}
 
@@ -404,7 +429,7 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
             t: "Mensurável",
             c: (
               <>
-                <p>{DIRECAO_LABEL[meta.direction]} · {MODO_LABEL[meta.target_mode]}</p>
+                <p>{rotuloDaDirecao(ind, meta.direction)} · {MODO_LABEL[meta.target_mode]}</p>
                 {meta.target_value != null && !resumo.escondido && (
                   <p>
                     <span className="text-muted-foreground">

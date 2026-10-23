@@ -13,13 +13,13 @@ import { parseBRLToCents } from "@/lib/pricing";
 import { APPOINTMENT_TYPE_LABELS } from "@/lib/appointments";
 import { ROLE_LABELS, USER_ROLES, type UserRole } from "@/lib/roles";
 import {
-  DIRECAO_LABEL,
   GRUPOS_DE_INDICADOR,
   INDICADORES_DE_META,
   ORIGENS_DA_VENDA,
   ORIGENS_DO_CLIENTE,
   ROTULO_DO_RECORTE,
   indicadorDe,
+  rotuloDaDirecao,
   type Recorte,
   type UnidadeIndicador,
 } from "@/lib/metas/indicadores";
@@ -222,8 +222,16 @@ function formInicial(inicial: MetaInicial | null, opcoes: OpcoesDoAssistente): F
   };
 }
 
-/** A janela do histórico usada como linha de base. */
-function janelaDoHistorico(f: Pick<Form, "periodicity" | "starts_on" | "ends_on">): { from: string; to: string; meses: number } | null {
+/**
+ * A janela do histórico usada como linha de base. FOTOGRAFIA não tem
+ * histórico guardado (N1): a base é o valor de HOJE.
+ */
+function janelaDoHistorico(
+  f: Pick<Form, "periodicity" | "starts_on" | "ends_on">,
+  tipo: string | undefined,
+  hoje: string
+): { from: string; to: string; meses: number } | null {
+  if (tipo === "point") return { from: hoje, to: hoje, meses: 0 };
   if (!f.starts_on || !f.ends_on || f.ends_on < f.starts_on) return null;
   if (f.periodicity === "monthly") {
     // Os 3 meses cheios antes do início.
@@ -295,7 +303,7 @@ export function AssistenteDaMeta({
   );
 
   // ------------------------------------------------------- linha de base (A)
-  const janela = janelaDoHistorico(f);
+  const janela = janelaDoHistorico(f, ind?.tipo, opcoes.hoje);
   const filtrosBanco = filtrosParaOBanco(f.indicator, f.filtros);
   const chaveBase =
     ind && janela && (f.scope === "network" || f.clinic_ids.length > 0)
@@ -680,8 +688,11 @@ export function AssistenteDaMeta({
                       indicator: e.target.value,
                       filtros: filtrosVazios(),
                       direction: novo?.direcoes[0] ?? "increase",
-                      individual_rule: novo?.tipo === "rate" ? "same" : x.individual_rule,
+                      individual_rule: novo && novo.tipo !== "sum" ? "same" : x.individual_rule,
                       target_mode: novo && !novo.porPessoa ? "collective" : x.target_mode,
+                      // Fotografia vale para o período inteiro (N1).
+                      periodicity: novo?.tipo === "point" ? "whole" : x.periodicity,
+                      stretch_value: novo?.limite ? "" : x.stretch_value,
                     }));
                   }}
                 >
@@ -860,7 +871,7 @@ export function AssistenteDaMeta({
                       >
                         {ind.direcoes.map((d) => (
                           <option key={d} value={d}>
-                            {DIRECAO_LABEL[d]}
+                            {rotuloDaDirecao(ind, d)}
                           </option>
                         ))}
                       </select>
@@ -930,7 +941,7 @@ export function AssistenteDaMeta({
                         />
                       </div>
                     )}
-                    {f.target_mode !== "individual" && (
+                    {f.target_mode !== "individual" && !ind.limite && (
                       <div className="space-y-1.5">
                         <Label htmlFor="super">Super Meta (opcional)</Label>
                         <Input
@@ -1022,6 +1033,13 @@ export function AssistenteDaMeta({
                   <p className="text-muted-foreground">Lendo o histórico…</p>
                 ) : (
                   <div className="space-y-2">
+                    {ind.tipo === "point" ? (
+                      <p>
+                        <span className="text-muted-foreground">Valor de hoje: </span>
+                        <strong>{formatarValor(unidade, valorDoHistorico)}</strong>
+                        <span className="text-muted-foreground"> (é a linha de base: a fotografia não tem histórico guardado)</span>
+                      </p>
+                    ) : (
                     <p>
                       <span className="text-muted-foreground">Histórico ({formatIsoDateBr(janela.from)} a {formatIsoDateBr(janela.to)}): </span>
                       <strong>{formatarValor(unidade, valorDoHistorico)}</strong>
@@ -1035,6 +1053,7 @@ export function AssistenteDaMeta({
                         </span>
                       )}
                     </p>
+                    )}
                     {baseAtual.base && baseAtual.base.by_month.length > 1 && (
                       <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         {baseAtual.base.by_month.map((m) => (
@@ -1155,7 +1174,7 @@ export function AssistenteDaMeta({
                     id="periodicidade"
                     className={selectClass}
                     value={f.periodicity}
-                    disabled={travado}
+                    disabled={travado || ind?.tipo === "point"}
                     onChange={(e) => set("periodicity", e.target.value as "whole" | "monthly")}
                   >
                     <option value="whole">Para o período inteiro</option>
@@ -1172,6 +1191,12 @@ export function AssistenteDaMeta({
               {inicial?.comecou && (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Lock className="size-3" aria-hidden /> A meta já começou: o início não muda mais.
+                </p>
+              )}
+              {ind?.tipo === "point" && (
+                <p className="text-xs text-muted-foreground">
+                  {ind.rotulo} é uma fotografia: vale o número de cada dia. O sistema guarda uma foto por dia, e o
+                  resultado da meta é o valor do último dia do prazo.
                 </p>
               )}
               {f.periodicity === "monthly" && (
@@ -1208,7 +1233,7 @@ export function AssistenteDaMeta({
                       <Input placeholder="Descrição do marco" value={m.label} onChange={(e) => upd({ label: e.target.value })} />
                       <select className={selectClass} value={m.indicator} onChange={(e) => upd({ indicator: e.target.value })}>
                         <option value="">Indicador…</option>
-                        {INDICADORES_DE_META.map((x) => (
+                        {INDICADORES_DE_META.filter((x) => x.tipo === "sum" && !x.limite).map((x) => (
                           <option key={x.chave} value={x.chave}>
                             {x.rotulo}
                           </option>

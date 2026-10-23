@@ -25,6 +25,10 @@ const MENSAGENS: Record<string, string> = {
   GOAL_SMART_R: "Falta o R (Relevante): escolha o objetivo estratégico e diga por que esta meta importa agora.",
   GOAL_NO_PARTICIPANTS: "Escolha quem participa da meta.",
   GOAL_BAD_TRANSITION: "Esta mudança de situação não é possível agora.",
+  GOAL_POINT_MONTHLY:
+    "Este indicador é uma fotografia (o valor de cada dia): a meta vale para o período inteiro, não mês a mês.",
+  GOAL_NOT_PER_PERSON: "Este indicador não tem dono por pessoa: a meta só pode ser coletiva.",
+  GOAL_BAD_MILESTONE: "Marco intermediário só com indicador que soma (agendamentos, vendas, cadastros…).",
 };
 
 export function mensagemDaMeta(error: { message?: string } | null | undefined): string {

@@ -5,27 +5,40 @@
  *
  * ⚠️ INDICADOR É CÓDIGO; META É DADO (a mesma regra do portão de certificação,
  * `src/lib/certificacao.ts`). Cada chave daqui tem a SUA consulta no banco, em
- * `_goal_measure_raw` (migração 0318). Se a tela deixasse cadastrar indicador,
+ * `_goal_measure_raw` (migrações 0318 e 0319). Se a tela deixasse cadastrar indicador,
  * alguém criaria um que nenhuma consulta mede, e a barra ficaria em zero para
  * sempre sem a tela explicar por quê.
  *
  * ⚠️ AS DUAS LISTAS TÊM DE SER A MESMA. `metas-catalogo.test.ts` lê a lista do
- * banco (entre as marcas `INDICADORES:INICIO/FIM` da 0318) e reprova se uma
- * chave existir só de um lado, ou se tipo/dinheiro/por pessoa divergirem.
+ * banco (entre as marcas `INDICADORES:INICIO/FIM` da migração mais nova) e
+ * reprova se uma chave existir só de um lado, ou se tipo/financeiro/por
+ * pessoa/limite divergirem.
  *
  * Os campos existem para quem CONFIGURA a meta não ter de adivinhar:
  *   * `ajuda`     — o que exatamente é contado (e o que NÃO é);
  *   * `quemConta` — a quem o número pertence quando a meta é individual;
- *   * `tipo`      — `soma` acumula no período; `taxa` é um percentual (ou
- *                   média) do período, que sobe e desce;
- *   * `dinheiro`  — valor em R$ (decisão D3: quem não vê o financeiro da
- *                   unidade vê só o percentual).
+ *   * `tipo`      — `sum` acumula no período; `rate` é um percentual (ou
+ *                   média) do período, que sobe e desce; `point` é uma
+ *                   FOTOGRAFIA — o valor de hoje (inadimplência, vidas). O
+ *                   sistema guarda uma foto por dia e o resultado final é o
+ *                   valor do último dia do prazo (N1, 23/10/2026);
+ *   * `limite`    — soma em que a meta é "no máximo" (cancelamentos, N2): a
+ *                   barra mostra quanto do limite já foi usado;
+ *   * `financeiro`— dado financeiro (D3/N7): quem não vê o financeiro da
+ *                   unidade vê só o percentual da meta. Inclui a TAXA de
+ *                   inadimplência, que não é R$ mas é dado do financeiro.
  */
 
 export type ChaveIndicador =
   | "sales_value"
   | "sales_count"
   | "sales_ticket"
+  | "conversion_rate"
+  | "revenue_received"
+  | "revenue_billed"
+  | "overdue_rate"
+  | "overdue_value"
+  | "overdue_recovery"
   | "appointments_created"
   | "appointments_done"
   | "evaluations_done"
@@ -34,10 +47,20 @@ export type ChaveIndicador =
   | "check_ins"
   | "returns_scheduled"
   | "procedures_done"
+  | "provider_production"
+  | "plan_options_approved"
   | "new_clients"
-  | "ppr_adhesions";
+  | "new_clients_evaluated"
+  | "ppr_adhesions"
+  | "ppr_cancellations"
+  | "ppr_lives"
+  | "indica_referrals"
+  | "indica_conversions"
+  | "indica_ambassadors"
+  | "empresarial_companies"
+  | "empresarial_lives";
 
-export type TipoIndicador = "sum" | "rate";
+export type TipoIndicador = "sum" | "rate" | "point";
 /** Como o número aparece: centavos (R$), quantidade ou percentual. */
 export type UnidadeIndicador = "brl" | "count" | "percent";
 export type Direcao = "increase" | "decrease";
@@ -52,6 +75,7 @@ export type Recorte =
 
 export type GrupoIndicador =
   | "Comercial"
+  | "Financeiro"
   | "Agenda e atendimento"
   | "Clínico"
   | "Clientes"
@@ -68,7 +92,11 @@ export type Indicador = {
   direcoes: Direcao[];
   porPessoa: boolean;
   quemConta: string;
-  dinheiro: boolean;
+  financeiro: boolean;
+  /** Soma de "no máximo": a barra é o uso do limite (N2). */
+  limite?: boolean;
+  /** A medição é por período inteiro (DRE): sem gráfico dia a dia (N3). */
+  semDiaADia?: boolean;
   recortes: Recorte[];
   /** O verbo da frase SMART ("fechar", "realizar"…). */
   verbo: string;
@@ -85,15 +113,15 @@ export const INDICADORES_DE_META: Indicador[] = [
     rotulo: "Vendas fechadas (R$)",
     grupo: "Comercial",
     ajuda:
-      "Valor final das vendas de plano e das vendas diretas FECHADAS no período (contrato assinado e pagamento confirmado). Venda cancelada não conta.",
+      "Valor final das vendas de plano e das vendas diretas FECHADAS no período (contrato assinado e pagamento confirmado). Venda cancelada não conta. Com especialidade escolhida, conta só a parte da venda que é dela (o desconto se reparte na mesma proporção).",
     onde: "Comercial → fechamento da venda; Venda direta",
     tipo: "sum",
     unidade: "brl",
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "o consultor da negociação (venda direta: quem a lançou)",
-    dinheiro: true,
-    recortes: ["sale_origin"],
+    financeiro: true,
+    recortes: ["sale_origin", "specialties"],
     verbo: "fechar",
     objeto: "em vendas",
   },
@@ -102,15 +130,15 @@ export const INDICADORES_DE_META: Indicador[] = [
     rotulo: "Vendas fechadas (quantidade)",
     grupo: "Comercial",
     ajuda:
-      "Quantas vendas de plano e vendas diretas foram fechadas no período. Venda cancelada não conta.",
+      "Quantas vendas de plano e vendas diretas foram fechadas no período. Venda cancelada não conta. Com especialidade escolhida, conta a venda que tem ao menos um procedimento dela.",
     onde: "Comercial → fechamento da venda; Venda direta",
     tipo: "sum",
     unidade: "count",
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "o consultor da negociação (venda direta: quem a lançou)",
-    dinheiro: false,
-    recortes: ["sale_origin"],
+    financeiro: false,
+    recortes: ["sale_origin", "specialties"],
     verbo: "fechar",
     objeto: "vendas",
   },
@@ -126,8 +154,8 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "o consultor da negociação (venda direta: quem a lançou)",
-    dinheiro: true,
-    recortes: ["sale_origin"],
+    financeiro: true,
+    recortes: ["sale_origin", "specialties"],
     verbo: "alcançar",
     objeto: "de ticket médio",
   },
@@ -146,7 +174,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "quem marcou o agendamento",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["appointment_types"],
     verbo: "marcar",
     objeto: "agendamentos",
@@ -163,7 +191,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "o profissional do horário",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["appointment_types"],
     verbo: "realizar",
     objeto: "atendimentos",
@@ -180,7 +208,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "o profissional do horário",
-    dinheiro: false,
+    financeiro: false,
     recortes: [],
     verbo: "realizar",
     objeto: "avaliações",
@@ -197,7 +225,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase", "decrease"],
     porPessoa: true,
     quemConta: "quem marcou o agendamento",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["appointment_types"],
     verbo: "alcançar",
     objeto: "de comparecimento",
@@ -214,7 +242,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["decrease", "increase"],
     porPessoa: true,
     quemConta: "quem marcou o agendamento",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["appointment_types"],
     verbo: "chegar a",
     objeto: "de faltas",
@@ -230,7 +258,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "quem registrou a chegada",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["appointment_types"],
     verbo: "registrar",
     objeto: "check-ins",
@@ -247,7 +275,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "quem marcou o agendamento",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["appointment_types"],
     verbo: "marcar",
     objeto: "retornos e reavaliações",
@@ -267,7 +295,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "o dentista que executou (ou o indicado pelo Planner, como no repasse)",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["specialties"],
     verbo: "executar",
     objeto: "procedimentos",
@@ -287,7 +315,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "quem fez o cadastro",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["client_origins"],
     verbo: "conquistar",
     objeto: "novos clientes",
@@ -307,10 +335,284 @@ export const INDICADORES_DE_META: Indicador[] = [
     direcoes: ["increase"],
     porPessoa: true,
     quemConta: "quem vendeu a adesão",
-    dinheiro: false,
+    financeiro: false,
     recortes: ["ppr_plans"],
     verbo: "fechar",
     objeto: "adesões ao Riso+",
+  },
+  // ===========================================================================
+  // ETAPA M2 (0319) — COMERCIAL, FINANCEIRO, CLÍNICO, CLIENTES E PROGRAMAS
+  // ===========================================================================
+  {
+    chave: "conversion_rate",
+    rotulo: "Taxa de conversão (apresentação → venda)",
+    grupo: "Comercial",
+    ajuda:
+      "Das negociações ABERTAS no período, quantas % já foram aceitas — a mesma conta do painel do Comercial. Versão substituída do plano não conta.",
+    onde: "Comercial → negociação",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "o consultor da negociação",
+    financeiro: false,
+    recortes: [],
+    verbo: "alcançar",
+    objeto: "de conversão",
+  },
+  {
+    chave: "revenue_received",
+    rotulo: "Receita recebida (caixa)",
+    grupo: "Financeiro",
+    ajuda:
+      "Dinheiro que entrou no período: os recebimentos registrados, sem os estornados. Só meta coletiva — quem registra o recebimento é a recepção, não quem vendeu.",
+    onde: "Financeiro → Recebíveis → receber",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "receber",
+    objeto: "em caixa",
+  },
+  {
+    chave: "revenue_billed",
+    rotulo: "Receita faturada (DRE)",
+    grupo: "Financeiro",
+    ajuda:
+      "Receita bruta menos deduções no período, pela própria conta da DRE (competência). A DRE é por período: esta meta tem a barra, sem o gráfico dia a dia.",
+    onde: "Financeiro → DRE",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    semDiaADia: true,
+    recortes: [],
+    verbo: "faturar",
+    objeto: "de receita",
+  },
+  {
+    chave: "overdue_rate",
+    rotulo: "Taxa de inadimplência",
+    grupo: "Financeiro",
+    ajuda:
+      "Quanto do que está a receber já venceu, em % — a mesma conta da tela do Financeiro. É uma FOTOGRAFIA: vale o número de cada dia; o sistema guarda uma foto por dia, e o resultado é o do último dia do prazo.",
+    onde: "Financeiro → Recebíveis",
+    tipo: "point",
+    unidade: "percent",
+    direcoes: ["decrease", "increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "de inadimplência",
+  },
+  {
+    chave: "overdue_value",
+    rotulo: "Valor inadimplente (R$)",
+    grupo: "Financeiro",
+    ajuda:
+      "A soma das parcelas vencidas e ainda não pagas. FOTOGRAFIA: vale o valor de cada dia, e o resultado é o do último dia do prazo.",
+    onde: "Financeiro → Recebíveis",
+    tipo: "point",
+    unidade: "brl",
+    direcoes: ["decrease", "increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "em atraso",
+  },
+  {
+    chave: "overdue_recovery",
+    rotulo: "Recuperação de inadimplência (R$)",
+    grupo: "Financeiro",
+    ajuda:
+      "Dinheiro recebido DEPOIS do vencimento, de parcelas que ficaram vencidas. Estorno não conta.",
+    onde: "Financeiro → Recebíveis → inadimplentes",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "recuperar",
+    objeto: "de inadimplência",
+  },
+  {
+    chave: "provider_production",
+    rotulo: "Produção do dentista (R$)",
+    grupo: "Clínico",
+    ajuda:
+      "O repasse das sessões concluídas no período, o mesmo valor congelado da tela de Repasses. Pode recortar por especialidade.",
+    onde: "Atendimento → concluir a sessão; Financeiro → Repasses",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "o dentista do repasse",
+    financeiro: true,
+    recortes: ["specialties"],
+    verbo: "produzir",
+    objeto: "em repasse",
+  },
+  {
+    chave: "plan_options_approved",
+    rotulo: "Opções de plano aprovadas",
+    grupo: "Clínico",
+    ajuda:
+      "Opções de plano de tratamento aprovadas pelo Coordenador no período. O número é do Planner que montou o plano. Devolvida não conta.",
+    onde: "Planejamento → aprovação do Coordenador",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "o Planner que montou o plano",
+    financeiro: false,
+    recortes: [],
+    verbo: "ter",
+    objeto: "opções de plano aprovadas",
+  },
+  {
+    chave: "new_clients_evaluated",
+    rotulo: "Novos clientes que avaliaram",
+    grupo: "Clientes",
+    ajuda:
+      "Clientes cadastrados no período que já fizeram a avaliação (atendimento de avaliação concluído). Mede a qualidade do cadastro, não só a quantidade.",
+    onde: "Clientes → Novo cliente; Atendimento → avaliação",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "quem fez o cadastro",
+    financeiro: false,
+    recortes: ["client_origins"],
+    verbo: "conquistar",
+    objeto: "novos clientes avaliados",
+  },
+  {
+    chave: "ppr_cancellations",
+    rotulo: "Cancelamentos do Riso+",
+    grupo: "Programas da Risarte",
+    ajuda:
+      "Adesões canceladas no período. É uma meta de NO MÁXIMO: a barra mostra quanto do limite já foi usado. Transferência entre unidades não é cancelamento.",
+    onde: "PPR+ → adesão → cancelar",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["decrease"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    limite: true,
+    recortes: ["ppr_plans"],
+    verbo: "ter",
+    objeto: "cancelamentos do Riso+",
+  },
+  {
+    chave: "ppr_lives",
+    rotulo: "Vidas no Riso+",
+    grupo: "Programas da Risarte",
+    ajuda:
+      "Beneficiários (titulares e dependentes) das adesões ativas. FOTOGRAFIA: vale o número de cada dia, e o resultado é o do último dia do prazo.",
+    onde: "PPR+ → adesões",
+    tipo: "point",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: ["ppr_plans"],
+    verbo: "chegar a",
+    objeto: "vidas no Riso+",
+  },
+  {
+    chave: "indica_referrals",
+    rotulo: "Indica +Risos — indicações recebidas",
+    grupo: "Programas da Risarte",
+    ajuda: "Indicações registradas no período, em qualquer situação.",
+    onde: "Indica +Risos → Nova indicação",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "o Risartano que registrou a indicação",
+    financeiro: false,
+    recortes: [],
+    verbo: "receber",
+    objeto: "indicações",
+  },
+  {
+    chave: "indica_conversions",
+    rotulo: "Indica +Risos — indicações convertidas",
+    grupo: "Programas da Risarte",
+    ajuda:
+      "Indicações convertidas em venda, pela data do fechamento — a mesma régua da apuração do Indica.",
+    onde: "Indica +Risos → indicação",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "o Risartano da conversão",
+    financeiro: false,
+    recortes: [],
+    verbo: "converter",
+    objeto: "indicações",
+  },
+  {
+    chave: "indica_ambassadors",
+    rotulo: "Indica +Risos — novos Embaixadores",
+    grupo: "Programas da Risarte",
+    ajuda: "Embaixadores cadastrados no período.",
+    onde: "Indica +Risos → Embaixadores",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "quem cadastrou o Embaixador",
+    financeiro: false,
+    recortes: [],
+    verbo: "cadastrar",
+    objeto: "novos Embaixadores",
+  },
+  {
+    chave: "empresarial_companies",
+    rotulo: "Empresarial — empresas que aderiram",
+    grupo: "Programas da Risarte",
+    ajuda:
+      "Empresas que entraram em Fechado (ganho) no funil do Empresarial no período, pela unidade principal da empresa. Empresa sem unidade principal não entra.",
+    onde: "Empresarial → Funil",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "o consultor RisLife do lead",
+    financeiro: false,
+    recortes: [],
+    verbo: "fechar",
+    objeto: "adesões de empresas",
+  },
+  {
+    chave: "empresarial_lives",
+    rotulo: "Empresarial — vidas incluídas",
+    grupo: "Programas da Risarte",
+    ajuda: "Titulares e dependentes incluídos no convênio no período, pela unidade de cada vida.",
+    onde: "Empresarial → empresa → colaboradores",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: [],
+    verbo: "incluir",
+    objeto: "vidas no Empresarial",
   },
 ];
 
@@ -320,9 +622,21 @@ export function indicadorDe(chave: string): Indicador | null {
   return POR_CHAVE.get(chave as ChaveIndicador) ?? null;
 }
 
+/** A ordem dos grupos nas listas (fixa: a ordem do catálogo é a da etapa). */
 export const GRUPOS_DE_INDICADOR: GrupoIndicador[] = [
-  ...new Set(INDICADORES_DE_META.map((i) => i.grupo)),
+  "Comercial",
+  "Financeiro",
+  "Agenda e atendimento",
+  "Clínico",
+  "Clientes",
+  "Programas da Risarte",
 ];
+
+/** "Reduzir até" de uma soma de limite se lê "No máximo". */
+export function rotuloDaDirecao(ind: Indicador | null, d: Direcao): string {
+  if (ind?.limite && d === "decrease") return "No máximo (limite no período)";
+  return DIRECAO_LABEL[d];
+}
 
 export const ROTULO_DO_RECORTE: Record<Recorte, string> = {
   appointment_types: "Tipo de agendamento",

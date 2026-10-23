@@ -17,6 +17,7 @@ export function BarraDaMeta({
   farol = "neutro",
   esperado,
   tamanho = "md",
+  limite = false,
   className,
 }: {
   pct: number | null;
@@ -25,13 +26,24 @@ export function BarraDaMeta({
   /** 0–1: onde a equipe deveria estar hoje (um tique sobre a barra). */
   esperado?: number | null;
   tamanho?: "sm" | "md";
+  /** Meta de limite: a barra é o uso do limite — passar de 100% é ruim. */
+  limite?: boolean;
   className?: string;
 }) {
   const teto = pctSuper && pctSuper > 100 ? pctSuper : 100;
   const largura = pct == null ? 0 : Math.max(0, Math.min(pct, teto)) / teto * 100;
   const marcaMeta = teto > 100 ? (100 / teto) * 100 : null;
   const marcaRitmo = esperado != null && esperado > 0 && esperado < 1 ? (esperado * 100 * 100) / teto : null;
-  const cor = farol === "neutro" && (pct ?? 0) >= 100 ? FAROL_COR.verde : FAROL_COR[farol];
+  const cor =
+    farol !== "neutro"
+      ? FAROL_COR[farol]
+      : limite
+        ? (pct ?? 0) > 100
+          ? FAROL_COR.vermelho
+          : FAROL_COR.verde
+        : (pct ?? 0) >= 100
+          ? FAROL_COR.verde
+          : FAROL_COR.neutro;
   return (
     <div
       className={cn("relative w-full overflow-visible", className)}
@@ -39,7 +51,7 @@ export function BarraDaMeta({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={pct == null ? undefined : Math.round(pct)}
-      aria-valuetext={pct == null ? "sem medida" : `${formatarPct(pct)} da meta`}
+      aria-valuetext={pct == null ? "sem medida" : `${formatarPct(pct)} ${limite ? "do limite" : "da meta"}`}
     >
       <div className={cn("overflow-hidden rounded-full bg-muted", tamanho === "sm" ? "h-1.5" : "h-3")}>
         <div className={cn("h-full rounded-full transition-[width]", cor)} style={{ width: `${largura}%` }} />

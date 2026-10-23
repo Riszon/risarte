@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/10/2026 · Versão do sistema: **0.343.0** · Última migração: **0318** (aplicada SÓ no treino — falta a produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 23/10/2026 · Versão do sistema: **0.344.0** · Última migração: **0319** (0318 e 0319 aplicadas SÓ no treino — falta a produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.344.0 / 0319 — METAS SMART, ETAPA M2 (23/10/2026)
+>
+> Plano §9b (N1–N7). 16 indicadores novos (29 no total) e o recorte por
+> especialidade nas vendas. Dois TIPOS novos: **fotografia** (`point` —
+> inadimplência, vidas do Riso+; foto diária em `goal_daily_values` pela
+> rotina; resultado = valor do último dia; só período inteiro) e **limite**
+> (`can_decrease` — soma de "no máximo"; o percentual é o USO do limite, em
+> `percentual(…, limite)` e `_goal_percent`, que são espelhos). `money` no
+> banco = "dado financeiro" (a taxa de inadimplência entra — N7); no código o
+> campo virou `financeiro`. ⚠️ **`clinic_overdue_rate` ganhou porta** (padrão
+> 0282): a conta mora em `_clinic_overdue_rate_raw`; a porta mantém a guarda —
+> sem isso a rotina e o participante sem financeiro liam vazio. Exemplos no
+> treino (Unidade Teste): MT-00011 a MT-00013.
 
 > ## 🎯 0.343.0 / 0318 — METAS SMART, ETAPA M1 (23/10/2026)
 >

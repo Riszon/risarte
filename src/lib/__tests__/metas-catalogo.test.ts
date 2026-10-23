@@ -15,7 +15,9 @@ import { INDICADORES_DE_META } from "@/lib/metas/indicadores";
 
 const PASTA = join(process.cwd(), "supabase", "migrations");
 
-function catalogoDoBanco(): Map<string, { kind: string; perPerson: boolean; money: boolean }> {
+type DoBanco = { kind: string; perPerson: boolean; money: boolean; canDecrease: boolean };
+
+function catalogoDoBanco(): Map<string, DoBanco> {
   const arquivos = readdirSync(PASTA).sort().filter((f) => f.endsWith(".sql"));
   let texto: string | null = null;
   for (const f of arquivos) {
@@ -24,8 +26,15 @@ function catalogoDoBanco(): Map<string, { kind: string; perPerson: boolean; mone
   }
   if (!texto) throw new Error("Nenhuma migração define _goal_indicator_meta com as marcas — a régua não mediu nada.");
   const bloco = texto.split("INDICADORES:INICIO")[1].split("INDICADORES:FIM")[0];
-  const linhas = [...bloco.matchAll(/\('([a-z_]+)',\s*'(sum|rate)',\s*(true|false),\s*(true|false)\)/g)];
-  return new Map(linhas.map((m) => [m[1], { kind: m[2], perPerson: m[3] === "true", money: m[4] === "true" }]));
+  const linhas = [
+    ...bloco.matchAll(/\('([a-z_]+)',\s*'(sum|rate|point)',\s*(true|false),\s*(true|false),\s*(true|false)\)/g),
+  ];
+  return new Map(
+    linhas.map((m) => [
+      m[1],
+      { kind: m[2], perPerson: m[3] === "true", money: m[4] === "true", canDecrease: m[5] === "true" },
+    ])
+  );
 }
 
 describe("catálogo das metas: código × banco", () => {
@@ -56,25 +65,39 @@ describe("catálogo das metas: código × banco", () => {
     expect([...banco.keys()].filter((k) => !daTela.has(k))).toEqual([]);
   });
 
-  it("tipo, dinheiro e 'por pessoa' batem dos dois lados", () => {
+  it("tipo, financeiro, 'por pessoa' e limite batem dos dois lados", () => {
     for (const i of INDICADORES_DE_META) {
       const b = banco.get(i.chave)!;
-      expect({ chave: i.chave, tipo: i.tipo, dinheiro: i.dinheiro, porPessoa: i.porPessoa }).toEqual({
+      expect({
+        chave: i.chave,
+        tipo: i.tipo,
+        financeiro: i.financeiro,
+        porPessoa: i.porPessoa,
+        limite: Boolean(i.limite),
+      }).toEqual({
         chave: i.chave,
         tipo: b.kind,
-        dinheiro: b.money,
+        financeiro: b.money,
         porPessoa: b.perPerson,
+        limite: b.canDecrease,
       });
     }
   });
 
-  it("dinheiro é sempre em R$ e R$ é sempre dinheiro", () => {
-    for (const i of INDICADORES_DE_META) expect(i.dinheiro).toBe(i.unidade === "brl");
+  it("R$ é sempre dado financeiro (D3); o contrário não precisa (a taxa de inadimplência é %)", () => {
+    for (const i of INDICADORES_DE_META.filter((x) => x.unidade === "brl")) expect(i.financeiro, i.chave).toBe(true);
   });
 
-  it("soma só aumenta (o banco recusa reduzir uma soma)", () => {
+  it("soma só aumenta — a não ser a de limite, que só é 'no máximo' (o banco recusa o resto)", () => {
     for (const i of INDICADORES_DE_META.filter((x) => x.tipo === "sum")) {
-      expect(i.direcoes).toEqual(["increase"]);
+      expect(i.direcoes, i.chave).toEqual(i.limite ? ["decrease"] : ["increase"]);
+    }
+  });
+
+  it("limite só existe em soma, e fotografia nunca é por pessoa", () => {
+    for (const i of INDICADORES_DE_META) {
+      if (i.limite) expect(i.tipo, i.chave).toBe("sum");
+      if (i.tipo === "point") expect(i.porPessoa, i.chave).toBe(false);
     }
   });
 

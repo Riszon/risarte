@@ -1,7 +1,8 @@
 # Módulo de Metas e Campanhas (metodologia SMART) — PLANO
 
 *Plano aprovado pelo dono em 23/10/2026, com D1–D9 como propostas.*
-*✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318 — aplicada no treino; falta a produção).*
+*✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318).*
+*✅ **M2 entregue** em 23/10/2026 (core 0.344.0, migração 0319, decisões N1–N7 da §9b). 0318 e 0319 aplicadas no treino; falta a produção.*
 *Pedido de origem: mensagem do dono de 23/10/2026 ("Módulo de Metas/campanhas
 com a metodologia de metas SMART"). Já estava previsto no `docs/BACKLOG.md`
 (FASE 2: "Módulo de Metas/Objetivos/Combinados").*
@@ -353,6 +354,42 @@ Cada etapa vai ao ar sozinha e já serve para uso real.
 | **D9** | Começar pela **M1** com os 13 indicadores listados? | **Sim** |
 
 ---
+
+## 9b. Plano da etapa M2 — dinheiro e programas (aprovado em 23/10/2026; entregue)
+
+**17 indicadores** (fontes conferidas no banco de treino, migração **0319**):
+
+| # | Indicador | De onde vem | Por pessoa | Tipo |
+|---|---|---|---|---|
+| C4 | Conversão (apresentação → venda) | negociações abertas no período: aceitas ÷ todas (a mesma conta do painel do Comercial) | ✅ consultor | Taxa |
+| C5 | Receita recebida | recebimentos válidos (`payment_receipts`, sem estorno) | ➖ | Soma |
+| C6 | Receita faturada (DRE) | receita bruta − deduções, pela própria função da DRE (`dre_lines`) | ➖ | Soma |
+| C7 | Vendas por especialidade | recorte novo em Vendas (R$ e quantidade): procedimentos da venda → especialidade | ✅ | Soma |
+| F1 | Taxa de inadimplência | `clinic_overdue_rate` — a mesma conta da tela do Financeiro | ➖ | **Fotografia** |
+| F2 | Valor inadimplente | idem | ➖ | **Fotografia** |
+| F3 | Recuperação de inadimplência | recebido de parcelas que já estiveram vencidas (`was_overdue`) | ➖ | Soma |
+| P2 | Produção do dentista (R$) | repasse congelado das sessões concluídas (`provider_payouts`) | ✅ dentista | Soma |
+| P3 | Opções de plano aprovadas | aprovação do Coordenador (`treatment_plan_options.review_status`) | ✅ Planner do plano | Soma |
+| J2 | Novos clientes que avaliaram | cadastrados no período que já fizeram a avaliação | ✅ quem cadastrou | Soma |
+| G2 | Cancelamentos do Riso+ | adesões canceladas no período | ➖ | **Limite** |
+| G3 | Vidas no Riso+ | beneficiários ativos hoje | ➖ | **Fotografia** |
+| G4 | Indicações recebidas (Indica +Risos) | `indica.indicacoes.registrada_em` | ✅ Risartano de origem | Soma |
+| G5 | Indicações convertidas | `indica.indicacoes.fechou_em`, situação convertida | ✅ Risartano da conversão | Soma |
+| G6 | Novos Embaixadores | `indica.embaixadores.criado_em` | ✅ quem cadastrou | Soma |
+| G7 | Empresas que aderiram (Empresarial) | empresa que entrou em **Fechado (ganho)** no funil | ✅ consultor RisLife | Soma |
+| G8 | Vidas incluídas no Empresarial | titulares e dependentes incluídos (`membership_history`) | ➖ | Soma |
+
+**Decisões novas da M2 (propostas):**
+
+| # | Pergunta | Proposta |
+|---|---|---|
+| N1 | Inadimplência e vidas são **fotografia** (o valor de hoje), não soma. Não existe histórico guardado delas. | O sistema tira **uma foto por dia** a partir da publicação; a linha de base é o valor do dia da criação; o resultado final é o valor do **último dia do prazo**. Só "período inteiro" (não mensal). O gráfico mostra a evolução dia a dia |
+| N2 | Cancelamentos do Riso+ é meta de **no máximo**. | A barra mostra **quanto do limite já foi usado** ("3 de 5 cancelamentos"); fica vermelha se passar; atingida se terminar dentro do limite |
+| N3 | Receita faturada vem da DRE, que é por período. | Só a barra, sem gráfico dia a dia |
+| N4 | Venda com várias especialidades. | Em R$, conta a **parte proporcional** dos procedimentos da especialidade (o desconto é repartido na mesma proporção); em quantidade, conta a venda que tem ao menos um procedimento dela |
+| N5 | Receita recebida e recuperação: de quem é o número? | **Só coletiva**: quem registra o recebimento é a recepção, não quem vendeu |
+| N6 | Empresarial não usa contrato assinado no sistema. | Adesão = empresa que entrou em **Fechado (ganho)** no funil; unidade = a unidade principal da empresa; só leitura do schema do Empresarial (D7) |
+| N7 | Inadimplência em % também é dado financeiro. | Entra na D3: quem não vê o financeiro da unidade vê só o **percentual da meta**, nunca a taxa nem o valor |
 
 ## 10. Achados de passagem (registrados no `docs/BACKLOG.md` como AP69 e AP70)
 

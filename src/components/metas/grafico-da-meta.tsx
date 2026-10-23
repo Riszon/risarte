@@ -17,7 +17,15 @@ const L = 640;
 const A = 180;
 const M = { t: 12, r: 12, b: 24, l: 40 };
 
-export function GraficoDaMeta({ pontos }: { pontos: PontoDoGrafico[] }) {
+export function GraficoDaMeta({
+  pontos,
+  legendaRealizado = "Realizado (acumulado)",
+  legendaEsperado = "Esperado para estar no ritmo",
+}: {
+  pontos: PontoDoGrafico[];
+  legendaRealizado?: string;
+  legendaEsperado?: string;
+}) {
   const [foco, setFoco] = useState<number | null>(null);
   if (pontos.length < 2) return null;
   const teto = Math.max(100, ...pontos.map((p) => Math.max(p.realizado ?? 0, p.esperado)));
@@ -45,13 +53,13 @@ export function GraficoDaMeta({ pontos }: { pontos: PontoDoGrafico[] }) {
           <svg width="18" height="6" aria-hidden>
             <line x1="0" y1="3" x2="18" y2="3" stroke="var(--primary)" strokeWidth="2" />
           </svg>
-          Realizado (acumulado)
+          {legendaRealizado}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <svg width="18" height="6" aria-hidden>
             <line x1="0" y1="3" x2="18" y2="3" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" />
           </svg>
-          Esperado para estar no ritmo
+          {legendaEsperado}
         </span>
       </div>
       <div className="relative">

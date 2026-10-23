@@ -339,20 +339,27 @@ export function valorDe(m: Medida | null | undefined): number | null {
 }
 
 /**
- * O percentual da barra.
+ * O percentual da barra. Espelho de `_goal_percent` (0319).
  *   * AUMENTAR até X: realizado ÷ alvo.
  *   * REDUZIR até X: quanto já caiu ÷ quanto precisava cair, a partir da
  *     linha de base. Sem base (ou base já abaixo do alvo): 100% se está
  *     dentro, senão alvo ÷ realizado.
+ *   * LIMITE (soma de "no máximo", N2): o USO do limite — realizado ÷ limite.
+ *     Aqui, MENOS é melhor: 60% = sobra 40% do limite; acima de 100% passou.
  * O número volta inteiro (pode passar de 100); a barra é quem para em 100.
  */
 export function percentual(
   direcao: Direcao,
   valor: number | null,
   alvo: number | null,
-  base: number | null = null
+  base: number | null = null,
+  limite = false
 ): number | null {
   if (valor == null || alvo == null) return null;
+  if (limite) {
+    if (alvo === 0) return valor > 0 ? 999 : 0;
+    return (valor / alvo) * 100;
+  }
   if (direcao === "increase") {
     if (alvo === 0) return valor > 0 ? 100 : 0;
     return (valor / alvo) * 100;
@@ -369,11 +376,17 @@ export function percentualDaMedida(
   m: Medida | null | undefined,
   direcao: Direcao,
   alvo: number | null,
-  base: number | null = null
+  base: number | null = null,
+  limite = false
 ): number | null {
   if (!m) return null;
   if (m.pct !== undefined) return m.pct == null ? null : Number(m.pct);
-  return percentual(direcao, valorDe(m), alvo, base);
+  return percentual(direcao, valorDe(m), alvo, base, limite);
+}
+
+/** A meta é de LIMITE ("no máximo" numa soma)? */
+export function ehLimite(meta: Pick<Meta, "indicator" | "direction">): boolean {
+  return Boolean(indicadorDe(meta.indicator)?.limite) && meta.direction === "decrease";
 }
 
 export function atingiu(direcao: Direcao, valor: number | null, alvo: number | null): boolean | null {
@@ -396,7 +409,8 @@ export function alvoDoSujeito(
   const ajuste = ajustes.find((a) => a.subject_kind === tipo && a.subject_id === id);
   if (ajuste) return Number(ajuste.target_value);
   if (tipo === "user" && meta.individual_rule === "same") return meta.individual_value;
-  if (indicadorDe(meta.indicator)?.tipo === "rate") {
+  // Taxa e fotografia não se dividem: cada unidade/pessoa tem o próprio alvo.
+  if (indicadorDe(meta.indicator)?.tipo !== "sum") {
     return tipo === "user" ? meta.individual_value : meta.target_value;
   }
   if (n > 0 && meta.target_value != null) return meta.target_value / n;
@@ -409,6 +423,14 @@ export const FAROL_LABEL: Record<Farol, string> = {
   verde: "No ritmo",
   amarelo: "Atenção",
   vermelho: "Atrás do ritmo",
+  neutro: "Começando",
+};
+
+/** No limite, o farol fala do quanto sobra (N2). */
+export const FAROL_LABEL_LIMITE: Record<Farol, string> = {
+  verde: "Dentro do limite",
+  amarelo: "Perto do limite",
+  vermelho: "Passou do limite",
   neutro: "Começando",
 };
 
@@ -425,11 +447,18 @@ export const LIMITE_ATENCAO = 0.85;
 /**
  * O farol do ritmo.
  *   * SOMA: compara o feito com o que já deveria ter sido feito hoje.
- *   * TAXA: compara com o próprio alvo (uma taxa não "acumula").
+ *   * TAXA e FOTOGRAFIA: compara com o próprio alvo (não "acumulam").
+ *   * LIMITE: `pct` é o USO do limite — verde enquanto o uso não passa da
+ *     parte do prazo que já correu; âmbar acima disso; vermelho passou.
  */
-export function farol(tipo: TipoIndicador, pct: number | null, esperado: number): Farol {
+export function farol(tipo: TipoIndicador, pct: number | null, esperado: number, limite = false): Farol {
   if (pct == null) return "neutro";
-  if (tipo === "rate") {
+  if (limite) {
+    if (pct > 100) return "vermelho";
+    if (pct <= esperado * 100) return "verde";
+    return "amarelo";
+  }
+  if (tipo !== "sum") {
     if (pct >= 100) return "verde";
     if (pct >= 90) return "amarelo";
     return "vermelho";
@@ -493,7 +522,7 @@ export function baseParaOPeriodo(
   diasDoPeriodo: number
 ): number | null {
   if (valorDoHistorico == null) return null;
-  if (tipo === "rate") return valorDoHistorico;
+  if (tipo !== "sum") return valorDoHistorico;
   if (diasDoHistorico <= 0) return null;
   return (valorDoHistorico / diasDoHistorico) * diasDoPeriodo;
 }
@@ -645,7 +674,9 @@ export function fraseSmart(d: DadosDaFrase): string {
   }
 
   let inicio: string;
-  if (ind.tipo === "rate") {
+  if (ind.limite && d.direction === "decrease") {
+    inicio = `Ter no máximo ${numero} ${ind.objeto}${recorte}${porMes}${sufixo}`;
+  } else if (ind.tipo !== "sum") {
     const limite = d.direction === "decrease" ? "no máximo" : "no mínimo";
     const acao = d.direction === "decrease" ? "Reduzir para" : "Alcançar";
     inicio = `${acao} ${limite} ${numero} ${ind.objeto}${recorte}${porMes}${sufixo}`;
