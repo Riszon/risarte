@@ -2578,6 +2578,24 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP70. O painel do Riso+ conta "novas adesões" pela criação, não pela ativação (23/10/2026)
+
+**Confirmado lendo o código (não executado).** `ppr/painel/page.tsx:228`
+filtra `newInPeriod` por `created_at`. A regra do Riso+ diz que a adesão vale
+com contrato + 1º pagamento (`activated_at`) — uma adesão criada e nunca
+ativada entra como nova. **Suspeita, não conferida:** a transferência cria
+outra linha (`transferred_from_id`, 0164) e também contaria como nova. Achado
+levantando as fontes do módulo de Metas (`docs/metas/METAS-PLANO.md`, G1).
+
+### AP69. Mensalidade do Riso+ e cobrança do Empresarial não lançam no razão (23/10/2026)
+
+**Confirmado lendo as migrações (não executado).** Nenhuma migração liga
+`ppr_charges` nem `empresarial.adhesion_billing` a `financial_entries`. Por
+isso DRE, fluxo de caixa, margem e ponto de equilíbrio da unidade não
+enxergam essa receita. Pode ser decisão antiga (não encontrei registro dela) —
+perguntar ao dono antes de tratar como defeito. Afeta os indicadores F4–F8 do
+módulo de Metas.
+
 ### AP68. A aba Fluxo de caixa do Painel da rede lê unidade por unidade (22/10/2026)
 
 **Suspeita de lentidão futura, não defeito.** Desde a 0.341.0 (OC-00121) a aba
