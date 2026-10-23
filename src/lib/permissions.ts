@@ -232,6 +232,18 @@ export const CAPACIDADES: Capability[] = [
     ],
   },
   {
+    // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
+    // cada um enxerga (as que cria, as das unidades que gere, e aquelas em
+    // que participa).
+    id: "modulo.metas",
+    rotulo: "Metas",
+    grupo: "Módulos",
+    descricao:
+      "Acompanhar as metas da rede e da unidade, com a barra do realizado. Cada pessoa vê as metas em que participa.",
+    dependeDoBanco: true,
+    padrao: TODOS,
+  },
+  {
     id: "modulo.financeiro",
     rotulo: "Financeiro",
     grupo: "Módulos",
@@ -347,6 +359,26 @@ export const CAPACIDADES: Capability[] = [
     // Também nasce escondido (ver modulo.indica). Quem tem o módulo já pode
     // indicar; esta permissão é para quem SÓ pede e registra (clínico).
     padrao: ["clinical_coordinator", "dentist", "tsb", "asb"],
+  },
+  {
+    // D1 (23/10/2026): meta de rede ou de várias unidades. O banco aceita
+    // só Admin e Franqueadora/Rede (`_goal_can_create`, 0318) — ligar para
+    // outra função aqui abriria o botão sem o banco aceitar gravar.
+    id: "acao.metas.criar_rede",
+    rotulo: "Criar meta da rede",
+    grupo: "Ações — Metas",
+    descricao: "Criar, editar, pausar e cancelar metas da rede toda ou de várias unidades.",
+    dependeDoBanco: true,
+    padrao: ["franchisor_staff"],
+  },
+  {
+    id: "acao.metas.criar_unidade",
+    rotulo: "Criar meta da unidade",
+    grupo: "Ações — Metas",
+    descricao:
+      "Criar, editar, pausar e cancelar metas da própria unidade. O banco aceita Gerente e Franqueado.",
+    dependeDoBanco: true,
+    padrao: ["unit_manager", "franchisee"],
   },
 ];
 

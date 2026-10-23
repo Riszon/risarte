@@ -390,6 +390,26 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**23/10/2026 — PC Administrador (core 0.342.0 → 0.343.0; migração 0318)**
+
+- **Módulo de Metas SMART — etapa M1** (pedido do dono; plano e decisões
+  D1–D9 aprovados: `docs/metas/METAS-PLANO.md`, com o catálogo de 45
+  indicadores possíveis). Painel `/metas` (5 abas), assistente S-M-A-R-T,
+  ficha com gráfico realizado × esperado, "Minhas metas" no Início. 13
+  indicadores na M1. **Indicador é código, meta é dado** — régua
+  `metas-catalogo.test.ts` (provada quebrando).
+- **0318 aplicada SÓ no treino** (provada em transação desfeita: travas de
+  quem cria/vê, D3, motivo, congelamento). ⚠️ **Falta rodar na produção**
+  (o dono, no SQL Editor). Até lá, na produção, só o Admin Master vê o menu
+  (a matriz de lá não tem `modulo.metas`) e a tela diz "módulo ainda não
+  instalado"; a 0318 semeia a permissão para todas as funções.
+- Achados de passagem no BACKLOG: AP69 (mensalidade do Riso+ e cobrança do
+  Empresarial fora do razão) e AP70 (painel do Riso+ conta adesão pela
+  criação).
+
+**Pendências:** 0318 na produção; depois, a etapa **M2** (dinheiro e
+programas) do plano.
+
 **22/10/2026 (4ª) — PC Administrador (core 0.341.2 → 0.342.0, migração 0317)**
 
 - **AP51 (pedido do dono): em qual conta o dinheiro entrou ou saiu.** Plano e

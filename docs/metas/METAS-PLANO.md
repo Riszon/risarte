@@ -1,6 +1,7 @@
 # Módulo de Metas e Campanhas (metodologia SMART) — PLANO
 
-*Plano para aprovação do dono — 23/10/2026. Nada foi codificado ainda.*
+*Plano aprovado pelo dono em 23/10/2026, com D1–D9 como propostas.*
+*✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318 — aplicada no treino; falta a produção).*
 *Pedido de origem: mensagem do dono de 23/10/2026 ("Módulo de Metas/campanhas
 com a metodologia de metas SMART"). Já estava previsto no `docs/BACKLOG.md`
 (FASE 2: "Módulo de Metas/Objetivos/Combinados").*

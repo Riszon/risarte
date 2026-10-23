@@ -211,6 +211,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   ppr_plan: "Plano PPR+",
   ppr_plan_benefit: "Benefício do plano PPR+",
   ppr_membership: "Adesão ao PPR+",
+  goal: "Meta",
+  goal_status: "Situação da meta",
   ppr_membership_cancel: "Adesão ao PPR+ cancelada",
   ppr_charges: "Cobranças do PPR+",
   ppr_settings: "Configuração do PPR+",

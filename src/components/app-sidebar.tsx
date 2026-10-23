@@ -36,6 +36,7 @@ import {
   Timer,
   Stethoscope,
   Tags,
+  Target,
   Users,
   ShieldCheck,
   Smile,
@@ -100,6 +101,8 @@ type Props = {
   canViewPpr: boolean;
   /** Indica +Risos (programa de indicação). Opcional: só o layout informa. */
   canViewIndica?: boolean;
+  /** 0318: módulo de Metas. Opcional: só o layout informa. */
+  canViewMetas?: boolean;
   /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
   canViewFinance: boolean;
   /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
@@ -192,6 +195,14 @@ const INDICA_ITEM = {
   icon: HeartHandshake,
 };
 
+// 0318: Metas SMART (rede e unidades). Fica perto do Início de propósito:
+// a meta só estimula se a equipe a vê todo dia.
+const METAS_ITEM = {
+  href: "/metas",
+  label: "Metas",
+  icon: Target,
+};
+
 // PPR2: Programa de Prevenção Riso+ (PPR+) — prevenção e recorrência.
 const PPR_ITEM = {
   href: "/ppr",
@@ -268,6 +279,7 @@ export function AppSidebar({
   canViewEmpresarial,
   canViewPpr,
   canViewIndica = false,
+  canViewMetas = false,
   canViewFinance,
   canViewStock,
   canViewPurchases,
@@ -352,6 +364,9 @@ export function AppSidebar({
   // H4.6 B1/E3: "Meu Dia" e "Minha Agenda" logo após Início para o dentista.
   if (activeClinicRoles.includes("dentist")) {
     navItems = [navItems[0], MEU_DIA_ITEM, MINHA_AGENDA_ITEM, ...navItems.slice(1)];
+  }
+  if (canViewMetas) {
+    navItems = [navItems[0], METAS_ITEM, ...navItems.slice(1)];
   }
   if (!dentistOnly && canViewComercial) {
     navItems = [...navItems, COMERCIAL_ITEM];

@@ -202,6 +202,7 @@ export const NOME_DA_TELA: Record<string, string> = {
   "indica-mais-risos": "Indica +Risos",
   jornada: "Jornada",
   manual: "Manual de treinamento",
+  metas: "Metas",
   "meu-dia": "Meu Dia",
   "minha-agenda": "Minha Agenda",
   notificacoes: "Notificações",

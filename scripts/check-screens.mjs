@@ -109,6 +109,7 @@ const FIXTURE_SOURCES = {
   campanha: () => admin.schema("indica").from("campanhas").select("id").limit(1),
   apuracaoMeta: () => admin.schema("indica").from("apuracoes").select("id").limit(1),
   pprPlan: () => admin.from("ppr_plans").select("id").limit(1),
+  goal: () => admin.from("goals").select("id").limit(1),
   pprBeneficiary: () => admin.from("ppr_beneficiaries").select("id").limit(1),
   cancellation: () => admin.from("plan_cancellations").select("id").limit(1),
   clinicalDocument: () => admin.from("clinical_documents").select("id").limit(1),

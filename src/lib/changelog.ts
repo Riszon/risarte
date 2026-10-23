@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.343.0",
+    data: "2026-10-23",
+    migracao: "0318",
+    titulo: "Metas: metas SMART da rede e da unidade, com a barra do realizado",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Menu novo, Metas: as metas da rede e da unidade em cinco abas (Ativas, A iniciar, Pausadas, Finalizadas e Canceladas), cada uma com a barra do quanto já foi feito, a cor do ritmo e a previsão de como termina. O número vem direto do sistema — ninguém digita.",
+        papeis: "todos",
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quem participa de uma meta vê no Início o cartão \"Minhas metas\", com a barra da equipe e, na meta individual, a sua.",
+        papeis: "todos",
+        manual: "2.2. A tela de Início",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A Franqueadora cria metas da rede ou de várias unidades; o Gerente e o Franqueado, da própria unidade. A criação segue os cinco passos do SMART, com o histórico da unidade para conferir se o alvo é realista e a meta escrita por extenso.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Depois de publicada, toda alteração na meta pede o motivo e fica no histórico. Pausar e cancelar também pedem o motivo. Ao terminar o prazo, o resultado é congelado.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+    ],
+  },
+  {
     versao: "0.342.0",
     data: "2026-10-22",
     migracao: "0317",

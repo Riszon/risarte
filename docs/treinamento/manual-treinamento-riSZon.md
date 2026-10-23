@@ -183,6 +183,10 @@ significa e o caminho para resolver. Eles mudam conforme a sua função:
 > "3 esperando", ao abrir você encontra três. Cada contagem usa a mesma régua da
 > tela de destino, nunca uma conta separada.
 
+**Minhas metas.** Quem participa de alguma meta ativa vê, no alto, um cartão
+para cada uma (até quatro), com a barra da equipe e — na meta individual — a
+**sua** barra ("Você"). Ver [seção 2.7](#27-metas-smart).
+
 **Embaixo: "O que mudou no sistema"** — as **três últimas** entregas que
 alcançam a sua função. A lista completa, com busca e filtros, está em **Ver
 todas as novidades** (ou no ícone ✨ da barra de cima). Ver
@@ -1095,6 +1099,130 @@ geram dois certificados. Você recebe um aviso no sino sempre que alguém entra
 nessa fila, e também quando alguém cumpre a missão mas está com o acesso
 fechado na ficha.
 
+### 2.7. Metas (SMART)
+
+O menu **Metas** (logo abaixo do Início) reúne as metas da rede e da sua
+unidade, com uma **barra que mostra quanto já foi feito** — medida direto do
+sistema, sem ninguém digitar número.
+
+**Quem vê o quê.** Todo Risartano vê as metas em que **participa**. Gerente,
+Franqueado e Coordenador veem todas as metas da(s) sua(s) unidade(s). A
+Franqueadora e o Admin Master veem todas as da rede. Rascunho só aparece para
+quem pode editar.
+
+**Quem cria.** A **Franqueadora/Rede** e o Admin Master criam metas da rede
+toda ou de várias unidades. O **Gerente** e o **Franqueado** criam metas da
+**própria unidade**. As outras funções acompanham.
+
+#### O painel
+
+Cinco abas: **Ativas · A iniciar · Pausadas · Finalizadas · Canceladas** (e
+**Rascunhos**, para quem tem algum). Os filtros acima dos cartões escolhem a
+unidade, o indicador e **"Só as metas em que participo"**. Cada cartão mostra:
+
+- o percentual e a **barra**. A cor é o **ritmo**: verde, no ritmo; âmbar,
+  um pouco atrás; vermelho, atrás. O traço fino marca **onde a equipe deveria
+  estar hoje**; o traço dourado marca a meta quando existe **Super Meta**;
+- o realizado e o alvo ("R$ 11.250,00 de R$ 15.000,00");
+- "no ritmo atual, termina em X%" e os dias que faltam.
+
+**Como a barra é calculada.**
+
+| A meta é… | O percentual é… |
+|---|---|
+| **Aumentar** até um valor | o realizado ÷ o alvo (passa de 100% quando supera) |
+| **Reduzir** até um valor (ex.: faltas de 8% para 5%) | quanto já caiu ÷ quanto precisava cair. Em 6,5%, a barra mostra 50% |
+| **Individual** | a média dos participantes, cada um contando até 100% |
+| **Mensal**, depois de encerrada | meses atingidos ÷ meses |
+
+> **O ritmo conta os dias já encerrados — até ontem.** No primeiro dia a meta
+> aparece "Começando", não "atrás": o dia ainda está acontecendo.
+
+> **Valores em R$ só para a gestão.** Numa meta de dinheiro (vendas, ticket
+> médio), quem não enxerga o financeiro da unidade vê **o percentual**, com o
+> aviso "Valores em R$ só para a gestão". O seu próprio número você sempre vê.
+
+#### Criar uma meta — os cinco passos do SMART
+
+Em **Metas → Nova meta**. Cada passo é uma letra; o círculo fica marcado
+quando ela está completa, e você pode ir e voltar entre os passos. Ao lado, a
+**meta por extenso** é escrita enquanto você preenche, por exemplo: *"Fechar
+R$ 15.000,00 em vendas por mês na Risarte Centro, de 01/01/2027 a
+31/03/2027."*
+
+1. **S — Específica.** O nome; **o que vai ser medido** (o indicador — veja a
+   lista abaixo); o **recorte** opcional (tipo de agendamento, especialidade,
+   plano do Riso+, origem do cliente, origem da venda); **de onde os números
+   vêm** (rede toda, unidades escolhidas ou a sua unidade); **quem participa**
+   (toda a equipe, por função, pessoas escolhidas — dá para combinar); e
+   **como** a meta vai ser alcançada.
+2. **M — Mensurável.** A direção (aumentar ou reduzir), o **tipo de meta** —
+   coletiva (um número de todos), individual (cada um com o seu alvo) ou as
+   duas — e o **valor-alvo**. Na individual: o mesmo alvo para cada um, ou um
+   total dividido entre todos. Opcional: **Super Meta** e o ajuste do alvo de
+   **cada unidade** (meta de várias unidades) ou de **cada pessoa**.
+3. **A — Atingível.** O sistema mostra o **histórico** do mesmo indicador e
+   dá um selo: **Realista** (até 10% acima do histórico), **Desafiador** (até
+   30%) ou **Muito acima do histórico** — nesse caso é obrigatório explicar
+   por que é possível. Diga também os **recursos** que a equipe terá.
+4. **R — Relevante.** O **objetivo estratégico** e **por que esta meta importa
+   agora**.
+5. **T — Temporal.** Início, fim e se o alvo vale **para o período inteiro** ou
+   **para cada mês**. Opcional: **marcos intermediários** ("1º mês com pelo
+   menos 20 novos clientes").
+
+Na **Revisão**, **Publicar meta** (ou **Salvar rascunho**). Faltando uma letra,
+o sistema diz qual e leva até ela.
+
+> **Quem participa por função ou "toda a equipe" muda sozinho.** Quem entra na
+> equipe durante a meta entra na meta. Escolher pessoas fixa a lista.
+>
+> **Com participantes escolhidos, conta só o que eles fizeram.** Uma meta de
+> agendamentos para as recepcionistas não conta o que o gerente agendou.
+
+#### Depois de publicada
+
+- **A iniciar → Ativa → Finalizada** acontecem **sozinhas pela data**.
+- **Pausar** e **Cancelar** (no alto da meta) pedem o **motivo**. Enquanto
+  pausada, os dias **não contam para o ritmo**, e o prazo final **não se
+  estende sozinho** — se precisar de mais tempo, edite o fim. Cancelar é
+  definitivo.
+- **Editar** continua possível, mas **toda alteração pede motivo** e aparece
+  no **Histórico** da meta. Indicador, recorte, abrangência, tipo de meta,
+  direção e periodicidade **não mudam** — isso seria outra meta: cancele e
+  crie uma nova.
+- **Ao terminar o prazo, o resultado é congelado** na madrugada seguinte e não
+  muda mais. Até lá, a meta aparece como **"Finalizada — apurando"**.
+- Rascunho pode ser **descartado** (apagado): ninguém da equipe chegou a vê-lo.
+
+**A ficha da meta** mostra a barra grande, o gráfico **realizado × esperado**
+dia a dia (com "Ver os números"), o **mês a mês** (meta mensal), os
+**participantes** com o número de cada um (meta individual ou com
+participantes escolhidos), o quadro **por unidade**, os **marcos**, as cinco
+letras do SMART e o **histórico**.
+
+#### O que dá para medir (indicadores)
+
+| Indicador | O que conta | Número de quem |
+|---|---|---|
+| Vendas fechadas (R$) e (quantidade) | Vendas de plano e vendas diretas fechadas (contrato + pagamento). Cancelada não conta | O consultor da negociação (venda direta: quem lançou) |
+| Ticket médio das vendas | Soma das vendas ÷ quantidade | Idem |
+| Agendamentos marcados | Pela data em que foram **marcados**. Cancelado não conta; falta conta | Quem marcou |
+| Atendimentos concluídos | Atendimento terminado | O profissional do horário |
+| Avaliações realizadas | Atendimento concluído do tipo Avaliação | O profissional do horário |
+| Taxa de comparecimento / de faltas | Dos horários que já passaram **e tiveram desfecho**, quantos % vieram / faltaram | Quem marcou |
+| Check-ins na recepção | Chegadas registradas | Quem registrou |
+| Retornos e reavaliações marcados | Agendamentos de Retorno e Reavaliação marcados | Quem marcou |
+| Procedimentos executados | Sessões de tratamento concluídas (recorte por especialidade) | O dentista que executou |
+| Novos clientes | Cadastros, pela unidade onde nasceram (recorte por origem) | Quem cadastrou |
+| Adesões ao Riso+ | Adesões **ativadas** (contrato + 1º pagamento); transferência não conta | Quem vendeu |
+
+Indicadores financeiros (receita, inadimplência, margem, ponto de equilíbrio),
+de programas (Indica +Risos, Empresarial) e de cadeira (ocupação, tempo
+ocioso) chegam nas próximas etapas.
+
+**Evidência:** EV-184 e EV-185.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu
@@ -1218,6 +1346,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Centro de Planejamento | `/planejamento` | Fila de casos a planejar, com prazo |
 | Procedimentos | `/procedimentos` | Catálogo: preço, protocolo de sessões, comissionamento. Cadastro e preço só do Admin Master; o Planner consulta, edita as sessões e sugere procedimento novo |
 | Planos de Tratamento | `/planos` | Visão gerencial dos planos |
+| Metas | `/metas` | Metas SMART da rede e da unidade, com a barra do realizado (ver [seção 2.7](#27-metas-smart)) |
 | Comercial | `/comercial` | Funil de negociação e fechamento |
 | Financeiro | `/financeiro` | Abre no **Painel** (ver [seção 2.3](#23-a-porta-do-financeiro)); dentro dele, DRE, fluxo de caixa, contas, taxas, repasses |
 | Estoque | `/estoque` | Itens, kits, saldo, inventário |

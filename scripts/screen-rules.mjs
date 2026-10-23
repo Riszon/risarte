@@ -67,6 +67,8 @@ export const ROUTE_FIXTURES = {
   "/indica-mais-risos/campanhas/[id]/editar": "campanha",
   "/indica-mais-risos/equipe/apuracao/[id]": "apuracaoMeta",
   "/ppr/adesoes/[id]": "pprMembership",
+  "/metas/[id]": "goal",
+  "/metas/[id]/editar": "goal",
   "/ppr/adesoes/[id]/contrato": "pprMembership",
   "/ppr/configuracao/[planId]": "pprPlan",
   "/ppr/cartao/[beneficiaryId]": "pprBeneficiary",

@@ -1,6 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 22/10/2026 · Versão do sistema: **0.342.0** · Última migração: **0317** (aplicada na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 23/10/2026 · Versão do sistema: **0.343.0** · Última migração: **0318** (aplicada SÓ no treino — falta a produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.343.0 / 0318 — METAS SMART, ETAPA M1 (23/10/2026)
+>
+> Plano e decisões D1–D9: `docs/metas/METAS-PLANO.md`. Rotas `/metas`,
+> `/metas/nova`, `/metas/[id]`, `/metas/[id]/editar`; cartão "Minhas metas"
+> no Início; item Metas no menu. ⚠️ **Indicador é código, meta é dado:** os
+> 13 indicadores da M1 são ramos de `_goal_measure_raw` e o catálogo da tela é
+> `src/lib/metas/indicadores.ts` — `metas-catalogo.test.ts` reprova se os dois
+> divergirem (acrescentar indicador = migração nova que redefine
+> `_goal_indicator_meta` E `_goal_measure_raw` + a entrada no catálogo).
+> Grava só por `goal_save`/`goal_publish`/`goal_change_status`; lê por
+> `can_view_goal` (RLS) e `goal_measure` (aplica a D3: R$ vira percentual
+> para quem não vê o financeiro de TODAS as unidades da meta). Resultado
+> congelado em `goal_results` pela rotina `risarte-metas-diaria` (02:20).
+> Regras puras em `src/lib/metas/regras.ts` e `resumo.ts`; `valorDe` e
+> `alvoDoSujeito` têm ESPELHO no banco (`_goal_value`, `_goal_subject_target`).
+> ⚠️ **Limite conhecido:** o participante sem acesso ao financeiro lê o ALVO
+> em R$ pela API (a coluna está na tabela `goals`); o realizado não. Exemplos
+> no treino, só na Risarte Unidade Teste: MT-00006 e MT-00007.
 
 > ## 🏦 0.342.0 / 0317 — AP51: EM QUAL CONTA O DINHEIRO ENTROU (22/10/2026)
 >
