@@ -1124,7 +1124,13 @@ unidade, o indicador e **"Só as metas em que participo"**. Cada cartão mostra:
   um pouco atrás; vermelho, atrás. O traço fino marca **onde a equipe deveria
   estar hoje**; o traço dourado marca a meta quando existe **Super Meta**;
 - o realizado e o alvo ("R$ 11.250,00 de R$ 15.000,00");
-- "no ritmo atual, termina em X%" e os dias que faltam.
+- "no ritmo atual, termina em X%" e os dias que faltam;
+- no Início, a sua posição: **"Sua unidade: 3º de 12"** (meta de várias
+  unidades, pela unidade em que você está trabalhando) e **"Você: 2º de 8"**
+  (meta individual) — quando a meta mostra o ranking;
+- o **reconhecimento** combinado, quando há ("Reconhecimento: jantar da
+  equipe"). Meta atingida ganha o **selo de troféu** e continua no seu Início
+  por **7 dias** depois do fim.
 
 **Como a barra é calculada.**
 
@@ -1155,7 +1161,14 @@ unidade, o indicador e **"Só as metas em que participo"**. Cada cartão mostra:
 
 #### Criar uma meta — os cinco passos do SMART
 
-Em **Metas → Nova meta**. Cada passo é uma letra; o círculo fica marcado
+Em **Metas → Nova meta**. No alto do passo S dá para **começar de um
+modelo** — Mês do Riso+, Avaliações do mês, Reduzir faltas, Ortodontia no
+trimestre, Inadimplência abaixo do limite, Ocupação da cadeira, Novos clientes
+ou Ticket médio. O modelo preenche o indicador, o recorte, o período e os
+textos; **revise cada passo** — nada é publicado sozinho. Ou fique em
+"Começar do zero".
+
+Cada passo é uma letra; o círculo fica marcado
 quando ela está completa, e você pode ir e voltar entre os passos. Ao lado, a
 **meta por extenso** é escrita enquanto você preenche, por exemplo: *"Fechar
 R$ 15.000,00 em vendas por mês na Risarte Centro, de 01/01/2027 a
@@ -1172,13 +1185,20 @@ R$ 15.000,00 em vendas por mês na Risarte Centro, de 01/01/2027 a
    coletiva (um número de todos), individual (cada um com o seu alvo) ou as
    duas — e o **valor-alvo**. Na individual: o mesmo alvo para cada um, ou um
    total dividido entre todos. Opcional: **Super Meta** e o ajuste do alvo de
-   **cada unidade** (meta de várias unidades) ou de **cada pessoa**.
+   **cada unidade** (meta de várias unidades) ou de **cada pessoa**. Quando o
+   sistema tem o histórico, ele mostra uma **sugestão de alvo**: o histórico
+   **+10%** (numa meta de reduzir, **−10%**) — o limite do "Realista". O botão
+   **Usar a sugestão** aparece enquanto o alvo está em branco; o número é seu.
 3. **A — Atingível.** O sistema mostra o **histórico** do mesmo indicador e
    dá um selo: **Realista** (até 10% acima do histórico), **Desafiador** (até
    30%) ou **Muito acima do histórico** — nesse caso é obrigatório explicar
    por que é possível. Diga também os **recursos** que a equipe terá.
 4. **R — Relevante.** O **objetivo estratégico** e **por que esta meta importa
-   agora**.
+   agora**. Opcional: o **reconhecimento** ao atingir a meta e ao atingir a
+   Super Meta ("jantar da equipe", "folga no aniversário"). **É só texto**: nada
+   vai ao Financeiro nem à folha — o prêmio, se houver, é pago fora do sistema.
+   Em meta de várias unidades (ou individual), a caixa **Mostrar o ranking**
+   vem marcada; desmarque para a ficha não mostrar posições.
 5. **T — Temporal.** Início, fim e se o alvo vale **para o período inteiro** ou
    **para cada mês**. Opcional: **marcos intermediários** ("1º mês com pelo
    menos 20 novos clientes").
@@ -1207,11 +1227,42 @@ o sistema diz qual e leva até ela.
   muda mais. Até lá, a meta aparece como **"Finalizada — apurando"**.
 - Rascunho pode ser **descartado** (apagado): ninguém da equipe chegou a vê-lo.
 
-**A ficha da meta** mostra a barra grande, o gráfico **realizado × esperado**
-dia a dia (com "Ver os números"), o **mês a mês** (meta mensal), os
-**participantes** com o número de cada um (meta individual ou com
-participantes escolhidos), o quadro **por unidade**, os **marcos**, as cinco
-letras do SMART e o **histórico**.
+**A ficha da meta** mostra o **reconhecimento** combinado, a barra grande, o
+gráfico **realizado × esperado** dia a dia (com "Ver os números"), o **mês a
+mês** (meta mensal), os **participantes** com o número de cada um (meta
+individual ou com participantes escolhidos), o quadro **por unidade**, os
+**marcos**, as cinco letras do SMART e o **histórico**.
+
+**Campeonato entre unidades.** Numa meta de várias unidades com o ranking
+ligado, o quadro vira **Campeonato entre unidades**: o **pódio** (1º, 2º e 3º)
+e a posição de cada uma. A posição é pelo **percentual do alvo de cada
+unidade**, não pelo número bruto — assim a unidade pequena compete com a
+grande. Empate divide o lugar (duas em 1º, a seguinte é 3º). Numa meta de
+**limite**, quem usou **menos** fica na frente. Os participantes da meta
+individual aparecem na mesma ordem, com a posição.
+
+#### Avisos no sino
+
+A meta avisa sozinha — **uma vez só** cada aviso, e **nunca com valor em R$**
+(só o percentual). Clicar no aviso abre a meta.
+
+| Aviso | Quem recebe | Quando |
+|---|---|---|
+| **Nova meta** | os participantes | na hora da publicação |
+| **A meta começou** | os participantes | na madrugada do início (meta publicada "A iniciar") |
+| **Faltam 3 dias** | os participantes | na madrugada, 3 dias antes do fim |
+| **Marco atingido** | os participantes | na madrugada seguinte |
+| **Meta atingida** / **Super Meta atingida** (antes do prazo) | os participantes e quem criou | na madrugada seguinte |
+| **Meta encerrada**, com o resultado e o reconhecimento | os participantes e quem criou | quando o resultado é congelado |
+| **Meta atrás do ritmo** | **só quem criou e os gestores** | na madrugada, no máximo 1 vez por semana |
+
+> O "atrás do ritmo" não vai para a equipe de propósito: avisar todo mundo que
+> está atrás desanima mais do que ajuda. Quem cria e quem gere decide o que
+> fazer.
+>
+> As metas de **ocupação e horas ociosas da cadeira** (medidas pela conta do
+> Planejamento Anual) não recebem "atrás do ritmo" nem "atingida antes do
+> prazo": o banco não mede a cadeira durante a meta. Os outros avisos valem.
 
 #### O que dá para medir (indicadores)
 

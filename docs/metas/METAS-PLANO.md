@@ -4,6 +4,7 @@
 *✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318).*
 *✅ **M2 entregue** em 23/10/2026 (core 0.344.0, migração 0319, decisões N1–N7 da §9b). 0318 e 0319 aplicadas no treino e na produção (24/10/2026).*
 *✅ **M3 entregue** em 24/10/2026 (core 0.345.0, migração 0320, decisões O1–O7 da §9c). 0320 aplicada no treino e na produção (24/10/2026).*
+*✅ **M4 entregue** em 24/10/2026 (core 0.346.0, migração 0321, decisões Q1–Q5 da §9d, aprovadas como propostas). 0321 aplicada no treino; **falta a produção**.*
 *Pedido de origem: mensagem do dono de 23/10/2026 ("Módulo de Metas/campanhas
 com a metodologia de metas SMART"). Já estava previsto no `docs/BACKLOG.md`
 (FASE 2: "Módulo de Metas/Objetivos/Combinados").*
@@ -423,6 +424,55 @@ Cada etapa vai ao ar sozinha e já serve para uso real.
 | O5 | Desconto médio. | **Ponderado pelo valor**: desconto total ÷ valor de tabela das vendas fechadas no período. Meta de reduzir |
 | O6 | Metas financeiras da M3 (margens, ponto de equilíbrio, recebimento em dia). | Entram na D3: quem não vê o financeiro vê só o percentual da meta |
 | O7 | Certificação e relatos. | Certificação conta **certificados emitidos** (não "% da equipe certificada", que dependeria de saber quem deveria estar). Relatos: a tela avisa, como na certificação, que meta alta de relatos mede conversa, não qualidade |
+
+## 9d. Plano da etapa M4 — engajamento (para aprovação, 24/10/2026)
+
+Quatro entregas, migração **0321**:
+
+**1. Avisos no sino** — pela porta do banco (como todo aviso do sistema, 0316):
+a tela nunca grava aviso. Cada aviso sai **uma vez só** (um registro de "já
+avisado" por meta e por evento), e **nunca mostra valor em R$** — só o
+percentual (D3).
+
+| Evento | Quem recebe | Quando |
+|---|---|---|
+| Meta publicada | os participantes | na hora da publicação |
+| Meta começou (a que foi publicada "A iniciar") | os participantes | na madrugada do dia do início |
+| Faltam 3 dias para o fim | os participantes | na madrugada, 3 dias antes |
+| Meta atingida antes do prazo / Super Meta atingida | os participantes e quem criou | na madrugada seguinte |
+| Marco intermediário atingido | os participantes | na madrugada seguinte |
+| Meta encerrada, com o resultado | os participantes e quem criou | quando o resultado é congelado |
+| Ritmo vermelho | **só quem criou e os gestores** (não a equipe) | na madrugada, no máximo 1 vez por semana |
+
+**2. Modelos prontos** — o assistente abre com "Começar do zero" ou um
+modelo, que já preenche indicador, recorte, direção, periodicidade e
+sugestões de texto do SMART. O **alvo sugerido é a linha de base + 10%**
+(o limite do "realista"); quem cria ajusta. Modelos iniciais: Mês do Riso+ ·
+Avaliações do mês · Reduzir faltas · Ortodontia no trimestre ·
+Inadimplência abaixo do limite · Ocupação da cadeira · Novos clientes ·
+Ticket médio.
+
+**3. Campeonato entre unidades** — em meta da rede ou de várias unidades, a
+ficha mostra o **pódio** e a posição de cada unidade, pelo **% do alvo de
+cada unidade** (assim a unidade pequena compete com a grande — D2). No
+Início, o cartão diz "Sua unidade: 3º de 12" e, na meta individual, "Você:
+2º de 8".
+
+**4. Recompensa e celebração** — dois campos opcionais de texto:
+**reconhecimento da meta** e **da Super Meta** ("jantar da equipe", "folga
+no aniversário"). Aparecem na ficha e no cartão. **Nada vai ao Financeiro**
+(como no Indica). Meta atingida ganha o selo de troféu no Início dos
+participantes por 7 dias depois do fim.
+
+**Decisões da M4 (propostas):**
+
+| # | Pergunta | Proposta |
+|---|---|---|
+| Q1 | Os avisos da tabela acima, com estes destinatários. | Sim. O ritmo vermelho vai só para quem criou e os gestores: avisar a equipe toda que está atrás desanima mais do que ajuda |
+| Q2 | Meta da cadeira (medida no código) entra nos avisos de ritmo e "atingida antes do prazo"? | **Não** nos dois (o banco não mede a cadeira); entra em publicada, começou, 3 dias e encerrada |
+| Q3 | Modelos ficam no código ou o Admin edita? | **No código** nesta etapa (como os indicadores); se quiser editar pela tela, vira uma etapa depois |
+| Q4 | Ranking entre unidades sempre visível em meta de várias unidades? | **Sim por padrão**, com uma opção na meta para desligar ("não mostrar ranking") |
+| Q5 | Recompensa em dinheiro vai para o Financeiro ou a folha? | **Não**: é só texto descritivo. Pagamento de prêmio continua fora do sistema (como decidido no Indica) |
 
 ## 10. Achados de passagem (registrados no `docs/BACKLOG.md` como AP69 e AP70)
 

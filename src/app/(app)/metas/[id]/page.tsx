@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { Lock, Target } from "lucide-react";
+import { Lock, Target, Trophy } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatBrDateTime, formatIsoDateBr, todayInBrazil } from "@/lib/dates";
@@ -8,6 +8,7 @@ import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { BarraDaMeta } from "@/components/metas/barra-da-meta";
 import { GraficoDaMeta } from "@/components/metas/grafico-da-meta";
+import { PodioDaMeta } from "@/components/metas/podio";
 import { canViewMetas, podeEditarMeta } from "@/lib/metas/access";
 import {
   lerAlvos,
@@ -35,7 +36,6 @@ import {
   MODO_LABEL,
   SITUACAO_COR,
   SITUACAO_LABEL,
-  alvoDoSujeito,
   formatarPct,
   formatarValor,
   fraseSmart,
@@ -43,10 +43,11 @@ import {
   ondeDaMeta,
   percentualDaMedida,
   periodoCorrente,
+  posicao,
   valorDe,
   type Meta,
 } from "@/lib/metas/regras";
-import { percentuaisDasPessoas, resumirMeta, serieDoGrafico } from "@/lib/metas/resumo";
+import { percentuaisDasPessoas, percentuaisDasUnidades, resumirMeta, serieDoGrafico } from "@/lib/metas/resumo";
 import { AcoesDaMeta } from "./acoes";
 
 export const metadata: Metadata = { title: "Meta — Metas" };
@@ -146,6 +147,26 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
         )
       : [];
   const unidadesDaMeta = foto && foto.n_clinics > 1 ? foto.by_clinic : [];
+  // M4 (Q4): o campeonato — posição pelo % do alvo de cada unidade.
+  const ranking = meta.show_ranking !== false;
+  const linhasDasUnidades =
+    foto && unidadesDaMeta.length > 0
+      ? percentuaisDasUnidades(meta, foto, meusAlvos).map((x) => ({ u: x.medida, alvo: x.alvo, pct: x.pct }))
+      : [];
+  const listaDasUnidades = linhasDasUnidades.map((x) => ({ id: x.u.id, pct: x.pct }));
+  const unidadesOrdenadas = linhasDasUnidades
+    .map((x) => ({ ...x, lugar: posicao(listaDasUnidades, x.u.id, resumo.limite)?.lugar ?? null }))
+    .sort((a, b) =>
+      ranking
+        ? (a.lugar ?? 9999) - (b.lugar ?? 9999)
+        : (nomes.get(a.u.id) ?? "").localeCompare(nomes.get(b.u.id) ?? "", "pt-BR")
+    );
+  const listaDasPessoas = pessoas.map((p) => ({ id: p.id, pct: p.pct }));
+  const lugarDaPessoa = (id: string) => posicao(listaDasPessoas, id, resumo.limite)?.lugar ?? null;
+  const recompensas = [
+    meta.reward_text ? { t: "Ao atingir a meta", c: meta.reward_text } : null,
+    meta.stretch_reward_text ? { t: "Ao atingir a Super Meta", c: meta.stretch_reward_text } : null,
+  ].filter((x): x is { t: string; c: string } => x !== null);
   const marcosLidos = lida?.medicao?.milestones ?? [];
 
   return (
@@ -169,6 +190,19 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
         <p className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
           <strong>{s === "paused" ? "Pausada" : "Cancelada"}:</strong> {meta.status_reason}
         </p>
+      )}
+
+      {recompensas.length > 0 && s !== "cancelled" && (
+        <div className="flex flex-wrap items-start gap-3 rounded-xl border border-amber-400/50 bg-amber-400/5 p-3 text-sm">
+          <Trophy className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-300" aria-hidden />
+          <div className="min-w-0 space-y-0.5">
+            {recompensas.map((r) => (
+              <p key={r.t}>
+                <span className="text-muted-foreground">{r.t}:</span> <strong>{r.c}</strong>
+              </p>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ------------------------------------------------ o realizado */}
@@ -341,12 +375,13 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
             <p className="text-sm text-amber-700 dark:text-amber-300">{participantes.erro}</p>
           ) : pessoas.length > 0 ? (
             <ol className="space-y-2">
-              {pessoas.map((p, i) => {
+              {[...pessoas].sort((a, b) => (lugarDaPessoa(a.id) ?? 9999) - (lugarDaPessoa(b.id) ?? 9999)).map((p) => {
+                const lugar = lugarDaPessoa(p.id);
                 const papeis = participantes.lista.find((x) => x.user_id === p.id)?.roles ?? [];
                 const temAlvo = meta.target_mode !== "collective";
                 return (
                   <li key={p.id} className="grid items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[2rem_1fr_10rem_12rem]">
-                    <span className="text-xs text-muted-foreground tabular-nums">{i + 1}º</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{ranking && lugar != null ? `${lugar}º` : ""}</span>
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{nomeDaPessoa.get(p.id) ?? "—"}</span>
                       <span className="block truncate text-xs text-muted-foreground">
@@ -384,20 +419,18 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
       {/* ------------------------------------------------ unidades (D2) */}
       {unidadesDaMeta.length > 0 && (
         <section className="space-y-3 rounded-xl border bg-card p-5 shadow-sm">
-          <h2 className="font-semibold">Por unidade</h2>
+          <h2 className="font-semibold">{ranking ? "Campeonato entre unidades" : "Por unidade"}</h2>
+          {ranking && (
+            <PodioDaMeta
+              itens={unidadesOrdenadas
+                .filter((x) => x.lugar != null)
+                .map((x) => ({ id: x.u.id, nome: nomes.get(x.u.id) ?? "Unidade", pct: x.pct, lugar: x.lugar as number }))}
+            />
+          )}
           <ul className="space-y-2">
-            {[...unidadesDaMeta]
-              .map((u) => {
-                const alvo = alvoDoSujeito(meta, "clinic", u.id, foto?.n_clinics ?? 1, meusAlvos);
-                return {
-                  u,
-                  alvo,
-                  pct: percentualDaMedida(u, meta.direction, alvo, resumo.limite ? null : meta.baseline_value, resumo.limite),
-                };
-              })
-              .sort((a, b) => (resumo.limite ? -1 : 1) * ((b.pct ?? -1) - (a.pct ?? -1)))
-              .map(({ u, alvo, pct }) => (
-                <li key={u.id} className="grid items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[1fr_12rem_12rem]">
+            {unidadesOrdenadas.map(({ u, alvo, pct, lugar }) => (
+                <li key={u.id} className="grid items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[2rem_1fr_12rem_12rem]">
+                  <span className="text-xs text-muted-foreground tabular-nums">{ranking && lugar != null ? `${lugar}º` : ""}</span>
                   <span className="truncate">{nomes.get(u.id) ?? "Unidade"}</span>
                   <span className="text-xs tabular-nums text-muted-foreground">
                     {u.pct !== undefined ? "" : `${formatarValor(unidade, valorDe(u))} de ${formatarValor(unidade, alvo)}`}
@@ -415,7 +448,8 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
           </ul>
           <p className="text-xs text-muted-foreground">
             Unidade sem nenhum registro no período não aparece aqui.
-            {resumo.limite ? " No limite, o percentual é o quanto dele cada unidade já usou." : ""}
+            {ranking ? " A posição é pelo percentual do alvo de cada unidade." : ""}
+            {resumo.limite ? " No limite, o percentual é o quanto dele cada unidade já usou — quem usou menos fica na frente." : ""}
           </p>
         </section>
       )}
@@ -536,6 +570,11 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
                 <p className="whitespace-pre-line">
                   <span className="text-muted-foreground">Por que agora:</span> {meta.relevance_text ?? "—"}
                 </p>
+                {recompensas.map((r) => (
+                  <p key={r.t}>
+                    <span className="text-muted-foreground">Reconhecimento {r.t.toLowerCase()}:</span> {r.c}
+                  </p>
+                ))}
               </>
             ),
           },

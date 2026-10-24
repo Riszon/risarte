@@ -45,6 +45,9 @@ export type DadosDaMeta = {
   periodicity: "whole" | "monthly";
   starts_on: string;
   ends_on: string;
+  reward_text: string;
+  stretch_reward_text: string;
+  show_ranking: boolean;
   rules: RegraDeParticipante[];
   targets: { subject_kind: "user" | "clinic"; subject_id: string; target_value: number }[];
   milestones: { label: string; indicator: string; due_on: string; target_value: number }[];
@@ -88,6 +91,9 @@ function normalizar(d: DadosDaMeta): DadosDaMeta {
     periodicity: d.periodicity === "monthly" ? "monthly" : "whole",
     starts_on: ISO.test(d.starts_on) ? d.starts_on : "",
     ends_on: ISO.test(d.ends_on) ? d.ends_on : "",
+    reward_text: texto(d.reward_text, 300),
+    stretch_reward_text: texto(d.stretch_reward_text, 300),
+    show_ranking: d.show_ranking !== false,
     rules: (d.rules ?? []).filter(
       (r) => r.kind === "all" || (r.kind === "role" && r.role) || (r.kind === "user" && UUID.test(r.user_id))
     ),

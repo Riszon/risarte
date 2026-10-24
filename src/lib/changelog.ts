@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.346.0",
+    data: "2026-10-24",
+    migracao: "0321",
+    titulo: "Metas: avisos no sino, modelos prontos, campeonato entre unidades e reconhecimento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "As metas avisam no sino: nova meta, começou, faltam 3 dias, marco atingido, meta e Super Meta atingidas e o resultado no fim. O \"atrás do ritmo\" vai só para quem criou e para os gestores. Nenhum aviso mostra valor em R$.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Nova meta pode começar de um modelo pronto (Mês do Riso+, Avaliações do mês, Reduzir faltas, Ortodontia no trimestre e outros), e o passo M sugere o alvo pelo histórico (+10%).",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Campeonato entre unidades: a ficha da meta de várias unidades mostra o pódio e a posição de cada uma pelo percentual do próprio alvo; no Início aparece \"Sua unidade: 3º de 12\" e, na meta individual, \"Você: 2º de 8\". Dá para desligar o ranking na meta.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A meta pode descrever o reconhecimento combinado (meta e Super Meta). Ele aparece na ficha e no cartão; meta atingida ganha o selo de troféu no Início por 7 dias. Nada vai ao Financeiro.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+    ],
+  },
+  {
     versao: "0.345.0",
     data: "2026-10-24",
     migracao: "0320",

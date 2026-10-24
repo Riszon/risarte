@@ -64,6 +64,11 @@ export type Meta = {
   periodicity: Periodicidade;
   starts_on: string;
   ends_on: string;
+  /** M4 (Q5): reconhecimento combinado — texto; nada vai ao Financeiro. */
+  reward_text: string | null;
+  stretch_reward_text: string | null;
+  /** M4 (Q4): mostrar o ranking entre unidades/pessoas. */
+  show_ranking: boolean;
   status: SituacaoMeta;
   outcome: Desfecho | null;
   status_reason: string | null;
@@ -75,7 +80,7 @@ export type Meta = {
 };
 
 export const CAMPOS_DA_META =
-  "id, code, name, indicator, filters, scope, clinic_ids, how_text, direction, target_mode, target_value, individual_rule, individual_value, stretch_value, baseline_value, baseline_from, baseline_to, resources_text, attainable_note, strategic_objective, relevance_text, periodicity, starts_on, ends_on, status, outcome, status_reason, published_at, finished_at, cancelled_at, created_by, created_at";
+  "id, code, name, indicator, filters, scope, clinic_ids, how_text, direction, target_mode, target_value, individual_rule, individual_value, stretch_value, baseline_value, baseline_from, baseline_to, resources_text, attainable_note, strategic_objective, relevance_text, periodicity, starts_on, ends_on, reward_text, stretch_reward_text, show_ranking, status, outcome, status_reason, published_at, finished_at, cancelled_at, created_by, created_at";
 
 /** Uma medida. `pct` no lugar de `num/den` = valor em R$ escondido (D3). */
 export type Medida = { num?: number | null; den?: number | null; pct?: number | null };
@@ -416,6 +421,23 @@ export function alvoDoSujeito(
   }
   if (n > 0 && meta.target_value != null) return meta.target_value / n;
   return null;
+}
+
+/**
+ * M4 (Q4): a posição de alguém numa lista de percentuais — "3º de 12".
+ * Empate divide a posição (dois em 1º, o seguinte é 3º). No LIMITE, menos é
+ * melhor. Sem percentual (sem dado) fica no fim.
+ */
+export function posicao(
+  lista: { id: string; pct: number | null }[],
+  id: string,
+  limite = false
+): { lugar: number; de: number } | null {
+  const minha = lista.find((x) => x.id === id);
+  if (!minha || minha.pct == null) return null;
+  const melhor = (a: number, b: number) => (limite ? a < b : a > b);
+  const acima = lista.filter((x) => x.pct != null && melhor(x.pct, minha.pct as number)).length;
+  return { lugar: acima + 1, de: lista.length };
 }
 
 export type Farol = "verde" | "amarelo" | "vermelho" | "neutro";

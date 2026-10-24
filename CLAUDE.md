@@ -390,7 +390,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**23/10/2026 — PC Administrador (core 0.342.0 → 0.344.0; migrações 0318 e 0319)**
+**23–24/10/2026 — PC Administrador (core 0.342.0 → 0.346.0; migrações 0318 a 0321)**
 
 - **Módulo de Metas SMART — etapa M1** (pedido do dono; plano e decisões
   D1–D9 aprovados: `docs/metas/METAS-PLANO.md`, com o catálogo de 45
@@ -420,7 +420,17 @@ Syncthing se comportarem de forma estranha.**
   porta `_dre_lines_raw` na 0320. **0320 APLICADA NA PRODUÇÃO em 24/10/2026**
   (conferido de fora, sem login: as funções novas existem e recusam).
 
-**Pendências:** publicar o código da M3 (push); o dono conferir a
+- **Etapa M4 (0321, core 0.346.0, 24/10/2026)** — engajamento (plano §9d,
+  Q1–Q5 como propostas). ⚠️ **Aviso de meta nasce pela porta do banco**
+  (`_goal_notify`, uma vez por meta/evento em `goal_notices`; nunca com R$);
+  "atrás do ritmo" só para quem criou e os gestores. Modelos prontos no código
+  (`modelos.ts`), alvo sugerido ±10%, campeonato pelo % do alvo
+  (`posicao` + `percentuaisDasUnidades`, uma conta para ficha e Início),
+  recompensa só texto. **0321 aplicada SÓ no treino** — lá a meta MT-00032 do
+  dono já gerou 11 avisos "Nova meta". Não visto na tela: pódio com dados e
+  troféu (o treino não tem meta para isso).
+
+**Pendências:** push da M4 e a **0321 na produção**; o dono conferir a
 inadimplência e a DRE na tela do Financeiro da produção (as duas ganharam
 porta: 0319 e 0320).
 

@@ -244,7 +244,7 @@ export default async function HomePage() {
       {minhaEquipe && <EquipeDaCertificacao grupos={minhaEquipe} />}
 
       {/* 0318: as metas em que a pessoa participa, com a barra dela. */}
-      {!portal && canViewMetas(session) && <MinhasMetasNoInicio userId={session.userId} />}
+      {!portal && canViewMetas(session) && <MinhasMetasNoInicio userId={session.userId} clinicId={session.activeClinic?.id ?? null} />}
 
       {/* 0276: AS UNIDADES AINDA FECHADAS, e por quê. Sem isto a unidade
           simplesmente some da lista, e a pessoa conclui que perdeu o acesso

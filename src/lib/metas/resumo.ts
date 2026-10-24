@@ -98,6 +98,27 @@ export function percentuaisDasPessoas(
   });
 }
 
+/**
+ * O percentual de cada UNIDADE da meta, pelo alvo dela (D2). Uma conta só,
+ * para a ficha (campeonato) e o Início ("Sua unidade: 3º de 12").
+ */
+export function percentuaisDasUnidades(
+  meta: Meta,
+  foto: Fotografia,
+  alvos: Alvo[]
+): { id: string; pct: number | null; alvo: number | null; medida: Fotografia["by_clinic"][number] }[] {
+  const limite = ehLimite(meta);
+  return foto.by_clinic.map((u) => {
+    const alvo = alvoDoSujeito(meta, "clinic", u.id, foto.n_clinics, alvos);
+    return {
+      id: u.id,
+      alvo,
+      pct: percentualDaMedida(u, meta.direction, alvo, limite ? null : meta.baseline_value, limite),
+      medida: u,
+    };
+  });
+}
+
 export function resumirMeta(
   meta: Meta,
   medicao: Medicao | null,

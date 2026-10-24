@@ -1,6 +1,22 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/10/2026 · Versão do sistema: **0.345.0** · Última migração: **0320** (0318, 0319 e 0320 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 24/10/2026 · Versão do sistema: **0.346.0** · Última migração: **0321** (0321 só no treino; 0318, 0319 e 0320 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.346.0 / 0321 — METAS SMART, ETAPA M4 (24/10/2026)
+>
+> Plano §9d (Q1–Q5). ⚠️ **AVISO DE META NASCE PELA PORTA DO BANCO**
+> (`_goal_notify`, padrão da 0316): a tela nunca grava em `notifications`;
+> `goal_notices` (fora da auditoria) garante uma vez por (meta, evento,
+> chave). A rotina da madrugada (`goals_daily_run` → `_goals_daily_notices`)
+> manda os avisos; "publicada" sai de `goal_publish`. Nenhum aviso com R$
+> (D3). Metas `in_app` (cadeira) não têm "atrás do ritmo" nem "atingida antes
+> do prazo" (Q2). **Modelos no código** (`src/lib/metas/modelos.ts`, régua em
+> `metas.test.ts` contra o catálogo). Alvo sugerido = base ±10%
+> (`alvoSugerido`). Ranking pelo % do alvo de cada um (`posicao`, empate
+> divide o lugar; no limite, menos é melhor) — o % por unidade mora em
+> `percentuaisDasUnidades`, usado pela ficha E pelo Início. Recompensa é texto
+> (Q5). `my_goal_ids` devolve a finalizada atingida por 7 dias (troféu no
+> Início).
 
 > ## 🎯 0.345.0 / 0320 — METAS SMART, ETAPA M3 (24/10/2026)
 >

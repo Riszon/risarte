@@ -79,6 +79,9 @@ export async function dadosParaEditar(db: Db, meta: Meta) {
     periodicity: meta.periodicity,
     starts_on: meta.starts_on,
     ends_on: meta.ends_on,
+    reward_text: meta.reward_text ?? "",
+    stretch_reward_text: meta.stretch_reward_text ?? "",
+    show_ranking: meta.show_ranking !== false,
     rules,
     targets,
     milestones: (marcos.data ?? []).map((m) => ({

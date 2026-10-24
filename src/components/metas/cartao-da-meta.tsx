@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Lock, Target } from "lucide-react";
+import { Gift, Lock, Target, Trophy } from "lucide-react";
 import { formatIsoDateBr } from "@/lib/dates";
 import {
   DESFECHO_LABEL,
@@ -21,6 +21,7 @@ export function CartaoDaMeta({
   onde,
   compacto = false,
   minha = null,
+  posicoes = null,
 }: {
   meta: Meta;
   resumo: ResumoDaMeta;
@@ -29,11 +30,15 @@ export function CartaoDaMeta({
   compacto?: boolean;
   /** Meta individual no Início: a barra da própria pessoa. */
   minha?: { pct: number | null; valor: number | null; alvo: number | null } | null;
+  /** M4 (Q4): "Sua unidade: 3º de 12" e "Você: 2º de 8" — só com o ranking ligado. */
+  posicoes?: { unidade: { lugar: number; de: number } | null; voce: { lugar: number; de: number } | null } | null;
 }) {
   const ind = resumo.indicador;
   const unidade = ind?.unidade ?? "count";
   const s = resumo.situacao;
   const medivel = s === "active" || s === "paused" || s === "closing" || s === "finished";
+  const atingida = s === "finished" && (meta.outcome === "achieved" || meta.outcome === "stretch");
+  const recompensa = meta.outcome === "stretch" && meta.stretch_reward_text ? meta.stretch_reward_text : meta.reward_text;
 
   return (
     <Link
@@ -47,9 +52,15 @@ export function CartaoDaMeta({
             {ind?.rotulo ?? meta.indicator} · {onde}
           </p>
         </div>
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${SITUACAO_COR[s]}`}>
-          {SITUACAO_LABEL[s]}
-        </span>
+        {atingida ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+            <Trophy className="size-3.5" aria-hidden /> {DESFECHO_LABEL[meta.outcome as "achieved" | "stretch"]}
+          </span>
+        ) : (
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${SITUACAO_COR[s]}`}>
+            {SITUACAO_LABEL[s]}
+          </span>
+        )}
       </div>
 
       {medivel ? (
@@ -104,6 +115,26 @@ export function CartaoDaMeta({
                 <BarraDaMeta pct={minha.pct} tamanho="sm" farol={(minha.pct ?? 0) >= 100 ? "verde" : "neutro"} />
               </div>
             )}
+            {posicoes && (posicoes.unidade || posicoes.voce) && (
+              <p className="flex flex-wrap gap-x-3 text-xs">
+                {posicoes.unidade && (
+                  <span>
+                    <span className="text-muted-foreground">Sua unidade:</span>{" "}
+                    <strong className="tabular-nums">
+                      {posicoes.unidade.lugar}º de {posicoes.unidade.de}
+                    </strong>
+                  </span>
+                )}
+                {posicoes.voce && (
+                  <span>
+                    <span className="text-muted-foreground">Você:</span>{" "}
+                    <strong className="tabular-nums">
+                      {posicoes.voce.lugar}º de {posicoes.voce.de}
+                    </strong>
+                  </span>
+                )}
+              </p>
+            )}
             {!compacto && s === "active" && (
               <p className="text-xs">
                 <span className="font-medium">{(resumo.limite ? FAROL_LABEL_LIMITE : FAROL_LABEL)[resumo.farol]}</span>
@@ -122,7 +153,7 @@ export function CartaoDaMeta({
                 )}
               </p>
             )}
-            {s === "finished" && meta.outcome && (
+            {s === "finished" && meta.outcome && !atingida && (
               <p className="inline-flex items-center gap-1 text-xs font-medium">
                 <Target className="size-3.5" aria-hidden /> {DESFECHO_LABEL[meta.outcome]}
               </p>
@@ -138,6 +169,15 @@ export function CartaoDaMeta({
               : meta.status_reason
                 ? `Motivo: ${meta.status_reason}`
                 : ""}
+        </p>
+      )}
+
+      {recompensa && s !== "cancelled" && (
+        <p className="inline-flex min-w-0 items-center gap-1 text-xs">
+          <Gift className="size-3.5 shrink-0 text-amber-600 dark:text-amber-300" aria-hidden />
+          <span className="truncate">
+            <span className="text-muted-foreground">{atingida ? "Conquistado:" : "Reconhecimento:"}</span> {recompensa}
+          </span>
         </p>
       )}
 

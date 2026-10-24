@@ -13,11 +13,13 @@ import {
   formatarValor,
   fraseSmart,
   janelaAtual,
+  OBJETIVOS_ESTRATEGICOS,
   paraBanco,
   percentual,
   percentualDaMedida,
   periodoCorrente,
   periodosMensais,
+  posicao,
   projecao,
   resolverParticipantes,
   seloAtingivel,
@@ -26,6 +28,7 @@ import {
 } from "@/lib/metas/regras";
 import type { Meta, Medicao } from "@/lib/metas/regras";
 import { resumirMeta, serieDoGrafico } from "@/lib/metas/resumo";
+import { MODELOS_DE_META, alvoSugerido, fimDoModelo } from "@/lib/metas/modelos";
 
 describe("valor de uma medida (espelho de _goal_value)", () => {
   it("soma: o número", () => expect(valorDe({ num: 12, den: null })).toBe(12));
@@ -278,7 +281,8 @@ function metaDe(over: Partial<Meta>): Meta {
     how_text: "x", direction: "increase", target_mode: "collective", target_value: 10, individual_rule: null,
     individual_value: null, stretch_value: null, baseline_value: null, baseline_from: null, baseline_to: null,
     resources_text: "x", attainable_note: null, strategic_objective: "growth", relevance_text: "x",
-    periodicity: "whole", starts_on: "2026-11-01", ends_on: "2026-11-30", status: "active", outcome: null,
+    periodicity: "whole", starts_on: "2026-11-01", ends_on: "2026-11-30", reward_text: null, stretch_reward_text: null,
+    show_ranking: true, status: "active", outcome: null,
     status_reason: null, published_at: null, finished_at: null, cancelled_at: null, created_by: "a", created_at: "",
     ...over,
   };
@@ -371,5 +375,83 @@ describe("M3 — horas da cadeira e limites", () => {
     expect(indicadorDe("chair_occupancy")?.noApp).toBe(true);
     expect(indicadorDe("chair_idle_hours")?.noApp).toBe(true);
     expect(indicadorDe("net_margin")?.noApp).toBeFalsy();
+  });
+});
+
+// ============================================================ ETAPA M4 (0321)
+
+describe("M4 — posição no ranking (Q4)", () => {
+  const lista = [
+    { id: "a", pct: 120 },
+    { id: "b", pct: 80 },
+    { id: "c", pct: 120 },
+    { id: "d", pct: null },
+    { id: "e", pct: 50 },
+  ];
+  it("empate divide o lugar; o seguinte pula", () => {
+    expect(posicao(lista, "a")).toEqual({ lugar: 1, de: 5 });
+    expect(posicao(lista, "c")).toEqual({ lugar: 1, de: 5 });
+    expect(posicao(lista, "b")).toEqual({ lugar: 3, de: 5 });
+    expect(posicao(lista, "e")).toEqual({ lugar: 4, de: 5 });
+  });
+  it("sem percentual (sem dado) não tem posição — e não empurra ninguém", () => {
+    expect(posicao(lista, "d")).toBeNull();
+    expect(posicao(lista, "x")).toBeNull();
+  });
+  it("no LIMITE, quem usou menos fica na frente", () => {
+    expect(posicao(lista, "e", true)).toEqual({ lugar: 1, de: 5 });
+    expect(posicao(lista, "a", true)).toEqual({ lugar: 3, de: 5 }); // empata com "c"
+  });
+});
+
+describe("M4 — alvo sugerido (+10% da base)", () => {
+  it("aumentar: +10%, arredondado para cima", () => {
+    expect(alvoSugerido("increase", 40, "count")).toBe(44);
+    expect(alvoSugerido("increase", 41, "count")).toBe(46); // 45,1 → 46
+    expect(alvoSugerido("increase", 10, "count")).toBe(11); // sem erro de vírgula: 11, não 12
+  });
+  it("reduzir: −10%, arredondado para baixo", () => {
+    expect(alvoSugerido("decrease", 15, "percent")).toBe(13.5);
+    expect(alvoSugerido("decrease", 9, "count")).toBe(8); // 8,1 → 8
+  });
+  it("R$ em reais inteiros (centavos no banco) e horas inteiras (minutos)", () => {
+    expect(alvoSugerido("increase", 1_234_567, "brl")).toBe(1_358_100);
+    expect(alvoSugerido("increase", 600, "hours")).toBe(660);
+  });
+  it("sem base, ou base zero, não sugere — inventar seria pior", () => {
+    expect(alvoSugerido("increase", null, "count")).toBeNull();
+    expect(alvoSugerido("increase", 0, "count")).toBeNull();
+  });
+});
+
+describe("M4 — modelos prontos (Q3)", () => {
+  it("são os oito do plano, com chave única", () => {
+    expect(MODELOS_DE_META.map((m) => m.nome)).toEqual([
+      "Mês do Riso+",
+      "Avaliações do mês",
+      "Reduzir faltas",
+      "Ortodontia no trimestre",
+      "Inadimplência abaixo do limite",
+      "Ocupação da cadeira",
+      "Novos clientes",
+      "Ticket médio",
+    ]);
+    expect(new Set(MODELOS_DE_META.map((m) => m.chave)).size).toBe(MODELOS_DE_META.length);
+  });
+  it("cada modelo só usa o que o indicador aceita (o banco recusaria o resto)", () => {
+    for (const m of MODELOS_DE_META) {
+      const ind = indicadorDe(m.indicator);
+      expect(ind, m.chave).toBeDefined();
+      expect(ind!.direcoes, m.chave).toContain(m.direction);
+      if (!ind!.porPessoa) expect(m.target_mode, m.chave).toBe("collective");
+      for (const r of Object.keys(m.filtros ?? {})) expect(ind!.recortes, `${m.chave}:${r}`).toContain(r);
+      expect(OBJETIVOS_ESTRATEGICOS.map((o) => o.value), m.chave).toContain(m.strategic_objective);
+      for (const t of [m.how_text, m.resources_text, m.relevance_text]) expect(t.trim().length).toBeGreaterThan(0);
+    }
+  });
+  it("o período do modelo: fim do mês, ou do terceiro mês", () => {
+    expect(fimDoModelo("mes", "2026-10-24")).toBe("2026-10-31");
+    expect(fimDoModelo("trimestre", "2026-10-24")).toBe("2026-12-31");
+    expect(fimDoModelo("trimestre", "2026-12-05")).toBe("2027-02-28");
   });
 });

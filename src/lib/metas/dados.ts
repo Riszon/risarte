@@ -52,6 +52,7 @@ function normalizar(m: Meta): Meta {
     baseline_value: n(m.baseline_value),
     clinic_ids: m.clinic_ids ?? [],
     filters: m.filters ?? {},
+    show_ranking: m.show_ranking ?? true,
   };
 }
 

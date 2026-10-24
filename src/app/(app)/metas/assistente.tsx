@@ -41,6 +41,7 @@ import {
   type ModoDoAlvo,
   type RegraDeParticipante,
 } from "@/lib/metas/regras";
+import { MODELOS_DE_META, alvoSugerido, fimDoModelo, modeloDe } from "@/lib/metas/modelos";
 import {
   buscarCandidatos,
   medirLinhaDeBase,
@@ -103,6 +104,9 @@ type Form = {
   starts_on: string;
   ends_on: string;
   milestones: { label: string; indicator: string; due_on: string; target_value: string }[];
+  reward_text: string;
+  stretch_reward_text: string;
+  show_ranking: boolean;
 };
 
 const PASSOS = [
@@ -193,6 +197,9 @@ function formInicial(inicial: MetaInicial | null, opcoes: OpcoesDoAssistente): F
       starts_on: opcoes.hoje,
       ends_on: ultimoDoMesAtual(opcoes.hoje),
       milestones: [],
+      reward_text: "",
+      stretch_reward_text: "",
+      show_ranking: true,
     };
   }
   const d = inicial.dados;
@@ -225,6 +232,9 @@ function formInicial(inicial: MetaInicial | null, opcoes: OpcoesDoAssistente): F
       due_on: m.due_on,
       target_value: paraTexto(indicadorDe(m.indicator)?.unidade ?? "count", m.target_value),
     })),
+    reward_text: d.reward_text ?? "",
+    stretch_reward_text: d.stretch_reward_text ?? "",
+    show_ranking: d.show_ranking !== false,
   };
 }
 
@@ -269,6 +279,7 @@ export function AssistenteDaMeta({
   const [erroCandidatos, setErroCandidatos] = useState<string | null>(null);
   const [base, setBase] = useState<{ chave: string; base: LinhaDeBase | null; erro: string | null } | null>(null);
   const [buscaPessoa, setBuscaPessoa] = useState("");
+  const [modelo, setModelo] = useState("");
 
   const publicada = Boolean(inicial && inicial.status !== "draft");
   const travado = publicada;
@@ -357,6 +368,44 @@ export function AssistenteDaMeta({
         : null
       : baseDoPeriodo;
   const selo = seloAtingivel(f.direction, alvoComparado, baseComparada);
+  // M4: o alvo sugerido (+10% sobre a base; reduzir, −10%). Só sugere.
+  const campoDoAlvo: "individual_value" | "target_value" =
+    f.target_mode !== "collective" && f.individual_rule === "same" ? "individual_value" : "target_value";
+  const sugestao = ind && !ind.limite ? alvoSugerido(f.direction, baseComparada, unidade) : null;
+  const variasUnidades = clinicasDaMeta.length > 1;
+
+  /** M4: um modelo preenche o formulário; quem cria revisa tudo. */
+  function aplicarModelo(chave: string) {
+    setModelo(chave);
+    const m = modeloDe(chave);
+    const novo = m ? indicadorDe(m.indicator) : undefined;
+    if (!m || !novo) return;
+    setF((x) => ({
+      ...x,
+      name: m.nome,
+      indicator: m.indicator,
+      filtros: {
+        ...filtrosVazios(),
+        specialties: (m.filtros?.specialties ?? []).filter((e) => opcoes.especialidades.includes(e)),
+        appointment_types: m.filtros?.appointment_types ?? [],
+        client_origins: m.filtros?.client_origins ?? [],
+      },
+      direction: novo.direcoes.includes(m.direction) ? m.direction : novo.direcoes[0],
+      target_mode: novo.porPessoa ? m.target_mode : "collective",
+      individual_rule: "same",
+      periodicity: "whole",
+      target_value: "",
+      individual_value: "",
+      stretch_value: "",
+      ajustes: {},
+      how_text: m.how_text,
+      resources_text: m.resources_text,
+      strategic_objective: m.strategic_objective,
+      relevance_text: m.relevance_text,
+      starts_on: opcoes.hoje,
+      ends_on: fimDoModelo(m.duracao, opcoes.hoje),
+    }));
+  }
   const exigeJustificativa = selo.nivel === "muito_acima";
 
   // ----------------------------------------------------------- completude
@@ -456,6 +505,9 @@ export function AssistenteDaMeta({
       periodicity: f.periodicity,
       starts_on: f.starts_on,
       ends_on: f.ends_on,
+      reward_text: f.reward_text,
+      stretch_reward_text: f.stretch_reward_text,
+      show_ranking: f.show_ranking,
       rules: f.rules,
       targets: ajustes,
       milestones: f.milestones
@@ -675,6 +727,28 @@ export function AssistenteDaMeta({
           {/* ------------------------------------------------------------ S */}
           {passo === 0 && (
             <div className="space-y-4">
+              {!inicial && (
+                <div className="space-y-1.5 rounded-lg border border-dashed p-3">
+                  <Label htmlFor="modelo">Começar de um modelo</Label>
+                  <select
+                    id="modelo"
+                    className={selectClass}
+                    value={modelo}
+                    onChange={(e) => (e.target.value ? aplicarModelo(e.target.value) : setModelo(""))}
+                  >
+                    <option value="">Começar do zero</option>
+                    {MODELOS_DE_META.map((m) => (
+                      <option key={m.chave} value={m.chave}>
+                        {m.nome} — {m.resumo}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    O modelo preenche o indicador, o período e os textos. Revise cada passo; o alvo é sugerido no passo M
+                    pelo histórico da unidade.
+                  </p>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="nome">Nome da meta</Label>
                 <Input
@@ -972,6 +1046,20 @@ export function AssistenteDaMeta({
                     )}
                   </div>
 
+                  {sugestao != null && (
+                    <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>
+                        Sugestão pelo histórico: <strong className="text-foreground">{formatarValor(unidade, sugestao)}</strong>{" "}
+                        ({f.direction === "decrease" ? "10% abaixo" : "10% acima"} da linha de base).
+                      </span>
+                      {f[campoDoAlvo].trim() === "" && (
+                        <Button type="button" size="sm" variant="outline" onClick={() => set(campoDoAlvo, paraTexto(unidade, sugestao))}>
+                          Usar a sugestão
+                        </Button>
+                      )}
+                    </p>
+                  )}
+
                   {/* D2: ajuste por unidade */}
                   {f.target_mode !== "individual" && clinicasDaMeta.length > 1 && (
                     <details className="rounded-lg border p-3 text-sm">
@@ -1164,6 +1252,49 @@ export function AssistenteDaMeta({
                   onChange={(e) => set("relevance_text", e.target.value)}
                 />
               </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="recompensa">Reconhecimento ao atingir (opcional)</Label>
+                  <Input
+                    id="recompensa"
+                    value={f.reward_text}
+                    maxLength={300}
+                    placeholder="Ex.: jantar da equipe"
+                    onChange={(e) => set("reward_text", e.target.value)}
+                  />
+                </div>
+                {f.target_mode !== "individual" && !ind?.limite && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recompensa-super">Reconhecimento da Super Meta (opcional)</Label>
+                    <Input
+                      id="recompensa-super"
+                      value={f.stretch_reward_text}
+                      maxLength={300}
+                      placeholder="Ex.: folga no aniversário"
+                      onChange={(e) => set("stretch_reward_text", e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                É só o combinado, por escrito: nada disso vai ao Financeiro nem à folha.
+              </p>
+              {(variasUnidades || f.target_mode !== "collective") && (
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={f.show_ranking}
+                    onChange={(e) => set("show_ranking", e.target.checked)}
+                  />
+                  <span>
+                    Mostrar o ranking {variasUnidades ? "entre as unidades" : "entre os participantes"}
+                    <span className="block text-xs text-muted-foreground">
+                      A posição é pelo percentual do alvo de cada um, para a unidade pequena competir com a grande.
+                    </span>
+                  </span>
+                </label>
+              )}
             </div>
           )}
 
