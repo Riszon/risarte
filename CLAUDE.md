@@ -417,10 +417,12 @@ Syncthing se comportarem de forma estranha.**
   O1–O7). Ocupação e horas ociosas MEDIDAS NO CÓDIGO (a conta do Planejamento
   Anual; o servidor grava o final). ⚠️ Achado: `dre_lines` tinha guarda
   escondida — a receita faturada da M2 congelaria em zero; corrigido com a
-  porta `_dre_lines_raw` na 0320. **0320 só no treino.**
+  porta `_dre_lines_raw` na 0320. **0320 APLICADA NA PRODUÇÃO em 24/10/2026**
+  (conferido de fora, sem login: as funções novas existem e recusam).
 
-**Pendências:** **0320 na produção**; o dono conferir a inadimplência e a DRE
-na tela do Financeiro da produção (as duas ganharam porta: 0319 e 0320).
+**Pendências:** publicar o código da M3 (push); o dono conferir a
+inadimplência e a DRE na tela do Financeiro da produção (as duas ganharam
+porta: 0319 e 0320).
 
 **22/10/2026 (4ª) — PC Administrador (core 0.341.2 → 0.342.0, migração 0317)**
 
