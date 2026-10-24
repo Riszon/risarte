@@ -54,9 +54,10 @@ export default async function MetasPage({
   }
   const naAba = filtradas.filter((m) => abaDa(situacaoEfetiva(m, hoje)) === aba);
   const medir = aba === "ativas" || aba === "pausadas" || aba === "finalizadas";
-  const aMedir = medir ? naAba.slice(0, MEDIR_NO_MAXIMO).map((m) => m.id) : [];
+  const metasAMedir = medir ? naAba.slice(0, MEDIR_NO_MAXIMO) : [];
+  const aMedir = metasAMedir.map((m) => m.id);
   const [medicoes, pausas, alvos] = await Promise.all([
-    medirMetas(db, aMedir),
+    medirMetas(db, metasAMedir),
     lerPausas(db, aMedir),
     lerAlvos(db, aMedir),
   ]);

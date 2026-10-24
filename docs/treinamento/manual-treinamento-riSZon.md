@@ -1242,11 +1242,31 @@ letras do SMART e o **histórico**.
 | Indica +Risos — indicações recebidas / convertidas / novos Embaixadores | Registradas; convertidas pela data do fechamento (a régua do Indica); Embaixadores cadastrados | Quem registrou / converteu / cadastrou |
 | Empresarial — empresas que aderiram | Empresas que entraram em **Fechado (ganho)** no funil, pela unidade principal da empresa | O consultor RisLife |
 | Empresarial — vidas incluídas | Titulares e dependentes incluídos no convênio | A unidade (só coletiva) |
+| Desconto médio concedido (%) | Desconto ÷ valor de tabela das vendas de plano fechadas, ponderado pelo valor. Meta típica: reduzir | O consultor |
+| Vendas canceladas | Vendas de plano e diretas canceladas — meta de **no máximo** | A unidade (só coletiva) |
+| Margem líquida / Margem de contribuição (%) | A mesma conta da DRE / do Ponto de equilíbrio. Várias unidades: ponderado (o lucro de todas ÷ a receita de todas) | A unidade (só coletiva) |
+| Ponto de equilíbrio atingido (%) | Receita líquida ÷ ponto de equilíbrio (100% = empatou); visão contábil ou de caixa. A ficha mostra quanto falta **em R$ e em atendimentos** | A unidade (só coletiva) |
+| Recebimento em dia (%) | Das parcelas que venceram no período, quantas foram pagas até o vencimento | A unidade (só coletiva) |
+| Ocupação da cadeira (%) / Horas ociosas | A **mesma conta do Planejamento Anual**. Horas ociosas é meta de **no máximo** | A unidade (só coletiva) |
+| Tratamentos concluídos | Clientes que entraram na Fase 6 (reavaliação) | A unidade (só coletiva) |
+| Conversão da Jornada | Dos clientes avaliados no período, quantos % já fecharam venda | A unidade (só coletiva) |
+| Clientes reativados | Atendidos no período depois de mais tempo sem atendimento que os "dias sem atendimento" da Administração | A unidade (só coletiva) |
+| Certificações concluídas | Certificados emitidos pelo portão de certificação | A pessoa certificada |
+| Relatos e sugestões enviados | Relatos e sugestões registrados — use para incentivar quem nunca relatou, não para competir | Quem relatou |
 
-Ocupação e tempo ocioso da cadeira, margens e ponto de equilíbrio chegam na
-próxima etapa.
+> **Ocupação e horas ociosas usam a conta do Planejamento Anual.** O número
+> da meta é o mesmo da tela **Agenda → Planejamento anual** no mesmo período.
+> Por isso o resultado final dessas duas é gravado na **primeira vez que a
+> meta é aberta depois do fim do prazo** (até lá ela aparece "apurando"), e
+> elas valem para o período inteiro, não mês a mês. Uma meta da rede inteira
+> com muitas unidades demora um pouco mais para abrir.
 
-**Evidência:** EV-209 e EV-210 (etapa 1); EV-211 e EV-212 (etapa 2).
+> **Ponto de equilíbrio em R$ e em atendimentos.** Em percentual, o ponto de
+> equilíbrio financeiro e o operacional são o mesmo número. A ficha da meta
+> mostra as duas leituras: "faltam R$ 8.400 para empatar" e "faltam 23
+> atendimentos", pela margem média por atendimento do período.
+
+**Evidência:** EV-209 e EV-210 (etapa 1); EV-211 e EV-212 (etapa 2); EV-213 e EV-214 (etapa 3).
 
 ## A barra de cima
 

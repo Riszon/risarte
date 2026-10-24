@@ -9,7 +9,16 @@ import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { BarraDaMeta } from "@/components/metas/barra-da-meta";
 import { GraficoDaMeta } from "@/components/metas/grafico-da-meta";
 import { canViewMetas, podeEditarMeta } from "@/lib/metas/access";
-import { lerAlvos, lerMeta, lerParticipantes, lerPausas, medirMetas, nomesDasUnidades, type MedicaoLida } from "@/lib/metas/dados";
+import {
+  lerAlvos,
+  lerLeituraDoEquilibrio,
+  lerMeta,
+  lerParticipantes,
+  lerPausas,
+  medirMetas,
+  nomesDasUnidades,
+  type MedicaoLida,
+} from "@/lib/metas/dados";
 import { APPOINTMENT_TYPE_LABELS } from "@/lib/appointments";
 import {
   ORIGENS_DA_VENDA,
@@ -79,7 +88,7 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
 
   const hoje = todayInBrazil();
   const [medicoes, pausas, alvos, nomes, participantes, mudancas, marcos] = await Promise.all([
-    meta.status === "draft" ? Promise.resolve(new Map<string, MedicaoLida>()) : medirMetas(db, [id]),
+    meta.status === "draft" ? Promise.resolve(new Map<string, MedicaoLida>()) : medirMetas(db, [meta]),
     lerPausas(db, [id]),
     lerAlvos(db, [id]),
     nomesDasUnidades(db),
@@ -92,7 +101,13 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
       .limit(200),
     db.from("goal_milestones").select("id, label, indicator, due_on, target_value").eq("goal_id", id).order("position").limit(100),
   ]);
-  const { data: planosPpr } = await db.from("ppr_plans").select("id, name").limit(100);
+  const [{ data: planosPpr }, equilibrio] = await Promise.all([
+    db.from("ppr_plans").select("id, name").limit(100),
+    // O1: as duas leituras (R$ e atendimentos) — só para quem vê o financeiro.
+    meta.indicator === "breakeven_reached" && meta.status !== "draft"
+      ? lerLeituraDoEquilibrio(db, id)
+      : Promise.resolve(null),
+  ]);
   const nomesDosPlanos = new Map((planosPpr ?? []).map((p) => [p.id as string, p.name as string]));
   const lida = medicoes.get(id);
   const minhasPausas = pausas.get(id) ?? [];
@@ -227,6 +242,40 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
                 <p className="text-xs text-muted-foreground">
                   Super Meta: {formatarValor(unidade, meta.stretch_value)} ({formatarPct(resumo.pctSuper)} da meta) — o traço dourado marca a meta.
                 </p>
+              )}
+              {equilibrio && equilibrio.ponto != null && (
+                <div className="grid gap-3 rounded-lg bg-muted/40 p-3 text-sm sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Em R$</p>
+                    <p>
+                      Receita líquida de {formatarValor("brl", equilibrio.receita_liquida)} para um ponto de equilíbrio de{" "}
+                      {formatarValor("brl", equilibrio.ponto)}.
+                    </p>
+                    <p className="font-medium">
+                      {equilibrio.receita_liquida >= equilibrio.ponto
+                        ? `Passou o ponto em ${formatarValor("brl", equilibrio.receita_liquida - equilibrio.ponto)}.`
+                        : `Faltam ${formatarValor("brl", equilibrio.ponto - equilibrio.receita_liquida)} para empatar.`}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Em atendimentos</p>
+                    {equilibrio.atendimentos_necessarios != null ? (
+                      <>
+                        <p>
+                          {equilibrio.atendimentos} atendimentos concluídos de {equilibrio.atendimentos_necessarios} necessários
+                          para pagar a estrutura, na margem média por atendimento do período.
+                        </p>
+                        <p className="font-medium">
+                          {equilibrio.atendimentos >= equilibrio.atendimentos_necessarios
+                            ? "A estrutura já está paga."
+                            : `Faltam ${equilibrio.atendimentos_necessarios - equilibrio.atendimentos} atendimentos para empatar.`}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">Sem atendimentos concluídos no período para fazer a conta.</p>
+                    )}
+                  </div>
+                </div>
               )}
               {serie.pontos.length > 1 && (
                 <GraficoDaMeta

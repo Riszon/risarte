@@ -5,12 +5,15 @@ import {
   alvoDoSujeito,
   atingiu,
   baseParaOPeriodo,
+  daBanco,
   diasEntre,
   ehLimite,
   farol,
   fracaoEsperada,
+  formatarValor,
   fraseSmart,
   janelaAtual,
+  paraBanco,
   percentual,
   percentualDaMedida,
   periodoCorrente,
@@ -341,5 +344,32 @@ describe("M2 — fotografia (N1)", () => {
   it("receita da DRE não tem gráfico dia a dia (N3)", () => {
     const s = serieDoGrafico(metaDe({ indicator: "revenue_billed" }), foto({ num: 5 }), { from: "2026-11-01", to: "2026-11-30" }, "2026-11-16", []);
     expect(s.pontos).toEqual([]);
+  });
+});
+
+// ============================================================ ETAPA M3 (0320)
+describe("M3 — horas da cadeira e limites", () => {
+  it("horas: o campo é em horas, o banco em minutos (a conta da cadeira)", () => {
+    expect(paraBanco("hours", 12.5)).toBe(750);
+    expect(daBanco("hours", 750)).toBe(12.5);
+    expect(formatarValor("hours", 750)).toBe("12h30");
+  });
+  it("horas ociosas e vendas canceladas são limites ('no máximo')", () => {
+    expect(ehLimite({ indicator: "chair_idle_hours", direction: "decrease" })).toBe(true);
+    expect(ehLimite({ indicator: "sales_cancelled", direction: "decrease" })).toBe(true);
+    expect(ehLimite({ indicator: "chair_occupancy", direction: "increase" })).toBe(false);
+  });
+  it("a frase das horas ociosas", () => {
+    const f = fraseSmart({
+      indicador: indicadorDe("chair_idle_hours"), direction: "decrease", target_mode: "collective", target_value: 1200,
+      individual_rule: null, individual_value: null, periodicity: "whole", starts_on: "2026-11-01", ends_on: "2026-11-30",
+      onde: "na Unidade Centro",
+    });
+    expect(f).toBe("Ter no máximo 20h de cadeira ociosa na Unidade Centro, de 01/11/2026 a 30/11/2026.");
+  });
+  it("medidos no código não têm marco nem meta mensal (o catálogo marca)", () => {
+    expect(indicadorDe("chair_occupancy")?.noApp).toBe(true);
+    expect(indicadorDe("chair_idle_hours")?.noApp).toBe(true);
+    expect(indicadorDe("net_margin")?.noApp).toBeFalsy();
   });
 });

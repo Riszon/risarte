@@ -58,11 +58,24 @@ export type ChaveIndicador =
   | "indica_conversions"
   | "indica_ambassadors"
   | "empresarial_companies"
-  | "empresarial_lives";
+  | "empresarial_lives"
+  | "discount_avg"
+  | "sales_cancelled"
+  | "net_margin"
+  | "contribution_margin"
+  | "breakeven_reached"
+  | "on_time_payment"
+  | "chair_occupancy"
+  | "chair_idle_hours"
+  | "treatments_completed"
+  | "journey_conversion"
+  | "reactivated_clients"
+  | "certifications"
+  | "reports_sent";
 
 export type TipoIndicador = "sum" | "rate" | "point";
-/** Como o número aparece: centavos (R$), quantidade ou percentual. */
-export type UnidadeIndicador = "brl" | "count" | "percent";
+/** Como o número aparece: centavos (R$), quantidade, percentual ou horas (guardadas em minutos). */
+export type UnidadeIndicador = "brl" | "count" | "percent" | "hours";
 export type Direcao = "increase" | "decrease";
 
 /** Os recortes que a consulta do banco sabe aplicar (`filters` da meta). */
@@ -71,7 +84,8 @@ export type Recorte =
   | "sale_origin"
   | "specialties"
   | "client_origins"
-  | "ppr_plans";
+  | "ppr_plans"
+  | "breakeven_view";
 
 export type GrupoIndicador =
   | "Comercial"
@@ -79,7 +93,8 @@ export type GrupoIndicador =
   | "Agenda e atendimento"
   | "Clínico"
   | "Clientes"
-  | "Programas da Risarte";
+  | "Programas da Risarte"
+  | "Equipe";
 
 export type Indicador = {
   chave: ChaveIndicador;
@@ -97,6 +112,13 @@ export type Indicador = {
   limite?: boolean;
   /** A medição é por período inteiro (DRE): sem gráfico dia a dia (N3). */
   semDiaADia?: boolean;
+  /**
+   * MEDIDO NO CÓDIGO (O2): a conta não existe no banco (ocupação da cadeira =
+   * a do Planejamento Anual). Só período inteiro; o servidor grava o final.
+   */
+  noApp?: boolean;
+  /** Um cuidado que quem configura precisa ler (aparece no passo S). */
+  aviso?: string;
   recortes: Recorte[];
   /** O verbo da frase SMART ("fechar", "realizar"…). */
   verbo: string;
@@ -614,6 +636,236 @@ export const INDICADORES_DE_META: Indicador[] = [
     verbo: "incluir",
     objeto: "vidas no Empresarial",
   },
+  // ===========================================================================
+  // ETAPA M3 (0320) — EFICIÊNCIA
+  // ===========================================================================
+  {
+    chave: "discount_avg",
+    rotulo: "Desconto médio concedido (%)",
+    grupo: "Comercial",
+    ajuda:
+      "Desconto dado ÷ valor de tabela das vendas de plano fechadas no período, ponderado pelo valor (a mesma conta da autorização de desconto). Venda direta não entra. Meta típica: reduzir.",
+    onde: "Comercial → negociação → desconto",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["decrease", "increase"],
+    porPessoa: true,
+    quemConta: "o consultor da negociação",
+    financeiro: false,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "de desconto médio",
+  },
+  {
+    chave: "sales_cancelled",
+    rotulo: "Vendas canceladas",
+    grupo: "Comercial",
+    ajuda:
+      "Vendas de plano e vendas diretas canceladas no período. Meta de NO MÁXIMO: a barra mostra quanto do limite já foi usado.",
+    onde: "Comercial → cancelar venda",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["decrease"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    limite: true,
+    recortes: [],
+    verbo: "ter",
+    objeto: "vendas canceladas",
+  },
+  {
+    chave: "net_margin",
+    rotulo: "Margem líquida (%)",
+    grupo: "Financeiro",
+    ajuda:
+      "Lucro líquido ÷ receita líquida do período — a mesma conta da tela DRE. Com várias unidades, ponderado: o lucro de todas ÷ a receita de todas.",
+    onde: "Financeiro → DRE",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    semDiaADia: true,
+    recortes: [],
+    verbo: "alcançar",
+    objeto: "de margem líquida",
+  },
+  {
+    chave: "contribution_margin",
+    rotulo: "Margem de contribuição (%)",
+    grupo: "Financeiro",
+    ajuda:
+      "Receita líquida menos custos variáveis, ÷ receita líquida — a mesma conta da tela Ponto de equilíbrio. Com várias unidades, ponderado.",
+    onde: "Financeiro → Ponto de equilíbrio",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    semDiaADia: true,
+    recortes: [],
+    verbo: "alcançar",
+    objeto: "de margem de contribuição",
+  },
+  {
+    chave: "breakeven_reached",
+    rotulo: "Ponto de equilíbrio atingido (%)",
+    grupo: "Financeiro",
+    ajuda:
+      "Receita líquida ÷ ponto de equilíbrio do período — 100% é empatar. É o mesmo número em R$ e em atendimentos (O1): a ficha mostra quanto falta das duas formas. Escolha a visão contábil (com depreciação) ou de caixa. Unidade com margem negativa não tem ponto de equilíbrio e fica de fora.",
+    onde: "Financeiro → Ponto de equilíbrio",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    semDiaADia: true,
+    recortes: ["breakeven_view"],
+    verbo: "atingir",
+    objeto: "do ponto de equilíbrio",
+  },
+  {
+    chave: "on_time_payment",
+    rotulo: "Recebimento em dia (%)",
+    grupo: "Financeiro",
+    ajuda:
+      "Das parcelas que venceram no período (até ontem), quantas % foram pagas até o vencimento. O vencimento considera o prazo da adquirente no cartão.",
+    onde: "Financeiro → Recebíveis",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "alcançar",
+    objeto: "de recebimento em dia",
+  },
+  {
+    chave: "chair_occupancy",
+    rotulo: "Ocupação da cadeira (%)",
+    grupo: "Agenda e atendimento",
+    ajuda:
+      "Horas trabalhadas ÷ horas de cadeira dos dias que já passaram — a MESMA conta do Planejamento Anual da agenda (feriados, fechamentos e horários avulsos descontados). O resultado final é gravado na primeira vez que a meta é aberta depois do fim.",
+    onde: "Agenda → Planejamento anual",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    noApp: true,
+    recortes: [],
+    verbo: "alcançar",
+    objeto: "de ocupação da cadeira",
+  },
+  {
+    chave: "chair_idle_hours",
+    rotulo: "Horas ociosas da cadeira",
+    grupo: "Agenda e atendimento",
+    ajuda:
+      "Horas de cadeira que passaram sem atendimento concluído, pela mesma conta do Planejamento Anual. Meta de NO MÁXIMO: a barra mostra quanto do limite de horas já foi usado.",
+    onde: "Agenda → Planejamento anual",
+    tipo: "sum",
+    unidade: "hours",
+    direcoes: ["decrease"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    limite: true,
+    noApp: true,
+    recortes: [],
+    verbo: "ter",
+    objeto: "de cadeira ociosa",
+  },
+  {
+    chave: "treatments_completed",
+    rotulo: "Tratamentos concluídos",
+    grupo: "Clínico",
+    ajuda: "Clientes que entraram na Fase 6 (reavaliação) no período — o tratamento chegou ao fim.",
+    onde: "Jornada → Fase 6",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: [],
+    verbo: "concluir",
+    objeto: "tratamentos",
+  },
+  {
+    chave: "journey_conversion",
+    rotulo: "Conversão da Jornada (avaliação → venda)",
+    grupo: "Clientes",
+    ajuda:
+      "Dos clientes avaliados no período (avaliação concluída), quantos % já fecharam venda de plano. Sobe com o tempo, conforme as vendas desses clientes acontecem.",
+    onde: "Atendimento → avaliação; Comercial → fechamento",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: [],
+    verbo: "alcançar",
+    objeto: "de conversão da Jornada",
+  },
+  {
+    chave: "reactivated_clients",
+    rotulo: "Clientes reativados",
+    grupo: "Clientes",
+    ajuda:
+      "Clientes atendidos no período cujo atendimento anterior foi há mais tempo que os \"dias sem atendimento\" configurados em Administração (hoje, 365 dias). Cliente novo não conta.",
+    onde: "Atendimento → concluir",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: [],
+    verbo: "reativar",
+    objeto: "clientes",
+  },
+  {
+    chave: "certifications",
+    rotulo: "Certificações concluídas",
+    grupo: "Equipe",
+    ajuda: "Certificados emitidos pelo portão de certificação no período (missão cumprida no treino).",
+    onde: "Início → missão de certificação",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "a pessoa certificada",
+    financeiro: false,
+    recortes: [],
+    verbo: "concluir",
+    objeto: "certificações",
+  },
+  {
+    chave: "reports_sent",
+    rotulo: "Relatos e sugestões enviados",
+    grupo: "Equipe",
+    ajuda: "Relatos de problema e sugestões registrados no período, de qualquer tipo.",
+    aviso:
+      "Meta alta de relatos mede conversa, não qualidade: use para incentivar quem nunca relatou (ex.: 1 por pessoa), não para competir.",
+    onde: "Barra de cima → Relatar",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "quem relatou",
+    financeiro: false,
+    recortes: [],
+    verbo: "enviar",
+    objeto: "relatos e sugestões",
+  },
 ];
 
 const POR_CHAVE = new Map(INDICADORES_DE_META.map((i) => [i.chave, i]));
@@ -630,6 +882,7 @@ export const GRUPOS_DE_INDICADOR: GrupoIndicador[] = [
   "Clínico",
   "Clientes",
   "Programas da Risarte",
+  "Equipe",
 ];
 
 /** "Reduzir até" de uma soma de limite se lê "No máximo". */
@@ -644,7 +897,13 @@ export const ROTULO_DO_RECORTE: Record<Recorte, string> = {
   specialties: "Especialidade",
   client_origins: "Origem do cliente",
   ppr_plans: "Plano do Riso+",
+  breakeven_view: "Visão do ponto de equilíbrio",
 };
+
+export const VISOES_DO_EQUILIBRIO = [
+  { value: "accounting", label: "Contábil (com depreciação)" },
+  { value: "cash", label: "Caixa (sem depreciação)" },
+] as const;
 
 export const ORIGENS_DA_VENDA = [
   { value: "plan", label: "Venda de plano de tratamento" },

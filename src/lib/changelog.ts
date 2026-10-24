@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.345.0",
+    data: "2026-10-24",
+    migracao: "0320",
+    titulo: "Metas: margens, ponto de equilíbrio, ocupação da cadeira e mais 9 indicadores",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "13 indicadores novos nas Metas: desconto médio, vendas canceladas, margem líquida e de contribuição, ponto de equilíbrio, recebimento em dia, ocupação e horas ociosas da cadeira, tratamentos concluídos, conversão da Jornada, clientes reativados, certificações e relatos.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A meta de ocupação da cadeira usa a mesma conta do Planejamento Anual: o número da meta é o mesmo da tela da agenda no mesmo período.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na meta de ponto de equilíbrio, a ficha mostra quanto falta para empatar em R$ e em atendimentos.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A meta de receita faturada (DRE) passa a ser medida também pela rotina da madrugada — antes, o resultado final congelaria em zero.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+    ],
+  },
+  {
     versao: "0.344.0",
     data: "2026-10-23",
     migracao: "0319",

@@ -1,6 +1,9 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
-import { isoDateIn } from "@/lib/dates";
+import { isoDateIn, todayInBrazil } from "@/lib/dates";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { indicadorDe } from "./indicadores";
+import { medirCadeira } from "./medicao-no-app";
 import { mensagemDaMeta } from "./erros";
 import { CAMPOS_DA_META, type Alvo, type Medicao, type Meta, type Pausa } from "./regras";
 
@@ -54,17 +57,117 @@ function normalizar(m: Meta): Meta {
 
 export type MedicaoLida = { medicao: Medicao | null; erro: string | null };
 
-export async function medirMetas(db: Db, ids: string[]): Promise<Map<string, MedicaoLida>> {
+const NAO_MEDIU = "Não foi possível medir agora.";
+
+/**
+ * O realizado de cada meta. A porta do banco (`goal_measure`) aplica quem vê
+ * o quê (D3); para o indicador MEDIDO NO CÓDIGO (O2 — a cadeira), o servidor
+ * troca o "ao vivo" pela conta do Planejamento Anual e, passado o prazo,
+ * GRAVA o resultado final (`goal_record_app_final`, só com a chave de
+ * serviço). Chegar aqui já é prova de que a pessoa vê a meta: ela foi lida
+ * pela RLS e a porta respondeu.
+ */
+export async function medirMetas(db: Db, metas: Meta[]): Promise<Map<string, MedicaoLida>> {
+  const hoje = todayInBrazil();
   const pares = await Promise.all(
-    ids.map(async (id) => {
-      const { data, error } = await db.rpc("goal_measure", { p_goal_id: id });
-      const lida: MedicaoLida = error
-        ? { medicao: null, erro: "Não foi possível medir agora." }
-        : { medicao: data as Medicao, erro: null };
-      return [id, lida] as const;
+    metas.map(async (meta): Promise<[string, MedicaoLida]> => {
+      const { data, error } = await db.rpc("goal_measure", { p_goal_id: meta.id });
+      if (error) return [meta.id, { medicao: null, erro: NAO_MEDIU }] as [string, MedicaoLida];
+      const medicao = data as Medicao;
+      const ind = indicadorDe(meta.indicator);
+      if (!ind?.noApp || meta.status === "cancelled" || meta.status === "draft") {
+        return [meta.id, { medicao, erro: null }] as [string, MedicaoLida];
+      }
+      const temFinal = medicao.frozen.some((f) => f.kind === "final");
+      if (temFinal || meta.starts_on > hoje) return [meta.id, { medicao, erro: null }] as [string, MedicaoLida];
+      try {
+        const clinicas = await clinicasDaMeta(meta);
+        const encerrada = meta.ends_on < hoje;
+        const foto = await medirCadeira(
+          ind.chave as "chair_occupancy" | "chair_idle_hours",
+          clinicas,
+          meta.starts_on,
+          encerrada ? meta.ends_on : hoje,
+          hoje
+        );
+        if (!foto) return [meta.id, { medicao, erro: NAO_MEDIU }] as [string, MedicaoLida];
+        if (encerrada) {
+          // O prazo acabou: o servidor grava o resultado UMA vez (O2).
+          const { error: e } = await createAdminClient().rpc("goal_record_app_final", {
+            p_goal_id: meta.id,
+            p_snapshot: foto,
+          });
+          if (e) console.error("metas — gravar o resultado da cadeira:", e.message);
+          return [
+            meta.id,
+            {
+              medicao: {
+                ...medicao,
+                live: null,
+                frozen: [
+                  ...medicao.frozen,
+                  {
+                    kind: "final",
+                    from: meta.starts_on,
+                    to: meta.ends_on,
+                    achieved: null,
+                    stretch: null,
+                    people_achieved: null,
+                    people_total: null,
+                    measured_at: new Date().toISOString(),
+                    snapshot: foto,
+                  },
+                ],
+              },
+              erro: null,
+            },
+          ] as [string, MedicaoLida];
+        }
+        return [meta.id, { medicao: { ...medicao, live: foto }, erro: null }] as [string, MedicaoLida];
+      } catch (e) {
+        console.error("metas — medir a cadeira:", e instanceof Error ? e.message : e);
+        return [meta.id, { medicao, erro: NAO_MEDIU }] as [string, MedicaoLida];
+      }
     })
   );
   return new Map(pares);
+}
+
+/** As unidades da meta (a rede = todas as unidades franqueadas ativas, como no banco). */
+export async function clinicasDaMeta(meta: Pick<Meta, "scope" | "clinic_ids">): Promise<string[]> {
+  if (meta.scope === "clinics") return meta.clinic_ids;
+  const { data, error } = await createAdminClient()
+    .from("clinics")
+    .select("id")
+    .eq("type", "franchise_unit")
+    .eq("is_active", true)
+    .limit(1000);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((c) => c.id as string);
+}
+
+/** As duas leituras do ponto de equilíbrio (O1). `null` = não vê ou não se aplica. */
+export type LeituraDoEquilibrio = {
+  receita_liquida: number;
+  margem_contribuicao: number;
+  custo_fixo: number;
+  ponto: number | null;
+  atendimentos: number;
+  atendimentos_necessarios: number | null;
+};
+
+export async function lerLeituraDoEquilibrio(db: Db, id: string): Promise<LeituraDoEquilibrio | null> {
+  const { data, error } = await db.rpc("goal_breakeven_reading", { p_goal_id: id });
+  if (error || !data) return null;
+  const d = data as Record<string, number | null>;
+  return {
+    receita_liquida: Number(d.receita_liquida ?? 0),
+    margem_contribuicao: Number(d.margem_contribuicao ?? 0),
+    custo_fixo: Number(d.custo_fixo ?? 0),
+    ponto: d.ponto == null ? null : Number(d.ponto),
+    atendimentos: Number(d.atendimentos ?? 0),
+    atendimentos_necessarios: d.atendimentos_necessarios == null ? null : Number(d.atendimentos_necessarios),
+  };
 }
 
 export async function lerPausas(db: Db, ids: string[]): Promise<Map<string, Pausa[]>> {

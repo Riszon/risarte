@@ -18,6 +18,7 @@ import {
   ORIGENS_DA_VENDA,
   ORIGENS_DO_CLIENTE,
   ROTULO_DO_RECORTE,
+  VISOES_DO_EQUILIBRIO,
   indicadorDe,
   rotuloDaDirecao,
   type Recorte,
@@ -72,6 +73,7 @@ export type MetaInicial = {
 type Filtros = {
   appointment_types: string[];
   sale_origin: string;
+  breakeven_view: string;
   specialties: string[];
   client_origins: string[];
   ppr_plans: string[];
@@ -115,9 +117,10 @@ const PASSOS = [
 // ---------------------------------------------------------------- conversões
 const REAIS = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+/** Do banco para o campo: R$ em centavos → reais; horas em minutos → horas. */
 function paraTexto(unidade: UnidadeIndicador, v: number | null | undefined): string {
   if (v == null) return "";
-  const n = unidade === "brl" ? v / 100 : v;
+  const n = unidade === "brl" ? v / 100 : unidade === "hours" ? v / 60 : v;
   return unidade === "brl" ? REAIS.format(n) : String(n).replace(".", ",");
 }
 
@@ -126,11 +129,13 @@ function lerNumero(unidade: UnidadeIndicador, s: string): number | null {
   if (!t) return null;
   if (unidade === "brl") return parseBRLToCents(t);
   const n = Number(t.replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(n) && n >= 0 ? n : null;
+  if (!Number.isFinite(n) || n < 0) return null;
+  // Horas digitadas, minutos no banco (a conta da cadeira é em minutos).
+  return unidade === "hours" ? Math.round(n * 60) : n;
 }
 
 function filtrosVazios(): Filtros {
-  return { appointment_types: [], sale_origin: "", specialties: [], client_origins: [], ppr_plans: [] };
+  return { appointment_types: [], sale_origin: "", breakeven_view: "", specialties: [], client_origins: [], ppr_plans: [] };
 }
 
 function filtrosDoBanco(f: Record<string, unknown>): Filtros {
@@ -138,6 +143,7 @@ function filtrosDoBanco(f: Record<string, unknown>): Filtros {
   return {
     appointment_types: lista("appointment_types"),
     sale_origin: typeof f.sale_origin === "string" ? f.sale_origin : "",
+    breakeven_view: typeof f.breakeven_view === "string" ? f.breakeven_view : "",
     specialties: lista("specialties"),
     client_origins: lista("client_origins"),
     ppr_plans: lista("ppr_plans"),
@@ -379,6 +385,7 @@ export function AssistenteDaMeta({
       partes.push(`(${fl.appointment_types.map((t) => APPOINTMENT_TYPE_LABELS[t as keyof typeof APPOINTMENT_TYPE_LABELS] ?? t).join(", ")})`);
     if (ind.recortes.includes("sale_origin") && fl.sale_origin)
       partes.push(fl.sale_origin === "plan" ? "de plano de tratamento" : "de venda direta");
+    if (ind.recortes.includes("breakeven_view") && fl.breakeven_view === "cash") partes.push("(visão de caixa)");
     if (ind.recortes.includes("ppr_plans") && fl.ppr_plans.length)
       partes.push(`do plano ${fl.ppr_plans.map((id) => opcoes.planosPpr.find((p) => p.id === id)?.name ?? "").join(", ")}`);
     if (ind.recortes.includes("client_origins") && fl.client_origins.length)
@@ -552,8 +559,13 @@ export function AssistenteDaMeta({
           return opcoes.planosPpr.map((p) => ({ value: p.id, label: p.name }));
         case "sale_origin":
           return ORIGENS_DA_VENDA.map((o) => ({ ...o }));
+        case "breakeven_view":
+          return VISOES_DO_EQUILIBRIO.map((o) => ({ ...o }));
       }
     };
+    // Recortes de UMA escolha (lista); os outros são de várias (botões).
+    const umaEscolha = (r: Recorte): r is "sale_origin" | "breakeven_view" =>
+      r === "sale_origin" || r === "breakeven_view";
     return (
       <div className="space-y-3 rounded-lg border border-dashed p-3">
         <p className="text-xs text-muted-foreground">
@@ -562,14 +574,14 @@ export function AssistenteDaMeta({
         {ind.recortes.map((r) => (
           <div key={r} className="space-y-1.5">
             <Label>{ROTULO_DO_RECORTE[r]}</Label>
-            {r === "sale_origin" ? (
+            {umaEscolha(r) ? (
               <select
                 className={selectClass}
                 disabled={travado}
-                value={f.filtros.sale_origin}
-                onChange={(e) => set("filtros", { ...f.filtros, sale_origin: e.target.value })}
+                value={f.filtros[r]}
+                onChange={(e) => set("filtros", { ...f.filtros, [r]: e.target.value })}
               >
-                <option value="">Todas as vendas</option>
+                <option value="">{r === "sale_origin" ? "Todas as vendas" : "Contábil (padrão)"}</option>
                 {opcoesDe(r).map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -577,7 +589,7 @@ export function AssistenteDaMeta({
                 ))}
               </select>
             ) : (
-              marcaveis(opcoesDe(r), f.filtros[r] as string[], (v) => set("filtros", { ...f.filtros, [r]: v }))
+              marcaveis(opcoesDe(r), f.filtros[r], (v) => set("filtros", { ...f.filtros, [r]: v }))
             )}
           </div>
         ))}
@@ -690,8 +702,8 @@ export function AssistenteDaMeta({
                       direction: novo?.direcoes[0] ?? "increase",
                       individual_rule: novo && novo.tipo !== "sum" ? "same" : x.individual_rule,
                       target_mode: novo && !novo.porPessoa ? "collective" : x.target_mode,
-                      // Fotografia vale para o período inteiro (N1).
-                      periodicity: novo?.tipo === "point" ? "whole" : x.periodicity,
+                      // Fotografia (N1) e medido no código (O2): período inteiro.
+                      periodicity: novo?.tipo === "point" || novo?.noApp ? "whole" : x.periodicity,
                       stretch_value: novo?.limite ? "" : x.stretch_value,
                     }));
                   }}
@@ -710,6 +722,11 @@ export function AssistenteDaMeta({
                 {ind && (
                   <p className="text-xs text-muted-foreground">
                     {ind.ajuda} <span className="block">Onde acontece: {ind.onde}. Número de quem: {ind.quemConta}.</span>
+                    {ind.aviso && (
+                      <span className="mt-1 block rounded-md bg-amber-500/10 px-2 py-1 text-amber-800 dark:text-amber-200">
+                        {ind.aviso}
+                      </span>
+                    )}
                   </p>
                 )}
                 {avisoTravado("Depois de publicada, o indicador e o recorte não mudam — mudar seria outra meta.")}
@@ -917,7 +934,7 @@ export function AssistenteDaMeta({
                       <div className="space-y-1.5">
                         <Label htmlFor="alvo">
                           {f.target_mode === "individual" ? "Total a dividir" : "Valor-alvo"}
-                          {unidade === "brl" ? " (R$)" : unidade === "percent" ? " (%)" : ""}
+                          {unidade === "brl" ? " (R$)" : unidade === "percent" ? " (%)" : unidade === "hours" ? " (horas)" : ""}
                           {f.periodicity === "monthly" ? " por mês" : ""}
                         </Label>
                         <Input
@@ -931,7 +948,7 @@ export function AssistenteDaMeta({
                     {f.target_mode !== "collective" && f.individual_rule === "same" && (
                       <div className="space-y-1.5">
                         <Label htmlFor="alvoind">
-                          Alvo de cada participante{unidade === "brl" ? " (R$)" : unidade === "percent" ? " (%)" : ""}
+                          Alvo de cada participante{unidade === "brl" ? " (R$)" : unidade === "percent" ? " (%)" : unidade === "hours" ? " (horas)" : ""}
                         </Label>
                         <Input
                           id="alvoind"
@@ -1174,7 +1191,7 @@ export function AssistenteDaMeta({
                     id="periodicidade"
                     className={selectClass}
                     value={f.periodicity}
-                    disabled={travado || ind?.tipo === "point"}
+                    disabled={travado || ind?.tipo === "point" || Boolean(ind?.noApp)}
                     onChange={(e) => set("periodicity", e.target.value as "whole" | "monthly")}
                   >
                     <option value="whole">Para o período inteiro</option>
@@ -1233,7 +1250,7 @@ export function AssistenteDaMeta({
                       <Input placeholder="Descrição do marco" value={m.label} onChange={(e) => upd({ label: e.target.value })} />
                       <select className={selectClass} value={m.indicator} onChange={(e) => upd({ indicator: e.target.value })}>
                         <option value="">Indicador…</option>
-                        {INDICADORES_DE_META.filter((x) => x.tipo === "sum" && !x.limite).map((x) => (
+                        {INDICADORES_DE_META.filter((x) => x.tipo === "sum" && !x.limite && !x.noApp).map((x) => (
                           <option key={x.chave} value={x.chave}>
                             {x.rotulo}
                           </option>

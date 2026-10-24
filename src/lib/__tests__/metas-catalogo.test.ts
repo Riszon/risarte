@@ -15,7 +15,7 @@ import { INDICADORES_DE_META } from "@/lib/metas/indicadores";
 
 const PASTA = join(process.cwd(), "supabase", "migrations");
 
-type DoBanco = { kind: string; perPerson: boolean; money: boolean; canDecrease: boolean };
+type DoBanco = { kind: string; perPerson: boolean; money: boolean; canDecrease: boolean; inApp: boolean };
 
 function catalogoDoBanco(): Map<string, DoBanco> {
   const arquivos = readdirSync(PASTA).sort().filter((f) => f.endsWith(".sql"));
@@ -27,12 +27,20 @@ function catalogoDoBanco(): Map<string, DoBanco> {
   if (!texto) throw new Error("Nenhuma migração define _goal_indicator_meta com as marcas — a régua não mediu nada.");
   const bloco = texto.split("INDICADORES:INICIO")[1].split("INDICADORES:FIM")[0];
   const linhas = [
-    ...bloco.matchAll(/\('([a-z_]+)',\s*'(sum|rate|point)',\s*(true|false),\s*(true|false),\s*(true|false)\)/g),
+    ...bloco.matchAll(
+      /\('([a-z_]+)',\s*'(sum|rate|point)',\s*(true|false),\s*(true|false),\s*(true|false),\s*(true|false)\)/g
+    ),
   ];
   return new Map(
     linhas.map((m) => [
       m[1],
-      { kind: m[2], perPerson: m[3] === "true", money: m[4] === "true", canDecrease: m[5] === "true" },
+      {
+        kind: m[2],
+        perPerson: m[3] === "true",
+        money: m[4] === "true",
+        canDecrease: m[5] === "true",
+        inApp: m[6] === "true",
+      },
     ])
   );
 }
@@ -74,12 +82,14 @@ describe("catálogo das metas: código × banco", () => {
         financeiro: i.financeiro,
         porPessoa: i.porPessoa,
         limite: Boolean(i.limite),
+        noApp: Boolean(i.noApp),
       }).toEqual({
         chave: i.chave,
         tipo: b.kind,
         financeiro: b.money,
         porPessoa: b.perPerson,
         limite: b.canDecrease,
+        noApp: b.inApp,
       });
     }
   });

@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/10/2026 · Versão do sistema: **0.344.0** · Última migração: **0319** (0318 e 0319 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 23/10/2026 · Versão do sistema: **0.345.0** · Última migração: **0320** (0318/0319 na produção e no treino; **0320 SÓ no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.345.0 / 0320 — METAS SMART, ETAPA M3 (24/10/2026)
+>
+> Plano §9c (O1–O7). 13 indicadores novos (42 no total). ⚠️ **Indicador
+> MEDIDO NO CÓDIGO** (`in_app`/`noApp`): ocupação e horas ociosas da cadeira
+> usam `lerBaseDasHoras` + `montarQuadro` do Planejamento Anual
+> (`src/lib/metas/medicao-no-app.ts`, lido com a chave de serviço depois que a
+> RLS mostrou a meta); o banco não mede, a rotina não encerra, e o final é
+> gravado pelo servidor em `goal_record_app_final` (só service_role) na
+> primeira abertura depois do fim. Unidade nova `hours` (minutos no banco).
+> Margens e PE reusam `dre_lines`/`breakeven_lines_raw` e repetem as somas de
+> `buildDre`/`buildBreakeven`. ⚠️ **`dre_lines` ganhou porta**
+> (`_dre_lines_raw`) — a guarda escondida fazia a "receita faturada" da M2
+> (já na produção) congelar em zero: **a 0320 precisa ir para a produção**.
 
 > ## 🎯 0.344.0 / 0319 — METAS SMART, ETAPA M2 (23/10/2026)
 >

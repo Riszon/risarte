@@ -8,6 +8,9 @@ import { canViewMetas } from "@/lib/metas/access";
 import { mensagemDaMeta } from "@/lib/metas/erros";
 import { indicadorDe } from "@/lib/metas/indicadores";
 import type { Candidato, RegraDeParticipante } from "@/lib/metas/regras";
+import { clinicasDaMeta } from "@/lib/metas/dados";
+import { medirCadeira } from "@/lib/metas/medicao-no-app";
+import { todayInBrazil } from "@/lib/dates";
 
 /**
  * As ações do módulo de Metas. Quem pode o quê o BANCO decide
@@ -205,5 +208,40 @@ export async function medirLinhaDeBase(
     p_to: to,
   });
   if (error) return { ok: false, error: mensagemDaMeta(error) };
-  return { ok: true, base: data as LinhaDeBase };
+  const ind = indicadorDe(indicator);
+  if (!ind?.noApp) return { ok: true, base: data as LinhaDeBase };
+
+  // O2: a cadeira é medida pela conta do Planejamento Anual. A porta acima já
+  // conferiu que a pessoa pode criar meta nessas unidades.
+  try {
+    const clinicas = await clinicasDaMeta({ scope, clinic_ids: clinicIds });
+    const foto = await medirCadeira(
+      ind.chave as "chair_occupancy" | "chair_idle_hours",
+      clinicas,
+      from,
+      to,
+      todayInBrazil()
+    );
+    if (!foto) return { ok: false, error: "Não foi possível ler a agenda agora." };
+    const meses = new Map<string, { num: number; den: number | null }>();
+    for (const d of foto.by_day) {
+      const mes = `${d.day.slice(0, 7)}-01`;
+      const m = meses.get(mes) ?? { num: 0, den: d.den == null ? null : 0 };
+      m.num += Number(d.num ?? 0);
+      if (m.den != null) m.den += Number(d.den ?? 0);
+      meses.set(mes, m);
+    }
+    return {
+      ok: true,
+      base: {
+        from,
+        to,
+        total: { num: Number(foto.total.num ?? 0), den: foto.total.den == null ? null : Number(foto.total.den) },
+        people: 0,
+        by_month: [...meses.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v })),
+      },
+    };
+  } catch {
+    return { ok: false, error: "Não foi possível ler a agenda agora." };
+  }
 }

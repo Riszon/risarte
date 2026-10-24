@@ -61,6 +61,16 @@ describe("a transferência entre contas próprias (0301)", () => {
       const re = new RegExp(`create\\s+or\\s+replace\\s+function\\s+public\\.${nome}\\s*\\([\\s\\S]*?\\bas\\s+(\\$\\w*\\$)([\\s\\S]*?)\\1`, "gi");
       for (const f of arquivos) for (const m of readFileSync(join(pasta, f), "utf8").matchAll(re)) corpo = m[2];
       expect(corpo, nome).not.toBe("");
+      // Função com "porta" (padrão 0282): a conta mora em `_X_raw` e a porta
+      // só confere a guarda — a regra vale onde a conta está. `dre_lines`
+      // virou porta na 0320.
+      if (corpo.includes(`public._${nome}_raw(`)) {
+        const reRaw = new RegExp(re.source.replace(String.raw`public\.` + nome, String.raw`public\._` + nome + "_raw"), "gi");
+        let raw = "";
+        for (const f of arquivos) for (const m of readFileSync(join(pasta, f), "utf8").matchAll(reRaw)) raw = m[2];
+        expect(raw, `_${nome}_raw`).not.toBe("");
+        corpo = raw;
+      }
       expect(corpo, nome).toContain("not like '6%'");
     }
   });

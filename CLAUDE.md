@@ -413,8 +413,14 @@ Syncthing se comportarem de forma estranha.**
   especialidade, FOTOGRAFIA diária e metas de LIMITE (plano §9b, N1–N7).
   `clinic_overdue_rate` ganhou porta (`_clinic_overdue_rate_raw`).
 
-**Pendências:** o dono conferir a inadimplência na tela do Financeiro da
-produção; depois, a etapa **M3** (cadeira, margens, ponto de equilíbrio).
+- **Etapa M3 (0320, core 0.345.0, 24/10/2026)** — 13 indicadores (plano §9c,
+  O1–O7). Ocupação e horas ociosas MEDIDAS NO CÓDIGO (a conta do Planejamento
+  Anual; o servidor grava o final). ⚠️ Achado: `dre_lines` tinha guarda
+  escondida — a receita faturada da M2 congelaria em zero; corrigido com a
+  porta `_dre_lines_raw` na 0320. **0320 só no treino.**
+
+**Pendências:** **0320 na produção**; o dono conferir a inadimplência e a DRE
+na tela do Financeiro da produção (as duas ganharam porta: 0319 e 0320).
 
 **22/10/2026 (4ª) — PC Administrador (core 0.341.2 → 0.342.0, migração 0317)**
 

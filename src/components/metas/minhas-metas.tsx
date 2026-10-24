@@ -40,7 +40,7 @@ export async function MinhasMetasNoInicio({ userId }: { userId: string }) {
   const hoje = todayInBrazil();
   const visiveis = metas.map((m) => m.id);
   const [medicoes, pausas, alvos, nomes] = await Promise.all([
-    medirMetas(db, visiveis),
+    medirMetas(db, metas),
     lerPausas(db, visiveis),
     lerAlvos(db, visiveis),
     nomesDasUnidades(db),

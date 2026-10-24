@@ -3,6 +3,7 @@
 *Plano aprovado pelo dono em 23/10/2026, com D1–D9 como propostas.*
 *✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318).*
 *✅ **M2 entregue** em 23/10/2026 (core 0.344.0, migração 0319, decisões N1–N7 da §9b). 0318 e 0319 aplicadas no treino e na produção (24/10/2026).*
+*✅ **M3 entregue** em 24/10/2026 (core 0.345.0, migração 0320, decisões O1–O7 da §9c). 0320 aplicada no treino; falta a produção.*
 *Pedido de origem: mensagem do dono de 23/10/2026 ("Módulo de Metas/campanhas
 com a metodologia de metas SMART"). Já estava previsto no `docs/BACKLOG.md`
 (FASE 2: "Módulo de Metas/Objetivos/Combinados").*
@@ -390,6 +391,38 @@ Cada etapa vai ao ar sozinha e já serve para uso real.
 | N5 | Receita recebida e recuperação: de quem é o número? | **Só coletiva**: quem registra o recebimento é a recepção, não quem vendeu |
 | N6 | Empresarial não usa contrato assinado no sistema. | Adesão = empresa que entrou em **Fechado (ganho)** no funil; unidade = a unidade principal da empresa; só leitura do schema do Empresarial (D7) |
 | N7 | Inadimplência em % também é dado financeiro. | Entra na D3: quem não vê o financeiro da unidade vê só o **percentual da meta**, nunca a taxa nem o valor |
+
+## 9c. Plano da etapa M3 — eficiência (aprovado em 24/10/2026; entregue)
+
+**13 indicadores** (fontes conferidas no banco de treino, migração **0320**):
+
+| # | Indicador | De onde vem | Por pessoa | Tipo |
+|---|---|---|---|---|
+| C8 | Desconto médio concedido (%) | desconto ÷ valor de tabela das vendas fechadas (`plan_negotiations.adjustment_cents`, a mesma conta da autorização de desconto) | ✅ consultor | Taxa (reduzir) |
+| C9 | Vendas canceladas | vendas de plano e diretas canceladas no período | ➖ | Limite |
+| F4 | Margem líquida (%) | lucro líquido ÷ receita líquida — a mesma conta da tela DRE (`dre_lines`) | ➖ | Taxa |
+| F5 | Margem de contribuição (%) | a mesma conta da tela Ponto de equilíbrio (`breakeven_lines`) | ➖ | Taxa |
+| F6 | Ponto de equilíbrio atingido (%) | receita líquida ÷ ponto de equilíbrio (100% = empatou); recorte contábil ou caixa | ➖ | Taxa |
+| F9 | Recebimento em dia (%) | das parcelas que venceram no período, quantas foram pagas até o vencimento | ➖ | Taxa |
+| A6 | Ocupação da cadeira (%) | a MESMA conta do Planejamento Anual (horas trabalhadas ÷ horas de cadeira) | ➖ | Taxa |
+| A7 | Horas ociosas da cadeira | horas de cadeira − horas trabalhadas, pela mesma conta | ➖ | Limite |
+| P4 | Tratamentos concluídos | clientes que entraram na Fase 6 (reavaliação) no período | ➖ | Soma |
+| J3 | Conversão da Jornada (avaliação → venda) | dos clientes avaliados no período, quantos % já fecharam venda | ➖ | Taxa |
+| J4 | Clientes reativados | cliente atendido no período cujo atendimento anterior foi há mais de N dias | ➖ | Soma |
+| E1 | Certificações concluídas | certificados emitidos no período (portão de certificação) | ✅ a pessoa | Soma |
+| E2 | Relatos e sugestões enviados | relatos de problema e sugestões registrados | ✅ quem relatou | Soma |
+
+**Decisões da M3 (propostas):**
+
+| # | Pergunta | Proposta |
+|---|---|---|
+| O1 | Ponto de equilíbrio **operacional** (D6). Em percentual, ele dá **o mesmo número** do financeiro: (atendimentos feitos ÷ atendimentos necessários) = (margem ÷ custo fixo) = (receita ÷ ponto de equilíbrio). | **Uma meta só** (F6, "% do ponto de equilíbrio"), e a ficha mostra as duas leituras: **em R$** ("faltam R$ 8.400") e **em atendimentos** ("faltam 23 atendimentos", pela margem média por atendimento do período). O "dia do ponto de equilíbrio" (F7 do catálogo) sai: é uma projeção que muda todo dia, e o F6 já responde |
+| O2 | Ocupação e horas ociosas são calculadas **no código** do Planejamento Anual (7 fontes: jornada, salas, feriados, planejamento, dias extras, fechamentos, agendamentos). Refazer no banco arriscaria números diferentes dos da tela. | Usar a **mesma conta do código**: a barra ao vivo bate com o Planejamento Anual. O resultado final é congelado **pelo servidor**, na primeira vez que a meta for aberta depois do fim (até lá aparece "apurando"). Custo: meta da rede inteira com muitas unidades abre mais devagar |
+| O3 | O que é "cliente reativado"? | Cliente com atendimento concluído no período cujo atendimento concluído anterior foi há **mais de N dias**, com N = o **"dias sem atendimento"** que já existe em Administração (hoje 365) |
+| O4 | Margem e ponto de equilíbrio de várias unidades. | **Ponderado**: margem da rede = lucro de todas ÷ receita de todas (a unidade grande pesa mais), como o Painel da rede |
+| O5 | Desconto médio. | **Ponderado pelo valor**: desconto total ÷ valor de tabela das vendas fechadas no período. Meta de reduzir |
+| O6 | Metas financeiras da M3 (margens, ponto de equilíbrio, recebimento em dia). | Entram na D3: quem não vê o financeiro vê só o percentual da meta |
+| O7 | Certificação e relatos. | Certificação conta **certificados emitidos** (não "% da equipe certificada", que dependeria de saber quem deveria estar). Relatos: a tela avisa, como na certificação, que meta alta de relatos mede conversa, não qualidade |
 
 ## 10. Achados de passagem (registrados no `docs/BACKLOG.md` como AP69 e AP70)
 

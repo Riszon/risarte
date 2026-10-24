@@ -29,6 +29,10 @@ const MENSAGENS: Record<string, string> = {
     "Este indicador é uma fotografia (o valor de cada dia): a meta vale para o período inteiro, não mês a mês.",
   GOAL_NOT_PER_PERSON: "Este indicador não tem dono por pessoa: a meta só pode ser coletiva.",
   GOAL_BAD_MILESTONE: "Marco intermediário só com indicador que soma (agendamentos, vendas, cadastros…).",
+  GOAL_APP_MONTHLY:
+    "A ocupação e as horas ociosas da cadeira usam a conta do Planejamento Anual: a meta vale para o período inteiro, não mês a mês.",
+  GOAL_NOT_APP: "Esta meta não é medida pelo Planejamento Anual.",
+  GOAL_NOT_ENDED: "A meta ainda não terminou.",
 };
 
 export function mensagemDaMeta(error: { message?: string } | null | undefined): string {

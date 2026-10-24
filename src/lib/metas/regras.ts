@@ -1,5 +1,6 @@
 import { addDaysIso, formatIsoDateBr } from "@/lib/dates";
 import { formatBRL } from "@/lib/pricing";
+import { formatarHoras } from "@/lib/horas-da-agenda";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import {
   indicadorDe,
@@ -537,6 +538,8 @@ export function formatarValor(unidade: UnidadeIndicador, v: number | null | unde
   if (v == null || !Number.isFinite(v)) return "—";
   if (unidade === "brl") return formatBRL(Math.round(v));
   if (unidade === "percent") return `${NUM.format(v)}%`;
+  // Horas guardadas em minutos (a conta da cadeira): "7h30", como no Planejamento Anual.
+  if (unidade === "hours") return formatarHoras(v);
   return NUM.format(v);
 }
 
@@ -545,14 +548,18 @@ export function formatarPct(v: number | null | undefined): string {
   return `${NUM.format(v)}%`;
 }
 
-/** O alvo como o usuário digita: R$ em reais na tela, centavos no banco. */
+/** O alvo como o usuário digita: R$ em reais e horas na tela; centavos e minutos no banco. */
 export function paraBanco(unidade: UnidadeIndicador, digitado: number): number {
-  return unidade === "brl" ? Math.round(digitado * 100) : digitado;
+  if (unidade === "brl") return Math.round(digitado * 100);
+  if (unidade === "hours") return Math.round(digitado * 60);
+  return digitado;
 }
 
 export function daBanco(unidade: UnidadeIndicador, v: number | null): number | null {
   if (v == null) return null;
-  return unidade === "brl" ? v / 100 : v;
+  if (unidade === "brl") return v / 100;
+  if (unidade === "hours") return v / 60;
+  return v;
 }
 
 // =============================================================================
