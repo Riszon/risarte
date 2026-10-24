@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 23/10/2026 · Versão do sistema: **0.344.0** · Última migração: **0319** (0318 e 0319 aplicadas SÓ no treino — falta a produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 23/10/2026 · Versão do sistema: **0.344.0** · Última migração: **0319** (0318 e 0319 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.344.0 / 0319 — METAS SMART, ETAPA M2 (23/10/2026)
 >

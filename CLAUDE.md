@@ -398,11 +398,12 @@ Syncthing se comportarem de forma estranha.**
   ficha com gráfico realizado × esperado, "Minhas metas" no Início. 13
   indicadores na M1. **Indicador é código, meta é dado** — régua
   `metas-catalogo.test.ts` (provada quebrando).
-- **0318 e 0319 aplicadas SÓ no treino** (provadas em transação desfeita: travas de
-  quem cria/vê, D3, motivo, congelamento). ⚠️ **Falta rodar na produção**
-  (o dono, no SQL Editor). Até lá, na produção, só o Admin Master vê o menu
-  (a matriz de lá não tem `modulo.metas`) e a tela diz "módulo ainda não
-  instalado"; a 0318 semeia a permissão para todas as funções.
+- **0318 e 0319 APLICADAS NA PRODUÇÃO em 24/10/2026** (o dono, no SQL Editor;
+  `audit_attach_all` = 5 e 0) e no treino. Conferido de fora, sem login: as
+  tabelas existem e as funções novas (inclusive `_clinic_overdue_rate_raw`)
+  recusam. Código no ar (push de 23/10; treino conferido em 0.344.0).
+  ⚠️ **Não conferido:** a tela do Financeiro logada depois da porta da
+  inadimplência (a conta é a mesma, copiada; pedir ao dono para olhar).
 - Achados de passagem no BACKLOG: AP69 (mensalidade do Riso+ e cobrança do
   Empresarial fora do razão) e AP70 (painel do Riso+ conta adesão pela
   criação).
@@ -412,8 +413,8 @@ Syncthing se comportarem de forma estranha.**
   especialidade, FOTOGRAFIA diária e metas de LIMITE (plano §9b, N1–N7).
   `clinic_overdue_rate` ganhou porta (`_clinic_overdue_rate_raw`).
 
-**Pendências:** **0318 e 0319 na produção** (nesta ordem); depois, a etapa
-**M3** (cadeira, margens, ponto de equilíbrio) do plano.
+**Pendências:** o dono conferir a inadimplência na tela do Financeiro da
+produção; depois, a etapa **M3** (cadeira, margens, ponto de equilíbrio).
 
 **22/10/2026 (4ª) — PC Administrador (core 0.341.2 → 0.342.0, migração 0317)**
 
