@@ -4,7 +4,7 @@
 *✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318).*
 *✅ **M2 entregue** em 23/10/2026 (core 0.344.0, migração 0319, decisões N1–N7 da §9b). 0318 e 0319 aplicadas no treino e na produção (24/10/2026).*
 *✅ **M3 entregue** em 24/10/2026 (core 0.345.0, migração 0320, decisões O1–O7 da §9c). 0320 aplicada no treino e na produção (24/10/2026).*
-*✅ **M4 entregue** em 24/10/2026 (core 0.346.0, migração 0321, decisões Q1–Q5 da §9d, aprovadas como propostas). 0321 aplicada no treino; **falta a produção**.*
+*✅ **M4 entregue** em 24/10/2026 (core 0.346.0, migração 0321, decisões Q1–Q5 da §9d, aprovadas como propostas). 0321 aplicada no treino e na produção (24/10/2026).*
 *Pedido de origem: mensagem do dono de 23/10/2026 ("Módulo de Metas/campanhas
 com a metodologia de metas SMART"). Já estava previsto no `docs/BACKLOG.md`
 (FASE 2: "Módulo de Metas/Objetivos/Combinados").*

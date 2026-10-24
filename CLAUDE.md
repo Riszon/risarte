@@ -426,11 +426,13 @@ Syncthing se comportarem de forma estranha.**
   "atrás do ritmo" só para quem criou e os gestores. Modelos prontos no código
   (`modelos.ts`), alvo sugerido ±10%, campeonato pelo % do alvo
   (`posicao` + `percentuaisDasUnidades`, uma conta para ficha e Início),
-  recompensa só texto. **0321 aplicada SÓ no treino** — lá a meta MT-00032 do
-  dono já gerou 11 avisos "Nova meta". Não visto na tela: pódio com dados e
+  recompensa só texto. ✅ **0321 APLICADA nos dois bancos** (produção em
+  24/10/2026; conferido de fora: sem login as funções recusam, colunas e
+  tabela existem; a produção tem 0 metas). No treino a MT-00032 do dono já
+  gerou 11 avisos "Nova meta". Não visto na tela: pódio com dados e
   troféu (o treino não tem meta para isso).
 
-**Pendências:** push da M4 e a **0321 na produção**; o dono conferir a
+**Pendências:** o dono conferir a
 inadimplência e a DRE na tela do Financeiro da produção (as duas ganharam
 porta: 0319 e 0320).
 

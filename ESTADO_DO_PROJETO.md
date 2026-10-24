@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/10/2026 · Versão do sistema: **0.346.0** · Última migração: **0321** (0321 só no treino; 0318, 0319 e 0320 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 24/10/2026 · Versão do sistema: **0.346.0** · Última migração: **0321** (0318 a 0321 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.346.0 / 0321 — METAS SMART, ETAPA M4 (24/10/2026)
 >
@@ -16,7 +16,9 @@ _Atualizado em: 24/10/2026 · Versão do sistema: **0.346.0** · Última migraç
 > divide o lugar; no limite, menos é melhor) — o % por unidade mora em
 > `percentuaisDasUnidades`, usado pela ficha E pelo Início. Recompensa é texto
 > (Q5). `my_goal_ids` devolve a finalizada atingida por 7 dias (troféu no
-> Início).
+> Início). ✅ **0321 APLICADA na produção em 24/10/2026** (o dono; conferido
+> de fora: sem login as funções novas recusam, as colunas e a tabela existem,
+> a tabela está fora da auditoria; a produção tem 0 metas).
 
 > ## 🎯 0.345.0 / 0320 — METAS SMART, ETAPA M3 (24/10/2026)
 >
