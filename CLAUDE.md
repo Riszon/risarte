@@ -435,12 +435,14 @@ Syncthing se comportarem de forma estranha.**
 - **Etapa M5 (0322, core 0.347.0, 25/10/2026)** — não existia no plano; o
   dono aprovou a proposta (§9e, R1–R5): relatório de resultados com planilha,
   Duplicar, modelos editáveis (`goal_templates`) e aba Metas no sino (pelo
-  link). **0322 aplicada SÓ no treino.** ⚠️ No treino, as 7 metas de exemplo
+  link). ✅ **0322 APLICADA nos dois bancos** (produção em 25/10/2026,
+  `audit_attach_all` = 1; conferido de fora: sem login as funções recusam e os
+  8 modelos estão lá). ⚠️ No treino, as 7 metas de exemplo
   que criei na Unidade Teste têm UM participante real (o Coordenador de lá):
   ele recebe "Faltam 3 dias" (28/10) e "Meta encerrada" (01/11). **Decisão do
   dono (25/10): deixar como está.**
 
-**Pendências:** push da M5 e a **0322 na produção**; o dono conferir a
+**Pendências:** push da M5; o dono conferir a
 inadimplência e a DRE na tela do Financeiro da produção (as duas ganharam
 porta: 0319 e 0320).
 

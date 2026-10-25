@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/10/2026 · Versão do sistema: **0.347.0** · Última migração: **0322** (0322 só no treino; 0318 a 0321 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 25/10/2026 · Versão do sistema: **0.347.0** · Última migração: **0322** (0318 a 0322 aplicadas na produção e no treino; 0322 em 25/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.347.0 / 0322 — METAS SMART, ETAPA M5 (25/10/2026)
 >
@@ -13,6 +13,9 @@ _Atualizado em: 25/10/2026 · Versão do sistema: **0.347.0** · Última migraç
 > pode editar a meta + o próprio); a conta dos quadros em `resultados.ts`.
 > **Duplicar** = `/metas/nova?de=<id>` com `periodoSeguinte`. Aba **Metas** no
 > sino pelo LINK (`categorizeNotification(title, link)`), não pelo título.
+> ✅ **0322 APLICADA na produção em 25/10/2026** (o dono; `audit_attach_all`
+> = 1; conferido de fora: sem login as 4 funções recusam, a chave de serviço
+> para em GOAL_NOT_ALLOWED, os 8 modelos estão semeados e não aparecem sem login).
 
 > ## 🎯 0.346.0 / 0321 — METAS SMART, ETAPA M4 (24/10/2026)
 >
