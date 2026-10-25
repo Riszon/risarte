@@ -16,6 +16,10 @@ export const NOTIFICATION_CATEGORIES = [
   { key: "transferencia", label: "Transferência" },
   // FIN7.3 — orçamento estourando, caixa negativo, ponto de equilíbrio, atraso.
   { key: "financeiro", label: "Financeiro" },
+  // M5 — os avisos das Metas (0321). Pelo LINK, não pelo título: o nome da
+  // meta é livre ("Mês do Riso+" cairia no PPR+, "Ponto de equilíbrio…" no
+  // Financeiro).
+  { key: "metas", label: "Metas" },
   { key: "outras", label: "Outras" },
 ] as const;
 
@@ -38,6 +42,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   aniversario: "bg-pink-100 text-pink-800",
   transferencia: "bg-amber-100 text-amber-800",
   financeiro: "bg-slate-200 text-slate-800",
+  metas: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300",
   outras: "bg-muted text-muted-foreground",
 };
 
@@ -53,6 +58,7 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   aniversario: "bg-pink-500",
   transferencia: "bg-amber-500",
   financeiro: "bg-slate-600",
+  metas: "bg-sky-500",
   outras: "bg-muted-foreground",
 };
 
@@ -155,7 +161,8 @@ export function linkDoAviso(link: string, title: string): string {
   return `/prontuarios/${m[1]}${aba ? `?aba=${aba}` : ""}`;
 }
 
-export function categorizeNotification(title: string): NotificationCategory {
+export function categorizeNotification(title: string, link?: string | null): NotificationCategory {
+  if ((link ?? "").startsWith("/metas")) return "metas";
   const t = (title ?? "").toLowerCase();
   if (t.includes("aniversari")) return "aniversario";
   // Programa de Prevenção Riso+ — antes do "comercial" genérico.

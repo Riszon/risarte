@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 24/10/2026 · Versão do sistema: **0.346.0** · Última migração: **0321** (0318 a 0321 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 25/10/2026 · Versão do sistema: **0.347.0** · Última migração: **0322** (0322 só no treino; 0318 a 0321 aplicadas na produção em 24/10/2026 e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.347.0 / 0322 — METAS SMART, ETAPA M5 (25/10/2026)
+>
+> Plano §9e (R1–R5). **Modelos no banco** (`goal_templates`; os 8 da M4 são a
+> semente e `modelos.ts` ficou como semente + RESERVA quando a 0322 não está
+> no banco — `lerModelos` cai nela). Gravar só pela porta
+> (`goal_template_save`, Admin e Franqueadora). **Relatório de resultados**
+> (`/metas/resultados` + planilha pelo gerador do Financeiro): lê o resultado
+> CONGELADO por `goal_results_report` (só percentuais; pessoas só para quem
+> pode editar a meta + o próprio); a conta dos quadros em `resultados.ts`.
+> **Duplicar** = `/metas/nova?de=<id>` com `periodoSeguinte`. Aba **Metas** no
+> sino pelo LINK (`categorizeNotification(title, link)`), não pelo título.
 
 > ## 🎯 0.346.0 / 0321 — METAS SMART, ETAPA M4 (24/10/2026)
 >

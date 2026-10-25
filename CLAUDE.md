@@ -432,7 +432,15 @@ Syncthing se comportarem de forma estranha.**
   gerou 11 avisos "Nova meta". Não visto na tela: pódio com dados e
   troféu (o treino não tem meta para isso).
 
-**Pendências:** o dono conferir a
+- **Etapa M5 (0322, core 0.347.0, 25/10/2026)** — não existia no plano; o
+  dono aprovou a proposta (§9e, R1–R5): relatório de resultados com planilha,
+  Duplicar, modelos editáveis (`goal_templates`) e aba Metas no sino (pelo
+  link). **0322 aplicada SÓ no treino.** ⚠️ No treino, as 7 metas de exemplo
+  que criei na Unidade Teste têm UM participante real (o Coordenador de lá):
+  ele receberia "Faltam 3 dias" (28/10) e "Meta encerrada" (01/11) — perguntado
+  ao dono.
+
+**Pendências:** push da M5 e a **0322 na produção**; o dono conferir a
 inadimplência e a DRE na tela do Financeiro da produção (as duas ganharam
 porta: 0319 e 0320).
 

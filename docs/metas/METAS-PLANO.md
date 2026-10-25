@@ -4,6 +4,7 @@
 *✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318).*
 *✅ **M2 entregue** em 23/10/2026 (core 0.344.0, migração 0319, decisões N1–N7 da §9b). 0318 e 0319 aplicadas no treino e na produção (24/10/2026).*
 *✅ **M3 entregue** em 24/10/2026 (core 0.345.0, migração 0320, decisões O1–O7 da §9c). 0320 aplicada no treino e na produção (24/10/2026).*
+*✅ **M5 entregue** em 25/10/2026 (core 0.347.0, migração 0322, decisões R1–R5 da §9e). 0322 aplicada no treino; **falta a produção**.*
 *✅ **M4 entregue** em 24/10/2026 (core 0.346.0, migração 0321, decisões Q1–Q5 da §9d, aprovadas como propostas). 0321 aplicada no treino e na produção (24/10/2026).*
 *Pedido de origem: mensagem do dono de 23/10/2026 ("Módulo de Metas/campanhas
 com a metodologia de metas SMART"). Já estava previsto no `docs/BACKLOG.md`
@@ -473,6 +474,30 @@ participantes por 7 dias depois do fim.
 | Q3 | Modelos ficam no código ou o Admin edita? | **No código** nesta etapa (como os indicadores); se quiser editar pela tela, vira uma etapa depois |
 | Q4 | Ranking entre unidades sempre visível em meta de várias unidades? | **Sim por padrão**, com uma opção na meta para desligar ("não mostrar ranking") |
 | Q5 | Recompensa em dinheiro vai para o Financeiro ou a folha? | **Não**: é só texto descritivo. Pagamento de prêmio continua fora do sistema (como decidido no Indica) |
+
+## 9e. Plano da etapa M5 — resultados e rotina (aprovado em 25/10/2026; entregue)
+
+Não existia uma M5 no plano original (§8 parava na M4). Ela junta o que ficou
+adiado nas etapas anteriores e o item do BACKLOG "quadros-resumo comparados
+com metas (rede e por unidade)". Migração **0322**.
+
+1. **Relatório de resultados** (`/metas/resultados`): as metas encerradas num
+   período — atingidas, não atingidas, Super Meta; taxa de atingimento por
+   unidade, por indicador e por objetivo estratégico; quem mais atinge metas
+   individuais; planilha Excel (o mesmo gerador do Financeiro).
+2. **Duplicar meta**: rascunho igual, com o período seguinte sugerido e o alvo
+   copiado (a sugestão nova pelo histórico aparece ao lado).
+3. **Modelos editáveis pela tela** (`/metas/modelos`): os 8 modelos da M4
+   viram o ponto de partida no banco (`goal_templates`).
+4. **Aba "Metas" na central de notificações** (hoje caem em "Outras").
+
+| # | Pergunta | Decisão (aprovada como proposta) |
+|---|---|---|
+| R1 | Ao duplicar, o alvo vem copiado? | Copiado; a sugestão nova pelo histórico aparece ao lado |
+| R2 | Quem vê o relatório de resultados? | Quem já vê as metas, com as mesmas regras (unidade vê as suas; Franqueadora, a rede; D3: o relatório só traz percentuais) |
+| R3 | Quem cria modelos? | Só o Admin e a Franqueadora (a mesma régua de criar meta da rede) |
+| R4 | Ranking de "quem mais atinge" entre pessoas | Só para quem pode editar a meta (gestão); cada pessoa vê o próprio resultado |
+| R5 | Meta recorrente automática | Fora: o Duplicar resolve com um clique, com alguém revisando o alvo |
 
 ## 10. Achados de passagem (registrados no `docs/BACKLOG.md` como AP69 e AP70)
 

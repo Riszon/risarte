@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pause, Pencil, Play, Send, Trash2, XCircle } from "lucide-react";
+import { Copy, Pause, Pencil, Play, Send, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -99,6 +99,11 @@ export function AcoesDaMeta({
       {!encerrada && (
         <Button nativeButton={false} render={<Link href={`/metas/${id}/editar`} />} variant="ghost" className={classeBotao}>
           <Pencil className="mr-1 size-4" /> Editar
+        </Button>
+      )}
+      {status !== "draft" && (
+        <Button nativeButton={false} render={<Link href={`/metas/nova?de=${id}`} />} variant="ghost" className={classeBotao}>
+          <Copy className="mr-1 size-4" /> Duplicar
         </Button>
       )}
       {status === "draft" && (

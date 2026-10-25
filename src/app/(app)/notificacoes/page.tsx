@@ -95,15 +95,16 @@ export default async function NotificationsPage(
     aniversario: 0,
     transferencia: 0,
     financeiro: 0,
+    metas: 0,
     outras: 0,
   };
-  for (const n of all) counts[categorizeNotification(n.title)] += 1;
+  for (const n of all) counts[categorizeNotification(n.title, n.link)] += 1;
 
   const unreadCount = all.filter((n) => !n.read_at).length;
   const onlyUnread = searchParams.naolidas === "1";
 
   let notifications = categoria
-    ? all.filter((n) => categorizeNotification(n.title) === categoria)
+    ? all.filter((n) => categorizeNotification(n.title, n.link) === categoria)
     : all;
   if (onlyUnread) notifications = notifications.filter((n) => !n.read_at);
 

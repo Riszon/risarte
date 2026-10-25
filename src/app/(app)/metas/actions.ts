@@ -11,6 +11,7 @@ import type { Candidato, RegraDeParticipante } from "@/lib/metas/regras";
 import { clinicasDaMeta } from "@/lib/metas/dados";
 import { medirCadeira } from "@/lib/metas/medicao-no-app";
 import { todayInBrazil } from "@/lib/dates";
+import { filtrosDoModelo } from "@/lib/metas/modelos";
 
 /**
  * As ações do módulo de Metas. Quem pode o quê o BANCO decide
@@ -167,6 +168,64 @@ export async function mudarSituacaoDaMeta(
   if (error) return { ok: false, error: mensagemDaMeta(error) };
   await logAudit({ action: "update", entityType: "goal_status", entityId: id, details: { acao } });
   caminhos(acao === "discard" ? undefined : id);
+  return { ok: true };
+}
+
+/** M5 (R3): o que a tela de modelos manda. Quem pode o BANCO decide (0322). */
+export type DadosDoModelo = {
+  name: string;
+  summary: string;
+  indicator: string;
+  direction: "increase" | "decrease";
+  target_mode: "collective" | "individual" | "both";
+  filters: Record<string, unknown>;
+  duration: "mes" | "trimestre";
+  how_text: string;
+  resources_text: string;
+  strategic_objective: string;
+  relevance_text: string;
+};
+
+export async function salvarModelo(id: string | null, dados: DadosDoModelo): Promise<ResultadoDaMeta> {
+  const session = await getSessionContext();
+  if (!canViewMetas(session)) return { ok: false, error: "Você não tem acesso ao módulo de Metas." };
+  if (id !== null && !UUID.test(id)) return { ok: false, error: "Modelo inválido." };
+  const indicator = texto(dados.indicator, 80);
+  const d = {
+    name: texto(dados.name, 160),
+    summary: texto(dados.summary, 300),
+    indicator,
+    direction: dados.direction === "decrease" ? "decrease" : "increase",
+    target_mode: ["collective", "individual", "both"].includes(dados.target_mode) ? dados.target_mode : "collective",
+    filters: filtrosDoModelo(indicator, dados.filters),
+    duration: dados.duration === "trimestre" ? "trimestre" : "mes",
+    how_text: texto(dados.how_text),
+    resources_text: texto(dados.resources_text),
+    strategic_objective: texto(dados.strategic_objective, 40),
+    relevance_text: texto(dados.relevance_text),
+  };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("goal_template_save", { p_id: id, p_data: d });
+  if (error || !data) {
+    const faltaMigracao = error?.code === "PGRST202" || error?.code === "42883";
+    return { ok: false, error: faltaMigracao ? mensagemDaMeta({ message: "GOAL_TEMPLATE_MISSING" }) : mensagemDaMeta(error) };
+  }
+  await logAudit({ action: id ? "update" : "create", entityType: "goal_template", entityId: String(data) });
+  revalidatePath("/metas/modelos");
+  revalidatePath("/metas/nova");
+  return { ok: true, id: String(data) };
+}
+
+export async function ativarModelo(id: string, ativo: boolean): Promise<Resultado> {
+  const session = await getSessionContext();
+  if (!canViewMetas(session)) return { ok: false, error: "Você não tem acesso ao módulo de Metas." };
+  if (!UUID.test(id)) return { ok: false, error: "Modelo inválido." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("goal_template_set_active", { p_id: id, p_active: ativo });
+  if (error) return { ok: false, error: mensagemDaMeta(error) };
+  await logAudit({ action: "update", entityType: "goal_template", entityId: id, details: { ativo } });
+  revalidatePath("/metas/modelos");
+  revalidatePath("/metas/nova");
   return { ok: true };
 }
 

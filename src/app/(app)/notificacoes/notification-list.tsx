@@ -17,6 +17,7 @@ import {
   Presentation,
   Share2,
   Store,
+  Target,
   TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ const CATEGORY_ICON: Record<NotificationCategory, React.ComponentType<{ classNam
   aniversario: Cake,
   transferencia: ArrowLeftRight,
   financeiro: TrendingDown,
+  metas: Target,
   outras: Bell,
 };
 
@@ -166,7 +168,7 @@ export function NotificationList({
           </p>
           <ul className="space-y-2">
             {group.items.map((notification) => {
-              const cat = categorizeNotification(notification.title);
+              const cat = categorizeNotification(notification.title, notification.link);
               const Icon = CATEGORY_ICON[cat];
               const unread = !notification.read_at;
               const older = dayDiffFromToday(notification.created_at) >= 2;

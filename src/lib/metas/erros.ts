@@ -33,6 +33,7 @@ const MENSAGENS: Record<string, string> = {
     "A ocupação e as horas ociosas da cadeira usam a conta do Planejamento Anual: a meta vale para o período inteiro, não mês a mês.",
   GOAL_NOT_APP: "Esta meta não é medida pelo Planejamento Anual.",
   GOAL_NOT_ENDED: "A meta ainda não terminou.",
+  GOAL_TEMPLATE_MISSING: "Os modelos ainda não podem ser editados neste banco (falta a migração 0322).",
 };
 
 export function mensagemDaMeta(error: { message?: string } | null | undefined): string {

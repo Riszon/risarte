@@ -4,6 +4,7 @@ import type { createClient } from "@/lib/supabase/server";
 import { todayInBrazil } from "@/lib/dates";
 import { podeCriarMetaDaRede, unidadesParaMetaPropria } from "./access";
 import type { Alvo, Meta, RegraDeParticipante } from "./regras";
+import { MODELOS_DE_META, modeloDoBanco, type Modelo } from "./modelos";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -13,12 +14,26 @@ export type Opcoes = {
   especialidades: string[];
   planosPpr: { id: string; name: string }[];
   hoje: string;
+  modelos: Modelo[];
 };
+
+/**
+ * Os modelos do banco (0322). `todos` = também os desativados (a tela de
+ * modelos). Sem a 0322 no banco, a lista de reserva do código — e `doBanco`
+ * falso, para a tela de modelos dizer por que não dá para editar.
+ */
+export async function lerModelos(db: Db, todos = false): Promise<{ modelos: Modelo[]; doBanco: boolean }> {
+  let q = db.from("goal_templates").select("*").order("position").order("name").limit(500);
+  if (!todos) q = q.eq("is_active", true);
+  const { data, error } = await q;
+  if (error) return { modelos: MODELOS_DE_META, doBanco: false };
+  return { modelos: (data ?? []).map((r) => modeloDoBanco(r as Record<string, unknown>)), doBanco: true };
+}
 
 /** O que o assistente oferece para escolher. */
 export async function opcoesDoAssistente(db: Db, session: SessionContext): Promise<Opcoes> {
   const podeRede = podeCriarMetaDaRede(session);
-  const [unidades, especialidades, planos] = await Promise.all([
+  const [unidades, especialidades, planos, modelos] = await Promise.all([
     podeRede
       ? db
           .from("clinics")
@@ -31,6 +46,7 @@ export async function opcoesDoAssistente(db: Db, session: SessionContext): Promi
       : Promise.resolve(unidadesParaMetaPropria(session)),
     db.from("specialties").select("name").eq("is_active", true).order("sort_order").order("name").limit(500),
     db.from("ppr_plans").select("id, name").eq("is_active", true).order("name").limit(100),
+    lerModelos(db),
   ]);
   return {
     podeRede,
@@ -38,6 +54,7 @@ export async function opcoesDoAssistente(db: Db, session: SessionContext): Promi
     especialidades: (especialidades.data ?? []).map((e) => e.name as string),
     planosPpr: (planos.data ?? []) as { id: string; name: string }[],
     hoje: todayInBrazil(),
+    modelos: modelos.modelos,
   };
 }
 

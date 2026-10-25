@@ -1162,11 +1162,16 @@ unidade, o indicador e **"Só as metas em que participo"**. Cada cartão mostra:
 #### Criar uma meta — os cinco passos do SMART
 
 Em **Metas → Nova meta**. No alto do passo S dá para **começar de um
-modelo** — Mês do Riso+, Avaliações do mês, Reduzir faltas, Ortodontia no
-trimestre, Inadimplência abaixo do limite, Ocupação da cadeira, Novos clientes
-ou Ticket médio. O modelo preenche o indicador, o recorte, o período e os
-textos; **revise cada passo** — nada é publicado sozinho. Ou fique em
-"Começar do zero".
+modelo** (no início: Mês do Riso+, Avaliações do mês, Reduzir faltas,
+Ortodontia no trimestre, Inadimplência abaixo do limite, Ocupação da cadeira,
+Novos clientes e Ticket médio). O modelo preenche o indicador, o recorte, o
+período e os textos; **revise cada passo** — nada é publicado sozinho. Ou fique
+em "Começar do zero".
+
+> **Os modelos são editáveis.** O Admin e a Franqueadora/Rede cuidam deles em
+> **Metas → Modelos**: criar, editar e desativar (o desativado some da Nova
+> meta e pode ser reativado). Mudar um modelo **não muda** as metas que já
+> nasceram dele — a meta copia os campos ao ser criada.
 
 Cada passo é uma letra; o círculo fica marcado
 quando ela está completa, e você pode ir e voltar entre os passos. Ao lado, a
@@ -1202,6 +1207,15 @@ R$ 15.000,00 em vendas por mês na Risarte Centro, de 01/01/2027 a
 5. **T — Temporal.** Início, fim e se o alvo vale **para o período inteiro** ou
    **para cada mês**. Opcional: **marcos intermediários** ("1º mês com pelo
    menos 20 novos clientes").
+
+**Repetir uma meta: Duplicar.** Na ficha de uma meta publicada, **Duplicar**
+abre um rascunho igual, com o **período seguinte** já preenchido: uma meta de
+outubro (dia 1 ao último dia) vira novembro; um trimestre vira o trimestre
+seguinte; fora disso, o mesmo número de dias logo depois do fim. Se o período
+seguinte já passou, ele começa no período de hoje. O **alvo vem copiado**, e ao
+lado dele aparece a **sugestão pelo histórico** mais recente, quando há
+histórico — revise antes de publicar. O nome ganha "(cópia)" para você trocar.
+Só aparece para quem pode criar aquela meta.
 
 Na **Revisão**, **Publicar meta** (ou **Salvar rascunho**). Faltando uma letra,
 o sistema diz qual e leva até ela.
@@ -1244,7 +1258,8 @@ individual aparecem na mesma ordem, com a posição.
 #### Avisos no sino
 
 A meta avisa sozinha — **uma vez só** cada aviso, e **nunca com valor em R$**
-(só o percentual). Clicar no aviso abre a meta.
+(só o percentual). Clicar no aviso abre a meta. Na central de notificações, os
+avisos de meta têm a aba própria **Metas**.
 
 | Aviso | Quem recebe | Quando |
 |---|---|---|
@@ -1263,6 +1278,28 @@ A meta avisa sozinha — **uma vez só** cada aviso, e **nunca com valor em R$**
 > As metas de **ocupação e horas ociosas da cadeira** (medidas pela conta do
 > Planejamento Anual) não recebem "atrás do ritmo" nem "atingida antes do
 > prazo": o banco não mede a cadeira durante a meta. Os outros avisos valem.
+
+#### Resultados das metas
+
+Em **Metas → Resultados**: as metas **encerradas** num período (padrão: os
+últimos três meses), com filtro **De / Até** e por **unidade**.
+
+- **No alto:** metas encerradas, atingidas, Super Meta, não atingidas e a
+  **taxa de atingimento**. A taxa conta só as metas **com dados para apurar** —
+  meta sem dados não conta como fracasso.
+- **Por unidade:** cada meta em que a unidade teve registro, pelo **alvo
+  dela**; unidade sem nenhum registro na meta não entra.
+- **Por indicador** e **por objetivo estratégico**.
+- **Quem mais atinge** (metas individuais): só para quem cria metas, e só com
+  as metas que a pessoa pode editar. Os outros veem **"Você: atingiu X de Y"**.
+- **A lista das metas**, com o resultado e o percentual de cada uma.
+- **Planilha:** baixa o mesmo relatório em Excel (fica registrado na
+  Auditoria).
+
+> O relatório mostra **só percentuais**: os valores em R$ ficam na ficha de
+> cada meta, para quem pode vê-los. Meta mensal: o percentual é a média dos
+> meses, e ela só conta como atingida se atingiu em todos. O resultado é o
+> **congelado** no fim da meta — não muda mais.
 
 #### O que dá para medir (indicadores)
 

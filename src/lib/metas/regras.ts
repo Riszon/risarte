@@ -267,6 +267,33 @@ export function ultimoDoMes(iso: string): string {
   return addDaysIso(proximo, -1);
 }
 
+/**
+ * M5 (Duplicar): o período SEGUINTE de uma meta, com o mesmo tamanho. Meta de
+ * meses cheios (dia 1 ao último dia) continua em meses cheios — outubro vira
+ * novembro; um trimestre vira o trimestre seguinte. Fora disso, o mesmo número
+ * de dias logo depois do fim. Se esse período já passou (meta antiga), começa
+ * no período de hoje: o mês atual, ou hoje.
+ */
+export function periodoSeguinte(inicio: string, fim: string, hoje: string): { inicio: string; fim: string } {
+  const mesesCheios = inicio === primeiroDoMes(inicio) && fim === ultimoDoMes(fim);
+  if (mesesCheios) {
+    const meses =
+      (Number(fim.slice(0, 4)) - Number(inicio.slice(0, 4))) * 12 + (Number(fim.slice(5, 7)) - Number(inicio.slice(5, 7))) + 1;
+    const somaMeses = (de: string, n: number) => {
+      let m = de;
+      for (let i = 0; i < n; i++) m = primeiroDoMes(addDaysIso(ultimoDoMes(m), 1));
+      return m;
+    };
+    let novoInicio = addDaysIso(fim, 1);
+    if (ultimoDoMes(somaMeses(novoInicio, meses - 1)) < hoje) novoInicio = primeiroDoMes(hoje);
+    return { inicio: novoInicio, fim: ultimoDoMes(somaMeses(novoInicio, meses - 1)) };
+  }
+  const dias = diasEntre(inicio, fim);
+  let novoInicio = addDaysIso(fim, 1);
+  if (addDaysIso(novoInicio, dias - 1) < hoje) novoInicio = hoje;
+  return { inicio: novoInicio, fim: addDaysIso(novoInicio, dias - 1) };
+}
+
 /** Os meses de uma meta mensal (o primeiro e o último podem ser parciais). */
 export function periodosMensais(de: string, ate: string): { from: string; to: string }[] {
   const out: { from: string; to: string }[] = [];

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, Target } from "lucide-react";
+import { BarChart3, LayoutTemplate, Plus, Target } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { todayInBrazil } from "@/lib/dates";
@@ -9,7 +9,7 @@ import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { FilterForm } from "@/components/filter-form";
 import { Button } from "@/components/ui/button";
 import { CartaoDaMeta } from "@/components/metas/cartao-da-meta";
-import { canViewMetas, podeCriarMeta } from "@/lib/metas/access";
+import { canViewMetas, podeCriarMeta, podeCriarMetaDaRede } from "@/lib/metas/access";
 import { GRUPOS_DE_INDICADOR, INDICADORES_DE_META } from "@/lib/metas/indicadores";
 import { ABAS, abaDa, lerAba, ondeDaMeta, situacaoEfetiva } from "@/lib/metas/regras";
 import { resumirMeta } from "@/lib/metas/resumo";
@@ -83,6 +83,24 @@ export default async function MetasPage({
         titulo="Metas"
         descricao="Metas SMART da rede e das unidades: específicas, mensuráveis, atingíveis, relevantes e com prazo. A barra mostra o realizado, medido direto do sistema."
       >
+        <Button
+          nativeButton={false}
+          render={<Link href="/metas/resultados" />}
+          variant="ghost"
+          className="bg-primary-foreground/15 text-primary-foreground ring-1 ring-inset ring-primary-foreground/25 hover:bg-primary-foreground/25"
+        >
+          <BarChart3 className="mr-1 size-4" /> Resultados
+        </Button>
+        {podeCriarMetaDaRede(session) && (
+          <Button
+            nativeButton={false}
+            render={<Link href="/metas/modelos" />}
+            variant="ghost"
+            className="bg-primary-foreground/15 text-primary-foreground ring-1 ring-inset ring-primary-foreground/25 hover:bg-primary-foreground/25"
+          >
+            <LayoutTemplate className="mr-1 size-4" /> Modelos
+          </Button>
+        )}
         {podeCriarMeta(session) && (
           <Button
             nativeButton={false}

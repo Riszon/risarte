@@ -1,22 +1,38 @@
 import { addDaysIso } from "@/lib/dates";
-import type { ChaveIndicador, Direcao, UnidadeIndicador } from "./indicadores";
+import { indicadorDe, type ChaveIndicador, type Direcao, type UnidadeIndicador } from "./indicadores";
 import { primeiroDoMes, ultimoDoMes, type ModoDoAlvo } from "./regras";
 
 /**
- * M4 (Q3): os MODELOS PRONTOS do assistente. Ficam no código, como os
- * indicadores — um modelo só preenche o formulário; quem cria revisa tudo e o
- * banco confere como qualquer meta. O alvo NÃO vem do modelo: é sugerido pela
- * linha de base (+10%), porque o número certo depende da unidade.
+ * Os MODELOS PRONTOS do assistente. Um modelo só preenche o formulário; quem
+ * cria revisa tudo e o banco confere como qualquer meta. O alvo NÃO vem do
+ * modelo: é sugerido pela linha de base (+10%), porque o número certo depende
+ * da unidade.
+ *
+ * M5 (R3): os modelos moram no BANCO (`goal_templates`, 0322) e o Admin e a
+ * Franqueadora editam pela tela. A lista abaixo é a semente da 0322 (a régua
+ * em `metas.test.ts` compara as duas) e a RESERVA enquanto um banco não
+ * recebeu a 0322 — o assistente continua oferecendo os modelos.
  */
+export type FiltrosDoModelo = {
+  specialties?: string[];
+  appointment_types?: string[];
+  client_origins?: string[];
+  sale_origin?: string;
+};
+
 export type Modelo = {
+  /** O id do banco; nulo na lista de reserva do código. */
+  id: string | null;
+  /** Identifica o modelo na tela: o id do banco, ou a chave da semente. */
   chave: string;
+  ativo: boolean;
   nome: string;
   resumo: string;
   indicator: ChaveIndicador;
   direction: Direcao;
   target_mode: ModoDoAlvo;
   /** Recorte já marcado (só chaves que o indicador aceita). */
-  filtros?: { specialties?: string[]; appointment_types?: string[]; client_origins?: string[] };
+  filtros?: FiltrosDoModelo;
   /** "mes": até o fim do mês atual; "trimestre": até o fim do 3º mês. */
   duracao: "mes" | "trimestre";
   how_text: string;
@@ -25,8 +41,10 @@ export type Modelo = {
   relevance_text: string;
 };
 
-export const MODELOS_DE_META: Modelo[] = [
+export const MODELOS_DE_META: Modelo[] = ([
   {
+    id: null,
+    ativo: true,
     chave: "mes_riso_mais",
     nome: "Mês do Riso+",
     resumo: "Adesões ao Riso+ no mês, por consultor.",
@@ -40,6 +58,8 @@ export const MODELOS_DE_META: Modelo[] = [
     relevance_text: "O Riso+ fideliza e dá receita recorrente; um mês de foco cria o hábito da oferta.",
   },
   {
+    id: null,
+    ativo: true,
     chave: "avaliacoes_do_mes",
     nome: "Avaliações do mês",
     resumo: "Avaliações realizadas na unidade no mês.",
@@ -53,6 +73,8 @@ export const MODELOS_DE_META: Modelo[] = [
     relevance_text: "Toda venda começa numa avaliação: é o primeiro número do funil.",
   },
   {
+    id: null,
+    ativo: true,
     chave: "reduzir_faltas",
     nome: "Reduzir faltas",
     resumo: "Taxa de faltas dos agendamentos, para baixo.",
@@ -66,6 +88,8 @@ export const MODELOS_DE_META: Modelo[] = [
     relevance_text: "Cada falta é uma cadeira parada que já estava paga.",
   },
   {
+    id: null,
+    ativo: true,
     chave: "ortodontia_trimestre",
     nome: "Ortodontia no trimestre",
     resumo: "Procedimentos de Ortodontia realizados em três meses.",
@@ -80,6 +104,8 @@ export const MODELOS_DE_META: Modelo[] = [
     relevance_text: "A ortodontia ocupa a cadeira por meses e sustenta a receita do trimestre.",
   },
   {
+    id: null,
+    ativo: true,
     chave: "inadimplencia_limite",
     nome: "Inadimplência abaixo do limite",
     resumo: "O percentual em atraso, para baixo.",
@@ -93,6 +119,8 @@ export const MODELOS_DE_META: Modelo[] = [
     relevance_text: "Dinheiro em atraso é caixa que falta para pagar as contas do mês.",
   },
   {
+    id: null,
+    ativo: true,
     chave: "ocupacao_cadeira",
     nome: "Ocupação da cadeira",
     resumo: "Ocupação das cadeiras no mês (a conta do Planejamento Anual).",
@@ -106,6 +134,8 @@ export const MODELOS_DE_META: Modelo[] = [
     relevance_text: "A cadeira ociosa é o custo fixo que não volta.",
   },
   {
+    id: null,
+    ativo: true,
     chave: "novos_clientes",
     nome: "Novos clientes",
     resumo: "Clientes novos cadastrados no mês.",
@@ -119,6 +149,8 @@ export const MODELOS_DE_META: Modelo[] = [
     relevance_text: "Sem cliente novo a agenda envelhece.",
   },
   {
+    id: null,
+    ativo: true,
     chave: "ticket_medio",
     nome: "Ticket médio",
     resumo: "Valor médio de cada venda fechada, por consultor.",
@@ -131,10 +163,46 @@ export const MODELOS_DE_META: Modelo[] = [
     strategic_objective: "growth",
     relevance_text: "Vender melhor cada caso rende mais que atender mais casos.",
   },
-];
+] satisfies Modelo[]) as Modelo[];
 
-export function modeloDe(chave: string): Modelo | undefined {
-  return MODELOS_DE_META.find((m) => m.chave === chave);
+export function modeloDe(chave: string, lista: Modelo[] = MODELOS_DE_META): Modelo | undefined {
+  return lista.find((m) => m.chave === chave);
+}
+
+/** Só os recortes que o indicador aceita (o resto o banco ignoraria em silêncio). */
+export function filtrosDoModelo(indicador: string, f: FiltrosDoModelo | Record<string, unknown> | null | undefined): FiltrosDoModelo {
+  const ind = indicadorDe(indicador);
+  const x = (f ?? {}) as Record<string, unknown>;
+  const lista = (v: unknown) => (Array.isArray(v) ? v.filter((i): i is string => typeof i === "string" && i !== "") : []);
+  const out: FiltrosDoModelo = {};
+  if (!ind) return out;
+  if (ind.recortes.includes("specialties") && lista(x.specialties).length) out.specialties = lista(x.specialties);
+  if (ind.recortes.includes("appointment_types") && lista(x.appointment_types).length)
+    out.appointment_types = lista(x.appointment_types);
+  if (ind.recortes.includes("client_origins") && lista(x.client_origins).length) out.client_origins = lista(x.client_origins);
+  if (ind.recortes.includes("sale_origin") && typeof x.sale_origin === "string" && x.sale_origin) out.sale_origin = x.sale_origin;
+  return out;
+}
+
+/** Uma linha de `goal_templates` no formato da tela. */
+export function modeloDoBanco(r: Record<string, unknown>): Modelo {
+  const indicator = String(r.indicator ?? "") as ChaveIndicador;
+  return {
+    id: String(r.id),
+    chave: String(r.id),
+    ativo: r.is_active !== false,
+    nome: String(r.name ?? ""),
+    resumo: String(r.summary ?? ""),
+    indicator,
+    direction: r.direction === "decrease" ? "decrease" : "increase",
+    target_mode: r.target_mode === "individual" || r.target_mode === "both" ? r.target_mode : "collective",
+    filtros: filtrosDoModelo(indicator, r.filters as Record<string, unknown>),
+    duracao: r.duration === "trimestre" ? "trimestre" : "mes",
+    how_text: String(r.how_text ?? ""),
+    resources_text: String(r.resources_text ?? ""),
+    strategic_objective: String(r.strategic_objective ?? ""),
+    relevance_text: String(r.relevance_text ?? ""),
+  };
 }
 
 /** O fim do período do modelo, a partir de hoje. */

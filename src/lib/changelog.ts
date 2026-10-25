@@ -62,6 +62,41 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.347.0",
+    data: "2026-10-25",
+    migracao: "0322",
+    titulo: "Metas: relatório de resultados, duplicar meta, modelos editáveis e aba Metas no sino",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Metas → Resultados: as metas encerradas no período, com a taxa de atingimento por unidade, por indicador e por objetivo, quem mais atinge as metas individuais e a planilha em Excel. Só percentuais.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Duplicar meta: na ficha, um clique cria um rascunho igual com o período seguinte já preenchido e o alvo copiado, com a sugestão pelo histórico ao lado.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Os modelos de meta passam a ser editáveis em Metas → Modelos (Admin e Franqueadora): criar, editar e desativar. Mudar um modelo não muda as metas que já nasceram dele.",
+        papeis: ["franchisor_staff"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto: "Os avisos de meta ganharam a aba própria Metas na central de notificações (antes caíam em Outras).",
+        papeis: "todos",
+        manual: "2.7. Metas (SMART)",
+      },
+    ],
+  },
+  {
     versao: "0.346.0",
     data: "2026-10-24",
     migracao: "0321",

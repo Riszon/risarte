@@ -85,6 +85,7 @@ export const TABELAS: Record<string, string> = {
   "public.goal_participant_rules": "Participantes da meta",
   "public.goal_pauses": "Pausa de meta",
   "public.goal_targets": "Alvo da meta por pessoa ou unidade",
+  "public.goal_templates": "Modelo de meta",
   "public.goals": "Meta",
   "public.inactivity_settings": "Regra de cliente inativo",
   "public.journey_decisions": "Decisão da jornada",

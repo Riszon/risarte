@@ -213,6 +213,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   ppr_membership: "Adesão ao PPR+",
   goal: "Meta",
   goal_status: "Situação da meta",
+  goal_template: "Modelo de meta",
+  goal_results_report: "Resultados das metas",
   ppr_membership_cancel: "Adesão ao PPR+ cancelada",
   ppr_charges: "Cobranças do PPR+",
   ppr_settings: "Configuração do PPR+",

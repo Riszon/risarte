@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { indicadorDe } from "@/lib/metas/indicadores";
 import {
@@ -18,6 +19,7 @@ import {
   percentual,
   percentualDaMedida,
   periodoCorrente,
+  periodoSeguinte,
   periodosMensais,
   posicao,
   projecao,
@@ -28,7 +30,8 @@ import {
 } from "@/lib/metas/regras";
 import type { Meta, Medicao } from "@/lib/metas/regras";
 import { resumirMeta, serieDoGrafico } from "@/lib/metas/resumo";
-import { MODELOS_DE_META, alvoSugerido, fimDoModelo } from "@/lib/metas/modelos";
+import { MODELOS_DE_META, alvoSugerido, filtrosDoModelo, fimDoModelo, modeloDoBanco } from "@/lib/metas/modelos";
+import { montarResultados, relatorioDeResultados, taxa, type LinhaDoResultado } from "@/lib/metas/resultados";
 
 describe("valor de uma medida (espelho de _goal_value)", () => {
   it("soma: o número", () => expect(valorDe({ num: 12, den: null })).toBe(12));
@@ -453,5 +456,109 @@ describe("M4 — modelos prontos (Q3)", () => {
     expect(fimDoModelo("mes", "2026-10-24")).toBe("2026-10-31");
     expect(fimDoModelo("trimestre", "2026-10-24")).toBe("2026-12-31");
     expect(fimDoModelo("trimestre", "2026-12-05")).toBe("2027-02-28");
+  });
+});
+
+// ============================================================ ETAPA M5 (0322)
+
+describe("M5 — duplicar: o período seguinte", () => {
+  it("mês cheio vira o mês seguinte; trimestre vira o trimestre seguinte", () => {
+    expect(periodoSeguinte("2026-10-01", "2026-10-31", "2026-10-25")).toEqual({ inicio: "2026-11-01", fim: "2026-11-30" });
+    expect(periodoSeguinte("2026-10-01", "2026-12-31", "2026-12-20")).toEqual({ inicio: "2027-01-01", fim: "2027-03-31" });
+    expect(periodoSeguinte("2027-01-01", "2027-01-31", "2027-01-10")).toEqual({ inicio: "2027-02-01", fim: "2027-02-28" });
+  });
+  it("fora de meses cheios: o mesmo número de dias logo depois do fim", () => {
+    expect(periodoSeguinte("2026-10-24", "2026-10-31", "2026-10-25")).toEqual({ inicio: "2026-11-01", fim: "2026-11-08" });
+  });
+  it("meta antiga: começa no período de hoje, não num passado", () => {
+    expect(periodoSeguinte("2026-01-01", "2026-01-31", "2026-10-25")).toEqual({ inicio: "2026-10-01", fim: "2026-10-31" });
+    expect(periodoSeguinte("2026-03-10", "2026-03-19", "2026-10-25")).toEqual({ inicio: "2026-10-25", fim: "2026-11-03" });
+  });
+});
+
+describe("M5 — modelos no banco (R3)", () => {
+  it("só ficam os recortes que o indicador aceita", () => {
+    expect(filtrosDoModelo("procedures_done", { specialties: ["Ortodontia"], sale_origin: "plan", client_origins: ["ppr"] })).toEqual({
+      specialties: ["Ortodontia"],
+    });
+    expect(filtrosDoModelo("sales_value", { sale_origin: "direct", specialties: [] })).toEqual({ sale_origin: "direct" });
+    expect(filtrosDoModelo("nao_existe", { specialties: ["x"] })).toEqual({});
+  });
+  it("a linha do banco vira o modelo da tela", () => {
+    const m = modeloDoBanco({
+      id: "t1", name: "X", summary: null, indicator: "sales_count", direction: "increase", target_mode: "both",
+      filters: { sale_origin: "plan", appointment_types: ["evaluation"] }, duration: "trimestre", is_active: false,
+      how_text: null, resources_text: "r", strategic_objective: "growth", relevance_text: "z",
+    });
+    expect(m).toMatchObject({ id: "t1", chave: "t1", ativo: false, resumo: "", target_mode: "both", duracao: "trimestre", how_text: "" });
+    expect(m.filtros).toEqual({ sale_origin: "plan" });
+  });
+  it("a semente da 0322 é a lista do código (os mesmos 8, com os mesmos campos)", () => {
+    const sql = readFileSync("supabase/migrations/0322_metas_m5_resultados.sql", "utf8");
+    const aspas = (v: string) => v.split("'").join("''");
+    for (const m of MODELOS_DE_META) {
+      const linha = sql.split("\n").find((l) => l.includes(`'${m.chave}'`));
+      expect(linha, m.chave).toBeDefined();
+      for (const v of [m.nome, m.indicator, m.direction, m.target_mode, m.duracao, m.strategic_objective])
+        expect(linha, `${m.chave}: ${v}`).toContain(`'${aspas(v)}'`);
+      for (const t of [m.how_text, m.resources_text, m.relevance_text]) expect(linha, m.chave).toContain(aspas(t));
+    }
+  });
+});
+
+describe("M5 — relatório de resultados", () => {
+  const nomes = new Map([["u1", "Centro"], ["u2", "Norte"]]);
+  const metas = [
+    metaDe({ id: "a", code: "MT-1", status: "finished", outcome: "stretch", ends_on: "2026-09-30", indicator: "sales_count", strategic_objective: "growth" }),
+    metaDe({ id: "b", code: "MT-2", status: "finished", outcome: "not_achieved", ends_on: "2026-10-31", indicator: "sales_count", strategic_objective: "growth" }),
+    metaDe({ id: "c", code: "MT-3", status: "finished", outcome: "no_data", ends_on: "2026-08-31", indicator: "new_clients", strategic_objective: "loyalty" }),
+    metaDe({ id: "d", code: "MT-4", status: "finished", outcome: "achieved", ends_on: "2026-10-15", indicator: "new_clients", strategic_objective: "loyalty" }),
+  ];
+  const linhas: LinhaDoResultado[] = [
+    { goal_id: "a", subject_kind: "goal", subject_id: "a", pct: 130, achieved: true },
+    { goal_id: "a", subject_kind: "clinic", subject_id: "u1", pct: 140, achieved: true },
+    { goal_id: "a", subject_kind: "clinic", subject_id: "u2", pct: 80, achieved: false },
+    { goal_id: "b", subject_kind: "clinic", subject_id: "u1", pct: 90, achieved: false },
+    { goal_id: "d", subject_kind: "clinic", subject_id: "u2", pct: 100, achieved: true },
+    { goal_id: "b", subject_kind: "user", subject_id: "p1", pct: 100, achieved: true },
+    { goal_id: "d", subject_kind: "user", subject_id: "p1", pct: 50, achieved: false },
+    { goal_id: "d", subject_kind: "user", subject_id: "p2", pct: 120, achieved: true },
+    // Linha de uma meta que não está na lista (filtrada pela unidade): ignorada.
+    { goal_id: "x", subject_kind: "clinic", subject_id: "u1", pct: 10, achieved: false },
+  ];
+  const r = montarResultados(metas, linhas, nomes, new Map([["p1", "Ana"], ["p2", "Bia"]]));
+  it("a taxa conta só o que tem dado (sem dados não é fracasso)", () => {
+    expect(r.resumo).toMatchObject({ metas: 4, atingidas: 2, comDado: 3, superMeta: 1, naoAtingidas: 1, semDados: 1 });
+    expect(r.resumo.taxa).toBe(66.7);
+    expect(taxa(0, 0)).toBeNull();
+  });
+  it("por unidade: cada meta em que a unidade teve registro", () => {
+    expect(r.porUnidade.map((u) => [u.nome, u.atingidas, u.comDado, u.taxa]).sort()).toEqual([
+      ["Centro", 1, 2, 50],
+      ["Norte", 1, 2, 50],
+    ]);
+    expect(r.porUnidade.find((u) => u.id === "u1")?.pctMedio).toBe(115);
+  });
+  it("por indicador e por objetivo", () => {
+    expect(r.porIndicador.find((x) => x.chave === "new_clients")).toMatchObject({ metas: 2, atingidas: 1, comDado: 1, taxa: 100 });
+    expect(r.porObjetivo.find((x) => x.valor === "growth")).toMatchObject({ metas: 2, atingidas: 1, taxa: 50 });
+  });
+  it("quem mais atinge: mais metas atingidas primeiro; empate, melhor taxa", () => {
+    expect(r.pessoas.map((p) => [p.nome, p.atingidas, p.taxa])).toEqual([
+      ["Bia", 1, 100],
+      ["Ana", 1, 50],
+    ]);
+  });
+  it("a lista vem do fim mais recente e leva o % da meta", () => {
+    expect(r.lista.map((x) => x.meta.code)).toEqual(["MT-2", "MT-4", "MT-1", "MT-3"]);
+    expect(r.lista.find((x) => x.meta.id === "a")?.pct).toBe(130);
+  });
+  it("a planilha tem uma linha por meta e nenhum valor em R$", () => {
+    const p = relatorioDeResultados(r, {
+      de: "2026-08-01", ate: "2026-10-31", deBr: "01/08/2026", ateBr: "31/10/2026", unidade: null, geradoPor: "X", geradoEm: "agora",
+    });
+    expect(p.linhas).toHaveLength(4);
+    expect(p.colunas.some((c) => c.tipo === "dinheiro")).toBe(false);
+    expect(p.linhas[0]).toMatchObject({ codigo: "MT-2", desfecho: "Não atingida" });
   });
 });

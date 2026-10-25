@@ -33,6 +33,7 @@ import {
   diasEntre,
   formatarValor,
   fraseSmart,
+  periodoSeguinte,
   primeiroDoMes,
   resolverParticipantes,
   seloAtingivel,
@@ -41,7 +42,7 @@ import {
   type ModoDoAlvo,
   type RegraDeParticipante,
 } from "@/lib/metas/regras";
-import { MODELOS_DE_META, alvoSugerido, fimDoModelo, modeloDe } from "@/lib/metas/modelos";
+import { alvoSugerido, fimDoModelo, modeloDe, type Modelo } from "@/lib/metas/modelos";
 import {
   buscarCandidatos,
   medirLinhaDeBase,
@@ -61,6 +62,7 @@ export type OpcoesDoAssistente = {
   especialidades: string[];
   planosPpr: { id: string; name: string }[];
   hoje: string;
+  modelos: Modelo[];
 };
 
 export type MetaInicial = {
@@ -171,7 +173,23 @@ function ultimoDoMesAtual(hoje: string): string {
   return addDaysIso(prox, -1);
 }
 
-function formInicial(inicial: MetaInicial | null, opcoes: OpcoesDoAssistente): Form {
+function formInicial(inicial: MetaInicial | null, opcoes: OpcoesDoAssistente, copia: DadosDaMeta | null): Form {
+  if (!inicial && copia) {
+    // M5 (Duplicar, R1): tudo igual, o alvo copiado, o período seguinte. Os
+    // marcos andam junto com o início e saem os que caem depois do fim.
+    const p = periodoSeguinte(copia.starts_on, copia.ends_on, opcoes.hoje);
+    const delta = diasEntre(copia.starts_on, p.inicio) - 1;
+    const base = formDosDados(copia);
+    return {
+      ...base,
+      name: `${copia.name} (cópia)`.slice(0, 160),
+      starts_on: p.inicio,
+      ends_on: p.fim,
+      milestones: base.milestones
+        .map((m) => ({ ...m, due_on: addDaysIso(m.due_on, delta) }))
+        .filter((m) => m.due_on >= p.inicio && m.due_on <= p.fim),
+    };
+  }
   if (!inicial) {
     const unica = !opcoes.podeRede && opcoes.unidades.length === 1;
     return {
@@ -202,7 +220,10 @@ function formInicial(inicial: MetaInicial | null, opcoes: OpcoesDoAssistente): F
       show_ranking: true,
     };
   }
-  const d = inicial.dados;
+  return formDosDados(inicial.dados);
+}
+
+function formDosDados(d: DadosDaMeta): Form {
   const u = indicadorDe(d.indicator)?.unidade ?? "count";
   return {
     name: d.name,
@@ -266,13 +287,16 @@ function janelaDoHistorico(
 export function AssistenteDaMeta({
   opcoes,
   inicial,
+  copia = null,
 }: {
   opcoes: OpcoesDoAssistente;
   inicial: MetaInicial | null;
+  /** M5: os dados da meta que está sendo duplicada (vira um rascunho novo). */
+  copia?: DadosDaMeta | null;
 }) {
   const router = useRouter();
   const [passo, setPasso] = useState(0);
-  const [f, setF] = useState<Form>(() => formInicial(inicial, opcoes));
+  const [f, setF] = useState<Form>(() => formInicial(inicial, opcoes, copia));
   const [motivo, setMotivo] = useState("");
   const [pendente, startTransition] = useTransition();
   const [candidatos, setCandidatos] = useState<Candidato[] | null>(null);
@@ -377,7 +401,7 @@ export function AssistenteDaMeta({
   /** M4: um modelo preenche o formulário; quem cria revisa tudo. */
   function aplicarModelo(chave: string) {
     setModelo(chave);
-    const m = modeloDe(chave);
+    const m = modeloDe(chave, opcoes.modelos);
     const novo = m ? indicadorDe(m.indicator) : undefined;
     if (!m || !novo) return;
     setF((x) => ({
@@ -389,6 +413,7 @@ export function AssistenteDaMeta({
         specialties: (m.filtros?.specialties ?? []).filter((e) => opcoes.especialidades.includes(e)),
         appointment_types: m.filtros?.appointment_types ?? [],
         client_origins: m.filtros?.client_origins ?? [],
+        sale_origin: m.filtros?.sale_origin ?? "",
       },
       direction: novo.direcoes.includes(m.direction) ? m.direction : novo.direcoes[0],
       target_mode: novo.porPessoa ? m.target_mode : "collective",
@@ -727,7 +752,7 @@ export function AssistenteDaMeta({
           {/* ------------------------------------------------------------ S */}
           {passo === 0 && (
             <div className="space-y-4">
-              {!inicial && (
+              {!inicial && !copia && opcoes.modelos.length > 0 && (
                 <div className="space-y-1.5 rounded-lg border border-dashed p-3">
                   <Label htmlFor="modelo">Começar de um modelo</Label>
                   <select
@@ -737,9 +762,9 @@ export function AssistenteDaMeta({
                     onChange={(e) => (e.target.value ? aplicarModelo(e.target.value) : setModelo(""))}
                   >
                     <option value="">Começar do zero</option>
-                    {MODELOS_DE_META.map((m) => (
+                    {opcoes.modelos.map((m) => (
                       <option key={m.chave} value={m.chave}>
-                        {m.nome} — {m.resumo}
+                        {m.resumo ? `${m.nome} — ${m.resumo}` : m.nome}
                       </option>
                     ))}
                   </select>

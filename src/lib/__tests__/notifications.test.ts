@@ -95,3 +95,12 @@ describe("categorizeNotification — alertas do Financeiro (FIN7.3)", () => {
     );
   });
 });
+
+describe("M5 — avisos das Metas", () => {
+  it("vão para a aba Metas pelo LINK, mesmo com nome de meta que lembra outra aba", () => {
+    expect(categorizeNotification("Meta atingida: Mês do Riso+", "/metas/abc")).toBe("metas");
+    expect(categorizeNotification("Nova meta: Ponto de equilíbrio de outubro", "/metas/abc")).toBe("metas");
+    // Sem o link, o título sozinho enganaria — é por isso que o link manda.
+    expect(categorizeNotification("Meta atingida: Mês do Riso+")).toBe("ppr");
+  });
+});
