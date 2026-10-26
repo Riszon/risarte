@@ -10,6 +10,11 @@ import {
   type UserRole,
 } from "@/lib/roles";
 import { enderecoDaFicha, type PessoaDaEquipe } from "@/lib/risartanos";
+import {
+  selosDeCertificacao,
+  type CertificadoLido,
+  type SeloDeCertificacao,
+} from "@/lib/conquistas";
 import type { Ambiente, PermissoesDeAmbiente } from "@/lib/ambientes";
 import { lerAcessoPorUnidade, type LeituraDoAcesso } from "@/lib/acesso-por-unidade";
 import {
@@ -227,6 +232,7 @@ export async function carregarAcessos(
     string,
     { clinicId: string; clinicName: string; roleLabel: string }[]
   >();
+  const funcoesPorUsuario = new Map<string, Set<UserRole>>();
   for (const p of papeis ?? []) {
     const lista = unidadesPorUsuario.get(p.user_id) ?? [];
     lista.push({
@@ -235,6 +241,9 @@ export async function carregarAcessos(
       roleLabel: ROLE_LABELS[p.role],
     });
     unidadesPorUsuario.set(p.user_id, lista);
+    const funcoes = funcoesPorUsuario.get(p.user_id) ?? new Set<UserRole>();
+    funcoes.add(p.role);
+    funcoesPorUsuario.set(p.user_id, funcoes);
   }
 
   for (const perfil of perfis ?? []) {
@@ -248,9 +257,65 @@ export async function carregarAcessos(
       rolesText: partes.join(", "),
       units: unidades,
       unitClinicIds: unidades.map((u) => u.clinicId),
+      roles: [...(funcoesPorUsuario.get(perfil.id) ?? [])],
     });
   }
   return mapa;
+}
+
+/**
+ * OC-00133: os certificados de cada login (`training_certifications`, 0273).
+ *
+ * A régua de quem lê é a do BANCO (`training_certifications_select`): a
+ * própria pessoa, o Admin Master e quem enxerga aquele Risartano — o mesmo
+ * público desta tela (decisão M2 do dono). Leitura que falha devolve
+ * `ok: false`: mostrar "sem medalha" seria afirmar que ninguém é certificado.
+ */
+export async function carregarCertificacoes(
+  supabase: Supa,
+  userIds: string[]
+): Promise<{ ok: boolean; porUsuario: Map<string, CertificadoLido[]> }> {
+  const porUsuario = new Map<string, CertificadoLido[]>();
+  if (userIds.length === 0) return { ok: true, porUsuario };
+  type CertRow = {
+    id: string;
+    user_id: string;
+    role: UserRole;
+    certified_at: string;
+    approved_by: string | null;
+  };
+  const leitura = await lerPorLotes<CertRow>(userIds, (lote, de, ate) =>
+    supabase
+      .from("training_certifications")
+      .select("id, user_id, role, certified_at, approved_by")
+      .in("user_id", lote)
+      .order("id")
+      .range(de, ate)
+      .returns<CertRow[]>()
+  );
+  if (!leitura.ok) {
+    console.error("risartanos — certificações:", leitura.error.message);
+    return { ok: false, porUsuario };
+  }
+  for (const r of leitura.linhas) {
+    const lista = porUsuario.get(r.user_id) ?? [];
+    lista.push({
+      role: r.role,
+      certifiedAt: r.certified_at,
+      aprovadoPeloAdmin: r.approved_by !== null,
+    });
+    porUsuario.set(r.user_id, lista);
+  }
+  return { ok: true, porUsuario };
+}
+
+/** As medalhas de um login, com as funções que ele tem hoje. */
+export function medalhasDe(
+  certificacoes: Map<string, CertificadoLido[]>,
+  acesso: StaffAccess | null | undefined
+): SeloDeCertificacao[] {
+  if (!acesso) return [];
+  return selosDeCertificacao(certificacoes.get(acesso.userId) ?? [], acesso.roles);
 }
 
 /** URLs assinadas (1h) das fotos — o balde é privado. */
@@ -279,6 +344,8 @@ export type Equipe = {
   unidades: { id: string; name: string }[];
   /** Logins livres para vincular a um cadastro (só o Admin usa). */
   loginsSemCadastro: { id: string; label: string }[];
+  /** OC-00133: a leitura dos certificados deu certo? Falhou = a tela avisa. */
+  certificacoesLidas: boolean;
 };
 
 export async function carregarEquipe(
@@ -309,17 +376,28 @@ export async function carregarEquipe(
   ]);
   if (!leituraDosCadastros.ok) console.error("risartanos — cadastros:", leituraDosCadastros.error.message);
   const cadastros = leituraDosCadastros.ok ? leituraDosCadastros.linhas : [];
-  const acessos = await carregarAcessos(
-    supabase,
-    [...new Set(cadastros.filter((r) => r.user_id).map((r) => r.user_id!))]
-  );
+  const idsDosCadastros = [
+    ...new Set(cadastros.filter((r) => r.user_id).map((r) => r.user_id!)),
+  ];
+  const [acessos, certificacoes] = await Promise.all([
+    carregarAcessos(supabase, idsDosCadastros),
+    carregarCertificacoes(supabase, idsDosCadastros),
+  ]);
+  let certificacoesLidas = certificacoes.ok;
   const fotos = await assinarFotos(
     supabase,
     cadastros.map((r) => r.photo_path).filter(Boolean) as string[]
   );
 
   const pessoas: PessoaDaEquipe[] = cadastros.map((r) =>
-    pessoaDoCadastro(r, acessos.get(r.user_id ?? ""), fotos, session, alcance)
+    pessoaDoCadastro(
+      r,
+      acessos.get(r.user_id ?? ""),
+      fotos,
+      session,
+      alcance,
+      certificacoes.porUsuario
+    )
   );
 
   // LOGIN SEM CADASTRO — a outra metade da união. Só o Admin gere acesso, então
@@ -341,10 +419,11 @@ export async function carregarEquipe(
     const soltos = (perfis ?? []).filter(
       (p) => !vinculados.has(p.id) && (!daProducao || daProducao.has(p.id))
     );
-    const acessosSoltos = await carregarAcessos(
-      supabase,
-      soltos.map((p) => p.id)
-    );
+    const [acessosSoltos, certificacoesSoltas] = await Promise.all([
+      carregarAcessos(supabase, soltos.map((p) => p.id)),
+      carregarCertificacoes(supabase, soltos.map((p) => p.id)),
+    ]);
+    certificacoesLidas &&= certificacoesSoltas.ok;
     for (const p of soltos) {
       const acesso = acessosSoltos.get(p.id);
       pessoas.push({
@@ -371,6 +450,7 @@ export async function carregarEquipe(
         isAdminMaster: p.is_admin_master,
         funcaoPrevista: null,
         podeGerir: !isTreino(),
+        certificacoes: medalhasDe(certificacoesSoltas.porUsuario, acesso),
       });
     }
     loginsSemCadastro = soltos
@@ -381,7 +461,7 @@ export async function carregarEquipe(
       }));
   }
 
-  return { pessoas, unidades: unidades ?? [], loginsSemCadastro };
+  return { pessoas, unidades: unidades ?? [], loginsSemCadastro, certificacoesLidas };
 }
 
 /** Os logins do treino que são cópia de alguém da produção (0260). */
@@ -398,7 +478,8 @@ function pessoaDoCadastro(
   acesso: StaffAccess | undefined,
   fotos: Map<string, string>,
   session: SessionContext,
-  alcance: Alcance
+  alcance: Alcance,
+  certificacoes: Map<string, CertificadoLido[]>
 ): PessoaDaEquipe {
   // Sem perfil legível (RLS de outra unidade) mas COM vínculo: a pessoa tem
   // acesso, só não dá para dizer mais que isso.
@@ -411,6 +492,7 @@ function pessoaDoCadastro(
         rolesText: "",
         units: [],
         unitClinicIds: [],
+        roles: [],
       }
     : null;
   const inativasAqui = new Set(r.inactive_unit_ids ?? []);
@@ -450,6 +532,7 @@ function pessoaDoCadastro(
     acessoAtivo: resumo?.loginActive ?? false,
     isAdminMaster: false,
     podeGerir,
+    certificacoes: medalhasDe(certificacoes, resumo),
   };
 }
 
@@ -506,6 +589,7 @@ export async function carregarFicha(
         rolesText: "",
         units: [],
         unitClinicIds: [],
+        roles: [],
       }
     : null;
 

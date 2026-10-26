@@ -15,6 +15,7 @@ import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { CONTRACT_LABELS, type ContractType } from "@/lib/staff";
 import {
   alcanceDoUsuario,
+  carregarCertificacoes,
   carregarClinicas,
   carregarEspecialidades,
   carregarFicha,
@@ -22,7 +23,9 @@ import {
   carregarAcessoPorUnidade,
   carregarAmbientesDoUsuario,
   podeVerEquipe,
+  medalhasDe,
 } from "../dados";
+import { CertificacoesDaPessoa } from "@/components/medalhas-de-certificacao";
 import { treinoConfigurado } from "@/lib/treino";
 import { isTreino } from "@/lib/environment";
 import { podeDarOuTirarAdmin, podeMexerNoAcessoDe } from "@/lib/admins";
@@ -88,9 +91,11 @@ export default async function FichaDoRisartanoPage(
     gerida: adminEdita || alcance.gerirIds.has(u.clinicId),
   }));
 
-  const [especialidades, funcoes] = await Promise.all([
+  const [especialidades, funcoes, certificacoes] = await Promise.all([
     carregarEspecialidades(supabase, staff.specialties),
     acesso ? carregarFuncoes(supabase, acesso.userId) : Promise.resolve([]),
+    // OC-00133: as medalhas — a mesma regra da lista.
+    carregarCertificacoes(supabase, acesso ? [acesso.userId] : []),
   ]);
   // Clínicas e logins livres só servem ao Admin (é ele quem mexe em acesso).
   const clinicas = adminEdita ? await carregarClinicas(supabase) : [];
@@ -190,6 +195,13 @@ export default async function FichaDoRisartanoPage(
       </header>
 
       <AvisoSomenteConsulta />
+
+      {acesso && (
+        <CertificacoesDaPessoa
+          selos={medalhasDe(certificacoes.porUsuario, acesso)}
+          lidas={certificacoes.ok}
+        />
+      )}
 
       <nav className="flex gap-1 border-b">
         <Aba href={`/risartanos/${codigo}`} ativa={aba === "cadastro"}>

@@ -15,6 +15,7 @@ import { startOfTodayInBrazil } from "@/lib/dates";
 import { resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certificacao";
 import { guardarProgresso, medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
 import type { MissaoNaTela } from "@/components/missao-de-certificacao";
+import { selosDeCertificacao, type SeloDeCertificacao } from "@/lib/conquistas";
 import {
   agruparMissoes,
   lerColegas,
@@ -596,4 +597,38 @@ export async function missoesAbertas(
     });
   }
   return missoes;
+}
+
+/**
+ * OC-00133: as medalhas da própria pessoa no Início. A regra de leitura do
+ * banco já deixa cada um ler os seus certificados (0273). Leitura que falha
+ * não mostra nada — é enfeite do Início, não conta que alguém confere.
+ */
+export async function minhasCertificacoes(
+  supabase: SupabaseClient,
+  session: SessionContext
+): Promise<SeloDeCertificacao[]> {
+  const { data, error } = await supabase
+    .from("training_certifications")
+    .select("role, certified_at, approved_by")
+    .eq("user_id", session.userId)
+    .returns<{ role: UserRole; certified_at: string; approved_by: string | null }[]>();
+  if (error) {
+    console.error("inicio — certificações:", error.message);
+    return [];
+  }
+  // As funções de hoje, inclusive nas unidades ainda fechadas (elas somem de
+  // `rolesByClinic`, mas a pessoa continua tendo a função).
+  const funcoes = [
+    ...Object.values(session.rolesByClinic).flat(),
+    ...session.unidadesFechadas.map((u) => u.role),
+  ];
+  return selosDeCertificacao(
+    (data ?? []).map((r) => ({
+      role: r.role,
+      certifiedAt: r.certified_at,
+      aprovadoPeloAdmin: r.approved_by !== null,
+    })),
+    funcoes
+  );
 }

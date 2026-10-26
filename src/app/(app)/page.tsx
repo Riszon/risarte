@@ -24,11 +24,13 @@ import {
   montarPendencias,
   atalhosPara,
   equipeDaMissao,
+  minhasCertificacoes,
   missoesAbertas,
   type Pendencia,
 } from "./inicio-dados";
 import { MissaoDeCertificacao } from "@/components/missao-de-certificacao";
 import { EquipeDaCertificacao } from "@/components/equipe-da-certificacao";
+import { MinhasCertificacoes } from "@/components/medalhas-de-certificacao";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/roles";
@@ -215,6 +217,8 @@ export default async function HomePage() {
     : await missoesAbertas(supabase, session.userId, session.email);
   // 0303 (OC-00003): na coletiva, a equipe da unidade e como cada um avança.
   const minhaEquipe = minhasMissoes.length > 0 ? await equipeDaMissao(supabase) : null;
+  // OC-00133: as medalhas da pessoa — o certificado também mora neste banco.
+  const minhasMedalhas = treino ? [] : await minhasCertificacoes(supabase, session);
 
   const { greeting, dateLabel } = greetingAndDate();
   const firstName = session.fullName.split(" ")[0] || "bem-vindo(a)";
@@ -242,6 +246,7 @@ export default async function HomePage() {
         <MissaoDeCertificacao key={m.id} missao={m} />
       ))}
       {minhaEquipe && <EquipeDaCertificacao grupos={minhaEquipe} />}
+      <MinhasCertificacoes selos={minhasMedalhas} />
 
       {/* 0318: as metas em que a pessoa participa, com a barra dela. */}
       {!portal && canViewMetas(session) && <MinhasMetasNoInicio userId={session.userId} clinicId={session.activeClinic?.id ?? null} />}

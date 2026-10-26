@@ -1,6 +1,8 @@
 // Risartanos — colaboradores da unidade (H4.1). Tipos e rótulos compartilhados
 // entre a tela, as ações e a ficha. Identificadores em inglês; rótulos pt-BR.
 
+import type { UserRole } from "@/lib/roles";
+
 /** Bucket privado das fotos dos colaboradores (H4.1 Lote 1b). */
 export const STAFF_PHOTO_BUCKET = "staff-photos";
 
@@ -92,6 +94,8 @@ export type StaffAccess = {
   units: { clinicId: string; clinicName: string; roleLabel: string }[];
   /** Ids das unidades onde o login tem papel (para checar gestão multi-unidade). */
   unitClinicIds: string[];
+  /** As funções que o login tem hoje, sem repetir (OC-00133: medalha atual × antiga). */
+  roles: UserRole[];
 };
 
 /** Nome de exibição: prefere "como quer ser chamado", cai para o nome completo. */

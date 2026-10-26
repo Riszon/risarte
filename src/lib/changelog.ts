@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.349.0",
+    data: "2026-10-26",
+    migracao: null,
+    titulo: "Medalhas de certificação: na lista e na ficha de Risartanos e no seu Início",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na lista de Risartanos, cada pessoa mostra uma medalha por função em que cumpriu a missão de certificação. Dourada é a função de hoje; mais clara, uma função que ela já teve. O filtro Certificado em… acha quem pode cobrir um colega.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha do Risartano ganhou a seção Certificações, com o histórico de cada medalha: a data, se foi a certificação ou uma reciclagem, e se foi automática ou aprovada pelo Admin.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quem já foi certificado vê as próprias medalhas no Início, no quadro Sua certificação.",
+        papeis: "todos",
+        manual: "Quando você cumpre a missão",
+      },
+    ],
+  },
+  {
     versao: "0.348.1",
     data: "2026-10-26",
     migracao: null,

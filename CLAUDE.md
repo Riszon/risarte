@@ -390,6 +390,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**26/10/2026 (3ª) — PC Administrador (core 0.348.1 → 0.349.0, sem migração)**
+
+- **OC-00133 (sugestão + pedido do Admin): medalhas de certificação.** Plano e
+  decisões M1–M4 em `docs/certificacao/OC-00133-PLANO.md` (todas como
+  recomendado). Lista de Risartanos (medalha + filtro "Certificado em…"),
+  ficha e página do login (seção Certificações), Início (Sua certificação).
+- ⚠️ **A regra das medalhas mora em `src/lib/conquistas.ts`**; `StaffAccess`
+  ganhou `roles` (as funções de hoje — medalha atual × antiga).
+- ⚠️ **Medalha de META ficou de fora de propósito** (M1): o resultado de cada
+  pessoa só é visto por quem edita a meta e por ela (R4). Item no BACKLOG.
+- Visto na tela no treino (servidor local contra o treino, contas de teste).
+  Os roteiros `servidor-treino.mjs`/`entrar-treino.mjs` foram refeitos na
+  pasta temporária (a anterior tinha sido limpa). Cache `.next-test` limpo.
+
 **26/10/2026 (2ª) — PC Administrador (core 0.348.0 → 0.348.1, sem migração)**
 
 - **OC-00134 (Coordenador de Londrina): as fichas de anamnese não contavam na

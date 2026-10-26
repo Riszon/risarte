@@ -620,7 +620,22 @@ Os quatro atalhos no alto (*Toda a equipe*, *Com acesso*, *Sem acesso*,
 quem saiu e continua com login aparece **em cima**; os cadastros incompletos
 ficam no fim, como lista de pendências.
 
-**A ficha** (clique em qualquer linha) tem **duas abas**:
+**As medalhas de certificação** (desde a versão 0.349.0). Embaixo do e-mail,
+cada pessoa mostra **uma medalha por função em que cumpriu a missão de
+certificação** — *Recepcionista*, *Coordenador Clínico*… Passe o mouse para ver
+a data. **Dourada** = ela tem aquela função hoje; **mais clara, com borda
+tracejada** = já foi certificada nela e mudou de função (continua à vista de
+propósito: é o que serve para remanejar alguém ou **cobrir um colega que
+faltou**). **×2** quer dizer que ela passou duas vezes (a segunda foi
+reciclagem). O filtro **Certificado em…** mostra só quem tem aquela medalha —
+inclusive quem mudou de função. Quem vê as medalhas é quem já vê a lista
+(Admin, Franqueadora, Gerente e Franqueado da unidade); a própria pessoa vê as
+dela no **Início**.
+
+**A ficha** (clique em qualquer linha) mostra, no alto, a seção
+**Certificações**: cada medalha com o histórico — a data, se foi a certificação
+ou uma reciclagem, e se foi automática ou aprovada pelo Admin. Abaixo dela, a
+ficha tem **duas abas**:
 
 **Aba Cadastro** — dados pessoais, contato, endereço, contrato e a **função na
 unidade**. Três coisas ajudam a errar menos:
@@ -1086,6 +1101,11 @@ Admin configurou a liberação:
 | **Automática** | O certificado é gravado na hora e o sistema real abre nas unidades onde você tem aquela função. |
 | **Aprovação do Admin** | O cartão diz *"Missão cumprida — aguardando aprovação"*. O Admin confere os seus números e aprova; aí o sistema real abre. Você não precisa fazer mais nada no treino. |
 | **Reciclagem** (qualquer configuração) | O certificado novo é gravado na hora e, se o seu acesso estava suspenso por causa dela, **ele volta sozinho**. |
+
+**A sua medalha.** Com o certificado gravado, o Início do sistema real passa a
+mostrar o quadro **Sua certificação**, com uma medalha por função em que você
+cumpriu a missão. Os seus gestores veem as mesmas medalhas na lista de
+Risartanos (ver 2.5).
 
 Duas coisas que valem nos dois casos:
 

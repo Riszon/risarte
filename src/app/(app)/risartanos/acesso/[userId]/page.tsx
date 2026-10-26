@@ -7,11 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import {
   carregarAcessos,
+  carregarCertificacoes,
   carregarAcessoPorUnidade,
   carregarAmbientesDoUsuario,
   carregarClinicas,
   carregarFuncoes,
+  medalhasDe,
 } from "../../dados";
+import { CertificacoesDaPessoa } from "@/components/medalhas-de-certificacao";
 import { treinoConfigurado } from "@/lib/treino";
 import { isTreino } from "@/lib/environment";
 import { podeDarOuTirarAdmin, podeMexerNoAcessoDe } from "@/lib/admins";
@@ -61,13 +64,16 @@ export default async function AcessoSemCadastroPage(
     .eq("user_id", perfil.id)
     .maybeSingle<{ id: string; code: string | null }>();
 
-  const [acessos, clinicas, funcoes, ambientes, acessoPorUnidade] = await Promise.all([
-    carregarAcessos(supabase, [perfil.id]),
-    carregarClinicas(supabase),
-    carregarFuncoes(supabase, perfil.id),
-    carregarAmbientesDoUsuario(supabase, perfil.id),
-    carregarAcessoPorUnidade(supabase, perfil.id),
-  ]);
+  const [acessos, clinicas, funcoes, ambientes, acessoPorUnidade, certificacoes] =
+    await Promise.all([
+      carregarAcessos(supabase, [perfil.id]),
+      carregarClinicas(supabase),
+      carregarFuncoes(supabase, perfil.id),
+      carregarAmbientesDoUsuario(supabase, perfil.id),
+      carregarAcessoPorUnidade(supabase, perfil.id),
+      // OC-00133: as medalhas — a mesma regra da lista e da ficha.
+      carregarCertificacoes(supabase, [perfil.id]),
+    ]);
   const acesso = acessos.get(perfil.id) ?? null;
   const enderecos = await carregarEnderecos(supabase);
   // 0262: o acesso de um Admin só o Admin Principal altera.
@@ -106,6 +112,13 @@ export default async function AcessoSemCadastroPage(
       </header>
 
       <AvisoSomenteConsulta />
+
+      {acesso && (
+        <CertificacoesDaPessoa
+          selos={medalhasDe(certificacoes.porUsuario, acesso)}
+          lidas={certificacoes.ok}
+        />
+      )}
 
       {vinculado ? (
         <p className="rounded-xl border bg-card p-4 text-sm">

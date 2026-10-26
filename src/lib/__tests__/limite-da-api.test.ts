@@ -102,7 +102,8 @@ describe("nenhuma leitura pede mais que a API entrega", () => {
     // 4: apresentações, planos, informações complementares e (OD2) as
     // sugestões do odontograma.
     expect((ler("app/(app)/planejamento/page.tsx").match(/lerPorLotes</g) ?? []).length).toBe(4);
-    expect((ler("app/(app)/risartanos/dados.ts").match(/lerPorLotes</g) ?? []).length).toBe(2);
+    // 3: perfis, funções e (OC-00133) os certificados da equipe.
+    expect((ler("app/(app)/risartanos/dados.ts").match(/lerPorLotes</g) ?? []).length).toBe(3);
   });
 
   it("leitura que falha DIZ isso na tela (nunca zero com cara de certo)", () => {

@@ -10,6 +10,9 @@
 // de uma ficha. Quem manda em quem PODE o quê continua sendo a RLS do banco e
 // as guardas das telas — isto aqui não decide permissão nenhuma.
 
+import { certificadoEm, type SeloDeCertificacao } from "@/lib/conquistas";
+import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+
 /** Uma pessoa na lista: o cadastro, o login, ou os dois. */
 export type PessoaDaEquipe = {
   /** `risartano` tem cadastro; `login` é um acesso sem cadastro de RH. */
@@ -53,6 +56,8 @@ export type PessoaDaEquipe = {
   isAdminMaster: boolean;
   /** Quem vê pode editar esta pessoa? */
   podeGerir: boolean;
+  /** As medalhas de certificação (OC-00133), uma por função. */
+  certificacoes: SeloDeCertificacao[];
 };
 
 // -----------------------------------------------------------------------------
@@ -129,6 +134,8 @@ export type FiltrosDaEquipe = {
   contrato: string;
   situacao: SituacaoDeCadastro;
   acesso: FiltroDeAcesso;
+  /** "Certificado em [função]" (OC-00133); vazio = qualquer um. */
+  certificado: UserRole | "";
 };
 
 function texto(v: unknown): string {
@@ -146,7 +153,9 @@ export function lerFiltros(
   const situacao = texto(params.situacao);
   const acesso = texto(params.acesso);
   const contrato = texto(params.contrato);
+  const certificado = texto(params.certificado);
   return {
+    certificado: Object.hasOwn(ROLE_LABELS, certificado) ? (certificado as UserRole) : "",
     busca: texto(params.busca),
     unidade: texto(params.unidade),
     contrato: contratosValidos.includes(contrato) ? contrato : "",
@@ -193,6 +202,7 @@ export function passaNoFiltro(p: PessoaDaEquipe, f: FiltrosDaEquipe): boolean {
   // que ele não tem. Ele só sai da lista quando se pede "inativos".
   if (f.situacao === "ativos" && !p.ativo) return false;
   if (f.situacao === "inativos" && (p.ativo || p.tipo === "login")) return false;
+  if (f.certificado && !certificadoEm(p.certificacoes, f.certificado)) return false;
   if (f.acesso === "atencao") return precisaDeAtencao(p);
   if (f.acesso) return situacaoDeAcesso(p) === f.acesso;
   return true;

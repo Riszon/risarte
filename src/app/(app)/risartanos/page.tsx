@@ -24,6 +24,9 @@ import {
   situacaoDeAcesso,
   type PessoaDaEquipe,
 } from "@/lib/risartanos";
+import { funcoesCertificadas } from "@/lib/conquistas";
+import { ROLE_LABELS } from "@/lib/roles";
+import { MedalhasDeCertificacao } from "@/components/medalhas-de-certificacao";
 import { alcanceDoUsuario, carregarEquipe, podeVerEquipe } from "./dados";
 import { SeloDeAcesso, SeloDeUnidade } from "./selos";
 
@@ -52,12 +55,22 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
   if (alcance.escopoIds !== null && alcance.escopoIds.length === 0) redirect("/");
 
   const supabase = await createClient();
-  const { pessoas, unidades } = await carregarEquipe(supabase, session, alcance);
+  const { pessoas, unidades, certificacoesLidas } = await carregarEquipe(
+    supabase,
+    session,
+    alcance
+  );
 
   const searchParams = await props.searchParams;
   const filtros = lerFiltros(searchParams, CONTRACT_TYPES);
   const contagem = contarEquipe(pessoas);
   const lista = ordenar(pessoas.filter((p) => passaNoFiltro(p, filtros)));
+  // OC-00133: o filtro só oferece as funções que alguém desta lista tem — e a
+  // escolhida, mesmo sem ninguém, para o filtro não "sumir" da caixa.
+  const funcoesDoFiltro = funcoesCertificadas(pessoas.map((p) => p.certificacoes));
+  if (filtros.certificado && !funcoesDoFiltro.includes(filtros.certificado)) {
+    funcoesDoFiltro.push(filtros.certificado);
+  }
 
   // Os atalhos do topo trocam SÓ o recorte de acesso; o resto do filtro fica.
   function comAcesso(valor: string): string {
@@ -65,6 +78,7 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
     if (filtros.busca) params.set("busca", filtros.busca);
     if (filtros.unidade) params.set("unidade", filtros.unidade);
     if (filtros.contrato) params.set("contrato", filtros.contrato);
+    if (filtros.certificado) params.set("certificado", filtros.certificado);
     if (valor === "atencao" || valor === "acesso_desativado") {
       params.set("situacao", "todos");
     } else if (filtros.situacao !== "ativos") {
@@ -182,7 +196,31 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
             </option>
           ))}
         </select>
+        {funcoesDoFiltro.length > 0 && (
+          <select
+            name="certificado"
+            defaultValue={filtros.certificado}
+            className={selectClass}
+            aria-label="Certificado em"
+          >
+            <option value="">Qualquer certificação</option>
+            {funcoesDoFiltro.map((r) => (
+              <option key={r} value={r}>
+                Certificado em {ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        )}
       </FilterForm>
+
+      {!certificacoesLidas && (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+          Não foi possível conferir agora as certificações da equipe: as
+          medalhas não aparecem
+          {filtros.certificado ? " e o filtro de certificação não tem como valer" : ""}.
+          Recarregue em instantes.
+        </p>
+      )}
 
       <section className="overflow-hidden rounded-xl border bg-card">
         <p className="border-b px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -268,6 +306,8 @@ function Linha({ pessoa }: { pessoa: PessoaDaEquipe }) {
             <span className="block truncate text-xs text-muted-foreground">
               {pessoa.email ?? "sem e-mail no cadastro"}
             </span>
+            {/* OC-00133: uma medalha por função certificada. */}
+            <MedalhasDeCertificacao selos={pessoa.certificacoes} className="mt-1" />
           </span>
         </span>
 

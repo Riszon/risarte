@@ -37,6 +37,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 
 **Futuro / sem causa encontrada**
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
+- [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
 - [ ] **AP72** — limpar a anamnese antiga sem uso (`saveAnamnesis`; a tabela só depois de conferir a produção)
 - [ ] **AP68** — aba Fluxo de caixa do Painel da rede lê unidade por unidade (medir com a rede grande)
 - [ ] **AP57** — textos da certificação que podem citar botões com nome antigo

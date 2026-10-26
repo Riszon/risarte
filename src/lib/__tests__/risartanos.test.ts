@@ -50,6 +50,7 @@ function pessoa(over: Partial<PessoaDaEquipe> = {}): PessoaDaEquipe {
     acessoAtivo: true,
     isAdminMaster: false,
     podeGerir: true,
+    certificacoes: [],
     ...over,
   };
 }
@@ -121,6 +122,7 @@ describe("filtros da lista", () => {
       contrato: "",
       situacao: "ativos",
       acesso: "",
+      certificado: "",
     });
   });
 

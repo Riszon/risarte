@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/10/2026 · Versão do sistema: **0.348.1** · Última migração: **0323** (0318 a 0323 aplicadas na produção e no treino; 0323 em 26/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 26/10/2026 · Versão do sistema: **0.349.0** · Última migração: **0323** (0318 a 0323 aplicadas na produção e no treino; 0323 em 26/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.349.0 (sem migração) — MEDALHAS DE CERTIFICAÇÃO (OC-00133, 26/10/2026)
+>
+> Sugestão do Coordenador de Londrina + pedido do Admin (ver na lista de
+> Risartanos quem é certificado em quê, para remanejar ou cobrir). Plano e
+> decisões M1–M4 em `docs/certificacao/OC-00133-PLANO.md` (todas como
+> recomendado): **só certificação** (meta fica para depois — R4), **gestores +
+> a própria pessoa** (a RLS da 0273, sem migração), **selo + filtro "Certificado
+> em…"**, função antiga **à vista, mais clara**. ⚠️ **Uma regra só**
+> (`src/lib/conquistas.ts`) para a lista, as duas fichas e o Início;
+> `StaffAccess` ganhou `roles` (funções de hoje). Leitura que falha AVISA
+> (`certificacoesLidas`), nunca "sem medalha". EV-223.
 
 > ## 🎯 0.348.1 (sem migração) — CERTIFICAÇÃO: DOIS ITENS QUE NUNCA CONTAVAM (OC-00134, 26/10/2026)
 >
