@@ -406,7 +406,10 @@ Syncthing se comportarem de forma estranha.**
   de `profiles` só mostra colegas).
 - ⚠️ **Ensaio pegou `brl(numeric)`**: `sum()` de bigint devolve numeric —
   converter (`::bigint`) antes de `public.brl`.
-- ✅ 0323 no treino; ⏳ **falta a PRODUÇÃO** (antes dela, a lista abre e diz
+- ✅ **0323 APLICADA nos dois bancos** (produção em 26/10/2026, o dono;
+  conferido de fora: sem login as três funções recusam com "permission
+  denied"; a de controle, inexistente, responde "não encontrada"). Antes dela
+  a lista abria e dizia
   "não foi possível ler" no nome; o resto da tela funciona). Visto na tela no
   treino (Admin de teste, só leitura). **Não visto:** a faixa (sem item para
   aprovar no treino). AP71 no BACKLOG (rascunhos vazios).

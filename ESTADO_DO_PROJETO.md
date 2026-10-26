@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/10/2026 · Versão do sistema: **0.348.0** · Última migração: **0323** (0323 aplicada SÓ no treino; 0318 a 0322 na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 26/10/2026 · Versão do sistema: **0.348.0** · Última migração: **0323** (0318 a 0323 aplicadas na produção e no treino; 0323 em 26/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.348.0 / 0323 — COMPRAS: QUEM PEDIU E OS AVISOS (OC-00129 + OC-00130, 26/10/2026)
 >
@@ -21,8 +21,11 @@ _Atualizado em: 26/10/2026 · Versão do sistema: **0.348.0** · Última migraç
 > categoria Compras no sino (pelo link). Código antes da migração: sem a
 > função, a lista abre e diz "não foi possível ler" no nome.
 > ✅ 0323 aplicada no treino (duas vezes, idempotente) + ensaio desfeito com
-> 7 conferências (achou um `brl(numeric)` antes de ir ao dono). ⏳ **Falta a
-> PRODUÇÃO.** Não visto na tela: a faixa (o treino não tem item para aprovar).
+> 7 conferências (achou um `brl(numeric)` antes de ir ao dono). ✅ **0323 APLICADA
+> NA PRODUÇÃO em 26/10/2026** (o dono; conferido de fora, sem login: as três
+> funções recusam com "permission denied" e a nova existe — a de controle
+> responde "não encontrada"). Não visto na tela: a faixa (o treino não tem
+> item para aprovar).
 
 > ## 🎯 0.347.0 / 0322 — METAS SMART, ETAPA M5 (25/10/2026)
 >
