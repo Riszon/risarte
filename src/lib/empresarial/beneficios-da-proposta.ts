@@ -93,6 +93,60 @@ export function rotuloDaCarencia(b: BeneficioDaProposta): string | null {
     : `após ${b.gracePeriodMonths} meses de programa`;
 }
 
+/**
+ * AS TRÊS CATEGORIAS DA LISTA (dono, 26/10/2026): *"vai ficando uma lista
+ * muito longa… deve organizar em 3 categorias (sem custo, com desconto e não
+ * coberto)"*. Desconto em % e em R$ são a mesma pergunta para quem lê a
+ * proposta — por isso viram uma categoria só.
+ */
+export const CATEGORIAS_DE_BENEFICIO = ["sem_custo", "com_desconto", "nao_coberto"] as const;
+export type CategoriaDeBeneficio = (typeof CATEGORIAS_DE_BENEFICIO)[number];
+
+export const CATEGORIA_ROTULO: Record<CategoriaDeBeneficio, string> = {
+  sem_custo: "Sem custo",
+  com_desconto: "Com desconto",
+  nao_coberto: "Não coberto",
+};
+
+/** O tipo com que um procedimento nasce ao ser incluído direto na categoria. */
+export const TIPO_DA_CATEGORIA: Record<CategoriaDeBeneficio, BenefitType> = {
+  sem_custo: "FREE",
+  com_desconto: "DISCOUNT_PERCENT",
+  nao_coberto: "NOT_COVERED",
+};
+
+export function categoriaDoBeneficio(tipo: BenefitType): CategoriaDeBeneficio {
+  if (tipo === "FREE") return "sem_custo";
+  if (tipo === "NOT_COVERED") return "nao_coberto";
+  return "com_desconto";
+}
+
+export function contarPorCategoria(
+  lista: readonly Pick<BeneficioDaProposta, "benefitType">[]
+): Record<CategoriaDeBeneficio, number> {
+  const c: Record<CategoriaDeBeneficio, number> = { sem_custo: 0, com_desconto: 0, nao_coberto: 0 };
+  for (const b of lista) c[categoriaDoBeneficio(b.benefitType)] += 1;
+  return c;
+}
+
+/**
+ * O BENEFÍCIO RECOLHIDO, em uma linha: o que se ganha, a regra de uso, a
+ * carência e para quem. É o que a lista mostra enquanto ninguém está editando
+ * aquele procedimento — a linha inteira de campos só abre quando se pede.
+ *
+ * No "sem custo" e no "não coberto" a categoria já diz o tipo, então a linha
+ * começa pela regra; repetir "Sem custo" dentro da seção "Sem custo" é ruído.
+ */
+export function resumoDoBeneficio(b: BeneficioDaProposta): string {
+  const partes = [
+    categoriaDoBeneficio(b.benefitType) === "com_desconto" ? rotuloDoBeneficio(b) : null,
+    b.benefitType === "NOT_COVERED" ? null : rotuloDoUso(b),
+    b.benefitType === "NOT_COVERED" ? null : rotuloDaCarencia(b),
+    paraQuemVale(b),
+  ].filter((p): p is string => Boolean(p));
+  return partes.join(" · ");
+}
+
 export type ResultadoDaAplicacao = {
   lista: BeneficioDaProposta[];
   /** Quantos vieram do grupo e não existiam na proposta. */

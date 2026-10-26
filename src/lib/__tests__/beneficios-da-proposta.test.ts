@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   aplicarGrupo,
+  categoriaDoBeneficio,
+  contarPorCategoria,
+  resumoDoBeneficio,
   paraQuemVale,
   problemasDoBeneficio,
   rotuloDaCarencia,
@@ -165,5 +168,44 @@ describe("o que impede de salvar", () => {
   it("janela sem limite é avisada em vez de virar restrição invisível", () => {
     const p = problemasDoBeneficio({ ...base, usagePeriodMonths: 6 });
     expect(p).toContain("a janela em meses só vale com um limite de usos");
+  });
+});
+
+describe("as três categorias da lista (dono, 26/10/2026)", () => {
+  it("desconto em % e em R$ são a mesma categoria", () => {
+    expect(categoriaDoBeneficio("DISCOUNT_PERCENT")).toBe("com_desconto");
+    expect(categoriaDoBeneficio("DISCOUNT_AMOUNT")).toBe("com_desconto");
+    expect(categoriaDoBeneficio("FREE")).toBe("sem_custo");
+    expect(categoriaDoBeneficio("NOT_COVERED")).toBe("nao_coberto");
+  });
+
+  it("conta por categoria", () => {
+    expect(
+      contarPorCategoria([
+        { benefitType: "FREE" },
+        { benefitType: "DISCOUNT_PERCENT" },
+        { benefitType: "DISCOUNT_AMOUNT" },
+      ])
+    ).toEqual({ sem_custo: 1, com_desconto: 2, nao_coberto: 0 });
+  });
+
+  it("o resumo recolhido diz o que se ganha, a regra, a carência e para quem", () => {
+    expect(
+      resumoDoBeneficio({
+        ...base,
+        usageLimitCount: 1,
+        usagePeriodMonths: 12,
+        gracePeriodMonths: 2,
+      })
+    ).toBe("30% de desconto · 1 vez a cada 12 meses · após 2 meses de programa · Titular e dependente");
+  });
+
+  it("no sem custo a linha não repete a categoria; no não coberto, só para quem", () => {
+    expect(resumoDoBeneficio({ ...base, benefitType: "FREE", forDependent: false })).toBe(
+      "Só o titular"
+    );
+    expect(
+      resumoDoBeneficio({ ...base, benefitType: "NOT_COVERED", usageLimitCount: 2, gracePeriodMonths: 3 })
+    ).toBe("Titular e dependente");
   });
 });

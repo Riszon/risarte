@@ -519,7 +519,25 @@ como ela paga**:
 
 ### 6.7. Vantagens e benefícios
 
-**Incluir um procedimento** e dizer o que o programa faz com ele:
+O passo **Benefícios e unidades** tem, de cima para baixo:
+
+**1. Inserir um grupo de benefícios.** Cada grupo pronto aparece numa linha com
+o nome, quantos benefícios traz, quantos são *sem custo*, *com desconto* e *não
+coberto*, e para que serve. **Ver o que tem** mostra os procedimentos do grupo;
+**Inserir** coloca todos na proposta. O **Padrão da rede** (Configurações →
+Benefícios) aparece como o primeiro da lista. Ao inserir, a tela diz **quantos
+incluiu e quais trocou** — o grupo **substitui** o benefício do mesmo
+procedimento e **mantém** os outros. **Nada é salvo até você salvar.**
+
+**2. A lista, em três seções:** **Sem custo**, **Com desconto** (em % ou em R$)
+e **Não coberto**, cada uma com quantos procedimentos tem. Clicar no título
+**recolhe ou abre** a seção.
+
+Cada procedimento fica **recolhido em uma linha**, com o resumo do que foi
+combinado — por exemplo *"50% de desconto · 1 vez a cada 12 meses · após 2
+meses de programa · Titular e dependente"*. O **lápis** abre os campos para
+editar; **Pronto** fecha de novo. Benefício com algo a corrigir mostra o
+problema em vermelho mesmo recolhido, e o título da seção diz quantos há.
 
 | Tipo | O que sai no documento |
 |---|---|
@@ -529,17 +547,25 @@ como ela paga**:
 | **Não coberto** | fica de fora do programa |
 
 Cada benefício tem ainda **quantas vezes**, **a cada quantos meses** e
-**carência própria**.
+**carência própria** (o *Não coberto* não tem: não há o que usar). Trocar o
+tipo muda o procedimento de seção.
+
+**Incluir um procedimento:** no fim de cada seção, *+ Incluir procedimento sem
+custo / com desconto / não coberto*. Ele entra já com o tipo da seção e
+**aberto**, pronto para configurar.
 
 **Vale para quem:** as duas caixas — *titular* e *dependente* — vêm **marcadas**.
 Desmarcar as duas é recusado: benefício que não vale para ninguém não é
 benefício.
 
-**Grupos de benefícios.** Uma combinação usada com frequência pode virar grupo
-(*Guardar esta combinação como grupo da rede*) e ser aplicada em outras
-propostas (*Aplicar um grupo pronto*). Ao aplicar, a tela diz **quantos incluiu
-e quais trocou** — e **nada é salvo até você salvar**. O grupo **substitui** o
-benefício do mesmo procedimento e **mantém** os outros.
+**3. Salvar os benefícios.** Ao lado do botão, o total e a conta por categoria
+(*"6 benefícios — 3 sem custo · 3 com desconto"*); em amarelo, **"há mudanças
+não salvas"** enquanto houver. Recolhido **não é removido**: salvar grava todos
+os procedimentos da lista, abertos ou não.
+
+**Guardar como grupo.** Uma combinação usada com frequência pode virar grupo
+(*Guardar esta combinação como grupo da rede*) e ser inserida em outras
+propostas.
 
 > **De onde vêm os benefícios na proposta nova.** Uma empresa que ainda não tem
 > benefício salvo chega com os **benefícios padrão da rede** (Configurações →

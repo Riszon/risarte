@@ -1452,3 +1452,31 @@ disparada foi a contagem de relatos do layout (bloqueada e identificada).
 Documento aberto numa proposta antiga, sem erro.
 
 **Fora, declarado:** AP74.
+
+### Bloco Q — os benefícios da proposta, arrumados ✅ (sem migração, v0.83.0)
+
+Pedido do dono (26/10/2026): *"conforme vai configurando as vantagens e os
+benefícios, vai ficando uma lista muito longa… vai ficando aberto, deve ficar
+mais organizado e limpo. Deve organizar em 3 categorias (sem custo, com
+desconto e não coberto). Deve ter como selecionar grupo de benefício já
+configurado para inserir na proposta."*
+
+- **Três seções** (`categoriaDoBeneficio`, pura e testada): desconto em % e em
+  R$ viram "Com desconto". Seção recolhe/abre pelo título.
+- **Cada procedimento recolhido em uma linha** (`resumoDoBeneficio`): o lápis
+  abre os campos. O que acaba de ser incluído abre sozinho.
+- **Os grupos prontos subiram para o topo**, um por linha, com as contagens por
+  categoria, a descrição, "Ver o que tem" e "Inserir". O seletor antigo existia,
+  mas ficava escondido no meio da tela — o dono não o achou.
+- Incluir procedimento **por seção**, já com o tipo dela.
+- Rodapé com o total por categoria e o aviso de mudanças não salvas.
+
+**Decisão que vale registrar:** ⚠️ **recolhido não é removido.** Os campos
+continuam no formulário (`hidden`) e passaram a ser CONTROLADOS — o
+procedimento troca de seção ao trocar o tipo, e um campo não controlado
+perderia o que foi digitado.
+
+**Conferido no treino, logado, sem salvar:** a tela recolhida, a edição e o
+"Inserir" do grupo (4 → 6 benefícios). Clicando em Salvar, a gravação foi
+interceptada e bloqueada: levava as **6 linhas completas**, inclusive as
+recolhidas. Build do zero, testes e lint.
