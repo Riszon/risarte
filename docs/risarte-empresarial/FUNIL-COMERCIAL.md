@@ -1381,3 +1381,34 @@ perdida (a única perdida do treino foi a reaberta no teste).
 
 **Anterior à regra, no treino (não mexi):** 3 empresas em Implantação sem
 conferência e 1 ganha com cadastro e sem selos.
+
+### Bloco O — dependentes na simulação e total da faixa ✅ (sem migração, v0.81.0)
+
+Pedido do dono (26/10/2026): *"quando estou gerando uma simulação de proposta
+não aparece o valor dos dependentes"*; o total de cada faixa deve aparecer
+**só para quem monta**; e a configuração do dependente individual e do plano
+familiar precisa ficar mais intuitiva, abrindo junto da pergunta
+"dependentes entram nesta fase?".
+
+- **Estimativa dos dependentes na simulação** (`estimativaDosDependentes`,
+  pura e testada). Individual = dependentes × valor. Familiar = divisão por
+  igual entre os titulares com dependentes, cada família com o mais barato
+  entre pacote e avulso; sem essa quantidade, cai no individual e diz.
+- **Total por faixa** (`totalDaFaixa`) embaixo de cada faixa, com ✓ na faixa
+  que vale para os titulares da proposta.
+- **Os valores dos dependentes mudaram de lugar:** saíram de *Condições
+  comerciais* (que ficou com um atalho) e foram para o passo 1, dentro do
+  `saveProposal`. O `saveCommercialTerms` deixou de escrevê-los — dois
+  formulários gravando o mesmo campo, o último apagaria o outro.
+- O `saveProposal` só escreve os campos de dependente **presentes na tela**:
+  responder "Não" não apaga a tabela combinada.
+
+**Decisões que valem registrar**
+
+- **⚠️ A decisão de 24/09 continua valendo para o DOCUMENTO.** A estimativa e
+  o total da faixa são só tela; `simularProposta` segue com
+  `dependentesCents = 0`, e a proposta impressa mostra a tabela, sem total.
+- A linha "dependentes R$ 0,00" da simulação saiu: era ela que fazia parecer
+  que o sistema não calculava nada.
+
+**Conferido:** build do zero, 1649 testes, e na tela pelo dono (26/10/2026).

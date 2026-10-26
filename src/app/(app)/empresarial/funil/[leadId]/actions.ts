@@ -207,7 +207,31 @@ export async function saveProposal(
       billing_model: daLista(formData, "billing_model", ["unico", "por_cnpj"] as const),
       billing_basis: daLista(formData, "billing_basis", BILLING_BASES),
       holder_fee_cents: centavos(formData, "holder_fee"),
-      dependent_fee_cents: centavos(formData, "dependent_fee"),
+      // Os valores dos dependentes vieram para este formulário (26/10/2026):
+      // abrem junto do "dependentes entram? Sim". Campo fora da tela NÃO
+      // escreve — gravar nulo apagaria a tabela combinada ao trocar para "Não".
+      ...(formData.has("dependent_fee")
+        ? { dependent_fee_cents: centavos(formData, "dependent_fee") }
+        : {}),
+      ...(formData.has("dependent_mode")
+        ? {
+            dependent_mode: daLista(formData, "dependent_mode", [
+              "PER_DEPENDENT",
+              "FAMILY_PACKAGE",
+            ] as const),
+          }
+        : {}),
+      ...(formData.has("dependent_family_fee")
+        ? {
+            dependent_family_fee_cents: centavos(formData, "dependent_family_fee"),
+            dependent_family_extra_fee_cents: centavos(
+              formData,
+              "dependent_family_extra_fee"
+            ),
+            dependent_family_size: inteiro(formData, "dependent_family_size"),
+            holders_with_dependents: inteiro(formData, "holders_with_dependents"),
+          }
+        : {}),
       fixed_monthly_cents: centavos(formData, "fixed_monthly"),
       // AP18: implantation_per_employee_cents não é mais escrito — o campo
       // saiu da tela, e escrever nulo apagaria o valor antigo guardado.
@@ -859,14 +883,9 @@ export async function saveCommercialTerms(
       min_proposal_cents: centavos(formData, "min_proposal"),
       // AP18: implantation_mode / implantation_fixed_cents não são mais
       // escritos (a implantação é o 1º pagamento); o banco guarda o antigo.
-      dependent_mode: daLista(formData, "dependent_mode", [
-        "PER_DEPENDENT",
-        "FAMILY_PACKAGE",
-      ] as const),
-      dependent_family_fee_cents: centavos(formData, "dependent_family_fee"),
-      dependent_family_extra_fee_cents: centavos(formData, "dependent_family_extra_fee"),
-      dependent_family_size: inteiro(formData, "dependent_family_size"),
-      holders_with_dependents: inteiro(formData, "holders_with_dependents"),
+      // 26/10/2026: os valores dos dependentes saíram daqui e são gravados
+      // pelo `saveProposal` (passo 1). Escrevê-los aqui apagaria o que foi
+      // salvo lá — dois formulários gravando o mesmo campo, o último ganha.
       // I4 (1020): o que acontece se a empresa passar do contratado. Combinar
       // isto na proposta é o que permite o termo de inclusão nascer com o
       // número pronto, em vez de virar renegociação do zero a cada pessoa.

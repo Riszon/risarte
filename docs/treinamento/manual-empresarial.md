@@ -329,8 +329,8 @@ responde a cada mudança sem você precisar rolar a tela.
 
 | # | Passo | O que se decide |
 |---|---|---|
-| 1 | **Quem paga e quanto** | modelo de pagamento, quantos entram, mensalidade |
-| 2 | **Condições comerciais** | faixas por quantidade, mínimo, máximo, excedente |
+| 1 | **Quem paga e quanto** | modelo de pagamento, quantos entram, mensalidade, valores dos dependentes |
+| 2 | **Condições comerciais** | faixas por quantidade (com o total de cada uma), mínimo, máximo, excedente |
 | 3 | **Benefícios e unidades** | o que está coberto e onde vale |
 | 4 | **Prazo e carência** | validade da proposta e as duas carências |
 | 5 | **Texto da proposta** | os blocos de texto do documento |
@@ -382,6 +382,14 @@ redigitadas depois.
 
 - Faixa maior **mais cara** que a anterior: a tela **avisa** e **deixa salvar**
   (existe negociação assim). Duas faixas na mesma quantidade: **recusa**.
+- **O total de cada faixa aparece embaixo dela**, enquanto você digita — por
+  exemplo, *"Total no início da faixa: 50 × R$ 34,90 = R$ 1.745,00/mês"*. A
+  faixa que vale para os titulares desta proposta ganha um **✓** com o total
+  para essa quantidade. No valor fixo por empresa, o total é o próprio valor da
+  faixa.
+
+> **O total da faixa é só para quem monta a proposta.** O documento que vai
+> para a empresa continua mostrando o preço por titular de cada faixa.
 
 **Valor fixo por empresa.** Em vez de preço por titular, a proposta pode
 combinar **um valor só pela empresa**. É esse valor que ela paga todo mês,
@@ -395,13 +403,39 @@ na mensalidade, na ficha, no painel e na cobrança.
 
 ### 6.3. Dependentes
 
-Três formas: **individual**, **pacote familiar** (um valor cobrindo até N
-pessoas, com preço do extra) e o que a negociação combinar.
+Os valores dos dependentes ficam no passo **Quem paga e quanto**. Ao responder
+**"Dependentes entram nesta fase?" → Sim**, abre o quadro **Valores dos
+dependentes**, com duas opções:
 
-> ⚠️ **A proposta NÃO soma o total dos dependentes**, de propósito. Ninguém sabe
-> quantos dependentes cada família tem antes da implantação; um total estimado
-> viraria promessa. O documento mostra a **tabela de valores** e diz que o total
-> sai na implantação.
+- **Individual** — cada dependente paga o mesmo valor. Um campo só: **Valor por
+  dependente**.
+- **Plano familiar** — um pacote por titular cobre vários dependentes. Campos:
+  **valor do pacote**, **até quantos dependentes ele cobre**, **cada dependente
+  além do pacote** e **dependente avulso** (para o titular que leva um só e não
+  precisa do pacote). Há ainda **quantos titulares têm dependentes**, que só a
+  simulação usa.
+
+Os valores são gravados no botão **Salvar proposta**, junto com o resto do
+passo. Responder "Não" depois **não apaga** os valores já salvos. Em
+**Condições comerciais** fica só um atalho, **Configurar dependentes**, que leva
+até este quadro.
+
+Na proposta de **valor fixo por empresa** não há preço de dependente: eles já
+estão dentro do valor combinado, e a tela diz isso.
+
+**A simulação mostra a estimativa dos dependentes.** Ao lado, o quadro
+**Dependentes (estimativa)** dá o valor por mês, como a conta foi feita e o
+total **Titulares + dependentes**. No plano familiar, a conta supõe que os
+dependentes se dividem por igual entre os titulares que têm dependentes, e que
+cada família fica com a opção mais barata (quem leva um só dependente paga o
+avulso). Sem a quantidade de titulares com dependentes, a conta usa o valor
+individual e avisa em amarelo.
+
+> ⚠️ **A estimativa é só para quem monta a proposta — o documento NÃO soma o
+> total dos dependentes**, de propósito. Ninguém sabe quantos dependentes cada
+> família tem antes da implantação; um total estimado no papel viraria promessa.
+> O documento mostra a **tabela de valores** e diz que o total sai na
+> implantação.
 
 ### 6.4. Implantação
 

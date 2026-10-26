@@ -7,11 +7,14 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatBRL } from "@/lib/pricing";
 import {
+  precoDaFaixa,
   problemasDasFaixas,
+  totalDaFaixa,
   type FaixaDePreco,
 } from "@/lib/empresarial/condicoes-da-proposta";
-import { Campo, emReais, selectClass } from "./campos";
+import { Campo, emReais, paraCentavos, selectClass } from "./campos";
 import { saveCommercialTerms } from "./actions";
 
 export type CondicoesView = {
@@ -46,19 +49,37 @@ export function CondicoesComerciais({
   leadId,
   condicoes,
   porTitular,
+  titulares,
+  aoIrParaDependentes,
 }: {
   leadId: string;
   condicoes: CondicoesView;
   /** A base da cobrança muda o que a faixa significa. */
   porTitular: boolean;
+  /** Os titulares que estão sendo digitados no passo 1 — só para a conta da faixa. */
+  titulares: number;
+  /** Os valores dos dependentes moram no passo 1; este botão leva até lá. */
+  aoIrParaDependentes: () => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [faixas, setFaixas] = useState<FaixaDePreco[]>(condicoes.faixas);
-  const [modoDep, setModoDep] = useState(condicoes.dependentMode ?? "PER_DEPENDENT");
+  // O preço da faixa virou estado (era só `defaultValue`) para o total
+  // acompanhar a digitação. Texto, não centavos: "29," no meio da digitação
+  // não pode virar "29,00" no campo.
+  const [precos, setPrecos] = useState<string[]>(
+    condicoes.faixas.map((f) => emReais(f.priceCents))
+  );
   const [modoExc, setModoExc] = useState(condicoes.excessMode ?? "");
 
-  const avisosDasFaixas = problemasDasFaixas(faixas);
+  const faixasDigitadas: FaixaDePreco[] = faixas.map((f, i) => ({
+    minQuantity: f.minQuantity,
+    priceCents: paraCentavos(precos[i] ?? ""),
+  }));
+  const avisosDasFaixas = problemasDasFaixas(faixasDigitadas);
+  // Qual faixa vale para os titulares desta proposta — a mesma régua da conta.
+  const faixaDaProposta =
+    titulares > 0 ? precoDaFaixa(faixasDigitadas, titulares, 0).faixa : null;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -184,7 +205,12 @@ export function CondicoesComerciais({
                     <Input
                       id={`faixa_preco_${i}`}
                       name={`faixa_preco_${i}`}
-                      defaultValue={emReais(f.priceCents)}
+                      value={precos[i] ?? ""}
+                      onChange={(e) =>
+                        setPrecos((a) =>
+                          a.map((x, j) => (j === i ? e.target.value : x))
+                        )
+                      }
                       placeholder="0,00"
                     />
                   </Campo>
@@ -195,10 +221,24 @@ export function CondicoesComerciais({
                   size="sm"
                   className="h-9 px-2"
                   aria-label={`Tirar a faixa ${i + 1}`}
-                  onClick={() => setFaixas((a) => a.filter((_, j) => j !== i))}
+                  onClick={() => {
+                    setFaixas((a) => a.filter((_, j) => j !== i));
+                    setPrecos((a) => a.filter((_, j) => j !== i));
+                  }}
                 >
                   <Trash2 className="size-3.5" />
                 </Button>
+                {/* O TOTAL DA FAIXA — só para quem monta (dono, 26/10/2026).
+                    Não vai para o documento: lá continua o preço unitário. */}
+                <TotalDaFaixa
+                  faixa={faixasDigitadas[i]}
+                  porTitular={porTitular}
+                  titulares={titulares}
+                  valendo={
+                    faixaDaProposta != null &&
+                    faixaDaProposta.minQuantity === f.minQuantity
+                  }
+                />
               </div>
             ))}
 
@@ -215,9 +255,10 @@ export function CondicoesComerciais({
               variant="outline"
               size="sm"
               className="h-8 text-xs"
-              onClick={() =>
-                setFaixas((a) => [...a, { minQuantity: 0, priceCents: 0 }])
-              }
+              onClick={() => {
+                setFaixas((a) => [...a, { minQuantity: 0, priceCents: 0 }]);
+                setPrecos((a) => [...a, ""]);
+              }}
             >
               <Plus className="mr-1 size-3.5" />
               Nova faixa
@@ -228,82 +269,27 @@ export function CondicoesComerciais({
               pagamento, e a cobrança nunca leu estes campos. */}
 
           {/* ---- dependentes ---- */}
-          <div className="space-y-2 rounded-md border p-2">
-            <p className="text-sm font-medium">Preço dos dependentes</p>
-            <div className="grid gap-3 @xl:grid-cols-3">
-              <Campo id="dependent_mode" rotulo="Como cobrar">
-                <select
-                  id="dependent_mode"
-                  name="dependent_mode"
-                  value={modoDep}
-                  onChange={(e) =>
-                    setModoDep(
-                      e.target.value as "PER_DEPENDENT" | "FAMILY_PACKAGE"
-                    )
-                  }
-                  className={selectClass}
-                >
-                  <option value="PER_DEPENDENT">Um valor por dependente</option>
-                  <option value="FAMILY_PACKAGE">Pacote familiar</option>
-                </select>
-              </Campo>
-              {modoDep === "FAMILY_PACKAGE" && (
-                <>
-                  <Campo id="dependent_family_fee" rotulo="Pacote familiar (R$)">
-                    <Input
-                      id="dependent_family_fee"
-                      name="dependent_family_fee"
-                      defaultValue={emReais(condicoes.dependentFamilyFeeCents)}
-                      placeholder="59,90"
-                    />
-                  </Campo>
-                  <Campo
-                    id="dependent_family_size"
-                    rotulo="O pacote cobre até"
-                    ajuda="Quantos dependentes de um mesmo titular."
-                  >
-                    <Input
-                      id="dependent_family_size"
-                      name="dependent_family_size"
-                      type="number"
-                      min={1}
-                      defaultValue={condicoes.dependentFamilySize ?? ""}
-                      placeholder="3"
-                    />
-                  </Campo>
-                  <Campo id="dependent_family_extra_fee" rotulo="Cada extra (R$)">
-                    <Input
-                      id="dependent_family_extra_fee"
-                      name="dependent_family_extra_fee"
-                      defaultValue={emReais(condicoes.dependentFamilyExtraFeeCents)}
-                      placeholder="19,90"
-                    />
-                  </Campo>
-                  <Campo
-                    id="holders_with_dependents"
-                    rotulo="Titulares com dependentes"
-                    ajuda="Só a estimativa usa. Sem isso, a conta cai no valor individual e diz que caiu."
-                  >
-                    <Input
-                      id="holders_with_dependents"
-                      name="holders_with_dependents"
-                      type="number"
-                      min={0}
-                      defaultValue={condicoes.holdersWithDependents ?? ""}
-                      placeholder="—"
-                    />
-                  </Campo>
-                </>
-              )}
-            </div>
-            {modoDep === "FAMILY_PACKAGE" && (
+          {/* 26/10/2026: os valores dos dependentes saíram daqui e foram para
+              o passo 1, junto da pergunta "dependentes entram?". Dois lugares
+              para o mesmo preço eram o que confundia o dono. */}
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+            <div>
+              <p className="text-sm font-medium">Preço dos dependentes</p>
               <p className="text-xs text-muted-foreground">
-                ⚠️ O pacote é <strong>por titular</strong>, e na hora da proposta
-                ninguém sabe como os dependentes vão se distribuir. A simulação
-                supõe que eles se dividem por igual e <strong>declara que é
-                estimativa</strong> — a fatura real é calculada família a família.
+                Individual ou plano familiar, com os valores, ficam no passo{" "}
+                <strong>Quem paga e quanto</strong> — abrem quando você marca que
+                os dependentes entram nesta fase.
               </p>
-            )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={aoIrParaDependentes}
+            >
+              Configurar dependentes
+            </Button>
           </div>
 
           {/* ---- o excedente ---- */}
@@ -391,5 +377,51 @@ export function CondicoesComerciais({
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+/** O total de uma faixa, ao lado dela. Só tela — o documento não mostra. */
+function TotalDaFaixa({
+  faixa,
+  porTitular,
+  titulares,
+  valendo,
+}: {
+  faixa: FaixaDePreco;
+  porTitular: boolean;
+  titulares: number;
+  /** É a faixa que vale para os titulares desta proposta. */
+  valendo: boolean;
+}) {
+  if (faixa.minQuantity < 1 || faixa.priceCents <= 0) {
+    return (
+      <p className="basis-full text-xs text-muted-foreground">
+        Preencha a quantidade e o preço para ver o total.
+      </p>
+    );
+  }
+  return (
+    <div className="basis-full rounded-md bg-muted/40 px-2 py-1 text-xs">
+      {porTitular ? (
+        <>
+          Total no início da faixa: {faixa.minQuantity} ×{" "}
+          {formatBRL(faixa.priceCents)} ={" "}
+          <strong>{formatBRL(totalDaFaixa(faixa, true))}</strong>/mês
+        </>
+      ) : (
+        <>
+          Total da empresa nesta faixa:{" "}
+          <strong>{formatBRL(totalDaFaixa(faixa, false))}</strong>/mês
+        </>
+      )}
+      {valendo && (
+        <span className="block text-emerald-700 dark:text-emerald-400">
+          ✓ Faixa desta proposta
+          {porTitular
+            ? ` — com ${titulares} titulares: ${formatBRL(titulares * faixa.priceCents)}/mês`
+            : ` (${titulares} titulares)`}
+        </span>
+      )}
+    </div>
   );
 }

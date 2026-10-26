@@ -2,10 +2,78 @@ import { describe, expect, it } from "vitest";
 import {
   avisoDoValorMinimo,
   avisosDosLimites,
+  estimativaDosDependentes,
   precoDaFaixa,
   problemasDasFaixas,
   rotuloDaFaixa,
+  totalDaFaixa,
 } from "@/lib/empresarial/condicoes-da-proposta";
+
+describe("estimativaDosDependentes (só tela, 26/10/2026)", () => {
+  const BASE = {
+    modo: "PER_DEPENDENT" as const,
+    dependentes: 10,
+    individualCents: 3990,
+    pacoteCents: 5990,
+    pacoteCobre: 3,
+    extraCents: 1990,
+    titularesComDependentes: null,
+  };
+
+  it("individual: dependentes × valor", () => {
+    expect(estimativaDosDependentes(BASE).totalCents).toBe(39900);
+  });
+
+  it("sem dependentes, zero", () => {
+    expect(estimativaDosDependentes({ ...BASE, dependentes: 0 }).totalCents).toBe(0);
+  });
+
+  it("familiar sem 'titulares com dependentes' cai no individual e diz", () => {
+    const r = estimativaDosDependentes({ ...BASE, modo: "FAMILY_PACKAGE" });
+    expect(r.totalCents).toBe(39900);
+    expect(r.caiuNoIndividual).toBe(true);
+  });
+
+  it("familiar: 10 dependentes em 2 famílias = 2 × (pacote + 2 extras)", () => {
+    const r = estimativaDosDependentes({
+      ...BASE,
+      modo: "FAMILY_PACKAGE",
+      titularesComDependentes: 2,
+    });
+    expect(r.totalCents).toBe(2 * (5990 + 2 * 1990));
+    expect(r.caiuNoIndividual).toBe(false);
+  });
+
+  it("familiar: família de um dependente fica com o individual (mais barato)", () => {
+    const r = estimativaDosDependentes({
+      ...BASE,
+      modo: "FAMILY_PACKAGE",
+      dependentes: 4,
+      titularesComDependentes: 4,
+    });
+    expect(r.totalCents).toBe(4 * 3990);
+  });
+
+  it("divisão desigual: 7 em 3 famílias = uma com 3 e duas com 2", () => {
+    const r = estimativaDosDependentes({
+      ...BASE,
+      modo: "FAMILY_PACKAGE",
+      dependentes: 7,
+      titularesComDependentes: 3,
+    });
+    // 3 dependentes: pacote 59,90 < 3×39,90; 2 dependentes: pacote 59,90 < 79,80.
+    expect(r.totalCents).toBe(3 * 5990);
+  });
+});
+
+describe("totalDaFaixa", () => {
+  it("por titular: quantidade de início × preço", () => {
+    expect(totalDaFaixa({ minQuantity: 50, priceCents: 3490 }, true)).toBe(174500);
+  });
+  it("valor fixo: o preço já é o total", () => {
+    expect(totalDaFaixa({ minQuantity: 50, priceCents: 300000 }, false)).toBe(300000);
+  });
+});
 
 const FAIXAS = [
   { minQuantity: 1, priceCents: 3990 },

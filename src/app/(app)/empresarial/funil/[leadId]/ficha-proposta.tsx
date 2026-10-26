@@ -59,6 +59,7 @@ import type { BeneficioDaProposta } from "@/lib/empresarial/beneficios-da-propos
 import {
   avisoDoValorMinimo,
   avisosDosLimites,
+  estimativaDosDependentes,
 } from "@/lib/empresarial/condicoes-da-proposta";
 import { CondicoesComerciais, type CondicoesView } from "./condicoes-editor";
 import { UnidadesDaParceria, type Unidade } from "./unidades-editor";
@@ -155,6 +156,22 @@ export function FichaDaProposta({
     qualificacao.dependentsEstimate?.toString() ?? ""
   );
   const [depFee, setDepFee] = useState(emReais(qualificacao.dependentFeeCents));
+  // Os valores dos dependentes moram AQUI, junto da pergunta "dependentes
+  // entram?" (dono, 26/10/2026) — antes metade estava nesta tela e metade nas
+  // condições comerciais, e ninguém achava onde configurar o plano familiar.
+  const [depMode, setDepMode] = useState<"PER_DEPENDENT" | "FAMILY_PACKAGE">(
+    condicoes.dependentMode ?? "PER_DEPENDENT"
+  );
+  const [familyFee, setFamilyFee] = useState(emReais(condicoes.dependentFamilyFeeCents));
+  const [familySize, setFamilySize] = useState(
+    condicoes.dependentFamilySize?.toString() ?? "3"
+  );
+  const [familyExtra, setFamilyExtra] = useState(
+    emReais(condicoes.dependentFamilyExtraFeeCents)
+  );
+  const [holdersWithDeps, setHoldersWithDeps] = useState(
+    condicoes.holdersWithDependents?.toString() ?? ""
+  );
   const [fixedMonthly, setFixedMonthly] = useState(
     emReais(qualificacao.fixedMonthlyCents)
   );
@@ -225,6 +242,22 @@ export function FichaDaProposta({
     cnpj,
   };
   const incluiDependentes = includeDeps === "SIM";
+  // ⚠️ SÓ PARA A TELA: a proposta impressa continua sem somar dependente
+  // (decisão de 24/09). Na base fixa o valor da empresa já cobre todo mundo.
+  const estimativaDeps =
+    incluiDependentes && basis === "PER_EMPLOYEE"
+      ? estimativaDosDependentes({
+          modo: depMode,
+          dependentes: Number.parseInt(depsCount || "0", 10) || 0,
+          individualCents: paraCentavos(depFee),
+          pacoteCents: paraCentavos(familyFee),
+          pacoteCobre: Number.parseInt(familySize || "0", 10) || 0,
+          extraCents: paraCentavos(familyExtra),
+          titularesComDependentes: holdersWithDeps.trim()
+            ? Number.parseInt(holdersWithDeps, 10) || 0
+            : null,
+        })
+      : null;
   const faltaProposta = faltaParaProposta(dados);
   const faltaContrato = faltaParaContrato(dados);
 
@@ -451,16 +484,6 @@ export function FichaDaProposta({
                     onChange={(e) => setHolderFee(e.target.value)}
                   />
                 </Campo>
-                {includeDeps === "SIM" && (
-                  <Campo id="dependent_fee" rotulo="Mensalidade por dependente (R$)">
-                    <Input
-                      id="dependent_fee"
-                      name="dependent_fee"
-                      value={depFee}
-                      onChange={(e) => setDepFee(e.target.value)}
-                    />
-                  </Campo>
-                )}
               </>
             ) : (
               <Campo id="fixed_monthly" rotulo="Valor fixo mensal da empresa (R$)">
@@ -474,6 +497,29 @@ export function FichaDaProposta({
               </Campo>
             )}
           </div>
+          {incluiDependentes &&
+            (basis === "PER_EMPLOYEE" ? (
+              <ValoresDosDependentes
+                modo={depMode}
+                aoTrocarModo={setDepMode}
+                individual={depFee}
+                aoTrocarIndividual={setDepFee}
+                pacote={familyFee}
+                aoTrocarPacote={setFamilyFee}
+                cobre={familySize}
+                aoTrocarCobre={setFamilySize}
+                extra={familyExtra}
+                aoTrocarExtra={setFamilyExtra}
+                titularesComDependentes={holdersWithDeps}
+                aoTrocarTitularesComDependentes={setHoldersWithDeps}
+              />
+            ) : (
+              <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+                No <strong>valor fixo por empresa</strong> os dependentes já
+                estão dentro do valor combinado — não há preço de dependente a
+                configurar.
+              </p>
+            ))}
           {/* AP18: a implantação não se negocia aqui — é o 1º pagamento. */}
           <p className="text-xs text-muted-foreground">
             A implantação é o <strong>primeiro pagamento</strong>: o mesmo
@@ -642,6 +688,8 @@ export function FichaDaProposta({
                 leadId={leadId}
                 condicoes={condicoes}
                 porTitular={basis === "PER_EMPLOYEE"}
+                titulares={Number.parseInt(employeeCount || "0", 10) || 0}
+                aoIrParaDependentes={() => setPasso("precos")}
               />
             )}
           </PainelDoPasso>
@@ -703,6 +751,7 @@ export function FichaDaProposta({
             linkDoContrato={`/empresarial/funil/${leadId}/contrato`}
             avisos={avisos}
             incluiDependentes={incluiDependentes}
+            estimativaDependentes={estimativaDeps}
           />
         </aside>
       </div>
@@ -938,6 +987,7 @@ function SimuladorDaProposta({
   linkDoContrato,
   avisos,
   incluiDependentes,
+  estimativaDependentes,
 }: {
   proposta: ReturnType<typeof simularProposta>;
   basis: BillingBasis;
@@ -948,6 +998,8 @@ function SimuladorDaProposta({
   avisos: { gravidade: "avisa" | "bloqueia"; texto: string }[];
   /** Há dependentes nesta fase — muda o que a tela precisa explicar. */
   incluiDependentes: boolean;
+  /** Estimativa dos dependentes — só tela, nunca vai para a proposta. */
+  estimativaDependentes: ReturnType<typeof estimativaDosDependentes> | null;
 }) {
   const economia = proposta.economiaMensalCents;
   return (
@@ -989,8 +1041,7 @@ function SimuladorDaProposta({
 
         {basis === "PER_EMPLOYEE" && (
           <p className="text-xs text-muted-foreground">
-            Titulares {formatBRL(proposta.titularesCents)} · dependentes{" "}
-            {formatBRL(proposta.dependentesCents)} · implantação (1º pagamento){" "}
+            Titulares {formatBRL(proposta.titularesCents)} · implantação (1º pagamento){" "}
             {formatBRL(proposta.implantacaoCents)}
           </p>
         )}
@@ -1028,12 +1079,38 @@ function SimuladorDaProposta({
             entre os titulares, e o pacote é POR TITULAR. Número estimado em
             documento de venda vira expectativa — e a primeira fatura, feita
             família a família, não bateria. */}
-        {incluiDependentes && (
+        {/* 26/10/2026: o dono pediu para VER o valor dos dependentes ao montar
+            a proposta. Aparece aqui, separado e marcado como estimativa — o
+            documento continua com a tabela de valores, sem total. */}
+        {estimativaDependentes && (
+          <div className="space-y-1.5 rounded-md border border-dashed p-3">
+            <p className="text-[11px] leading-tight font-medium tracking-wider text-muted-foreground uppercase">
+              Dependentes (estimativa)
+            </p>
+            <p className="text-sm">
+              <strong>{formatBRL(estimativaDependentes.totalCents)}</strong>/mês
+            </p>
+            <p
+              className={`text-xs ${estimativaDependentes.caiuNoIndividual ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`}
+            >
+              {estimativaDependentes.explicacao}
+            </p>
+            <p className="border-t pt-1.5 text-sm">
+              Titulares + dependentes:{" "}
+              <strong>
+                {formatBRL(proposta.mensalidadeCents + estimativaDependentes.totalCents)}
+              </strong>
+              /mês
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Só você vê este número. A proposta mostra a tabela de valores dos
+              dependentes; o total real sai na implantação, família a família.
+            </p>
+          </div>
+        )}
+        {incluiDependentes && !estimativaDependentes && (
           <p className="text-xs text-muted-foreground">
-            O valor acima é <strong>só dos titulares</strong>. Os dependentes
-            têm a tabela de valores na proposta, e o total deles só existe
-            depois dos cadastros da implantação — é quando a cobrança deles é
-            gerada.
+            No valor fixo, os dependentes já estão dentro do valor da empresa.
           </p>
         )}
 
@@ -1101,5 +1178,166 @@ function SimuladorDaProposta({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * OS VALORES DOS DEPENDENTES — abrem junto do "Sim" em "dependentes entram?".
+ *
+ * Pedido do dono (26/10/2026): a configuração estava partida em duas telas, e
+ * "um valor por dependente" não deixava claro onde ficava o preço. Agora a
+ * escolha é entre dois cartões (individual × familiar) e cada um mostra só os
+ * campos que usa. O valor individual aparece nos dois: no familiar, é o preço
+ * de quem leva um só dependente.
+ */
+function ValoresDosDependentes({
+  modo,
+  aoTrocarModo,
+  individual,
+  aoTrocarIndividual,
+  pacote,
+  aoTrocarPacote,
+  cobre,
+  aoTrocarCobre,
+  extra,
+  aoTrocarExtra,
+  titularesComDependentes,
+  aoTrocarTitularesComDependentes,
+}: {
+  modo: "PER_DEPENDENT" | "FAMILY_PACKAGE";
+  aoTrocarModo: (m: "PER_DEPENDENT" | "FAMILY_PACKAGE") => void;
+  individual: string;
+  aoTrocarIndividual: (v: string) => void;
+  pacote: string;
+  aoTrocarPacote: (v: string) => void;
+  cobre: string;
+  aoTrocarCobre: (v: string) => void;
+  extra: string;
+  aoTrocarExtra: (v: string) => void;
+  titularesComDependentes: string;
+  aoTrocarTitularesComDependentes: (v: string) => void;
+}) {
+  const opcoes = [
+    {
+      valor: "PER_DEPENDENT" as const,
+      titulo: "Individual",
+      texto: "Cada dependente paga o mesmo valor por mês.",
+    },
+    {
+      valor: "FAMILY_PACKAGE" as const,
+      titulo: "Plano familiar",
+      texto: "Um pacote por titular cobre vários dependentes; quem passar paga o extra.",
+    },
+  ];
+  return (
+    <div className="space-y-3 rounded-md border p-3">
+      <div>
+        <p className="text-sm font-medium">Valores dos dependentes</p>
+        <p className="text-xs text-muted-foreground">
+          Estes valores vão para a tabela de dependentes da proposta.
+        </p>
+      </div>
+
+      <div role="radiogroup" className="grid gap-2 @md:grid-cols-2">
+        {opcoes.map((o) => (
+          <label
+            key={o.valor}
+            className={`flex cursor-pointer gap-2 rounded-md border p-2 text-sm ${modo === o.valor ? "border-primary bg-primary/5" : ""}`}
+          >
+            <input
+              type="radio"
+              name="dependent_mode"
+              value={o.valor}
+              checked={modo === o.valor}
+              onChange={() => aoTrocarModo(o.valor)}
+              className="mt-1"
+            />
+            <span>
+              <span className="font-medium">{o.titulo}</span>
+              <span className="block text-xs text-muted-foreground">{o.texto}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
+      <div className="grid gap-3 @md:grid-cols-2">
+        <Campo
+          id="dependent_fee"
+          rotulo={
+            modo === "FAMILY_PACKAGE"
+              ? "Dependente avulso (R$)"
+              : "Valor por dependente (R$)"
+          }
+          ajuda={
+            modo === "FAMILY_PACKAGE"
+              ? "Para o titular que leva um dependente só e não precisa do pacote."
+              : "Mensalidade de cada dependente."
+          }
+        >
+          <Input
+            id="dependent_fee"
+            name="dependent_fee"
+            value={individual}
+            onChange={(e) => aoTrocarIndividual(e.target.value)}
+            placeholder="39,90"
+          />
+        </Campo>
+        {modo === "FAMILY_PACKAGE" && (
+          <>
+            <Campo id="dependent_family_fee" rotulo="Valor do pacote familiar (R$)">
+              <Input
+                id="dependent_family_fee"
+                name="dependent_family_fee"
+                value={pacote}
+                onChange={(e) => aoTrocarPacote(e.target.value)}
+                placeholder="59,90"
+              />
+            </Campo>
+            <Campo
+              id="dependent_family_size"
+              rotulo="O pacote cobre até (dependentes)"
+              ajuda="Por titular."
+            >
+              <Input
+                id="dependent_family_size"
+                name="dependent_family_size"
+                type="number"
+                min={1}
+                value={cobre}
+                onChange={(e) => aoTrocarCobre(e.target.value)}
+                placeholder="3"
+              />
+            </Campo>
+            <Campo
+              id="dependent_family_extra_fee"
+              rotulo="Cada dependente além do pacote (R$)"
+            >
+              <Input
+                id="dependent_family_extra_fee"
+                name="dependent_family_extra_fee"
+                value={extra}
+                onChange={(e) => aoTrocarExtra(e.target.value)}
+                placeholder="19,90"
+              />
+            </Campo>
+            <Campo
+              id="holders_with_dependents"
+              rotulo="Quantos titulares têm dependentes"
+              ajuda="Só a simulação usa, para estimar quantas famílias compram o pacote."
+            >
+              <Input
+                id="holders_with_dependents"
+                name="holders_with_dependents"
+                type="number"
+                min={0}
+                value={titularesComDependentes}
+                onChange={(e) => aoTrocarTitularesComDependentes(e.target.value)}
+                placeholder="—"
+              />
+            </Campo>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
