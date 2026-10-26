@@ -2590,6 +2590,39 @@ insere a lista antes de conferir os itens), e o clique duplo cria duas. Elas
 não atrapalham o envio (lista vazia é recusada), mas enchem a tela Pedir. Achado
 tratando o OC-00129/00130.
 
+### AP73. Preço dos dependentes: a proposta prometia uma regra e o boleto cobrava outra (26/10/2026) — ✅ CORRIGIDO na 1032 (Empresarial 0.82.0)
+
+**Confirmado lendo o código, corrigido na mesma entrega** (achado montando o
+quadro de dependentes da proposta). Quatro defeitos da mesma família:
+
+1. A escolha "Individual × Plano familiar" da proposta **não chegava à
+   empresa**: o boleto cobrava sempre o pacote a partir de 2 dependentes.
+2. A cobrança **lia `dependent_family_size` e não usava**: o pacote era sempre
+   3 no boleto, qualquer que fosse o combinado (a 1018 dizia ter resolvido).
+3. A ficha, o painel, o relatório e o contrato **nem liam** o tamanho do
+   pacote — sete cópias de "ler preço → montar preço"; hoje uma só
+   (`ADHESION_PRICING_COLUMNS` + `pricingFromRow`).
+4. A implantação **somava os dependentes cadastrados** quando todos os
+   titulares estavam cadastrados, e não somava pela quantidade contratada —
+   contra a regra escrita no Bloco K. Hoje segue a opção da proposta (padrão:
+   só titulares).
+
+O preço por família passou a sair da **quantidade** de dependentes
+(`custoDosDependentesDoTitular`), não do rótulo `dependent_plan`.
+
+### AP74. O que a 1032 deixou de fora, declarado (26/10/2026)
+
+**Confirmado lendo o código; nenhum dos três muda valor cobrado.**
+
+- **O rótulo do plano** (`dependent_plan`, calculado pela `dependent_plan_for`
+  da 1002) continua com o pacote fixo em 3 e não conhece o modo individual. A
+  lista de titulares mostra "Dependente familiar" para quem tem 2 ou 3
+  dependentes mesmo numa empresa "individual". O VALOR já não usa o rótulo.
+- **Configurações → Preços de adesão** (padrão da rede) não tem a escolha do
+  modo: empresa cadastrada direto, sem funil, fica no plano familiar.
+- A implantação de **segunda etapa** (titulares novos por termo de inclusão)
+  cobra só os titulares novos, mesmo na empresa "titulares e dependentes".
+
 ### AP72. A anamnese antiga (`clinical_anamnesis` e `saveAnamnesis`) ficou sem uso (26/10/2026)
 
 **Confirmado lendo o código e o treino (achado no OC-00134).** `saveAnamnesis`

@@ -6,7 +6,11 @@ import { carregarFaixasDaEmpresa } from "@/lib/empresarial/faixas-da-empresa";
 import {
   computeMonthlyCents,
   DEFAULT_ADHESION_PRICING,
+  ADHESION_PRICING_COLUMNS,
+  escolherPricing,
+  pricingFromRow,
   type AdhesionPricing,
+  type AdhesionPricingRow,
   type SplitRules,
 } from "@/lib/empresarial/pricing";
 import { DEFAULT_SPLIT_RULES } from "@/lib/empresarial/pricing";
@@ -197,20 +201,9 @@ export async function loadCompanySheet(
       .returns<{ employee_id: string; status: string }[]>(),
     db
       .from("adhesion_pricing")
-      .select(
-        "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments"
-      )
+      .select(ADHESION_PRICING_COLUMNS)
       .or(`company_id.eq.${companyId},company_id.is.null`)
-      .returns<
-        {
-          company_id: string | null;
-          holder_fee_cents: number;
-          dependent_individual_fee_cents: number;
-          dependent_family_fee_cents: number;
-          dependent_family_extra_fee_cents: number;
-          max_installments: number;
-        }[]
-      >(),
+      .returns<AdhesionPricingRow[]>(),
     db
       .from("split_rules")
       .select(
@@ -297,18 +290,9 @@ export async function loadCompanySheet(
   }
 
   // Preço e split: da empresa quando existe; senão o padrão da rede.
-  const ownPricing = (pricingRows ?? []).find((p) => p.company_id === companyId);
-  const netPricing = (pricingRows ?? []).find((p) => p.company_id === null);
-  const chosenPricing = ownPricing ?? netPricing;
+  const chosenPricing = escolherPricing(pricingRows, companyId);
   const pricing: AdhesionPricing = chosenPricing
-    ? {
-        holderFeeCents: chosenPricing.holder_fee_cents,
-        dependentIndividualFeeCents: chosenPricing.dependent_individual_fee_cents,
-        dependentFamilyFeeCents: chosenPricing.dependent_family_fee_cents,
-        dependentFamilyExtraFeeCents:
-          chosenPricing.dependent_family_extra_fee_cents,
-        maxInstallments: chosenPricing.max_installments,
-      }
+    ? pricingFromRow(chosenPricing)
     : DEFAULT_ADHESION_PRICING;
 
   const ownSplit = (splitRows ?? []).find((s) => s.company_id === companyId);
@@ -417,7 +401,7 @@ export async function loadCompanySheet(
       employees: empByDoc.get(d.id) ?? 0,
     })),
     pricing,
-    pricingScope: ownPricing ? "empresa" : "rede",
+    pricingScope: chosenPricing?.company_id === companyId ? "empresa" : "rede",
     split,
     splitScope: ownSplit ? "empresa" : "rede",
     benefits: [...chosenBenefit.values()]

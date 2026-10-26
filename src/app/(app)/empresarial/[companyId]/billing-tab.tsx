@@ -345,6 +345,29 @@ export function BillingTab({
                 </p>
               )}
 
+              {/* 1032: A REGRA DOS DEPENDENTES NA IMPLANTAÇÃO, dita junto do
+                  número — sem ela, quem confere procura os dependentes na
+                  conta e não sabe se faltam ou se não entram. */}
+              {preview.dependentesNaImplantacao && (
+                <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                  {preview.dependentesNaImplantacao.inclui ? (
+                    <>
+                      Combinado na proposta: a implantação cobra{" "}
+                      <strong>titulares e dependentes</strong>
+                      {preview.dependentesNaImplantacao.estimativaCents != null
+                        ? ` — os dependentes pela estimativa da proposta (${formatBRL(preview.dependentesNaImplantacao.estimativaCents)}), já que os cadastros não estão completos.`
+                        : " — os dependentes já cadastrados."}
+                    </>
+                  ) : (
+                    <>
+                      Combinado na proposta: a implantação cobra{" "}
+                      <strong>só os titulares</strong>. Os dependentes entram na
+                      mensalidade.
+                    </>
+                  )}
+                </p>
+              )}
+
               {/* OC-00090: A MENSALIDADE SAI PELO COMBINADO, mesmo sem os
                   cadastros. Sem esta frase, quem vê "7 titulares" procura os
                   nomes na lista e não acha — e ninguém cobra a empresa. */}

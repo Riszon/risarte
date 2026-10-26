@@ -17,7 +17,66 @@ export type AdhesionPricing = {
    * diferente. Ausente = 3, que preserva o que já acontecia.
    */
   dependentFamilySize?: number;
+  /**
+   * Como os dependentes são cobrados (1032, dono em 26/10/2026).
+   *
+   * `PER_DEPENDENT`: cada dependente paga o valor individual. `FAMILY_PACKAGE`
+   * (o padrão, e o que sempre existiu): 1 dependente paga o individual, a
+   * partir de 2 vale o pacote, e quem passar do pacote paga o extra.
+   * Ausente = `FAMILY_PACKAGE`, que preserva o que já acontecia.
+   */
+  dependentMode?: DependentMode;
 };
+
+export const DEPENDENT_MODES = ["PER_DEPENDENT", "FAMILY_PACKAGE"] as const;
+export type DependentMode = (typeof DEPENDENT_MODES)[number];
+
+/**
+ * AS COLUNAS DO PREÇO DE ADESÃO, num lugar só (1032).
+ *
+ * ⚠️ Antes cada tela tinha a sua lista e a sua conversão — sete cópias — e
+ * só a cobrança lia o tamanho do pacote: a mensalidade da ficha, do painel e
+ * do relatório usava 3 mesmo quando a empresa tinha combinado outro número.
+ * Coluna nova que entrasse em uma cópia e não nas outras faria a tela
+ * discordar do boleto em silêncio.
+ */
+export const ADHESION_PRICING_COLUMNS =
+  "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments, dependent_family_size, dependent_mode";
+
+export type AdhesionPricingRow = {
+  company_id: string | null;
+  holder_fee_cents: number;
+  dependent_individual_fee_cents: number;
+  dependent_family_fee_cents: number;
+  dependent_family_extra_fee_cents: number;
+  max_installments: number;
+  dependent_family_size: number | null;
+  dependent_mode: string | null;
+};
+
+export function pricingFromRow(r: AdhesionPricingRow): AdhesionPricing {
+  return {
+    holderFeeCents: r.holder_fee_cents,
+    dependentIndividualFeeCents: r.dependent_individual_fee_cents,
+    dependentFamilyFeeCents: r.dependent_family_fee_cents,
+    dependentFamilyExtraFeeCents: r.dependent_family_extra_fee_cents,
+    maxInstallments: r.max_installments,
+    dependentFamilySize: r.dependent_family_size ?? undefined,
+    dependentMode: r.dependent_mode === "PER_DEPENDENT" ? "PER_DEPENDENT" : "FAMILY_PACKAGE",
+  };
+}
+
+/** O preço da EMPRESA, senão o padrão da REDE (linha com `company_id` nulo). */
+export function escolherPricing(
+  rows: readonly AdhesionPricingRow[] | null | undefined,
+  companyId: string
+): AdhesionPricingRow | null {
+  return (
+    rows?.find((r) => r.company_id === companyId) ??
+    rows?.find((r) => r.company_id === null) ??
+    null
+  );
+}
 
 export type SplitRules = {
   firstPaymentRisartePct: number;
@@ -41,30 +100,44 @@ export const DEFAULT_SPLIT_RULES: SplitRules = {
   recurringRislifePct: 50,
 };
 
+/**
+ * QUANTO OS DEPENDENTES DE UM TITULAR CUSTAM POR MÊS — a regra única.
+ *
+ * ⚠️ É ESTA a conta da cobrança E da proposta (1032). A proposta estima pelo
+ * quadro "quantos titulares com quantos dependentes"; a cobrança soma família
+ * a família. Usar a mesma função é o que garante que o número prometido e o
+ * boleto saiam da mesma régua.
+ *
+ * ⚠️ PELA QUANTIDADE, NÃO PELO RÓTULO DO PLANO. O rótulo (`dependent_plan`)
+ * é calculado no banco com o pacote fixo em 3 (1002); desde a 1018 o tamanho
+ * do pacote é da empresa. Com pacote de 2, o titular de 3 dependentes era
+ * "FAMILY" e pagava só o pacote — o extra nunca era cobrado.
+ */
+export function custoDosDependentesDoTitular(
+  pricing: AdhesionPricing,
+  dependentes: number
+): number {
+  const n = Math.max(0, Math.floor(Number.isFinite(dependentes) ? dependentes : 0));
+  if (n === 0) return 0;
+  const individual = Math.max(0, pricing.dependentIndividualFeeCents);
+  if (pricing.dependentMode === "PER_DEPENDENT") return n * individual;
+  if (n === 1) return individual;
+  const cobertos = Math.max(1, Math.floor(pricing.dependentFamilySize ?? 3));
+  return (
+    Math.max(0, pricing.dependentFamilyFeeCents) +
+    Math.max(0, n - cobertos) * Math.max(0, pricing.dependentFamilyExtraFeeCents)
+  );
+}
+
 /** Custo mensal do plano de dependentes de UM titular. */
 export function dependentPlanCostCents(
   pricing: AdhesionPricing,
   plan: DependentPlan,
   activeDependentCount: number
 ): number {
-  switch (plan) {
-    case "NONE":
-      return 0;
-    case "INDIVIDUAL":
-      return pricing.dependentIndividualFeeCents;
-    case "FAMILY":
-      return pricing.dependentFamilyFeeCents;
-    case "FAMILY_EXTRA": {
-      const cobertos = Math.max(1, Math.floor(pricing.dependentFamilySize ?? 3));
-      const extras = Math.max(0, activeDependentCount - cobertos);
-      return (
-        pricing.dependentFamilyFeeCents +
-        extras * pricing.dependentFamilyExtraFeeCents
-      );
-    }
-    default:
-      return 0;
-  }
+  // O rótulo só decide "tem ou não tem"; o valor sai da quantidade.
+  if (plan === "NONE") return 0;
+  return custoDosDependentesDoTitular(pricing, activeDependentCount);
 }
 
 export type MonthlyEmployee = {

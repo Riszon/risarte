@@ -173,7 +173,7 @@ describe("régua: a cobrança da mensalidade usa o contratado e avisa", () => {
 
   it("a prévia pede o contratado só na MENSALIDADE (a implantação tem a própria conta)", () => {
     expect(acoes).toMatch(
-      /computeMonthlyBreakdown\(db, companyId, \{\s*peloContratado: billingType === "MONTHLY",\s*\}\)/
+      /computeMonthlyBreakdown\(db, companyId, \{\s*peloContratado: billingType === "MONTHLY",\s*soTitulares: billingType === "IMPLANTATION" && !implantacaoComDependentes,\s*\}\)/
     );
   });
 

@@ -54,6 +54,7 @@ import type { CompanyCategory } from "@/lib/empresarial/documents";
 import { FichaDoLead, type QualificacaoView } from "./ficha-lead";
 import { FichaDaProposta } from "./ficha-proposta";
 import type { CondicoesView } from "./condicoes-editor";
+import { lerQuadro } from "@/lib/empresarial/dependentes-da-proposta";
 import {
   progressoDaImplantacao,
   type ImplementationStep,
@@ -221,6 +222,10 @@ type QualRow = {
   dependent_family_extra_fee_cents: number | null;
   dependent_family_size: number | null;
   holders_with_dependents: number | null;
+  // 1032: o quadro dos dependentes e a regra da implantação
+  dependents_calc_mode: "DISTRIBUTION" | "AS_INDIVIDUAL" | "NONE" | null;
+  dependents_distribution: unknown;
+  implantation_includes_dependents: boolean | null;
   // I3 (1019)
   main_clinic_id: string | null;
   // I4 (1020)
@@ -436,7 +441,9 @@ export default async function FichaDoLeadPage({
     dependentFamilyFeeCents: qual?.dependent_family_fee_cents ?? null,
     dependentFamilyExtraFeeCents: qual?.dependent_family_extra_fee_cents ?? null,
     dependentFamilySize: qual?.dependent_family_size ?? null,
-    holdersWithDependents: qual?.holders_with_dependents ?? null,
+    dependentsCalcMode: qual?.dependents_calc_mode ?? null,
+    dependentsDistribution: lerQuadro(qual?.dependents_distribution),
+    implantationIncludesDependents: qual?.implantation_includes_dependents ?? null,
     faixas: (faixasRows ?? []).map((f) => ({
       minQuantity: f.min_quantity,
       priceCents: f.price_cents,

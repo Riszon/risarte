@@ -14,6 +14,7 @@ import {
   totalDaFaixa,
   type FaixaDePreco,
 } from "@/lib/empresarial/condicoes-da-proposta";
+import type { LinhaDoQuadro } from "@/lib/empresarial/dependentes-da-proposta";
 import { Campo, emReais, paraCentavos, selectClass } from "./campos";
 import { saveCommercialTerms } from "./actions";
 
@@ -26,7 +27,10 @@ export type CondicoesView = {
   dependentFamilyFeeCents: number | null;
   dependentFamilyExtraFeeCents: number | null;
   dependentFamilySize: number | null;
-  holdersWithDependents: number | null;
+  // 1032: como os dependentes entram na conta, o quadro e a implantação.
+  dependentsCalcMode: "DISTRIBUTION" | "AS_INDIVIDUAL" | "NONE" | null;
+  dependentsDistribution: LinhaDoQuadro[];
+  implantationIncludesDependents: boolean | null;
   faixas: FaixaDePreco[];
   // I4 (1020): o que acontece se a empresa passar do contratado.
   excessMode: "NEW_FIXED" | "PER_ADHESION" | null;

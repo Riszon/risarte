@@ -13,6 +13,7 @@ import {
   type FaixaDePreco,
 } from "./condicoes-da-proposta";
 import { fixoDoFechamento } from "./mensalidade";
+import { estimativaDaProposta } from "./dependentes-da-proposta";
 
 export const BILLING_BASES = ["PER_EMPLOYEE", "FIXED_PER_COMPANY"] as const;
 export type BillingBasis = (typeof BILLING_BASES)[number];
@@ -38,13 +39,13 @@ export type PropostaInput = {
   /**
    * Dependentes entram no programa nesta fase, e quantos se estima.
    *
-   * ⚠️ NÃO ENTRAM NA CONTA da proposta (decisão do dono, 24/09/2026) — servem
-   * para a tela dizer que haverá dependentes e para a régua dos limites de
-   * adesão. O VALOR deles só existe depois da implantação.
+   * Servem para a tela dizer que haverá dependentes e para a régua dos
+   * limites de adesão. O VALOR deles entra pela `dependentesEstimadosCents`
+   * (1032) — só quando a proposta escolhe calcular.
    */
   includeDependents: boolean;
   dependentsCount: number;
-  /** Valor do dependente individual — vai na TABELA, não na conta. */
+  /** Valor do dependente individual — vai na TABELA do documento. */
   dependentFeeCents: number;
   /** Só vale quando a base é valor fixo por empresa. */
   fixedMonthlyCents: number;
@@ -60,6 +61,16 @@ export type PropostaInput = {
   // a que já era. Proposta antiga não muda de preço por causa de campo novo.
   /** Faixas de preço por quantidade. Vazio = sem regra de quantidade. */
   faixas?: readonly FaixaDePreco[];
+
+  // ---- 1032: os dependentes ENTRAM na conta quando a proposta escolhe -------
+  /**
+   * O que os dependentes somam por mês (`estimativaDosDependentes`). Ausente
+   * ou nulo = a proposta escolheu não calcular, e a conta é só dos titulares,
+   * como era desde 24/09.
+   */
+  dependentesEstimadosCents?: number | null;
+  /** A implantação (1º pagamento) cobra também os dependentes. */
+  implantacaoComDependentes?: boolean;
 };
 
 export type PropostaResult = {
@@ -109,46 +120,45 @@ export function simularProposta(input: PropostaInput): PropostaResult {
     ? titulares * naoNegativo(precoUnitario)
     : naoNegativo(precoUnitario);
 
-  // ⚠️ A PROPOSTA NÃO CALCULA O VALOR DOS DEPENDENTES (decisão do dono,
-  // 24/09/2026, corrigindo o que eu tinha feito em H3).
+  // ⚠️ OS DEPENDENTES ENTRAM QUANDO A PROPOSTA ESCOLHE (dono, 26/10/2026 —
+  // 1032), revendo a decisão de 24/09.
   //
-  // Na hora de contratar ninguém sabe quantos dependentes vão entrar, nem como
-  // eles se distribuem entre os titulares — e o pacote familiar é POR TITULAR.
-  // Eu tinha resolvido isso com uma estimativa declarada; ele cortou pela
-  // raiz, e está certo: número estimado num documento de venda vira
-  // expectativa, e a primeira fatura (calculada família a família) não bate.
-  //
-  // O que a proposta mostra é a TABELA DE VALORES do dependente. O total sai
-  // depois da implantação, quando os cadastros existem — e é só então que a
-  // cobrança dos dependentes é gerada.
-  const dependentesCents = 0;
+  // Em 24/09 a proposta deixou de somar dependente porque a estimativa era
+  // "dividir por igual entre os titulares", e a primeira fatura não batia.
+  // Agora quem monta informa o QUADRO (quantos titulares com quantos
+  // dependentes), e o preço de cada família sai da mesma régua do boleto.
+  // Sem o quadro, a proposta pode calcular como individual ou não calcular —
+  // e "não calcular" é o que vale quando ninguém escolheu nada.
+  const dependentesCents = naoNegativo(input.dependentesEstimadosCents ?? 0);
 
   const mensalidadeCents = titularesCents + dependentesCents;
 
-  // ⚠️ A IMPLANTAÇÃO É O 1º PAGAMENTO (dono, 27/09/2026 — AP18). Havia três
-  // campos (valor por titular, modo, valor fixo) que a proposta imprimia e a
-  // cobrança NÃO lia: a implantação sempre foi cobrada pelo preço da
-  // mensalidade. O documento prometia um número e o boleto cobrava outro.
-  // Os campos saíram da tela; as colunas ficam no banco, sem uso.
-  const implantacaoCents = mensalidadeCents;
+  // ⚠️ A IMPLANTAÇÃO É O 1º PAGAMENTO (dono, 27/09/2026 — AP18). Desde a
+  // 1032 ela tem opção: só os titulares (o padrão) ou titulares e
+  // dependentes — e a cobrança da implantação segue a mesma opção.
+  const implantacaoCents =
+    titularesCents + (input.implantacaoComDependentes ? dependentesCents : 0);
 
   // Quem paga o quê. As duas partes SEMPRE somam a mensalidade: a do
   // titular é o resto, nunca uma segunda conta — senão um centavo de
   // arredondamento sumiria entre as duas.
+  //
+  // ⚠️ A PARTE DA EMPRESA VALE SÓ SOBRE OS TITULARES (dono, 26/10/2026): os
+  // dependentes ficam por conta do titular.
   let empresaPagaCents = 0;
   if (input.paymentModel === "COMPANY_PAYS") {
-    empresaPagaCents = mensalidadeCents;
+    empresaPagaCents = titularesCents;
   } else if (input.paymentModel === "COMPANY_PARTIAL") {
     if (input.subsidyType === "PERCENT") {
       empresaPagaCents = Math.round(
-        (mensalidadeCents * naoNegativo(input.subsidyValue)) / 100
+        (titularesCents * naoNegativo(input.subsidyValue)) / 100
       );
     } else if (input.subsidyType === "AMOUNT") {
       empresaPagaCents = naoNegativo(input.subsidyValue) * titulares;
     }
-    // A parte da empresa nunca passa do total: bancar mais do que a conta
-    // inteira faria o titular aparecer com valor negativo a pagar.
-    empresaPagaCents = Math.min(empresaPagaCents, mensalidadeCents);
+    // A parte da empresa nunca passa dos titulares: bancar mais do que a
+    // conta deles faria o titular aparecer com valor negativo a pagar.
+    empresaPagaCents = Math.min(empresaPagaCents, titularesCents);
   }
   const colaboradorPagaCents = mensalidadeCents - empresaPagaCents;
 
@@ -160,8 +170,10 @@ export function simularProposta(input: PropostaInput): PropostaResult {
     mensalidadeCents,
     titularesCents,
     dependentesCents,
+    // O preço do TITULAR — com dependentes na conta, dividir o total pelos
+    // titulares daria um "por titular" que nenhum titular paga.
     porColaboradorCents:
-      titulares > 0 ? Math.round(mensalidadeCents / titulares) : null,
+      titulares > 0 ? Math.round(titularesCents / titulares) : null,
     implantacaoCents,
     empresaPagaCents,
     colaboradorPagaCents,
@@ -246,6 +258,11 @@ export type QualificacaoDoLead = {
   dependent_family_fee_cents?: number | null;
   dependent_family_extra_fee_cents?: number | null;
   dependent_family_size?: number | null;
+  // ---- 1032: como os dependentes entram na conta e na implantação ----------
+  dependent_mode?: "PER_DEPENDENT" | "FAMILY_PACKAGE" | null;
+  dependents_calc_mode?: "DISTRIBUTION" | "AS_INDIVIDUAL" | "NONE" | null;
+  dependents_distribution?: unknown;
+  implantation_includes_dependents?: boolean | null;
   main_clinic_id?: string | null;
   includes_dependents?: boolean | null;
   dependents_estimate?: number | null;
@@ -318,6 +335,21 @@ export function camposDaEmpresa(
     // de sempre, a primeira cobrança sairia em data diferente da combinada.
     address: qual?.address ?? null,
     due_day: qual?.due_day ?? 5,
+    // ⚠️ A REGRA DA IMPLANTAÇÃO VIAJA JUNTO (1032). Com "titulares e
+    // dependentes", a estimativa que a empresa leu na proposta fica congelada
+    // aqui: é o que a 1ª implantação cobra dos dependentes enquanto os
+    // cadastros não estão completos — como a quantidade contratada faz com os
+    // titulares. Sem estimativa (não calculou), não há o que cobrar deles.
+    ...implantacaoDosDependentes(qual),
+  };
+}
+
+function implantacaoDosDependentes(qual: QualificacaoDoLead | null) {
+  const inclui = Boolean(qual?.implantation_includes_dependents && qual?.includes_dependents);
+  const estimativa = inclui ? estimativaDaProposta(qual) : null;
+  return {
+    implantation_includes_dependents: inclui,
+    implantation_dependents_cents: estimativa ? estimativa.totalCents : null,
   };
 }
 

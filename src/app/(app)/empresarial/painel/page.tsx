@@ -10,7 +10,10 @@ import { formatBRL } from "@/lib/pricing";
 import {
   computeMonthlyCents,
   DEFAULT_ADHESION_PRICING,
+  ADHESION_PRICING_COLUMNS,
+  pricingFromRow,
   type AdhesionPricing,
+  type AdhesionPricingRow,
 } from "@/lib/empresarial/pricing";
 import {
   COMPANY_STATUS_LABELS,
@@ -25,21 +28,6 @@ import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
 export const metadata: Metadata = { title: "Painel · Risarte Empresarial" };
 
-function toPricing(r: {
-  holder_fee_cents: number;
-  dependent_individual_fee_cents: number;
-  dependent_family_fee_cents: number;
-  dependent_family_extra_fee_cents: number;
-  max_installments: number;
-}): AdhesionPricing {
-  return {
-    holderFeeCents: r.holder_fee_cents,
-    dependentIndividualFeeCents: r.dependent_individual_fee_cents,
-    dependentFamilyFeeCents: r.dependent_family_fee_cents,
-    dependentFamilyExtraFeeCents: r.dependent_family_extra_fee_cents,
-    maxInstallments: r.max_installments,
-  };
-}
 
 export default async function PainelPage() {
   const session = await getSessionContext();
@@ -84,12 +72,8 @@ export default async function PainelPage() {
       .returns<{ employee_id: string; status: "ACTIVE" }[]>(),
     db
       .from("adhesion_pricing")
-      .select(
-        "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments"
-      )
-      .returns<
-        ({ company_id: string | null } & Parameters<typeof toPricing>[0])[]
-      >(),
+      .select(ADHESION_PRICING_COLUMNS)
+      .returns<AdhesionPricingRow[]>(),
     db
       .from("benefit_usage")
       .select("company_id, amount_saved_cents, used_at")
@@ -105,10 +89,10 @@ export default async function PainelPage() {
   const networkPricing =
     (pricingRows ?? [])
       .filter((p) => p.company_id === null)
-      .map(toPricing)[0] ?? DEFAULT_ADHESION_PRICING;
+      .map(pricingFromRow)[0] ?? DEFAULT_ADHESION_PRICING;
   const pricingByCompany = new Map<string, AdhesionPricing>();
   for (const p of pricingRows ?? [])
-    if (p.company_id) pricingByCompany.set(p.company_id, toPricing(p));
+    if (p.company_id) pricingByCompany.set(p.company_id, pricingFromRow(p));
 
   const depCountByEmployee = new Map<string, number>();
   for (const d of dependents ?? [])

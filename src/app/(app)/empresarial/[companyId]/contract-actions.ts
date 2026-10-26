@@ -13,7 +13,11 @@ import { contagemConfirmada } from "@/lib/contagem";
 import {
   computeMonthlyCents,
   DEFAULT_ADHESION_PRICING,
+  ADHESION_PRICING_COLUMNS,
+  escolherPricing,
+  pricingFromRow,
   type AdhesionPricing,
+  type AdhesionPricingRow,
 } from "@/lib/empresarial/pricing";
 import type { DependentPlan } from "@/lib/empresarial/constants";
 
@@ -177,10 +181,9 @@ async function buildProposalText(companyId: string): Promise<string | null> {
   ] = await Promise.all([
       db
         .from("adhesion_pricing")
-        .select(
-          "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments"
-        )
-        .or(`company_id.eq.${companyId},company_id.is.null`),
+        .select(ADHESION_PRICING_COLUMNS)
+        .or(`company_id.eq.${companyId},company_id.is.null`)
+        .returns<AdhesionPricingRow[]>(),
       db
         .from("employees")
         .select("id, dependent_plan, status")
@@ -208,25 +211,9 @@ async function buildProposalText(companyId: string): Promise<string | null> {
   }
   const minimoDeTitulares = typeof limiteRow === "number" ? limiteRow : null;
 
-  const rows = pricingRows as {
-    company_id: string | null;
-    holder_fee_cents: number;
-    dependent_individual_fee_cents: number;
-    dependent_family_fee_cents: number;
-    dependent_family_extra_fee_cents: number;
-    max_installments: number;
-  }[];
-  const chosen =
-    rows.find((r) => r.company_id === companyId) ??
-    rows.find((r) => r.company_id === null);
+  const chosen = escolherPricing(pricingRows, companyId);
   const pricing: AdhesionPricing = chosen
-    ? {
-        holderFeeCents: chosen.holder_fee_cents,
-        dependentIndividualFeeCents: chosen.dependent_individual_fee_cents,
-        dependentFamilyFeeCents: chosen.dependent_family_fee_cents,
-        dependentFamilyExtraFeeCents: chosen.dependent_family_extra_fee_cents,
-        maxInstallments: chosen.max_installments,
-      }
+    ? pricingFromRow(chosen)
     : DEFAULT_ADHESION_PRICING;
   const depCount = new Map<string, number>();
   for (const d of (deps ?? []) as { employee_id: string }[])

@@ -405,43 +405,78 @@ na mensalidade, na ficha, no painel e na cobrança.
 
 Os valores dos dependentes ficam no passo **Quem paga e quanto**. Ao responder
 **"Dependentes entram nesta fase?" → Sim**, abre o quadro **Valores dos
-dependentes**, com duas opções:
+dependentes**. Ele tem três partes.
+
+**1. Como os dependentes são cobrados** — duas opções:
 
 - **Individual** — cada dependente paga o mesmo valor. Um campo só: **Valor por
   dependente**.
-- **Plano familiar** — um pacote por titular cobre vários dependentes. Campos:
-  **valor do pacote**, **até quantos dependentes ele cobre**, **cada dependente
-  além do pacote** e **dependente avulso** (para o titular que leva um só e não
-  precisa do pacote). Há ainda **quantos titulares têm dependentes**, que só a
-  simulação usa.
+- **Plano familiar** — o titular com **1 dependente** paga o **avulso**; a
+  partir de **2**, paga o **pacote**; quem passa do tamanho do pacote paga o
+  **extra** por dependente. Campos: **dependente avulso**, **valor do pacote**,
+  **até quantos dependentes ele cobre** e **cada dependente além do pacote**.
+
+> ⚠️ **A escolha vale também na cobrança.** No fechamento, ela vai para o
+> cadastro da empresa, e a mensalidade é cobrada família a família por essa
+> regra. Proposta sem escolha gravada vale **plano familiar** — é o que a
+> cobrança sempre fez.
+
+**2. Calcular os dependentes na proposta?** — três opções:
+
+- **Detalhar por titular** — abre um quadro de **quantos titulares terão
+  quantos dependentes**. Ele já vem com as linhas de 0 a 4 dependentes; basta
+  preencher quantos titulares estão em cada uma (por exemplo: 3 sem
+  dependentes, 4 com 1, 2 com 2, 3 com 3, 1 com 4). **Nova linha** acrescenta
+  famílias maiores. Cada linha mostra quanto cada titular paga pelos
+  dependentes e o subtotal; embaixo, o total de dependentes e o valor por mês.
+  O campo **Quantos dependentes** passa a ser a soma do quadro.
+- **Calcular como individual** — para quando não se sabe a distribuição: a
+  conta é **quantos dependentes × o valor individual**.
+- **Não calcular** — a proposta só explica a tabela de valores; o total dos
+  dependentes sai dos cadastros.
+
+> **O quadro usa a mesma conta do boleto.** Se o quadro estiver certo, a
+> primeira mensalidade com todos cadastrados dá o mesmo valor que a proposta.
+
+> **Os avisos do quadro:** duas linhas com a mesma quantidade de dependentes
+> **impedem salvar** (junte as duas). Se o quadro somar mais ou menos titulares
+> que os da proposta, aparece um **aviso em amarelo** — ele não impede salvar.
+> Quem não terá dependente entra na linha **0**.
+
+**3. A implantação (1º pagamento) cobra** — aparece quando os dependentes são
+calculados:
+
+- **Só os titulares** (o padrão) — os dependentes começam a pagar na
+  mensalidade.
+- **Titulares e dependentes** — os dependentes estimados entram já no primeiro
+  pagamento.
+
+**O que muda na simulação e no documento.** Com os dependentes calculados, a
+**mensalidade** passa a ser **titulares + dependentes**, e a simulação diz de
+onde veio o valor dos dependentes. O documento mostra **Titulares**,
+**Dependentes (estimado)** e **Total mensal estimado**, a tabela de valores e,
+quando houve quadro, a linha "**Como estimamos**" de cada grupo de famílias.
+Ele também diz que o valor dos dependentes é **estimativa** e que a cobrança é
+feita pelos dependentes efetivamente cadastrados.
+
+> **A parte da empresa vale só sobre os titulares.** Quando a empresa paga tudo
+> ou parte, a parte dela é calculada sobre os titulares; os dependentes ficam
+> por conta do titular — a simulação e o documento dizem isso.
 
 Os valores são gravados no botão **Salvar proposta**, junto com o resto do
-passo. Responder "Não" depois **não apaga** os valores já salvos. Em
-**Condições comerciais** fica só um atalho, **Configurar dependentes**, que leva
-até este quadro.
+passo. Responder "Não" depois **não apaga** os valores nem o quadro já salvos.
+Em **Condições comerciais** fica só um atalho, **Configurar dependentes**, que
+leva até este quadro.
 
 Na proposta de **valor fixo por empresa** não há preço de dependente: eles já
-estão dentro do valor combinado, e a tela diz isso.
-
-**A simulação mostra a estimativa dos dependentes.** Ao lado, o quadro
-**Dependentes (estimativa)** dá o valor por mês, como a conta foi feita e o
-total **Titulares + dependentes**. No plano familiar, a conta supõe que os
-dependentes se dividem por igual entre os titulares que têm dependentes, e que
-cada família fica com a opção mais barata (quem leva um só dependente paga o
-avulso). Sem a quantidade de titulares com dependentes, a conta usa o valor
-individual e avisa em amarelo.
-
-> ⚠️ **A estimativa é só para quem monta a proposta — o documento NÃO soma o
-> total dos dependentes**, de propósito. Ninguém sabe quantos dependentes cada
-> família tem antes da implantação; um total estimado no papel viraria promessa.
-> O documento mostra a **tabela de valores** e diz que o total sai na
-> implantação.
+estão dentro do valor combinado, e a tela e o documento dizem isso.
 
 ### 6.4. Implantação
 
-**A implantação é o primeiro pagamento** — o mesmo valor da mensalidade,
-cobrado ao iniciar o programa. Não se negocia à parte, e a proposta não tem
-mais campo para isso (decisão da direção, 27/09/2026).
+**A implantação é o primeiro pagamento**, cobrado ao iniciar o programa: o
+valor dos titulares — e, se a proposta marcou **"Titulares e dependentes"**
+(seção 6.3), também o dos dependentes estimados. O valor não se negocia à
+parte, e a proposta não tem campo para isso (decisão da direção, 27/09/2026).
 
 > **Por que os campos saíram:** a proposta tinha "implantação por titular" e
 > "implantação fixa ou por adesão", e o documento imprimia esses valores — mas
@@ -837,7 +872,10 @@ O termo de inclusão resolve os dois: informe quantos **titulares** e quantos
 ### A mensalidade
 
 Aba **Plano & Benefícios** → **Mensalidade atual**: soma titular + dependentes,
-aplicando a faixa por quantidade quando houver. O **Simulador** ao lado
+aplicando a faixa por quantidade quando houver. Os dependentes de cada família
+seguem a regra combinada na proposta (seção 6.3): **individual** (cada um paga
+o valor individual) ou **plano familiar** (1 paga o avulso, a partir de 2 o
+pacote, acima do pacote o extra, com o tamanho de pacote combinado). O **Simulador** ao lado
 recalcula com outros números, sem gravar nada.
 
 **O contratado é o mínimo.** A mensalidade cobra o **maior** entre os titulares
@@ -925,6 +963,20 @@ titular**.
 - A **mensalidade** segue a mesma base (o contratado é o mínimo). A diferença:
   sem titulares **e** sem quantidade contratada, a mensalidade **não é gerada**
   — não existe valor combinado — e o sistema diz o que fazer.
+
+**Os dependentes na implantação seguem o que a proposta combinou**, e a tela
+diz qual regra vale:
+
+- **Só os titulares** (o padrão, e o de toda empresa que fechou antes desta
+  versão): a implantação **nunca** cobra dependente. Antes, com todos os
+  titulares cadastrados, ela somava os dependentes cadastrados — sem ninguém
+  ter combinado isso.
+- **Titulares e dependentes**: com os cadastros completos, entram os
+  dependentes **cadastrados**; com cadastros faltando, entra a **estimativa da
+  proposta**, guardada no fechamento — do mesmo jeito que os titulares vão pela
+  quantidade contratada.
+- A implantação de **titulares novos** (segunda etapa, termo de inclusão)
+  cobra só os titulares novos.
 
 **Cada titular paga a implantação UMA vez — na etapa em que entra.** Quando
 a empresa inclui titulares depois (pelo **termo de inclusão**), o primeiro

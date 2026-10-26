@@ -47,6 +47,11 @@ export async function copiarPropostaParaEmpresa(
         n("dependent_family_extra_fee_cents") ??
         DEFAULT_ADHESION_PRICING.dependentFamilyExtraFeeCents,
       dependent_family_size: n("dependent_family_size") ?? 3,
+      // 1032: a escolha "individual × plano familiar" passa a chegar à
+      // cobrança. Antes ela ficava na proposta, e o boleto cobrava sempre o
+      // pacote a partir de 2 dependentes.
+      dependent_mode:
+        qual.dependent_mode === "PER_DEPENDENT" ? "PER_DEPENDENT" : "FAMILY_PACKAGE",
     });
     if (error) {
       console.error("fechamento (preços):", error.message);

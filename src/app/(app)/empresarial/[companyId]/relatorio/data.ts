@@ -7,7 +7,11 @@ import {
   computeMonthlyCents,
   dependentPlanCostCents,
   DEFAULT_ADHESION_PRICING,
+  ADHESION_PRICING_COLUMNS,
+  escolherPricing,
+  pricingFromRow,
   type AdhesionPricing,
+  type AdhesionPricingRow,
 } from "@/lib/empresarial/pricing";
 import {
   REPORT_FILTER_LABELS,
@@ -167,20 +171,9 @@ export async function loadCompanyReport(
         .returns<EmployeeRow[]>(),
       db
         .from("adhesion_pricing")
-        .select(
-          "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments"
-        )
+        .select(ADHESION_PRICING_COLUMNS)
         .or(`company_id.eq.${companyId},company_id.is.null`)
-        .returns<
-          {
-            company_id: string | null;
-            holder_fee_cents: number;
-            dependent_individual_fee_cents: number;
-            dependent_family_fee_cents: number;
-            dependent_family_extra_fee_cents: number;
-            max_installments: number;
-          }[]
-        >(),
+        .returns<AdhesionPricingRow[]>(),
       db
         .from("benefit_usage")
         .select("amount_saved_cents")
@@ -189,17 +182,9 @@ export async function loadCompanyReport(
     ]);
 
   // Preço efetivo: linha da empresa, senão a da rede, senão o padrão do código.
-  const own = (pricingRows ?? []).find((p) => p.company_id === companyId);
-  const net = (pricingRows ?? []).find((p) => p.company_id === null);
-  const chosen = own ?? net;
+  const chosen = escolherPricing(pricingRows, companyId);
   const pricing: AdhesionPricing = chosen
-    ? {
-        holderFeeCents: chosen.holder_fee_cents,
-        dependentIndividualFeeCents: chosen.dependent_individual_fee_cents,
-        dependentFamilyFeeCents: chosen.dependent_family_fee_cents,
-        dependentFamilyExtraFeeCents: chosen.dependent_family_extra_fee_cents,
-        maxInstallments: chosen.max_installments,
-      }
+    ? pricingFromRow(chosen)
     : DEFAULT_ADHESION_PRICING;
 
   // Nomes das unidades dos titulares vinculados + consultor responsável.
@@ -307,7 +292,7 @@ export async function loadCompanyReport(
       consultantName,
     },
     pricing,
-    pricingScope: own ? "empresa" : "rede",
+    pricingScope: chosen?.company_id === companyId ? "empresa" : "rede",
     employees,
     filter,
     filterLabel: REPORT_FILTER_LABELS[filter],

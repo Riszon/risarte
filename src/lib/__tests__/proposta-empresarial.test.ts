@@ -30,13 +30,10 @@ describe("mensalidade por titular", () => {
     expect(r.porColaboradorCents).toBe(3990);
   });
 
-  it("A PROPOSTA NÃO SOMA DEPENDENTE, nem quando marcados", () => {
-    // Decisão do dono, 24/09/2026, corrigindo o que eu tinha feito antes: na
-    // contratação ninguém sabe quantos dependentes entram nem de quais
-    // titulares, e o pacote é POR TITULAR. Número estimado em documento de
-    // venda vira expectativa — e a primeira fatura, feita família a família,
-    // não bate. A proposta mostra a TABELA de valores; o total sai na
-    // implantação, e é só então que a cobrança deles é gerada.
+  it("SEM a escolha de calcular, a proposta não soma dependente, nem quando marcados", () => {
+    // Decisão do dono, 24/09/2026: número estimado "por igual" em documento de
+    // venda vira expectativa. Desde a 1032 a proposta só soma quando quem
+    // monta escolhe calcular (quadro ou como individual) — ver abaixo.
     const r = simularProposta({
       ...BASE,
       includeDependents: true,
@@ -45,6 +42,48 @@ describe("mensalidade por titular", () => {
     });
     expect(r.dependentesCents).toBe(0);
     expect(r.mensalidadeCents).toBe(50 * 3990);
+  });
+
+  it("COM a estimativa, os dependentes entram na mensalidade (1032)", () => {
+    const r = simularProposta({
+      ...BASE,
+      includeDependents: true,
+      dependentesEstimadosCents: 30_000,
+    });
+    expect(r.titularesCents).toBe(50 * 3990);
+    expect(r.dependentesCents).toBe(30_000);
+    expect(r.mensalidadeCents).toBe(50 * 3990 + 30_000);
+    // "Por titular" é o preço do titular, não o total dividido.
+    expect(r.porColaboradorCents).toBe(3990);
+  });
+
+  it("a implantação cobra só os titulares, salvo a opção de incluir dependentes", () => {
+    const so = simularProposta({ ...BASE, dependentesEstimadosCents: 30_000 });
+    expect(so.implantacaoCents).toBe(50 * 3990);
+    const com = simularProposta({
+      ...BASE,
+      dependentesEstimadosCents: 30_000,
+      implantacaoComDependentes: true,
+    });
+    expect(com.implantacaoCents).toBe(50 * 3990 + 30_000);
+  });
+
+  it("⚠️ A PARTE DA EMPRESA VALE SÓ SOBRE OS TITULARES (dono, 26/10/2026)", () => {
+    const tudo = simularProposta({ ...BASE, dependentesEstimadosCents: 30_000 });
+    expect(tudo.empresaPagaCents).toBe(50 * 3990);
+    expect(tudo.colaboradorPagaCents).toBe(30_000);
+
+    const metade = simularProposta({
+      ...BASE,
+      paymentModel: "COMPANY_PARTIAL",
+      subsidyType: "PERCENT",
+      subsidyValue: 50,
+      dependentesEstimadosCents: 30_000,
+    });
+    expect(metade.empresaPagaCents).toBe(Math.round((50 * 3990) / 2));
+    expect(metade.empresaPagaCents + metade.colaboradorPagaCents).toBe(
+      metade.mensalidadeCents
+    );
   });
 
   it("marcar ou não marcar dependentes dá o MESMO valor na proposta", () => {

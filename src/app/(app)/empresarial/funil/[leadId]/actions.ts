@@ -33,6 +33,14 @@ import {
 } from "@/lib/empresarial/condicoes-da-proposta";
 import { formatPhone } from "@/lib/masks";
 import { lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
+import {
+  CALCULOS_DOS_DEPENDENTES,
+  dependentesDoQuadro,
+  lerQuadro,
+  problemasDoQuadro,
+  type CalculoDosDependentes,
+  type LinhaDoQuadro,
+} from "@/lib/empresarial/dependentes-da-proposta";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -67,6 +75,56 @@ function centavos(formData: FormData, key: string): number | null {
     v.replace(/\s/g, "").replace(/\./g, "").replace(",", ".")
   );
   return Number.isFinite(n) ? Math.round(n * 100) : null;
+}
+
+/**
+ * O BLOCO DOS DEPENDENTES DA TELA (1032): o cálculo, o quadro e a implantação.
+ *
+ * `null` = o bloco não estava na tela (dependentes não entram, ou valor fixo)
+ * e nada é escrito. No quadro, a quantidade de dependentes é RECALCULADA aqui
+ * a partir das linhas — o número da tela é cópia, e cópia não manda.
+ */
+function lerDependentesDaTela(
+  formData: FormData
+):
+  | {
+      dependents_calc_mode: CalculoDosDependentes;
+      dependents_distribution: LinhaDoQuadro[] | null;
+      implantation_includes_dependents: boolean;
+      dependents_estimate?: number;
+    }
+  | { erro: string }
+  | null {
+  if (!formData.has("dependents_calc_mode")) return null;
+  const calculo =
+    daLista(formData, "dependents_calc_mode", CALCULOS_DOS_DEPENDENTES) ?? "NONE";
+
+  const bruto: { dependentes: number; titulares: number }[] = [];
+  for (let i = 0; i < 50; i += 1) {
+    if (!formData.has(`dist_tit_${i}`)) continue;
+    bruto.push({
+      dependentes: inteiro(formData, `dist_dep_${i}`) ?? 0,
+      titulares: inteiro(formData, `dist_tit_${i}`) ?? 0,
+    });
+  }
+  const quadro = lerQuadro(bruto);
+  if (calculo === "DISTRIBUTION") {
+    const problemas = problemasDoQuadro(quadro);
+    if (problemas.length > 0) return { erro: `Confira o quadro dos dependentes: ${problemas.join("; ")}.` };
+    if (quadro.length === 0) {
+      return { erro: "O quadro dos dependentes está vazio. Preencha quantos titulares terão dependentes, ou escolha outra forma de calcular." };
+    }
+  }
+  return {
+    dependents_calc_mode: calculo,
+    // O quadro fica guardado mesmo fora do modo "detalhar": trocar de ideia e
+    // voltar não pode custar o quadro inteiro.
+    dependents_distribution: quadro.length > 0 ? quadro : null,
+    // Sem cálculo não há valor de dependente para cobrar na implantação.
+    implantation_includes_dependents:
+      calculo !== "NONE" && triBooleano(formData, "implantation_includes_dependents") === true,
+    ...(calculo === "DISTRIBUTION" ? { dependents_estimate: dependentesDoQuadro(quadro) } : {}),
+  };
 }
 
 /** Caixa de marcar de TRÊS estados: sim, não, e "não perguntei". */
@@ -189,6 +247,14 @@ export async function saveProposal(
     }
   }
 
+  // 1032: COMO OS DEPENDENTES ENTRAM NA CONTA, o quadro e a implantação. Só
+  // escreve quando o bloco estava na tela — gravar nulo ao responder "Não"
+  // apagaria o quadro que alguém montou.
+  const dependentes = lerDependentesDaTela(formData);
+  if (dependentes && "erro" in dependentes) {
+    return { ok: false, error: dependentes.erro };
+  }
+
   return gravarNoLevantamento(
     leadId,
     {
@@ -204,6 +270,7 @@ export async function saveProposal(
       employee_count: inteiro(formData, "employee_count"),
       includes_dependents: triBooleano(formData, "includes_dependents"),
       dependents_estimate: inteiro(formData, "dependents_estimate"),
+      ...(dependentes ?? {}),
       billing_model: daLista(formData, "billing_model", ["unico", "por_cnpj"] as const),
       billing_basis: daLista(formData, "billing_basis", BILLING_BASES),
       holder_fee_cents: centavos(formData, "holder_fee"),
@@ -229,7 +296,6 @@ export async function saveProposal(
               "dependent_family_extra_fee"
             ),
             dependent_family_size: inteiro(formData, "dependent_family_size"),
-            holders_with_dependents: inteiro(formData, "holders_with_dependents"),
           }
         : {}),
       fixed_monthly_cents: centavos(formData, "fixed_monthly"),

@@ -59,8 +59,18 @@ import type { BeneficioDaProposta } from "@/lib/empresarial/beneficios-da-propos
 import {
   avisoDoValorMinimo,
   avisosDosLimites,
-  estimativaDosDependentes,
 } from "@/lib/empresarial/condicoes-da-proposta";
+import {
+  avisoDoQuadro,
+  dependentesDoQuadro,
+  estimativaDosDependentes,
+  lerQuadro,
+  pricingDaProposta,
+  problemasDoQuadro,
+  type CalculoDosDependentes,
+  type EstimativaDosDependentes,
+} from "@/lib/empresarial/dependentes-da-proposta";
+import type { DependentMode } from "@/lib/empresarial/pricing";
 import { CondicoesComerciais, type CondicoesView } from "./condicoes-editor";
 import { UnidadesDaParceria, type Unidade } from "./unidades-editor";
 import { PainelDoPasso, TrilhaDaProposta } from "./passos-da-proposta";
@@ -159,8 +169,10 @@ export function FichaDaProposta({
   // Os valores dos dependentes moram AQUI, junto da pergunta "dependentes
   // entram?" (dono, 26/10/2026) — antes metade estava nesta tela e metade nas
   // condições comerciais, e ninguém achava onde configurar o plano familiar.
-  const [depMode, setDepMode] = useState<"PER_DEPENDENT" | "FAMILY_PACKAGE">(
-    condicoes.dependentMode ?? "PER_DEPENDENT"
+  // Sem escolha gravada vale o PLANO FAMILIAR: é o que a cobrança sempre fez
+  // e o padrão da empresa no banco (1032).
+  const [depMode, setDepMode] = useState<DependentMode>(
+    condicoes.dependentMode ?? "FAMILY_PACKAGE"
   );
   const [familyFee, setFamilyFee] = useState(emReais(condicoes.dependentFamilyFeeCents));
   const [familySize, setFamilySize] = useState(
@@ -169,8 +181,21 @@ export function FichaDaProposta({
   const [familyExtra, setFamilyExtra] = useState(
     emReais(condicoes.dependentFamilyExtraFeeCents)
   );
-  const [holdersWithDeps, setHoldersWithDeps] = useState(
-    condicoes.holdersWithDependents?.toString() ?? ""
+  // 1032: como os dependentes entram na conta, e o quadro titulares × dependentes.
+  const [calculo, setCalculo] = useState<CalculoDosDependentes>(
+    condicoes.dependentsCalcMode ?? "NONE"
+  );
+  const [quadro, setQuadro] = useState<{ dependentes: string; titulares: string }[]>(
+    condicoes.dependentsDistribution.length > 0
+      ? condicoes.dependentsDistribution.map((l) => ({
+          dependentes: String(l.dependentes),
+          titulares: String(l.titulares),
+        }))
+      : // Linhas prontas de 0 a 4 — o caso comum — com os titulares em branco.
+        [0, 1, 2, 3, 4].map((d) => ({ dependentes: String(d), titulares: "" }))
+  );
+  const [implantacaoComDeps, setImplantacaoComDeps] = useState(
+    condicoes.implantationIncludesDependents ?? false
   );
   const [fixedMonthly, setFixedMonthly] = useState(
     emReais(qualificacao.fixedMonthlyCents)
@@ -194,12 +219,40 @@ export function FichaDaProposta({
   const [respCpf, setRespCpf] = useState(qualificacao.responsibleCpf ?? "");
   const [respEmail, setRespEmail] = useState(qualificacao.responsibleEmail ?? "");
 
+  // ⚠️ A ESTIMATIVA USA A MESMA RÉGUA DO BOLETO (`custoDosDependentesDoTitular`).
+  // Na base fixa o valor da empresa já cobre todo mundo: não há o que somar.
+  const incluiDependentes = includeDeps === "SIM";
+  const linhasDoQuadro = lerQuadro(quadro);
+  const estimativaDeps =
+    incluiDependentes && basis === "PER_EMPLOYEE"
+      ? estimativaDosDependentes({
+          calculo,
+          pricing: pricingDaProposta({
+            dependent_fee_cents: paraCentavos(depFee),
+            dependent_mode: depMode,
+            dependent_family_fee_cents: paraCentavos(familyFee),
+            dependent_family_extra_fee_cents: paraCentavos(familyExtra),
+            dependent_family_size: Number.parseInt(familySize || "0", 10) || null,
+          }),
+          quadro: linhasDoQuadro,
+          dependentes: Number.parseInt(depsCount || "0", 10) || 0,
+        })
+      : null;
+  // No quadro, a quantidade de dependentes é a do quadro — um segundo número
+  // digitado à parte poderia discordar dele.
+  const dependentesDaProposta =
+    calculo === "DISTRIBUTION"
+      ? dependentesDoQuadro(linhasDoQuadro)
+      : Number.parseInt(depsCount || "0", 10) || 0;
+
   const proposta = simularProposta({
     basis,
+    dependentesEstimadosCents: estimativaDeps?.totalCents ?? null,
+    implantacaoComDependentes: implantacaoComDeps && estimativaDeps != null,
     employeeCount: Number.parseInt(employeeCount || "0", 10) || 0,
     holderFeeCents: paraCentavos(holderFee),
-    includeDependents: includeDeps === "SIM",
-    dependentsCount: Number.parseInt(depsCount || "0", 10) || 0,
+    includeDependents: incluiDependentes,
+    dependentsCount: dependentesDaProposta,
     dependentFeeCents: paraCentavos(depFee),
     fixedMonthlyCents: paraCentavos(fixedMonthly),
     paymentModel: (paymentModel || "EMPLOYEE_PAYS") as PaymentModel,
@@ -226,7 +279,7 @@ export function FichaDaProposta({
         alvo: condicoes.adhesionLimitTarget,
       },
       Number.parseInt(employeeCount || "0", 10) || 0,
-      includeDeps === "SIM" ? Number.parseInt(depsCount || "0", 10) || 0 : 0
+      incluiDependentes ? dependentesDaProposta : 0
     ),
     avisoDoValorMinimo(condicoes.minProposalCents, proposta.mensalidadeCents),
   ].filter((a) => a !== null);
@@ -241,23 +294,6 @@ export function FichaDaProposta({
     responsibleEmail: respEmail,
     cnpj,
   };
-  const incluiDependentes = includeDeps === "SIM";
-  // ⚠️ SÓ PARA A TELA: a proposta impressa continua sem somar dependente
-  // (decisão de 24/09). Na base fixa o valor da empresa já cobre todo mundo.
-  const estimativaDeps =
-    incluiDependentes && basis === "PER_EMPLOYEE"
-      ? estimativaDosDependentes({
-          modo: depMode,
-          dependentes: Number.parseInt(depsCount || "0", 10) || 0,
-          individualCents: paraCentavos(depFee),
-          pacoteCents: paraCentavos(familyFee),
-          pacoteCobre: Number.parseInt(familySize || "0", 10) || 0,
-          extraCents: paraCentavos(familyExtra),
-          titularesComDependentes: holdersWithDeps.trim()
-            ? Number.parseInt(holdersWithDeps, 10) || 0
-            : null,
-        })
-      : null;
   const faltaProposta = faltaParaProposta(dados);
   const faltaContrato = faltaParaContrato(dados);
 
@@ -430,18 +466,35 @@ export function FichaDaProposta({
                 ))}
               </select>
             </Campo>
-            {includeDeps === "SIM" && (
-              <Campo id="dependents_estimate" rotulo="Quantos dependentes (estimativa)">
-                <Input
+            {includeDeps === "SIM" &&
+              (calculo === "DISTRIBUTION" && basis === "PER_EMPLOYEE" ? (
+                // Pelo quadro, a quantidade é a soma do quadro — gravada
+                // junto, para limites e documento contarem o mesmo número.
+                <Campo
                   id="dependents_estimate"
-                  name="dependents_estimate"
-                  type="number"
-                  min={0}
-                  value={depsCount}
-                  onChange={(e) => setDepsCount(e.target.value)}
-                />
-              </Campo>
-            )}
+                  rotulo="Quantos dependentes"
+                  ajuda="Somado do quadro abaixo."
+                >
+                  <Input
+                    id="dependents_estimate"
+                    name="dependents_estimate"
+                    value={String(dependentesDaProposta)}
+                    readOnly
+                    className="bg-muted/40"
+                  />
+                </Campo>
+              ) : (
+                <Campo id="dependents_estimate" rotulo="Quantos dependentes (estimativa)">
+                  <Input
+                    id="dependents_estimate"
+                    name="dependents_estimate"
+                    type="number"
+                    min={0}
+                    value={depsCount}
+                    onChange={(e) => setDepsCount(e.target.value)}
+                  />
+                </Campo>
+              ))}
 
             <Campo id="billing_model" rotulo="Uma empresa ou um conjunto de CNPJs?">
               <select
@@ -510,8 +563,14 @@ export function FichaDaProposta({
                 aoTrocarCobre={setFamilySize}
                 extra={familyExtra}
                 aoTrocarExtra={setFamilyExtra}
-                titularesComDependentes={holdersWithDeps}
-                aoTrocarTitularesComDependentes={setHoldersWithDeps}
+                calculo={calculo}
+                aoTrocarCalculo={setCalculo}
+                quadro={quadro}
+                aoTrocarQuadro={setQuadro}
+                estimativa={estimativaDeps}
+                titulares={Number.parseInt(employeeCount || "0", 10) || 0}
+                implantacaoComDependentes={implantacaoComDeps}
+                aoTrocarImplantacao={setImplantacaoComDeps}
               />
             ) : (
               <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
@@ -522,8 +581,9 @@ export function FichaDaProposta({
             ))}
           {/* AP18: a implantação não se negocia aqui — é o 1º pagamento. */}
           <p className="text-xs text-muted-foreground">
-            A implantação é o <strong>primeiro pagamento</strong>: o mesmo
-            valor da mensalidade, cobrado ao iniciar o programa.
+            A implantação é o <strong>primeiro pagamento</strong>, cobrado ao
+            iniciar o programa: o valor dos titulares
+            {estimativaDeps ? " — e dos dependentes, se marcado acima" : ""}.
           </p>
         </Secao>
 
@@ -999,7 +1059,7 @@ function SimuladorDaProposta({
   /** Há dependentes nesta fase — muda o que a tela precisa explicar. */
   incluiDependentes: boolean;
   /** Estimativa dos dependentes — só tela, nunca vai para a proposta. */
-  estimativaDependentes: ReturnType<typeof estimativaDosDependentes> | null;
+  estimativaDependentes: EstimativaDosDependentes | null;
 }) {
   const economia = proposta.economiaMensalCents;
   return (
@@ -1041,8 +1101,10 @@ function SimuladorDaProposta({
 
         {basis === "PER_EMPLOYEE" && (
           <p className="text-xs text-muted-foreground">
-            Titulares {formatBRL(proposta.titularesCents)} · implantação (1º pagamento){" "}
-            {formatBRL(proposta.implantacaoCents)}
+            Titulares {formatBRL(proposta.titularesCents)}
+            {estimativaDependentes &&
+              ` · dependentes (estimado) ${formatBRL(proposta.dependentesCents)}`}{" "}
+            · implantação (1º pagamento) {formatBRL(proposta.implantacaoCents)}
           </p>
         )}
 
@@ -1074,41 +1136,22 @@ function SimuladorDaProposta({
             o valor digitado acima não está sendo usado.
           </p>
         )}
-        {/* ⚠️ A PROPOSTA NÃO SOMA DEPENDENTE (decisão do dono, 24/09/2026).
-            Na contratação ninguém sabe quantos entram nem como se distribuem
-            entre os titulares, e o pacote é POR TITULAR. Número estimado em
-            documento de venda vira expectativa — e a primeira fatura, feita
-            família a família, não bateria. */}
-        {/* 26/10/2026: o dono pediu para VER o valor dos dependentes ao montar
-            a proposta. Aparece aqui, separado e marcado como estimativa — o
-            documento continua com a tabela de valores, sem total. */}
+        {/* 1032 (dono, 26/10/2026): os dependentes ENTRAM na mensalidade
+            quando a proposta escolhe calcular — pelo quadro, com a mesma régua
+            do boleto, ou como individual. A tela diz de onde veio o número. */}
         {estimativaDependentes && (
-          <div className="space-y-1.5 rounded-md border border-dashed p-3">
-            <p className="text-[11px] leading-tight font-medium tracking-wider text-muted-foreground uppercase">
-              Dependentes (estimativa)
-            </p>
-            <p className="text-sm">
-              <strong>{formatBRL(estimativaDependentes.totalCents)}</strong>/mês
-            </p>
-            <p
-              className={`text-xs ${estimativaDependentes.caiuNoIndividual ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`}
-            >
-              {estimativaDependentes.explicacao}
-            </p>
-            <p className="border-t pt-1.5 text-sm">
-              Titulares + dependentes:{" "}
-              <strong>
-                {formatBRL(proposta.mensalidadeCents + estimativaDependentes.totalCents)}
-              </strong>
-              /mês
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Só você vê este número. A proposta mostra a tabela de valores dos
-              dependentes; o total real sai na implantação, família a família.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Dependentes: {estimativaDependentes.explicacao}. A parte da empresa
+            vale só sobre os titulares.
+          </p>
         )}
-        {incluiDependentes && !estimativaDependentes && (
+        {incluiDependentes && !estimativaDependentes && basis === "PER_EMPLOYEE" && (
+          <p className="text-xs text-muted-foreground">
+            Dependentes <strong>não calculados</strong>: a proposta explica a
+            tabela de valores, e o total deles sai dos cadastros.
+          </p>
+        )}
+        {incluiDependentes && basis !== "PER_EMPLOYEE" && (
           <p className="text-xs text-muted-foreground">
             No valor fixo, os dependentes já estão dentro do valor da empresa.
           </p>
@@ -1181,14 +1224,19 @@ function SimuladorDaProposta({
   );
 }
 
+
 /**
  * OS VALORES DOS DEPENDENTES — abrem junto do "Sim" em "dependentes entram?".
  *
  * Pedido do dono (26/10/2026): a configuração estava partida em duas telas, e
  * "um valor por dependente" não deixava claro onde ficava o preço. Agora a
  * escolha é entre dois cartões (individual × familiar) e cada um mostra só os
- * campos que usa. O valor individual aparece nos dois: no familiar, é o preço
- * de quem leva um só dependente.
+ * campos que usa.
+ *
+ * 1032 (mesmo dia): COMO OS DEPENDENTES ENTRAM NA CONTA — pelo quadro
+ * "quantos titulares com quantos dependentes", como individual (sem saber a
+ * distribuição) ou sem calcular. E a implantação: só titulares, ou titulares
+ * e dependentes. As duas escolhas vão para o documento e para a cobrança.
  */
 function ValoresDosDependentes({
   modo,
@@ -1201,11 +1249,17 @@ function ValoresDosDependentes({
   aoTrocarCobre,
   extra,
   aoTrocarExtra,
-  titularesComDependentes,
-  aoTrocarTitularesComDependentes,
+  calculo,
+  aoTrocarCalculo,
+  quadro,
+  aoTrocarQuadro,
+  estimativa,
+  titulares,
+  implantacaoComDependentes,
+  aoTrocarImplantacao,
 }: {
-  modo: "PER_DEPENDENT" | "FAMILY_PACKAGE";
-  aoTrocarModo: (m: "PER_DEPENDENT" | "FAMILY_PACKAGE") => void;
+  modo: DependentMode;
+  aoTrocarModo: (m: DependentMode) => void;
   individual: string;
   aoTrocarIndividual: (v: string) => void;
   pacote: string;
@@ -1214,8 +1268,17 @@ function ValoresDosDependentes({
   aoTrocarCobre: (v: string) => void;
   extra: string;
   aoTrocarExtra: (v: string) => void;
-  titularesComDependentes: string;
-  aoTrocarTitularesComDependentes: (v: string) => void;
+  calculo: CalculoDosDependentes;
+  aoTrocarCalculo: (c: CalculoDosDependentes) => void;
+  quadro: { dependentes: string; titulares: string }[];
+  aoTrocarQuadro: (
+    f: (q: { dependentes: string; titulares: string }[]) => { dependentes: string; titulares: string }[]
+  ) => void;
+  estimativa: EstimativaDosDependentes | null;
+  /** Os titulares da proposta — o quadro é conferido contra eles. */
+  titulares: number;
+  implantacaoComDependentes: boolean;
+  aoTrocarImplantacao: (v: boolean) => void;
 }) {
   const opcoes = [
     {
@@ -1226,15 +1289,41 @@ function ValoresDosDependentes({
     {
       valor: "FAMILY_PACKAGE" as const,
       titulo: "Plano familiar",
-      texto: "Um pacote por titular cobre vários dependentes; quem passar paga o extra.",
+      texto:
+        "Quem tem 1 dependente paga o avulso; a partir de 2, o pacote; acima do pacote, o extra.",
     },
   ];
+  const calculos = [
+    {
+      valor: "DISTRIBUTION" as const,
+      titulo: "Detalhar por titular",
+      texto: "Quantos titulares terão quantos dependentes — o cálculo mais próximo.",
+    },
+    {
+      valor: "AS_INDIVIDUAL" as const,
+      titulo: "Calcular como individual",
+      texto: "Não sei a distribuição: dependentes × o valor individual.",
+    },
+    {
+      valor: "NONE" as const,
+      titulo: "Não calcular",
+      texto: "A proposta só explica a tabela de valores dos dependentes.",
+    },
+  ];
+  const problemas = problemasDoQuadro(lerQuadro(quadro));
+  const aviso = calculo === "DISTRIBUTION" ? avisoDoQuadro(lerQuadro(quadro), titulares) : null;
+  // A linha calculada de cada quantidade — para mostrar o preço ao lado.
+  const calculadas = new Map(
+    (estimativa?.linhas ?? []).map((l) => [l.dependentes, l] as const)
+  );
+
   return (
     <div className="space-y-3 rounded-md border p-3">
       <div>
         <p className="text-sm font-medium">Valores dos dependentes</p>
         <p className="text-xs text-muted-foreground">
-          Estes valores vão para a tabela de dependentes da proposta.
+          Estes valores vão para a tabela de dependentes da proposta — e são os
+          que a empresa paga depois do fechamento.
         </p>
       </div>
 
@@ -1270,7 +1359,7 @@ function ValoresDosDependentes({
           }
           ajuda={
             modo === "FAMILY_PACKAGE"
-              ? "Para o titular que leva um dependente só e não precisa do pacote."
+              ? "Para o titular que leva um dependente só."
               : "Mensalidade de cada dependente."
           }
         >
@@ -1320,22 +1409,182 @@ function ValoresDosDependentes({
                 placeholder="19,90"
               />
             </Campo>
-            <Campo
-              id="holders_with_dependents"
-              rotulo="Quantos titulares têm dependentes"
-              ajuda="Só a simulação usa, para estimar quantas famílias compram o pacote."
-            >
-              <Input
-                id="holders_with_dependents"
-                name="holders_with_dependents"
-                type="number"
-                min={0}
-                value={titularesComDependentes}
-                onChange={(e) => aoTrocarTitularesComDependentes(e.target.value)}
-                placeholder="—"
-              />
-            </Campo>
           </>
+        )}
+      </div>
+
+      {/* ---- como os dependentes entram na conta (1032) ---- */}
+      <div className="space-y-2 border-t pt-3">
+        <p className="text-sm font-medium">Calcular os dependentes na proposta?</p>
+        <div role="radiogroup" className="grid gap-2 @xl:grid-cols-3">
+          {calculos.map((o) => (
+            <label
+              key={o.valor}
+              className={`flex cursor-pointer gap-2 rounded-md border p-2 text-sm ${calculo === o.valor ? "border-primary bg-primary/5" : ""}`}
+            >
+              <input
+                type="radio"
+                name="dependents_calc_mode"
+                value={o.valor}
+                checked={calculo === o.valor}
+                onChange={() => aoTrocarCalculo(o.valor)}
+                className="mt-1"
+              />
+              <span>
+                <span className="font-medium">{o.titulo}</span>
+                <span className="block text-xs text-muted-foreground">{o.texto}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        {calculo === "DISTRIBUTION" && (
+          <div className="space-y-2 rounded-md bg-muted/30 p-2">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="py-1 pr-2 font-medium">Titulares</th>
+                    <th className="py-1 pr-2 font-medium">com quantos dependentes cada</th>
+                    <th className="py-1 pr-2 text-right font-medium">Por titular</th>
+                    <th className="py-1 pr-2 text-right font-medium">Subtotal</th>
+                    <th className="w-8" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {quadro.map((l, i) => {
+                    const calc = calculadas.get(Number.parseInt(l.dependentes, 10));
+                    return (
+                      <tr key={i}>
+                        <td className="py-1 pr-2">
+                          <Input
+                            name={`dist_tit_${i}`}
+                            type="number"
+                            min={0}
+                            value={l.titulares}
+                            aria-label={`Titulares da linha ${i + 1}`}
+                            onChange={(e) =>
+                              aoTrocarQuadro((q) =>
+                                q.map((x, j) => (j === i ? { ...x, titulares: e.target.value } : x))
+                              )
+                            }
+                            placeholder="0"
+                            className="h-8 w-20"
+                          />
+                        </td>
+                        <td className="py-1 pr-2">
+                          <Input
+                            name={`dist_dep_${i}`}
+                            type="number"
+                            min={0}
+                            value={l.dependentes}
+                            aria-label={`Dependentes por titular da linha ${i + 1}`}
+                            onChange={(e) =>
+                              aoTrocarQuadro((q) =>
+                                q.map((x, j) => (j === i ? { ...x, dependentes: e.target.value } : x))
+                              )
+                            }
+                            className="h-8 w-20"
+                          />
+                        </td>
+                        <td className="py-1 pr-2 text-right text-muted-foreground">
+                          {calc ? formatBRL(calc.porTitularCents) : "—"}
+                        </td>
+                        <td className="py-1 pr-2 text-right">
+                          {calc ? formatBRL(calc.subtotalCents) : "—"}
+                        </td>
+                        <td>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            aria-label={`Tirar a linha ${i + 1}`}
+                            onClick={() => aoTrocarQuadro((q) => q.filter((_, j) => j !== i))}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                {estimativa && (
+                  <tfoot>
+                    <tr className="border-t text-sm">
+                      <td className="py-1 pr-2" colSpan={3}>
+                        {estimativa.dependentes} dependente
+                        {estimativa.dependentes === 1 ? "" : "s"} no total
+                      </td>
+                      <td className="py-1 pr-2 text-right font-medium">
+                        {formatBRL(estimativa.totalCents)}/mês
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                const maior = quadro.reduce(
+                  (m, l) => Math.max(m, Number.parseInt(l.dependentes, 10) || 0),
+                  -1
+                );
+                aoTrocarQuadro((q) => [...q, { dependentes: String(maior + 1), titulares: "" }]);
+              }}
+            >
+              <Plus className="mr-1 size-3.5" />
+              Nova linha
+            </Button>
+            {problemas.map((p) => (
+              <p key={p} className="text-xs text-destructive">
+                ⛔ {p}
+              </p>
+            ))}
+            {aviso && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">⚠️ {aviso}</p>
+            )}
+          </div>
+        )}
+
+        {/* ---- a implantação (1032) — só quando há valor de dependente ---- */}
+        {calculo !== "NONE" && (
+          <div className="space-y-1">
+            <p className="text-sm font-medium">A implantação (1º pagamento) cobra</p>
+            <div role="radiogroup" className="grid gap-2 @md:grid-cols-2">
+              {[
+                { valor: false, titulo: "Só os titulares", texto: "Os dependentes começam a pagar na mensalidade." },
+                {
+                  valor: true,
+                  titulo: "Titulares e dependentes",
+                  texto: "Os dependentes estimados entram já no 1º pagamento.",
+                },
+              ].map((o) => (
+                <label
+                  key={String(o.valor)}
+                  className={`flex cursor-pointer gap-2 rounded-md border p-2 text-sm ${implantacaoComDependentes === o.valor ? "border-primary bg-primary/5" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="implantation_includes_dependents"
+                    value={o.valor ? "SIM" : "NAO"}
+                    checked={implantacaoComDependentes === o.valor}
+                    onChange={() => aoTrocarImplantacao(o.valor)}
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="font-medium">{o.titulo}</span>
+                    <span className="block text-xs text-muted-foreground">{o.texto}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>

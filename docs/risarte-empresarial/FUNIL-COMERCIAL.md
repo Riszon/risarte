@@ -1412,3 +1412,43 @@ familiar precisa ficar mais intuitiva, abrindo junto da pergunta
   que o sistema não calculava nada.
 
 **Conferido:** build do zero, 1649 testes, e na tela pelo dono (26/10/2026).
+
+### Bloco P — o quadro dos dependentes, e a cobrança seguindo a proposta ✅ (migração 1032, v0.82.0)
+
+Pedido do dono (26/10/2026): um quadro de **quantos titulares terão quantos
+dependentes** (3 sem, 4 com 1, 2 com 2…) para a proposta calcular um valor mais
+próximo para iniciar o programa; sem saber a distribuição, calcular como
+individual ou não calcular. Decisões dele na mesma conversa:
+
+1. **A cobrança segue a proposta** — o modo individual × familiar viaja no
+   fechamento (`adhesion_pricing.dependent_mode`).
+2. **O documento mostra titulares + dependentes estimados = total.**
+3. **A parte da empresa vale só sobre os titulares.**
+4. **A implantação tem opção:** só titulares (padrão) ou titulares e
+   dependentes (`companies.implantation_includes_dependents`, com a estimativa
+   congelada em `implantation_dependents_cents`).
+
+**O que foi feito**
+
+- `dependentes-da-proposta.ts` (puro, testado): o quadro, os avisos, a
+  estimativa (quadro / como individual / não calcular) e a leitura da proposta
+  gravada — usada pelo documento E pelo fechamento.
+- **Uma régua só para o preço da família:** `custoDosDependentesDoTitular`,
+  pela quantidade. O teste prova que, com o quadro certo, a estimativa da
+  proposta é igual ao `dependentsCents` da mensalidade, nos dois modos.
+- `simularProposta` soma a estimativa quando há; sem escolha, a conta é a de
+  24/09 (só titulares). "Por titular" virou o preço do titular.
+- Tela: escolha do cálculo, quadro editável com preço por linha e subtotal,
+  opção da implantação. O "quantos titulares têm dependentes" (divisão por
+  igual) saiu — o quadro o substitui.
+- Cobrança: a implantação segue a opção (`soTitulares` no
+  `computeMonthlyBreakdown`; estimativa pela quantidade contratada). As sete
+  cópias da leitura de preço viraram uma (AP73).
+
+**Conferido:** 1032 aplicada no treino; build do zero, 2718 testes, lint; tela
+aberta no treino como Admin de teste com o exemplo do pedido (R$ 538,90 de
+dependentes, conta manual igual), **sem salvar** — a única ação do servidor
+disparada foi a contagem de relatos do layout (bloqueada e identificada).
+Documento aberto numa proposta antiga, sem erro.
+
+**Fora, declarado:** AP74.

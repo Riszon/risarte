@@ -90,86 +90,9 @@ export function problemasDasFaixas(faixas: readonly FaixaDePreco[]): string[] {
  * A função foi REMOVIDA em vez de ficar sem uso: regra que o dono rejeitou,
  * guardada no código, é regra que volta a ser chamada por engano.
  *
- * (26/10/2026: a estimativa voltou, mas SÓ para a simulação na tela — ver
- * `estimativaDosDependentes` abaixo. O documento segue sem ela.)
+ * (26/10/2026: a estimativa voltou, e desde a 1032 é pelo quadro "quantos
+ * titulares com quantos dependentes" — ver `dependentes-da-proposta.ts`.)
  */
-
-export type ConfigDosDependentes = {
-  modo: "PER_DEPENDENT" | "FAMILY_PACKAGE";
-  dependentes: number;
-  /** Valor de UM dependente — vale no individual e é a alternativa no pacote. */
-  individualCents: number;
-  pacoteCents: number;
-  /** Quantos dependentes de um mesmo titular o pacote cobre. */
-  pacoteCobre: number;
-  extraCents: number;
-  /** Quantos titulares levam dependentes. Null = ninguém informou. */
-  titularesComDependentes: number | null;
-};
-
-export type EstimativaDosDependentes = {
-  totalCents: number;
-  /** Como a conta foi feita, em uma linha — a tela mostra junto do número. */
-  explicacao: string;
-  /** Pacote sem "titulares com dependentes": a conta caiu no individual. */
-  caiuNoIndividual: boolean;
-};
-
-/**
- * ⚠️ A ESTIMATIVA DOS DEPENDENTES VOLTOU — SÓ PARA A TELA (dono, 26/10/2026).
- *
- * Pedido: *"quando estou gerando uma simulação de proposta não aparece o valor
- * dos dependentes"*. Quem monta a proposta precisa enxergar quanto os
- * dependentes somam para negociar. A decisão de 24/09 continua de pé para o
- * DOCUMENTO: `simularProposta` segue sem somar dependente, e esta função não
- * é chamada pela proposta impressa nem pela cobrança.
- *
- * No pacote, os dependentes se dividem por igual entre os titulares que têm
- * dependentes, e cada família fica com o mais barato entre o pacote e o
- * individual — uma família de um só dependente não compraria o pacote.
- */
-export function estimativaDosDependentes(
-  c: ConfigDosDependentes
-): EstimativaDosDependentes {
-  const deps = Math.max(0, Math.floor(c.dependentes));
-  const individual = Math.max(0, c.individualCents);
-  const reais = (v: number) => `R$ ${(v / 100).toFixed(2).replace(".", ",")}`;
-  if (deps === 0) {
-    return { totalCents: 0, explicacao: "Nenhum dependente estimado.", caiuNoIndividual: false };
-  }
-
-  const porIndividual = {
-    totalCents: deps * individual,
-    explicacao: `${deps} × ${reais(individual)} por dependente`,
-  };
-  if (c.modo === "PER_DEPENDENT") return { ...porIndividual, caiuNoIndividual: false };
-
-  const familias = Math.min(deps, Math.floor(c.titularesComDependentes ?? 0));
-  if (familias <= 0) {
-    return {
-      totalCents: porIndividual.totalCents,
-      explicacao: `${porIndividual.explicacao} — informe quantos titulares têm dependentes para calcular o pacote`,
-      caiuNoIndividual: true,
-    };
-  }
-
-  const cobre = Math.max(1, Math.floor(c.pacoteCobre));
-  const custoDaFamilia = (n: number) =>
-    Math.min(
-      n * individual,
-      Math.max(0, c.pacoteCents) + Math.max(0, n - cobre) * Math.max(0, c.extraCents)
-    );
-  // Divisão por igual: as primeiras `resto` famílias levam um dependente a mais.
-  const base = Math.floor(deps / familias);
-  const resto = deps % familias;
-  const totalCents =
-    resto * custoDaFamilia(base + 1) + (familias - resto) * custoDaFamilia(base);
-  return {
-    totalCents,
-    explicacao: `${deps} dependentes em ${familias} família${familias === 1 ? "" : "s"} (~${(deps / familias).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} por titular)`,
-    caiuNoIndividual: false,
-  };
-}
 
 /**
  * O TOTAL DE CADA FAIXA, para quem monta a proposta (dono, 26/10/2026).

@@ -37,6 +37,16 @@ export type BillingPreview = {
   billingModel?: string;
   /** Implantação: o cálculo usou a quantidade contratada, não os cadastrados. */
   baseContratada?: number;
+  /**
+   * Implantação (1032): a regra dos dependentes que a proposta combinou. A
+   * tela diz qual vale — "só titulares" ou "titulares e dependentes", e de
+   * onde veio o valor dos dependentes.
+   */
+  dependentesNaImplantacao?: {
+    inclui: boolean;
+    /** Pela estimativa da proposta (cadastros incompletos), quando inclui. */
+    estimativaCents?: number;
+  };
   /** Quantos titulares estão cadastrados agora (para a tela explicar a conta). */
   titularesCadastrados?: number;
   /** Nem titulares nem quantidade contratada: a tela precisa pedir o valor. */
@@ -95,7 +105,7 @@ export async function previewBilling(
   const { data: company } = await db
     .from("companies")
     .select(
-      "legal_name, trade_name, cnpj, due_day, billing_model, contracted_holders, billing_basis, fixed_monthly_cents"
+      "legal_name, trade_name, cnpj, due_day, billing_model, contracted_holders, billing_basis, fixed_monthly_cents, implantation_includes_dependents, implantation_dependents_cents"
     )
     .eq("id", companyId)
     .maybeSingle<{
@@ -107,9 +117,15 @@ export async function previewBilling(
       contracted_holders: number | null;
       billing_basis: string | null;
       fixed_monthly_cents: number | null;
+      implantation_includes_dependents: boolean;
+      implantation_dependents_cents: number | null;
     }>();
   if (!company) return { ok: false, error: "Empresa não encontrada." };
   const contratado = company.contracted_holders;
+  // ⚠️ A IMPLANTAÇÃO SEGUE A REGRA COMBINADA (1032, dono em 26/10/2026).
+  // Antes dependia do caminho: com todos cadastrados o boleto somava os
+  // dependentes; pela quantidade contratada, não somava.
+  const implantacaoComDependentes = company.implantation_includes_dependents === true;
 
   const { data: docs } = await db
     .from("company_documents")
@@ -130,6 +146,7 @@ export async function previewBilling(
   // própria conta do contratado (mais abaixo) e usa daqui só os cadastrados.
   const breakdown = await computeMonthlyBreakdown(db, companyId, {
     peloContratado: billingType === "MONTHLY",
+    soTitulares: billingType === "IMPLANTATION" && !implantacaoComDependentes,
   });
   // AP13: sem conseguir ler preço, titulares e dependentes, não há conta — e
   // conta "aproximada" numa cobrança é conta errada com cara de certa.
@@ -374,10 +391,17 @@ export async function previewBilling(
 
     if (semTitulares || menosQueOContratado) {
       if (contratado != null && contratado > 0) {
-        const cents = await implantacaoPeloContratado(db, companyId, contratado);
-        if (cents === null) {
+        const titularesCents = await implantacaoPeloContratado(db, companyId, contratado);
+        if (titularesCents === null) {
           return { ok: false, error: naoConseguiConferir("o preço da adesão") };
         }
+        // Cadastros incompletos: os dependentes vão pela ESTIMATIVA congelada
+        // no fechamento — a mesma lógica dos titulares pela quantidade
+        // contratada. Sem estimativa, não há valor combinado para eles.
+        const estimativaCents = implantacaoComDependentes
+          ? (company.implantation_dependents_cents ?? 0)
+          : 0;
+        const cents = titularesCents + estimativaCents;
         return {
           ok: true,
           items: [
@@ -399,6 +423,10 @@ export async function previewBilling(
           baseContratada: contratado,
           titularesCadastrados: breakdown.totalEmployees,
           avisoCobertura,
+          dependentesNaImplantacao: {
+            inclui: implantacaoComDependentes,
+            estimativaCents: implantacaoComDependentes ? estimativaCents : undefined,
+          },
         };
       }
       if (semTitulares) {
@@ -454,6 +482,8 @@ export async function previewBilling(
     avisoCobertura,
     cadastrosPendentes,
     titularesCadastrados: breakdown.totalEmployees,
+    dependentesNaImplantacao:
+      billingType === "IMPLANTATION" ? { inclui: implantacaoComDependentes } : undefined,
   };
 }
 

@@ -16,7 +16,11 @@ import {
   precoDoTitularComFaixa,
   titularesDaMensalidade,
   DEFAULT_ADHESION_PRICING,
+  ADHESION_PRICING_COLUMNS,
+  escolherPricing,
+  pricingFromRow,
   type AdhesionPricing,
+  type AdhesionPricingRow,
 } from "./pricing";
 import type { DependentPlan } from "./constants";
 
@@ -116,7 +120,15 @@ export async function avisarCadastrosPendentes(
 export async function computeMonthlyBreakdown(
   db: Db,
   companyId: string,
-  opcoes: { peloContratado?: boolean } = {}
+  opcoes: {
+    peloContratado?: boolean;
+    /**
+     * Só o preço dos titulares, sem os dependentes (1032). É a implantação da
+     * empresa que combinou "implantação só dos titulares" — antes, com todos
+     * cadastrados, ela somava os dependentes sem ninguém ter combinado isso.
+     */
+    soTitulares?: boolean;
+  } = {}
 ): Promise<{
   totalCents: number;
   /** Titulares CADASTRADOS e ativos. */
@@ -141,10 +153,9 @@ export async function computeMonthlyBreakdown(
   ] = await Promise.all([
       db
         .from("adhesion_pricing")
-        .select(
-          "company_id, holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments, dependent_family_size"
-        )
-        .or(`company_id.eq.${companyId},company_id.is.null`),
+        .select(ADHESION_PRICING_COLUMNS)
+        .or(`company_id.eq.${companyId},company_id.is.null`)
+        .returns<AdhesionPricingRow[]>(),
       db
         .from("employees")
         .select("id, dependent_plan, status, company_document_id")
@@ -172,25 +183,11 @@ export async function computeMonthlyBreakdown(
   }
   const limite = typeof limiteRow === "number" ? limiteRow : null;
 
-  const rows = pricingRows as {
-    company_id: string | null;
-    holder_fee_cents: number;
-    dependent_individual_fee_cents: number;
-    dependent_family_fee_cents: number;
-    dependent_family_extra_fee_cents: number;
-    max_installments: number;
-  }[];
-  const chosen =
-    rows.find((r) => r.company_id === companyId) ??
-    rows.find((r) => r.company_id === null);
+  // ⚠️ Até a 1032 o tamanho do pacote era LIDO aqui e NÃO era usado: o
+  // boleto contava o pacote como 3 mesmo com outro número combinado.
+  const chosen = escolherPricing(pricingRows, companyId);
   const pricing: AdhesionPricing = chosen
-    ? {
-        holderFeeCents: chosen.holder_fee_cents,
-        dependentIndividualFeeCents: chosen.dependent_individual_fee_cents,
-        dependentFamilyFeeCents: chosen.dependent_family_fee_cents,
-        dependentFamilyExtraFeeCents: chosen.dependent_family_extra_fee_cents,
-        maxInstallments: chosen.max_installments,
-      }
+    ? pricingFromRow(chosen)
     : DEFAULT_ADHESION_PRICING;
 
   const depCount = new Map<string, number>();
@@ -216,13 +213,14 @@ export async function computeMonthlyBreakdown(
   const byDocument = new Map<string, { employees: number; cents: number }>();
   let totalCents = 0;
   for (const e of emps ?? []) {
-    const one = computeMonthlyCents(precoComFaixa, [
+    const conta = computeMonthlyCents(precoComFaixa, [
       {
         status: "ACTIVE",
         dependentPlan: e.dependent_plan,
         activeDependentCount: depCount.get(e.id) ?? 0,
       },
-    ]).totalCents;
+    ]);
+    const one = opcoes.soTitulares ? conta.holdersCents : conta.totalCents;
     totalCents += one;
     const key = e.company_document_id ?? "__none__";
     const cur = byDocument.get(key) ?? { employees: 0, cents: 0 };

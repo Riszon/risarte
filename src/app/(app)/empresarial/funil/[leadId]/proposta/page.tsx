@@ -20,6 +20,10 @@ import {
 } from "@/lib/empresarial/proposta";
 import { rotuloDaFaixa } from "@/lib/empresarial/condicoes-da-proposta";
 import {
+  estimativaDaProposta,
+  pricingDaProposta,
+} from "@/lib/empresarial/dependentes-da-proposta";
+import {
   comoSeraCobrado,
   comparacaoComOAtual,
   quemPagaOQue,
@@ -78,6 +82,10 @@ type QualRow = {
   dependent_family_size: number | null;
   holders_with_dependents: number | null;
   main_clinic_id: string | null;
+  // 1032
+  dependents_calc_mode: "DISTRIBUTION" | "AS_INDIVIDUAL" | "NONE" | null;
+  dependents_distribution: unknown;
+  implantation_includes_dependents: boolean | null;
 };
 
 type BeneficioRow = {
@@ -202,9 +210,15 @@ export default async function PropostaPage({
 
   const basis: BillingBasis = q.billing_basis ?? "PER_EMPLOYEE";
   const titulares = q.employee_count ?? 0;
-  const dependentes = q.dependents_estimate ?? 0;
+  // 1032: a estimativa dos dependentes sai da MESMA peça que o fechamento usa
+  // para congelar o valor — o documento e a cobrança não podem divergir.
+  const estimativa = estimativaDaProposta(q);
+  const dependentes = estimativa?.dependentes ?? q.dependents_estimate ?? 0;
+  const tabelaDeps = pricingDaProposta(q);
   const conta = simularProposta({
     basis,
+    dependentesEstimadosCents: estimativa?.totalCents ?? null,
+    implantacaoComDependentes: Boolean(q.implantation_includes_dependents) && estimativa != null,
     employeeCount: titulares,
     holderFeeCents: q.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents,
     includeDependents: Boolean(q.includes_dependents),
@@ -352,7 +366,7 @@ export default async function PropostaPage({
           <p className="leading-relaxed text-muted-foreground">
             {titulares} titular{titulares === 1 ? "" : "es"}
             {q.includes_dependents
-              ? ` e ${dependentes} dependente${dependentes === 1 ? "" : "s"}`
+              ? ` e ${dependentes} dependente${dependentes === 1 ? "" : "s"} (estimativa)`
               : ", sem dependentes"}
             .
           </p>
@@ -360,9 +374,27 @@ export default async function PropostaPage({
 
         <section className="space-y-3 break-inside-avoid">
           <h2 className="text-lg font-medium">Investimento mensal</h2>
+          {/* 1032 (dono, 26/10/2026): com os dependentes calculados, o papel
+              mostra titulares + dependentes estimados = o total. Separados, e
+              com a palavra "estimado", porque o valor real dos dependentes sai
+              dos cadastros. */}
+          {estimativa && (
+            <div className="grid grid-cols-3 gap-4 rounded-lg border p-4">
+              <Numero rotulo="Titulares" valor={formatBRL(conta.titularesCents)} />
+              <Numero
+                rotulo="Dependentes (estimado)"
+                valor={formatBRL(conta.dependentesCents)}
+              />
+              <Numero
+                rotulo="Total mensal estimado"
+                valor={formatBRL(conta.mensalidadeCents)}
+                destaque
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4 rounded-lg border p-4 sm:grid-cols-4">
             <Numero
-              rotulo="Mensalidade"
+              rotulo={estimativa ? "Mensalidade (com dependentes)" : "Mensalidade"}
               valor={formatBRL(conta.mensalidadeCents)}
               destaque
             />
@@ -386,6 +418,9 @@ export default async function PropostaPage({
               q.subsidy_type,
               q.subsidy_value
             )}
+            {estimativa &&
+              (q.payment_model ?? "EMPLOYEE_PAYS") !== "EMPLOYEE_PAYS" &&
+              " A parte da empresa vale sobre os titulares; os dependentes ficam por conta do titular."}
           </p>
           <p className="leading-relaxed text-muted-foreground">
             {comoSeraCobrado(q.billing_model, basis)}
@@ -396,8 +431,12 @@ export default async function PropostaPage({
               <strong className="text-foreground">
                 {formatBRL(conta.implantacaoCents)}
               </strong>
-              {" — "}o primeiro pagamento, no mesmo valor da mensalidade,
-              cobrado ao iniciar o programa.
+              {" — "}o primeiro pagamento, cobrado ao iniciar o programa
+              {estimativa
+                ? q.implantation_includes_dependents
+                  ? ": titulares e dependentes estimados."
+                  : ": só os titulares. Os dependentes começam a pagar na mensalidade."
+                : ", no mesmo valor da mensalidade."}
             </p>
           )}
 
@@ -405,44 +444,97 @@ export default async function PropostaPage({
               "cresça e pague menos" — e é também o compromisso que a empresa
               vai cobrar depois. Mostrar só o preço de hoje esconderia as duas
               coisas. */}
-          {/* ⚠️ A TABELA DOS DEPENDENTES, NÃO O TOTAL DELES (decisão do dono,
-              24/09/2026). Na contratação ninguém sabe quantos entram nem como
-              se distribuem entre os titulares — e o pacote é por titular. O
-              documento mostra quanto CUSTA cada situação e diz quando o total
-              vai existir. */}
-          {q.includes_dependents && (
-            <div className="space-y-1 rounded-lg border p-4">
+          {/* A TABELA DOS DEPENDENTES vai sempre: é o compromisso de preço.
+              O TOTAL só vai quando a proposta escolheu calcular (1032) — pelo
+              quadro, com a mesma régua do boleto, ou como individual. Sem a
+              escolha, vale a decisão de 24/09: o papel não inventa total. */}
+          {q.includes_dependents && basis === "PER_EMPLOYEE" && (
+            <div className="space-y-2 rounded-lg border p-4">
               <p className="font-medium">Dependentes</p>
               <ul className="space-y-0.5 text-muted-foreground">
-                <li>
-                  Um dependente:{" "}
-                  {formatBRL(
-                    q.dependent_fee_cents ??
-                      DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents
-                  )}{" "}
-                  por mês
-                </li>
-                {q.dependent_mode === "FAMILY_PACKAGE" && (
+                {tabelaDeps.dependentMode === "PER_DEPENDENT" ? (
+                  <li>
+                    Cada dependente:{" "}
+                    {formatBRL(tabelaDeps.dependentIndividualFeeCents)} por mês
+                  </li>
+                ) : (
                   <>
                     <li>
-                      Pacote familiar (até {q.dependent_family_size ?? 3}{" "}
-                      dependentes do mesmo titular):{" "}
-                      {formatBRL(q.dependent_family_fee_cents ?? 0)} por mês
+                      Titular com um dependente:{" "}
+                      {formatBRL(tabelaDeps.dependentIndividualFeeCents)} por mês
+                    </li>
+                    <li>
+                      Pacote familiar (a partir de 2, até{" "}
+                      {tabelaDeps.dependentFamilySize ?? 3} dependentes do mesmo
+                      titular): {formatBRL(tabelaDeps.dependentFamilyFeeCents)} por
+                      mês
                     </li>
                     <li>
                       Cada dependente acima do pacote:{" "}
-                      {formatBRL(q.dependent_family_extra_fee_cents ?? 0)} por mês
+                      {formatBRL(tabelaDeps.dependentFamilyExtraFeeCents)} por mês
                     </li>
                   </>
                 )}
               </ul>
+
+              {estimativa && estimativa.linhas.length > 0 && (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground">
+                      <th className="py-1 font-medium">Como estimamos</th>
+                      <th className="py-1 text-right font-medium">Por titular</th>
+                      <th className="py-1 text-right font-medium">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estimativa.linhas
+                      .filter((l) => l.dependentes > 0)
+                      .map((l) => (
+                        <tr key={l.dependentes} className="border-t">
+                          <td className="py-1">
+                            {l.titulares} titular{l.titulares === 1 ? "" : "es"} com{" "}
+                            {l.dependentes} dependente{l.dependentes === 1 ? "" : "s"}
+                          </td>
+                          <td className="py-1 text-right">{formatBRL(l.porTitularCents)}</td>
+                          <td className="py-1 text-right">{formatBRL(l.subtotalCents)}</td>
+                        </tr>
+                      ))}
+                    <tr className="border-t font-medium">
+                      <td className="py-1" colSpan={2}>
+                        Dependentes (estimado)
+                      </td>
+                      <td className="py-1 text-right">{formatBRL(estimativa.totalCents)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+
               <p className="text-sm text-muted-foreground">
-                O <strong>valor mensal acima não inclui dependentes</strong>.
-                Quantos entram, e de quais titulares, só se sabe ao cadastrar —
-                o total dos dependentes é fechado na implantação, e a cobrança
-                deles começa a partir daí.
+                {estimativa ? (
+                  <>
+                    O valor dos dependentes acima é uma{" "}
+                    <strong>estimativa</strong>
+                    {estimativa.linhas.length > 0
+                      ? ", feita com a quantidade de dependentes por titular informada"
+                      : ", calculada como dependente individual"}
+                    . A cobrança é feita família a família, pelos dependentes
+                    efetivamente cadastrados, com a tabela acima.
+                  </>
+                ) : (
+                  <>
+                    O <strong>valor mensal acima não inclui dependentes</strong>.
+                    Quantos entram, e de quais titulares, só se sabe ao cadastrar
+                    — a cobrança deles é feita com a tabela acima, a partir dos
+                    cadastros.
+                  </>
+                )}
               </p>
             </div>
+          )}
+          {q.includes_dependents && basis !== "PER_EMPLOYEE" && (
+            <p className="leading-relaxed text-muted-foreground">
+              Os dependentes estão incluídos no valor fixo da empresa.
+            </p>
           )}
 
           {faixas.length > 0 && (
