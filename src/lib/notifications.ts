@@ -20,6 +20,9 @@ export const NOTIFICATION_CATEGORIES = [
   // meta é livre ("Mês do Riso+" cairia no PPR+, "Ponto de equilíbrio…" no
   // Financeiro).
   { key: "metas", label: "Metas" },
+  // OC-00129 (0323): lista enviada à Franqueadora e compra para aprovar. Pelo
+  // LINK, como as Metas: o título leva o nome da unidade, que é livre.
+  { key: "compras", label: "Compras" },
   { key: "outras", label: "Outras" },
 ] as const;
 
@@ -43,6 +46,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   transferencia: "bg-amber-100 text-amber-800",
   financeiro: "bg-slate-200 text-slate-800",
   metas: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300",
+  compras: "bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300",
   outras: "bg-muted text-muted-foreground",
 };
 
@@ -59,6 +63,7 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   transferencia: "bg-amber-500",
   financeiro: "bg-slate-600",
   metas: "bg-sky-500",
+  compras: "bg-orange-500",
   outras: "bg-muted-foreground",
 };
 
@@ -163,6 +168,7 @@ export function linkDoAviso(link: string, title: string): string {
 
 export function categorizeNotification(title: string, link?: string | null): NotificationCategory {
   if ((link ?? "").startsWith("/metas")) return "metas";
+  if ((link ?? "").startsWith("/compras")) return "compras";
   const t = (title ?? "").toLowerCase();
   if (t.includes("aniversari")) return "aniversario";
   // Programa de Prevenção Riso+ — antes do "comercial" genérico.

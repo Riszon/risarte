@@ -11,6 +11,8 @@ import {
   sendBlock,
   sendBlockMessage,
   statusLabel,
+  requestStage,
+  personWithRole,
   type PurchaseRequestItem,
   orderStatusAfter,
   pendingQuantity,
@@ -153,6 +155,40 @@ describe("rótulos de situação", () => {
   it("traduz os estados", () => {
     expect(statusLabel("rascunho")).toBe("Rascunho");
     expect(statusLabel("em_negociacao")).toBe("Em negociação");
+  });
+});
+
+describe("em que pé a lista está (OC-00129)", () => {
+  it("enviada NÃO é para aprovar: está com a Franqueadora", () => {
+    const s = requestStage("enviada", false);
+    expect(s.aprovar).toBe(false);
+    expect(s.text).toContain("Franqueadora");
+    expect(s.text).toContain("nada para aprovar");
+  });
+  it("em negociação ainda não é para aprovar", () => {
+    expect(requestStage("em_negociacao", false).aprovar).toBe(false);
+  });
+  it("só a negociada leva para Aprovar", () => {
+    const vezes = (["rascunho", "enviada", "em_negociacao", "concluida", "cancelada"] as const)
+      .filter((st) => requestStage(st, false).aprovar);
+    expect(vezes).toEqual(["concluida"]);
+  });
+  it("compra local enviada não espera a Franqueadora", () => {
+    expect(requestStage("enviada", true).text).toContain("local");
+  });
+});
+
+describe("quem pediu (OC-00130)", () => {
+  const labels = { unit_manager: "Gerente de Unidade" };
+  it("nome com a função", () => {
+    expect(personWithRole("Ana", "unit_manager", labels)).toBe("Ana, Gerente de Unidade");
+  });
+  it("Admin Master é marca do perfil, não função de unidade", () => {
+    expect(personWithRole("Edson", "admin_master", labels)).toBe("Edson, Admin Master");
+  });
+  it("sem função conhecida, só o nome; sem nome, nada", () => {
+    expect(personWithRole("Ana", null, labels)).toBe("Ana");
+    expect(personWithRole(null, "unit_manager", labels)).toBeNull();
   });
 });
 

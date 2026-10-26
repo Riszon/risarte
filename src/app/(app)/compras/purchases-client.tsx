@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -18,10 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
+import { formatBrDateTime } from "@/lib/dates";
+import { ROLE_LABELS } from "@/lib/roles";
 import {
   estimateLabel,
   estimateTrust,
   isEstimateStale,
+  personWithRole,
+  requestStage,
   requestTotals,
   sendBlock,
   sendBlockMessage,
@@ -29,6 +34,7 @@ import {
   type EstimateTrust,
   type PurchaseRequest,
   type PurchaseRequestItem,
+  type RequestAuthors,
 } from "@/lib/purchases";
 import {
   addRequestItem,
@@ -119,7 +125,10 @@ function ItemRow({
 
 export function PurchasesView({
   clinicId,
+  clinicName,
   today,
+  authors,
+  authorsMissing,
   requests,
   itemsByRequest,
   stockItems,
@@ -127,7 +136,10 @@ export function PurchasesView({
   canManage,
 }: {
   clinicId: string;
+  clinicName: string;
   today: string;
+  authors: Record<string, RequestAuthors>;
+  authorsMissing: boolean;
   requests: PurchaseRequest[];
   itemsByRequest: Record<string, PurchaseRequestItem[]>;
   stockItems: { id: string; name: string; brand: string; purchaseUnit: string }[];
@@ -227,6 +239,15 @@ export function PurchasesView({
           const block = sendBlock(r, items);
           const blockMsg = sendBlockMessage(block);
           const editable = canManage && r.status === "rascunho";
+          const author = authors[r.id];
+          const stage = requestStage(r.status, r.isLocal);
+          const askedBy = author
+            ? personWithRole(author.createdByName, author.createdByRole, ROLE_LABELS)
+            : null;
+          const sentBy = author
+            ? personWithRole(author.sentByName, author.sentByRole, ROLE_LABELS)
+            : null;
+          const unknownPerson = authorsMissing ? "não foi possível ler" : "—";
 
           return (
             <Card key={r.id}>
@@ -261,6 +282,44 @@ export function PurchasesView({
                     </span>
                   </span>
                 </button>
+
+                {/* QUEM, ONDE E QUANDO (OC-00130) — fora do "abrir", porque é
+                    o que se procura antes de abrir. E EM QUE PÉ ESTÁ (OC-00129):
+                    "Enviada" sozinho foi lido como "devia estar para aprovar". */}
+                <div className="mt-1 space-y-0.5 pl-5 text-[11px] text-muted-foreground">
+                  <p>
+                    Pedida por{" "}
+                    <span className="font-medium text-foreground">
+                      {askedBy ?? unknownPerson}
+                    </span>{" "}
+                    · {clinicName} · {formatBrDateTime(r.createdAt)}
+                  </p>
+                  {r.sentAt && (
+                    <p>
+                      Enviada por{" "}
+                      <span className="font-medium text-foreground">
+                        {sentBy ?? unknownPerson}
+                      </span>{" "}
+                      em {formatBrDateTime(r.sentAt)}
+                    </p>
+                  )}
+                  {stage.text && (
+                    <p className={cn(stage.aprovar && "font-medium text-gold-tinta")}>
+                      {stage.text}
+                      {stage.aprovar && (
+                        <>
+                          {" "}
+                          <Link
+                            href="/compras/aprovar"
+                            className="underline underline-offset-2"
+                          >
+                            Ir para Aprovar
+                          </Link>
+                        </>
+                      )}
+                    </p>
+                  )}
+                </div>
 
                 {isOpen && (
                   <div className="mt-2">
@@ -527,11 +586,6 @@ export function PurchasesView({
                               Cancelar lista
                             </Button>
                           )}
-                        {r.sentAt && (
-                          <span className="ml-auto text-[11px] text-muted-foreground">
-                            enviada em {fmtDate(r.sentAt.slice(0, 10))}
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>

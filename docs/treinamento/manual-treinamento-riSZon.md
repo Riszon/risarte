@@ -3035,6 +3035,38 @@ recebe a sua parte. Por isso **quem aprova é quem paga**.
 | 3. Aprovar | Compras → **Aprovar** | Gerente da unidade (e o Admin). Na compra da **própria Franqueadora**: o **Financeiro da Franqueadora** | **Aprovar** ou **Recusar** cada item (recusar pede o motivo) → **Gerar pedidos** (um por fornecedor) |
 | 4. Receber | Compras → **Receber** | Gerente da unidade, Financeiro da Franqueadora, Admin — **não** o Coordenador nem o ASB: receber cria a conta a pagar | Quando a entrega chega, conferir pela nota → **Registrar entrega**: o material entra no estoque e a conta a pagar nasce sozinha |
 
+**Cada lista diz quem pediu e em que pé está.** Em Compras → **Pedir**, logo
+abaixo do código, aparece *"Pedida por Fulana, Gerente de Unidade · Risarte
+Cambé - Centro · 26/10/2026 10:47"*, e depois do envio *"Enviada por … em …"*.
+A terceira linha diz de quem é a vez:
+
+| Situação da lista | O que quer dizer | Tem algo para aprovar? |
+|---|---|---|
+| **Rascunho** | Só a unidade vê; ainda não foi enviada | Não |
+| **Enviada** | Está com a Franqueadora, esperando entrar numa rodada de negociação | **Não** — a aprovação só nasce quando a Franqueadora fecha a negociação |
+| **Em negociação** | A Franqueadora está cotando com os fornecedores | Não, ainda |
+| **Concluída** | Negociada — a parte da unidade foi para **Aprovar** (link na própria linha) | **Sim** |
+
+> **"Enviada" não é "esperando a minha aprovação".** Se a lista está Enviada e
+> não há nada em Aprovar, o sistema está certo: falta a Franqueadora juntar a
+> lista numa rodada e fechá-la. Quem faz isso recebe o aviso no sino.
+
+**Os avisos no sino** (categoria **Compras**, desde a versão 0.348.0):
+
+- **Lista enviada** → avisa o **Comprador**, o **Financeiro da Franqueadora** e
+  o **Admin Master**, com quem enviou, a unidade, a hora, quantos itens e a
+  previsão. **Abrir** leva à Mesa de negociação. Compra local não avisa: ela
+  não passa pela Franqueadora.
+- **Rodada fechada** → avisa **quem aprova** em cada unidade que tem parte na
+  rodada (o gerente; na compra da própria Franqueadora, o Financeiro da
+  Franqueadora). Se a unidade não tem gerente, o aviso vai ao Admin Master.
+  **Abrir** leva a Compras → Aprovar — confira se a unidade escolhida no menu é
+  a do aviso.
+
+**Quando há algo para aprovar, toda tela de Compras avisa:** uma faixa dourada
+no alto (*"3 itens negociados pela Franqueadora esperam a aprovação desta
+unidade"*) com o botão **Aprovar agora**.
+
 > **Item sem decisão não vira pedido.** O sistema não aprova sozinho: o
 > dinheiro é da unidade. Quem não decide vê, na coluna **Decisão**, quem
 > decide (por exemplo, *"Decide: o gerente da unidade ou o Admin"*).

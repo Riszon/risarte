@@ -193,6 +193,32 @@ export function TrilhaDaCompra({
 
   return (
     <div className="space-y-3">
+      {/* A APROVAÇÃO GRITA EM TODA TELA DO FLUXO (OC-00129). O número no
+          cartão "Aprovar" existia e passou despercebido: a pessoa foi procurar
+          a aprovação em Receber. Uma faixa com o botão não depende de alguém
+          notar um número pequeno — e some na própria tela de aprovar, onde
+          seria só eco. */}
+      {aguardandoAprovacao > 0 && atual !== "aprovar" && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gold/50 bg-gold/10 px-4 py-3">
+          <ThumbsUp className="size-4 shrink-0 text-gold-tinta" />
+          <p className="min-w-0 flex-1 text-sm">
+            <strong>
+              {aguardandoAprovacao}{" "}
+              {aguardandoAprovacao === 1 ? "item negociado" : "itens negociados"}
+            </strong>{" "}
+            pela Franqueadora{" "}
+            {aguardandoAprovacao === 1 ? "espera" : "esperam"} a aprovação desta
+            unidade. Sem ela, o pedido não nasce.
+          </p>
+          <Link
+            href="/compras/aprovar"
+            className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Aprovar agora
+          </Link>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         {etapas.map((e) => (
           <Cartao key={e.n} etapa={e} />

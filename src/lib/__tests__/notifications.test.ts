@@ -100,6 +100,10 @@ describe("M5 — avisos das Metas", () => {
   it("vão para a aba Metas pelo LINK, mesmo com nome de meta que lembra outra aba", () => {
     expect(categorizeNotification("Meta atingida: Mês do Riso+", "/metas/abc")).toBe("metas");
     expect(categorizeNotification("Nova meta: Ponto de equilíbrio de outubro", "/metas/abc")).toBe("metas");
+    // OC-00129: os avisos de Compras (0323) vão pelo link — "aprovar a compra"
+    // não pode cair em outra categoria pelo título.
+    expect(categorizeNotification("Compras — nova lista PC-000020 de Risarte Cambé - Centro", "/compras/rodadas")).toBe("compras");
+    expect(categorizeNotification("Compras — aprovar a compra da Risarte Cambé - Centro", "/compras/aprovar")).toBe("compras");
     // Sem o link, o título sozinho enganaria — é por isso que o link manda.
     expect(categorizeNotification("Meta atingida: Mês do Riso+")).toBe("ppr");
   });

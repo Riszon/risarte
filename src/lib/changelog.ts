@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.348.0",
+    data: "2026-10-26",
+    migracao: "0323",
+    titulo: "Compras: quem pediu cada lista, em que pé ela está, e avisos no sino para comprar e para aprovar",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Em Compras → Pedir, cada lista mostra quem pediu (com a função), a unidade, o dia e a hora — e, depois do envio, quem enviou e quando. Na Mesa de negociação, cada lista esperando mostra quem a enviou.",
+        papeis: ["unit_manager", "clinical_coordinator", "asb", "franchisee", "purchaser", "finance_franchisor"],
+        manual: "Fluxo 5 — Compras: pedir, negociar, aprovar e receber",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Cada lista diz em que pé está e de quem é a vez. \"Enviada\" quer dizer que ela está com a Franqueadora, esperando a negociação — ainda não há nada para aprovar. Quando a negociação fecha, a lista mostra o link Ir para Aprovar.",
+        papeis: ["unit_manager", "clinical_coordinator", "asb", "franchisee"],
+        manual: "Fluxo 5 — Compras: pedir, negociar, aprovar e receber",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quando há itens esperando a aprovação da unidade, toda tela de Compras mostra uma faixa dourada no alto com o botão Aprovar agora.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "Fluxo 5 — Compras: pedir, negociar, aprovar e receber",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Avisos de Compras no sino: a lista enviada avisa o Comprador, o Financeiro da Franqueadora e o Admin; a negociação fechada avisa quem aprova em cada unidade. Os dois ficam na aba nova Compras da central de notificações.",
+        papeis: ["unit_manager", "purchaser", "finance_franchisor"],
+        manual: "Fluxo 5 — Compras: pedir, negociar, aprovar e receber",
+      },
+    ],
+  },
+  {
     versao: "0.347.0",
     data: "2026-10-25",
     migracao: "0322",

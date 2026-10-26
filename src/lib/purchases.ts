@@ -150,6 +150,69 @@ export function statusLabel(status: RequestStatus): string {
   return STATUS_LABEL[status] ?? status;
 }
 
+/**
+ * EM QUE PÉ A LISTA ESTÁ — e de quem é a vez (OC-00129).
+ *
+ * "Enviada" sozinho foi lido como "devia estar para aprovar": a pessoa procurou
+ * a aprovação e não achou, porque a lista ainda estava com a Franqueadora. A
+ * aprovação só nasce quando a rodada FECHA. A frase diz isso, e `aprovar`
+ * marca a única situação em que a próxima ação é da unidade.
+ */
+export function requestStage(
+  status: RequestStatus,
+  isLocal: boolean
+): { text: string; aprovar: boolean } {
+  switch (status) {
+    case "rascunho":
+      return { text: "Ainda não enviada — só a unidade vê.", aprovar: false };
+    case "enviada":
+      return isLocal
+        ? { text: "Compra local: a unidade compra por conta própria.", aprovar: false }
+        : {
+            text: "Com a Franqueadora, esperando entrar numa rodada de negociação. Ainda não há nada para aprovar.",
+            aprovar: false,
+          };
+    case "em_negociacao":
+      return {
+        text: "A Franqueadora está cotando com os fornecedores. A aprovação aparece quando ela fechar a negociação.",
+        aprovar: false,
+      };
+    case "concluida":
+      return {
+        text: "Negociada. A parte desta unidade vai para Aprovar — sem a aprovação, o pedido não nasce.",
+        aprovar: true,
+      };
+    case "cancelada":
+      return { text: "Cancelada.", aprovar: false };
+    default:
+      return { text: "", aprovar: false };
+  }
+}
+
+/** Quem montou e quem enviou a lista (0323, `purchase_request_authors`). */
+export type RequestAuthors = {
+  createdByName: string | null;
+  createdByRole: string | null;
+  sentByName: string | null;
+  sentByRole: string | null;
+};
+
+/**
+ * "Fulana, Gerente de Unidade". Vírgula, não parêntese: alguns rótulos já têm
+ * parêntese ("ASB (Auxiliar em Saúde Bucal)") e ficariam dobrados. A função
+ * vem como o valor do banco; o Admin Master não é função de unidade, é marca
+ * do perfil — por isso o caso à parte.
+ */
+export function personWithRole(
+  name: string | null,
+  role: string | null,
+  labels: Record<string, string>
+): string | null {
+  if (!name) return null;
+  const label = role === "admin_master" ? "Admin Master" : role ? labels[role] : null;
+  return label ? `${name}, ${label}` : name;
+}
+
 // ---------------------------------------------------------------------------
 // C2 — A MESA DE NEGOCIAÇÃO DA FRANQUEADORA
 // ---------------------------------------------------------------------------

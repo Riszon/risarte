@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
+import { formatBrDateTime } from "@/lib/dates";
 import { roundSavings, roundStatusLabel } from "@/lib/purchases";
 import {
   awardItem,
@@ -81,7 +82,13 @@ export function RoundsView({
 }: {
   rounds: RoundRow[];
   currentId: string | null;
-  pending: { id: string; code: string; clinicName: string; sentAt: string | null }[];
+  pending: {
+    id: string;
+    code: string;
+    clinicName: string;
+    sentAt: string | null;
+    sentBy: string | null;
+  }[];
   suppliers: { id: string; name: string }[];
   items: RoundItemRow[];
   quotes: QuoteRow[];
@@ -181,6 +188,12 @@ export function RoundsView({
                   />
                   <span className="text-muted-foreground">{p.code}</span>
                   {p.clinicName}
+                  {/* Quem pediu e quando (OC-00130): a Franqueadora sabe a
+                      quem perguntar antes de juntar a lista numa rodada. */}
+                  <span className="ml-auto text-right text-[11px] text-muted-foreground">
+                    {p.sentBy ? `${p.sentBy} · ` : ""}
+                    {p.sentAt ? formatBrDateTime(p.sentAt) : ""}
+                  </span>
                 </label>
               ))}
               <div className="flex flex-wrap items-end gap-2 pt-2">

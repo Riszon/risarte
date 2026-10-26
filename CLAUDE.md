@@ -390,6 +390,27 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**26/10/2026 — PC Administrador (core 0.347.0 → 0.348.0, migração 0323)**
+
+- **OC-00129 + OC-00130 (Admin Master, Cambé, TREINO) — um caso.** OC-00130
+  era DEFEITO de tela (a lista não mostrava quem pediu nem a hora; o banco
+  sempre gravou). OC-00129 NÃO era defeito da aprovação: "Enviada" = esperando
+  rodada; a aprovação nasce quando a rodada FECHA. A causa comum: o fluxo não
+  avisava ninguém (0 avisos de Compras na história do treino).
+- Decisões do dono: o envio avisa **Comprador + Financeiro da Franqueadora +
+  Admin Master**; aprovação = **faixa "Aprovar agora"** em toda tela de
+  Compras + **situação por lista**.
+- ⚠️ **Os avisos nascem DENTRO de `send_purchase_request` e
+  `close_purchase_round`** (0323). Ao recriar essas funções, levar o bloco do
+  aviso junto. Nomes de quem pediu vêm de `purchase_request_authors` (a regra
+  de `profiles` só mostra colegas).
+- ⚠️ **Ensaio pegou `brl(numeric)`**: `sum()` de bigint devolve numeric —
+  converter (`::bigint`) antes de `public.brl`.
+- ✅ 0323 no treino; ⏳ **falta a PRODUÇÃO** (antes dela, a lista abre e diz
+  "não foi possível ler" no nome; o resto da tela funciona). Visto na tela no
+  treino (Admin de teste, só leitura). **Não visto:** a faixa (sem item para
+  aprovar no treino). AP71 no BACKLOG (rascunhos vazios).
+
 **23–24/10/2026 — PC Administrador (core 0.342.0 → 0.346.0; migrações 0318 a 0321)**
 
 - **Módulo de Metas SMART — etapa M1** (pedido do dono; plano e decisões

@@ -5,6 +5,8 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isPurchaser } from "@/lib/purchases-access";
 import { canConfigureFinanceNetwork } from "@/lib/finance/access";
+import { personWithRole } from "@/lib/purchases";
+import { ROLE_LABELS } from "@/lib/roles";
 import { RoundsView, type RoundItemRow, type RoundRow } from "./rounds-client";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 
@@ -95,7 +97,29 @@ export default async function RoundsPage(
     code: r.code ?? "",
     clinicName: one(r.clinic),
     sentAt: r.sent_at,
+    sentBy: null as string | null,
   }));
+
+  // QUEM ENVIOU cada lista (OC-00130), pela mesma função da tela Pedir (0323).
+  // Sem ela (banco ainda sem a 0323), a lista aparece como antes, sem o nome.
+  if (pending.length > 0) {
+    const { data: authorRows, error: authorError } = await supabase.rpc(
+      "purchase_request_authors",
+      { p_ids: pending.map((p) => p.id) }
+    );
+    if (authorError) console.error("purchase_request_authors failed:", authorError.message);
+    const byId = new Map(
+      ((authorRows ?? []) as {
+        request_id: string;
+        sent_by_name: string | null;
+        sent_by_role: string | null;
+      }[]).map((a) => [
+        a.request_id,
+        personWithRole(a.sent_by_name, a.sent_by_role, ROLE_LABELS),
+      ])
+    );
+    for (const p of pending) p.sentBy = byId.get(p.id) ?? null;
+  }
 
   const suppliers = ((supplierRows ?? []) as { id: string; name: string }[]).map(
     (s) => ({ id: s.id, name: s.name })

@@ -2578,6 +2578,16 @@ montado à mão poderia pôr uma ASB como profissional — e o profissional do
 horário pode registrar chegada e chamar (`v_provider = v_user`). Não mexi
 (fora do relato).
 
+### AP71. Listas de compras vazias se acumulam em Rascunho (26/10/2026)
+
+**Confirmado no treino (só leitura), causa não conferida.** Em Cambé há três
+listas em Rascunho com 0 itens (PC-000016 e PC-000017, criadas no mesmo
+minuto, e PC-000019 na Franqueadora). **Suspeita:** "Gerar lista de compras"
+cria a lista mesmo quando nada está abaixo do mínimo (`build_purchase_request`
+insere a lista antes de conferir os itens), e o clique duplo cria duas. Elas
+não atrapalham o envio (lista vazia é recusada), mas enchem a tela Pedir. Achado
+tratando o OC-00129/00130.
+
 ### AP70. O painel do Riso+ conta "novas adesões" pela criação, não pela ativação (23/10/2026)
 
 **Confirmado lendo o código (não executado).** `ppr/painel/page.tsx:228`

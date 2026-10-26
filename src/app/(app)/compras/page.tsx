@@ -13,6 +13,7 @@ import { todayInBrazil } from "@/lib/dates";
 import type {
   PurchaseRequest,
   PurchaseRequestItem,
+  RequestAuthors,
 } from "@/lib/purchases";
 import { PurchasesView } from "./purchases-client";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
@@ -103,6 +104,37 @@ export default async function PurchasesPage() {
     createdAt: r.created_at,
   }));
 
+  // QUEM PEDIU (OC-00130). Vem por função do banco (0323): o nome de quem é de
+  // outra unidade não passa pela regra de `profiles`. Antes de a 0323 rodar
+  // num banco, a função não existe — a lista abre igual, só sem os nomes, e a
+  // tela diz isso em vez de fingir que ninguém pediu.
+  const authors: Record<string, RequestAuthors> = {};
+  let authorsMissing = false;
+  if (requests.length > 0) {
+    const { data: authorRows, error: authorError } = await supabase.rpc(
+      "purchase_request_authors",
+      { p_ids: requests.map((r) => r.id) }
+    );
+    if (authorError) {
+      console.error("purchase_request_authors failed:", authorError.message);
+      authorsMissing = true;
+    }
+    for (const a of (authorRows ?? []) as {
+      request_id: string;
+      created_by_name: string | null;
+      created_by_role: string | null;
+      sent_by_name: string | null;
+      sent_by_role: string | null;
+    }[]) {
+      authors[a.request_id] = {
+        createdByName: a.created_by_name,
+        createdByRole: a.created_by_role,
+        sentByName: a.sent_by_name,
+        sentByRole: a.sent_by_role,
+      };
+    }
+  }
+
   const known = new Set(requests.map((r) => r.id));
   const itemsByRequest: Record<string, PurchaseRequestItem[]> = {};
   for (const raw of (itemRows ?? []) as {
@@ -153,7 +185,10 @@ export default async function PurchasesPage() {
 
       <PurchasesView
         clinicId={clinicId}
+        clinicName={session.activeClinic?.name ?? ""}
         today={todayInBrazil()}
+        authors={authors}
+        authorsMissing={authorsMissing}
         requests={requests}
         itemsByRequest={itemsByRequest}
         stockItems={(

@@ -1,6 +1,28 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 25/10/2026 · Versão do sistema: **0.347.0** · Última migração: **0322** (0318 a 0322 aplicadas na produção e no treino; 0322 em 25/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 26/10/2026 · Versão do sistema: **0.348.0** · Última migração: **0323** (0323 aplicada SÓ no treino; 0318 a 0322 na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.348.0 / 0323 — COMPRAS: QUEM PEDIU E OS AVISOS (OC-00129 + OC-00130, 26/10/2026)
+>
+> Dois relatos do Admin Master (Cambé, no TREINO), um caso. **OC-00130 era
+> defeito de tela:** a lista não mostrava quem pediu nem a hora (o banco
+> sempre gravou `created_by`/`sent_by`). **OC-00129 NÃO era defeito da
+> aprovação:** "Enviada" = esperando rodada; a aprovação só nasce quando a
+> rodada FECHA (0241). A PC-000020 nunca entrou em rodada e a PC-000018 está
+> numa rodada aberta — e nenhum aviso de Compras jamais existiu no sino. A
+> causa comum: o fluxo não dizia a ninguém de quem era a vez.
+> **0323:** `purchase_request_authors` (nome + função, com a régua de leitura
+> da lista — `profiles` só mostra colegas); `send_purchase_request` avisa
+> Comprador + Financeiro da Franqueadora + Admin Master (decisão do dono);
+> `close_purchase_round` avisa quem aprova por unidade (régua da 0294; sem
+> ninguém, o Admin). Avisos dentro da função do ato (mesma transação).
+> Tela: linha "Pedida por / Enviada por", situação por lista
+> (`requestStage`), faixa **Aprovar agora** na trilha, quem enviou na Mesa,
+> categoria Compras no sino (pelo link). Código antes da migração: sem a
+> função, a lista abre e diz "não foi possível ler" no nome.
+> ✅ 0323 aplicada no treino (duas vezes, idempotente) + ensaio desfeito com
+> 7 conferências (achou um `brl(numeric)` antes de ir ao dono). ⏳ **Falta a
+> PRODUÇÃO.** Não visto na tela: a faixa (o treino não tem item para aprovar).
 
 > ## 🎯 0.347.0 / 0322 — METAS SMART, ETAPA M5 (25/10/2026)
 >
