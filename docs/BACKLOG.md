@@ -37,6 +37,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 
 **Futuro / sem causa encontrada**
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
+- [ ] **AP72** — limpar a anamnese antiga sem uso (`saveAnamnesis`; a tabela só depois de conferir a produção)
 - [ ] **AP68** — aba Fluxo de caixa do Painel da rede lê unidade por unidade (medir com a rede grande)
 - [ ] **AP57** — textos da certificação que podem citar botões com nome antigo
 - [ ] **AP33** — rodada de testes que falhou uma vez e não se repetiu
@@ -2587,6 +2588,17 @@ cria a lista mesmo quando nada está abaixo do mínimo (`build_purchase_request`
 insere a lista antes de conferir os itens), e o clique duplo cria duas. Elas
 não atrapalham o envio (lista vazia é recusada), mas enchem a tela Pedir. Achado
 tratando o OC-00129/00130.
+
+### AP72. A anamnese antiga (`clinical_anamnesis` e `saveAnamnesis`) ficou sem uso (26/10/2026)
+
+**Confirmado lendo o código e o treino (achado no OC-00134).** `saveAnamnesis`
+(`prontuarios/[id]/clinical-actions.ts`) não tem quem chame desde que vieram as
+fichas (`saveAnamnesisFill`), e a tabela `clinical_anamnesis` tem 0 linhas no
+treino desde sempre. Foi por ela que o item da certificação ficou morto. Limpar
+o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produção**
+se há linha lá (só leitura) e sem o dono pedir. De carona: o
+`check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
+todos com tela que grava (conferido um a um), só ninguém fez ainda.
 
 ### AP70. O painel do Riso+ conta "novas adesões" pela criação, não pela ativação (23/10/2026)
 

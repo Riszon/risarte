@@ -220,8 +220,22 @@ describe("a origem de cada indicador (o que a Etapa 2 vai contar)", () => {
     // "Planos criados" e "planos enviados" saem da MESMA coluna (quem montou o
     // plano) e são ações diferentes: um pela data de criação, o outro pela de
     // envio. É por isso que a regra olha o par, e não só a coluna.
-    const frases = INDICADORES.map((i) => `${i.origem} @ ${i.quando}`);
-    const repetidas = frases.filter((f, k) => frases.indexOf(f) !== k);
+    //
+    // ⚠️ OC-00134 (26/10/2026): a régua olha POR FUNÇÃO. O Admin configura uma
+    // função por vez e só vê os itens dela — a repetição engana quando os dois
+    // nomes aparecem para a MESMA função. "Anamneses clínicas" (Coordenador) e
+    // "Fichas de anamnese" (Recepção e TSB, AP55) contam as mesmas fichas para
+    // funções diferentes; quando o dono decidir o AP55, a segunda pode sair.
+    const repetidas: string[] = [];
+    const vistas = new Map<string, string>();
+    for (const i of INDICADORES) {
+      for (const papel of i.papeis) {
+        const frase = `${papel}: ${i.origem} @ ${i.quando}`;
+        const outra = vistas.get(frase);
+        if (outra && outra !== i.chave) repetidas.push(`${frase} (${outra} = ${i.chave})`);
+        vistas.set(frase, i.chave);
+      }
+    }
     expect(repetidas, "contagens idênticas com nomes diferentes").toEqual([]);
   });
 

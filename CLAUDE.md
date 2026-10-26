@@ -390,6 +390,23 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**26/10/2026 (2ª) — PC Administrador (core 0.348.0 → 0.348.1, sem migração)**
+
+- **OC-00134 (Coordenador de Londrina): as fichas de anamnese não contavam na
+  missão.** Defeito: o item contava `clinical_anamnesis`, que nenhuma tela grava
+  (AP72). Agora `anamnesis_fills.filled_by`/`filled_at`, só o Coordenador. Na
+  varredura dos 88 (pedido do Admin), `lancamentos_razao` contava
+  `source_type=manual` (nada grava) → `bank_transaction`.
+- ⚠️ **EXISTIR NÃO É SER GRAVADO:** coluna, data e filtro existiam, e o
+  `check:indicadores` dizia OK para um item impossível. Ele agora lista o
+  indicador nunca preenchido no treino (alerta). **Indicador novo: conferir
+  que alguma tela GRAVA aquela coluna com aquele valor hoje.**
+- Medido só lendo: o Coordenador do relato verá **10 de 15** (14 fichas, 10
+  depois do aceite em 23/10).
+- ⚠️ **Outra sessão trabalhou no `main` ao mesmo tempo** (Compras, 0323): esperei
+  o commit dela antes de mexer em `changelog.ts`/`version.ts`/manual, e
+  numerei o achado como AP72 (ela pegou o AP71).
+
 **26/10/2026 — PC Administrador (core 0.347.0 → 0.348.0, migração 0323)**
 
 - **OC-00129 + OC-00130 (Admin Master, Cambé, TREINO) — um caso.** OC-00130

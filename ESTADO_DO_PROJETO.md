@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/10/2026 · Versão do sistema: **0.348.0** · Última migração: **0323** (0318 a 0323 aplicadas na produção e no treino; 0323 em 26/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 26/10/2026 · Versão do sistema: **0.348.1** · Última migração: **0323** (0318 a 0323 aplicadas na produção e no treino; 0323 em 26/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.348.1 (sem migração) — CERTIFICAÇÃO: DOIS ITENS QUE NUNCA CONTAVAM (OC-00134, 26/10/2026)
+>
+> Relato do Coordenador de Londrina: preenchia as fichas de anamnese e a
+> missão não andava. **Defeito, não regra:** `anamnese_clinica` contava
+> `clinical_anamnesis` (a tela antiga; `saveAnamnesis` não tem quem chame).
+> Agora conta `anamnesis_fills.filled_by` / `filled_at`, só para o
+> Coordenador (o Dentista saiu: não grava ficha). Varredura dos 88 (pedido do
+> Admin): `lancamentos_razao` contava `source_type=manual`, que nada grava →
+> `bank_transaction` (o Lançar da Conciliação). ⚠️ **Existir não é ser
+> gravado:** o `check:indicadores` agora lista o indicador NUNCA preenchido
+> no treino (16 hoje, todos com tela que grava, conferidos). EV-222.
 
 > ## 🎯 0.348.0 / 0323 — COMPRAS: QUEM PEDIU E OS AVISOS (OC-00129 + OC-00130, 26/10/2026)
 >

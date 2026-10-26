@@ -257,12 +257,18 @@ export const INDICADORES = [
     chave: "anamnese_clinica",
     rotulo: "Anamneses clínicas preenchidas",
     ajuda:
-      "A anamnese feita pelo clínico, mais completa que a da recepção (histórico, medicação, alergias).",
-    onde: "Ficha do cliente → Anamnese clínica",
+      "As fichas de anamnese (Geral, e as outras do modelo) que ele preencheu na ficha do cliente.",
+    onde: "Ficha do cliente → Anamnese → Preencher (ou Atualizar)",
     nivel: "complementar",
-    origem: "clinical_anamnesis.created_by",
-    quando: "created_at",
-    papeis: ["clinical_coordinator", "dentist"],
+    // ⚠️ OC-00134 (26/10/2026): contava `clinical_anamnesis` — a anamnese
+    // antiga, de uma tela que SAIU quando vieram as fichas (Anamnese 2.0).
+    // Nenhuma tela grava mais lá (0 linhas no treino, desde sempre), e o item
+    // ficou impossível: o Coordenador preenchia as fichas e via "0 de 15".
+    // Só o Coordenador grava ficha (`requireCoordinator` em
+    // anamnesis-actions.ts) — por isso o Dentista saiu daqui.
+    origem: "anamnesis_fills.filled_by",
+    quando: "filled_at",
+    papeis: ["clinical_coordinator"],
   },
   {
     chave: "aprovacoes_plano",
@@ -839,10 +845,15 @@ export const INDICADORES = [
   {
     chave: "lancamentos_razao",
     rotulo: "Lançamentos no razão",
-    ajuda: "Lançamentos contábeis criados à mão por ela.",
-    onde: "Financeiro → Razão → Novo lançamento",
+    ajuda:
+      "Lançamentos criados por ela na Conciliação, a partir da linha do extrato (o que o sistema não sabia: tarifa, rendimento, transferência).",
+    onde: "Financeiro → Conciliação → Lançar (ou Transferência)",
     nivel: "complementar",
-    origem: "financial_entries.created_by + source_type=manual",
+    // ⚠️ OC-00134 (26/10/2026): contava `source_type=manual` numa tela
+    // "Razão → Novo lançamento" que NÃO EXISTE — nada no sistema cria
+    // lançamento `manual`. O lançamento feito à mão hoje nasce na Conciliação,
+    // pela linha do extrato (`create_entry_from_bank_transaction`).
+    origem: "financial_entries.created_by + source_type=bank_transaction",
     quando: "created_at",
     papeis: ["finance_franchisor"],
   },

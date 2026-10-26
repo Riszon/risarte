@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.348.1",
+    data: "2026-10-26",
+    migracao: null,
+    titulo: "Certificação: as fichas de anamnese do Coordenador e os lançamentos da Conciliação passam a contar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O item \"Anamneses clínicas preenchidas\" da missão do Coordenador contava uma tela antiga e ficava sempre em zero. Agora conta as fichas de anamnese preenchidas na ficha do cliente, desde o aceite da missão — não é preciso refazer nada.",
+        papeis: ["clinical_coordinator"],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O item \"Lançamentos no razão\" do Financeiro da Franqueadora passa a contar os lançamentos feitos em Financeiro → Conciliação (Lançar ou Transferência).",
+        papeis: ["finance_franchisor"],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O item de anamnese saiu da lista do Dentista: só o Coordenador consegue preencher a ficha, e o item nunca teria como ser cumprido.",
+        papeis: ["dentist"],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+    ],
+  },
+  {
     versao: "0.348.0",
     data: "2026-10-26",
     migracao: "0323",

@@ -892,8 +892,9 @@ inventado e pagamento de mentira.
 **O que libera é cumprir a sua missão no treino.** Cada função tem metas
 próprias, escolhidas entre **as ações que o sistema realmente consegue
 contar** — a recepção cadastra pessoas, faz primeiros agendamentos, registra
-check-ins e consentimentos; o coordenador conclui avaliações e avalia opções de
-plano; o dentista conclui sessões e escreve evoluções; o comercial faz
+check-ins e consentimentos; o coordenador conclui avaliações, avalia opções de
+plano e preenche as fichas de anamnese (em **Ficha do cliente → Anamnese →
+Preencher**, ou **Atualizar**); o dentista conclui sessões e escreve evoluções; o comercial faz
 apresentações e fecha contratos; a **ASB** cuida do material — envia a lista
 de compras (para a franqueadora ou local), dá entrada, manda material para
 uso, faz o inventário e acerta o saldo — e pede indicação. Três delas valem para **todas** as funções:
@@ -910,6 +911,15 @@ exatamente é contado, **em qual tela** a pessoa faz aquilo, e se aquilo
 mercadoria sem alguém ter feito o pedido). As ações aparecem separadas em
 **trabalho do dia a dia** e **acontece de vez em quando** — comece pelas
 primeiras.
+
+> **Até a versão 0.348.1, dois itens nunca contavam** (OC-00134): as
+> *Anamneses clínicas preenchidas* do Coordenador contavam uma tela antiga de
+> anamnese, que saiu quando vieram as fichas, e os *Lançamentos no razão* do
+> Financeiro da Franqueadora contavam uma tela que não existe. Agora contam as
+> fichas de anamnese e os lançamentos feitos na **Conciliação** (Lançar ou
+> Transferência). Quem já tinha feito não precisa refazer: entra na conta o que
+> foi feito **depois do aceite da missão**. O item de anamnese saiu da lista do
+> Dentista — só o Coordenador consegue preencher a ficha.
 
 > **Se a missão de uma função tiver só ações que dependem de terceiros**, a
 > tela avisa. Quem tiver aquela função ficaria travado sem ter como resolver

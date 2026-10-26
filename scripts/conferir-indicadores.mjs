@@ -160,4 +160,45 @@ if (problemas.length > 0) {
 const comFiltro = itens.filter((i) => i.origem.includes(" + ")).length;
 console.log(`✓ Todas as ${itens.length} origens existem por inteiro.`);
 console.log(`  ${comFiltro} usam filtro; valores de enum conferidos, texto livre não.\n`);
+
+// ⚠️ OC-00134 (26/10/2026): EXISTIR NÃO É SER GRAVADO. A anamnese clínica
+// apontava para `clinical_anamnesis.created_by` — tabela, coluna e data
+// existiam, a régua acima dizia OK, e NENHUMA TELA gravava mais lá (a tela
+// antiga saiu com as fichas). O Coordenador preenchia 14 fichas e via "0 de
+// 15". O "Lançamentos no razão" contava `source_type=manual`, um valor que
+// nada no sistema escreve.
+//
+// Por isso: quantas vezes cada origem JÁ foi preenchida no treino, desde
+// sempre. Zero é ALERTA, não erro — pode ser só ninguém ter feito aquilo
+// ainda. Mas cada zero pede uma pergunta: alguma tela grava esta coluna,
+// com este valor, hoje? (Foi assim que os dois defeitos apareceram.)
+const nuncaUsados = [];
+for (const { chave, origem } of itens) {
+  const o = ler(origem);
+  const conds = [`"${o.coluna}" is not null`];
+  const params = [];
+  for (const f of o.filtros) {
+    const vals = f.valor.split("|");
+    const marcas = vals.map((v) => {
+      params.push(v);
+      return `$${params.length}::text`;
+    });
+    conds.push(`"${f.coluna}"::text in (${marcas.join(", ")})`);
+  }
+  const { rows } = await db.query(
+    `select count(*)::int n from "${o.schema}"."${o.tabela}" where ${conds.join(" and ")}`,
+    params
+  );
+  if (rows[0].n === 0) nuncaUsados.push({ chave, origem });
+}
+if (nuncaUsados.length > 0) {
+  console.log(
+    `⚠️  ${nuncaUsados.length} indicador(es) NUNCA foram preenchidos no treino ` +
+      "(alerta, não erro — confira se alguma tela grava a coluna, com esse valor, hoje):\n"
+  );
+  for (const n of nuncaUsados) console.log(`  ${n.chave.padEnd(32)} ${n.origem}`);
+  console.log("");
+} else {
+  console.log("✓ Todos já foram preenchidos ao menos uma vez no treino.\n");
+}
 await db.end();
