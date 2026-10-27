@@ -39,7 +39,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
-- [ ] **AP79** — o preço mínimo/máximo do PROCEDIMENTO não é conferido em lugar nenhum (só aparece na "Faixa")
+- [ ] **AP79** — o preço MÁXIMO do procedimento não é conferido em lugar nenhum (o mínimo trava desde a 0.356.0)
 - [ ] **AP78** — campo de busca dos Procedimentos solta aviso do Base UI no console (`defaultValue` que muda)
 - [ ] **AP77** — comissão em massa (Precificação) ainda grava % e mostra "% + R$" (o cadastro grava R$ desde a 0.352.0)
 - [ ] **AP76** — manual 6.3 ("Cuidados") ainda cita o botão Reabrir para edição, que saiu na 0.336.0
@@ -2665,6 +2665,11 @@ tela nem função os confere: a negociação, a venda direta e o plano aceitam
 qualquer preço final. O mínimo do GRUPO (0326) trava, por decisão do dono; o
 do procedimento, não. Perguntar ao dono se deve travar (e como — a negociação
 desconta sobre a opção inteira, não por item).
+
+**Atualização (27/10/2026, 0.356.0 / 0327):** o MÍNIMO do procedimento passou
+a travar a negociação (pedido do dono; decisões PM1 e PM2 na 0327). Segue em
+aberto: o MÁXIMO (nada confere) e a venda direta (o mínimo não é conferido
+lá — a negociação é o único caminho com a trava).
 
 ### AP78. Campo de busca dos Procedimentos: aviso do Base UI no console (27/10/2026)
 

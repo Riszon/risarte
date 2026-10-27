@@ -303,6 +303,11 @@ function ProcedureFields({
           inputMode="decimal"
           placeholder="(opcional)"
         />
+        {/* 0327: o mínimo TRAVA a negociação (pedido do dono, 27/10/2026). */}
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Abaixo dele, a negociação espera a autorização do Gerente. Se a
+          unidade tiver preço próprio menor, vale o dela.
+        </p>
       </div>
       <div>
         <Label>Preço máximo (R$)</Label>

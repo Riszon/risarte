@@ -2420,6 +2420,17 @@ par R$ ⇄ %, aparece *"No preço mínimo (R$ 110,00): 6,82%"*. Como o repasse �
 fixo, o percentual no mínimo é sempre o maior: é o peso do repasse no pior
 caso, quando o procedimento sai pelo menor preço.
 
+**O preço mínimo do procedimento trava a negociação** (versão 0.356.0). Se o
+desconto do Comercial deixar um procedimento abaixo do **Preço mínimo**, a
+negociação fica **aguardando autorização** do Gerente, como o desconto acima
+do teto. Duas regras:
+
+- Se a **unidade tem preço próprio menor** que o mínimo da rede, vale o preço
+  dela — só o desconto abaixo disso pede autorização.
+- O procedimento lançado por um **grupo com preço de pacote ou com mínimo
+  próprio** segue a regra do grupo, não a do procedimento. Grupo sem desconto
+  e sem mínimo não muda nada: vale o mínimo do procedimento.
+
 **Grupos de procedimentos** (versão 0.350.0). Em **Procedimentos → Grupos**,
 o Planner e o Admin Master montam os grupos que o plano oferece no botão
 **Grupo**. Os grupos valem para a **rede inteira**.
@@ -2630,7 +2641,9 @@ e a cobrança não muda até alguém autorizar. O mesmo vale para o **pacote
 abaixo do mínimo** (versão 0.354.0): se o plano tem procedimentos de um grupo
 com preço mínimo e o desconto deixa o pacote abaixo dele, o painel avisa
 *"Pacote … abaixo do mínimo"* antes de salvar, e o Gerente precisa autorizar.
-O benefício do programa (PPR+, Empresarial) não conta — é direito do cliente.
+O mesmo vale para o **preço mínimo de cada procedimento** (versão 0.356.0):
+*"<procedimento> abaixo do mínimo"*. O benefício do programa (PPR+,
+Empresarial) não conta — é direito do cliente.
 
 **O odontograma na apresentação e no aceite (desde a 0.338.0).**
 

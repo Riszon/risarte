@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.355.0** · Última migração: **0326** (0318 a 0326 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.356.0** · Última migração: **0327** (0318 a 0326 aplicadas na produção e no treino; ⏳ **0327 só no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.356.0 / 0327 — O MÍNIMO DO PROCEDIMENTO TRAVA A NEGOCIAÇÃO (27/10/2026)
+>
+> Pedido do dono (fecha o "mínimo" do AP79). Abaixo do preço mínimo, a
+> negociação vai para autorização do Gerente, pelo caminho do teto
+> (`_negotiation_procedure_floor` + `evaluate_negotiation_rules` recriada).
+> PM1: item que o grupo precificou segue o grupo. PM2: vale o menor entre o
+> mínimo da rede e o preço da unidade. ✅ 0327 no treino; ⏳ **falta a
+> produção**. EV-230.
 
 > ## 🎯 0.355.0 (sem migração) — REPASSE EM % DO PREÇO E DO MÍNIMO (27/10/2026)
 >

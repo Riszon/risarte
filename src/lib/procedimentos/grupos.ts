@@ -195,6 +195,60 @@ export function pacotesAbaixoDoMinimo(
   return motivos;
 }
 
+// ---------------------------------------------------------------------------
+// O MÍNIMO DO PROCEDIMENTO (0327, pedido do dono, 27/10/2026)
+// ---------------------------------------------------------------------------
+
+export type ItemComMinimo = {
+  /** O procedimento e o mínimo dele (nulo = sem mínimo ou item sem procedimento). */
+  procedimento: { id: string; nome: string; minimoCents: number | null } | null;
+  quantidade: number;
+  precoCents: number;
+  beneficioCents: number;
+  incluido: boolean;
+  /**
+   * PM1: o item que o GRUPO precificou (tem o "de" do pacote, ou o grupo tem
+   * mínimo) responde ao grupo, não ao mínimo do procedimento.
+   */
+  isentoPeloGrupo: boolean;
+};
+
+/**
+ * Os motivos "<procedimento> abaixo do mínimo" — a MESMA conta de
+ * `_negotiation_procedure_floor` (0327). Por procedimento, somando os dentes:
+ * cobrado = preço − a parte do desconto manual que cabe a ele; piso = o MENOR
+ * entre o mínimo da rede e o preço do item (PM2: a unidade com preço próprio
+ * abaixo do mínimo já decidiu aquele preço).
+ */
+export function procedimentosAbaixoDoMinimo(
+  itens: ItemComMinimo[],
+  ajusteCents: number,
+  baseDescontavelCents: number
+): string[] {
+  const porProc = new Map<string, { nome: string; preco: number; descontavel: number; piso: number }>();
+  for (const i of itens) {
+    const p = i.procedimento;
+    if (!i.incluido || i.isentoPeloGrupo || !p || p.minimoCents === null) continue;
+    const g = porProc.get(p.id) ?? { nome: p.nome, preco: 0, descontavel: 0, piso: 0 };
+    g.preco += i.quantidade * i.precoCents;
+    if (!(i.beneficioCents > 0)) g.descontavel += i.quantidade * i.precoCents;
+    g.piso += i.quantidade * Math.min(p.minimoCents, i.precoCents);
+    porProc.set(p.id, g);
+  }
+  const motivos: string[] = [];
+  for (const g of [...porProc.values()].sort((a, b) => (a.nome < b.nome ? -1 : a.nome > b.nome ? 1 : 0))) {
+    const parte =
+      ajusteCents < 0 && baseDescontavelCents > 0
+        ? roundHalfUp((ajusteCents * g.descontavel) / baseDescontavelCents)
+        : 0;
+    const cobrado = g.preco + parte;
+    if (cobrado < g.piso) {
+      motivos.push(`${g.nome} abaixo do mínimo: ${brlTexto(cobrado)} (mínimo ${brlTexto(g.piso)})`);
+    }
+  }
+  return motivos;
+}
+
 /** "R$ 1.599,99" — o mesmo formato do `brl()` do banco, para o motivo sair igual. */
 function brlTexto(cents: number): string {
   const [inteiro, frac] = (Math.abs(cents) / 100).toFixed(2).split(".");

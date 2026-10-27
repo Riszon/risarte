@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.356.0",
+    data: "2026-10-27",
+    migracao: "0327",
+    titulo: "O preço mínimo do procedimento trava a negociação",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Se o desconto da negociação deixar um procedimento abaixo do preço mínimo do cadastro, a negociação fica aguardando a autorização do Gerente, como o desconto acima do teto — e o painel avisa antes de salvar. Se a unidade tiver preço próprio menor, vale o dela; e o procedimento lançado por um grupo com preço de pacote ou mínimo próprio segue a regra do grupo.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.355.0",
     data: "2026-10-27",
     migracao: null,

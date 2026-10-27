@@ -390,6 +390,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (7) — PC Administrador (core 0.355.0 → 0.356.0, migração 0327)**
+
+- **O mínimo do PROCEDIMENTO trava a negociação (pedido do dono).** Decisões
+  PM1 (item que o grupo precificou segue o grupo; grupo sem ajuste e sem
+  mínimo NÃO isenta) e PM2 (piso = menor entre o mínimo da rede e o preço do
+  item) — as duas como recomendado.
+- ⚠️ **`evaluate_negotiation_rules` recriada de novo (0327)** — agora chama
+  `_negotiation_package_floor` E `_negotiation_procedure_floor`. Ao recriar,
+  levar as DUAS. Espelho em TS: `procedimentosAbaixoDoMinimo`.
+- AP79 atualizado: segue aberto o MÁXIMO e a venda direta (o mínimo não é
+  conferido lá).
+- ✅ 0327 no treino (ensaio 17/17 + quebra). ⏳ **Falta a produção.**
+  `.next-test` limpo.
+
 **27/10/2026 (6) — PC Administrador (core 0.354.0 → 0.355.0, sem migração)**
 
 - **Repasse em % do preço E do mínimo (pedido do dono).** Procedimento:

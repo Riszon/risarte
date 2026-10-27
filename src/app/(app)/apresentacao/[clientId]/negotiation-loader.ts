@@ -253,6 +253,30 @@ export async function loadNegotiationBlock(
     }
   }
 
+  // 0327: o mínimo de cada PROCEDIMENTO — para o painel avisar antes de salvar
+  // (quem trava é o banco). Leitura que falha deixa o painel sem o aviso.
+  {
+    const procIds = [
+      ...new Set(options.flatMap((o) => o.items.map((i) => i.procedureId).filter((x): x is string => Boolean(x)))),
+    ];
+    if (procIds.length > 0) {
+      const { data: minRows, error: minErro } = await supabase
+        .from("procedures")
+        .select("id, name, min_price_cents")
+        .in("id", procIds)
+        .not("min_price_cents", "is", null)
+        .returns<{ id: string; name: string; min_price_cents: number }[]>();
+      if (minErro) console.error("negotiation-loader (mínimo do procedimento) failed:", minErro.message);
+      const minimoDoProc = new Map((minRows ?? []).map((m) => [m.id, m]));
+      for (const o of options) {
+        for (const i of o.items) {
+          const m = i.procedureId ? minimoDoProc.get(i.procedureId) : undefined;
+          if (m) i.minimo = { id: m.id, nome: m.name, minimoCents: m.min_price_cents };
+        }
+      }
+    }
+  }
+
   // OD4: o desenho do aceite (o mesmo da apresentação).
   const { data: cliRow } = await supabase
     .from("clients")
