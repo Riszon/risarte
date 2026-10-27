@@ -246,6 +246,15 @@ export async function createTreatmentPlan(
             { id: string; tooth_code: string | null; face_codes: string[] | null; region_code: string | null; situation_override_reason: string | null }[]
           >();
         const localDoItem = new Map((srcLoc ?? []).map((l) => [l.id, l]));
+        // 0324 (GP2): a etiqueta do grupo vem junto (à parte: sem a 0324, a
+        // cópia segue sem ela). Grupo editado depois: o banco tira a etiqueta.
+        const { data: srcGrupo } = await supabase
+          .from("treatment_plan_option_items")
+          .select("id, procedure_group_id")
+          .in("option_id", srcOptionIds)
+          .not("procedure_group_id", "is", null)
+          .returns<{ id: string; procedure_group_id: string }[]>();
+        const grupoDoItem = new Map((srcGrupo ?? []).map((g) => [g.id, g.procedure_group_id]));
         const rows = (srcItems ?? [])
           .map((it) => {
             const newOptionId = optionMap.get(it.option_id as string);
@@ -255,6 +264,7 @@ export async function createTreatmentPlan(
               ...(loc?.tooth_code ? { tooth_code: loc.tooth_code, face_codes: loc.face_codes ?? [] } : {}),
               ...(loc?.region_code ? { region_code: loc.region_code } : {}),
               ...(loc?.situation_override_reason ? { situation_override_reason: loc.situation_override_reason } : {}),
+              ...(grupoDoItem.get(it.id as string) ? { procedure_group_id: grupoDoItem.get(it.id as string) } : {}),
               option_id: newOptionId,
               clinic_id: client.clinic_id,
               procedure_id: it.procedure_id,
@@ -866,6 +876,95 @@ export async function addBudgetItem(
   await touchPlan(ctx.planId);
   revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
+}
+
+/**
+ * 0324 — LANÇAR UM GRUPO DE PROCEDIMENTOS na opção (pedido do dono,
+ * 27/10/2026). O grupo é atalho: cada linha vira um item NORMAL, pelas mesmas
+ * travas do lançamento à mão — o banco põe o nome e o preço do catálogo
+ * (0306) e confere o dente (0311). As linhas chegam montadas pela tela
+ * (`montarLancamento`, dente a dente, na ordem do grupo); aqui só se confere
+ * que cada uma é DO grupo e se grava tudo de uma vez: ou entram todas, ou
+ * nenhuma — metade do grupo lançada seria pior que nada.
+ */
+export async function addProcedureGroup(
+  optionId: string,
+  input: {
+    groupId: string;
+    linhas: {
+      procedureId: string;
+      quantity: number;
+      tooth: string | null;
+      faces: string[];
+      regionCode: string | null;
+      plannedSessions: number | null;
+      plannedMinutes: number | null;
+    }[];
+    stageId?: string | null;
+    /** Motivo de lançar apesar do aviso de situação (vale para as linhas com conflito). */
+    motivo?: string | null;
+  }
+): Promise<PlanResult & { quantos?: number }> {
+  if (input.linhas.length === 0) return { ok: false, error: "Nada para lançar: escolha o lugar dos procedimentos." };
+  // 30 procedimentos × 32 dentes é o teto do que a tela consegue montar.
+  if (input.linhas.length > 960) return { ok: false, error: "Lançamento grande demais para uma vez só." };
+
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const ctx = await loadOptionContext(optionId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const supabase = await createClient();
+  const { data: grupo, error: erroDoGrupo } = await supabase
+    .from("procedure_groups")
+    .select("id, is_active, procedure_group_items ( procedure_id )")
+    .eq("id", input.groupId)
+    .maybeSingle<{ id: string; is_active: boolean; procedure_group_items: { procedure_id: string }[] }>();
+  if (erroDoGrupo) {
+    console.error("addProcedureGroup (grupo) failed:", erroDoGrupo.message);
+    return { ok: false, error: "Não foi possível ler o grupo agora." };
+  }
+  if (!grupo || !grupo.is_active) return { ok: false, error: "Este grupo não está mais ativo." };
+  const doGrupo = new Set((grupo.procedure_group_items ?? []).map((i) => i.procedure_id));
+  if (input.linhas.some((l) => !doGrupo.has(l.procedureId))) {
+    return { ok: false, error: "O grupo mudou enquanto a tela estava aberta. Feche e escolha de novo." };
+  }
+
+  const { count, error: erroDaOrdem } = await supabase
+    .from("treatment_plan_option_items")
+    .select("id", { count: "exact", head: true })
+    .eq("option_id", optionId);
+  // Só a posição na lista: zero é aceitável se a contagem falhar (AP11).
+  const ordem = contagemConfirmada({ count, error: erroDaOrdem }) ?? 0;
+  const motivo = input.motivo?.trim();
+  const linhas = input.linhas.map((l, i) => ({
+    option_id: optionId,
+    clinic_id: ctx.clinicId,
+    procedure_id: l.procedureId,
+    procedure_group_id: grupo.id,
+    // O nome e o preço quem põe é o banco (`plan_item_catalog_guard`, 0306).
+    description: "(do catálogo)",
+    unit_price_cents: 0,
+    quantity: l.tooth ? 1 : Math.max(1, Math.floor(l.quantity || 1)),
+    planned_sessions: posIntOrNull(l.plannedSessions),
+    planned_total_minutes: posIntOrNull(l.plannedMinutes),
+    stage_id: input.stageId ?? null,
+    sort_order: ordem + i,
+    ...(l.tooth ? { tooth_code: l.tooth, face_codes: l.faces } : {}),
+    ...(l.regionCode ? { region_code: l.regionCode } : {}),
+    ...(motivo ? { situation_override_reason: motivo } : {}),
+  }));
+  const { error } = await supabase.from("treatment_plan_option_items").insert(linhas);
+  if (error) {
+    console.error("addProcedureGroup failed:", error.message);
+    return {
+      ok: false,
+      error: mensagemDoPlano(error.message) ?? "Não foi possível lançar o grupo.",
+    };
+  }
+  await touchPlan(ctx.planId);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  return { ok: true, quantos: linhas.length };
 }
 
 export async function editBudgetItem(

@@ -85,6 +85,8 @@ import {
   submitTreatmentPlan,
 } from "./planning-actions";
 import { DevolverAoCoordenador } from "./devolver-ao-coordenador";
+import { LancarGrupo } from "./lancar-grupo";
+import type { GrupoDeProcedimentos } from "@/lib/procedimentos/grupos";
 import { moveClientPhase } from "../../jornada/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
@@ -353,7 +355,10 @@ export function PlanningSection({
   commercialByPlan = {},
   odonto,
   podeVerPrecos = false,
+  grupos = [],
 }: {
+  /** 0324: os grupos de procedimentos ATIVOS (atalho de lançamento). */
+  grupos?: GrupoDeProcedimentos[];
   clientId: string;
   clientName: string;
   /** O plano exibido/editado. O switcher remonta este componente ao trocar. */
@@ -1024,6 +1029,7 @@ export function PlanningSection({
                         canEdit={canEditContent}
                         summaryOnly={!canSeePrices}
                         odonto={odonto}
+                        grupos={grupos}
                         programBenefits={
                           programActive ? programBenefits : undefined
                         }
@@ -1445,7 +1451,10 @@ function OptionBudget({
   summaryOnly,
   programBenefits,
   odonto,
+  grupos = [],
 }: {
+  /** 0324: os grupos ativos — o botão "+ Grupo". */
+  grupos?: GrupoDeProcedimentos[];
   optionId: string;
   /** OD3: o plano por dente (desenho + lugar do item). Ausente = como antes. */
   odonto?: OdontoDoPlano;
@@ -1493,6 +1502,8 @@ function OptionBudget({
   // O formulário de novo procedimento começa fechado (abre pelo botão) para não
   // ocupar espaço à toa.
   const [adding, setAdding] = useState(false);
+  // 0324: lançar um grupo de procedimentos (fecha o "Novo procedimento").
+  const [addingGroup, setAddingGroup] = useState(false);
   // OD3: onde o procedimento acontece (o seletor zera ao trocar de procedimento).
   const [local, setLocal] = useState<LocalEscolhido>(LOCAL_VAZIO);
   const [localKey, setLocalKey] = useState(0);
@@ -1600,6 +1611,12 @@ function OptionBudget({
                         >
                           <span>
                             {it.quantity}× {it.description}
+                            {it.grupo && (
+                              <span className="ml-1 rounded bg-gold/15 px-1 text-xs font-medium text-gold-tinta" title="Lançado pelo grupo de procedimentos">
+                                <Layers className="mr-0.5 inline size-3 align-[-2px]" />
+                                {it.grupo.nome}
+                              </span>
+                            )}
                             {localDoItem(it) && (
                               <span className="ml-1 rounded bg-primary/10 px-1 text-xs font-medium text-primary">
                                 {localDoItem(it)}
@@ -1935,6 +1952,15 @@ function OptionBudget({
                               <div className="min-w-0">
                                 <p className="font-medium leading-snug">
                                   {it.description}
+                                  {it.grupo && (
+                                    <span
+                                      className="ml-1.5 inline-block rounded bg-gold/15 px-1.5 py-0.5 align-middle text-[11px] font-medium text-gold-tinta"
+                                      title="Lançado pelo grupo de procedimentos"
+                                    >
+                                      <Layers className="mr-0.5 inline size-3 align-[-2px]" />
+                                      {it.grupo.nome}
+                                    </span>
+                                  )}
                                   {localDoItem(it) && (
                                     <span className="ml-1.5 inline-block rounded bg-primary/10 px-1.5 py-0.5 align-middle text-[11px] font-medium text-primary">
                                       {localDoItem(it)}
@@ -2144,8 +2170,8 @@ function OptionBudget({
         </div>
       )}
 
-      {canEdit && !adding && (
-        <div className="mt-2 border-t pt-2">
+      {canEdit && !adding && !addingGroup && (
+        <div className="mt-2 flex flex-wrap gap-2 border-t pt-2">
           <Button
             size="sm"
             variant="outline"
@@ -2154,7 +2180,30 @@ function OptionBudget({
             <Plus className="mr-1 size-4" />
             Procedimento
           </Button>
+          {grupos.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAddingGroup(true)}
+            >
+              <Layers className="mr-1 size-4" />
+              Grupo
+            </Button>
+          )}
         </div>
+      )}
+
+      {canEdit && addingGroup && (
+        <LancarGrupo
+          optionId={optionId}
+          grupos={grupos}
+          catalog={catalog}
+          protocols={protocols}
+          odonto={odonto}
+          itensDaOpcao={items.map((it) => ({ id: it.id, procedureId: it.procedureId, toothCode: it.toothCode ?? null }))}
+          etapas={orderedStages.map((s) => ({ id: s.id, name: s.name }))}
+          onFechar={() => setAddingGroup(false)}
+        />
       )}
 
       {canEdit && adding && (

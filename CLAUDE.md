@@ -390,6 +390,29 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 — PC Administrador (core 0.349.0 → 0.350.0, migração 0324)**
+
+- **Grupos de procedimentos (pedido do dono).** Plano e decisões GP1–GP3 em
+  `docs/procedimentos/GRUPOS-PLANO.md` (as três como recomendado).
+  `/procedimentos/grupos` (Admin Master e Planner montam; grupos da rede) e
+  o botão **Grupo** no plano.
+- ⚠️ **O GRUPO É ATALHO, NÃO PROCEDIMENTO:** não tem preço, repasse, kit nem
+  regra de dente. Cada linha vira item normal do plano; o preço quem põe é o
+  banco (0306) e o dente é conferido pela 0311. Não criar "preço do grupo".
+- ⚠️ **A ordem do grupo importa** e o lançamento é UMA gravação, dente a
+  dente: o gatilho de linha da 0311 enxerga a linha anterior do mesmo
+  comando (provado no ensaio: exodontia + implante entram sem motivo).
+- ⚠️ **Etiqueta = `procedure_group_id`** no item; o gatilho a TIRA (sem
+  recusar) quando o procedimento não está no grupo — a cópia para nova versão
+  não quebra se o grupo mudou.
+- ⏳ **0324 aplicada só no TREINO** — falta o dono rodar na produção. Antes
+  dela o botão Grupo não aparece e o plano abre igual (leituras à parte).
+- **Resíduo no treino (meu):** o grupo "Exodontia + implante (teste)" e 4
+  itens dele (dentes 37 e 47) no plano em rascunho do "Teste do portão 2
+  (pode ignorar)". Nada enviado, ninguém avisado.
+- Achado de passagem: **AP76** (manual 6.3 ainda cita o Reabrir para
+  edição). Cache `.next-test` limpo.
+
 **26/10/2026 (3ª) — PC Administrador (core 0.348.1 → 0.349.0, sem migração)**
 
 - **OC-00133 (sugestão + pedido do Admin): medalhas de certificação.** Plano e

@@ -130,6 +130,8 @@ export type BudgetItem = {
   regionCode?: string | null;
   /** Motivo de lançar apesar do aviso de situação (F1). */
   situationReason?: string | null;
+  /** 0324 (GP2): o grupo de procedimentos de onde o item veio — só a etiqueta. */
+  grupo?: { id: string; nome: string } | null;
 };
 
 /** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */

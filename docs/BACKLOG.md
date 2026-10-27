@@ -37,7 +37,9 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 
 **Futuro / sem causa encontrada**
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
+- [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
+- [ ] **AP76** — manual 6.3 ("Cuidados") ainda cita o botão Reabrir para edição, que saiu na 0.336.0
 - [ ] **AP72** — limpar a anamnese antiga sem uso (`saveAnamnesis`; a tabela só depois de conferir a produção)
 - [ ] **AP68** — aba Fluxo de caixa do Painel da rede lê unidade por unidade (medir com a rede grande)
 - [ ] **AP57** — textos da certificação que podem citar botões com nome antigo
@@ -2650,6 +2652,17 @@ o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produç�
 se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
+
+### AP76. Manual 6.3: "Cuidados" ainda manda usar o Reabrir para edição (27/10/2026)
+
+**Confirmado** (achado escrevendo o manual dos grupos de procedimentos): o
+parágrafo **Cuidados** da seção 6.3 diz *"depois de aprovado o plano fica em
+leitura — há **Reabrir para edição**, que exige nova aprovação"*. O botão saiu
+na 0.336.0 (OD3, D4): `planning-actions.ts` declara a saída e
+`odontograma-plano.test.ts` reprova a volta de `reopenTreatmentPlan`. O
+parágrafo de cima, na mesma seção, já diz o certo (**Criar nova versão**).
+O conserto é tirar a frase (ou trocar por "para mudar, crie nova versão") e
+regerar o Word. Não entrou no commit dos grupos para não misturar assuntos.
 
 ### AP70. O painel do Riso+ conta "novas adesões" pela criação, não pela ativação (23/10/2026)
 

@@ -188,6 +188,26 @@ export async function loadClientPlans(
       if (!locErro) for (const l of locRows ?? []) localPorItem.set(l.id, l);
     }
 
+    // 0324 (GP2): de qual grupo o item veio — à parte pelo mesmo motivo: sem a
+    // 0324 o plano abre igual, só sem a etiqueta.
+    const grupoPorItem = new Map<string, { id: string; nome: string }>();
+    {
+      const { data: gRows, error: gErro } = await supabase
+        .from("treatment_plan_option_items")
+        .select("id, procedure_group_id, grupo:procedure_groups ( name )")
+        .in("option_id", optionIds)
+        .not("procedure_group_id", "is", null)
+        .returns<
+          { id: string; procedure_group_id: string; grupo: { name: string } | { name: string }[] | null }[]
+        >();
+      if (!gErro) {
+        for (const g of gRows ?? []) {
+          const nome = (Array.isArray(g.grupo) ? g.grupo[0] : g.grupo)?.name;
+          if (nome) grupoPorItem.set(g.id, { id: g.procedure_group_id, nome });
+        }
+      }
+    }
+
     for (const it of itemRows ?? []) {
       const list = itemsByOption.get(it.option_id) ?? [];
       const loc = localPorItem.get(it.id);
@@ -209,6 +229,7 @@ export async function loadClientPlans(
         faceCodes: loc?.face_codes ?? [],
         regionCode: loc?.region_code ?? null,
         situationReason: loc?.situation_override_reason ?? null,
+        grupo: grupoPorItem.get(it.id) ?? null,
       });
       itemsByOption.set(it.option_id, list);
     }

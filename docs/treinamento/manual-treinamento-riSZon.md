@@ -1507,7 +1507,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Atendimento | `/atendimento` | Chegada, chamada e conclusão do atendimento do dia |
 | Prontuários | `/prontuarios` | A ficha completa do paciente |
 | Centro de Planejamento | `/planejamento` | Fila de casos a planejar, com prazo |
-| Procedimentos | `/procedimentos` | Catálogo: preço, protocolo de sessões, comissionamento. Cadastro e preço só do Admin Master; o Planner consulta, edita as sessões e sugere procedimento novo |
+| Procedimentos | `/procedimentos` | Catálogo: preço, protocolo de sessões, comissionamento. Cadastro e preço só do Admin Master; o Planner consulta, edita as sessões e sugere procedimento novo. **Grupos** (o Admin e o Planner montam) lançam vários procedimentos de uma vez no plano |
 | Planos de Tratamento | `/planos` | Visão gerencial dos planos |
 | Metas | `/metas` | Metas SMART da rede e da unidade, com a barra do realizado (ver [seção 2.7](#27-metas-smart)) |
 | Comercial | `/comercial` | Funil de negociação e fechamento |
@@ -2276,6 +2276,26 @@ Planejamento**.
    e, em **vermelho**, o que ela planeja. Itens lançados antes desta versão
    aparecem com **"sem dente — indique antes de enviar"**: remova e lance de
    novo com o lugar.
+5b. **Grupo** (desde a 0.350.0) — para lançar de uma vez procedimentos que
+   andam juntos (ex.: **exodontia + implante**, **canal + restauração**). Ao
+   lado de **Procedimento**, clique em **Grupo** → escolha o grupo → toque nos
+   dentes **uma vez só**: cada dente recebe todos os procedimentos de dente do
+   grupo. Se algum é de **face**, escolha as faces dele ali mesmo; se é de
+   **região**, escolha a região. A lista **Vai entrar no plano** mostra cada
+   item, dente a dente, com o preço do catálogo, e o botão diz quantos itens
+   vão entrar (**Lançar 4 itens**). Entram todos ou nenhum.
+   - Cada procedimento vira um **item normal** do plano: preço do catálogo,
+     sessões do protocolo, a mesma regra do dente (inclusive o aviso de
+     situação e o motivo). Dá para editar ou remover um item sem mexer nos
+     outros.
+   - O item mostra a etiqueta com o **nome do grupo** de onde veio. O
+     orçamento, a apresentação e a negociação continuam **item a item**, como
+     sempre — o grupo é ferramenta de quem planeja.
+   - **A ordem do grupo importa:** o procedimento que prepara o dente vem
+     antes. Na exodontia + implante, o implante entra sem aviso porque a
+     extração do mesmo dente já está planejada.
+   - Procedimento do grupo que não está no catálogo da unidade (ou foi
+     desativado) **fica de fora**, e a tela diz qual.
 6. Classifique o **pilar** (1 dos 6) → **Salvar pilar**.
 7. Monte os **Atendimentos e sequência** (botão no alto do cockpit) — veja
    abaixo.
@@ -2367,6 +2387,29 @@ Clique no cartão para ver os detalhes (faixa de preço, comissão, repasse por
 nível, kits, sessões, histórico e os botões de editar); abre um por vez. Os
 **inativos** ficam numa seção própria no fim da lista, em cinza e riscados,
 com o botão **Reativar** à vista — eles não aparecem no orçamento nem na venda.
+
+**Grupos de procedimentos** (versão 0.350.0). Em **Procedimentos → Grupos**,
+o Planner e o Admin Master montam os grupos que o plano oferece no botão
+**Grupo**. Os grupos valem para a **rede inteira**.
+
+1. **Novo grupo** → dê um **nome** (ex.: "Implante + prótese sobre
+   implante") e, se quiser, uma descrição de quando usar.
+2. Escolha os procedimentos **na ordem em que entram no plano** — o que
+   prepara o dente vem antes. As setas mudam a ordem; o **×** tira da lista.
+   Um grupo junta de 2 a 30 procedimentos, sem repetir.
+3. A **quantidade** vale para procedimento que não se marca no dente
+   (consulta, exame…). Procedimento de dente entra **uma vez por dente**
+   escolhido no plano.
+4. **Criar grupo.** O total de referência é só para conferir (preço padrão
+   da rede, um de cada): o grupo **não tem preço próprio** — no plano vale o
+   preço do catálogo da unidade, item por item.
+
+**Inativar** tira o grupo do plano; o que já foi lançado não muda.
+**Excluir** só funciona com grupo que nunca foi usado num plano — usado, o
+sistema pede para inativar. Procedimento desativado no catálogo aparece
+riscado no grupo e não entra no plano; edite o grupo para tirá-lo. E um
+procedimento que está num grupo não pode ser excluído do catálogo: tire do
+grupo antes (ou desative).
 
 **Quando faltar informação para planejar**, não devolva o caso em silêncio: use
 **Devolver ao Coordenador**, na aba Plano, e escreva o que falta (foto, exame,

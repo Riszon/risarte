@@ -1,6 +1,19 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 26/10/2026 · Versão do sistema: **0.349.0** · Última migração: **0323** (0318 a 0323 aplicadas na produção e no treino; 0323 em 26/10/2026) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.350.0** · Última migração: **0324** (0318 a 0323 aplicadas na produção e no treino; **0324 só no treino** — falta a produção) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.350.0 / 0324 — GRUPOS DE PROCEDIMENTOS (pedido do dono, 27/10/2026)
+>
+> Lançar vários procedimentos de uma vez no plano ("implante + prótese sobre
+> implante", "canal + restauração"). Plano e decisões GP1–GP3 em
+> `docs/procedimentos/GRUPOS-PLANO.md` (todas como recomendado): **Admin
+> Master e Planner** criam (grupos da rede), o item lançado leva a
+> **etiqueta** do grupo, orçamento e apresentação **item a item**. ⚠️ **O
+> grupo é ATALHO, não procedimento:** sem preço, repasse, kit nem regra de
+> dente; cada linha vira item normal pelas travas de sempre (0306 preço,
+> 0311 dente). A ordem do grupo importa (o que prepara o dente vem antes) e o
+> lançamento é UMA gravação, dente a dente. Regra pura em
+> `src/lib/procedimentos/grupos.ts`. ⏳ **0324 aplicada só no treino.** EV-224.
 
 > ## 🎯 0.349.0 (sem migração) — MEDALHAS DE CERTIFICAÇÃO (OC-00133, 26/10/2026)
 >

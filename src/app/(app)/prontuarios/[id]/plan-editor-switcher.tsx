@@ -23,6 +23,7 @@ import { PlanningSection, type OdontoDoPlano } from "./planning-section";
 import { PlanLifecycleBar, type LifecycleCaps } from "./plan-lifecycle-bar";
 import { createTreatmentPlan } from "./planning-actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import type { GrupoDeProcedimentos } from "@/lib/procedimentos/grupos";
 
 /**
  * Dono da seleção de plano: mostra a lista de TODOS os planos do cliente (nenhum
@@ -50,7 +51,10 @@ export function PlanEditorSwitcher({
   commercialByPlan = {},
   odonto,
   podeVerPrecos = false,
+  grupos = [],
 }: {
+  /** 0324: os grupos de procedimentos ativos (atalho de lançamento). */
+  grupos?: GrupoDeProcedimentos[];
   /** OD3: o plano por dente (o odontograma e as regras). */
   odonto?: OdontoDoPlano;
   /** D7: o Gerente vê o preço item a item. */
@@ -247,6 +251,7 @@ export function PlanEditorSwitcher({
         onNewPlan={newPlan}
         odonto={odonto}
         podeVerPrecos={podeVerPrecos}
+        grupos={grupos}
       />
     </div>
   );

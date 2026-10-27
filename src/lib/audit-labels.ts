@@ -160,6 +160,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   procedure_cost: "Custo do procedimento",
   procedure_price_from_simulator: "Preço definido pelo precificador",
   procedure_suggestion: "Sugestão de novo procedimento",
+  procedure_group: "Grupo de procedimentos",
   dental_condition: "Situação do dente (odontograma)",
   dental_tooth_faces: "Faces de um dente (odontograma)",
   dental_region_teeth: "Dentes de uma região (odontograma)",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Calculator, Tag } from "lucide-react";
+import { Calculator, Layers, Tag } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
@@ -539,6 +539,14 @@ export default async function ProceduresPage(
             >
               <Tag className="size-4" />
               Especialidades
+            </Link>
+            {/* 0324: grupos para lançar vários procedimentos de uma vez no plano. */}
+            <Link
+              href="/procedimentos/grupos"
+              className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:border-primary"
+            >
+              <Layers className="size-4" />
+              Grupos
             </Link>
           </div>
         )}

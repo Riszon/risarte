@@ -135,6 +135,8 @@ export const TABELAS: Record<string, string> = {
   "public.odontograms": "Odontograma do paciente (dentição)",
   "public.procedure_price_schedule": "Reajuste de preço agendado",
   "public.procedure_suggestions": "Sugestão de novo procedimento",
+  "public.procedure_groups": "Grupo de procedimentos",
+  "public.procedure_group_items": "Procedimento dentro de um grupo",
   "public.procedures": "Procedimento",
   "public.profiles": "Usuário",
   "public.protocol_change_proposals": "Proposta de mudança de protocolo",

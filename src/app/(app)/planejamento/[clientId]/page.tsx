@@ -59,6 +59,7 @@ import { TreatmentSummary } from "./treatment-summary";
 import { SequenciaPorOpcao } from "./session-join-planner";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { carregarOdontograma, carregarRegrasDoPlano } from "@/lib/odontograma/carregar";
+import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
 import { diagnosticoADefinir, podeDefinirOdontograma } from "@/lib/odontograma/diagnostico";
 import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
 
@@ -540,6 +541,9 @@ export default async function PlanningCockpitPage(
     session,
     Object.values(session.rolesByClinic).some((r) => r.includes("planner_dentist"))
   );
+  // 0324: os grupos de procedimentos (o "+ Grupo" do plano) — só para quem
+  // monta. Leitura que falha = sem o botão; o lançamento à mão segue igual.
+  const gruposDoPlano = podeDefinir ? (await carregarGrupos(supabase, { soAtivos: true })).grupos : [];
   const situacaoDoDiagnostico =
     odontograma && odontograma.achados
       ? diagnosticoADefinir(
@@ -907,6 +911,7 @@ export default async function PlanningCockpitPage(
         clientName={client.full_name}
         plans={plans}
         odonto={odontoDoPlano}
+        grupos={gruposDoPlano}
         // D6 (0312): montar o plano é do Planner e do titular; o Admin vê (com preço).
         canEdit={podeDefinir}
         podeVerPrecos={session.isAdminMaster}

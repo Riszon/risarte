@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.350.0",
+    data: "2026-10-27",
+    migracao: "0324",
+    titulo: "Grupos de procedimentos: lançar vários procedimentos de uma vez no plano",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Em Procedimentos → Grupos, o Planner e o Admin montam grupos de procedimentos que andam juntos — implante + prótese sobre implante, canal + restauração —, na ordem em que entram no plano. Os grupos valem para a rede inteira.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No plano, o botão Grupo lança o grupo inteiro: você toca nos dentes uma vez e cada dente recebe todos os procedimentos. Cada um entra como item normal, com o preço do catálogo e uma etiqueta com o nome do grupo; o orçamento e a apresentação continuam item a item.",
+        papeis: ["planner_dentist", "clinical_coordinator"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.349.0",
     data: "2026-10-26",
     migracao: null,

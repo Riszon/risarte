@@ -383,6 +383,13 @@ export async function deleteProcedure(id: string): Promise<ProcedureResult> {
   const { error } = await supabase.from("procedures").delete().eq("id", id);
   if (error) {
     console.error("deleteProcedure failed:", error.message);
+    // 0324: procedimento que está num grupo não se apaga (a ligação segura).
+    if (error.message.includes("procedure_group_items")) {
+      return {
+        ok: false,
+        error: "Este procedimento está num grupo de procedimentos. Tire-o do grupo (Procedimentos → Grupos) ou desative-o.",
+      };
+    }
     return { ok: false, error: "Não foi possível excluir o procedimento." };
   }
   await logAudit({

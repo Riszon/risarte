@@ -170,6 +170,7 @@ import type {
 } from "@/lib/appointments";
 import { roomLabel } from "@/lib/rooms";
 import { allowedNextPhases, PHASE_LABELS, PILLAR_LABELS } from "@/lib/journey";
+import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
 import type {
   DecisionKind,
   JourneyPhase,
@@ -2568,6 +2569,10 @@ export default async function ClientDetailPage(
   const regrasDoPlano = odontograma && canViewPlanning ? await carregarRegrasDoPlano() : null;
   const odontoDoPlano =
     odontograma && regrasDoPlano ? { dados: odontograma, regras: regrasDoPlano } : undefined;
+  // 0324: os grupos de procedimentos (o "+ Grupo" do plano) — só para quem
+  // monta. Leitura que falha = sem o botão; o lançamento à mão segue igual.
+  const gruposDoPlano =
+    canViewPlanning && podeMontarPlano ? (await carregarGrupos(supabase, { soAtivos: true })).grupos : [];
   // OD3: o vermelho da aba Odontograma = o plano que VALE (D4). OD5: só o que
   // ainda FALTA — o item feito vira o efeito (azul) pelo `feitos`.
   const marcasDoPlanoVigente =
@@ -3415,6 +3420,7 @@ export default async function ClientDetailPage(
                 clientName={client.full_name}
                 plans={plans}
                 odonto={odontoDoPlano}
+                grupos={gruposDoPlano}
                 podeVerPrecos={podeVerPrecosDoPlano}
                 canEdit={podeMontarPlano}
                 canReview={canReviewPlan}
