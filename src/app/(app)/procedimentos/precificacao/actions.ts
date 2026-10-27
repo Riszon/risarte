@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { margemMinimaValida } from "@/lib/finance/pricing-simulator";
 
 export type PricingResult = { ok: boolean; error?: string };
 
@@ -19,9 +20,24 @@ export async function saveCostSettings(input: {
   taxPercent: number;
   avgAcquirerFeePercent: number;
   targetMarginPercent: number;
+  /**
+   * A margem MÍNIMA (nulo = sem). É a MESMA do alerta de margem da negociação
+   * e da venda direta — `commercial_rules.min_margin_percent` (decisão do
+   * dono, 27/10/2026). `undefined` = a tela não conseguiu ler: não mexe.
+   */
+  minMarginPercent?: number | null;
 }): Promise<PricingResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
+
+  if (input.minMarginPercent !== undefined) {
+    const problema = margemMinimaValida(input.minMarginPercent, Math.max(0, input.targetMarginPercent));
+    if (problema) return { ok: false, error: problema };
+    // Só o Admin Master grava regra comercial (a regra do banco também).
+    if (!session.isAdminMaster) {
+      return { ok: false, error: "Só o Admin Master define a margem mínima." };
+    }
+  }
 
   const row = {
     clinic_id: input.clinicId,
@@ -57,6 +73,38 @@ export async function saveCostSettings(input: {
   if (error) {
     console.error("saveCostSettings failed:", error.message);
     return { ok: false, error: "Não foi possível salvar a configuração." };
+  }
+
+  // A margem mínima mora na regra comercial do MESMO escopo (unidade ou rede).
+  // Só esta coluna: os outros campos da regra (teto, parcelas…) não mudam, e
+  // a unidade sem regra própria ganha uma linha que herda o resto da rede.
+  if (input.minMarginPercent !== undefined) {
+    const minima = input.minMarginPercent === null ? null : Math.round(input.minMarginPercent * 100) / 100;
+    const { data: regra, error: erroDaRegra } = input.clinicId
+      ? await supabase.from("commercial_rules").select("id").eq("clinic_id", input.clinicId).maybeSingle()
+      : await supabase.from("commercial_rules").select("id").is("clinic_id", null).maybeSingle();
+    if (erroDaRegra) {
+      console.error("saveCostSettings (regra) failed:", erroDaRegra.message);
+      return { ok: false, error: "Os custos foram salvos, mas não consegui ler a regra comercial — a margem mínima não mudou." };
+    }
+    const { error: erroDaMinima } = regra
+      ? await supabase
+          .from("commercial_rules")
+          .update({ min_margin_percent: minima, updated_by: session.userId, updated_at: new Date().toISOString() })
+          .eq("id", regra.id)
+      : minima === null
+        ? { error: null } // sem regra e sem mínima: nada a gravar
+        : await supabase.from("commercial_rules").insert({
+            clinic_id: input.clinicId,
+            min_margin_percent: minima,
+            updated_by: session.userId,
+            updated_at: new Date().toISOString(),
+          });
+    if (erroDaMinima) {
+      console.error("saveCostSettings (margem mínima) failed:", erroDaMinima.message);
+      return { ok: false, error: "Os custos foram salvos, mas a margem mínima não — tente de novo." };
+    }
+    revalidatePath("/admin/regras-comerciais");
   }
 
   await logAudit({

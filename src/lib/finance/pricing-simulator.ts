@@ -213,14 +213,16 @@ export const FILTROS_DA_MARGEM = {
   todos: "Todos",
   acima: "Na margem desejada ou acima",
   abaixo: "Abaixo da margem desejada",
-  abaixo_no_minimo: "Abaixo da margem no preço mínimo",
+  abaixo_no_minimo: "Abaixo da margem mínima no preço mínimo",
   sem_preco: "Sem preço",
 } as const;
 export type FiltroDaMargem = keyof typeof FILTROS_DA_MARGEM;
 
 /**
- * Se o procedimento entra no filtro. "Acima" e "abaixo" olham o preço NORMAL;
- * "abaixo no mínimo" olha o preço mínimo (só quem tem mínimo). Sem preço não
+ * Se o procedimento entra no filtro. "Acima" e "abaixo" olham o preço NORMAL
+ * contra a margem desejada; "abaixo no mínimo" olha o preço mínimo contra a
+ * margem MÍNIMA (`margemDeReferenciaDoMinimo`) — quem calcula `minimo` já
+ * passa essa régua. Sem preço não
  * é acima nem abaixo — tem opção própria (não há margem para comparar).
  * Prejuízo é abaixo da meta.
  */
@@ -241,4 +243,24 @@ export function passaNoFiltroDaMargem(
     case "abaixo_no_minimo":
       return minimo !== null && minimo.abaixoDaMeta;
   }
+}
+
+/**
+ * A régua de cada preço (pedido do dono, 27/10/2026): o preço NORMAL se mede
+ * pela margem DESEJADA; o preço MÍNIMO, pela margem MÍNIMA. Sem margem mínima
+ * configurada, o mínimo se mede pela desejada (o que a tela fazia antes).
+ *
+ * A margem mínima é a MESMA do alerta de margem da negociação e da venda
+ * direta (`commercial_rules.min_margin_percent`, decisão do dono).
+ */
+export function margemDeReferenciaDoMinimo(desejada: number, minima: number | null): number {
+  return minima === null ? desejada : minima;
+}
+
+/** A margem mínima não pode passar da desejada; vazia é permitido. */
+export function margemMinimaValida(minima: number | null, desejada: number): string | null {
+  if (minima === null) return null;
+  if (!Number.isFinite(minima) || minima < 0 || minima > 100) return "A margem mínima vai de 0% a 100%.";
+  if (minima > desejada) return "A margem mínima não pode ser maior que a margem desejada.";
+  return null;
 }

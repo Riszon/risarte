@@ -34,6 +34,7 @@ export default async function PricingPage() {
     { data: levelRows },
     { data: matrixRows },
     { data: feeRow },
+    { data: minMarginRow, error: minMarginErro },
   ] = await Promise.all([
     supabase
       .from("procedures")
@@ -58,7 +59,11 @@ export default async function PricingPage() {
       p_clinic_id: clinicId,
       p_days: 90,
     }),
+    // A margem MÍNIMA é a do alerta de margem da negociação (decisão do dono,
+    // 27/10/2026): `commercial_rules.min_margin_percent`, rede → unidade.
+    supabase.rpc("min_margin_percent", { p_clinic: clinicId }),
   ]);
+  if (minMarginErro) console.error("min_margin_percent failed:", minMarginErro.message);
 
   const settings = Array.isArray(settingsRow) ? settingsRow[0] : settingsRow;
   const suggestedFee = Array.isArray(feeRow) ? feeRow[0] : feeRow;
@@ -178,7 +183,10 @@ export default async function PricingPage() {
           taxPercent: Number(settings?.tax_percent ?? 0),
           avgAcquirerFeePercent: Number(settings?.avg_acquirer_fee_percent ?? 0),
           targetMarginPercent: Number(settings?.target_margin_percent ?? 0),
+          // Nulo = sem margem mínima (o preço mínimo se mede pela desejada).
+          minMarginPercent: minMarginRow == null ? null : Number(minMarginRow),
         }}
+        minMarginReadable={!minMarginErro}
         suggestedFee={
           suggestedFee
             ? {

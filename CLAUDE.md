@@ -390,6 +390,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (9) — PC Administrador (core 0.357.0 → 0.358.0, sem migração)**
+
+- **Margem mínima na Precificação (pedido do dono).** Normal × desejada;
+  mínimo × mínima (vazia = desejada).
+- ⚠️ **Decisão do dono: a mínima É a do alerta de margem** —
+  `commercial_rules.min_margin_percent` (0209, rede → unidade), que não tinha
+  tela e estava vazia nos dois bancos. A Precificação lê por
+  `min_margin_percent(clinic)` e grava SÓ essa coluna na regra do escopo
+  (cria a linha da unidade, herdando o resto). Salvar liga o aviso do
+  Comercial. **AP80:** o alerta (`computeMargin`) não conta cadeira nem
+  imposto.
+- Visto na tela no treino SEM salvar (salvar criaria configuração própria da
+  Londrina). `.next-test` limpo.
+
 **27/10/2026 (8) — PC Administrador (core 0.356.0 → 0.357.0, sem migração)**
 
 - **Precificação no preço mínimo + filtro pela margem (pedido do dono).**

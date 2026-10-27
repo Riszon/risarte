@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.358.0",
+    data: "2026-10-27",
+    migracao: null,
+    titulo: "Precificação: margem mínima para o preço mínimo",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao lado da margem desejada, a Precificação ganhou a margem mínima: o preço normal se mede pela desejada e o preço mínimo pela mínima (a tabela mostra a linha Meta com as duas, e o filtro usa as duas). A margem mínima é a mesma do alerta de margem da negociação e da venda direta — salvá-la liga aquele aviso para o Comercial.",
+        papeis: ["commercial_consultant"],
+        manual: "Admin Master",
+      },
+    ],
+  },
+  {
     versao: "0.357.0",
     data: "2026-10-27",
     migracao: null,

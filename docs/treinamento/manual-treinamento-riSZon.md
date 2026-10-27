@@ -1700,14 +1700,29 @@ na linha a margem nos dois preços (*preço R$ 150,00 · 95% · mín R$ 110,00 �
 93,18%*). Ao abrir, a tabela **Preço normal × Preço mínimo** mostra a conta
 inteira — preço, custo direto, imposto + taxa e a margem em R$ e em % — e a
 comparação por nível mostra os dois (*Júnior: 95% · no mínimo 93,18%*). As
-cores são as de sempre: verde na margem desejada, âmbar abaixo dela, vermelho
-no prejuízo.
+cores são as de sempre: verde na meta, âmbar abaixo dela, vermelho no
+prejuízo.
+
+**Margem desejada e margem mínima** (versão 0.358.0). Em *Custos e metas*,
+ao lado da **Margem desejada** fica a **Margem mínima**. O **preço normal** se
+mede pela margem **desejada**; o **preço mínimo**, pela margem **mínima** — a
+tabela mostra a linha **Meta** com as duas. Em branco, o preço mínimo se mede
+pela desejada. A mínima não pode passar da desejada (a tela não deixa salvar).
+
+> **A margem mínima é a mesma do alerta de margem** da negociação e da venda
+> direta: salvar aqui **liga aquele aviso** para o Comercial (ele avisa, não
+> bloqueia). Ela vale para a unidade em que você está; em **Regras
+> comerciais**, *Remover ajuste* da unidade apaga também a margem mínima dela,
+> e volta a valer a da rede. **Atenção:** no alerta da negociação a conta não
+> inclui a hora de cadeira nem o imposto — o mesmo percentual é mais fácil de
+> cumprir lá do que aqui.
 
 O filtro **Mostrar**, no alto da lista, separa: **Na margem desejada ou
 acima**, **Abaixo da margem desejada** (pelo preço normal), **Abaixo da margem
-no preço mínimo** (bem no preço normal, mal no pior caso da negociação) e **Sem
-preço** (não há margem para comparar). Cada opção mostra quantos são. O
-filtro usa a **margem desejada** e os custos que estão na tela, e o nível
+no preço mínimo** — desde a 0.358.0, **Abaixo da margem mínima no preço
+mínimo** (o pior caso da negociação) — e **Sem preço** (não há margem para
+comparar). Cada opção mostra quantos são. O filtro usa as **margens** e os
+custos que estão na tela, e o nível
 escolhido em *Simular com* — mudou um deles, a lista muda junto, mesmo antes
 de salvar.
 

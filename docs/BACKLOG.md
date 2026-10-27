@@ -39,6 +39,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
+- [ ] **AP80** — o alerta de margem da negociação não conta a hora de cadeira nem o imposto (a Precificação conta) — a mesma margem mínima vale coisas diferentes
 - [ ] **AP79** — o preço MÁXIMO do procedimento não é conferido em lugar nenhum (o mínimo trava desde a 0.356.0)
 - [ ] **AP78** — campo de busca dos Procedimentos solta aviso do Base UI no console (`defaultValue` que muda)
 - [ ] **AP77** — comissão em massa (Precificação) ainda grava % e mostra "% + R$" (o cadastro grava R$ desde a 0.352.0)
@@ -2655,6 +2656,17 @@ o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produç�
 se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
+
+### AP80. A margem do alerta da negociação não é a margem da Precificação (27/10/2026)
+
+**Confirmado lendo o código** (achado ao ligar a margem mínima da Precificação
+ao alerta, 0.358.0, decisão do dono: "a mesma"). `computeMargin`
+(`src/lib/finance/margin.ts`, negociação e venda direta) faz preço − repasse
+− material − taxa do pagamento; a Precificação (`simulatePrice`) desconta
+também a **hora de cadeira** e o **imposto**. Com a mesma margem mínima, o
+alerta da negociação é mais frouxo que a régua da Precificação. A tela da
+Precificação já avisa. Perguntar ao dono se a negociação deve contar cadeira
+e imposto (mudaria o número que o Comercial vê ao vivo).
 
 ### AP79. O preço mínimo e o máximo do procedimento não travam nada (27/10/2026)
 

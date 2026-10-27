@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.357.0** · Última migração: **0327** (0318 a 0327 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.358.0** · Última migração: **0327** (0318 a 0327 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.358.0 (sem migração) — MARGEM MÍNIMA NA PRECIFICAÇÃO (27/10/2026)
+>
+> Pedido do dono: o preço normal se mede pela margem desejada; o mínimo, pela
+> margem mínima. ⚠️ Decisão do dono: a mínima é a MESMA do alerta de margem da
+> negociação (`commercial_rules.min_margin_percent`) — antes sem tela e vazia
+> nos dois bancos; salvar na Precificação liga o aviso. AP80: o alerta não
+> conta cadeira nem imposto. EV-232.
 
 > ## 🎯 0.357.0 (sem migração) — PRECIFICAÇÃO NO PREÇO MÍNIMO + FILTRO PELA MARGEM (27/10/2026)
 >

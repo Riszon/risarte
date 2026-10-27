@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   FILTROS_DA_MARGEM,
+  margemDeReferenciaDoMinimo,
+  margemMinimaValida,
   margemNoPreco,
   passaNoFiltroDaMargem,
   simulatePrice,
@@ -74,6 +76,49 @@ describe("o filtro", () => {
   });
 });
 
+describe("a margem mínima (pedido do dono, 27/10/2026)", () => {
+  it("o preço mínimo se mede pela mínima; sem ela, pela desejada", () => {
+    expect(margemDeReferenciaDoMinimo(40, 25)).toBe(25);
+    expect(margemDeReferenciaDoMinimo(40, null)).toBe(40);
+    expect(margemDeReferenciaDoMinimo(40, 0)).toBe(0); // zero é uma mínima de verdade
+  });
+
+  it("com a mínima, o mesmo preço mínimo deixa de estar abaixo", () => {
+    // 30.000 dá 24,33%: abaixo da desejada (40), acima de uma mínima de 20.
+    const pelaDesejada = margemNoPreco(base, 30000)!;
+    const pelaMinima = margemNoPreco({ ...base, targetMarginPercent: margemDeReferenciaDoMinimo(40, 20) }, 30000)!;
+    expect(passaNoFiltroDaMargem("abaixo_no_minimo", null, pelaDesejada)).toBe(true);
+    expect(passaNoFiltroDaMargem("abaixo_no_minimo", null, pelaMinima)).toBe(false);
+  });
+
+  it("a mínima não passa da desejada nem sai de 0 a 100; vazia vale", () => {
+    expect(margemMinimaValida(null, 40)).toBeNull();
+    expect(margemMinimaValida(30, 40)).toBeNull();
+    expect(margemMinimaValida(40, 40)).toBeNull();
+    expect(margemMinimaValida(41, 40)).toMatch(/maior que a margem desejada/);
+    expect(margemMinimaValida(-1, 40)).toMatch(/0% a 100%/);
+  });
+
+  it("é a MESMA do alerta de margem: lida e gravada em commercial_rules.min_margin_percent", () => {
+    const page = ler("src/app/(app)/procedimentos/precificacao/page.tsx");
+    expect(page).toMatch(/rpc\("min_margin_percent", \{ p_clinic: clinicId \}\)/);
+    const acoes = ler("src/app/(app)/procedimentos/precificacao/actions.ts");
+    expect(acoes).toMatch(/\.update\(\{ min_margin_percent: minima,/);
+    expect(acoes).toMatch(/margemMinimaValida\(input\.minMarginPercent/);
+    // a negociação e a venda direta continuam lendo a mesma função
+    expect(ler("src/app/(app)/apresentacao/[clientId]/negotiation-loader.ts")).toMatch(/rpc\("min_margin_percent"/);
+    expect(ler("src/app/(app)/comercial/venda-direta/page.tsx")).toMatch(/rpc\("min_margin_percent"/);
+  });
+
+  it("a tela mede o mínimo pela mínima (filtro, linha, tabela e níveis)", () => {
+    const tela = ler("src/app/(app)/procedimentos/precificacao/pricing-simulator-client.tsx");
+    expect(tela).toMatch(/const minTarget = margemDeReferenciaDoMinimo\(num\(target\), minMarginValue\)/);
+    expect(tela.match(/margemDe\(p, p\.minPriceCents, simLevel, minTarget\)/g)?.length).toBe(3);
+    expect(tela).toMatch(/targetPercent: minTarget/);
+    expect(tela).toMatch(/m\.currentMarginPercent < minTargetPercent/);
+  });
+});
+
 describe("a tela", () => {
   const page = ler("src/app/(app)/procedimentos/precificacao/page.tsx");
   const tela = ler("src/app/(app)/procedimentos/precificacao/pricing-simulator-client.tsx");
@@ -84,7 +129,7 @@ describe("a tela", () => {
   });
 
   it("filtra pela margem nos dois preços e mostra a conta lado a lado", () => {
-    expect(tela).toMatch(/passaNoFiltroDaMargem\(filtro, margemDe\(p, p\.priceCents\), margemDe\(p, p\.minPriceCents\)\)/);
+    expect(tela).toMatch(/passaNoFiltroDaMargem\(filtro, margemDe\(p, p\.priceCents\), margemDe\(p, p\.minPriceCents, simLevel, minTarget\)\)/);
     expect(tela).toMatch(/<NormalEMinimo/);
     expect(tela).toMatch(/priceCents: p\.minPriceCents/);
     expect(tela).toMatch(/simulateNoMinimo=\{/);
