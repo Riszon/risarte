@@ -401,7 +401,7 @@ Syncthing se comportarem de forma estranha.**
   levar as DUAS. Espelho em TS: `procedimentosAbaixoDoMinimo`.
 - AP79 atualizado: segue aberto o MÁXIMO e a venda direta (o mínimo não é
   conferido lá).
-- ✅ 0327 no treino (ensaio 17/17 + quebra). ⏳ **Falta a produção.**
+- ✅ **0327 APLICADA nos dois bancos** (o dono rodou na produção em 27/10/2026; conferência 1·1·1; conferido de fora: sem login a regra interna e a regra da negociação recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço lê vazio para negociação inexistente, sem gravar; a produção tem 16 procedimentos com preço mínimo — passam a travar — e 0 negociações). Ensaio no treino 17/17 + quebra.
   `.next-test` limpo.
 
 **27/10/2026 (6) — PC Administrador (core 0.354.0 → 0.355.0, sem migração)**
