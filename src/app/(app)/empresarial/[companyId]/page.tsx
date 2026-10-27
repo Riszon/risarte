@@ -547,7 +547,7 @@ export default async function CompanyDetailPage(props: {
     effectiveSplit: SplitRules;
     hasSplitOverride: boolean;
     benefits: BenefitView[];
-    procedures: { id: string; name: string; priceCents: number | null }[];
+    procedures: { id: string; name: string; priceCents: number | null; specialty: string | null }[];
     monthly: ReturnType<typeof computeMonthlyCents>;
     /** AP18: o que a empresa paga de verdade (fixo + termos, ou por titular). */
     mensalidade: Awaited<ReturnType<typeof mensalidadeNaTela>>;

@@ -43,6 +43,13 @@ const TABS = [
   { key: "contrato", label: "Contrato" },
 ] as const;
 
+// As três partes da aba Benefícios e grupos — uma por vez (27/10/2026).
+const BLOCOS = [
+  { key: "procedimentos", label: "Procedimentos" },
+  { key: "vantagens", label: "Outras vantagens" },
+  { key: "grupos", label: "Grupos" },
+] as const;
+
 export default async function EmpresarialConfigPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
@@ -55,6 +62,12 @@ export default async function EmpresarialConfigPage(props: {
   const abaPedida = typeof searchParams.aba === "string" ? searchParams.aba : "adesao";
   const abaParam = abaPedida === "grupos" ? "beneficios" : abaPedida;
   const aba = TABS.some((t) => t.key === abaParam) ? abaParam : "adesao";
+  // O endereço antigo de grupos (`aba=grupos`) abre direto na parte Grupos.
+  const blocoPedido =
+    typeof searchParams.bloco === "string" ? searchParams.bloco : abaPedida === "grupos" ? "grupos" : "";
+  const bloco = BLOCOS.some((b) => b.key === blocoPedido)
+    ? (blocoPedido as (typeof BLOCOS)[number]["key"])
+    : "procedimentos";
 
   const db = await empresarialDb();
   const procedures = await loadProcedures();
@@ -188,6 +201,12 @@ export default async function EmpresarialConfigPage(props: {
     });
   }
 
+  const contagem: Record<(typeof BLOCOS)[number]["key"], number> = {
+    procedimentos: benefits.length,
+    vantagens: vantagens.length,
+    grupos: grupos.length,
+  };
+
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
       <CabecalhoDeModulo
@@ -263,24 +282,50 @@ export default async function EmpresarialConfigPage(props: {
         />
       )}
 
-      {/* Uma aba, três blocos, na ordem em que se monta: o que cada
+      {/* Uma aba, três partes, na ordem em que se monta: o que cada
           procedimento ganha, as vantagens que não são procedimento, e as
-          combinações prontas das duas coisas. */}
+          combinações prontas das duas coisas. Desde 27/10/2026 (dono: "lista
+          muito longa") aparece UMA parte por vez; o endereço guarda qual. */}
       {aba === "beneficios" && (
         <div className="space-y-4">
-          <BenefitsEditor
-            companyId={null}
-            procedures={procedures}
-            benefits={benefits}
-            margens={margens}
-            scopeLabel="padrão da rede"
-          />
-          <VantagensDaRede vantagens={vantagens} />
-          <GruposDeBeneficios
-            grupos={grupos}
-            procedimentos={procedures}
-            vantagens={vantagens}
-          />
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Parte da aba">
+            {BLOCOS.map((b) => (
+              <Button
+                key={b.key}
+                size="sm"
+                variant={bloco === b.key ? "default" : "outline"}
+                nativeButton={false}
+                aria-current={bloco === b.key ? "page" : undefined}
+                render={
+                  <Link
+                    href={{
+                      pathname: "/empresarial/configuracoes",
+                      query: { aba: "beneficios", bloco: b.key },
+                    }}
+                  />
+                }
+              >
+                {b.label} ({contagem[b.key]})
+              </Button>
+            ))}
+          </div>
+          {bloco === "procedimentos" && (
+            <BenefitsEditor
+              companyId={null}
+              procedures={procedures}
+              benefits={benefits}
+              margens={margens}
+              scopeLabel="padrão da rede"
+            />
+          )}
+          {bloco === "vantagens" && <VantagensDaRede vantagens={vantagens} />}
+          {bloco === "grupos" && (
+            <GruposDeBeneficios
+              grupos={grupos}
+              procedimentos={procedures}
+              vantagens={vantagens}
+            />
+          )}
         </div>
       )}
 

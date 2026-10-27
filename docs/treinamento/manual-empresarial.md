@@ -1229,12 +1229,26 @@ A aba tem quatro partes, na ordem do trabalho:
 - **Preços de adesão** — os padrões da rede (titular, dependente).
 - **Split de pagamento** — a divisão Risarte/RisLife.
 - **Benefícios e grupos** — tudo o que o programa oferece, numa aba só, em três
-  blocos:
-  - **Benefícios por procedimento** — os **padrão da rede**, que chegam nas
-    propostas novas. Cada linha mostra o **Preço** — o **normal** (o preço
+  partes. No alto, os botões **Procedimentos (n)**, **Outras vantagens (n)** e
+  **Grupos (n)** mostram **uma parte de cada vez** (o número é quantos há):
+  - **Procedimentos** — os benefícios **padrão da rede**, que chegam nas
+    propostas novas. Ficam em **blocos por especialidade** (a do cadastro de
+    Procedimentos), **fechados** ao abrir a tela: clique no nome da
+    especialidade para abrir ou fechar; **Abrir todas** e **Fechar todas**
+    fazem isso de uma vez. Para achar rápido:
+    - **Procurar procedimento…** — digite parte do nome; os blocos com
+      resultado abrem sozinhos.
+    - Os botões do resumo também **filtram**: **benefício(s)** (todos),
+      **sem custo**, **com desconto** e **sem preço cadastrado** — este último
+      mostra os procedimentos que ainda precisam de preço no cadastro.
+
+    Cada linha mostra o **Preço** — o **normal** (o preço
     padrão do cadastro de Procedimentos), o **com benefício** (o que o
     beneficiário paga) e quanto ele **economiza** — e a coluna **Margem
-    (rede)**. Procedimento sem preço cadastrado diz *"sem preço cadastrado"*.
+    (rede)**. Quando falta cadastrar algum custo, aparece o selo **custo
+    incompleto**: passe o mouse ou clique nele para ler o que falta (a margem
+    mostrada é um teto otimista). Procedimento sem preço cadastrado diz
+    *"sem preço cadastrado"*.
     Em **Adicionar benefício**, a lista tem **busca** (digite parte do nome) e
     mostra **só os procedimentos que ainda não têm benefício**; para mudar um
     que já tem, use o **Editar** da linha. Com todos incluídos, o botão diz

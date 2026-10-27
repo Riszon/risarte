@@ -96,18 +96,21 @@ export async function loadBenefits(
  * benefício ao lado de cada um. Nulo = sem preço cadastrado.
  */
 export async function loadProcedures(): Promise<
-  { id: string; name: string; priceCents: number | null }[]
+  { id: string; name: string; priceCents: number | null; specialty: string | null }[]
 > {
   const supabase = await createClient();
   const { data } = await supabase
     .from("procedures")
-    .select("id, name, default_price_cents")
+    .select("id, name, default_price_cents, specialty")
     .eq("is_active", true)
     .order("name")
-    .returns<{ id: string; name: string; default_price_cents: number | null }[]>();
+    .returns<
+      { id: string; name: string; default_price_cents: number | null; specialty: string | null }[]
+    >();
   return (data ?? []).map((p) => ({
     id: p.id,
     name: p.name,
     priceCents: p.default_price_cents != null ? Number(p.default_price_cents) : null,
+    specialty: p.specialty,
   }));
 }
