@@ -21,7 +21,9 @@ import {
   baseDaLinha,
   montarLancamento,
   oQueEntra,
+  ajusteDoItem,
   precoNoPacote,
+  temDistribuicaoPropria,
   textoDoAjuste,
   totalDoLancamento,
   type GrupoDeProcedimentos,
@@ -89,10 +91,14 @@ export function LancarGrupo({
   const deFace = regras ? entram.filter((e) => regras[e.procedureId]?.nivel === "face") : [];
   const deRegiao = regras ? entram.filter((e) => ehPorRegiao(regras[e.procedureId])) : [];
   const facesDaSelecao = ORDEM_DAS_FACES.filter((f) => dentes.some((d) => (dados?.faces[d] ?? []).includes(f)));
-  // 0325: o ajuste do pacote, item a item como o banco grava.
-  const ajuste = grupo?.ajustePercent ?? 0;
+  // 0325/0328: o ajuste do pacote — o do procedimento, senão o do grupo —
+  // item a item como o banco grava.
+  const ajusteDoGrupo = grupo?.ajustePercent ?? 0;
+  const ajusteDe = (procedureId: string) =>
+    ajusteDoItem(grupo?.itens.find((i) => i.procedureId === procedureId) ?? {}, ajusteDoGrupo);
+  const comPacote = Boolean(grupo) && (ajusteDoGrupo !== 0 || temDistribuicaoPropria(grupo?.itens ?? []));
   const tabela = totalDoLancamento(montagem.linhas, precoDe);
-  const total = totalDoLancamento(montagem.linhas, precoDe, ajuste);
+  const total = totalDoLancamento(montagem.linhas, precoDe, ajusteDe);
   const pedeMotivo = montagem.conflitos.length > 0;
   const pronto =
     Boolean(grupo) &&
@@ -280,7 +286,7 @@ export function LancarGrupo({
                         {l.quantidade > 1 ? ` × ${l.quantidade}` : ""}
                       </span>
                       <span className="shrink-0 tabular-nums">
-                        {formatBRL(precoNoPacote(precoDe(l.procedureId), ajuste) * l.quantidade)}
+                        {formatBRL(precoNoPacote(precoDe(l.procedureId), ajusteDe(l.procedureId)) * l.quantidade)}
                       </span>
                     </li>
                   );
@@ -291,19 +297,24 @@ export function LancarGrupo({
                   {montagem.linhas.length} {montagem.linhas.length === 1 ? "item" : "itens"}
                 </span>
                 <span className="tabular-nums">
-                  {ajuste !== 0 && (
+                  {total !== tabela && (
                     <span className="mr-1 font-normal text-muted-foreground line-through">{formatBRL(tabela)}</span>
                   )}
                   {formatBRL(total)}
                 </span>
               </p>
-              {ajuste !== 0 && (
+              {comPacote && grupo && (
                 <p className="mt-1 font-medium">
-                  Preço de pacote: {textoDoAjuste(ajuste)} em cada item do grupo.
+                  {temDistribuicaoPropria(grupo.itens)
+                    ? `Preço de pacote: ${grupo.itens
+                        .filter((i) => ajusteDe(i.procedureId) !== 0)
+                        .map((i) => `${i.nome} ${textoDoAjuste(ajusteDe(i.procedureId))}`)
+                        .join(" · ")}.`
+                    : `Preço de pacote: ${textoDoAjuste(ajusteDoGrupo)} em cada item do grupo.`}
                 </p>
               )}
               <p className="mt-1 text-muted-foreground">
-                Preço do catálogo da unidade, item por item{ajuste !== 0 ? ", com o ajuste do pacote" : ""}; sessões e tempo vêm do protocolo e podem ser ajustados depois em cada item.
+                Preço do catálogo da unidade, item por item{comPacote ? ", com o ajuste do pacote" : ""}; sessões e tempo vêm do protocolo e podem ser ajustados depois em cada item.
               </p>
             </div>
           )}

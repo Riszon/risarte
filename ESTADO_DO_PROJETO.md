@@ -1,6 +1,13 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.359.0** · Última migração: **0327** (0318 a 0327 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.360.0** · Última migração: **0328** (0318 a 0327 aplicadas na produção e no treino; ⏳ **0328 só no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.360.0 / 0328 — DE ONDE SAI O DESCONTO DO PACOTE (27/10/2026)
+>
+> Pedido do dono (GP9): igual em todos / de um procedimento só / o preço de
+> cada um. % próprio por procedimento (4 casas, para fechar no centavo), na
+> mesma `plan_item_group_percent`; `save_procedure_group` recriada para não
+> apagar a distribuição. ✅ 0328 no treino; ⏳ **falta a produção**. EV-234.
 
 > ## 🎯 0.359.0 (sem migração) — A MARGEM DA VENDA = A DA PRECIFICAÇÃO (27/10/2026)
 >

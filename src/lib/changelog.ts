@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.360.0",
+    data: "2026-10-27",
+    migracao: "0328",
+    titulo: "Grupos de procedimentos: escolher de onde sai o desconto do pacote",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No preço do pacote, o Admin Master escolhe de onde sai o desconto (ou o acréscimo): um pouco de cada (o mesmo % em todos, como era), de um procedimento só (digita o total do pacote e o desconto inteiro sai daquele procedimento) ou o preço de cada um. O cartão do grupo mostra de onde sai, e o plano já lança cada procedimento com o seu preço no pacote.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.359.0",
     data: "2026-10-27",
     migracao: null,

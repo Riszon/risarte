@@ -42,8 +42,14 @@ export const ACRESCIMO_MAXIMO = 100;
  */
 export function precoNoPacote(precoCents: number, ajustePercent: number): number {
   if (!ajustePercent) return precoCents;
-  const centesimos = Math.round(ajustePercent * 100);
-  return roundHalfUp((precoCents * (10000 + centesimos)) / 10000);
+  // Até 4 casas no % (o de cada procedimento, 0328, tem 4 para fechar no centavo).
+  const dezMilesimos = Math.round(ajustePercent * 10000);
+  return roundHalfUp((precoCents * (1000000 + dezMilesimos)) / 1000000);
+}
+
+/** O percentual com 4 casas — o que o banco guarda por procedimento (0328). */
+function quatroCasas(n: number): number {
+  return Math.round(n * 10000) / 10000;
 }
 
 /** O ajuste que leva a referência ao total digitado, com 2 casas. Nulo sem referência. */
@@ -69,7 +75,7 @@ export function textoDoAjuste(ajustePercent: number): string {
 
 /** O total do grupo (um de cada × quantidade), de tabela e no pacote — item a item, como o banco. */
 export function totaisDoGrupo(
-  itens: { procedureId: string; quantidade: number }[],
+  itens: { procedureId: string; quantidade: number; ajustePercent?: number | null }[],
   precoDe: (procedureId: string) => number,
   ajustePercent: number
 ): { tabelaCents: number; pacoteCents: number } {
@@ -78,9 +84,65 @@ export function totaisDoGrupo(
   for (const i of itens) {
     const preco = precoDe(i.procedureId);
     tabelaCents += preco * i.quantidade;
-    pacoteCents += precoNoPacote(preco, ajustePercent) * i.quantidade;
+    pacoteCents += precoNoPacote(preco, ajusteDoItem(i, ajustePercent)) * i.quantidade;
   }
   return { tabelaCents, pacoteCents };
+}
+
+// ---------------------------------------------------------------------------
+// DE ONDE SAI O DESCONTO (0328, GP9, pedido do dono, 27/10/2026)
+// ---------------------------------------------------------------------------
+
+/**
+ * O percentual que vale para um procedimento do grupo: o DELE (0328), senão o
+ * do grupo — a mesma regra de `plan_item_group_percent` no banco.
+ */
+export function ajusteDoItem(item: { ajustePercent?: number | null }, ajusteDoGrupo: number): number {
+  return item.ajustePercent ?? ajusteDoGrupo;
+}
+
+/** Algum procedimento tem percentual próprio? (= o desconto não sai igual de todos) */
+export function temDistribuicaoPropria(itens: { ajustePercent?: number | null }[]): boolean {
+  return itens.some((i) => i.ajustePercent != null);
+}
+
+/** O ajuste do pacote inteiro (um de cada), qualquer que seja a distribuição. */
+export function ajusteEfetivo(
+  itens: { procedureId: string; quantidade: number; ajustePercent?: number | null }[],
+  precoDe: (procedureId: string) => number,
+  ajusteDoGrupo: number
+): number | null {
+  const { tabelaCents, pacoteCents } = totaisDoGrupo(itens, precoDe, ajusteDoGrupo);
+  return ajusteDoTotal(pacoteCents, tabelaCents);
+}
+
+/**
+ * "O desconto sai de um procedimento só": o percentual que esse procedimento
+ * precisa ter para o pacote (um de cada) fechar no total pedido, com os
+ * outros pelo preço de tabela. Nulo quando não fecha (o desconto passa do
+ * preço dele, ou o acréscimo passa do limite).
+ */
+export function ajusteParaUmSo(
+  itens: { procedureId: string; quantidade: number }[],
+  precoDe: (procedureId: string) => number,
+  procedureId: string,
+  totalCents: number
+): number | null {
+  const alvo = itens.find((i) => i.procedureId === procedureId);
+  if (!alvo) return null;
+  const doAlvo = precoDe(procedureId) * alvo.quantidade;
+  if (!(doAlvo > 0)) return null;
+  const dosOutros = itens
+    .filter((i) => i.procedureId !== procedureId)
+    .reduce((s, i) => s + precoDe(i.procedureId) * i.quantidade, 0);
+  const pct = quatroCasas(((totalCents - dosOutros) / doAlvo - 1) * 100);
+  return ajusteValido(pct) ? pct : null;
+}
+
+/** O percentual que leva o preço de tabela ao preço digitado, com 2 casas. */
+export function ajusteDoPreco(precoNoPacoteCents: number, precoDeTabelaCents: number): number | null {
+  if (!(precoDeTabelaCents > 0) || !(precoNoPacoteCents >= 0)) return null;
+  return quatroCasas((precoNoPacoteCents / precoDeTabelaCents - 1) * 100);
 }
 
 /** "Pacote Implante + coroa" — sem repetir quando o nome do grupo já começa com "Pacote". */
@@ -263,6 +325,11 @@ export type ItemDoGrupo = {
   nome: string;
   /** O procedimento ainda está ativo no catálogo? */
   ativo: boolean;
+  /**
+   * 0328: o percentual PRÓPRIO deste procedimento no pacote (nulo = vale o do
+   * grupo). `undefined` = não deu para ler (o banco sem a 0328).
+   */
+  ajustePercent?: number | null;
 };
 
 export type GrupoDeProcedimentos = {
@@ -307,6 +374,10 @@ export function validarGrupo(
 
 /** Os códigos das funções da 0324, 0325 e 0326 em pt-BR. Nulo = erro que não é delas. */
 export function mensagemDoGrupo(erro: string): string | null {
+  // A distribuição é da 0328.
+  if (/set_procedure_group_split/i.test(erro) && /could not find|schema cache|does not exist/i.test(erro)) {
+    return "O banco ainda não recebeu a atualização 0328 (de onde sai o desconto do pacote).";
+  }
   // O mínimo é da 0326 — antes das regras da 0325 e da 0324.
   if (/set_procedure_group_pricing|min_price_percent/i.test(erro) &&
       /could not find|schema cache|does not exist/i.test(erro)) {
@@ -336,6 +407,7 @@ export function mensagemDoGrupo(erro: string): string | null {
     ["INVALID_ADJUST", `O desconto vai até ${DESCONTO_MAXIMO}% e o acréscimo até ${ACRESCIMO_MAXIMO}%.`],
     ["INVALID_MIN", `O mínimo vai de 0,01% a ${MINIMO_MAXIMO}% do preço de tabela.`],
     ["MIN_ABOVE_PRICE", "O mínimo não pode ficar acima do preço do pacote — baixe o mínimo antes de dar mais desconto."],
+    ["PROCEDURE_NOT_IN_GROUP", "Um dos procedimentos saiu do grupo enquanto você editava — abra o grupo de novo."],
   ];
   return m.find(([codigo]) => erro.includes(codigo))?.[1] ?? null;
 }
@@ -469,7 +541,9 @@ export function baseDaLinha(
 export function totalDoLancamento(
   linhas: LinhaDoGrupo[],
   precoDe: (procedureId: string) => number,
-  ajustePercent = 0
+  /** Um percentual para todos, ou o de cada procedimento (0328). */
+  ajustePercent: number | ((procedureId: string) => number) = 0
 ): number {
-  return linhas.reduce((soma, l) => soma + precoNoPacote(precoDe(l.procedureId), ajustePercent) * l.quantidade, 0);
+  const pct = typeof ajustePercent === "function" ? ajustePercent : () => ajustePercent;
+  return linhas.reduce((soma, l) => soma + precoNoPacote(precoDe(l.procedureId), pct(l.procedureId)) * l.quantidade, 0);
 }

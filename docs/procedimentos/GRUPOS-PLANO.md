@@ -89,6 +89,7 @@ apresentação, negociação, sessões, repasse, estoque, odontograma.
 | GP6 | O paciente vê o ajuste? | **Sim, "de … por …"** — os itens seguem um a um, mais a linha do pacote (27/10/2026) |
 | GP7 | O que o preço mínimo do grupo faz? | **Trava a negociação** — abaixo dele, autorização do Gerente (27/10/2026, §7; contra a recomendação, que era só avisar) |
 | GP8 | Como o mínimo é guardado? | **Em % do preço de tabela** — digita-se % ou total (27/10/2026) |
+| GP9 | De onde sai o desconto do pacote? | **Escolha do Admin**: igual em todos, de um procedimento só, ou o preço de cada um (27/10/2026, §8) |
 
 As três como recomendado.
 
@@ -190,3 +191,26 @@ pela MESMA porta do editor (`save_procedure_group`) — mesmas regras e a
 permissão do GP1 (Admin Master e Planner). Entra no FIM, quantidade 1;
 desmarcar que deixaria o grupo com 1 é recusado com explicação. Grupos no
 cartão: `GruposDoProcedimento`.
+
+## 8. De onde sai o desconto (0.360.0 / migração 0328, 27/10/2026)
+
+**O pedido do dono:** ao dar desconto (ou acréscimo) no pacote, escolher se
+ele sai de um procedimento só ou um pouco de cada, como era.
+
+- `procedure_group_items.price_adjust_percent` (nulo = vale o do grupo):
+  o percentual PRÓPRIO de cada procedimento, com **4 casas** — com 2, "tirar
+  de um só" não fechava no centavo (R$ 1.260,00 pedidos saíam R$ 1.259,97;
+  achado na tela, corrigido antes da produção).
+- A conta continua no banco, no mesmo lugar: `plan_item_group_percent` devolve
+  o do procedimento, senão o do grupo — a trava do item (0325) e o envio do
+  plano usam ela sem mudar.
+- ⚠️ `save_procedure_group` apagava e regravava os itens: recriada levando o
+  percentual de quem fica (senão editar o grupo, ou o "Vincular a grupo",
+  apagaria a distribuição).
+- Porta `set_procedure_group_split(id, % do grupo, mínimo, [{procedimento,
+  %}])`, só Admin Master; o mínimo é conferido contra o pacote EFETIVO (um de
+  cada, preço da rede, cada um com o seu %).
+- Tela: três modos — igual em todos / de um procedimento só (digita-se o
+  total; `ajusteParaUmSo`) / o preço de cada um (`ajusteDoPreco`). O cartão
+  mostra "Sai de: …". Diálogo do botão Grupo e tabela de repasse usam o % de
+  cada procedimento (`ajusteDoItem`).

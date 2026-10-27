@@ -1,5 +1,5 @@
 import { formatBRL } from "@/lib/pricing";
-import { pisoDoPacote, precoNoPacote } from "@/lib/procedimentos/grupos";
+import { ajusteDoItem, pisoDoPacote, precoNoPacote } from "@/lib/procedimentos/grupos";
 import { textoDosPercentuais } from "@/lib/finance/repasse-percentual";
 
 export type RepasseDoNivel = { amountCents: number; source: string };
@@ -20,7 +20,8 @@ export function RepasseDoPacote({
   repasses,
   unidade,
 }: {
-  itens: { procedureId: string; quantidade: number; nome: string }[];
+  /** 0328: cada item com o seu percentual (nulo = o do grupo). */
+  itens: { procedureId: string; quantidade: number; nome: string; ajustePercent?: number | null }[];
   precoDe: Map<string, number>;
   ajustePercent: number;
   /** 0326: o mínimo da negociação em % da tabela (nulo = sem mínimo). */
@@ -35,7 +36,7 @@ export function RepasseDoPacote({
     const tabelaCents = (precoDe.get(i.procedureId) ?? 0) * i.quantidade;
     return {
       ...i,
-      pacoteCents: precoNoPacote(precoDe.get(i.procedureId) ?? 0, ajustePercent) * i.quantidade,
+      pacoteCents: precoNoPacote(precoDe.get(i.procedureId) ?? 0, ajusteDoItem(i, ajustePercent)) * i.quantidade,
       // O mínimo de cada item: o % do grupo sobre a tabela dele (0326).
       minimoCents: minimoPercent ? pisoDoPacote(tabelaCents, minimoPercent) : null,
     };

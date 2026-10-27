@@ -2486,6 +2486,23 @@ outro aparece sozinho (ex.: R$ 1.400,00 por R$ 1.260,00 = 10% de desconto).
 **Salvar preço do pacote** grava o **percentual**; apagar o percentual volta
 cada item ao preço do catálogo.
 
+**De onde sai o desconto** (versão 0.360.0). No mesmo lugar, escolha:
+
+- **Um pouco de cada** — o mesmo percentual em todos (como era).
+- **De um procedimento só** — escolha o procedimento e digite o **total do
+  pacote**: o desconto inteiro sai dele, e os outros ficam pelo preço de
+  tabela (ex.: canal R$ 950,00 + restauração R$ 450,00 por R$ 1.260,00,
+  tirando só do canal = canal R$ 810,00).
+- **Escolher o preço de cada um** — digite o preço de cada procedimento no
+  pacote; o percentual de cada um aparece ao lado.
+
+A tela mostra a prévia antes de salvar, e o cartão do grupo mostra **Sai
+de: …**. Fica gravado o percentual de cada procedimento, então continua
+valendo para qualquer número de dentes. O desconto não pode passar do preço
+do procedimento (a tela avisa "não fecha"). Editar o grupo (ou usar
+**Vincular a grupo**) mantém o percentual de quem fica; quem sai e volta
+perde o seu.
+
 **Preço mínimo do pacote** (versão 0.354.0), no mesmo lugar e também só do
 Admin Master: digite o **% da tabela ou o total mínimo** (ex.: 85% de R$
 1.400,00 = R$ 1.190,00). Ele **trava a negociação**: se o desconto do Comercial

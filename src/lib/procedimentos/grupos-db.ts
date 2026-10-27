@@ -57,6 +57,17 @@ export async function carregarGrupos(
   const minimoDe = new Map(
     (minimos ?? []).map((m) => [m.id, m.min_price_percent === null ? null : Number(m.min_price_percent)])
   );
+  // 0328: o percentual próprio de cada procedimento do grupo — à parte (o banco
+  // pode ter a 0326 sem a 0328).
+  const { data: proprios, error: erroDosProprios } = await supabase
+    .from("procedure_group_items")
+    .select("group_id, procedure_id, price_adjust_percent")
+    .not("price_adjust_percent", "is", null)
+    .returns<{ group_id: string; procedure_id: string; price_adjust_percent: number | string }[]>();
+  if (erroDosProprios) console.error("carregarGrupos (por procedimento) failed:", erroDosProprios.message);
+  const proprioDe = new Map(
+    (proprios ?? []).map((p) => [`${p.group_id}|${p.procedure_id}`, Number(p.price_adjust_percent)])
+  );
   return {
     ok: true,
     grupos: (data ?? []).map((g) => ({
@@ -75,6 +86,7 @@ export async function carregarGrupos(
             quantidade: i.quantity,
             nome: p?.name ?? "Procedimento",
             ativo: p?.is_active ?? false,
+            ajustePercent: erroDosProprios ? undefined : (proprioDe.get(`${g.id}|${i.procedure_id}`) ?? null),
           };
         }),
     })),

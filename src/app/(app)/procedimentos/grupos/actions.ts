@@ -71,7 +71,15 @@ export async function salvarGrupo(input: {
 export async function definirPrecoDoPacote(
   id: string,
   ajustePercent: number,
-  minimoPercent?: number | null
+  minimoPercent?: number | null,
+  /**
+   * 0328 (GP9): de onde sai o desconto. `undefined` = a tela não sabe (o
+   * banco sem a 0328) — grava como antes. Lista vazia = igual em todos; com
+   * itens = o percentual PRÓPRIO de cada procedimento listado.
+   */
+  distribuicao?: { procedureId: string; percent: number | null }[],
+  /** O ajuste do pacote inteiro (um de cada) — a régua do mínimo com distribuição. */
+  ajusteEfetivoPercent?: number
 ): Promise<GrupoResult> {
   const session = await getSessionContext();
   if (!session.isAdminMaster) return { ok: false, error: "Só o Admin Master define o preço do pacote." };
@@ -81,14 +89,30 @@ export async function definirPrecoDoPacote(
   const ajuste = Math.round(ajustePercent * 100) / 100;
   const minimo = minimoPercent == null ? null : Math.round(minimoPercent * 100) / 100;
   if (minimoPercent !== undefined) {
-    const problema = minimoValido(minimo, ajuste);
+    const problema = minimoValido(minimo, ajusteEfetivoPercent ?? ajuste);
     if (problema) return { ok: false, error: problema };
   }
+  for (const d of distribuicao ?? []) {
+    if (d.percent !== null && !ajusteValido(d.percent)) {
+      return { ok: false, error: mensagemDoGrupo("INVALID_ADJUST") ?? "Ajuste inválido." };
+    }
+  }
   const supabase = await createClient();
+  // A distribuição grava o mínimo junto: só vai por ela quando a tela leu o mínimo.
   const { error } =
-    minimoPercent === undefined
-      ? await supabase.rpc("set_procedure_group_price", { p_id: id, p_percent: ajuste })
-      : await supabase.rpc("set_procedure_group_pricing", { p_id: id, p_percent: ajuste, p_min_percent: minimo });
+    distribuicao !== undefined && minimoPercent !== undefined
+      ? await supabase.rpc("set_procedure_group_split", {
+          p_id: id,
+          p_percent: ajuste,
+          p_min_percent: minimo,
+          p_item_percents: distribuicao.map((d) => ({
+            procedureId: d.procedureId,
+            percent: d.percent === null ? null : Math.round(d.percent * 10000) / 10000,
+          })),
+        })
+      : minimoPercent === undefined
+        ? await supabase.rpc("set_procedure_group_price", { p_id: id, p_percent: ajuste })
+        : await supabase.rpc("set_procedure_group_pricing", { p_id: id, p_percent: ajuste, p_min_percent: minimo });
   if (error) {
     console.error("set_procedure_group_pricing failed:", error.message);
     return { ok: false, error: mensagemDoGrupo(error.message) ?? "Não foi possível salvar o preço do pacote." };
@@ -97,7 +121,11 @@ export async function definirPrecoDoPacote(
     action: "update",
     entityType: "procedure_group",
     entityId: id,
-    details: { price_adjust_percent: ajuste, ...(minimoPercent !== undefined ? { min_price_percent: minimo } : {}) },
+    details: {
+      price_adjust_percent: ajuste,
+      ...(minimoPercent !== undefined ? { min_price_percent: minimo } : {}),
+      ...(distribuicao !== undefined ? { por_procedimento: distribuicao.length } : {}),
+    },
   });
   atualizar();
   revalidatePath("/procedimentos");

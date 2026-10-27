@@ -153,7 +153,7 @@ describe("o banco e as telas seguem a mesma regra", () => {
     expect(ler("src/app/orcamentos/[id]/page.tsx")).toMatch(/<LinhasDoPacote linhas=\{pacotes\}/);
     expect(ler("src/app/(app)/apresentacao/[clientId]/presentation-view.tsx")).toMatch(/option\.pacotes\.map/);
     expect(ler("src/app/(app)/apresentacao/[clientId]/actions.ts")).toMatch(/\$\{rotuloDoPacote\(p\.nome\)\}/);
-    expect(ler("src/app/(app)/prontuarios/[id]/lancar-grupo.tsx")).toMatch(/totalDoLancamento\(montagem\.linhas, precoDe, ajuste\)/);
+    expect(ler("src/app/(app)/prontuarios/[id]/lancar-grupo.tsx")).toMatch(/totalDoLancamento\(montagem\.linhas, precoDe, ajusteDe\)/); // 0328: o % de cada procedimento
   });
 
   it("quem vê só os totais não vê o subtotal do pacote (F4)", () => {

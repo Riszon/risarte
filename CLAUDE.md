@@ -390,6 +390,21 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (11) — PC Administrador (core 0.359.0 → 0.360.0, migração 0328)**
+
+- **De onde sai o desconto do pacote (pedido do dono, GP9).** Percentual
+  próprio por procedimento (`procedure_group_items.price_adjust_percent`,
+  nulo = o do grupo), **4 casas** (com 2 não fechava no centavo — achado na
+  tela; a 0328 foi corrigida antes da produção e reaplicada no treino).
+- ⚠️ **`plan_item_group_percent` (0328) = o do procedimento, senão o do
+  grupo** — a trava do item e o envio do plano usam ela. Espelho TS:
+  `ajusteDoItem`.
+- ⚠️ **`save_procedure_group` recriada (0328) preservando o % de quem fica.**
+  Ao recriar de novo, levar isso junto.
+- ✅ 0328 no treino (ensaio 16/16 + quebra). ⏳ **Falta a produção.**
+- Resíduo no treino (meu): o "Pacote teste (pode ignorar)" agora tira o
+  desconto SÓ do canal (R$ 810,00), mínimo 85%. `.next-test` limpo.
+
 **27/10/2026 (10) — PC Administrador (core 0.358.0 → 0.359.0, sem migração)**
 
 - **A margem da venda = a da Precificação (pedido do dono, AP80 fechado).**

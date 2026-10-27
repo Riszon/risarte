@@ -126,7 +126,8 @@ describe("o banco e as telas seguem a mesma regra", () => {
     const page = ler("src/app/(app)/procedimentos/grupos/page.tsx");
     expect(page).toMatch(/rpc\("payout_matrix"/);
     const repasse = ler("src/app/(app)/procedimentos/grupos/repasse-do-pacote.tsx");
-    expect(repasse).toMatch(/precoNoPacote\(precoDe\.get\(i\.procedureId\) \?\? 0, ajustePercent\)/);
+    // 0328: com o percentual de cada procedimento (senão o do grupo)
+    expect(repasse).toMatch(/precoNoPacote\(precoDe\.get\(i\.procedureId\) \?\? 0, ajusteDoItem\(i, ajustePercent\)\)/);
     // nível sem repasse em nenhum procedimento: "sem repasse", não "R$ 0,00 · 0%"
     expect(repasse).toMatch(/if \(comRepasse\.length === 0\) \{[\s\S]{0,120}celula\(null,/);
     // e também sobre o MÍNIMO do pacote (pedido do dono, 27/10/2026)
