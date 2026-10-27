@@ -1,12 +1,17 @@
-// GRUPOS DE PROCEDIMENTOS (0324; plano e decisões GP1–GP3 em
+// GRUPOS DE PROCEDIMENTOS (0324; plano e decisões GP1–GP6 em
 // docs/procedimentos/GRUPOS-PLANO.md).
 //
-// O grupo é um ATALHO de lançamento, não um procedimento: não tem preço,
-// repasse, kit nem regra de dente. Ao usar o grupo, cada procedimento vira um
-// item normal do plano — preço do catálogo, sessões do protocolo e a mesma
-// régua do dente (`odontograma/plano.ts` = 0311). Esta peça só MONTA as
-// linhas; quem confere é o banco, como num lançamento à mão.
+// O grupo é um ATALHO de lançamento, não um procedimento: não tem repasse,
+// kit nem regra de dente. Ao usar o grupo, cada procedimento vira um item
+// normal do plano — preço do catálogo, sessões do protocolo e a mesma régua do
+// dente (`odontograma/plano.ts` = 0311). Esta peça só MONTA as linhas; quem
+// confere é o banco, como num lançamento à mão.
+//
+// Desde a 0325 o grupo tem um AJUSTE DE PREÇO (GP4–GP6): um percentual de
+// desconto ou acréscimo que o Admin Master define e que cada item lançado pelo
+// grupo recebe sobre o preço do catálogo. Ver `precoNoPacote`.
 
+import { roundHalfUp } from "@/lib/finance/money";
 import {
   conflitosDeSituacao,
   ehPorDente,
@@ -21,6 +26,101 @@ import {
 export const MINIMO_NO_GRUPO = 2;
 export const MAXIMO_NO_GRUPO = 30;
 export const QUANTIDADE_MAXIMA = 20;
+/** Limites do ajuste do pacote — os mesmos do banco (0325). */
+export const DESCONTO_MAXIMO = 99.99;
+export const ACRESCIMO_MAXIMO = 100;
+
+// ---------------------------------------------------------------------------
+// O PREÇO DO PACOTE (0325)
+// ---------------------------------------------------------------------------
+
+/**
+ * O preço de UM item no pacote: o do catálogo ajustado pelo percentual,
+ * arredondado meio para cima. É a mesma conta de `group_adjusted_price` no
+ * banco — quem grava é o banco; esta serve para a tela mostrar antes.
+ * Conta em inteiros (o % tem 2 casas), para não errar o meio por vírgula.
+ */
+export function precoNoPacote(precoCents: number, ajustePercent: number): number {
+  if (!ajustePercent) return precoCents;
+  const centesimos = Math.round(ajustePercent * 100);
+  return roundHalfUp((precoCents * (10000 + centesimos)) / 10000);
+}
+
+/** O ajuste que leva a referência ao total digitado, com 2 casas. Nulo sem referência. */
+export function ajusteDoTotal(totalCents: number, referenciaCents: number): number | null {
+  if (!(referenciaCents > 0) || !(totalCents >= 0)) return null;
+  return Math.round((totalCents / referenciaCents - 1) * 10000) / 100;
+}
+
+/** O ajuste está dentro do que o banco aceita? */
+export function ajusteValido(ajustePercent: number): boolean {
+  return Number.isFinite(ajustePercent) && ajustePercent > -100 && ajustePercent <= ACRESCIMO_MAXIMO;
+}
+
+function numeroBr(n: number): string {
+  return String(Math.round(Math.abs(n) * 100) / 100).replace(".", ",");
+}
+
+/** "10% de desconto", "15% de acréscimo", "sem ajuste". */
+export function textoDoAjuste(ajustePercent: number): string {
+  if (!ajustePercent) return "sem ajuste";
+  return `${numeroBr(ajustePercent)}% de ${ajustePercent < 0 ? "desconto" : "acréscimo"}`;
+}
+
+/** O total do grupo (um de cada × quantidade), de tabela e no pacote — item a item, como o banco. */
+export function totaisDoGrupo(
+  itens: { procedureId: string; quantidade: number }[],
+  precoDe: (procedureId: string) => number,
+  ajustePercent: number
+): { tabelaCents: number; pacoteCents: number } {
+  let tabelaCents = 0;
+  let pacoteCents = 0;
+  for (const i of itens) {
+    const preco = precoDe(i.procedureId);
+    tabelaCents += preco * i.quantidade;
+    pacoteCents += precoNoPacote(preco, ajustePercent) * i.quantidade;
+  }
+  return { tabelaCents, pacoteCents };
+}
+
+/** "Pacote Implante + coroa" — sem repetir quando o nome do grupo já começa com "Pacote". */
+export function rotuloDoPacote(nome: string): string {
+  return /^pacote\b/i.test(nome.trim()) ? nome.trim() : `Pacote ${nome.trim()}`;
+}
+
+export type ItemComPacote = {
+  grupo: { id: string; nome: string } | null;
+  quantidade: number;
+  precoCents: number;
+  /** O preço de tabela quando o pacote mudou o preço (0325); nulo = igual. */
+  precoDeTabelaCents: number | null;
+};
+
+export type LinhaDoPacote = {
+  grupoId: string;
+  nome: string;
+  /** Quanto os itens do pacote custariam pelo preço de tabela. */
+  deCents: number;
+  /** Quanto custam no pacote. */
+  porCents: number;
+};
+
+/**
+ * As linhas "Pacote X: de … por …" de uma opção (GP6), uma por grupo que
+ * MUDOU o preço. Só os itens que vieram do grupo entram; o resto do plano
+ * fica de fora da linha.
+ */
+export function pacotesDaOpcao(itens: ItemComPacote[]): LinhaDoPacote[] {
+  const porGrupo = new Map<string, LinhaDoPacote>();
+  for (const i of itens) {
+    if (!i.grupo) continue;
+    const linha = porGrupo.get(i.grupo.id) ?? { grupoId: i.grupo.id, nome: i.grupo.nome, deCents: 0, porCents: 0 };
+    linha.deCents += (i.precoDeTabelaCents ?? i.precoCents) * i.quantidade;
+    linha.porCents += i.precoCents * i.quantidade;
+    porGrupo.set(i.grupo.id, linha);
+  }
+  return [...porGrupo.values()].filter((l) => l.deCents !== l.porCents);
+}
 
 export type ItemDoGrupo = {
   procedureId: string;
@@ -37,6 +137,12 @@ export type GrupoDeProcedimentos = {
   nome: string;
   descricao: string | null;
   ativo: boolean;
+  /**
+   * 0325: ajuste do pacote em % (negativo = desconto, positivo = acréscimo).
+   * Nulo = não deu para ler (o banco sem a 0325) — a tela não mostra preço de
+   * pacote em vez de mostrar "sem ajuste".
+   */
+  ajustePercent: number | null;
   /** Na ordem de lançar — a ordem importa (implante antes da prótese). */
   itens: ItemDoGrupo[];
 };
@@ -61,8 +167,13 @@ export function validarGrupo(
   return null;
 }
 
-/** Os códigos das funções da 0324 em pt-BR. Nulo = erro que não é delas. */
+/** Os códigos das funções da 0324 e da 0325 em pt-BR. Nulo = erro que não é delas. */
 export function mensagemDoGrupo(erro: string): string | null {
+  // A porta do preço é da 0325 — antes da regra geral, que fala da 0324.
+  if (/set_procedure_group_price|price_adjust_percent|list_price_cents/i.test(erro) &&
+      /could not find|schema cache|does not exist/i.test(erro)) {
+    return "O banco ainda não recebeu a atualização 0325 (preço do grupo).";
+  }
   // Função ou tabela que não existe = o banco ainda não recebeu a 0324.
   if (/could not find the function|schema cache|procedure_group\w* does not exist/i.test(erro)) {
     return "O banco ainda não recebeu a atualização 0324 (grupos de procedimentos).";
@@ -78,6 +189,8 @@ export function mensagemDoGrupo(erro: string): string | null {
     ["INVALID_QUANTITY", `A quantidade vai de 1 a ${QUANTIDADE_MAXIMA}.`],
     ["GROUP_NOT_FOUND", "Grupo não encontrado (alguém pode tê-lo excluído)."],
     ["GROUP_IN_USE", "Este grupo já foi usado em planos: inative em vez de excluir."],
+    ["PRICE_NOT_ALLOWED", "Só o Admin Master define o preço do pacote."],
+    ["INVALID_ADJUST", `O desconto vai até ${DESCONTO_MAXIMO}% e o acréscimo até ${ACRESCIMO_MAXIMO}%.`],
   ];
   return m.find(([codigo]) => erro.includes(codigo))?.[1] ?? null;
 }
@@ -204,7 +317,14 @@ export function baseDaLinha(
   return { sessoes: protocolo.count * linha.quantidade || null, minutos: protocolo.minutes * linha.quantidade || null };
 }
 
-/** O total que o lançamento soma, pelo preço do catálogo de hoje (referência). */
-export function totalDoLancamento(linhas: LinhaDoGrupo[], precoDe: (procedureId: string) => number): number {
-  return linhas.reduce((soma, l) => soma + precoDe(l.procedureId) * l.quantidade, 0);
+/**
+ * O total que o lançamento soma, pelo preço do catálogo de hoje (referência) —
+ * e, com o ajuste do pacote (0325), item a item como o banco vai gravar.
+ */
+export function totalDoLancamento(
+  linhas: LinhaDoGrupo[],
+  precoDe: (procedureId: string) => number,
+  ajustePercent = 0
+): number {
+  return linhas.reduce((soma, l) => soma + precoNoPacote(precoDe(l.procedureId), ajustePercent) * l.quantidade, 0);
 }

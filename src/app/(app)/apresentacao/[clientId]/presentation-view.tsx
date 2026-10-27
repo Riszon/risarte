@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Odontograma } from "@/components/odontograma/odontograma";
 import type { Denticao, MarcaNoDente } from "@/lib/odontograma/desenho";
 import { generateGammaDeck, getGammaStatus } from "./actions";
+import { rotuloDoPacote } from "@/lib/procedimentos/grupos";
 
 export type PresentationOptionItem = {
   description: string;
@@ -45,6 +46,11 @@ export type PresentationOption = {
   /** Em ordem de dente (FDI), depois região, depois o que não tem lugar. */
   items: PresentationOptionItem[];
   totalLabel: string | null;
+  /**
+   * 0325 (GP6): "Pacote X: de … por …" — um por grupo que mudou o preço. Vazio
+   * para quem vê só os totais (o subtotal do pacote já abriria o preço).
+   */
+  pacotes: { nome: string; deLabel: string; porLabel: string }[];
   summaryLabel: string | null;
   /** OD4: o vermelho do que a opção faz + o diagnóstico definido. */
   marcas: MarcaNoDente[];
@@ -315,6 +321,19 @@ function PropostaDaOpcao({ option }: { option: PresentationOption }) {
           </li>
         ))}
       </ul>
+      {option.pacotes.length > 0 && (
+        <ul className="mt-3 space-y-1 text-sm">
+          {option.pacotes.map((p) => (
+            <li key={p.nome} className="flex flex-wrap items-baseline justify-between gap-x-2">
+              <span className="font-medium">{rotuloDoPacote(p.nome)}</span>
+              <span>
+                de <span className="tabular-nums text-muted-foreground line-through">{p.deLabel}</span> por{" "}
+                <strong className="tabular-nums">{p.porLabel}</strong>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide opacity-80">Investimento total</p>

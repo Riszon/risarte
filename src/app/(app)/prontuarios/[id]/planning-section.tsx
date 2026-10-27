@@ -86,7 +86,22 @@ import {
 } from "./planning-actions";
 import { DevolverAoCoordenador } from "./devolver-ao-coordenador";
 import { LancarGrupo } from "./lancar-grupo";
-import type { GrupoDeProcedimentos } from "@/lib/procedimentos/grupos";
+import {
+  pacotesDaOpcao,
+  type GrupoDeProcedimentos,
+  type ItemComPacote,
+} from "@/lib/procedimentos/grupos";
+import { LinhasDoPacote } from "@/components/linhas-do-pacote";
+
+/** 0325 (GP6): o item do plano visto pela conta do pacote. */
+function paraPacote(it: BudgetItem): ItemComPacote {
+  return {
+    grupo: it.grupo ?? null,
+    quantidade: it.quantity,
+    precoCents: it.unitPriceCents,
+    precoDeTabelaCents: it.precoDeTabelaCents ?? null,
+  };
+}
 import { moveClientPhase } from "../../jornada/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
@@ -1653,6 +1668,7 @@ function OptionBudget({
         <span className="text-sm font-semibold">{formatBRL(total)}</span>
       </div>
       <ProgramSavings program={program} />
+      <LinhasDoPacote linhas={pacotesDaOpcao(items.map(paraPacote))} className="mt-1" />
 
       {/* OD3: o odontograma DESTA opção — o diagnóstico definido (azul /
           cinza) e, em vermelho, o que ela planeja. */}
@@ -1990,6 +2006,13 @@ function OptionBudget({
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {it.quantity} × {formatBRL(it.unitPriceCents)}
+                                  {it.precoDeTabelaCents != null &&
+                                    it.precoDeTabelaCents !== it.unitPriceCents && (
+                                      <span title="Preço do pacote do grupo de procedimentos">
+                                        {" "}(de{" "}
+                                        <span className="line-through">{formatBRL(it.precoDeTabelaCents)}</span>, pacote)
+                                      </span>
+                                    )}
                                   {plannedText(it) && (
                                     <> · Planejado: {plannedText(it)}</>
                                   )}

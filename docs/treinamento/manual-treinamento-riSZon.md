@@ -2424,9 +2424,29 @@ o Planner e o Admin Master montam os grupos que o plano oferece no botão
 3. A **quantidade** vale para procedimento que não se marca no dente
    (consulta, exame…). Procedimento de dente entra **uma vez por dente**
    escolhido no plano.
-4. **Criar grupo.** O total de referência é só para conferir (preço padrão
-   da rede, um de cada): o grupo **não tem preço próprio** — no plano vale o
-   preço do catálogo da unidade, item por item.
+4. **Criar grupo.** O cartão do grupo mostra o **Preço do pacote** — o total
+   pelo preço padrão da rede, um de cada.
+
+**Preço do pacote — desconto ou acréscimo** (versão 0.353.0). Quem define é o
+**Admin Master** (o Planner vê o preço, mas não muda — como no catálogo). No
+cartão do grupo, **Definir desconto ou acréscimo** (ou **Alterar**): escolha
+*Desconto* ou *Acréscimo* e digite **o percentual ou o total do pacote** — o
+outro aparece sozinho (ex.: R$ 1.400,00 por R$ 1.260,00 = 10% de desconto).
+**Salvar preço do pacote** grava o **percentual**; **Tirar o ajuste** volta
+cada item ao preço do catálogo.
+
+- **No plano,** cada procedimento lançado pelo botão **Grupo** entra com o
+  preço do catálogo da unidade **já ajustado** pelo percentual — por isso vale
+  para qualquer número de dentes. O item mostra *"1 × R$ 855,00 (de ~~R$
+  950,00~~, pacote)"* e a opção mostra a linha **Pacote …: de … por …**. O
+  diálogo do botão **Grupo** já mostra o total do pacote antes de lançar.
+- **O preço vale no ENVIO para aprovação:** se o Admin mudar o percentual
+  antes do envio, o plano pega o novo; depois de enviado, não muda mais.
+- Procedimento lançado à mão (sem o botão Grupo) fica com o preço do
+  catálogo, mesmo que esteja num grupo.
+- O **repasse ao dentista não muda** (é valor fixo): o desconto do pacote sai
+  da margem da clínica. O Comercial negocia a partir do preço do pacote, com
+  o desconto e o teto de sempre.
 
 **Inativar** tira o grupo do plano; o que já foi lançado não muda.
 **Excluir** só funciona com grupo que nunca foi usado num plano — usado, o
@@ -2601,7 +2621,10 @@ e a cobrança não muda até alguém autorizar.
 PDF; no fechamento, o mesmo documento está em **Imprimir orçamento para
 assinar**. Ele traz o desenho do que foi aceito, os procedimentos por dente, o
 total (subtotal, benefício do programa, desconto), o pagamento, o que ficou de
-fora com o motivo, a **validade** e as linhas de assinatura.
+fora com o motivo, a **validade** e as linhas de assinatura. Quando o plano tem
+procedimentos de um **grupo com preço de pacote**, o orçamento e a apresentação
+mostram também a linha **Pacote …: de R$ … por R$ …** (versão 0.353.0) — os
+procedimentos continuam um a um, já com o preço do pacote.
 
 > **O orçamento lê o que está SALVO**, não o que está na tela. Mudou alguma
 > coisa? Salve antes de abrir. Enquanto a negociação estiver aguardando a

@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.352.0** · Última migração: **0324** (0318 a 0324 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.353.0** · Última migração: **0325** (0318 a 0324 aplicadas na produção e no treino; ⏳ **0325 só no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.353.0 / 0325 — PREÇO DE PACOTE NOS GRUPOS (pedido do dono, 27/10/2026)
+>
+> O Admin Master define desconto ou acréscimo por grupo de procedimentos
+> (percentual ⇄ total). Decisões GP4–GP6 (`docs/procedimentos/GRUPOS-PLANO.md`
+> §6): vale **no plano** (o item lançado pelo grupo entra com o catálogo
+> ajustado), o grupo guarda o **%**, e o paciente vê **"de … por …"** no
+> orçamento e na apresentação. ⚠️ Três regras mudaram de propósito (o dono foi
+> avisado): o grupo ganhou ajuste; o preço do item é o catálogo AJUSTADO; e
+> acréscimo no plano existe só por esta via. Quem calcula é o banco (trava do
+> item e envio do plano). ✅ 0325 no treino; ⏳ **falta a produção**. EV-227.
 
 > ## 🎯 0.352.0 (sem migração) — REPASSE EM R$ OU EM % (pedido do dono, 27/10/2026)
 >

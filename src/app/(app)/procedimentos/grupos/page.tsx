@@ -13,6 +13,7 @@ export const metadata: Metadata = { title: "Grupos de procedimentos" };
  * GRUPOS DE PROCEDIMENTOS (0324). Atalho para o Planner lançar vários
  * procedimentos de uma vez no plano ("Implante + prótese sobre implante").
  * GP1: o Admin Master e o Planner criam e editam; os grupos são da rede.
+ * 0325 (GP4–GP6): o preço do pacote (desconto ou acréscimo) só o Admin define.
  */
 export default async function GruposPage() {
   const session = await getSessionContext();
@@ -58,9 +59,10 @@ export default async function GruposPage() {
         <p className="text-sm text-muted-foreground">
           Junte procedimentos que costumam andar juntos — implante + prótese
           sobre implante, canal + restauração — para lançar todos de uma vez no
-          plano de tratamento. O grupo não tem preço próprio: no plano, cada
-          procedimento entra com o preço do catálogo, como se fosse lançado à
-          mão. Os grupos valem para a rede inteira.
+          plano de tratamento. Cada procedimento entra no plano como se fosse
+          lançado à mão, com o preço do catálogo — e, se o grupo tiver{" "}
+          <strong>preço de pacote</strong> (desconto ou acréscimo, definido pelo
+          Admin Master), com esse ajuste. Os grupos valem para a rede inteira.
         </p>
       </div>
 
@@ -75,7 +77,11 @@ export default async function GruposPage() {
           em instantes.
         </p>
       ) : (
-        <GruposEditor grupos={grupos.grupos} procedimentos={procedimentos} />
+        <GruposEditor
+          grupos={grupos.grupos}
+          procedimentos={procedimentos}
+          podeDefinirPreco={session.isAdminMaster}
+        />
       )}
     </div>
   );

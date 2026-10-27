@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.353.0",
+    data: "2026-10-27",
+    migracao: "0325",
+    titulo: "Grupos de procedimentos: preço de pacote (desconto ou acréscimo)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Em Procedimentos → Grupos, o Admin Master define o preço do pacote de cada grupo: desconto ou acréscimo, digitando o percentual ou o total (um mostra o outro). No plano, os procedimentos lançados pelo botão Grupo já entram com o preço do pacote, e o orçamento impresso e a apresentação mostram a linha \"Pacote …: de R$ … por R$ …\". O Planner vê o preço do pacote, mas não muda.",
+        papeis: ["planner_dentist", "commercial_consultant"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.352.0",
     data: "2026-10-27",
     migracao: null,

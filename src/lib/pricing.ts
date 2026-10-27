@@ -132,6 +132,8 @@ export type BudgetItem = {
   situationReason?: string | null;
   /** 0324 (GP2): o grupo de procedimentos de onde o item veio — só a etiqueta. */
   grupo?: { id: string; nome: string } | null;
+  /** 0325 (GP6): o preço de TABELA quando o pacote do grupo mudou o preço; nulo = igual. */
+  precoDeTabelaCents?: number | null;
 };
 
 /** Referência de protocolo de um procedimento: padrão da Rede e da Unidade. */

@@ -15,6 +15,7 @@ import {
   type GrupoDeProcedimentos,
 } from "@/lib/procedimentos/grupos";
 import { ativarGrupo, excluirGrupo, salvarGrupo } from "./actions";
+import { PrecoDoPacote } from "./preco-do-pacote";
 
 export type ProcedimentoParaGrupo = {
   id: string;
@@ -41,9 +42,12 @@ const NOVO: Rascunho = {
 export function GruposEditor({
   grupos,
   procedimentos,
+  podeDefinirPreco,
 }: {
   grupos: GrupoDeProcedimentos[];
   procedimentos: ProcedimentoParaGrupo[];
+  /** 0325: só o Admin Master define o preço do pacote; o Planner vê. */
+  podeDefinirPreco: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -124,6 +128,7 @@ export function GruposEditor({
             grupo={g}
             precoDe={precoDe}
             ocupado={isPending}
+            podeDefinirPreco={podeDefinirPreco}
             onEditar={() => editar(g)}
             onAtivar={() => rodar(() => ativarGrupo(g.id, false), "Grupo inativado: não aparece mais no plano.")}
             onExcluir={() => {
@@ -144,6 +149,7 @@ export function GruposEditor({
                 grupo={g}
                 precoDe={precoDe}
                 ocupado={isPending}
+                podeDefinirPreco={podeDefinirPreco}
                 onEditar={() => editar(g)}
                 onAtivar={() => rodar(() => ativarGrupo(g.id, true), "Grupo reativado.")}
                 onExcluir={() => {
@@ -163,6 +169,7 @@ function CartaoDoGrupo({
   grupo,
   precoDe,
   ocupado,
+  podeDefinirPreco,
   onEditar,
   onAtivar,
   onExcluir,
@@ -170,14 +177,13 @@ function CartaoDoGrupo({
   grupo: GrupoDeProcedimentos;
   precoDe: Map<string, number>;
   ocupado: boolean;
+  podeDefinirPreco: boolean;
   onEditar: () => void;
   onAtivar: () => void;
   onExcluir: () => void;
 }) {
   const foraDoCatalogo = grupo.itens.filter((i) => !i.ativo);
-  const total = grupo.itens
-    .filter((i) => i.ativo)
-    .reduce((s, i) => s + (precoDe.get(i.procedureId) ?? 0) * i.quantidade, 0);
+  const noCatalogo = grupo.itens.filter((i) => i.ativo);
   return (
     <li className={`rounded-xl border bg-card p-3 ${grupo.ativo ? "" : "opacity-70"}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -219,10 +225,13 @@ function CartaoDoGrupo({
           {foraDoCatalogo.length === 1 ? "entra" : "entram"} no plano. Edite o grupo para tirar.
         </p>
       )}
-      <p className="mt-2 text-xs text-muted-foreground">
-        Total de referência (preço padrão da rede, um de cada): {formatBRL(total)}. No plano vale o
-        preço do catálogo da unidade, item por item.
-      </p>
+      <PrecoDoPacote
+        grupoId={grupo.id}
+        itens={noCatalogo}
+        precoDe={precoDe}
+        ajustePercent={grupo.ajustePercent}
+        podeDefinir={podeDefinirPreco}
+      />
     </li>
   );
 }

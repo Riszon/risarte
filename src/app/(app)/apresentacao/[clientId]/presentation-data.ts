@@ -12,6 +12,8 @@ import {
 } from "@/lib/pricing";
 import type { PresentationData, PresentationOption } from "./presentation-view";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
+import { pacotesDaOpcao } from "@/lib/procedimentos/grupos";
 import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
 import { localDoItem, marcasDoAceite, porDente } from "@/lib/odontograma/aceite";
 
@@ -147,6 +149,9 @@ export async function loadPresentationData(
           >()
       : { data: [] };
 
+    // 0325 (GP6): o grupo e o preço de tabela de cada item, à parte.
+    const pacoteDe = await pacoteDosItens(supabase, (itemRows ?? []).map((it) => it.id));
+
     let principal: BudgetItem[] = [];
     for (const opt of optRows ?? []) {
       const linhas = (itemRows ?? []).filter((it) => it.option_id === opt.id);
@@ -195,6 +200,16 @@ export async function loadPresentationData(
               : null,
         })),
         totalLabel: budgetTotalCents(items) > 0 ? formatBRL(budgetTotalCents(items)) : null,
+        pacotes: veApenasTotais
+          ? []
+          : pacotesDaOpcao(
+              items.map((it) => ({
+                grupo: pacoteDe.get(it.id)?.grupo ?? null,
+                quantidade: it.quantity,
+                precoCents: it.unitPriceCents,
+                precoDeTabelaCents: pacoteDe.get(it.id)?.precoDeTabelaCents ?? null,
+              }))
+            ).map((p) => ({ nome: p.nome, deLabel: formatBRL(p.deCents), porLabel: formatBRL(p.porCents) })),
         summaryLabel,
         marcas: odonto ? marcasDoAceite(comLocal, [], odonto) : [],
       });

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext, type SessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { mensagemDoGrupo, validarGrupo } from "@/lib/procedimentos/grupos";
+import { ajusteValido, mensagemDoGrupo, validarGrupo } from "@/lib/procedimentos/grupos";
 
 export type GrupoResult = { ok: boolean; error?: string; id?: string };
 
@@ -55,6 +55,38 @@ export async function salvarGrupo(input: {
   });
   atualizar();
   return { ok: true, id };
+}
+
+/**
+ * 0325 (GP4–GP6): o ajuste de preço do pacote. SÓ o Admin Master — o preço é
+ * dele (OC-00068), e o banco repete a regra (`set_procedure_group_price`).
+ * Vale para os itens lançados DEPOIS e no envio do plano; o que já foi
+ * enviado não muda.
+ */
+export async function definirPrecoDoPacote(id: string, ajustePercent: number): Promise<GrupoResult> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return { ok: false, error: "Só o Admin Master define o preço do pacote." };
+  if (!ajusteValido(ajustePercent)) {
+    return { ok: false, error: mensagemDoGrupo("INVALID_ADJUST") ?? "Ajuste inválido." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_procedure_group_price", {
+    p_id: id,
+    p_percent: Math.round(ajustePercent * 100) / 100,
+  });
+  if (error) {
+    console.error("set_procedure_group_price failed:", error.message);
+    return { ok: false, error: mensagemDoGrupo(error.message) ?? "Não foi possível salvar o preço do pacote." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "procedure_group",
+    entityId: id,
+    details: { price_adjust_percent: Math.round(ajustePercent * 100) / 100 },
+  });
+  atualizar();
+  revalidatePath("/procedimentos");
+  return { ok: true };
 }
 
 export async function ativarGrupo(id: string, ativo: boolean): Promise<GrupoResult> {

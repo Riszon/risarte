@@ -83,7 +83,10 @@ apresentação, negociação, sessões, repasse, estoque, odontograma.
 |---|---|---|
 | GP1 | Quem cria e edita os grupos | **Admin Master e Planner**; os grupos valem para a rede inteira (27/10/2026) |
 | GP2 | Depois de lançado, o plano lembra do grupo? | **Itens soltos + etiqueta** "do grupo …" no plano (27/10/2026) |
-| GP3 | O orçamento e a apresentação ao paciente mostram o grupo? | **Não** — item a item, como hoje (27/10/2026) |
+| GP3 | O orçamento e a apresentação ao paciente mostram o grupo? | **Não** — item a item, como hoje (27/10/2026). ⚠️ Revista em parte pela GP6 |
+| GP4 | Onde vale o preço do grupo (desconto/acréscimo)? | **No plano** — o item lançado pelo grupo já entra com o preço do pacote (27/10/2026, §6) |
+| GP5 | O grupo guarda o percentual ou o total? | **O percentual** — digita-se um ou outro; vale para qualquer nº de dentes e acompanha o catálogo (27/10/2026) |
+| GP6 | O paciente vê o ajuste? | **Sim, "de … por …"** — os itens seguem um a um, mais a linha do pacote (27/10/2026) |
 
 As três como recomendado.
 
@@ -109,3 +112,41 @@ As três como recomendado.
   linha anterior do mesmo comando). Ao contrário, o implante pede motivo.
 - **Não visto na tela:** procedimento de face e de região dentro de um grupo
   e o aviso de situação no grupo — presos por teste (EV-224).
+
+## 6. O preço do grupo (0.353.0 / migração 0325, 27/10/2026)
+
+**O pedido do dono:** *"em grupo de procedimentos deve ter como propor desconto
+ou acréscimo no preço dos procedimentos daquele grupo. Um lugar para configurar
+o preço total do grupo com os procedimentos."*
+
+**O que mudou de regra, de propósito** (o dono foi avisado das três antes de
+decidir): (1) o grupo deixou de ser "sem preço" — passou a ter um AJUSTE sobre
+o catálogo, nunca um preço próprio (o "segundo catálogo" continua evitado);
+(2) o preço do item do plano deixou de ser sempre o do catálogo — é o do
+catálogo ajustado pelo pacote, e quem põe continua sendo o banco; (3) o
+acréscimo no plano, antes vedado (06/08), passa a existir SÓ por esta via,
+definido pelo Admin Master no catálogo, nunca no plano nem na negociação.
+
+**Quem define:** só o **Admin Master** (`set_procedure_group_price`), como o
+preço do catálogo (OC-00068). O Planner monta o grupo (GP1) e vê o preço.
+
+**Como funciona:**
+- `procedure_groups.price_adjust_percent` (−99,99 a +100). Item lançado pelo
+  grupo: `unit_price_cents = catálogo × (100 + %) / 100`, meio para cima, e
+  `list_price_cents` = o catálogo (o "de"). Sem ajuste, `list_price_cents` nulo.
+- A conta mora no banco (`group_adjusted_price` + `plan_item_group_percent`),
+  na trava do item (0306) e no envio do plano (F3, 0312) — o envio refaz o
+  preço com o % do DIA. Espelho em TS: `precoNoPacote` (grupos.ts).
+- A tela não muda preço, "de" nem etiqueta do item (`ITEM_PRICE_LOCKED`).
+- Linha do pacote: `pacotesDaOpcao` + `<LinhasDoPacote>` no plano (não na
+  visão do Coordenador — F4), no orçamento impresso, na apresentação e no
+  texto do Gamma (não para quem vê só os totais).
+
+**Limites declarados:**
+- Procedimento lançado à mão, mesmo que esteja num grupo, fica no catálogo.
+- O desconto é por ITEM: se o Planner tirar um item do pacote do plano, os
+  outros mantêm o desconto; na compra parcial do Comercial, idem.
+- O repasse ao dentista é fixo: o desconto do pacote sai da margem (o alerta
+  de margem da negociação já mostra).
+- O plano enviado antes da 0325 não muda; itens do grupo lançados antes dela
+  pegam o ajuste no envio.

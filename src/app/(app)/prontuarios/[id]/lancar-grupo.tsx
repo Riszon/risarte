@@ -21,6 +21,8 @@ import {
   baseDaLinha,
   montarLancamento,
   oQueEntra,
+  precoNoPacote,
+  textoDoAjuste,
   totalDoLancamento,
   type GrupoDeProcedimentos,
 } from "@/lib/procedimentos/grupos";
@@ -87,7 +89,10 @@ export function LancarGrupo({
   const deFace = regras ? entram.filter((e) => regras[e.procedureId]?.nivel === "face") : [];
   const deRegiao = regras ? entram.filter((e) => ehPorRegiao(regras[e.procedureId])) : [];
   const facesDaSelecao = ORDEM_DAS_FACES.filter((f) => dentes.some((d) => (dados?.faces[d] ?? []).includes(f)));
-  const total = totalDoLancamento(montagem.linhas, precoDe);
+  // 0325: o ajuste do pacote, item a item como o banco grava.
+  const ajuste = grupo?.ajustePercent ?? 0;
+  const tabela = totalDoLancamento(montagem.linhas, precoDe);
+  const total = totalDoLancamento(montagem.linhas, precoDe, ajuste);
   const pedeMotivo = montagem.conflitos.length > 0;
   const pronto =
     Boolean(grupo) &&
@@ -274,7 +279,9 @@ export function LancarGrupo({
                         {lugar ? ` · ${lugar}` : ""}
                         {l.quantidade > 1 ? ` × ${l.quantidade}` : ""}
                       </span>
-                      <span className="shrink-0 tabular-nums">{formatBRL(precoDe(l.procedureId) * l.quantidade)}</span>
+                      <span className="shrink-0 tabular-nums">
+                        {formatBRL(precoNoPacote(precoDe(l.procedureId), ajuste) * l.quantidade)}
+                      </span>
                     </li>
                   );
                 })}
@@ -283,10 +290,20 @@ export function LancarGrupo({
                 <span>
                   {montagem.linhas.length} {montagem.linhas.length === 1 ? "item" : "itens"}
                 </span>
-                <span className="tabular-nums">{formatBRL(total)}</span>
+                <span className="tabular-nums">
+                  {ajuste !== 0 && (
+                    <span className="mr-1 font-normal text-muted-foreground line-through">{formatBRL(tabela)}</span>
+                  )}
+                  {formatBRL(total)}
+                </span>
               </p>
+              {ajuste !== 0 && (
+                <p className="mt-1 font-medium">
+                  Preço de pacote: {textoDoAjuste(ajuste)} em cada item do grupo.
+                </p>
+              )}
               <p className="mt-1 text-muted-foreground">
-                Preço do catálogo da unidade, item por item; sessões e tempo vêm do protocolo e podem ser ajustados depois em cada item.
+                Preço do catálogo da unidade, item por item{ajuste !== 0 ? ", com o ajuste do pacote" : ""}; sessões e tempo vêm do protocolo e podem ser ajustados depois em cada item.
               </p>
             </div>
           )}

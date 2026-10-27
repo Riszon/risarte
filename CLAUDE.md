@@ -390,6 +390,27 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (4) — PC Administrador (core 0.352.0 → 0.353.0, migração 0325)**
+
+- **Preço de pacote nos grupos (pedido do dono).** Decisões GP4–GP6 em
+  `docs/procedimentos/GRUPOS-PLANO.md` §6 (as três como recomendado).
+- ⚠️ **O grupo guarda um %, nunca um preço próprio.** O item lançado pelo
+  grupo: `unit_price_cents` = catálogo ajustado, `list_price_cents` = o "de".
+  A conta é do BANCO: `plan_item_catalog_guard` (0306, recriada) e
+  `submit_treatment_plan` (0312, recriada — o envio refaz com o % do dia).
+  **Ao recriar qualquer das duas, levar o pacote junto.** Espelho em TS:
+  `precoNoPacote`.
+- ⚠️ **Só o Admin Master define o %** (`set_procedure_group_price`); o
+  Planner monta o grupo e vê. A tela não muda preço, "de" nem etiqueta do item.
+- ⚠️ **Quem vê só totais (Coordenador, recepção) não vê a linha do pacote**
+  (F4) — régua em `preco-do-pacote.test.ts`.
+- ⚠️ **Código antes da migração:** ajuste e "de" lidos À PARTE; sem a 0325 a
+  tela de grupos avisa e o plano abre como antes.
+- ✅ 0325 no treino (ensaio 27/27 + quebra). ⏳ **Falta a produção.**
+- Resíduo no treino (meu): grupo **"Pacote teste (pode ignorar)"** (canal +
+  restauração 3 faces, −10%) e os 2 itens dele no plano em rascunho do "Teste
+  do portão 2". Nada enviado, ninguém avisado. `.next-test` limpo.
+
 **27/10/2026 (3) — PC Administrador (core 0.351.0 → 0.352.0, sem migração)**
 
 - **Repasse em R$ ou em % (pedido do dono).** Cadastro do procedimento,
@@ -422,9 +443,11 @@ Syncthing se comportarem de forma estranha.**
   `docs/procedimentos/GRUPOS-PLANO.md` (as três como recomendado).
   `/procedimentos/grupos` (Admin Master e Planner montam; grupos da rede) e
   o botão **Grupo** no plano.
-- ⚠️ **O GRUPO É ATALHO, NÃO PROCEDIMENTO:** não tem preço, repasse, kit nem
+- ⚠️ **O GRUPO É ATALHO, NÃO PROCEDIMENTO:** não tem repasse, kit nem
   regra de dente. Cada linha vira item normal do plano; o preço quem põe é o
-  banco (0306) e o dente é conferido pela 0311. Não criar "preço do grupo".
+  banco (0306) e o dente é conferido pela 0311. ⚠️ **Desde a 0325 o grupo
+  TEM ajuste de preço** (pedido do dono, mesmo dia — ver o bloco de cima);
+  continua sem preço PRÓPRIO: é o catálogo ajustado por %.
 - ⚠️ **A ordem do grupo importa** e o lançamento é UMA gravação, dente a
   dente: o gatilho de linha da 0311 enxerga a linha anterior do mesmo
   comando (provado no ensaio: exodontia + implante entram sem motivo).

@@ -3,6 +3,7 @@
 import { logAudit } from "@/lib/audit";
 import { loadPresentationData } from "./presentation-data";
 import type { PresentationData } from "./presentation-view";
+import { rotuloDoPacote } from "@/lib/procedimentos/grupos";
 
 // API pública do Gamma (Generate API). A geração é assíncrona: POST devolve um
 // generationId; consulta-se o status até "completed", que traz o gammaUrl.
@@ -75,6 +76,10 @@ function buildInputText(
       s += `\n- ${it.quantity > 1 ? `${it.quantity}× ` : ""}${it.description}${
         it.local ? ` — ${it.local}` : ""
       }${extra ? ` (${extra})` : ""}${it.priceLabel ? ` — ${it.priceLabel}` : ""}`;
+    }
+    // 0325 (GP6): a linha do pacote, como na tela.
+    for (const p of d.option.pacotes ?? []) {
+      s += `\n\n${rotuloDoPacote(p.nome)}: de ~~${p.deLabel}~~ por **${p.porLabel}**`;
     }
     if (d.option.summaryLabel) s += `\n\n${d.option.summaryLabel}`;
     if (d.option.totalLabel) s += `\n\n**Total: ${d.option.totalLabel}**`;

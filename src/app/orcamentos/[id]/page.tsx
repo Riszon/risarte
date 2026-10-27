@@ -16,6 +16,9 @@ import {
 } from "@/lib/orcamento";
 import { Odontograma } from "@/components/odontograma/odontograma";
 import { PrintButton } from "@/app/renegociacoes/[id]/acordo/print-button";
+import { LinhasDoPacote } from "@/components/linhas-do-pacote";
+import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
+import { pacotesDaOpcao } from "@/lib/procedimentos/grupos";
 
 export const metadata: Metadata = { title: "Orçamento" };
 
@@ -133,6 +136,16 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
   });
   const regioes = odonto?.regioes ?? [];
   const linhas = porDente(conta.incluidos, regioes);
+  // 0325 (GP6): "Pacote X: de … por …" — só dos itens aceitos.
+  const pacoteDe = await pacoteDosItens(supabase, conta.incluidos.map((i) => i.id));
+  const pacotes = pacotesDaOpcao(
+    conta.incluidos.map((i) => ({
+      grupo: pacoteDe.get(i.id)?.grupo ?? null,
+      quantidade: i.quantity,
+      precoCents: i.unitPriceCents,
+      precoDeTabelaCents: pacoteDe.get(i.id)?.precoDeTabelaCents ?? null,
+    }))
+  );
   const fora = porDente(conta.excluidos, regioes);
 
   const status = n.status as string;
@@ -235,6 +248,7 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
           </tbody>
         </table>
 
+        <LinhasDoPacote linhas={pacotes} className="mt-3 ml-auto w-fit max-w-full" />
         <table className="mt-3 ml-auto w-72 text-xs">
           <tbody>
             <tr className="border-b">

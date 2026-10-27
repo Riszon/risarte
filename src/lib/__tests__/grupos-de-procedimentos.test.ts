@@ -171,6 +171,7 @@ describe("o que entra e quanto soma", () => {
     nome: "Implante + prótese",
     descricao: null,
     ativo: true,
+    ajustePercent: 0,
     itens: [
       { procedureId: "implante", quantidade: 1, nome: "Implante", ativo: true },
       { procedureId: "velho", quantidade: 1, nome: "Procedimento desativado", ativo: false },

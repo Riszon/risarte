@@ -208,6 +208,19 @@ export async function loadClientPlans(
       }
     }
 
+    // 0325 (GP6): o preço de tabela do item que o pacote ajustou — à parte de
+    // novo: sem a 0325 a coluna não existe e o plano abre igual, sem o "de".
+    const tabelaPorItem = new Map<string, number>();
+    {
+      const { data: tRows, error: tErro } = await supabase
+        .from("treatment_plan_option_items")
+        .select("id, list_price_cents")
+        .in("option_id", optionIds)
+        .not("list_price_cents", "is", null)
+        .returns<{ id: string; list_price_cents: number }[]>();
+      if (!tErro) for (const t of tRows ?? []) tabelaPorItem.set(t.id, t.list_price_cents);
+    }
+
     for (const it of itemRows ?? []) {
       const list = itemsByOption.get(it.option_id) ?? [];
       const loc = localPorItem.get(it.id);
@@ -230,6 +243,7 @@ export async function loadClientPlans(
         regionCode: loc?.region_code ?? null,
         situationReason: loc?.situation_override_reason ?? null,
         grupo: grupoPorItem.get(it.id) ?? null,
+        precoDeTabelaCents: tabelaPorItem.get(it.id) ?? null,
       });
       itemsByOption.set(it.option_id, list);
     }

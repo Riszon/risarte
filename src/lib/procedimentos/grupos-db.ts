@@ -40,6 +40,14 @@ export async function carregarGrupos(
     console.error("carregarGrupos failed:", error.message);
     return { ok: false, grupos: [] };
   }
+  // 0325: o ajuste do pacote, lido À PARTE — sem a 0325 no banco a coluna não
+  // existe, e a lista de grupos não pode cair junto (fica sem preço de pacote).
+  const { data: ajustes, error: erroDoAjuste } = await supabase
+    .from("procedure_groups")
+    .select("id, price_adjust_percent")
+    .returns<{ id: string; price_adjust_percent: number | string }[]>();
+  if (erroDoAjuste) console.error("carregarGrupos (ajuste) failed:", erroDoAjuste.message);
+  const ajusteDe = new Map((ajustes ?? []).map((a) => [a.id, Number(a.price_adjust_percent)]));
   return {
     ok: true,
     grupos: (data ?? []).map((g) => ({
@@ -47,6 +55,7 @@ export async function carregarGrupos(
       nome: g.name,
       descricao: g.description,
       ativo: g.is_active,
+      ajustePercent: erroDoAjuste ? null : (ajusteDe.get(g.id) ?? 0),
       itens: [...(g.procedure_group_items ?? [])]
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((i) => {
@@ -60,4 +69,35 @@ export async function carregarGrupos(
         }),
     })),
   };
+}
+
+/**
+ * 0325 (GP6): de cada item do plano, o grupo de onde veio e o preço de tabela
+ * que o pacote ajustou — para o "Pacote X: de … por …" do orçamento e da
+ * apresentação. Lido À PARTE: sem a 0325 (ou sem a 0324) no banco, a leitura
+ * falha e o documento sai como antes, item a item, sem a linha do pacote.
+ */
+export async function pacoteDosItens(
+  supabase: Supabase,
+  itemIds: string[]
+): Promise<Map<string, { grupo: { id: string; nome: string }; precoDeTabelaCents: number | null }>> {
+  const porItem = new Map<string, { grupo: { id: string; nome: string }; precoDeTabelaCents: number | null }>();
+  if (itemIds.length === 0) return porItem;
+  const { data, error } = await supabase
+    .from("treatment_plan_option_items")
+    .select("id, procedure_group_id, list_price_cents, grupo:procedure_groups ( name )")
+    .in("id", itemIds)
+    .not("procedure_group_id", "is", null)
+    .returns<
+      { id: string; procedure_group_id: string; list_price_cents: number | null; grupo: Um<{ name: string }> }[]
+    >();
+  if (error) {
+    console.error("pacoteDosItens failed:", error.message);
+    return porItem;
+  }
+  for (const r of data ?? []) {
+    const nome = um(r.grupo)?.name;
+    if (nome) porItem.set(r.id, { grupo: { id: r.procedure_group_id, nome }, precoDeTabelaCents: r.list_price_cents });
+  }
+  return porItem;
 }
