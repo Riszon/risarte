@@ -26,6 +26,12 @@ import {
   salvarGrupoDeBeneficios,
   salvarItensDoGrupo,
 } from "./actions";
+import {
+  textoDaVantagem,
+  type Vantagem,
+  type VantagemEscolhida,
+} from "@/lib/empresarial/vantagens";
+import { VantagensEscolhidas } from "../vantagens-escolhidas";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -38,6 +44,8 @@ export type GrupoView = {
   description: string | null;
   isActive: boolean;
   itens: (BeneficioDaProposta & { nome: string })[];
+  /** 1033: as outras vantagens que o grupo traz, com o detalhe sugerido. */
+  vantagens: (VantagemEscolhida & { nome: string })[];
 };
 
 /**
@@ -56,9 +64,12 @@ export type GrupoView = {
 export function GruposDeBeneficios({
   grupos,
   procedimentos,
+  vantagens,
 }: {
   grupos: GrupoView[];
   procedimentos: Procedimento[];
+  /** 1033: o catálogo das outras vantagens da rede. */
+  vantagens: Vantagem[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -258,11 +269,22 @@ export function GruposDeBeneficios({
                 <ItensDoGrupo
                   grupo={g}
                   procedimentos={procedimentos}
+                  vantagens={vantagens}
                   aoSalvar={() => setEditando(null)}
                 />
               ) : (
                 <ul className="divide-y rounded-md bg-muted/30 text-sm">
-                  {g.itens.length === 0 ? (
+                  {g.vantagens.map((v) => (
+                    <li key={v.perkId} className="p-2">
+                      <span className="font-medium">
+                        {textoDaVantagem(v.nome, v.detail)}
+                      </span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        outra vantagem
+                      </span>
+                    </li>
+                  ))}
+                  {g.itens.length === 0 && g.vantagens.length === 0 ? (
                     <li className="p-2 text-muted-foreground">
                       Grupo sem benefício nenhum — aplicar não faria nada.
                     </li>
@@ -303,15 +325,20 @@ export function GruposDeBeneficios({
 function ItensDoGrupo({
   grupo,
   procedimentos,
+  vantagens,
   aoSalvar,
 }: {
   grupo: GrupoView;
   procedimentos: Procedimento[];
+  vantagens: Vantagem[];
   aoSalvar: () => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [lista, setLista] = useState(grupo.itens);
+  const [escolhidas, setEscolhidas] = useState<VantagemEscolhida[]>(
+    grupo.vantagens.map((v) => ({ perkId: v.perkId, detail: v.detail }))
+  );
 
   const nomePorId = new Map(procedimentos.map((p) => [p.id, p.name]));
   const disponiveis = procedimentos.filter(
@@ -511,6 +538,20 @@ function ItensDoGrupo({
             ))}
           </select>
         </div>
+      </div>
+
+      {/* 1033: as outras vantagens do grupo, gravadas no mesmo salvar. */}
+      <div className="space-y-1 border-t pt-2">
+        <p className="text-sm font-medium">Outras vantagens do grupo</p>
+        <VantagensEscolhidas
+          catalogo={vantagens}
+          lista={escolhidas}
+          aoMudar={setEscolhidas}
+          dicaDoDetalhe="Detalhe sugerido (a proposta pode reescrever)"
+        />
+      </div>
+
+      <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={isPending}>
           Salvar os benefícios do grupo
         </Button>

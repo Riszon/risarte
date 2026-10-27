@@ -4,6 +4,9 @@ import type { empresarialDb } from "@/lib/empresarial/db";
 import {
   DEFAULT_ADHESION_PRICING,
   DEFAULT_SPLIT_RULES,
+  ADHESION_PRICING_COLUMNS,
+  pricingFromRow,
+  type AdhesionPricingRow,
   type AdhesionPricing,
   type SplitRules,
 } from "@/lib/empresarial/pricing";
@@ -16,24 +19,14 @@ export async function loadPricing(
   db: Db,
   companyId: string | null
 ): Promise<{ pricing: AdhesionPricing; hasOverride: boolean }> {
-  let q = db
-    .from("adhesion_pricing")
-    .select(
-      "holder_fee_cents, dependent_individual_fee_cents, dependent_family_fee_cents, dependent_family_extra_fee_cents, max_installments"
-    );
+  // A peça única de leitura do preço (1032): esta era a oitava cópia, e a aba
+  // Plano & Benefícios da empresa calculava a mensalidade sem o tamanho do
+  // pacote nem o modo do dependente — discordando do boleto.
+  let q = db.from("adhesion_pricing").select(ADHESION_PRICING_COLUMNS);
   q = companyId === null ? q.is("company_id", null) : q.eq("company_id", companyId);
-  const { data } = await q.maybeSingle();
+  const { data } = await q.maybeSingle<AdhesionPricingRow>();
   if (!data) return { pricing: DEFAULT_ADHESION_PRICING, hasOverride: false };
-  return {
-    hasOverride: true,
-    pricing: {
-      holderFeeCents: data.holder_fee_cents,
-      dependentIndividualFeeCents: data.dependent_individual_fee_cents,
-      dependentFamilyFeeCents: data.dependent_family_fee_cents,
-      dependentFamilyExtraFeeCents: data.dependent_family_extra_fee_cents,
-      maxInstallments: data.max_installments,
-    },
-  };
+  return { hasOverride: true, pricing: pricingFromRow(data) };
 }
 
 export async function loadSplit(

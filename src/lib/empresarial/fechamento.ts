@@ -1,6 +1,7 @@
 import "server-only";
 import type { empresarialDb } from "./db";
 import { DEFAULT_ADHESION_PRICING } from "./pricing";
+import { carregarVantagensDaProposta } from "./vantagens-servidor";
 
 type Db = Awaited<ReturnType<typeof empresarialDb>>;
 
@@ -116,6 +117,29 @@ export async function copiarPropostaParaEmpresa(
     if (error) {
       console.error("fechamento (benefícios):", error.message);
       naoCopiado.push("os benefícios");
+    }
+  }
+
+  // 5) AS OUTRAS VANTAGENS VIRAM COMPROMISSOS (1033, decisão do dono). O nome
+  //    e o detalhe são COPIADOS: o que a empresa assinou não muda quando
+  //    alguém renomeia a vantagem no catálogo depois.
+  const vantagens = await carregarVantagensDaProposta(db, leadId);
+  if (vantagens === null) {
+    naoCopiado.push("as outras vantagens");
+  } else if (vantagens.length > 0) {
+    const { error } = await db.from("company_perks").insert(
+      vantagens.map((v, i) => ({
+        company_id: companyId,
+        perk_id: v.perkId,
+        name: v.nome,
+        detail: v.detalhe ?? v.descricao,
+        origin_lead_id: leadId,
+        sort_order: i,
+      }))
+    );
+    if (error) {
+      console.error("fechamento (vantagens):", error.message);
+      naoCopiado.push("as outras vantagens");
     }
   }
 

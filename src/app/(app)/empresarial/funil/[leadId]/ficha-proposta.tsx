@@ -56,6 +56,7 @@ import {
   type Procedimento,
 } from "./beneficios-editor";
 import type { BeneficioDaProposta } from "@/lib/empresarial/beneficios-da-proposta";
+import type { Vantagem, VantagemEscolhida } from "@/lib/empresarial/vantagens";
 import {
   avisoDoValorMinimo,
   avisosDosLimites,
@@ -110,6 +111,8 @@ export function FichaDaProposta({
   beneficiosVieramDaRede,
   beneficiosDaRede,
   podeCriarGrupo,
+  vantagens,
+  vantagensDaProposta,
   condicoes,
   unidades,
   unidadePrincipal,
@@ -140,6 +143,9 @@ export function FichaDaProposta({
   /** O padrão da rede, para poder ser reaplicado a qualquer momento. */
   beneficiosDaRede: BeneficioDaProposta[];
   podeCriarGrupo: boolean;
+  /** 1033: o catálogo das outras vantagens e as escolhidas nesta proposta. */
+  vantagens: Vantagem[];
+  vantagensDaProposta: VantagemEscolhida[];
   /** H3: limites, valor mínimo, faixas, implantação e dependentes. */
   condicoes: CondicoesView;
   /** I3: as unidades do sistema, e as desta parceria. */
@@ -775,6 +781,8 @@ export function FichaDaProposta({
                   vieramDaRede={beneficiosVieramDaRede}
                   daRede={beneficiosDaRede}
                   podeCriarGrupo={podeCriarGrupo}
+                  vantagens={vantagens}
+                  vantagensIniciais={vantagensDaProposta}
                   unidadesDaParceria={unidades.filter((u) =>
                     unidadesDaParceria.includes(u.id)
                   )}

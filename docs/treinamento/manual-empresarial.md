@@ -563,9 +563,20 @@ benefício.
 não salvas"** enquanto houver. Recolhido **não é removido**: salvar grava todos
 os procedimentos da lista, abertos ou não.
 
+**4. Outras vantagens** (abaixo das três seções): o que a empresa ganha além
+dos procedimentos. **+ Incluir outra vantagem** escolhe do catálogo da rede
+(Configurações → Benefícios e grupos), e ao lado se escreve o **detalhe desta
+empresa** — por exemplo *"2 palestras por ano"* ou *"TVs da unidade Cambé"*.
+Sem detalhe, o documento usa a descrição da rede. Inserir um grupo traz
+também as vantagens dele.
+
+As outras vantagens aparecem no **documento da proposta** (seção *Outras
+vantagens*), no **contrato** (no anexo, depois dos procedimentos) e, depois do
+fechamento, viram **compromissos** na ficha da empresa (seção 8).
+
 **Guardar como grupo.** Uma combinação usada com frequência pode virar grupo
 (*Guardar esta combinação como grupo da rede*) e ser inserida em outras
-propostas.
+propostas — com os procedimentos **e** as outras vantagens.
 
 > **De onde vêm os benefícios na proposta nova.** Uma empresa que ainda não tem
 > benefício salvo chega com os **benefícios padrão da rede** (Configurações →
@@ -707,6 +718,8 @@ Ao **criar a empresa**, o sistema **leva a proposta junto**:
 - **Preços de adesão** — os da proposta, não os da rede.
 - **Faixas por quantidade** — continuam valendo no cadastro.
 - **Benefícios** — inclusive o "vale só para o titular".
+- **Outras vantagens** — viram **compromissos** da empresa, com o nome e o
+  detalhe copiados da proposta e a situação **Pendente** (seção 8).
 - **Carência** — a da empresa e a do titular.
 - **Unidades da parceria** e a restrição de cada benefício.
 - **Quantidade contratada** e a regra do excedente.
@@ -725,10 +738,23 @@ Menu **Empresarial**, clique na empresa. Sete abas:
 | **Dados Gerais** | CNPJ, razão social, categoria, modelo de pagamento, vencimento, meios de pagamento, carência, **acordo de cobrança** |
 | **Documentos** | os documentos da empresa |
 | **Titulares** | as pessoas do programa |
-| **Plano & Benefícios** | mensalidade atual, simulador, preços de adesão, benefícios |
+| **Plano & Benefícios** | **outras vantagens combinadas**, mensalidade atual, simulador, preços de adesão, benefícios |
 | **Financeiro** | cobranças, economia gerada, benefícios utilizados |
 | **Riso+ Social** | as fichas sociais |
 | **Contratos** | contratos e assinatura |
+
+**Outras vantagens combinadas** (cartão no alto de Plano & Benefícios) — o que
+a empresa ganhou **além dos procedimentos** e se já foi entregue. Vêm da
+proposta no fechamento, com o nome e o detalhe **copiados** (renomear a
+vantagem em Configurações não muda o que foi assinado), todas **Pendentes**.
+O resumo diz, por exemplo, *"2 entregues · 1 pendente"*.
+
+- Cada vantagem tem a **situação** — **Pendente**, **Em andamento** ou
+  **Entregue** —, o detalhe e uma **anotação** (ex.: *"palestra marcada para
+  12/11"*). **Salvar** grava, com a data da atualização.
+- **Incluir vantagem** acrescenta uma do catálogo — para a empresa cadastrada
+  direto ou o que foi combinado depois. A **lixeira** retira.
+- Quem altera é o **gestor do programa**; os demais veem a lista.
 
 **Acordo de cobrança** (cartão em Dados Gerais) — como a mensalidade é cobrada
 (**por titular** ou **valor fixo**), a **quantidade contratada** (titulares e
@@ -1114,12 +1140,24 @@ No modelo **Titular paga**, o botão explica que a empresa não participa — e 
 
 ## 15. Configurações da rede
 
-**Empresarial → Configurações**. Seis abas:
+**Empresarial → Configurações**. Cinco abas:
 
 - **Preços de adesão** — os padrões da rede (titular, dependente).
 - **Split de pagamento** — a divisão Risarte/RisLife.
-- **Benefícios** — os benefícios **padrão da rede**, que chegam nas propostas
-  novas. Tem a coluna **Margem (rede)**.
+- **Benefícios e grupos** — tudo o que o programa oferece, numa aba só, em três
+  blocos:
+  - **Benefícios por procedimento** — os **padrão da rede**, que chegam nas
+    propostas novas. Tem a coluna **Margem (rede)**.
+  - **Outras vantagens** — o que o programa oferece **além dos
+    procedimentos**: desconto em parceiros, palestras na empresa, publicidade
+    nas TVs da unidade, unidade exclusiva de atendimento. **Nova vantagem**
+    cadastra (nome e "o que é"); o **lápis** edita; desmarcar **Disponível**
+    tira a vantagem das próximas propostas e grupos. Só dá para **excluir** a
+    vantagem que nunca foi usada — usada, a tela manda desmarcar *Disponível*.
+    Renomear **não muda** o que uma empresa já assinou.
+  - **Grupos de benefícios** — criar, editar e desligar grupos. Em **Editar os
+    benefícios**, o grupo também pode trazer **outras vantagens**, com um
+    detalhe sugerido que a proposta pode reescrever.
 - **Proposta comercial** — validade padrão e os **blocos de texto** que saem em
   toda proposta sem texto próprio.
 - **Contrato** — **A Risarte no contrato** (razão social, CNPJ, endereço,
@@ -1128,8 +1166,6 @@ No modelo **Titular paga**, o botão explica que a empresa não participa — e 
   Mudar o modelo muda o contrato de toda empresa que não tem texto próprio.
   Enquanto faltar o nome, o RG ou o CPF de quem assina pela Risarte, todo
   contrato sai com essa linha em branco e a tela avisa.
-- **Grupos de benefícios** — criar, editar e desligar grupos.
-
 ### A coluna Margem
 
 Mostra quanto sobra em cada procedimento depois do benefício, usando preço e

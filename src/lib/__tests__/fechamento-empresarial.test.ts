@@ -28,7 +28,20 @@ function bancoDeMentira(
   // que este teste existe para pegar, e ele atravessaria inteiro.
   const recortar = (linhas: unknown[], colunas: string) => {
     if (colunas.trim() === "*") return linhas;
-    const pedidas = colunas.split(",").map((c) => c.trim());
+    // Vírgula DENTRO de parênteses é da tabela embutida (`perks ( name, … )`):
+    // a coluna pedida é o nome antes do parêntese, e ela vem inteira.
+    const pedidas: string[] = [];
+    let atual = "";
+    let nivel = 0;
+    for (const ch of colunas) {
+      if (ch === "(") nivel += 1;
+      if (ch === ")") nivel -= 1;
+      if (ch === "," && nivel === 0) {
+        pedidas.push(atual.split("(")[0].trim());
+        atual = "";
+      } else atual += ch;
+    }
+    if (atual.trim()) pedidas.push(atual.split("(")[0].trim());
     return linhas.map((l) => {
       const recorte: Record<string, unknown> = {};
       for (const c of pedidas) recorte[c] = (l as Record<string, unknown>)[c];
@@ -44,7 +57,12 @@ function bancoDeMentira(
             data: recortar(dados[tabela] ?? [], colunas),
             error: null,
           });
-          return { eq: () => resultado };
+          // `.order()` e `.returns()` não mudam o que o teste mede.
+          const encadeado = Object.assign(resultado, {
+            order: () => encadeado,
+            returns: () => encadeado,
+          });
+          return { eq: () => encadeado };
         },
         insert(linhas: unknown) {
           const lista = Array.isArray(linhas) ? linhas : [linhas];
@@ -226,5 +244,56 @@ describe("as unidades da parceria no fechamento (I3)", () => {
     const { db, escritas } = bancoDeMentira();
     await copiarPropostaParaEmpresa(db, "lead-1", "emp-1", QUAL);
     expect(escritas.find((e) => e.tabela === "company_clinics")).toBeUndefined();
+  });
+});
+
+describe("as outras vantagens no fechamento (1033)", () => {
+  it("VIRAM COMPROMISSOS com o nome e o detalhe COPIADOS, pendentes", async () => {
+    const { db, escritas } = bancoDeMentira({
+      lead_qualification: [],
+      lead_perks: [
+        {
+          perk_id: "p1",
+          detail: "2 por ano",
+          perks: { name: "Palestras na empresa", description: "Palestras de saúde" },
+        },
+        {
+          perk_id: "p2",
+          detail: null,
+          perks: { name: "Publicidade nas TVs", description: "Nas TVs da unidade principal" },
+        },
+      ],
+    });
+    const r = await copiarPropostaParaEmpresa(db, "lead", "empresa", null);
+    expect(r.naoCopiado).toEqual([]);
+    const linhas = escritas.find((e) => e.tabela === "company_perks")?.linhas;
+    expect(linhas).toEqual([
+      {
+        company_id: "empresa",
+        perk_id: "p1",
+        name: "Palestras na empresa",
+        detail: "2 por ano",
+        origin_lead_id: "lead",
+        sort_order: 0,
+      },
+      {
+        company_id: "empresa",
+        perk_id: "p2",
+        name: "Publicidade nas TVs",
+        // Sem detalhe na proposta, fica a descrição da rede — congelada.
+        detail: "Nas TVs da unidade principal",
+        origin_lead_id: "lead",
+        sort_order: 1,
+      },
+    ]);
+  });
+
+  it("falha ao gravar as vantagens é RELATADA, não some", async () => {
+    const { db } = bancoDeMentira(
+      { lead_perks: [{ perk_id: "p1", detail: null, perks: { name: "X", description: null } }] },
+      "company_perks"
+    );
+    const r = await copiarPropostaParaEmpresa(db, "lead", "empresa", null);
+    expect(r.naoCopiado).toContain("as outras vantagens");
   });
 });

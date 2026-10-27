@@ -9,6 +9,8 @@ import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { canViewEmpresarial, isProgramFinance, isProgramManager } from "@/lib/empresarial/access";
+import { VantagensDaEmpresa, type CompromissoView } from "./vantagens-da-empresa";
+import type { Vantagem } from "@/lib/empresarial/vantagens";
 import {
   ColaboradoresTab,
   type DependentView,
@@ -177,6 +179,53 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
       <p className="text-sm">{value ?? "—"}</p>
     </div>
   );
+}
+
+/** 1033: as vantagens combinadas com a empresa e o catálogo da rede. */
+async function carregarCompromissos(
+  db: Awaited<ReturnType<typeof empresarialDb>>,
+  companyId: string
+): Promise<{ compromissos: CompromissoView[]; catalogoDeVantagens: Vantagem[] }> {
+  const [{ data: linhas, error: e1 }, { data: catalogo, error: e2 }] = await Promise.all([
+    db
+      .from("company_perks")
+      .select("id, name, detail, status, status_note, status_changed_at")
+      .eq("company_id", companyId)
+      .order("sort_order")
+      .returns<
+        {
+          id: string;
+          name: string;
+          detail: string | null;
+          status: CompromissoView["status"];
+          status_note: string | null;
+          status_changed_at: string | null;
+        }[]
+      >(),
+    db
+      .from("perks")
+      .select("id, name, description, is_active")
+      .order("name")
+      .returns<{ id: string; name: string; description: string | null; is_active: boolean }[]>(),
+  ]);
+  if (e1) console.error("vantagens da empresa:", e1.message);
+  if (e2) console.error("catálogo de vantagens:", e2.message);
+  return {
+    compromissos: (linhas ?? []).map((l) => ({
+      id: l.id,
+      name: l.name,
+      detail: l.detail,
+      status: l.status,
+      statusNote: l.status_note,
+      statusChangedAt: l.status_changed_at,
+    })),
+    catalogoDeVantagens: (catalogo ?? []).map((v) => ({
+      id: v.id,
+      name: v.name,
+      description: v.description,
+      isActive: v.is_active,
+    })),
+  };
 }
 
 export default async function CompanyDetailPage(props: {
@@ -496,6 +545,9 @@ export default async function CompanyDetailPage(props: {
     monthly: ReturnType<typeof computeMonthlyCents>;
     /** AP18: o que a empresa paga de verdade (fixo + termos, ou por titular). */
     mensalidade: Awaited<ReturnType<typeof mensalidadeNaTela>>;
+    /** 1033: as outras vantagens combinadas (compromissos) e o catálogo. */
+    compromissos: CompromissoView[];
+    catalogoDeVantagens: Vantagem[];
   } | null = null;
   if (aba === "plano") {
     const procedures = await loadProcedures();
@@ -540,6 +592,7 @@ export default async function CompanyDetailPage(props: {
       procedures,
       monthly,
       mensalidade: await mensalidadeNaTela(db, companyId, monthly.totalCents),
+      ...(await carregarCompromissos(db, companyId)),
     };
   }
 
@@ -1221,6 +1274,12 @@ export default async function CompanyDetailPage(props: {
 
       {aba === "plano" && plano && (
         <div className="space-y-4">
+          <VantagensDaEmpresa
+            companyId={companyId}
+            compromissos={plano.compromissos}
+            catalogo={plano.catalogoDeVantagens}
+            podeEditar={canManage}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>
               <CardHeader>

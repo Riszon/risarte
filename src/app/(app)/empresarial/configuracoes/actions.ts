@@ -9,6 +9,11 @@ import { isProgramManager } from "@/lib/empresarial/access";
 import { BENEFIT_TYPES } from "@/lib/empresarial/constants";
 import { lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
 import { maskDocument } from "@/lib/empresarial/documents";
+import {
+  limparDetalhe,
+  problemasDasVantagens,
+  type VantagemEscolhida,
+} from "@/lib/empresarial/vantagens";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -526,11 +531,118 @@ export async function salvarItensDoGrupo(
     }
   }
 
+  // 1033: AS OUTRAS VANTAGENS DO GRUPO, pela mesma regra — o conjunto inteiro
+  // é substituído. Só mexe quando o bloco estava na tela.
+  if (formData.has("vantagens_no_formulario")) {
+    const vantagens = vantagensDoFormulario(formData);
+    const problemas = problemasDasVantagens(vantagens);
+    if (problemas.length > 0) {
+      return { ok: false, error: `Os procedimentos foram salvos, mas as vantagens não: ${problemas.join("; ")}.` };
+    }
+    const { error: eDelV } = await db.from("benefit_group_perks").delete().eq("group_id", groupId);
+    const { error: eInsV } =
+      eDelV || vantagens.length === 0
+        ? { error: null }
+        : await db.from("benefit_group_perks").insert(
+            vantagens.map((v) => ({ group_id: groupId, perk_id: v.perkId, detail: v.detail }))
+          );
+    if (eDelV || eInsV) {
+      console.error("salvarItensDoGrupo (vantagens) failed:", (eDelV ?? eInsV)?.message);
+      return { ok: false, error: "Os procedimentos foram salvos, mas as outras vantagens não." };
+    }
+  }
+
   await logAudit({
     action: "update",
     entityType: "empresarial_benefit_group",
     entityId: groupId,
   });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// 1033 — as outras vantagens do programa (catálogo da rede)
+// -----------------------------------------------------------------------------
+
+/** As vantagens escolhidas num formulário: `vant_i` (id) e `vant_det_i` (detalhe). */
+function vantagensDoFormulario(formData: FormData): VantagemEscolhida[] {
+  const lista: VantagemEscolhida[] = [];
+  for (let i = 0; i < 100; i += 1) {
+    const perkId = field(formData, `vant_${i}`);
+    if (!perkId) continue;
+    lista.push({ perkId, detail: limparDetalhe(field(formData, `vant_det_${i}`)) });
+  }
+  return lista;
+}
+
+/**
+ * Cria ou edita uma vantagem do catálogo da rede.
+ *
+ * ⚠️ RENOMEAR NÃO REESCREVE O QUE FOI VENDIDO: a empresa que fechou guarda o
+ * nome e o detalhe na linha dela (`company_perks`). O que muda é o que as
+ * propostas mostram daqui em diante.
+ */
+export async function salvarVantagem(formData: FormData): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const id = field(formData, "perk_id");
+  const name = field(formData, "name");
+  if (!name) return { ok: false, error: "Dê um nome à vantagem." };
+  if (name.length > 120) return { ok: false, error: "O nome passa de 120 letras." };
+  const linha = {
+    name,
+    description: field(formData, "description"),
+    is_active: id ? formData.get("is_active") === "on" : true,
+  };
+
+  const db = await empresarialDb();
+  const { data, error } = id
+    ? await db.from("perks").update(linha).eq("id", id).select("id").single()
+    : await db
+        .from("perks")
+        .insert({ ...linha, created_by: session.userId })
+        .select("id")
+        .single();
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: "Já existe uma vantagem com este nome." };
+    console.error("salvarVantagem failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a vantagem." };
+  }
+
+  await logAudit({
+    action: id ? "update" : "create",
+    entityType: "empresarial_perk",
+    entityId: data.id,
+  });
+  revalidatePath("/empresarial/configuracoes");
+  return { ok: true };
+}
+
+/**
+ * Exclui uma vantagem — só a que NUNCA foi usada.
+ *
+ * Usada numa proposta ou num grupo, o banco recusa (`on delete restrict`) e a
+ * tela manda desativar: apagar levaria junto o que foi oferecido.
+ */
+export async function excluirVantagem(perkId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+
+  const db = await empresarialDb();
+  const { error } = await db.from("perks").delete().eq("id", perkId);
+  if (error) {
+    if (error.code === "23503") {
+      return {
+        ok: false,
+        error: "Esta vantagem já está em proposta ou grupo. Desmarque “Disponível” para tirá-la das próximas, em vez de excluir.",
+      };
+    }
+    console.error("excluirVantagem failed:", error.message);
+    return { ok: false, error: "Não foi possível excluir a vantagem." };
+  }
+  await logAudit({ action: "update", entityType: "empresarial_perk_excluida", entityId: perkId });
   revalidatePath("/empresarial/configuracoes");
   return { ok: true };
 }

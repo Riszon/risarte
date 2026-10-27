@@ -22,6 +22,7 @@ import {
   rotuloDoUso,
   type BeneficioDaProposta,
 } from "@/lib/empresarial/beneficios-da-proposta";
+import { carregarVantagensDaProposta } from "@/lib/empresarial/vantagens-servidor";
 import {
   LINHA_EM_BRANCO,
   montarContrato,
@@ -183,6 +184,8 @@ export default async function ContratoPage({
       .returns<{ clinic_id: string }[]>(),
     lerContratada(db),
   ]);
+  // 1033: as outras vantagens combinadas — entram no anexo (decisão do dono).
+  const vantagens = await carregarVantagensDaProposta(db, leadId);
 
   // ⚠️ CONTRATO NÃO SAI COM LEITURA PELA METADE (AP13). Preço, faixas e
   // benefícios que não vieram virariam "preço padrão" e "anexo vazio" num
@@ -191,6 +194,7 @@ export default async function ContratoPage({
     erroDoLevantamento && "a proposta",
     erroDasFaixas && "as faixas de preço",
     erroDosBeneficios && "os benefícios",
+    vantagens === null && "as outras vantagens",
     erroDaParceria && "as unidades da parceria",
     erroDaContratada && "os dados da Risarte",
   ].filter((x): x is string => Boolean(x));
@@ -484,6 +488,17 @@ export default async function ContratoPage({
                 ))}
               </tbody>
             </table>
+          )}
+
+          {(vantagens ?? []).length > 0 && (
+            <div className="space-y-1 text-left">
+              <p className="font-semibold">Outras vantagens</p>
+              <ul className="list-disc space-y-0.5 pl-5">
+                {(vantagens ?? []).map((v) => (
+                  <li key={v.perkId}>{v.texto}</li>
+                ))}
+              </ul>
+            </div>
           )}
         </section>
       </article>

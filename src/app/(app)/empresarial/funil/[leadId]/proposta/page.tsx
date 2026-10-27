@@ -19,6 +19,7 @@ import {
   type BillingBasis,
 } from "@/lib/empresarial/proposta";
 import { rotuloDaFaixa } from "@/lib/empresarial/condicoes-da-proposta";
+import { carregarVantagensDaProposta } from "@/lib/empresarial/vantagens-servidor";
 import {
   estimativaDaProposta,
   pricingDaProposta,
@@ -256,6 +257,8 @@ export default async function PropostaPage({
     .eq("lead_id", leadId)
     .returns<BeneficioRow[]>();
   if (erroBen) console.error("benefícios da proposta:", erroBen.message);
+  // 1033: as outras vantagens (além dos procedimentos).
+  const vantagens = (await carregarVantagensDaProposta(db, leadId)) ?? [];
 
   const beneficios: (BeneficioDaProposta & { nome: string })[] = [];
   if (benRows?.length) {
@@ -630,6 +633,25 @@ export default async function PropostaPage({
                   </li>
                 );
               })}
+            </ul>
+          </section>
+        )}
+
+        {/* 1033: o que o programa oferece além dos procedimentos. */}
+        {vantagens.length > 0 && (
+          <section className="space-y-2 break-inside-avoid">
+            <h2 className="text-lg font-medium">Outras vantagens</h2>
+            <ul className="divide-y rounded-lg border">
+              {vantagens.map((v) => (
+                <li key={v.perkId} className="p-3">
+                  <span className="font-medium">{v.nome}</span>
+                  {(v.detalhe || v.descricao) && (
+                    <span className="block text-sm text-muted-foreground">
+                      {v.detalhe ?? v.descricao}
+                    </span>
+                  )}
+                </li>
+              ))}
             </ul>
           </section>
         )}

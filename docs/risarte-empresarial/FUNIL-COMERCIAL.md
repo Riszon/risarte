@@ -1480,3 +1480,39 @@ perderia o que foi digitado.
 "Inserir" do grupo (4 → 6 benefícios). Clicando em Salvar, a gravação foi
 interceptada e bloqueada: levava as **6 linhas completas**, inclusive as
 recolhidas. Build do zero, testes e lint.
+
+### Bloco R — as outras vantagens, e "Benefícios e grupos" numa aba só ✅ (migração 1033, v0.84.0)
+
+Pedido do dono (26/10/2026): reunir "Benefícios" e "Grupos de benefícios" numa
+aba de Configurações, e poder oferecer vantagens que não são procedimento —
+desconto em parceiros, palestras na empresa, publicidade nas TVs da unidade
+principal, unidade exclusiva de atendimento. Decisões dele: **catálogo da rede
++ detalhe na proposta** (entram nos grupos), **viram compromissos
+acompanhados** no fechamento, e **entram no contrato**.
+
+- **1033:** `perks` (catálogo, semeado com as quatro do pedido), `lead_perks`
+  (proposta + detalhe), `benefit_group_perks` (grupo + detalhe sugerido),
+  `company_perks` (compromisso: nome e detalhe COPIADOS, situação
+  pendente/em andamento/entregue, anotação). Vantagem usada não se apaga
+  (`on delete restrict`) — desativa-se.
+- `vantagens.ts` (puro, testado) e `vantagens-servidor.ts` (a leitura única
+  usada pelo documento, pelo contrato e pelo fechamento).
+- Configurações: aba **Benefícios e grupos** com os três blocos; o endereço
+  antigo `?aba=grupos` cai nela.
+- `VantagensEscolhidas`: o mesmo componente no grupo e na proposta.
+- Proposta: seção "Outras vantagens"; inserir grupo traz as vantagens; salvar
+  e "guardar como grupo" levam junto. Documento e contrato listam. O contrato
+  **recusa** sair se não conseguir ler as vantagens (AP13).
+- Empresa: cartão "Outras vantagens combinadas" em Plano & Benefícios, com
+  situação, anotação, incluir e retirar (gestor do programa).
+
+**Achado no caminho (AP73, 8ª cópia):** `loadPricing` (Configurações) também
+lia o preço sem o tamanho do pacote nem o modo do dependente, e é ele que a
+aba Plano & Benefícios usa para a "Mensalidade atual". Passou a usar a peça
+única.
+
+**Conferido no treino, logado, sem salvar:** a aba nova (e o endereço
+antigo), o catálogo semeado, a seção na proposta — o Salvar interceptado
+levava `vant_0` com o detalhe "2 palestras por ano" —, e o cartão da empresa.
+Teste do fechamento: as vantagens viram compromissos com nome e detalhe
+copiados; falha é relatada. Build do zero, testes e lint.

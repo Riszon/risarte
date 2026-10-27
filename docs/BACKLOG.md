@@ -2610,6 +2610,10 @@ quadro de dependentes da proposta). Quatro defeitos da mesma família:
 O preço por família passou a sair da **quantidade** de dependentes
 (`custoDosDependentesDoTitular`), não do rótulo `dependent_plan`.
 
+**Complemento (26/10/2026, 1033):** havia uma **oitava** cópia — `loadPricing`
+(`configuracoes/data.ts`), usada pela aba Plano & Benefícios da empresa para a
+"Mensalidade atual". Também passou à peça única.
+
 ### AP74. O que a 1032 deixou de fora, declarado (26/10/2026)
 
 **Confirmado lendo o código; nenhum dos três muda valor cobrado.**

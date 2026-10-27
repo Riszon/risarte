@@ -23,6 +23,8 @@ import {
   lerModelosDoContrato,
 } from "@/lib/empresarial/contrato-dados";
 import { GruposDeBeneficios, type GrupoView } from "./grupos-de-beneficios";
+import { VantagensDaRede } from "./vantagens-da-rede";
+import type { Vantagem } from "@/lib/empresarial/vantagens";
 import { Settings } from "lucide-react";
 import type { BenefitType } from "@/lib/empresarial/constants";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
@@ -31,13 +33,14 @@ export const metadata: Metadata = {
   title: "Configurações · Risarte Empresarial",
 };
 
+// 26/10/2026 (dono): "Benefícios" e "Grupos de benefícios" viraram UMA aba —
+// os grupos são combinações dos benefícios, e estavam a duas abas de distância.
 const TABS = [
   { key: "adesao", label: "Preços de adesão" },
   { key: "split", label: "Split de pagamento" },
-  { key: "beneficios", label: "Benefícios" },
+  { key: "beneficios", label: "Benefícios e grupos" },
   { key: "proposta", label: "Proposta comercial" },
   { key: "contrato", label: "Contrato" },
-  { key: "grupos", label: "Grupos de benefícios" },
 ] as const;
 
 export default async function EmpresarialConfigPage(props: {
@@ -47,8 +50,10 @@ export default async function EmpresarialConfigPage(props: {
   if (!isProgramManager(session)) redirect("/empresarial");
 
   const searchParams = await props.searchParams;
-  const abaParam =
-    typeof searchParams.aba === "string" ? searchParams.aba : "adesao";
+  // Endereço antigo da aba de grupos (favoritos, links do manual) cai na aba
+  // nova, que é onde os grupos moram agora.
+  const abaPedida = typeof searchParams.aba === "string" ? searchParams.aba : "adesao";
+  const abaParam = abaPedida === "grupos" ? "beneficios" : abaPedida;
   const aba = TABS.some((t) => t.key === abaParam) ? abaParam : "adesao";
 
   const db = await empresarialDb();
@@ -73,7 +78,12 @@ export default async function EmpresarialConfigPage(props: {
       : null;
 
   // H2 (1016): os grupos de benefícios da rede, com os itens de cada um.
-  const [{ data: gruposRows }, { data: itensRows }] = await Promise.all([
+  const [
+    { data: gruposRows },
+    { data: itensRows },
+    { data: vantagensRows },
+    { data: vantagensDosGruposRows },
+  ] = await Promise.all([
     db
       .from("benefit_groups")
       .select("id, name, description, is_active")
@@ -100,12 +110,36 @@ export default async function EmpresarialConfigPage(props: {
           for_dependent: boolean;
         }[]
       >(),
+    // 1033: as outras vantagens da rede, e as de cada grupo.
+    db
+      .from("perks")
+      .select("id, name, description, is_active")
+      .order("name")
+      .returns<{ id: string; name: string; description: string | null; is_active: boolean }[]>(),
+    db
+      .from("benefit_group_perks")
+      .select("group_id, perk_id, detail")
+      .returns<{ group_id: string; perk_id: string; detail: string | null }[]>(),
   ]);
+  const vantagens: Vantagem[] = (vantagensRows ?? []).map((v) => ({
+    id: v.id,
+    name: v.name,
+    description: v.description,
+    isActive: v.is_active,
+  }));
+  const nomeDaVantagem = new Map(vantagens.map((v) => [v.id, v.name]));
   const grupos: GrupoView[] = (gruposRows ?? []).map((g) => ({
     id: g.id,
     name: g.name,
     description: g.description,
     isActive: g.is_active,
+    vantagens: (vantagensDosGruposRows ?? [])
+      .filter((v) => v.group_id === g.id)
+      .map((v) => ({
+        perkId: v.perk_id,
+        detail: v.detail,
+        nome: nomeDaVantagem.get(v.perk_id) ?? "(vantagem)",
+      })),
     itens: (itensRows ?? [])
       .filter((i) => i.group_id === g.id)
       .map((i) => ({
@@ -229,18 +263,25 @@ export default async function EmpresarialConfigPage(props: {
         />
       )}
 
-      {aba === "grupos" && (
-        <GruposDeBeneficios grupos={grupos} procedimentos={procedures} />
-      )}
-
+      {/* Uma aba, três blocos, na ordem em que se monta: o que cada
+          procedimento ganha, as vantagens que não são procedimento, e as
+          combinações prontas das duas coisas. */}
       {aba === "beneficios" && (
-        <BenefitsEditor
-          companyId={null}
-          procedures={procedures}
-          benefits={benefits}
-          margens={margens}
-          scopeLabel="padrão da rede"
-        />
+        <div className="space-y-4">
+          <BenefitsEditor
+            companyId={null}
+            procedures={procedures}
+            benefits={benefits}
+            margens={margens}
+            scopeLabel="padrão da rede"
+          />
+          <VantagensDaRede vantagens={vantagens} />
+          <GruposDeBeneficios
+            grupos={grupos}
+            procedimentos={procedures}
+            vantagens={vantagens}
+          />
+        </div>
       )}
 
       {session.isAdminMaster && (

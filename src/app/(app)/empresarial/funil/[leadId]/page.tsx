@@ -61,6 +61,7 @@ import {
   type PassoRegistrado,
 } from "@/lib/empresarial/implantacao";
 import { ApresentacaoEditor } from "./apresentacao-editor";
+import type { Vantagem, VantagemEscolhida } from "@/lib/empresarial/vantagens";
 import { EnvioESelos, type EnvioView } from "./envio-e-selos";
 import { FechamentoEImplantacao } from "./fechamento-e-implantacao";
 
@@ -378,6 +379,9 @@ export default async function FichaDoLeadPage({
     { data: beneficiosRows, error: erroBeneficios },
     { data: gruposRows },
     { data: itensRows },
+    { data: vantagensRows },
+    { data: vantagensDaPropostaRows },
+    { data: vantagensDosGruposRows },
   ] = await Promise.all([
     db
       .from("lead_benefits")
@@ -402,8 +406,33 @@ export default async function FichaDoLeadPage({
         "group_id, procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent"
       )
       .returns<(BeneficioRow & { group_id: string })[]>(),
+    // 1033: as outras vantagens — o catálogo, as desta proposta e as dos grupos.
+    db
+      .from("perks")
+      .select("id, name, description, is_active")
+      .order("name")
+      .returns<{ id: string; name: string; description: string | null; is_active: boolean }[]>(),
+    db
+      .from("lead_perks")
+      .select("perk_id, detail")
+      .eq("lead_id", leadId)
+      .order("sort_order")
+      .returns<{ perk_id: string; detail: string | null }[]>(),
+    db
+      .from("benefit_group_perks")
+      .select("group_id, perk_id, detail")
+      .returns<{ group_id: string; perk_id: string; detail: string | null }[]>(),
   ]);
   if (erroBeneficios) console.error("benefícios do lead:", erroBeneficios.message);
+  const vantagens: Vantagem[] = (vantagensRows ?? []).map((v) => ({
+    id: v.id,
+    name: v.name,
+    description: v.description,
+    isActive: v.is_active,
+  }));
+  const vantagensDaProposta: VantagemEscolhida[] = (vantagensDaPropostaRows ?? []).map(
+    (v) => ({ perkId: v.perk_id, detail: v.detail })
+  );
 
   // ⚠️ O QUE A REDE CONFIGURA PRECISA CHEGAR NA PROPOSTA (relato do dono,
   // 24/09/2026: "os benefícios por procedimentos que são criados em
@@ -496,6 +525,9 @@ export default async function FichaDoLeadPage({
     itens: (itensRows ?? [])
       .filter((i) => i.group_id === g.id)
       .map(paraBeneficio),
+    vantagens: (vantagensDosGruposRows ?? [])
+      .filter((v) => v.group_id === g.id)
+      .map((v) => ({ perkId: v.perk_id, detail: v.detail })),
   }));
 
   // Nomes de quem enviou e do consultor responsável.
@@ -762,6 +794,8 @@ export default async function FichaDoLeadPage({
           beneficiosVieramDaRede={(beneficiosRows ?? []).length === 0 && daRedeComoGrupo.length > 0}
           beneficiosDaRede={daRedeComoGrupo}
           podeCriarGrupo={isProgramManager(session)}
+          vantagens={vantagens}
+          vantagensDaProposta={vantagensDaProposta}
           condicoes={condicoes}
           unidades={unidadesRows ?? []}
           unidadePrincipal={qual?.main_clinic_id ?? null}

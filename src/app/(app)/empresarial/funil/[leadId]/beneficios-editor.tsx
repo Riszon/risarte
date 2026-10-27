@@ -28,6 +28,13 @@ import {
   type CategoriaDeBeneficio,
 } from "@/lib/empresarial/beneficios-da-proposta";
 import { selectClass } from "./campos";
+import {
+  aplicarVantagensDoGrupo,
+  textoDaVantagem,
+  type Vantagem,
+  type VantagemEscolhida,
+} from "@/lib/empresarial/vantagens";
+import { VantagensEscolhidas } from "../../vantagens-escolhidas";
 import { saveAsBenefitGroup, saveLeadBenefits } from "./actions";
 
 export type Procedimento = { id: string; name: string };
@@ -36,6 +43,8 @@ export type GrupoDeBeneficios = {
   name: string;
   description: string | null;
   itens: BeneficioDaProposta[];
+  /** 1033: as outras vantagens que o grupo traz. */
+  vantagens?: VantagemEscolhida[];
 };
 
 /** "3 sem custo · 5 com desconto · 1 não coberto" — só o que existe. */
@@ -82,6 +91,8 @@ export function BeneficiosDaProposta({
   daRede,
   podeCriarGrupo,
   unidadesDaParceria,
+  vantagens,
+  vantagensIniciais,
 }: {
   leadId: string;
   procedimentos: Procedimento[];
@@ -95,6 +106,10 @@ export function BeneficiosDaProposta({
   podeCriarGrupo: boolean;
   /** As unidades da parceria — as únicas que podem restringir um benefício. */
   unidadesDaParceria: { id: string; name: string }[];
+  /** 1033: o catálogo das outras vantagens da rede. */
+  vantagens: Vantagem[];
+  /** 1033: as outras vantagens já escolhidas nesta proposta. */
+  vantagensIniciais: VantagemEscolhida[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -106,6 +121,8 @@ export function BeneficiosDaProposta({
   const [salvandoGrupo, setSalvandoGrupo] = useState(false);
   // Houve mudança desde o último salvar — a tela lembra de salvar.
   const [mexeu, setMexeu] = useState(false);
+  const [escolhidas, setEscolhidas] = useState<VantagemEscolhida[]>(vantagensIniciais);
+  const nomeDaVantagem = new Map(vantagens.map((v) => [v.id, v.name]));
 
   const nomeDoProcedimento = new Map(procedimentos.map((p) => [p.id, p.name]));
   const semBeneficio = procedimentos.filter(
@@ -153,6 +170,9 @@ export function BeneficiosDaProposta({
   function inserirGrupo(grupo: GrupoDeBeneficios) {
     const r = aplicarGrupo(lista, grupo.itens);
     mudar(() => r.lista);
+    // As outras vantagens do grupo entram pela mesma regra (1033).
+    const rv = aplicarVantagensDoGrupo(escolhidas, grupo.vantagens ?? []);
+    setEscolhidas(rv.lista);
     // A tela diz o que o grupo fez. "Aplicado" sozinho esconderia que ele
     // trocou um desconto que o consultor tinha acabado de negociar.
     const trocou = r.trocados
@@ -161,8 +181,8 @@ export function BeneficiosDaProposta({
     toast.success(`Grupo "${grupo.name}" inserido.`, {
       description:
         r.trocados.length > 0
-          ? `${r.incluidos} incluído(s); trocou o que já havia em: ${trocou}. Nada foi salvo ainda.`
-          : `${r.incluidos} benefício(s) incluído(s). Nada foi salvo ainda.`,
+          ? `${r.incluidos} incluído(s); trocou o que já havia em: ${trocou}.${rv.incluidas + rv.trocadas > 0 ? ` ${rv.incluidas + rv.trocadas} outra(s) vantagem(ns).` : ""} Nada foi salvo ainda.`
+          : `${r.incluidos} benefício(s)${rv.incluidas + rv.trocadas > 0 ? ` e ${rv.incluidas + rv.trocadas} outra(s) vantagem(ns)` : ""} incluído(s). Nada foi salvo ainda.`,
     });
   }
 
@@ -248,6 +268,7 @@ export function BeneficiosDaProposta({
           <GruposProntos
             grupos={prontos}
             nomeDoProcedimento={nomeDoProcedimento}
+            nomeDaVantagem={nomeDaVantagem}
             aoInserir={inserirGrupo}
             desabilitado={isPending}
           />
@@ -352,10 +373,38 @@ export function BeneficiosDaProposta({
             );
           })}
 
+          {/* ---- 1033: as outras vantagens (além dos procedimentos) ---- */}
+          <div className="space-y-2 rounded-md border p-2">
+            <div className="px-1">
+              <p className="text-sm font-medium">
+                Outras vantagens{" "}
+                <span className="rounded-full bg-muted px-2 text-xs font-normal text-muted-foreground">
+                  {escolhidas.length}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Além dos procedimentos: desconto em parceiros, palestras,
+                publicidade nas TVs da unidade, unidade exclusiva… Escreva o
+                detalhe desta empresa. Depois do fechamento, cada uma vira um
+                compromisso acompanhado na ficha da empresa.
+              </p>
+            </div>
+            <VantagensEscolhidas
+              catalogo={vantagens}
+              lista={escolhidas}
+              aoMudar={(nova) => {
+                setEscolhidas(nova);
+                setMexeu(true);
+              }}
+            />
+          </div>
+
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             <span className={`text-xs ${mexeu ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`}>
               {lista.length} benefício{lista.length === 1 ? "" : "s"} —{" "}
               {rotuloDasContagens(contagem)}
+              {escolhidas.length > 0 &&
+                ` · ${escolhidas.length} outra${escolhidas.length === 1 ? "" : "s"} vantage${escolhidas.length === 1 ? "m" : "ns"}`}
               {mexeu && " · há mudanças não salvas"}
             </span>
             <Button type="submit" size="sm" disabled={isPending}>
@@ -426,11 +475,13 @@ export function BeneficiosDaProposta({
 function GruposProntos({
   grupos,
   nomeDoProcedimento,
+  nomeDaVantagem,
   aoInserir,
   desabilitado,
 }: {
   grupos: GrupoDeBeneficios[];
   nomeDoProcedimento: Map<string, string>;
+  nomeDaVantagem: Map<string, string>;
   aoInserir: (g: GrupoDeBeneficios) => void;
   desabilitado: boolean;
 }) {
@@ -457,6 +508,8 @@ function GruposProntos({
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {rotuloDasContagens(contarPorCategoria(g.itens))}
+                  {(g.vantagens?.length ?? 0) > 0 &&
+                    ` · ${g.vantagens!.length} outra${g.vantagens!.length === 1 ? "" : "s"} vantage${g.vantagens!.length === 1 ? "m" : "ns"}`}
                   {g.description ? ` — ${g.description}` : ""}
                 </p>
               </div>
@@ -476,7 +529,7 @@ function GruposProntos({
                   size="sm"
                   variant="outline"
                   className="h-8"
-                  disabled={desabilitado || g.itens.length === 0}
+                  disabled={desabilitado || (g.itens.length === 0 && (g.vantagens?.length ?? 0) === 0)}
                   onClick={() => aoInserir(g)}
                 >
                   <Plus className="mr-1 size-3.5" />
@@ -497,6 +550,14 @@ function GruposProntos({
                       {" · "}
                       {resumoDoBeneficio(b)}
                     </span>
+                  </li>
+                ))}
+                {(g.vantagens ?? []).map((v) => (
+                  <li key={v.perkId}>
+                    <span className="font-medium">
+                      {textoDaVantagem(nomeDaVantagem.get(v.perkId) ?? "(vantagem)", v.detail)}
+                    </span>
+                    <span className="text-muted-foreground"> — outra vantagem</span>
                   </li>
                 ))}
               </ul>

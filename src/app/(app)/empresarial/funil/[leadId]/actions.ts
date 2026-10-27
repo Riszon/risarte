@@ -32,6 +32,11 @@ import {
   type FaixaDePreco,
 } from "@/lib/empresarial/condicoes-da-proposta";
 import { formatPhone } from "@/lib/masks";
+import {
+  limparDetalhe,
+  problemasDasVantagens,
+  type VantagemEscolhida,
+} from "@/lib/empresarial/vantagens";
 import { lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
 import {
   CALCULOS_DOS_DEPENDENTES,
@@ -125,6 +130,17 @@ function lerDependentesDaTela(
       calculo !== "NONE" && triBooleano(formData, "implantation_includes_dependents") === true,
     ...(calculo === "DISTRIBUTION" ? { dependents_estimate: dependentesDoQuadro(quadro) } : {}),
   };
+}
+
+/** As outras vantagens do formulário (1033): `vant_i` e `vant_det_i`. */
+function vantagensDoFormulario(formData: FormData): VantagemEscolhida[] {
+  const lista: VantagemEscolhida[] = [];
+  for (let i = 0; i < 100; i += 1) {
+    const perkId = texto(formData, `vant_${i}`);
+    if (!perkId) continue;
+    lista.push({ perkId, detail: limparDetalhe(texto(formData, `vant_det_${i}`)) });
+  }
+  return lista;
 }
 
 /** Caixa de marcar de TRÊS estados: sim, não, e "não perguntei". */
@@ -786,6 +802,14 @@ export async function saveLeadBenefits(
   if (problemas.length > 0) {
     return { ok: false, error: `Confira os benefícios: ${[...new Set(problemas)].join("; ")}.` };
   }
+  // 1033: as outras vantagens vêm no mesmo formulário.
+  const vantagens = formData.has("vantagens_no_formulario")
+    ? vantagensDoFormulario(formData)
+    : null;
+  const problemasDasVant = vantagens ? problemasDasVantagens(vantagens) : [];
+  if (problemasDasVant.length > 0) {
+    return { ok: false, error: `Confira as outras vantagens: ${problemasDasVant.join("; ")}.` };
+  }
 
   const db = await empresarialDb();
   const { error: eDel } = await db
@@ -817,6 +841,27 @@ export async function saveLeadBenefits(
     if (error) {
       console.error("saveLeadBenefits failed:", error.message);
       return { ok: false, error: "Não foi possível salvar os benefícios." };
+    }
+  }
+
+  // 1033: o conjunto das outras vantagens também é SUBSTITUÍDO.
+  if (vantagens) {
+    const { error: eDelV } = await db.from("lead_perks").delete().eq("lead_id", leadId);
+    const { error: eInsV } =
+      eDelV || vantagens.length === 0
+        ? { error: null }
+        : await db.from("lead_perks").insert(
+            vantagens.map((v, i) => ({
+              lead_id: leadId,
+              perk_id: v.perkId,
+              detail: v.detail,
+              sort_order: i,
+              updated_by: session.userId,
+            }))
+          );
+    if (eDelV || eInsV) {
+      console.error("saveLeadBenefits (vantagens) failed:", (eDelV ?? eInsV)?.message);
+      return { ok: false, error: "Os benefícios foram salvos, mas as outras vantagens não." };
     }
   }
 
@@ -854,9 +899,15 @@ export async function saveAsBenefitGroup(
     )
     .eq("lead_id", leadId);
 
+  const { data: vantagensAtuais } = await db
+    .from("lead_perks")
+    .select("perk_id, detail")
+    .eq("lead_id", leadId)
+    .returns<{ perk_id: string; detail: string | null }[]>();
+
   // Grupo vazio com nome bonito é pior que grupo nenhum: alguém o aplicaria
   // achando que faz alguma coisa.
-  if (!atuais || atuais.length === 0) {
+  if ((!atuais || atuais.length === 0) && (vantagensAtuais ?? []).length === 0) {
     return { ok: false, error: "Esta proposta ainda não tem benefício para guardar." };
   }
 
@@ -875,12 +926,25 @@ export async function saveAsBenefitGroup(
     return { ok: false, error: "Não foi possível criar o grupo." };
   }
 
-  const { error: eI } = await db.from("benefit_group_items").insert(
-    atuais.map((b) => ({ group_id: grupo.id, ...b }))
-  );
+  const { error: eI } =
+    (atuais ?? []).length > 0
+      ? await db
+          .from("benefit_group_items")
+          .insert((atuais ?? []).map((b) => ({ group_id: grupo.id, ...b })))
+      : { error: null };
   if (eI) {
     console.error("saveAsBenefitGroup (itens) failed:", eI.message);
     return { ok: false, error: "O grupo foi criado, mas os benefícios não entraram." };
+  }
+  // 1033: as outras vantagens da proposta vão junto.
+  if ((vantagensAtuais ?? []).length > 0) {
+    const { error: eV } = await db.from("benefit_group_perks").insert(
+      (vantagensAtuais ?? []).map((v) => ({ group_id: grupo.id, perk_id: v.perk_id, detail: v.detail }))
+    );
+    if (eV) {
+      console.error("saveAsBenefitGroup (vantagens) failed:", eV.message);
+      return { ok: false, error: "O grupo foi criado, mas as outras vantagens não entraram." };
+    }
   }
 
   await logAudit({
