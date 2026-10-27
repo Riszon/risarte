@@ -401,7 +401,7 @@ Syncthing se comportarem de forma estranha.**
   `ajusteDoItem`.
 - ⚠️ **`save_procedure_group` recriada (0328) preservando o % de quem fica.**
   Ao recriar de novo, levar isso junto.
-- ✅ 0328 no treino (ensaio 16/16 + quebra). ⏳ **Falta a produção.**
+- ✅ **0328 APLICADA nos dois bancos** (o dono rodou na produção em 27/10/2026; conferência 4·1·1·1; conferido de fora: sem login a porta da distribuição recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é Admin, para em PRICE_NOT_ALLOWED; a produção tem 4 grupos, 12 procedimentos em grupos, nenhum ainda com percentual próprio — todos seguem "igual em todos"). Ensaio no treino 16/16 + quebra.
 - Resíduo no treino (meu): o "Pacote teste (pode ignorar)" agora tira o
   desconto SÓ do canal (R$ 810,00), mínimo 85%. `.next-test` limpo.
 
