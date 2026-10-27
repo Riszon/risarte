@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.354.0** · Última migração: **0326** (0318 a 0326 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.355.0** · Última migração: **0326** (0318 a 0326 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.355.0 (sem migração) — REPASSE EM % DO PREÇO E DO MÍNIMO (27/10/2026)
+>
+> Pedido do dono: o repasse mostra o percentual sobre o preço normal e sobre o
+> preço mínimo, no procedimento (cartão, níveis, formulário) e no grupo (tabela
+> do repasse com a coluna Mínimo). Conta única `textoDosPercentuais`
+> (`repasse-percentual.ts`). De carona, defeito meu da 0.354.0: total do
+> pacote dizia "R$ 0,00 · 0%" quando nenhum item tinha repasse. EV-229.
 
 > ## 🎯 0.354.0 / 0326 — MÍNIMO, REPASSE E VÍNCULO RÁPIDO NOS GRUPOS (27/10/2026)
 >

@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { parseBRLToCents } from "@/lib/pricing";
+import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
   lerPercentual,
   percentualDoValor,
   percentualParaCampo,
+  textoDoPercentual,
   valorDoPercentual,
 } from "@/lib/finance/repasse-percentual";
 
@@ -30,6 +31,7 @@ export function RepasseValorOuPercentual({
   precoCents,
   compacto = false,
   rotulo,
+  precoMinimoCents = null,
 }: {
   /** O valor em R$, como texto do campo ("150,00"). */
   valor: string;
@@ -39,6 +41,8 @@ export function RepasseValorOuPercentual({
   /** Versão pequena, para a linha de cada nível. */
   compacto?: boolean;
   rotulo?: string;
+  /** Preço mínimo: mostra o peso do repasse no pior caso (nulo = sem mínimo). */
+  precoMinimoCents?: number | null;
 }) {
   const [digitandoPercentual, setDigitandoPercentual] = useState<string | null>(
     null
@@ -67,55 +71,77 @@ export function RepasseValorOuPercentual({
   }
 
   const caixa = compacto ? "h-7 text-xs" : "";
+  // Pedido do dono (27/10/2026): o mesmo repasse lido sobre o preço MÍNIMO.
+  const noMinimo =
+    valorCents != null && precoMinimoCents != null && precoMinimoCents > 0
+      ? percentualDoValor(valorCents, precoMinimoCents)
+      : null;
   return (
-    <div className={cn("flex items-end gap-1.5", compacto && "gap-1")}>
-      <label className="block min-w-0 flex-1">
-        {rotulo && (
-          <span className="text-[10px] text-muted-foreground">{rotulo}</span>
-        )}
-        <div className="relative">
-          <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[11px] text-muted-foreground">
-            R$
-          </span>
-          <Input
-            aria-label={rotulo ? `${rotulo} — valor em R$` : "Repasse em R$"}
-            className={cn("pl-7 tabular-nums", caixa, compacto && "w-24")}
-            inputMode="decimal"
-            placeholder={compacto ? "—" : "0,00"}
-            value={valor}
-            onChange={(e) => onValor(e.target.value)}
-          />
-        </div>
-      </label>
-      <span className="pb-1.5 text-[11px] text-muted-foreground">=</span>
-      <label className="block">
-        <div className="relative">
-          <Input
-            aria-label={
-              rotulo ? `${rotulo} — percentual do preço` : "Repasse em percentual"
-            }
-            className={cn(
-              "pr-6 tabular-nums",
-              caixa,
-              compacto ? "w-[4.75rem]" : "w-24"
-            )}
-            inputMode="decimal"
-            placeholder={temPreco ? "%" : "—"}
-            disabled={!temPreco}
-            title={
-              temPreco
-                ? "Digite o percentual do preço padrão; o valor em R$ é calculado."
-                : "Defina o preço padrão para lançar em percentual."
-            }
-            value={temPreco ? campoPercentual : ""}
-            onChange={(e) => aoDigitarPercentual(e.target.value)}
-            onBlur={() => setDigitandoPercentual(null)}
-          />
-          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[11px] text-muted-foreground">
-            %
-          </span>
-        </div>
-      </label>
+    <div>
+      <div className={cn("flex items-end gap-1.5", compacto && "gap-1")}>
+        <label className="block min-w-0 flex-1">
+          {rotulo && (
+            <span className="text-[10px] text-muted-foreground">{rotulo}</span>
+          )}
+          <div className="relative">
+            <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[11px] text-muted-foreground">
+              R$
+            </span>
+            <Input
+              aria-label={rotulo ? `${rotulo} — valor em R$` : "Repasse em R$"}
+              className={cn("pl-7 tabular-nums", caixa, compacto && "w-24")}
+              inputMode="decimal"
+              placeholder={compacto ? "—" : "0,00"}
+              value={valor}
+              onChange={(e) => onValor(e.target.value)}
+            />
+          </div>
+        </label>
+        <span className="pb-1.5 text-[11px] text-muted-foreground">=</span>
+        <label className="block">
+          <div className="relative">
+            <Input
+              aria-label={
+                rotulo
+                  ? `${rotulo} — percentual do preço`
+                  : "Repasse em percentual"
+              }
+              className={cn(
+                "pr-6 tabular-nums",
+                caixa,
+                compacto ? "w-[4.75rem]" : "w-24"
+              )}
+              inputMode="decimal"
+              placeholder={temPreco ? "%" : "—"}
+              disabled={!temPreco}
+              title={
+                temPreco
+                  ? "Digite o percentual do preço padrão; o valor em R$ é calculado."
+                  : "Defina o preço padrão para lançar em percentual."
+              }
+              value={temPreco ? campoPercentual : ""}
+              onChange={(e) => aoDigitarPercentual(e.target.value)}
+              onBlur={() => setDigitandoPercentual(null)}
+            />
+            <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[11px] text-muted-foreground">
+              %
+            </span>
+          </div>
+        </label>
+      </div>
+      {noMinimo != null && (
+        <p
+          className={cn(
+            "mt-0.5 text-muted-foreground tabular-nums",
+            compacto ? "text-[10px]" : "text-[11px]"
+          )}
+        >
+          {compacto
+            ? "no mínimo: "
+            : `No preço mínimo (${formatBRL(precoMinimoCents!)}): `}
+          {textoDoPercentual(noMinimo)}
+        </p>
+      )}
     </div>
   );
 }

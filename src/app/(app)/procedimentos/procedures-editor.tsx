@@ -65,8 +65,8 @@ import {
 import { BRAZIL_TIME_ZONE, todayInBrazil } from "@/lib/dates";
 import {
   lerPercentual,
-  percentualDoValor,
   textoDoPercentual,
+  textoDosPercentuais,
   valorDoPercentual,
 } from "@/lib/finance/repasse-percentual";
 import { RepasseValorOuPercentual } from "./repasse-valor-percentual";
@@ -108,19 +108,21 @@ function centsToInput(cents: number): string {
  * Agora mostra o que vale de verdade.
  */
 function commissionLabel(p: Procedure): string {
-  if (p.commissionFixedCents > 0) {
-    const pct = percentualDoValor(p.commissionFixedCents, p.defaultPriceCents);
-    return pct != null
-      ? `${formatBRL(p.commissionFixedCents)} (${textoDoPercentual(pct)} do preço)`
-      : formatBRL(p.commissionFixedCents);
+  // O repasse em R$ (gravado, ou o percentual antigo convertido pelo preço).
+  const valor =
+    p.commissionFixedCents > 0
+      ? p.commissionFixedCents
+      : p.commissionPercent > 0
+        ? valorDoPercentual(p.commissionPercent, p.defaultPriceCents)
+        : null;
+  if (valor === null) {
+    return p.commissionPercent > 0
+      ? `${textoDoPercentual(p.commissionPercent)} do preço (sem preço definido)`
+      : "—";
   }
-  if (p.commissionPercent > 0) {
-    const v = valorDoPercentual(p.commissionPercent, p.defaultPriceCents);
-    return v != null
-      ? `${formatBRL(v)} (${textoDoPercentual(p.commissionPercent)} do preço)`
-      : `${textoDoPercentual(p.commissionPercent)} do preço (sem preço definido)`;
-  }
-  return "—";
+  // Pedido do dono (27/10/2026): o peso do repasse no preço normal E no mínimo.
+  const pcts = textoDosPercentuais(valor, p.defaultPriceCents, p.minPriceCents ?? null);
+  return pcts ? `${formatBRL(valor)} (${pcts})` : formatBRL(valor);
 }
 
 const EMPTY: ProcedureInput = {
@@ -212,6 +214,9 @@ function ProcedureFields({
       : specialties;
   const precoDoFormulario = value.defaultPrice.trim()
     ? parseBRLToCents(value.defaultPrice)
+    : null;
+  const minimoDoFormulario = value.minPrice.trim()
+    ? parseBRLToCents(value.minPrice)
     : null;
   // Percentual gravado antes da 0.352.0 que não deu para converter (sem preço).
   const percentualAntigo =
@@ -316,6 +321,7 @@ function ProcedureFields({
             // Digitou R$ ou % → grava em R$; o percentual antigo sai junto.
             onValor={(v) => onChange({ commissionFixed: v, commissionPercent: "" })}
             precoCents={precoDoFormulario}
+            precoMinimoCents={minimoDoFormulario}
           />
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">
@@ -1089,6 +1095,7 @@ export function ProceduresEditor({
 function PayoutByLevel({
   procedureId,
   priceCents,
+  minPriceCents,
   levels,
   payoutByLevel,
   canEdit,
@@ -1098,6 +1105,8 @@ function PayoutByLevel({
   procedureId: string;
   /** Preço padrão: a base do percentual de cada nível (par R$ ⇄ %). */
   priceCents: number;
+  /** Preço mínimo do cadastro: o percentual no pior caso (nulo = sem mínimo). */
+  minPriceCents: number | null;
   levels: { id: string; name: string }[];
   payoutByLevel: Record<string, { amountCents: number; source: string }>;
   canEdit: boolean;
@@ -1149,6 +1158,7 @@ function PayoutByLevel({
                 valor={draft[l.id] ?? ""}
                 onValor={(v) => setDraft((d) => ({ ...d, [l.id]: v }))}
                 precoCents={priceCents}
+                precoMinimoCents={minPriceCents}
               />
             ))}
           </div>
@@ -1202,7 +1212,9 @@ function PayoutByLevel({
                     {formatBRL(v.amountCents)}
                   </em>
                 )}
-                {v && <PercentualDoNivel valorCents={v.amountCents} priceCents={priceCents} />}
+                {v && (
+                  <PercentualDoNivel valorCents={v.amountCents} priceCents={priceCents} minPriceCents={minPriceCents} />
+                )}
               </span>
             );
           })}
@@ -1212,17 +1224,19 @@ function PayoutByLevel({
   );
 }
 
-/** "· 30%" ao lado do valor do nível; nada quando não há preço. */
+/** "· 30% do preço · 37,5% no mínimo" ao lado do valor do nível; nada sem preço. */
 function PercentualDoNivel({
   valorCents,
   priceCents,
+  minPriceCents,
 }: {
   valorCents: number;
   priceCents: number;
+  minPriceCents: number | null;
 }) {
-  const pct = percentualDoValor(valorCents, priceCents);
-  if (pct == null) return null;
-  return <span className="tabular-nums"> · {textoDoPercentual(pct)}</span>;
+  const texto = textoDosPercentuais(valorCents, priceCents, minPriceCents);
+  if (texto == null) return null;
+  return <span className="tabular-nums"> · {texto}</span>;
 }
 
 function ProcedureRow({
@@ -1735,6 +1749,7 @@ function ProcedureRow({
         <PayoutByLevel
           procedureId={p.id}
           priceCents={p.defaultPriceCents}
+          minPriceCents={p.minPriceCents ?? null}
           levels={levels}
           payoutByLevel={payoutByLevel}
           canEdit={canEditPayout}

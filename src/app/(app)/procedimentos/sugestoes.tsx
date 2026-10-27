@@ -439,6 +439,7 @@ export function SugestoesDeProcedimento({
                       valor={preco.commissionFixed}
                       onValor={(v) => setPreco((p) => ({ ...p, commissionFixed: v, commissionPercent: "" }))}
                       precoCents={preco.defaultPrice.trim() ? parseBRLToCents(preco.defaultPrice) : null}
+                      precoMinimoCents={preco.minPrice.trim() ? parseBRLToCents(preco.minPrice) : null}
                     />
                   </div>
                   <p className="mt-1 text-[10px] text-muted-foreground">

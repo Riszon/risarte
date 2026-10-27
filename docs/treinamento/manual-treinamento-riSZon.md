@@ -2412,6 +2412,14 @@ o mesmo e o percentual muda** — um reajuste de preço não aumenta o repasse d
 ninguém sem alguém decidir. Sem preço padrão, o campo de percentual fica
 apagado (não há sobre o que calcular).
 
+**O repasse também sobre o preço mínimo** (versão 0.355.0). Quando o
+procedimento tem **Preço mínimo**, a linha mostra os dois percentuais — por
+exemplo, *R$ 7,50 (5% do preço · 6,82% no mínimo)* — e cada nível também
+(*Júnior: R$ 7,50 · 5% do preço · 6,82% no mínimo*). No formulário, embaixo do
+par R$ ⇄ %, aparece *"No preço mínimo (R$ 110,00): 6,82%"*. Como o repasse é
+fixo, o percentual no mínimo é sempre o maior: é o peso do repasse no pior
+caso, quando o procedimento sai pelo menor preço.
+
 **Grupos de procedimentos** (versão 0.350.0). Em **Procedimentos → Grupos**,
 o Planner e o Admin Master montam os grupos que o plano oferece no botão
 **Grupo**. Os grupos valem para a **rede inteira**.
@@ -2444,10 +2452,12 @@ preço do pacote (a tela não deixa salvar). Em branco = sem mínimo.
 
 **Repasse ao dentista no pacote** (versão 0.354.0). Abra a linha no cartão do
 grupo: cada procedimento com o preço **no pacote** e o repasse de cada nível,
-em R$ e em % desse preço (*Júnior: R$ 100,00 · 11,7%*), mais o total do
-pacote. É o mesmo repasse do cadastro do procedimento, na unidade em que você
-está; em vermelho, o que ainda não tem repasse. Como o repasse é fixo, o
-desconto do pacote **aumenta** o percentual.
+em R$ e em % desse preço, mais o total do pacote. Quando o grupo tem **preço
+mínimo**, aparece a coluna **Mínimo** e o percentual também sobre ele (versão
+0.355.0) — por exemplo, *R$ 100,00 · 11,7% do pacote · 12,38% no mínimo*. É o
+mesmo repasse do cadastro do procedimento, na unidade em que você está; em
+vermelho, o que ainda não tem repasse. Como o repasse é fixo, o desconto do
+pacote **aumenta** o percentual.
 
 **Vincular um procedimento a um grupo sem abrir o grupo** (versão 0.354.0).
 No cartão aberto do procedimento (em **Procedimentos**), a linha **Grupos:**

@@ -77,3 +77,25 @@ export function repasseParaGravar(input: {
   }
   return { valorCents: 0, percent: 0 };
 }
+
+/**
+ * O repasse lido sobre o preço NORMAL e sobre o preço MÍNIMO (pedido do dono,
+ * 27/10/2026: "para facilitar a visualização do cálculo de repasse"). Como o
+ * repasse é fixo, quanto mais desconto, maior o peso dele — o percentual no
+ * mínimo é o pior caso. Ex.: "30% do preço · 37,5% no mínimo".
+ *
+ * Nulo quando não há preço nenhum para comparar. Sem mínimo, só o do preço.
+ */
+export function textoDosPercentuais(
+  valorCents: number,
+  precoCents: number,
+  minimoCents: number | null,
+  rotulos: { preco: string; minimo: string } = { preco: "do preço", minimo: "no mínimo" }
+): string | null {
+  const partes: string[] = [];
+  const doPreco = percentualDoValor(valorCents, precoCents);
+  if (doPreco !== null) partes.push(`${textoDoPercentual(doPreco)} ${rotulos.preco}`);
+  const doMinimo = minimoCents === null ? null : percentualDoValor(valorCents, minimoCents);
+  if (doMinimo !== null) partes.push(`${textoDoPercentual(doMinimo)} ${rotulos.minimo}`);
+  return partes.length > 0 ? partes.join(" · ") : null;
+}

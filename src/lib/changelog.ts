@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.355.0",
+    data: "2026-10-27",
+    migracao: null,
+    titulo: "Procedimentos e grupos: o repasse em % do preço e do preço mínimo",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O repasse ao dentista passou a mostrar dois percentuais: sobre o preço normal e sobre o preço mínimo (ex.: R$ 7,50 = 5% do preço · 6,82% no mínimo). Vale no cartão do procedimento, no repasse por nível, no formulário e, nos grupos, na tabela de repasse do pacote, que ganhou a coluna Mínimo.",
+        papeis: ["planner_dentist", "unit_manager"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.354.0",
     data: "2026-10-27",
     migracao: "0326",

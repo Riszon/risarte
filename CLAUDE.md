@@ -390,6 +390,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (6) — PC Administrador (core 0.354.0 → 0.355.0, sem migração)**
+
+- **Repasse em % do preço E do mínimo (pedido do dono).** Procedimento:
+  cartão, níveis, formulário e sugestão (mínimo = `min_price_cents`). Grupo:
+  coluna Mínimo na tabela de repasse (o % do grupo sobre a tabela de cada
+  item). Conta única `textoDosPercentuais`.
+- Corrigido (defeito meu, 0.354.0): o total do pacote mostrava "R$ 0,00 ·
+  0%" com nenhum repasse no nível; agora "sem repasse".
+- ⚠️ O `prettier` NÃO é ferramenta do projeto (sem configuração): rodei sem
+  querer e ele pôs vírgulas finais; tirei à mão. Não rodar.
+- Visto na tela no treino (Admin de teste; nada gravado). O cookie de unidade
+  ativa do Admin de teste ficou na **Londrina**. `.next-test` limpo.
+
 **27/10/2026 (5) — PC Administrador (core 0.353.0 → 0.354.0, migração 0326)**
 
 - **Mínimo, repasse e vínculo rápido nos grupos (pedido do dono).** GP7–GP8

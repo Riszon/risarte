@@ -1,6 +1,6 @@
 import { formatBRL } from "@/lib/pricing";
-import { precoNoPacote } from "@/lib/procedimentos/grupos";
-import { percentualDoValor, textoDoPercentual } from "@/lib/finance/repasse-percentual";
+import { pisoDoPacote, precoNoPacote } from "@/lib/procedimentos/grupos";
+import { textoDosPercentuais } from "@/lib/finance/repasse-percentual";
 
 export type RepasseDoNivel = { amountCents: number; source: string };
 
@@ -15,6 +15,7 @@ export function RepasseDoPacote({
   itens,
   precoDe,
   ajustePercent,
+  minimoPercent = null,
   niveis,
   repasses,
   unidade,
@@ -22,24 +23,35 @@ export function RepasseDoPacote({
   itens: { procedureId: string; quantidade: number; nome: string }[];
   precoDe: Map<string, number>;
   ajustePercent: number;
+  /** 0326: o mínimo da negociação em % da tabela (nulo = sem mínimo). */
+  minimoPercent?: number | null;
   niveis: { id: string; name: string }[];
   repasses: Record<string, Record<string, RepasseDoNivel>>;
   /** Nome da unidade ativa (o repasse pode ter valor próprio da unidade). */
   unidade: string | null;
 }) {
   if (niveis.length === 0 || itens.length === 0) return null;
-  const linhas = itens.map((i) => ({
-    ...i,
-    pacoteCents: precoNoPacote(precoDe.get(i.procedureId) ?? 0, ajustePercent) * i.quantidade,
-  }));
+  const linhas = itens.map((i) => {
+    const tabelaCents = (precoDe.get(i.procedureId) ?? 0) * i.quantidade;
+    return {
+      ...i,
+      pacoteCents: precoNoPacote(precoDe.get(i.procedureId) ?? 0, ajustePercent) * i.quantidade,
+      // O mínimo de cada item: o % do grupo sobre a tabela dele (0326).
+      minimoCents: minimoPercent ? pisoDoPacote(tabelaCents, minimoPercent) : null,
+    };
+  });
   const totalDoPacote = linhas.reduce((s, l) => s + l.pacoteCents, 0);
-  const celula = (valorCents: number | null, baseCents: number, doCadastro = false) => {
+  const totalDaTabela = linhas.reduce((s, l) => s + (precoDe.get(l.procedureId) ?? 0) * l.quantidade, 0);
+  const minimoDoPacote = minimoPercent ? pisoDoPacote(totalDaTabela, minimoPercent) : null;
+  // Pedido do dono (27/10/2026): o repasse sobre o preço NORMAL (no pacote) e
+  // sobre o MÍNIMO — o pior caso da negociação.
+  const celula = (valorCents: number | null, baseCents: number, minimoCents: number | null, doCadastro = false) => {
     if (valorCents === null) return <span className="text-destructive">sem repasse</span>;
-    const pct = percentualDoValor(valorCents, baseCents);
+    const pcts = textoDosPercentuais(valorCents, baseCents, minimoCents, { preco: "do pacote", minimo: "no mínimo" });
     return (
       <span className={doCadastro ? "italic" : undefined} title={doCadastro ? "Valor do cadastro do procedimento — o nível não tem valor próprio." : undefined}>
         <span className="tabular-nums">{formatBRL(valorCents)}</span>
-        {pct !== null && <span className="tabular-nums text-muted-foreground"> · {textoDoPercentual(pct)}</span>}
+        {pcts !== null && <span className="block tabular-nums text-[10px] text-muted-foreground">{pcts}</span>}
       </span>
     );
   };
@@ -55,6 +67,7 @@ export function RepasseDoPacote({
             <tr>
               <th className="py-1 pr-3 font-medium">Procedimento</th>
               <th className="py-1 pr-3 font-medium">No pacote</th>
+              {minimoPercent ? <th className="py-1 pr-3 font-medium">Mínimo</th> : null}
               {niveis.map((n) => (
                 <th key={n.id} className="py-1 pr-3 font-medium">{n.name}</th>
               ))}
@@ -68,11 +81,12 @@ export function RepasseDoPacote({
                   {l.quantidade > 1 && ` × ${l.quantidade}`}
                 </td>
                 <td className="py-1 pr-3 tabular-nums">{formatBRL(l.pacoteCents)}</td>
+                {l.minimoCents !== null && <td className="py-1 pr-3 tabular-nums">{formatBRL(l.minimoCents)}</td>}
                 {niveis.map((n) => {
                   const r = repasses[l.procedureId]?.[n.id];
                   return (
                     <td key={n.id} className="py-1 pr-3">
-                      {celula(r ? r.amountCents * l.quantidade : null, l.pacoteCents, r ? r.source !== "nivel" : false)}
+                      {celula(r ? r.amountCents * l.quantidade : null, l.pacoteCents, l.minimoCents, r ? r.source !== "nivel" : false)}
                     </td>
                   );
                 })}
@@ -81,13 +95,25 @@ export function RepasseDoPacote({
             <tr className="border-t font-medium">
               <td className="py-1 pr-3">Total do pacote</td>
               <td className="py-1 pr-3 tabular-nums">{formatBRL(totalDoPacote)}</td>
+              {minimoDoPacote !== null && <td className="py-1 pr-3 tabular-nums">{formatBRL(minimoDoPacote)}</td>}
               {niveis.map((n) => {
-                const falta = linhas.some((l) => !repasses[l.procedureId]?.[n.id]);
-                const soma = linhas.reduce((s, l) => s + (repasses[l.procedureId]?.[n.id]?.amountCents ?? 0) * l.quantidade, 0);
+                const comRepasse = linhas.filter((l) => repasses[l.procedureId]?.[n.id]);
+                const soma = comRepasse.reduce((s, l) => s + repasses[l.procedureId][n.id].amountCents * l.quantidade, 0);
+                // Nenhum procedimento com repasse neste nível: "sem repasse", nunca
+                // "R$ 0,00 · 0%" (que leria como repasse zero).
+                if (comRepasse.length === 0) {
+                  return (
+                    <td key={n.id} className="py-1 pr-3">
+                      {celula(null, totalDoPacote, minimoDoPacote)}
+                    </td>
+                  );
+                }
                 return (
                   <td key={n.id} className="py-1 pr-3">
-                    {celula(soma, totalDoPacote)}
-                    {falta && <span className="text-destructive"> (falta repasse)</span>}
+                    {celula(soma, totalDoPacote, minimoDoPacote)}
+                    {comRepasse.length < linhas.length && (
+                      <span className="text-destructive"> (falta repasse)</span>
+                    )}
                   </td>
                 );
               })}
@@ -98,8 +124,9 @@ export function RepasseDoPacote({
       <p className="mt-1 text-[10px] text-muted-foreground">
         O mesmo repasse do cadastro de cada procedimento (em itálico = valor do cadastro, o nível
         não tem valor próprio). O percentual é sobre o preço <strong>no pacote</strong> (preço padrão
-        da rede com o ajuste, um de cada) — o repasse é fixo, então o desconto do pacote aumenta o
-        percentual. Procedimento de dente paga um repasse por dente.
+        da rede com o ajuste, um de cada) e, quando o grupo tem mínimo, também sobre o{" "}
+        <strong>mínimo</strong> — o pior caso da negociação. O repasse é fixo: quanto mais desconto,
+        maior o percentual. Procedimento de dente paga um repasse por dente.
       </p>
     </details>
   );

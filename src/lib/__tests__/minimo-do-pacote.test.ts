@@ -127,7 +127,12 @@ describe("o banco e as telas seguem a mesma regra", () => {
     expect(page).toMatch(/rpc\("payout_matrix"/);
     const repasse = ler("src/app/(app)/procedimentos/grupos/repasse-do-pacote.tsx");
     expect(repasse).toMatch(/precoNoPacote\(precoDe\.get\(i\.procedureId\) \?\? 0, ajustePercent\)/);
-    expect(repasse).toMatch(/percentualDoValor\(valorCents, baseCents\)/);
+    // nível sem repasse em nenhum procedimento: "sem repasse", não "R$ 0,00 · 0%"
+    expect(repasse).toMatch(/if \(comRepasse\.length === 0\) \{[\s\S]{0,120}celula\(null,/);
+    // e também sobre o MÍNIMO do pacote (pedido do dono, 27/10/2026)
+    expect(repasse).toMatch(/textoDosPercentuais\(valorCents, baseCents, minimoCents,/);
+    expect(repasse).toMatch(/minimoCents: minimoPercent \? pisoDoPacote\(tabelaCents, minimoPercent\) : null/);
+    expect(ler("src/app/(app)/procedimentos/grupos/grupos-editor.tsx")).toMatch(/minimoPercent=\{grupo\.minimoPercent \?\? null\}/);
   });
 
   it("o botão rápido usa a porta do editor e a permissão do GP1", () => {

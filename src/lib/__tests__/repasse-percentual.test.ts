@@ -7,6 +7,7 @@ import {
   percentualParaCampo,
   repasseParaGravar,
   textoDoPercentual,
+  textoDosPercentuais,
   valorDoPercentual,
 } from "@/lib/finance/repasse-percentual";
 
@@ -48,6 +49,36 @@ describe("a conta do par", () => {
     expect(lerPercentual("-3")).toBeNull();
     expect(percentualParaCampo(33.333)).toBe("33,33");
     expect(textoDoPercentual(30)).toBe("30%");
+  });
+});
+
+describe("o repasse sobre o preço normal e sobre o mínimo (27/10/2026)", () => {
+  it("os dois percentuais, o do mínimo sempre maior", () => {
+    expect(textoDosPercentuais(15000, 50000, 40000)).toBe("30% do preço · 37,5% no mínimo");
+  });
+
+  it("sem mínimo, só o do preço; sem preço, só o do mínimo; sem nenhum, nulo", () => {
+    expect(textoDosPercentuais(15000, 50000, null)).toBe("30% do preço");
+    expect(textoDosPercentuais(15000, 0, 40000)).toBe("37,5% no mínimo");
+    expect(textoDosPercentuais(15000, 0, null)).toBeNull();
+  });
+
+  it("os rótulos mudam no pacote", () => {
+    expect(textoDosPercentuais(10000, 85500, 72000, { preco: "do pacote", minimo: "no mínimo" })).toBe(
+      "11,7% do pacote · 13,89% no mínimo"
+    );
+  });
+
+  it("o cartão, o repasse por nível e os formulários usam o mínimo do cadastro", () => {
+    const editor = ler("src/app/(app)/procedimentos/procedures-editor.tsx");
+    expect(editor).toMatch(/textoDosPercentuais\(valor, p\.defaultPriceCents, p\.minPriceCents \?\? null\)/);
+    expect(editor).toMatch(/minPriceCents=\{p\.minPriceCents \?\? null\}/);
+    expect(editor).toMatch(/precoMinimoCents=\{minimoDoFormulario\}/);
+    expect(editor).toMatch(/precoMinimoCents=\{minPriceCents\}/);
+    expect(ler("src/app/(app)/procedimentos/sugestoes.tsx")).toMatch(/precoMinimoCents=\{preco\.minPrice/);
+    expect(ler("src/app/(app)/procedimentos/repasse-valor-percentual.tsx")).toMatch(
+      /percentualDoValor\(valorCents, precoMinimoCents\)/
+    );
   });
 });
 

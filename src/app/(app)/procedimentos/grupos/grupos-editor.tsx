@@ -257,6 +257,7 @@ function CartaoDoGrupo({
         itens={noCatalogo}
         precoDe={precoDe}
         ajustePercent={grupo.ajustePercent ?? 0}
+        minimoPercent={grupo.minimoPercent ?? null}
         niveis={niveis}
         repasses={repasses}
         unidade={unidade}
