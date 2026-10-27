@@ -17,6 +17,8 @@ import {
 import { METHODOLOGY_PILLARS, PILLAR_LABELS } from "@/lib/journey";
 import { formatBrDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { parseBRLToCents } from "@/lib/pricing";
+import { RepasseValorOuPercentual } from "./repasse-valor-percentual";
 import {
   ROTULO_DA_SUGESTAO,
   type SituacaoDaSugestao,
@@ -430,8 +432,19 @@ export function SugestoesDeProcedimento({
                 <label className="block"><Label className="text-[11px]">Código TUSS</Label><Input value={preco.tussCode} onChange={(e) => setPreco((p) => ({ ...p, tussCode: e.target.value }))} /></label>
                 <label className="block"><Label className="text-[11px]">Preço mínimo (R$)</Label><Input value={preco.minPrice} onChange={(e) => setPreco((p) => ({ ...p, minPrice: e.target.value }))} inputMode="decimal" placeholder="(opcional)" /></label>
                 <label className="block"><Label className="text-[11px]">Preço máximo (R$)</Label><Input value={preco.maxPrice} onChange={(e) => setPreco((p) => ({ ...p, maxPrice: e.target.value }))} inputMode="decimal" placeholder="(opcional)" /></label>
-                <label className="block"><Label className="text-[11px]">Comissão (%)</Label><Input value={preco.commissionPercent} onChange={(e) => setPreco((p) => ({ ...p, commissionPercent: e.target.value }))} inputMode="decimal" /></label>
-                <label className="block"><Label className="text-[11px]">Comissão fixa (R$)</Label><Input value={preco.commissionFixed} onChange={(e) => setPreco((p) => ({ ...p, commissionFixed: e.target.value }))} inputMode="decimal" placeholder="(opcional)" /></label>
+                <div className="sm:col-span-2">
+                  <Label className="text-[11px]">Repasse ao dentista (comissão)</Label>
+                  <div className="max-w-sm">
+                    <RepasseValorOuPercentual
+                      valor={preco.commissionFixed}
+                      onValor={(v) => setPreco((p) => ({ ...p, commissionFixed: v, commissionPercent: "" }))}
+                      precoCents={preco.defaultPrice.trim() ? parseBRLToCents(preco.defaultPrice) : null}
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Digite o valor <strong>ou</strong> o percentual do preço padrão; o que fica gravado é o valor em R$.
+                  </p>
+                </div>
               </div>
             </div>
           )}

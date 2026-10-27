@@ -39,6 +39,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
+- [ ] **AP78** — campo de busca dos Procedimentos solta aviso do Base UI no console (`defaultValue` que muda)
+- [ ] **AP77** — comissão em massa (Precificação) ainda grava % e mostra "% + R$" (o cadastro grava R$ desde a 0.352.0)
 - [ ] **AP76** — manual 6.3 ("Cuidados") ainda cita o botão Reabrir para edição, que saiu na 0.336.0
 - [ ] **AP72** — limpar a anamnese antiga sem uso (`saveAnamnesis`; a tabela só depois de conferir a produção)
 - [ ] **AP68** — aba Fluxo de caixa do Painel da rede lê unidade por unidade (medir com a rede grande)
@@ -2652,6 +2654,31 @@ o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produç�
 se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
+
+### AP78. Campo de busca dos Procedimentos: aviso do Base UI no console (27/10/2026)
+
+**Confirmado na tela** (treino, achado conferindo o repasse em R$ ou %):
+buscar em `/procedimentos` solta *"A component is changing the default value
+state of an uncontrolled FieldControl after being initialized"*. Reproduzido
+numa aba nova só com a busca, sem tocar em mais nada. A causa provável é
+`defaultValue={search}` no `<Input>` de `procedimentos/page.tsx`: a busca
+muda o endereço, a página volta com outro `defaultValue`, e o Base UI
+reclama. **Suspeita, não conferida:** outras telas com `FilterForm` e
+`defaultValue` vindo do endereço fazem o mesmo. Não quebra nada que se veja;
+é erro no console que, sempre aparecendo, ninguém lê (§ ARQUITETURA, o
+cronômetro).
+
+### AP77. Comissão em massa ainda grava percentual (27/10/2026)
+
+**Confirmado lendo o código** (`setCommissionBulk` em
+`procedimentos/actions.ts`, painel em `bulk-panels.tsx`): a comissão em
+massa da Precificação grava `commission_percent` e/ou
+`commission_fixed_cents` como vieram, e o histórico escreve "10% + R$
+50,00". Desde a 0.352.0 o cadastro grava SEMPRE em R$ (decisão do dono: o %
+é calculadora), e o repasse paga só o valor quando os dois existem. Ficou de
+fora porque o dono escolheu o escopo "cadastro + repasse por nível". O
+conserto natural: o painel converter o % em R$ procedimento a procedimento
+(pelo preço de cada um) com `repasseParaGravar` — perguntar ao dono antes.
 
 ### AP76. Manual 6.3: "Cuidados" ainda manda usar o Reabrir para edição (27/10/2026)
 

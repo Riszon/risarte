@@ -390,6 +390,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (3) — PC Administrador (core 0.351.0 → 0.352.0, sem migração)**
+
+- **Repasse em R$ ou em % (pedido do dono).** Cadastro do procedimento,
+  repasse por nível e aprovação de sugestão: digita um, o outro aparece.
+  ⚠️ **Decisão do dono: GRAVA EM R$** — o % é calculadora sobre o preço
+  padrão; mudar o preço mantém o repasse e muda o %. A conta mora em
+  `src/lib/finance/repasse-percentual.ts` e o servidor grava pela mesma
+  (`repasseParaGravar` em `parseProcedure`, que também serve a importação).
+  ⚠️ `commission_percent` só sobra quando não há preço para converter.
+- Fora, por decisão (escopo "cadastro + por nível"): Financeiro › Repasses
+  e a comissão em massa da Precificação — esta ainda grava % (AP77).
+- Visto na tela no treino (Admin de teste; nada gravado). Achado AP78 (aviso
+  do Base UI no campo de busca). `.next-test` limpo.
+
 **27/10/2026 (2) — PC Administrador (core 0.350.0 → 0.351.0, sem migração)**
 
 - **Relatos OC-00135/OC-00136 (um caso):** a recepção não distinguia o

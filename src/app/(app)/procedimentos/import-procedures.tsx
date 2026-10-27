@@ -218,7 +218,12 @@ export function ImportProcedures() {
               <strong>Tempo Estimado (min)</strong>: minutos de execução (só o
               número, ex.: 30) — ajusta a duração na agenda e o tempo do plano.
             </li>
-            <li>Preços e comissão (R$) em reais (ex.: 250,00). Comissão (%) só o número (ex.: 10).</li>
+            <li>
+              Preços e comissão (R$) em reais (ex.: 250,00). Comissão (%) só o
+              número (ex.: 10). A comissão é gravada em <strong>R$</strong>:
+              o percentual vira valor sobre o preço padrão, e se vierem os dois
+              vale o R$.
+            </li>
             <li>
               Se o <strong>nome</strong> já existir, o procedimento é{" "}
               <strong>atualizado</strong>; senão, é criado.

@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.351.0** · Última migração: **0324** (0318 a 0324 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.352.0** · Última migração: **0324** (0318 a 0324 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.352.0 (sem migração) — REPASSE EM R$ OU EM % (pedido do dono, 27/10/2026)
+>
+> No cadastro do procedimento e no repasse por nível, o repasse ao dentista
+> se digita em R$ **ou** em % do preço padrão, e o outro aparece ao lado.
+> Decisões do dono: **grava em R$** (o % é calculadora; reajuste de preço não
+> muda o repasse — regra do FIN5) e o par vale no **cadastro + por nível**
+> (a tabela de Financeiro › Repasses e a comissão em massa ficaram como
+> estavam). Defeito de texto corrigido junto: a lista mostrava "10% + R$
+> 50,00", mas o repasse paga só o valor. Regra única em
+> `src/lib/finance/repasse-percentual.ts` (tela e servidor). EV-226.
+> Achados: AP77 (comissão em massa) e AP78 (aviso do campo de busca).
 
 > ## 🎯 0.351.0 (sem migração) — MARCA DA APRESENTAÇÃO COMERCIAL (OC-00135/OC-00136, 27/10/2026)
 >

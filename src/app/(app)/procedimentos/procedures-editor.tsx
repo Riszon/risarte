@@ -34,6 +34,7 @@ import {
   formatBRL,
   formatMinutes,
   intervalSummary,
+  parseBRLToCents,
   protocolSummary,
   protocolTotalMinutes,
   SESSION_TIME_OPTIONS,
@@ -63,6 +64,13 @@ import {
 } from "./actions";
 import { BRAZIL_TIME_ZONE, todayInBrazil } from "@/lib/dates";
 import {
+  lerPercentual,
+  percentualDoValor,
+  textoDoPercentual,
+  valorDoPercentual,
+} from "@/lib/finance/repasse-percentual";
+import { RepasseValorOuPercentual } from "./repasse-valor-percentual";
+import {
   dataBr,
   proximoReajuste,
   ROTULO_DA_ORIGEM,
@@ -91,11 +99,27 @@ function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
 
+/**
+ * O repasse do cadastro com o par ao lado: "R$ 150,00 (30% do preço)".
+ *
+ * Antes mostrava "10% + R$ 50,00" quando os dois estavam preenchidos — mas o
+ * repasse paga SÓ o valor (o percentual é o degrau de baixo, `resolvePayoutRate`).
+ * Agora mostra o que vale de verdade.
+ */
 function commissionLabel(p: Procedure): string {
-  const parts: string[] = [];
-  if (p.commissionPercent > 0) parts.push(`${p.commissionPercent}%`);
-  if (p.commissionFixedCents > 0) parts.push(formatBRL(p.commissionFixedCents));
-  return parts.length > 0 ? parts.join(" + ") : "—";
+  if (p.commissionFixedCents > 0) {
+    const pct = percentualDoValor(p.commissionFixedCents, p.defaultPriceCents);
+    return pct != null
+      ? `${formatBRL(p.commissionFixedCents)} (${textoDoPercentual(pct)} do preço)`
+      : formatBRL(p.commissionFixedCents);
+  }
+  if (p.commissionPercent > 0) {
+    const v = valorDoPercentual(p.commissionPercent, p.defaultPriceCents);
+    return v != null
+      ? `${formatBRL(v)} (${textoDoPercentual(p.commissionPercent)} do preço)`
+      : `${textoDoPercentual(p.commissionPercent)} do preço (sem preço definido)`;
+  }
+  return "—";
 }
 
 const EMPTY: ProcedureInput = {
@@ -114,6 +138,32 @@ const EMPTY: ProcedureInput = {
   directSaleSdr: false,
 };
 
+/**
+ * O repasse ao abrir o formulário. Percentual antigo (de antes do par R$ ⇄ %)
+ * já abre convertido em R$ quando há preço — é o que vai ser gravado. Sem
+ * preço não há como converter, e o percentual fica como está.
+ */
+function repasseNoFormulario(
+  p: Procedure
+): Pick<ProcedureInput, "commissionFixed" | "commissionPercent"> {
+  if (p.commissionFixedCents > 0) {
+    return {
+      commissionFixed: centsToInput(p.commissionFixedCents),
+      commissionPercent: "",
+    };
+  }
+  if (p.commissionPercent > 0) {
+    const v = valorDoPercentual(p.commissionPercent, p.defaultPriceCents);
+    return v != null
+      ? { commissionFixed: centsToInput(v), commissionPercent: "" }
+      : {
+          commissionFixed: "",
+          commissionPercent: String(p.commissionPercent).replace(".", ","),
+        };
+  }
+  return { commissionFixed: "", commissionPercent: "" };
+}
+
 function toInput(p: Procedure): ProcedureInput {
   return {
     name: p.name,
@@ -123,12 +173,7 @@ function toInput(p: Procedure): ProcedureInput {
     defaultPrice: centsToInput(p.defaultPriceCents),
     minPrice: p.minPriceCents != null ? centsToInput(p.minPriceCents) : "",
     maxPrice: p.maxPriceCents != null ? centsToInput(p.maxPriceCents) : "",
-    commissionPercent: p.commissionPercent
-      ? String(p.commissionPercent).replace(".", ",")
-      : "",
-    commissionFixed: p.commissionFixedCents
-      ? centsToInput(p.commissionFixedCents)
-      : "",
+    ...repasseNoFormulario(p),
     estimatedMinutes: p.estimatedMinutes != null ? String(p.estimatedMinutes) : "",
     directSale: p.directSale ?? false,
     directSaleReception: p.directSaleReception ?? false,
@@ -164,6 +209,14 @@ function ProcedureFields({
     value.specialty && !specialties.includes(value.specialty)
       ? [value.specialty, ...specialties]
       : specialties;
+  const precoDoFormulario = value.defaultPrice.trim()
+    ? parseBRLToCents(value.defaultPrice)
+    : null;
+  // Percentual gravado antes da 0.352.0 que não deu para converter (sem preço).
+  const percentualAntigo =
+    !value.commissionFixed.trim() && value.commissionPercent.trim()
+      ? lerPercentual(value.commissionPercent)
+      : null;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -254,23 +307,29 @@ function ProcedureFields({
           placeholder="(opcional)"
         />
       </div>
-      <div>
-        <Label>Comissão (%)</Label>
-        <Input
-          value={value.commissionPercent}
-          onChange={(e) => onChange({ commissionPercent: e.target.value })}
-          inputMode="decimal"
-          placeholder="Ex.: 10"
-        />
-      </div>
-      <div>
-        <Label>Comissão fixa (R$)</Label>
-        <Input
-          value={value.commissionFixed}
-          onChange={(e) => onChange({ commissionFixed: e.target.value })}
-          inputMode="decimal"
-          placeholder="(opcional)"
-        />
+      <div className="sm:col-span-2">
+        <Label>Repasse ao dentista (comissão)</Label>
+        <div className="max-w-sm">
+          <RepasseValorOuPercentual
+            valor={value.commissionFixed}
+            // Digitou R$ ou % → grava em R$; o percentual antigo sai junto.
+            onValor={(v) => onChange({ commissionFixed: v, commissionPercent: "" })}
+            precoCents={precoDoFormulario}
+          />
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Digite o valor <strong>ou</strong> o percentual do preço padrão: o
+          outro aparece sozinho. O que fica gravado é o valor em R$ — se o
+          preço mudar depois, o repasse continua o mesmo e o percentual
+          muda. Vale para o nível de carreira sem valor próprio.
+        </p>
+        {percentualAntigo != null && (
+          <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+            Este procedimento tem repasse de{" "}
+            {textoDoPercentual(percentualAntigo)} gravado antes desta tela.
+            Defina o preço padrão para ele virar valor em R$.
+          </p>
+        )}
       </div>
 
       {/* Venda direta na unidade (docs/COMERCIAL.md §7.3). */}
@@ -1019,6 +1078,7 @@ export function ProceduresEditor({
  */
 function PayoutByLevel({
   procedureId,
+  priceCents,
   levels,
   payoutByLevel,
   canEdit,
@@ -1026,6 +1086,8 @@ function PayoutByLevel({
   run,
 }: {
   procedureId: string;
+  /** Preço padrão: a base do percentual de cada nível (par R$ ⇄ %). */
+  priceCents: number;
   levels: { id: string; name: string }[];
   payoutByLevel: Record<string, { amountCents: number; source: string }>;
   canEdit: boolean;
@@ -1070,27 +1132,23 @@ function PayoutByLevel({
         <div className="mt-1 space-y-2">
           <div className="flex flex-wrap gap-2">
             {levels.map((l) => (
-              <label key={l.id} className="block">
-                <span className="text-[10px] text-muted-foreground">
-                  {l.name}
-                </span>
-                <Input
-                  className="h-7 w-24 text-xs"
-                  inputMode="decimal"
-                  placeholder="—"
-                  value={draft[l.id] ?? ""}
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, [l.id]: e.target.value }))
-                  }
-                />
-              </label>
+              <RepasseValorOuPercentual
+                key={l.id}
+                compacto
+                rotulo={l.name}
+                valor={draft[l.id] ?? ""}
+                onValor={(v) => setDraft((d) => ({ ...d, [l.id]: v }))}
+                precoCents={priceCents}
+              />
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Valor da <strong>rede</strong>, valendo a partir de hoje. A unidade
-            que tem contrato próprio sobrescreve em Financeiro › Repasses, e o
-            que já foi apurado continua com o valor da época. Em branco = o nível
-            usa a comissão do procedimento.
+            Digite o valor <strong>ou</strong> o percentual do preço padrão; o
+            que fica gravado é o valor em R$. Valor da <strong>rede</strong>,
+            valendo a partir de hoje. A unidade que tem contrato próprio
+            sobrescreve em Financeiro › Repasses, e o que já foi apurado
+            continua com o valor da época. Em branco = o nível usa o repasse
+            do cadastro do procedimento.
           </p>
           <Button
             size="sm"
@@ -1134,6 +1192,7 @@ function PayoutByLevel({
                     {formatBRL(v.amountCents)}
                   </em>
                 )}
+                {v && <PercentualDoNivel valorCents={v.amountCents} priceCents={priceCents} />}
               </span>
             );
           })}
@@ -1141,6 +1200,19 @@ function PayoutByLevel({
       )}
     </div>
   );
+}
+
+/** "· 30%" ao lado do valor do nível; nada quando não há preço. */
+function PercentualDoNivel({
+  valorCents,
+  priceCents,
+}: {
+  valorCents: number;
+  priceCents: number;
+}) {
+  const pct = percentualDoValor(valorCents, priceCents);
+  if (pct == null) return null;
+  return <span className="tabular-nums"> · {textoDoPercentual(pct)}</span>;
 }
 
 function ProcedureRow({
@@ -1449,7 +1521,7 @@ function ProcedureRow({
                 {p.maxPriceCents != null ? formatBRL(p.maxPriceCents) : "—"}
               </span>
             )}
-            <span>Comissão: {commissionLabel(p)}</span>
+            <span>Repasse: {commissionLabel(p)}</span>
             {sessions.length > 0 ? (
               <span>Rede: {protocolSummary(sessions)}</span>
             ) : (
@@ -1648,6 +1720,7 @@ function ProcedureRow({
       {networkMode && levels.length > 0 && (
         <PayoutByLevel
           procedureId={p.id}
+          priceCents={p.defaultPriceCents}
           levels={levels}
           payoutByLevel={payoutByLevel}
           canEdit={canEditPayout}

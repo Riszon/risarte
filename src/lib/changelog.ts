@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.352.0",
+    data: "2026-10-27",
+    migracao: null,
+    titulo: "Procedimentos: repasse ao dentista em R$ ou em %",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No cadastro do procedimento e no repasse por nível, o repasse ao dentista pode ser digitado em R$ ou em percentual do preço padrão: digitou um, o outro aparece ao lado. O que fica gravado é o valor em R$ — se o preço mudar depois, o repasse continua o mesmo e o percentual muda. A lista mostra o repasse com o percentual (ex.: R$ 150,00 (30% do preço)) e deixou de mostrar \"% + R$\", que não era o que o repasse pagava.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.351.0",
     data: "2026-10-27",
     migracao: null,

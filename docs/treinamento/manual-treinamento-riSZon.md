@@ -2395,10 +2395,22 @@ alto). Cada procedimento é um cartão com **uma linha de resumo**:
   orçamento: preço, tempo, pilar ou repasse. **Completo** (verde) quando não
   falta nada. O botão **Só os com pendência** mostra apenas os incompletos.
 
-Clique no cartão para ver os detalhes (faixa de preço, comissão, repasse por
+Clique no cartão para ver os detalhes (faixa de preço, repasse, repasse por
 nível, kits, sessões, histórico e os botões de editar); abre um por vez. Os
 **inativos** ficam numa seção própria no fim da lista, em cinza e riscados,
 com o botão **Reativar** à vista — eles não aparecem no orçamento nem na venda.
+
+**O repasse ao dentista em R$ ou em %** (versão 0.352.0). No cartão aberto, a
+linha **Repasse** mostra o valor e quanto ele é do preço padrão — por exemplo,
+*R$ 150,00 (30% do preço)* — e o **Repasse por nível** mostra o mesmo par para
+cada nível (*Júnior: R$ 50,00 · 8,2%*). Quem cadastra (o Admin Master) digita
+**o valor ou o percentual**, no cadastro do procedimento ou no **Editar** do
+repasse por nível: digitou um, o outro aparece ao lado, calculado sobre o
+preço padrão. O que fica gravado é sempre o **valor em R$** (regra da rede: o
+repasse é valor fixo). Por isso, **se o preço mudar depois, o repasse continua
+o mesmo e o percentual muda** — um reajuste de preço não aumenta o repasse de
+ninguém sem alguém decidir. Sem preço padrão, o campo de percentual fica
+apagado (não há sobre o que calcular).
 
 **Grupos de procedimentos** (versão 0.350.0). Em **Procedimentos → Grupos**,
 o Planner e o Admin Master montam os grupos que o plano oferece no botão

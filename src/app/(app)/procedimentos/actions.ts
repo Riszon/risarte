@@ -17,6 +17,7 @@ import {
 } from "@/lib/vigencia-do-preco";
 import { logAudit } from "@/lib/audit";
 import { formatBRL, formatSessions, parseBRLToCents } from "@/lib/pricing";
+import { repasseParaGravar } from "@/lib/finance/repasse-percentual";
 import { METHODOLOGY_PILLARS, type MethodologyPillar } from "@/lib/journey";
 import {
   mensagemDaSugestao,
@@ -125,6 +126,13 @@ function parseProcedure(
   if (!Number.isFinite(percent) || percent < 0) {
     return { error: "Comissão (%) inválida." };
   }
+  // Par R$ ⇄ % (27/10/2026): o que fica gravado é o valor em R$. Percentual
+  // vira R$ sobre o preço padrão; só sem preço ele fica como percentual.
+  const repasse = repasseParaGravar({
+    valorCents: fixed,
+    percent,
+    precoCents: def,
+  });
 
   let estimated_minutes: number | null = null;
   const estStr = input.estimatedMinutes.trim();
@@ -145,8 +153,8 @@ function parseProcedure(
       default_price_cents: def,
       min_price_cents: min,
       max_price_cents: max,
-      commission_percent: percent,
-      commission_fixed_cents: fixed,
+      commission_percent: repasse.percent,
+      commission_fixed_cents: repasse.valorCents,
       estimated_minutes,
       // Só faz sentido liberar recepção/SDR se o procedimento é de venda direta.
       direct_sale: input.directSale,
