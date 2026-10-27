@@ -405,8 +405,9 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Etiqueta = `procedure_group_id`** no item; o gatilho a TIRA (sem
   recusar) quando o procedimento não está no grupo — a cópia para nova versão
   não quebra se o grupo mudou.
-- ⏳ **0324 aplicada só no TREINO** — falta o dono rodar na produção. Antes
-  dela o botão Grupo não aparece e o plano abre igual (leituras à parte).
+- ✅ **0324 aplicada na produção e no treino** (27/10/2026; conferência do
+  dono 2·1·3·1·2 — tabelas, coluna, funções, gatilho, auditoria). Sem ela o
+  botão Grupo não aparece e o plano abre igual (leituras à parte).
 - **Resíduo no treino (meu):** o grupo "Exodontia + implante (teste)" e 4
   itens dele (dentes 37 e 47) no plano em rascunho do "Teste do portão 2
   (pode ignorar)". Nada enviado, ninguém avisado.
