@@ -35,7 +35,6 @@ import {
   conquistasDasMetas,
   lerMetas,
   painelDasMetas,
-  type TipoDeMeta,
 } from "@/lib/empresarial/riso-social";
 import type { PaymentModel } from "@/lib/empresarial/constants";
 import { BillingTab, type BillingView } from "./billing-tab";
@@ -818,6 +817,8 @@ export default async function CompanyDetailPage(props: {
       { data: metricas, error: eMetricas },
       { data: tokenRows },
       { data: indRows },
+      { count: dependentes, error: eDependentes },
+      { count: vencidas, error: eVencidas },
     ] = await Promise.all([
       db
         .from("companies")
@@ -838,13 +839,14 @@ export default async function CompanyDetailPage(props: {
       db.rpc("social_metrics", { p_company_id: companyId }),
       db
         .from("social_tokens")
-        .select("id, trigger_type, is_pool, status, beneficiary_client_id, created_at")
+        .select("id, trigger_type, goal_id, is_pool, status, beneficiary_client_id, created_at")
         .eq("company_id", companyId)
         .order("created_at", { ascending: false })
         .returns<
           {
             id: string;
             trigger_type: string;
+            goal_id: string | null;
             is_pool: boolean;
             status: "AVAILABLE" | "ASSIGNED" | "USED";
             beneficiary_client_id: string | null;
@@ -870,14 +872,36 @@ export default async function CompanyDetailPage(props: {
             created_at: string;
           }[]
         >(),
+      // Dependentes ativos de titulares ativos (1035).
+      db
+        .from("dependents")
+        .select("id, employees!inner(company_id, status)", { count: "exact", head: true })
+        .eq("employees.company_id", companyId)
+        .eq("employees.status", "ACTIVE")
+        .eq("status", "ACTIVE"),
+      // Mensalidades vencidas e não pagas (1035): passou da data e está em
+      // aberto — a situação OVERDUE só existe depois da checagem de
+      // inadimplência, então contar só por ela mostraria menos atraso.
+      db
+        .from("adhesion_billing")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("billing_type", "MONTHLY")
+        .in("status", ["PENDING", "OVERDUE"])
+        .lt("due_date", todayInBrazil()),
     ]);
     const metas = lerMetas(emp?.social_goals);
     // ⚠️ Medida que falhou NÃO vira zero (AP11): o painel diz que não mediu.
-    const medido = !eAtivos && !eMetricas && ativos != null;
+    const medido =
+      !eAtivos && !eMetricas && !eDependentes && !eVencidas && ativos != null && dependentes != null && vencidas != null;
     if (eMetricas) console.error("social_metrics:", eMetricas.message);
+    if (eDependentes) console.error("social dependentes:", eDependentes.message);
+    if (eVencidas) console.error("social mensalidades:", eVencidas.message);
     const conquistas = medido
       ? conquistasDasMetas(metas, {
           titularesAtivos: ativos ?? 0,
+          dependentesAtivos: dependentes ?? 0,
+          mensalidadesVencidas: vencidas ?? 0,
           inicio:
             emp?.contract_started_at ??
             (emp?.created_at ? isoDateIn(new Date(emp.created_at)) : todayInBrazil()),
@@ -895,11 +919,11 @@ export default async function CompanyDetailPage(props: {
           })),
         })
       : [];
-    const liberadasPorTipo: Partial<Record<TipoDeMeta, number>> = {};
-    for (const t of tokenRows ?? []) {
-      const tipo = t.trigger_type as TipoDeMeta;
-      liberadasPorTipo[tipo] = (liberadasPorTipo[tipo] ?? 0) + 1;
-    }
+    const fichas = (tokenRows ?? []).map((t) => ({
+      metaId: t.goal_id,
+      dia: isoDateIn(new Date(t.created_at)),
+    }));
+    const numeroDaMeta = new Map(metas.map((m, i) => [m.id, i + 1]));
     const nomePorFicha = new Map(
       (indRows ?? []).filter((r) => r.token_id).map((r) => [r.token_id!, r.full_name])
     );
@@ -908,10 +932,11 @@ export default async function CompanyDetailPage(props: {
       participa: emp?.social_participates ?? true,
       metas,
       medido,
-      painel: painelDasMetas(conquistas, liberadasPorTipo),
+      painel: painelDasMetas(conquistas, fichas),
       tokens: (tokenRows ?? []).map((t) => ({
         id: t.id,
         triggerType: t.trigger_type,
+        metaNumero: t.goal_id ? (numeroDaMeta.get(t.goal_id) ?? null) : null,
         isPool: t.is_pool,
         status: t.status,
         beneficiaryName: nomePorFicha.get(t.id) ?? null,

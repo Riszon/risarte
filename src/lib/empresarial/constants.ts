@@ -286,11 +286,15 @@ export const DISPATCH_ITEM_LABELS: Record<DispatchItem, string> = {
   EXTRA: "Documentos adicionais",
 };
 
+// Desde a 1035 a ficha nasce de uma META (GOAL, com `goal_id`) ou é avulsa
+// (MANUAL). Os quatro primeiros são das fichas anteriores — só para exibir.
 export const SOCIAL_TRIGGER_TYPES = [
   "EMPLOYEE_COUNT",
   "TIME_IN_PROGRAM",
   "ATTENDANCE",
   "TREATMENT_SPEND",
+  "GOAL",
+  "MANUAL",
 ] as const;
 export type SocialTriggerType = (typeof SOCIAL_TRIGGER_TYPES)[number];
 export const SOCIAL_TRIGGER_LABELS: Record<SocialTriggerType, string> = {
@@ -298,4 +302,6 @@ export const SOCIAL_TRIGGER_LABELS: Record<SocialTriggerType, string> = {
   TIME_IN_PROGRAM: "Tempo no programa",
   ATTENDANCE: "Comparecimento",
   TREATMENT_SPEND: "Gasto em tratamento",
+  GOAL: "Meta",
+  MANUAL: "Avulsa (exceção combinada)",
 };

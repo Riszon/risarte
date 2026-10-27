@@ -661,17 +661,19 @@ export default async function PropostaPage({
           <section className="space-y-2 break-inside-avoid">
             <h2 className="text-lg font-medium">Riso+ Social</h2>
             <p className="leading-relaxed text-muted-foreground">
-              A empresa indica pessoas carentes para tratamento na rede Risarte.
+              A empresa indica pessoas carentes para tratamento na rede Risarte,
+              enquanto pagar, integral ou parcialmente, a mensalidade dos
+              colaboradores.
               {metasSociais.length > 0
-                ? " As indicações são conquistadas por estas metas:"
+                ? " As indicações são conquistadas por estas metas (em cada uma, todas as condições ao mesmo tempo):"
                 : " As indicações são combinadas com a Risarte ao longo do programa."}
             </p>
             {metasSociais.length > 0 && (
-              <ul className="list-disc space-y-0.5 pl-5 text-muted-foreground">
+              <ol className="list-decimal space-y-0.5 pl-5 text-muted-foreground">
                 {metasSociais.map((m) => (
-                  <li key={m.tipo}>{rotuloDaMeta(m)}</li>
+                  <li key={m.id}>{rotuloDaMeta(m)}</li>
                 ))}
-              </ul>
+              </ol>
             )}
           </section>
         )}

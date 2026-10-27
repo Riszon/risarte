@@ -515,17 +515,19 @@ export default async function ContratoPage({
             <div className="space-y-1 text-left">
               <p className="font-semibold">Riso+ Social</p>
               <p>
-                A CONTRATANTE poderá indicar pessoas carentes para tratamento
+                Enquanto pagar, integral ou parcialmente, a mensalidade dos
+                colaboradores, a CONTRATANTE poderá indicar pessoas carentes
+                para tratamento
                 {lerMetas(q?.social_goals).length > 0
-                  ? ", conforme as metas abaixo:"
+                  ? ", conforme as metas abaixo (em cada uma, todas as condições ao mesmo tempo):"
                   : ", em quantidade combinada com a CONTRATADA."}
               </p>
               {lerMetas(q?.social_goals).length > 0 && (
-                <ul className="list-disc space-y-0.5 pl-5">
+                <ol className="list-decimal space-y-0.5 pl-5">
                   {lerMetas(q?.social_goals).map((m) => (
-                    <li key={m.tipo}>{rotuloDaMeta(m)}</li>
+                    <li key={m.id}>{rotuloDaMeta(m)}</li>
                   ))}
-                </ul>
+                </ol>
               )}
             </div>
           )}

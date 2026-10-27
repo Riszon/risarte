@@ -5,10 +5,12 @@ import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
-import { SOCIAL_TRIGGER_TYPES } from "@/lib/empresarial/constants";
+import type { PaymentModel } from "@/lib/empresarial/constants";
 import {
+  lerMetas,
   metasDoFormulario,
   metasParaGravar,
+  participaDoSocial,
   problemasDasMetas,
 } from "@/lib/empresarial/riso-social";
 import { formatCpf } from "@/lib/masks";
@@ -16,58 +18,65 @@ import { lookupClientByCpf } from "./employee-actions";
 
 export type ActionResult = { ok: boolean; error?: string };
 
+const SEM_PAGAMENTO_DA_EMPRESA =
+  "Só a empresa que paga a mensalidade dos colaboradores (integral ou parcial) participa do Riso+ Social.";
+
 /**
- * LIBERA UMA FICHA SOCIAL — o clique do gestor (1034: "o sistema mostra, o
- * gestor libera"). O gatilho é o da meta que rendeu a ficha; é por ele que o
- * painel conta "liberadas" de cada meta.
+ * LIBERA UMA FICHA SOCIAL — o clique do gestor ("o sistema mostra, o gestor
+ * libera"). Com `metaId`, a ficha é da meta (GOAL) e conta no painel dela;
+ * sem, é avulsa (MANUAL, exceção combinada).
+ *
+ * ⚠️ O pré-requisito (empresa que paga, tudo ou parte, e participa) também
+ * mora no banco desde a 1035: a conferência aqui é para a mensagem amigável.
  */
 export async function generateSocialToken(
   companyId: string,
-  triggerType: string
+  metaId: string | null
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
-  if (!(SOCIAL_TRIGGER_TYPES as readonly string[]).includes(triggerType)) {
-    return { ok: false, error: "Gatilho inválido." };
-  }
 
   const db = await empresarialDb();
   const { data: company } = await db
     .from("companies")
-    .select("payment_model, status, social_participates")
+    .select("payment_model, status, social_participates, social_goals")
     .eq("id", companyId)
     .maybeSingle();
   if (!company) return { ok: false, error: "Empresa não encontrada." };
   if (company.status !== "ACTIVE") {
     return { ok: false, error: "Só empresas ativas participam do Riso+ Social." };
   }
-  if (company.payment_model === "EMPLOYEE_PAYS") {
-    return {
-      ok: false,
-      error: "Empresas no modelo “titular paga” não participam do Riso+ Social.",
-    };
+  if (!participaDoSocial(company.payment_model)) {
+    return { ok: false, error: SEM_PAGAMENTO_DA_EMPRESA };
   }
   if (company.social_participates === false) {
     return { ok: false, error: "Esta empresa não participa do Riso+ Social (combinado na proposta)." };
+  }
+  if (metaId && !lerMetas(company.social_goals).some((m) => m.id === metaId)) {
+    return { ok: false, error: "Esta meta não existe mais. Recarregue a tela." };
   }
   // Integral → beneficiário próprio; Parcial → entra no pool coletivo.
   const isPool = company.payment_model === "COMPANY_PARTIAL";
 
   const { error } = await db.from("social_tokens").insert({
     company_id: companyId,
-    trigger_type: triggerType,
+    trigger_type: metaId ? "GOAL" : "MANUAL",
+    goal_id: metaId,
     is_pool: isPool,
     status: "AVAILABLE",
   });
   if (error) {
     console.error("generateSocialToken failed:", error.message);
+    if (error.message.includes("SOCIAL_REQUIRES_COMPANY_PAYMENT")) {
+      return { ok: false, error: SEM_PAGAMENTO_DA_EMPRESA };
+    }
     return { ok: false, error: "Não foi possível liberar a ficha social." };
   }
   await logAudit({
     action: "create",
     entityType: "empresarial_social_token",
     entityId: companyId,
-    details: { trigger: triggerType, pool: isPool },
+    details: { meta: metaId, pool: isPool },
   });
   revalidatePath(`/empresarial/${companyId}`);
   return { ok: true };
@@ -135,6 +144,16 @@ export async function salvarMetasDaEmpresa(
   if (problemas.length > 0) return { ok: false, error: `Confira as metas: ${problemas.join("; ")}.` };
 
   const db = await empresarialDb();
+  if (participa) {
+    const { data: emp } = await db
+      .from("companies")
+      .select("payment_model")
+      .eq("id", companyId)
+      .maybeSingle<{ payment_model: PaymentModel }>();
+    if (!participaDoSocial(emp?.payment_model)) {
+      return { ok: false, error: SEM_PAGAMENTO_DA_EMPRESA };
+    }
+  }
   const { error } = await db
     .from("companies")
     .update({

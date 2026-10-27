@@ -1,53 +1,80 @@
-// Risarte Empresarial — AS METAS DO RISO+ SOCIAL (1034, dono em 26/10/2026).
+// Risarte Empresarial — AS METAS DO RISO+ SOCIAL (1034, refeitas na 1035).
 //
-// Pedido: *"Se a empresa paga para os colaboradores se vai ter a possibilidade
-// de participar do Riso+ Social, para indicar pessoas carentes, de acordo as
-// metas que forem definidos para a empresa parceira poder indicar pessoas
-// carentes."*
+// Pedido (26/10/2026): *"Se a empresa paga para os colaboradores se vai ter a
+// possibilidade de participar do Riso+ Social, para indicar pessoas carentes,
+// de acordo as metas que forem definidos para a empresa parceira poder
+// indicar pessoas carentes."*
 //
-// As QUATRO metas do briefing (§5.6), cada uma rendendo indicações:
-//   - a cada N titulares ativos .................... K indicações
-//   - a cada N meses de programa ................... K indicações
-//   - a cada período de N meses com comparecimento
-//     às avaliações/reavaliações ≥ P% .............. K indicações
-//   - a cada R$ X em tratamento fechado ............ K indicações
+// 1035 (27/10/2026): *"a meta […] deve ter a possibilidade de em uma unica
+// meta ter as condições variáveis, como por exemplo: para indicar 01 pessoa
+// carente deve ter pelo menos X titulares ativos e Y tempo de programa
+// empresarial."* Decisões do dono, na mesma conversa:
+//   1. UMA META = VÁRIAS CONDIÇÕES "PELO MENOS", TODAS AO MESMO TEMPO, e o
+//      número de indicações que ela rende.
+//   2. RENDE UMA VEZ; com "renova a cada N meses", rende de novo a cada
+//      período de N meses de contrato em que as condições continuarem
+//      valendo. Várias metas funcionam como degraus.
+//   3. AS CONDIÇÕES: titulares ativos, dependentes ativos, tempo de programa,
+//      comparecimento às avaliações, gasto em tratamento e mensalidades em dia.
 //
-// ⚠️ O SISTEMA CONTA, QUEM LIBERA É GENTE (decisão do dono). A conta diz
-// quantas indicações a empresa CONQUISTOU; a liberação é um clique do gestor.
-// Ficha liberada nunca é recolhida, mesmo que a conta caia depois (titulares
-// que saíram, por exemplo) — o que foi prometido e liberado fica.
+// ⚠️ PRÉ-REQUISITO: a empresa paga a mensalidade (tudo ou parte). No "titular
+// paga" não há Riso+ Social — e o banco recusa a ficha (1035).
+//
+// ⚠️ O SISTEMA CONTA, QUEM LIBERA É GENTE. A conta diz o que a meta
+// conquistou NO PERÍODO; a liberação é um clique do gestor. Ficha liberada
+// nunca é recolhida, mesmo que a condição caia depois.
 //
 // Puro e em números inteiros: a tela, o documento e o contrato perguntam o
 // mesmo, e a resposta não pode depender de quem perguntou.
 
 import type { PaymentModel } from "./constants";
 
-export const TIPOS_DE_META = [
+export const TIPOS_DE_CONDICAO = [
   "EMPLOYEE_COUNT",
+  "DEPENDENT_COUNT",
   "TIME_IN_PROGRAM",
   "ATTENDANCE",
   "TREATMENT_SPEND",
+  "FEES_UP_TO_DATE",
 ] as const;
-export type TipoDeMeta = (typeof TIPOS_DE_META)[number];
+export type TipoDeCondicao = (typeof TIPOS_DE_CONDICAO)[number];
 
-export const META_ROTULO: Record<TipoDeMeta, string> = {
+export const CONDICAO_ROTULO: Record<TipoDeCondicao, string> = {
   EMPLOYEE_COUNT: "Titulares ativos",
-  TIME_IN_PROGRAM: "Tempo no programa",
+  DEPENDENT_COUNT: "Dependentes ativos",
+  TIME_IN_PROGRAM: "Tempo de programa",
   ATTENDANCE: "Comparecimento às avaliações",
   TREATMENT_SPEND: "Gasto em tratamento",
+  FEES_UP_TO_DATE: "Mensalidades em dia",
 };
 
+/** A unidade do mínimo, para o editor. Mensalidades em dia não tem número. */
+export const CONDICAO_UNIDADE: Record<TipoDeCondicao, string> = {
+  EMPLOYEE_COUNT: "titulares",
+  DEPENDENT_COUNT: "dependentes",
+  TIME_IN_PROGRAM: "meses",
+  ATTENDANCE: "%",
+  TREATMENT_SPEND: "reais",
+  FEES_UP_TO_DATE: "",
+};
+
+/** O comparecimento é medido nos últimos 12 meses FECHADOS. */
+export const JANELA_DO_COMPARECIMENTO = 12;
+
 /**
- * Uma meta. `aCada` muda de sentido com o tipo:
- *   EMPLOYEE_COUNT → titulares; TIME_IN_PROGRAM e ATTENDANCE → meses;
- *   TREATMENT_SPEND → centavos.
- * `percentual` só existe no comparecimento.
+ * Uma condição "pelo menos". `minimo` muda de sentido com o tipo: titulares,
+ * dependentes, meses, percentual (1–100) ou centavos. Em "mensalidades em
+ * dia" ele não é usado (vale 0).
  */
+export type CondicaoSocial = { tipo: TipoDeCondicao; minimo: number };
+
 export type MetaSocial = {
-  tipo: TipoDeMeta;
-  aCada: number;
+  /** Estável: é por ele que as fichas liberadas são contadas. */
+  id: string;
+  condicoes: CondicaoSocial[];
   indicacoes: number;
-  percentual?: number | null;
+  /** Nulo = rende uma vez só. */
+  renovaMeses: number | null;
 };
 
 /** O mês e seus números, como a `empresarial.social_metrics` devolve. */
@@ -61,6 +88,9 @@ export type MesSocial = {
 
 export type DadosDaEmpresa = {
   titularesAtivos: number;
+  dependentesAtivos: number;
+  /** Mensalidades do programa vencidas e não pagas. */
+  mensalidadesVencidas: number;
   /** "2026-01-15" — o início do contrato (ou o cadastro, sem contrato). */
   inicio: string;
   /** "2026-10-27" — hoje, no relógio brasileiro. */
@@ -68,11 +98,23 @@ export type DadosDaEmpresa = {
   meses: readonly MesSocial[];
 };
 
+export type AvaliacaoDaCondicao = {
+  condicao: CondicaoSocial;
+  cumpre: boolean;
+  /** Como está hoje, em palavras: "45 titulares ativos (mínimo 20)". */
+  situacao: string;
+};
+
 export type ConquistaDaMeta = {
   meta: MetaSocial;
+  condicoes: AvaliacaoDaCondicao[];
+  /** Todas as condições valem hoje. */
+  cumpre: boolean;
+  /** O que a meta rende NESTE período (0 ou `indicacoes`). */
   conquistadas: number;
-  /** A régua em palavras: "45 titulares ativos — 2 vezes 20". */
-  explicacao: string;
+  /** "aaaa-mm-dd" do começo do período; nulo = meta de uma vez só. */
+  periodoDesde: string | null;
+  periodo: string;
 };
 
 const inteiro = (n: unknown): number => {
@@ -83,48 +125,94 @@ const inteiro = (n: unknown): number => {
 const reais = (cents: number) =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+
+const dataBr = (iso: string) => iso.split("-").reverse().join("/");
+
+/** "2027-01-15" → "2027-01-14". Conta de calendário, sem relógio. */
+function diaAnterior(iso: string): string {
+  const [a, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, d - 1)).toISOString().slice(0, 10);
+}
+
+/**
+ * Uma meta crua (jsonb ou formulário) → meta. Aceita também o formato da
+ * primeira versão da 1034 (`{tipo, a_cada, indicacoes, percentual}`, uma
+ * condição só), lido como "pelo menos `a_cada`".
+ */
+function metaCrua(bruto: unknown, i: number): MetaSocial {
+  const r = (bruto ?? {}) as Record<string, unknown>;
+  const id = typeof r.id === "string" && r.id.trim() ? r.id.trim().slice(0, 40) : `meta-${i + 1}`;
+  const renova = inteiro(r.renova_meses ?? r.renovaMeses);
+  const condicoes: CondicaoSocial[] = Array.isArray(r.condicoes)
+    ? r.condicoes.map((c) => {
+        const cc = (c ?? {}) as Record<string, unknown>;
+        return { tipo: String(cc.tipo ?? "") as TipoDeCondicao, minimo: inteiro(cc.minimo) };
+      })
+    : r.tipo
+      ? [
+          {
+            tipo: String(r.tipo) as TipoDeCondicao,
+            minimo: inteiro(r.tipo === "ATTENDANCE" ? r.percentual : (r.a_cada ?? r.aCada)),
+          },
+        ]
+      : [];
+  return {
+    id,
+    condicoes: condicoes.map((c) => (c.tipo === "FEES_UP_TO_DATE" ? { ...c, minimo: 0 } : c)),
+    indicacoes: inteiro(r.indicacoes),
+    renovaMeses: renova > 0 ? renova : null,
+  };
+}
+
 /** As metas como vieram do banco (jsonb) → metas limpas. O que não serve sai. */
 export function lerMetas(bruto: unknown): MetaSocial[] {
   if (!Array.isArray(bruto)) return [];
-  const out: MetaSocial[] = [];
-  for (const m of bruto) {
-    const r = m as Record<string, unknown>;
-    const tipo = String(r?.tipo ?? "") as TipoDeMeta;
-    if (!TIPOS_DE_META.includes(tipo)) continue;
-    const meta: MetaSocial = {
-      tipo,
-      aCada: inteiro(r.a_cada ?? r.aCada),
-      indicacoes: inteiro(r.indicacoes),
-      percentual: tipo === "ATTENDANCE" ? inteiro(r.percentual) : null,
-    };
-    if (meta.aCada > 0 && meta.indicacoes > 0) out.push(meta);
-  }
-  return out;
+  return bruto
+    .map(metaCrua)
+    .map((m) => ({ ...m, condicoes: m.condicoes.filter((c) => TIPOS_DE_CONDICAO.includes(c.tipo)) }))
+    .filter((m) => m.condicoes.length > 0 && m.indicacoes > 0 && problemasDasMetas([m]).length === 0);
 }
 
 /** O formato gravado no banco (snake_case, como os outros jsonb do módulo). */
 export function metasParaGravar(metas: readonly MetaSocial[]) {
   return metas.map((m) => ({
-    tipo: m.tipo,
-    a_cada: m.aCada,
+    id: m.id,
     indicacoes: m.indicacoes,
-    ...(m.tipo === "ATTENDANCE" ? { percentual: m.percentual ?? 0 } : {}),
+    renova_meses: m.renovaMeses,
+    condicoes: m.condicoes.map((c) => ({ tipo: c.tipo, minimo: c.minimo })),
   }));
 }
 
 /** O que impede gravar as metas. */
 export function problemasDasMetas(metas: readonly MetaSocial[]): string[] {
   const p: string[] = [];
-  const vistos = new Set<TipoDeMeta>();
-  for (const m of metas) {
-    if (vistos.has(m.tipo)) p.push(`há duas metas de "${META_ROTULO[m.tipo]}" — junte as duas`);
-    vistos.add(m.tipo);
-    if (m.aCada <= 0) p.push(`"${META_ROTULO[m.tipo]}" precisa de um "a cada" maior que zero`);
-    if (m.indicacoes <= 0) p.push(`"${META_ROTULO[m.tipo]}" precisa render ao menos 1 indicação`);
-    if (m.tipo === "ATTENDANCE" && !((m.percentual ?? 0) > 0 && (m.percentual ?? 0) <= 100)) {
-      p.push("o comparecimento precisa de um percentual entre 1 e 100");
+  const ids = new Set<string>();
+  metas.forEach((m, i) => {
+    const nome = `a meta ${i + 1}`;
+    if (ids.has(m.id)) p.push(`${nome} repete a identificação de outra — crie de novo`);
+    ids.add(m.id);
+    if (m.condicoes.length === 0) p.push(`${nome} precisa de ao menos uma condição`);
+    if (m.indicacoes <= 0) p.push(`${nome} precisa render ao menos 1 indicação`);
+    if (m.renovaMeses != null && !(m.renovaMeses >= 1 && m.renovaMeses <= 120)) {
+      p.push(`${nome}: a renovação vai de 1 a 120 meses (ou fica em branco)`);
     }
-  }
+    const vistos = new Set<string>();
+    for (const c of m.condicoes) {
+      if (!TIPOS_DE_CONDICAO.includes(c.tipo)) {
+        p.push(`${nome} tem uma condição desconhecida`);
+        continue;
+      }
+      const rotulo = CONDICAO_ROTULO[c.tipo];
+      if (vistos.has(c.tipo)) p.push(`${nome} tem "${rotulo}" duas vezes — deixe uma`);
+      vistos.add(c.tipo);
+      if (c.tipo === "ATTENDANCE" && !(c.minimo > 0 && c.minimo <= 100)) {
+        p.push(`${nome}: o comparecimento precisa de um percentual entre 1 e 100`);
+      } else if (c.tipo !== "FEES_UP_TO_DATE" && c.minimo <= 0) {
+        p.push(`${nome}: "${rotulo}" precisa de um mínimo maior que zero`);
+      }
+    }
+  });
   return [...new Set(p)];
 }
 
@@ -136,19 +224,36 @@ export function participaDoSocial(modelo: PaymentModel | null | undefined): bool
   return modelo === "COMPANY_PAYS" || modelo === "COMPANY_PARTIAL";
 }
 
+/** A condição em palavras: "pelo menos 20 titulares ativos". */
+export function rotuloDaCondicao(c: CondicaoSocial): string {
+  switch (c.tipo) {
+    case "EMPLOYEE_COUNT":
+      return `pelo menos ${plural(c.minimo, "titular ativo", "titulares ativos")}`;
+    case "DEPENDENT_COUNT":
+      return `pelo menos ${plural(c.minimo, "dependente ativo", "dependentes ativos")}`;
+    case "TIME_IN_PROGRAM":
+      return `pelo menos ${plural(c.minimo, "mês", "meses")} de programa`;
+    case "ATTENDANCE":
+      return `comparecimento de pelo menos ${c.minimo}% às avaliações e reavaliações nos últimos ${JANELA_DO_COMPARECIMENTO} meses`;
+    case "TREATMENT_SPEND":
+      return `pelo menos ${reais(c.minimo)} em tratamentos fechados`;
+    case "FEES_UP_TO_DATE":
+      return "mensalidades do programa em dia";
+  }
+}
+
+const juntar = (partes: string[]) =>
+  partes.length <= 1 ? (partes[0] ?? "") : `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}`;
+
 /** A meta em uma frase — para a proposta, o contrato e a tela. */
 export function rotuloDaMeta(m: MetaSocial): string {
-  const ind = `${m.indicacoes} indicaç${m.indicacoes === 1 ? "ão" : "ões"}`;
-  switch (m.tipo) {
-    case "EMPLOYEE_COUNT":
-      return `${ind} a cada ${m.aCada} titulares ativos`;
-    case "TIME_IN_PROGRAM":
-      return `${ind} a cada ${m.aCada} ${m.aCada === 1 ? "mês" : "meses"} de programa`;
-    case "ATTENDANCE":
-      return `${ind} a cada ${m.aCada} ${m.aCada === 1 ? "mês" : "meses"} com comparecimento de pelo menos ${m.percentual ?? 0}% às avaliações e reavaliações`;
-    case "TREATMENT_SPEND":
-      return `${ind} a cada ${reais(m.aCada)} em tratamentos fechados`;
-  }
+  const ind = plural(m.indicacoes, "indicação", "indicações");
+  const quando = juntar(m.condicoes.map(rotuloDaCondicao));
+  const vez =
+    m.renovaMeses == null
+      ? "uma vez"
+      : `a cada ${plural(m.renovaMeses, "mês", "meses")} de contrato em que as condições valerem`;
+  return `${ind} ${vez}, com ${quando || "(nenhuma condição)"}`;
 }
 
 /** Meses COMPLETOS entre duas datas "aaaa-mm-dd" (o dia conta). */
@@ -161,133 +266,156 @@ export function mesesCompletos(inicio: string, hoje: string): number {
   return Math.max(0, meses);
 }
 
-/** "2026-03-15" + 5 meses → "2026-08-01" (o mês, não o dia). */
-function mesSomado(inicio: string, n: number): string {
-  const [a, m] = inicio.split("-").map(Number);
+/** "2026-03-15" + 5 meses → "2026-08-15" (o dia vira o último do mês se faltar). */
+export function dataSomada(inicio: string, n: number): string {
+  const [a, m, d] = inicio.split("-").map(Number);
   const total = a * 12 + (m - 1) + n;
   const ano = Math.floor(total / 12);
   const mes = (total % 12) + 1;
-  return `${ano}-${String(mes).padStart(2, "0")}-01`;
+  const ultimo = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+  const dd = Math.min(d || 1, ultimo);
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+}
+
+/** Cada condição medida com os números de hoje. */
+export function avaliarCondicao(c: CondicaoSocial, d: DadosDaEmpresa): AvaliacaoDaCondicao {
+  switch (c.tipo) {
+    case "EMPLOYEE_COUNT": {
+      const n = Math.max(0, d.titularesAtivos);
+      return {
+        condicao: c,
+        cumpre: n >= c.minimo,
+        situacao: `${plural(n, "titular ativo", "titulares ativos")} (mínimo ${c.minimo})`,
+      };
+    }
+    case "DEPENDENT_COUNT": {
+      const n = Math.max(0, d.dependentesAtivos);
+      return {
+        condicao: c,
+        cumpre: n >= c.minimo,
+        situacao: `${plural(n, "dependente ativo", "dependentes ativos")} (mínimo ${c.minimo})`,
+      };
+    }
+    case "TIME_IN_PROGRAM": {
+      const n = mesesCompletos(d.inicio, d.hoje);
+      return {
+        condicao: c,
+        cumpre: n >= c.minimo,
+        situacao: `${plural(n, "mês", "meses")} de programa (mínimo ${c.minimo})`,
+      };
+    }
+    case "ATTENDANCE": {
+      // Os últimos 12 meses FECHADOS: o mês corrente ainda não terminou.
+      const ate = `${d.hoje.slice(0, 7)}-01`;
+      const de = dataSomada(ate, -JANELA_DO_COMPARECIMENTO);
+      const janela = d.meses.filter((m) => m.mes >= de && m.mes < ate);
+      const total = janela.reduce((s, m) => s + m.avaliacoes, 0);
+      const vieram = janela.reduce((s, m) => s + m.comparecimentos, 0);
+      // Sem consulta não há comparecimento a medir — não vale como cumprida.
+      if (total === 0) {
+        return {
+          condicao: c,
+          cumpre: false,
+          situacao: `sem avaliações nos últimos ${JANELA_DO_COMPARECIMENTO} meses (mínimo ${c.minimo}%)`,
+        };
+      }
+      const taxa = Math.floor((vieram / total) * 100);
+      return {
+        condicao: c,
+        cumpre: taxa >= c.minimo,
+        situacao: `${taxa}% de comparecimento em ${plural(total, "avaliação", "avaliações")} nos últimos ${JANELA_DO_COMPARECIMENTO} meses (mínimo ${c.minimo}%)`,
+      };
+    }
+    case "TREATMENT_SPEND": {
+      const gasto = d.meses.reduce((s, m) => s + Math.max(0, m.gastoCents), 0);
+      return {
+        condicao: c,
+        cumpre: gasto >= c.minimo,
+        situacao: `${reais(gasto)} em tratamentos fechados (mínimo ${reais(c.minimo)})`,
+      };
+    }
+    case "FEES_UP_TO_DATE": {
+      const n = Math.max(0, d.mensalidadesVencidas);
+      return {
+        condicao: c,
+        cumpre: n === 0,
+        situacao:
+          n === 0
+            ? "nenhuma mensalidade vencida"
+            : `${plural(n, "mensalidade vencida", "mensalidades vencidas")} sem pagamento`,
+      };
+    }
+  }
 }
 
 /**
- * QUANTAS INDICAÇÕES CADA META CONQUISTOU, com a régua escrita.
+ * O QUE CADA META CONQUISTOU NESTE PERÍODO.
  *
- * O comparecimento é medido em PERÍODOS FECHADOS de N meses a partir do início
- * do contrato: o período em andamento ainda não terminou, e premiar meio
- * período seria premiar uma promessa. Período sem avaliação nenhuma não rende
- * — sem consulta não há comparecimento a medir.
+ * Meta de uma vez: o período é o contrato inteiro. Meta que renova a cada N
+ * meses: o período é o bloco de N meses de contrato em que hoje cai (do 1º ao
+ * N-ésimo mês, do N+1 ao 2N, …). Em cada período a meta rende suas
+ * indicações se TODAS as condições valem — o que não foi liberado num
+ * período que terminou não se acumula para o seguinte.
  */
 export function conquistasDasMetas(
   metas: readonly MetaSocial[],
   d: DadosDaEmpresa
 ): ConquistaDaMeta[] {
   const meses = mesesCompletos(d.inicio, d.hoje);
-  const gasto = d.meses.reduce((s, m) => s + Math.max(0, m.gastoCents), 0);
-
   return metas.map((meta) => {
-    const k = Math.max(0, meta.indicacoes);
-    const n = Math.max(1, meta.aCada);
-    switch (meta.tipo) {
-      case "EMPLOYEE_COUNT": {
-        const vezes = Math.floor(Math.max(0, d.titularesAtivos) / n);
-        return {
-          meta,
-          conquistadas: vezes * k,
-          explicacao: `${d.titularesAtivos} titulares ativos — ${vezes} vez(es) ${n}`,
-        };
-      }
-      case "TIME_IN_PROGRAM": {
-        const vezes = Math.floor(meses / n);
-        return {
-          meta,
-          conquistadas: vezes * k,
-          explicacao: `${meses} ${meses === 1 ? "mês" : "meses"} de programa — ${vezes} período(s) de ${n}`,
-        };
-      }
-      case "TREATMENT_SPEND": {
-        const vezes = Math.floor(gasto / n);
-        return {
-          meta,
-          conquistadas: vezes * k,
-          explicacao: `${reais(gasto)} em tratamentos fechados — ${vezes} vez(es) ${reais(n)}`,
-        };
-      }
-      case "ATTENDANCE": {
-        const fechados = Math.floor(meses / n);
-        const alvo = Math.max(0, meta.percentual ?? 0);
-        let bons = 0;
-        const taxas: string[] = [];
-        for (let p = 0; p < fechados; p += 1) {
-          const de = mesSomado(d.inicio, p * n);
-          const ate = mesSomado(d.inicio, (p + 1) * n);
-          const doPeriodo = d.meses.filter((m) => m.mes >= de && m.mes < ate);
-          const total = doPeriodo.reduce((s, m) => s + m.avaliacoes, 0);
-          const vieram = doPeriodo.reduce((s, m) => s + m.comparecimentos, 0);
-          if (total === 0) {
-            taxas.push("sem avaliações");
-            continue;
-          }
-          const taxa = Math.round((vieram / total) * 100);
-          taxas.push(`${taxa}%`);
-          if (taxa >= alvo) bons += 1;
-        }
-        return {
-          meta,
-          conquistadas: bons * k,
-          explicacao:
-            fechados === 0
-              ? `nenhum período de ${n} meses fechado ainda`
-              : `${bons} de ${fechados} período(s) com ${alvo}% ou mais (${taxas.join(", ")})`,
-        };
-      }
+    const condicoes = meta.condicoes.map((c) => avaliarCondicao(c, d));
+    const cumpre = condicoes.length > 0 && condicoes.every((c) => c.cumpre);
+    let periodoDesde: string | null = null;
+    let periodo = "uma vez só";
+    if (meta.renovaMeses != null) {
+      const p = Math.floor(meses / meta.renovaMeses);
+      periodoDesde = dataSomada(d.inicio, p * meta.renovaMeses);
+      const ate = dataSomada(d.inicio, (p + 1) * meta.renovaMeses);
+      periodo = `${p + 1}º período, de ${dataBr(periodoDesde)} a ${dataBr(diaAnterior(ate))}`;
     }
+    return {
+      meta,
+      condicoes,
+      cumpre,
+      conquistadas: cumpre ? Math.max(0, meta.indicacoes) : 0,
+      periodoDesde,
+      periodo,
+    };
   });
 }
 
+/** Uma ficha já liberada: a meta que a rendeu e o dia (Brasil) da liberação. */
+export type FichaDaMeta = { metaId: string | null; dia: string };
+
 /**
- * O PAINEL: por meta, quantas foram conquistadas, quantas já liberadas, e
- * quantas faltam liberar. A liberação de cada meta é contada pelas fichas com
- * o mesmo gatilho (`social_tokens.trigger_type`).
+ * O PAINEL: por meta, o que conquistou no período, quantas já foram
+ * liberadas no período e quantas faltam liberar (nunca negativo).
  */
 export function painelDasMetas(
   conquistas: readonly ConquistaDaMeta[],
-  liberadasPorTipo: Partial<Record<TipoDeMeta, number>>
+  fichas: readonly FichaDaMeta[]
 ): (ConquistaDaMeta & { liberadas: number; aLiberar: number })[] {
   return conquistas.map((c) => {
-    const liberadas = liberadasPorTipo[c.meta.tipo] ?? 0;
+    const liberadas = fichas.filter(
+      (f) => f.metaId === c.meta.id && (c.periodoDesde == null || f.dia >= c.periodoDesde)
+    ).length;
     return { ...c, liberadas, aLiberar: Math.max(0, c.conquistadas - liberadas) };
   });
 }
 
 /**
- * AS METAS DE UM FORMULÁRIO — a proposta e a empresa usam o mesmo editor.
- * Campos: `meta_tipo_i`, `meta_acada_i` (no gasto, em REAIS), `meta_ind_i`,
- * `meta_pct_i`. Linha sem tipo é linha vazia e sai.
+ * AS METAS DE UM FORMULÁRIO — a proposta e a empresa usam o mesmo editor, que
+ * manda tudo num campo só (`metas_json`), já em centavos. Não descarta nada:
+ * o que estiver errado aparece em `problemasDasMetas`.
  */
 export function metasDoFormulario(campo: (nome: string) => string | null): MetaSocial[] {
-  const lista: MetaSocial[] = [];
-  for (let i = 0; i < 20; i += 1) {
-    const tipo = (campo(`meta_tipo_${i}`) ?? "") as TipoDeMeta;
-    if (!TIPOS_DE_META.includes(tipo)) continue;
-    const bruto = (campo(`meta_acada_${i}`) ?? "").trim();
-    const aCada =
-      tipo === "TREATMENT_SPEND"
-        ? Math.round(
-            (Number.parseFloat(bruto.replace(/\s/g, "").replace(/\./g, "").replace(",", ".")) || 0) * 100
-          )
-        : Number.parseInt(bruto.replace(/\D/g, ""), 10) || 0;
-    lista.push({
-      tipo,
-      aCada,
-      indicacoes: Number.parseInt((campo(`meta_ind_${i}`) ?? "").replace(/\D/g, ""), 10) || 0,
-      percentual:
-        tipo === "ATTENDANCE"
-          ? Number.parseInt((campo(`meta_pct_${i}`) ?? "").replace(/\D/g, ""), 10) || 0
-          : null,
-    });
+  let bruto: unknown;
+  try {
+    bruto = JSON.parse(campo("metas_json") ?? "[]");
+  } catch {
+    return [];
   }
-  return lista;
+  return Array.isArray(bruto) ? bruto.slice(0, 30).map(metaCrua) : [];
 }
 
 const MEIO_ROTULO: Record<string, string> = { BOLETO: "boleto", PIX: "Pix", CARD: "cartão" };

@@ -585,17 +585,31 @@ propostas — com os procedimentos **e** as outras vantagens.
   tratamento na clínica: os meios aceitos (**boleto, Pix, cartão**) e o
   **parcelamento em até** (1 a 24x). Soma-se à regra da unidade: o programa
   acrescenta meios, nunca tira. Sem definir, vale o padrão (os três, 24x).
-- **Riso+ Social** — só aparece quando a empresa **paga pelo colaborador**
-  (integral ou parcial, no passo 1). Marque se ela participa e combine as
-  **metas** que rendem indicações de pessoas carentes. Em **Incluir meta…**:
-  - **Titulares ativos** — *a cada N titulares ativos*;
-  - **Tempo no programa** — *a cada N meses de programa*;
-  - **Comparecimento às avaliações** — *a cada período de N meses com
-    comparecimento de pelo menos X%* às avaliações e reavaliações;
-  - **Gasto em tratamento** — *a cada R$ X em tratamentos fechados*.
+- **Riso+ Social** — só aparece quando a empresa **paga a mensalidade dos
+  colaboradores** (integral ou parcial, no passo 1). Esse é o pré-requisito:
+  se só os titulares pagam, a empresa **não participa**. Marque se ela
+  participa e combine as **metas** que rendem indicações de pessoas carentes.
 
-  Cada meta diz quantas indicações **rende**, e embaixo dela aparece a frase
-  exatamente como sai na proposta.
+  **Nova meta** cria uma meta. Cada meta tem:
+  - **Condições** — em **Incluir condição…**, quantas quiser (cada uma uma
+    vez). **Todas precisam valer ao mesmo tempo** para a meta render:
+    - **Titulares ativos** — pelo menos N titulares ativos;
+    - **Dependentes ativos** — pelo menos N dependentes ativos;
+    - **Tempo de programa** — pelo menos N meses de programa;
+    - **Comparecimento às avaliações** — pelo menos X% de comparecimento às
+      avaliações e reavaliações nos últimos 12 meses;
+    - **Gasto em tratamento** — pelo menos R$ X em tratamentos fechados;
+    - **Mensalidades em dia** — nenhuma mensalidade do programa vencida sem
+      pagamento.
+  - **Rende (indicações)** — quantas indicações a meta dá.
+  - **Renova a cada (meses)** — em branco, a meta rende **uma vez só**.
+    Preenchido (ex.: 12), rende de novo **a cada 12 meses de contrato**,
+    desde que as condições continuem valendo naquele período.
+
+  Exemplo: *1 indicação uma vez, com pelo menos 20 titulares ativos e pelo
+  menos 6 meses de programa*. Várias metas funcionam como **degraus** (ex.: uma
+  segunda meta com 50 titulares e 12 meses rendendo mais 2). Embaixo de cada
+  meta aparece a frase exatamente como sai na proposta.
 
 O pagamento e as metas saem no **documento da proposta**, no **contrato** e
 **vão para a empresa** no fechamento.
@@ -1154,25 +1168,36 @@ economia acumulada, benefícios usados, disponíveis agora e histórico.
 
 ## 14. Riso+ Social
 
-Aba **Riso+ Social** da empresa. Participa só a empresa que **paga pelo
-colaborador** — no modelo **integral**, cada ficha indica um beneficiário
-próprio; no **parcial**, as fichas entram no pool coletivo da rede. No modelo
-**titular paga** a aba explica que a empresa não participa — e isso é regra,
-não defeito: não há parcela da empresa de onde tirar a ficha.
+Aba **Riso+ Social** da empresa. **Pré-requisito: a empresa paga a
+mensalidade dos colaboradores**, integral ou parcialmente — no modelo
+**integral**, cada ficha indica um beneficiário próprio; no **parcial**, as
+fichas entram no pool coletivo da rede. No modelo **titular paga** a aba
+explica que a empresa não participa — e isso é regra, não defeito. O sistema
+**recusa** liberar ficha para empresa que não paga ou não participa, por
+qualquer caminho.
 
 A aba tem quatro partes, na ordem do trabalho:
 
 1. **Metas da empresa** — a participação e as metas combinadas na proposta.
    **Editar participação e metas** muda as duas (para a empresa cadastrada
    direto, ou uma renegociação).
-2. **O que as metas conquistaram** — para cada meta, a conta escrita (ex.:
-   *"45 titulares ativos — 2 vez(es) 20"*), quantas indicações ela
-   **conquistou** e quantas já foram **liberadas**. O botão **Liberar (n)**
-   libera uma ficha daquela meta. **O sistema conta, quem libera é o gestor.**
-   - O comparecimento conta só **períodos fechados**: o período em andamento
-     ainda não terminou. Período sem nenhuma avaliação não rende.
-   - Ficha liberada **não é recolhida** se a conta cair depois (titulares que
-     saíram, por exemplo).
+2. **O que as metas conquistaram** — para cada meta (**Meta 1**, **Meta 2**…):
+   o selo **Cumprida** ou **Ainda não**; cada condição com ✓ ou ✗ e como está
+   hoje (ex.: *"19 titulares ativos (mínimo 20)"*); o período; quantas
+   indicações ela **conquistou** e quantas já foram **liberadas**. O botão
+   **Liberar (n)** libera uma ficha daquela meta. **O sistema conta, quem
+   libera é o gestor.**
+   - Meta **uma vez só**: liberada a ficha, não há mais o que liberar.
+   - Meta que **renova**: a tela mostra o período atual (ex.: *"2º período,
+     de 15/01/2026 a 14/01/2027"*) e conta só as fichas liberadas nele. O que
+     não foi liberado num período que terminou não passa para o seguinte.
+   - O comparecimento olha os **últimos 12 meses fechados** (o mês em
+     andamento não entra). Sem nenhuma avaliação nesse tempo, a condição não
+     vale.
+   - **Mensalidades em dia** olha as mensalidades do programa que passaram do
+     vencimento e não foram pagas.
+   - Ficha liberada **não é recolhida** se uma condição cair depois
+     (titulares que saíram, por exemplo).
    - **Liberar ficha avulsa** — para uma exceção combinada fora das metas.
    - Se aparecer *"Não foi possível medir as metas agora"*, nada foi liberado:
      tente de novo em instantes.
@@ -1189,7 +1214,8 @@ A aba tem quatro partes, na ordem do trabalho:
    indicação** ou **Tratamento iniciado** (botão quando o tratamento começa).
    Ficha livre pode ser removida.
 
-> Medidas usadas: os clientes com o selo da empresa; avaliações e
+> Medidas usadas: titulares e dependentes **ativos** (dependente conta só se
+> o titular dele está ativo); os clientes com o selo da empresa; avaliações e
 > reavaliações **já decididas** (compareceu ou faltou — agendamento que
 > ninguém marcou não conta como falta); e vendas **fechadas** do Comercial e
 > da venda direta, sem as canceladas.

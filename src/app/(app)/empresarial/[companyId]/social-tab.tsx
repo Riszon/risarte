@@ -3,18 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Gift, Trash2, UserPlus } from "lucide-react";
+import { Check, Gift, Trash2, UserPlus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SOCIAL_TRIGGER_LABELS, type PaymentModel } from "@/lib/empresarial/constants";
 import {
-  SOCIAL_TRIGGER_LABELS,
-  SOCIAL_TRIGGER_TYPES,
-  type PaymentModel,
-} from "@/lib/empresarial/constants";
-import {
-  META_ROTULO,
+  CONDICAO_ROTULO,
   participaDoSocial,
   rotuloDaMeta,
   type ConquistaDaMeta,
@@ -34,11 +30,11 @@ import {
   vincularClienteDaIndicacao,
 } from "./social-actions";
 
-const selectClass = "h-8 rounded-md border border-input bg-transparent px-2 text-xs";
-
 export type SocialTokenView = {
   id: string;
   triggerType: string;
+  /** "Meta 2" — a posição da meta que rendeu a ficha, quando ela ainda existe. */
+  metaNumero: number | null;
   isPool: boolean;
   status: "AVAILABLE" | "ASSIGNED" | "USED";
   /** O nome da pessoa indicada que usa esta ficha, quando há. */
@@ -103,7 +99,6 @@ export function SocialTab({
   const [linhas, setLinhas] = useState<LinhaDeMeta[]>(metasParaLinhas(social.metas));
   const [participa, setParticipa] = useState(social.participa);
   const [editandoMetas, setEditandoMetas] = useState(false);
-  const [avulsa, setAvulsa] = useState<string>(SOCIAL_TRIGGER_TYPES[0]);
 
   const modeloPermite = participaDoSocial(social.paymentModel);
   const ativo = modeloPermite && social.participa;
@@ -130,7 +125,8 @@ export function SocialTab({
           {!modeloPermite ? (
             <p className="text-sm text-muted-foreground">
               Modelo <strong>“titular paga”</strong>: a empresa não participa do
-              Riso+ Social — não há parcela da empresa de onde tirar a ficha.
+              Riso+ Social. O pré-requisito é a empresa pagar a mensalidade dos
+              colaboradores, integral ou parcialmente.
             </p>
           ) : !editandoMetas ? (
             <>
@@ -145,11 +141,11 @@ export function SocialTab({
                 (social.metas.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma meta combinada.</p>
                 ) : (
-                  <ul className="list-disc space-y-0.5 pl-5 text-sm">
+                  <ol className="list-decimal space-y-0.5 pl-5 text-sm">
                     {social.metas.map((m) => (
-                      <li key={m.tipo}>{rotuloDaMeta(m)}</li>
+                      <li key={m.id}>{rotuloDaMeta(m)}</li>
                     ))}
-                  </ul>
+                  </ol>
                 ))}
               {podeEditar && (
                 <Button size="sm" variant="outline" onClick={() => setEditandoMetas(true)}>
@@ -215,50 +211,65 @@ export function SocialTab({
                 abaixo, continua disponível.
               </p>
             ) : (
-              social.painel.map((p) => (
-                <div
-                  key={p.meta.tipo}
-                  className="flex flex-wrap items-center gap-3 rounded-md border p-2"
-                >
-                  <div className="min-w-56 flex-1">
-                    <p className="text-sm font-medium">{META_ROTULO[p.meta.tipo]}</p>
-                    <p className="text-xs text-muted-foreground">{p.explicacao}</p>
+              social.painel.map((p, i) => (
+                <div key={p.meta.id} className="space-y-1.5 rounded-md border p-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-56 flex-1">
+                      <p className="text-sm font-medium">
+                        Meta {i + 1}{" "}
+                        <Badge variant={p.cumpre ? "secondary" : "outline"}>
+                          {p.cumpre ? "Cumprida" : "Ainda não"}
+                        </Badge>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.meta.indicacoes}{" "}
+                        {p.meta.indicacoes === 1 ? "indicação" : "indicações"} · {p.periodo}
+                      </p>
+                    </div>
+                    <p className="text-xs">
+                      Conquistou <strong>{p.conquistadas}</strong> · liberadas{" "}
+                      <strong>{p.liberadas}</strong>
+                      {p.meta.renovaMeses != null ? " neste período" : ""}
+                    </p>
+                    {podeEditar && (
+                      <Button
+                        size="sm"
+                        disabled={isPending || p.aLiberar === 0}
+                        onClick={() =>
+                          run(() => generateSocialToken(companyId, p.meta.id), "Ficha liberada.")
+                        }
+                      >
+                        <Gift className="mr-1 size-3.5" />
+                        {p.aLiberar > 0 ? `Liberar (${p.aLiberar})` : "Nada a liberar"}
+                      </Button>
+                    )}
                   </div>
-                  <p className="text-xs">
-                    Conquistou <strong>{p.conquistadas}</strong> · liberadas{" "}
-                    <strong>{p.liberadas}</strong>
-                  </p>
-                  {podeEditar && (
-                    <Button
-                      size="sm"
-                      disabled={isPending || p.aLiberar === 0}
-                      onClick={() =>
-                        run(() => generateSocialToken(companyId, p.meta.tipo), "Ficha liberada.")
-                      }
-                    >
-                      <Gift className="mr-1 size-3.5" />
-                      {p.aLiberar > 0 ? `Liberar (${p.aLiberar})` : "Nada a liberar"}
-                    </Button>
-                  )}
+                  <ul className="space-y-0.5 text-xs">
+                    {p.condicoes.map((c) => (
+                      <li key={c.condicao.tipo} className="flex items-start gap-1.5">
+                        {c.cumpre ? (
+                          <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <X className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+                        )}
+                        <span>
+                          <strong>{CONDICAO_ROTULO[c.condicao.tipo]}:</strong> {c.situacao}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ))
             )}
             {podeEditar && (
               <div className="flex flex-wrap items-center gap-2 border-t pt-2 text-xs">
                 <span className="text-muted-foreground">Fora das metas (exceção combinada):</span>
-                <select value={avulsa} onChange={(e) => setAvulsa(e.target.value)} className={selectClass}>
-                  {SOCIAL_TRIGGER_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {SOCIAL_TRIGGER_LABELS[t]}
-                    </option>
-                  ))}
-                </select>
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-8"
                   disabled={isPending}
-                  onClick={() => run(() => generateSocialToken(companyId, avulsa), "Ficha avulsa liberada.")}
+                  onClick={() => run(() => generateSocialToken(companyId, null), "Ficha avulsa liberada.")}
                 >
                   Liberar ficha avulsa
                 </Button>
@@ -294,8 +305,12 @@ export function SocialTab({
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2"
                 >
                   <p className="flex flex-wrap items-center gap-2 text-sm">
-                    {SOCIAL_TRIGGER_LABELS[t.triggerType as keyof typeof SOCIAL_TRIGGER_LABELS] ??
-                      t.triggerType}
+                    {t.triggerType === "GOAL"
+                      ? t.metaNumero
+                        ? `Meta ${t.metaNumero}`
+                        : "Meta (já retirada)"
+                      : (SOCIAL_TRIGGER_LABELS[t.triggerType as keyof typeof SOCIAL_TRIGGER_LABELS] ??
+                        t.triggerType)}
                     <Badge variant={t.status === "USED" ? "outline" : "secondary"}>
                       {STATUS_FICHA[t.status]}
                     </Badge>
