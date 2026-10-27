@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.357.0",
+    data: "2026-10-27",
+    migracao: null,
+    titulo: "Precificação: a conta no preço mínimo e o filtro pela margem",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Na Precificação, o procedimento com preço mínimo mostra a margem nos dois preços: na linha, numa tabela preço normal × preço mínimo (custo, imposto + taxa e margem) e na comparação por nível. E o filtro Mostrar separa os que estão na margem desejada ou acima, os abaixo dela, os abaixo no preço mínimo e os sem preço — com a quantidade de cada um.",
+        papeis: [],
+        manual: "Admin Master",
+      },
+    ],
+  },
+  {
     versao: "0.356.0",
     data: "2026-10-27",
     migracao: "0327",

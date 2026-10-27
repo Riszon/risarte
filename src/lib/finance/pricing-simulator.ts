@@ -158,3 +158,87 @@ export function simulationWarnings(input: SimulationInput): string[] {
   }
   return warnings;
 }
+
+// ---------------------------------------------------------------------------
+// A margem no preço normal E no preço mínimo; o filtro da lista (pedido do
+// dono, 27/10/2026).
+// ---------------------------------------------------------------------------
+
+/** O que um preço entrega: o que sai em imposto + taxa e o que sobra. */
+export type MargemNoPreco = {
+  precoCents: number;
+  impostoETaxaCents: number;
+  margemCents: number;
+  margemPercent: number;
+  prejuizo: boolean;
+  abaixoDaMeta: boolean;
+};
+
+/**
+ * A mesma conta do `simulatePrice` (custo direto fixo; imposto e taxa sobre o
+ * preço), para um preço qualquer — o normal ou o mínimo. Nulo sem preço.
+ */
+export function margemNoPreco(
+  input: Omit<SimulationInput, "currentPriceCents">,
+  precoCents: number | null
+): MargemNoPreco | null {
+  if (precoCents === null || !(precoCents > 0)) return null;
+  const sim = simulatePrice({ ...input, currentPriceCents: precoCents });
+  return lerMargem(sim, precoCents, (input.taxPercent || 0) + (input.acquirerFeePercent || 0));
+}
+
+/**
+ * Uma simulação já feita, lida como "o que este preço entrega" — a tela usa
+ * esta (com o material e o laboratório que a pessoa está digitando) e o filtro
+ * usa `margemNoPreco`: a mesma leitura nos dois.
+ */
+export function lerMargem(
+  sim: Simulation,
+  precoCents: number,
+  impostoETaxaPercent: number
+): MargemNoPreco | null {
+  if (!(precoCents > 0)) return null;
+  return {
+    precoCents,
+    impostoETaxaCents: roundHalfUp((precoCents * Math.max(0, impostoETaxaPercent)) / 100),
+    margemCents: sim.currentMarginCents,
+    margemPercent: sim.currentMarginPercent,
+    prejuizo: sim.currentIsLoss,
+    abaixoDaMeta: sim.belowTarget,
+  };
+}
+
+/** As opções do filtro da lista da Precificação. */
+export const FILTROS_DA_MARGEM = {
+  todos: "Todos",
+  acima: "Na margem desejada ou acima",
+  abaixo: "Abaixo da margem desejada",
+  abaixo_no_minimo: "Abaixo da margem no preço mínimo",
+  sem_preco: "Sem preço",
+} as const;
+export type FiltroDaMargem = keyof typeof FILTROS_DA_MARGEM;
+
+/**
+ * Se o procedimento entra no filtro. "Acima" e "abaixo" olham o preço NORMAL;
+ * "abaixo no mínimo" olha o preço mínimo (só quem tem mínimo). Sem preço não
+ * é acima nem abaixo — tem opção própria (não há margem para comparar).
+ * Prejuízo é abaixo da meta.
+ */
+export function passaNoFiltroDaMargem(
+  filtro: FiltroDaMargem,
+  normal: MargemNoPreco | null,
+  minimo: MargemNoPreco | null
+): boolean {
+  switch (filtro) {
+    case "todos":
+      return true;
+    case "sem_preco":
+      return normal === null;
+    case "acima":
+      return normal !== null && !normal.abaixoDaMeta;
+    case "abaixo":
+      return normal !== null && normal.abaixoDaMeta;
+    case "abaixo_no_minimo":
+      return minimo !== null && minimo.abaixoDaMeta;
+  }
+}

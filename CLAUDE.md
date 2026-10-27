@@ -390,6 +390,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (8) — PC Administrador (core 0.356.0 → 0.357.0, sem migração)**
+
+- **Precificação no preço mínimo + filtro pela margem (pedido do dono).**
+  Linha, tabela "Preço normal × Preço mínimo" e níveis; filtro Mostrar (na
+  margem ou acima / abaixo / abaixo no mínimo / sem preço). O filtro usa os
+  custos, a margem desejada e o nível DA TELA (antes de salvar).
+- ⚠️ **Uma leitura só da margem:** `lerMargem` (tela, com o que se digita) e
+  `margemNoPreco` (filtro) — não recalcular à parte na tela.
+- Visto na tela no treino (Admin de teste; a margem de 94% foi só digitada,
+  não salva). `.next-test` limpo.
+
 **27/10/2026 (7) — PC Administrador (core 0.355.0 → 0.356.0, migração 0327)**
 
 - **O mínimo do PROCEDIMENTO trava a negociação (pedido do dono).** Decisões

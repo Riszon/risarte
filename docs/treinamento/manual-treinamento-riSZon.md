@@ -1694,6 +1694,23 @@ atrasado"* e o Admin tem o botão **Aplicar agora**. Um reajuste atrasado **não
 passa por cima** de um preço mudado à mão depois da data marcada: ele é
 cancelado, com o motivo.
 
+**Precificação no preço normal e no preço mínimo** (versão 0.357.0). Em
+**Procedimentos → Precificação**, cada procedimento com **Preço mínimo** mostra
+na linha a margem nos dois preços (*preço R$ 150,00 · 95% · mín R$ 110,00 ·
+93,18%*). Ao abrir, a tabela **Preço normal × Preço mínimo** mostra a conta
+inteira — preço, custo direto, imposto + taxa e a margem em R$ e em % — e a
+comparação por nível mostra os dois (*Júnior: 95% · no mínimo 93,18%*). As
+cores são as de sempre: verde na margem desejada, âmbar abaixo dela, vermelho
+no prejuízo.
+
+O filtro **Mostrar**, no alto da lista, separa: **Na margem desejada ou
+acima**, **Abaixo da margem desejada** (pelo preço normal), **Abaixo da margem
+no preço mínimo** (bem no preço normal, mal no pior caso da negociação) e **Sem
+preço** (não há margem para comparar). Cada opção mostra quantos são. O
+filtro usa a **margem desejada** e os custos que estão na tela, e o nível
+escolhido em *Simular com* — mudou um deles, a lista muda junto, mesmo antes
+de salvar.
+
 #### Recepcionista *(unidade)*
 
 - **Objetivo:** porta de entrada e organização do dia.

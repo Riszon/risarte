@@ -37,7 +37,7 @@ export default async function PricingPage() {
   ] = await Promise.all([
     supabase
       .from("procedures")
-      .select("id, name, specialty, pillar, default_price_cents, estimated_minutes")
+      .select("id, name, specialty, pillar, default_price_cents, min_price_cents, estimated_minutes")
       .eq("is_active", true)
       .order("specialty", { nullsFirst: true })
       .order("name")
@@ -195,6 +195,8 @@ export default async function PricingPage() {
           name: p.name as string,
           specialty: (p.specialty as string | null) ?? null,
           priceCents: Number(p.default_price_cents ?? 0),
+          // Pedido do dono (27/10/2026): a conta também no preço mínimo.
+          minPriceCents: p.min_price_cents == null ? null : Number(p.min_price_cents),
           minutes: Number(p.estimated_minutes ?? 0),
           payoutCents: fallbackPayout[p.id as string] ?? 0,
           payoutByLevel: payoutByProcedure[p.id as string] ?? {},

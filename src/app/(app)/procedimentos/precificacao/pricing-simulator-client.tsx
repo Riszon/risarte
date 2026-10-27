@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Search, Sparkles, TriangleAlert } from "lucide-react";
@@ -11,8 +11,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import {
+  FILTROS_DA_MARGEM,
+  lerMargem,
+  margemNoPreco,
+  passaNoFiltroDaMargem,
   simulatePrice,
   simulationWarnings,
+  type FiltroDaMargem,
+  type MargemNoPreco,
 } from "@/lib/finance/pricing-simulator";
 import { CommissionPanel, ReadjustPanel } from "../bulk-panels";
 import {
@@ -26,6 +32,8 @@ type Proc = {
   name: string;
   specialty: string | null;
   priceCents: number;
+  /** Preço mínimo do cadastro (nulo = sem mínimo) — a conta também nele. */
+  minPriceCents: number | null;
   minutes: number;
   /** Repasse do cadastro do procedimento (degrau 3/4). */
   payoutCents: number;
@@ -91,6 +99,8 @@ export function PricingSimulator({
   const [target, setTarget] = useState(String(settings.targetMarginPercent));
 
   const [search, setSearch] = useState("");
+  /** Filtro pela margem (pedido do dono, 27/10/2026). */
+  const [filtro, setFiltro] = useState<FiltroDaMargem>("todos");
   const [openId, setOpenId] = useState<string | null>(null);
   const [materials, setMaterials] = useState("");
   const [lab, setLab] = useState("");
@@ -104,7 +114,26 @@ export function PricingSimulator({
   const num = (v: string) => Number(v.replace(",", ".")) || 0;
   const chairCents = parseBRLToCents(chair) ?? 0;
 
-  const shown = useMemo(() => {
+  /** A margem de um procedimento num preço (o normal ou o mínimo). */
+  function margemDe(p: Proc, precoCents: number | null, levelId: string = simLevel): MargemNoPreco | null {
+    return margemNoPreco(
+      {
+        cost: {
+          minutes: p.minutes,
+          chairCostPerHourCents: chairCents,
+          materialsCents: p.materialsCents,
+          labCents: p.labCents,
+          payoutCents: payoutFor(p, levelId),
+        },
+        taxPercent: num(tax),
+        acquirerFeePercent: num(fee),
+        targetMarginPercent: num(target),
+      },
+      precoCents
+    );
+  }
+
+  const buscados = (() => {
     const q = search.trim().toLowerCase();
     return q
       ? procedures.filter(
@@ -113,7 +142,18 @@ export function PricingSimulator({
             (p.specialty ?? "").toLowerCase().includes(q)
         )
       : procedures;
-  }, [procedures, search]);
+  })();
+  // O filtro olha a margem com o nível escolhido em "Simular com" e os custos e
+  // metas da tela (mudou a margem desejada, a lista muda junto).
+  const contagem = Object.fromEntries(
+    (Object.keys(FILTROS_DA_MARGEM) as FiltroDaMargem[]).map((f) => [
+      f,
+      buscados.filter((p) => passaNoFiltroDaMargem(f, margemDe(p, p.priceCents), margemDe(p, p.minPriceCents))).length,
+    ])
+  ) as Record<FiltroDaMargem, number>;
+  const shown = buscados.filter((p) =>
+    passaNoFiltroDaMargem(filtro, margemDe(p, p.priceCents), margemDe(p, p.minPriceCents))
+  );
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -202,7 +242,7 @@ export function PricingSimulator({
 
   function simFor(
     p: Proc,
-    opts?: { materials?: number; lab?: number; levelId?: string }
+    opts?: { materials?: number; lab?: number; levelId?: string; priceCents?: number }
   ) {
     return simulatePrice({
       cost: {
@@ -215,7 +255,7 @@ export function PricingSimulator({
       taxPercent: num(tax),
       acquirerFeePercent: num(fee),
       targetMarginPercent: num(target),
-      currentPriceCents: p.priceCents,
+      currentPriceCents: opts?.priceCents ?? p.priceCents,
     });
   }
 
@@ -375,6 +415,21 @@ export function PricingSimulator({
                   </select>
                 </label>
               )}
+              <label className="flex items-center gap-1 text-xs">
+                <span className="text-muted-foreground">Mostrar</span>
+                <select
+                  aria-label="Filtrar pela margem"
+                  value={filtro}
+                  onChange={(e) => setFiltro(e.target.value as FiltroDaMargem)}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                >
+                  {(Object.keys(FILTROS_DA_MARGEM) as FiltroDaMargem[]).map((f) => (
+                    <option key={f} value={f}>
+                      {FILTROS_DA_MARGEM[f]} ({contagem[f]})
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -457,8 +512,19 @@ export function PricingSimulator({
                                 : "text-emerald-700"
                           )}
                         >
-                          {sim.currentMarginPercent}%
+                          {pct(sim.currentMarginPercent)}
                         </span>
+                        {(() => {
+                          // A mesma conta no preço MÍNIMO, quando há.
+                          const m = margemDe(p, p.minPriceCents);
+                          if (!m) return null;
+                          return (
+                            <span className="text-muted-foreground">
+                              mín {formatBRL(m.precoCents)}{" "}
+                              <span className={cn("font-medium", corDaMargem(m))}>{pct(m.margemPercent)}</span>
+                            </span>
+                          );
+                        })()}
                       </span>
                     </button>
                   </div>
@@ -538,6 +604,27 @@ export function PricingSimulator({
                         </div>
                       </dl>
 
+                      {/* Pedido do dono (27/10/2026): a conta no preço normal
+                          e no mínimo, lado a lado. */}
+                      <NormalEMinimo
+                        normal={lerMargem(liveSim, p.priceCents, num(tax) + num(fee))}
+                        minimo={
+                          p.minPriceCents
+                            ? lerMargem(
+                                simFor(p, {
+                                  materials: !p.fromKit ? (parseBRLToCents(materials) ?? 0) : undefined,
+                                  lab: parseBRLToCents(lab) ?? 0,
+                                  priceCents: p.minPriceCents,
+                                }),
+                                p.minPriceCents,
+                                num(tax) + num(fee)
+                              )
+                            : null
+                        }
+                        temMinimo={p.minPriceCents !== null}
+                        directCents={liveSim.breakdown.directCents}
+                      />
+
                       {/* 0212 — o resultado muda com QUEM executa. Como o
                           repasse é fixo, trocar o dentista mexe na margem sem
                           mexer no preço; sem esta linha ninguém enxerga isso. */}
@@ -555,6 +642,20 @@ export function PricingSimulator({
                               levelId,
                             })
                           }
+                          simulateNoMinimo={
+                            p.minPriceCents
+                              ? (levelId) =>
+                                  simFor(p, {
+                                    materials: open
+                                      ? (parseBRLToCents(materials) ?? 0)
+                                      : undefined,
+                                    lab: open ? (parseBRLToCents(lab) ?? 0) : undefined,
+                                    levelId,
+                                    priceCents: p.minPriceCents ?? undefined,
+                                  })
+                              : null
+                          }
+                          minPriceCents={p.minPriceCents}
                           targetPercent={num(target)}
                         />
                       )}
@@ -569,7 +670,7 @@ export function PricingSimulator({
                           </strong>
                           <span className="ml-2 text-xs text-muted-foreground">
                             hoje {formatBRL(p.priceCents)} ·{" "}
-                            {liveSim.currentMarginPercent}% de margem
+                            {pct(liveSim.currentMarginPercent)} de margem
                           </span>
                         </span>
                         <span className="flex gap-2">
@@ -655,12 +756,17 @@ function LevelComparison({
   levels,
   currentPriceCents,
   simulate,
+  simulateNoMinimo,
+  minPriceCents,
   targetPercent,
 }: {
   proc: Proc;
   levels: Level[];
   currentPriceCents: number;
   simulate: (levelId: string) => ReturnType<typeof simulatePrice>;
+  /** A mesma conta no preço mínimo (nulo = sem mínimo). */
+  simulateNoMinimo: ((levelId: string) => ReturnType<typeof simulatePrice>) | null;
+  minPriceCents: number | null;
   targetPercent: number;
 }) {
   if (currentPriceCents <= 0) {
@@ -674,7 +780,8 @@ function LevelComparison({
   return (
     <div className="rounded-lg border bg-muted/20 p-2 text-xs">
       <p className="mb-1 font-medium">
-        No preço de hoje ({formatBRL(currentPriceCents)}), por quem executa
+        No preço de hoje ({formatBRL(currentPriceCents)})
+        {minPriceCents ? ` e no mínimo (${formatBRL(minPriceCents)})` : ""}, por quem executa
       </p>
       <ul className="flex flex-wrap gap-x-4 gap-y-1">
         {levels.map((l) => {
@@ -693,8 +800,28 @@ function LevelComparison({
                       : "text-emerald-700"
                 )}
               >
-                {s.currentMarginPercent}%
+                {pct(s.currentMarginPercent)}
               </span>
+              {simulateNoMinimo && (() => {
+                const m = simulateNoMinimo(l.id);
+                return (
+                  <span className="ml-1 text-muted-foreground">
+                    · no mínimo{" "}
+                    <span
+                      className={cn(
+                        "font-medium",
+                        m.currentIsLoss
+                          ? "text-destructive"
+                          : m.currentMarginPercent < targetPercent
+                            ? "text-amber-700"
+                            : "text-emerald-700"
+                      )}
+                    >
+                      {pct(m.currentMarginPercent)}
+                    </span>
+                  </span>
+                );
+              })()}
               <span className="ml-1 text-muted-foreground">
                 (repasse {formatBRL(s.breakdown.payoutCents)}
                 {!own && ", do cadastro"})
@@ -708,6 +835,82 @@ function LevelComparison({
         repasse e está herdando a comissão do procedimento — todos custam igual
         até alguém cadastrar.
       </p>
+    </div>
+  );
+}
+
+/** "33,33%" — o percentual como se lê no Brasil (o número cru sairia "33.33%"). */
+function pct(n: number): string {
+  return `${String(n).replace(".", ",")}%`;
+}
+
+/** Verde na meta, âmbar abaixo dela, vermelho no prejuízo — as cores da lista. */
+function corDaMargem(m: { prejuizo: boolean; abaixoDaMeta: boolean }): string {
+  return m.prejuizo ? "text-destructive" : m.abaixoDaMeta ? "text-amber-700" : "text-emerald-700";
+}
+
+/**
+ * Preço normal × preço mínimo, lado a lado (pedido do dono, 27/10/2026): o
+ * custo direto é o mesmo; imposto e taxa acompanham o preço; o que sobra é a
+ * margem. O mínimo é o pior caso da negociação.
+ */
+function NormalEMinimo({
+  normal,
+  minimo,
+  temMinimo,
+  directCents,
+}: {
+  normal: MargemNoPreco | null;
+  minimo: MargemNoPreco | null;
+  temMinimo: boolean;
+  directCents: number;
+}) {
+  if (!normal) return null;
+  const colunas = minimo ? [normal, minimo] : [normal];
+  return (
+    <div className="rounded-lg border bg-muted/20 p-2 text-xs">
+      <table className="w-full tabular-nums">
+        <thead className="text-[10px] text-muted-foreground">
+          <tr>
+            <th className="py-0.5 text-left font-medium" />
+            <th className="py-0.5 text-right font-medium">Preço normal</th>
+            {minimo && <th className="py-0.5 text-right font-medium">Preço mínimo</th>}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="py-0.5 text-muted-foreground">Preço</td>
+            {colunas.map((c, i) => (
+              <td key={i} className="py-0.5 text-right">{formatBRL(c.precoCents)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td className="py-0.5 text-muted-foreground">− Custo direto</td>
+            {colunas.map((_, i) => (
+              <td key={i} className="py-0.5 text-right">{formatBRL(directCents)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td className="py-0.5 text-muted-foreground">− Imposto + taxa</td>
+            {colunas.map((c, i) => (
+              <td key={i} className="py-0.5 text-right">{formatBRL(c.impostoETaxaCents)}</td>
+            ))}
+          </tr>
+          <tr className="border-t font-medium">
+            <td className="py-0.5">= Margem</td>
+            {colunas.map((c, i) => (
+              <td key={i} className={cn("py-0.5 text-right", corDaMargem(c))}>
+                {formatBRL(c.margemCents)} ({pct(c.margemPercent)})
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+      {!temMinimo && (
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          Sem preço mínimo no cadastro — a conta no mínimo aparece quando ele for definido.
+        </p>
+      )}
     </div>
   );
 }

@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.356.0** · Última migração: **0327** (0318 a 0327 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.357.0** · Última migração: **0327** (0318 a 0327 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.357.0 (sem migração) — PRECIFICAÇÃO NO PREÇO MÍNIMO + FILTRO PELA MARGEM (27/10/2026)
+>
+> Pedido do dono. A Precificação mostra a margem no preço normal e no mínimo
+> (linha, tabela lado a lado, níveis) e filtra: na margem ou acima / abaixo /
+> abaixo no mínimo / sem preço. Regra pura em `pricing-simulator.ts`
+> (`margemNoPreco`, `lerMargem`, `passaNoFiltroDaMargem`). De carona, os
+> percentuais da tela passaram a sair com vírgula. EV-231.
 
 > ## 🎯 0.356.0 / 0327 — O MÍNIMO DO PROCEDIMENTO TRAVA A NEGOCIAÇÃO (27/10/2026)
 >
