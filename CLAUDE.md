@@ -402,7 +402,7 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Achado (não mexi):** o preço mínimo/máximo do PROCEDIMENTO não é
   conferido em lugar nenhum — só aparece na "Faixa". Registrado como AP79.
 - Botão rápido = `vincularAoGrupo` pela porta do editor (GP1).
-- ✅ 0326 no treino (ensaio 22/22 + quebra). ⏳ **Falta a produção.**
+- ✅ **0326 APLICADA nos dois bancos** (o dono rodou na produção em 27/10/2026; conferência 1·2·1·0; conferido de fora: sem login a porta do preço e mínimo e a regra interna recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é Admin, para em PRICE_NOT_ALLOWED; a produção tem 1 grupo, já com −33,33% de pacote e sem mínimo, e 0 negociações). Ensaio no treino 22/22 + quebra.
 - Resíduo no treino (meu): o "Pacote teste (pode ignorar)" ganhou mínimo de
   85%. `.next-test` limpo.
 
