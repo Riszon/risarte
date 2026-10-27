@@ -314,7 +314,7 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
             <p className="text-sm text-muted-foreground">
               {consultantOnly
                 ? "Apresentações comerciais (Fase 4) agendadas para você."
-                : "Avaliações (Fase 2), reavaliações (Fase 6) e apresentações comerciais (Fase 4, em destaque dourado)."}{" "}
+                : "Avaliações (Fase 2), reavaliações (Fase 6) e apresentações comerciais (Fase 4, com o selo Comercial)."}{" "}
               <span className="font-medium">{periodLabel}</span>
             </p>
           </div>
@@ -392,7 +392,6 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
               appointments={networkAppointments}
               canManage={false}
               staff={[]}
-              highlightType="commercial_presentation"
               dayCount={range.dayCount}
             />
           )}

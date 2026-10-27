@@ -14,6 +14,12 @@ import {
   Wifi,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  CONTORNO_COMERCIAL,
+  IconeComercial,
+  TEXTO_COMERCIAL,
+  ehComercial,
+} from "@/components/marca-comercial";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -551,6 +557,7 @@ export function DayRoomGrid({
           STATUS_STYLES[appointment.status],
           draggable && "cursor-grab active:cursor-grabbing",
           isDragging && "opacity-40",
+          ehComercial(appointment.type) && CONTORNO_COMERCIAL,
           appointment.needs_reschedule && "ring-2 ring-red-500",
           appointment.type === "urgency" && "ring-1 ring-amber-400",
           appointment.type === "emergency" && "ring-1 ring-red-500"
@@ -578,6 +585,7 @@ export function DayRoomGrid({
               minute: "2-digit",
             })}
           </span>
+          {compact && ehComercial(appointment.type) && <IconeComercial />}
           {compact && appointment.clients && (
             <Link
               href={`/prontuarios/${appointment.clients.id}`}
@@ -641,9 +649,21 @@ export function DayRoomGrid({
                 {appointment.clients.full_name}
               </Link>
             )}
-            <p className="truncate text-[10px] text-muted-foreground">
-              {APPOINTMENT_TYPE_LABELS[appointment.type]}
-            </p>
+            {ehComercial(appointment.type) ? (
+              <p
+                className={cn(
+                  "flex items-center gap-1 truncate text-[10px] font-medium",
+                  TEXTO_COMERCIAL
+                )}
+              >
+                <IconeComercial />
+                {APPOINTMENT_TYPE_LABELS[appointment.type]}
+              </p>
+            ) : (
+              <p className="truncate text-[10px] text-muted-foreground">
+                {APPOINTMENT_TYPE_LABELS[appointment.type]}
+              </p>
+            )}
             {height >= 54 && appointment.provider && (
               <p className="flex items-center gap-1 truncate text-[10px] text-muted-foreground">
                 <UserRound className="size-3 shrink-0" />

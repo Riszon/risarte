@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { TEXTO_COMERCIAL, ehComercial } from "@/components/marca-comercial";
 import { agendaHref, startOfWeek, toIsoDate } from "@/lib/agenda-view";
 import { APPOINTMENT_TYPE_LABELS } from "@/lib/appointments";
 import type { AgendaAppointment } from "./week-grid";
@@ -100,7 +101,15 @@ export function MonthView({
               {dayAppts.slice(0, 3).map((a) => (
                 <span
                   key={a.id}
-                  className="truncate rounded bg-muted px-1 py-0.5 text-[10px]"
+                  className={cn(
+                    "truncate rounded px-1 py-0.5 text-[10px]",
+                    ehComercial(a.type)
+                      ? cn(
+                          "bg-fuchsia-100 font-medium dark:bg-fuchsia-500/15",
+                          TEXTO_COMERCIAL
+                        )
+                      : "bg-muted"
+                  )}
                   title={`${APPOINTMENT_TYPE_LABELS[a.type]} — ${a.clients?.full_name ?? ""}`}
                 >
                   {new Date(a.starts_at).toLocaleTimeString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,

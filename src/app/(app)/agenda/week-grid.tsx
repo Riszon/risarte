@@ -26,6 +26,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
+  CONTORNO_COMERCIAL,
+  SeloComercial,
+  ehComercial,
+} from "@/components/marca-comercial";
+import {
   APPOINTMENT_STATUSES,
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_TYPE_LABELS,
@@ -159,7 +164,6 @@ export function WeekGrid({
   canManage,
   staff,
   config,
-  highlightType,
   dayCount = 7,
   weekdays,
   openDayDates = [],
@@ -173,8 +177,6 @@ export function WeekGrid({
   staff: StaffOption[];
   /** Rooms + working hours, passed to the edit dialog. */
   config?: AgendaFormConfig;
-  /** Appointment type to highlight (e.g. commercial presentation for planner). */
-  highlightType?: AppointmentType;
   /** Number of day columns (7 = week, 1 = single day). */
   dayCount?: number;
   /** Configured working weekdays (G5). When set, non-working days are hidden. */
@@ -237,15 +239,14 @@ export function WeekGrid({
   function renderCard(appointment: AgendaAppointment, compact: boolean) {
     const isUrgent =
       appointment.type === "urgency" || appointment.type === "emergency";
-    const isHighlighted =
-      highlightType !== undefined && appointment.type === highlightType;
+    const comercial = ehComercial(appointment.type);
     return (
       <div
         key={appointment.id}
         className={cn(
           "rounded-md border p-2 text-xs shadow-sm",
           STATUS_STYLES[appointment.status],
-          isHighlighted && "ring-2 ring-gold border-l-gold",
+          comercial && CONTORNO_COMERCIAL,
           appointment.needs_reschedule && "ring-2 ring-red-500 border-l-red-600",
           appointment.type === "urgency" &&
             "ring-2 ring-amber-400 border-l-amber-500",
@@ -259,6 +260,7 @@ export function WeekGrid({
             Remarcar — agenda fechada
           </Badge>
         )}
+        {comercial && <SeloComercial className="mb-1" />}
         {isUrgent && (
           <Badge
             className={cn(

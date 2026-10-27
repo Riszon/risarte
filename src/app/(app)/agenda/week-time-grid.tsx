@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Flag, Info, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  CONTORNO_COMERCIAL,
+  IconeComercial,
+  TEXTO_COMERCIAL,
+  ehComercial,
+} from "@/components/marca-comercial";
 import { Button } from "@/components/ui/button";
 import {
   APPOINTMENT_TYPE_LABELS,
@@ -319,6 +325,7 @@ export function WeekTimeGrid({
           STATUS_STYLES[a.status],
           draggable && "cursor-grab active:cursor-grabbing",
           isDragging && "opacity-40",
+          ehComercial(a.type) && CONTORNO_COMERCIAL,
           a.needs_reschedule && "ring-2 ring-red-500"
         )}
         style={{
@@ -341,6 +348,9 @@ export function WeekTimeGrid({
               minute: "2-digit",
             })}
           </span>
+          {compact && ehComercial(a.type) && (
+            <IconeComercial className="size-2.5" />
+          )}
           {compact && a.clients && (
             <Link
               href={`/prontuarios/${a.clients.id}`}
@@ -404,9 +414,21 @@ export function WeekTimeGrid({
                 {a.clients.full_name}
               </Link>
             )}
-            <p className="truncate text-muted-foreground">
-              {APPOINTMENT_TYPE_LABELS[a.type]}
-            </p>
+            {ehComercial(a.type) ? (
+              <p
+                className={cn(
+                  "flex items-center gap-0.5 truncate font-medium",
+                  TEXTO_COMERCIAL
+                )}
+              >
+                <IconeComercial className="size-2.5" />
+                {APPOINTMENT_TYPE_LABELS[a.type]}
+              </p>
+            ) : (
+              <p className="truncate text-muted-foreground">
+                {APPOINTMENT_TYPE_LABELS[a.type]}
+              </p>
+            )}
             <JointBadge names={a.participantNames} />
             <span className="inline-flex items-center gap-1 text-muted-foreground">
               <span className={cn("size-1.5 rounded-full", ds.dot)} />

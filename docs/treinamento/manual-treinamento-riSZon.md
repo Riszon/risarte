@@ -2055,6 +2055,18 @@ tratamento"** (a venda fechou) e **"Agendar apresentação comercial"**.
 > no agendamento → **Confirmado**. Não confunda **Confirmar** (o paciente disse
 > que vem) com **Confirmar chegada** (o paciente está na sua frente).
 
+> **O paciente do Comercial tem marca própria** (versão 0.351.0, relatos
+> OC-00135/OC-00136). A apresentação comercial fica na **mesma** agenda e no
+> **mesmo** Atendimento da unidade, e isso é regra da rede: é você quem
+> confirma, dá a chegada e acompanha a apresentação de perto, e duas agendas
+> separadas atrapalhariam esse acompanhamento. Para não confundir os
+> pacientes, o cartão da apresentação comercial tem **contorno rosa
+> (fúcsia)**, o tipo **Apresentação Comercial** escrito nessa cor com o ícone
+> de apresentação e, no Atendimento, o selo **Comercial** ao lado do nome. Vale
+> no Atendimento e em todas as vistas da Agenda (dia, semana e mês). A **cor de
+> fundo** continua dizendo a situação, como antes: azul é agendado, verde é
+> confirmado.
+
 **Tarefa 4 — Atender o pedido do Comercial**
 
 Quando o Consultor não consegue realizar a apresentação (o cliente não

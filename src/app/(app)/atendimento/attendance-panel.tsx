@@ -18,6 +18,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import {
+  CONTORNO_COMERCIAL,
+  SeloComercial,
+  TEXTO_COMERCIAL,
+  ehComercial,
+} from "@/components/marca-comercial";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -536,6 +542,7 @@ export function AttendancePanel({
           month: "2-digit",
         })
       : null;
+    const comercial = ehComercial(a.type);
     return (
       <li
         className={cn(
@@ -544,7 +551,8 @@ export function AttendancePanel({
             ? "border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-500/15"
             : accent
               ? cn("border-l-2 bg-card", accent)
-              : "bg-card"
+              : "bg-card",
+          comercial && CONTORNO_COMERCIAL
         )}
       >
         <div className="min-w-0 space-y-1">
@@ -559,6 +567,8 @@ export function AttendancePanel({
             ) : (
               <span className="text-sm font-medium">{a.clientName}</span>
             )}
+            {/* OC-00135/136: o paciente do comercial se distingue de relance. */}
+            {comercial && <SeloComercial />}
             {pendingSince && (
               <Badge
                 variant="outline"
@@ -597,7 +607,9 @@ export function AttendancePanel({
               <Clock className="size-3 shrink-0" />
               {time(a.starts_at)}
             </span>
-            <span>{APPOINTMENT_TYPE_LABELS[a.type]}</span>
+            <span className={cn(comercial && "font-medium", comercial && TEXTO_COMERCIAL)}>
+              {APPOINTMENT_TYPE_LABELS[a.type]}
+            </span>
             {a.providerName && (
               <span className="inline-flex items-center gap-1">
                 <UserRound className="size-3 shrink-0" />

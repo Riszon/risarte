@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.350.0** · Última migração: **0324** (0318 a 0324 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.351.0** · Última migração: **0324** (0318 a 0324 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.351.0 (sem migração) — MARCA DA APRESENTAÇÃO COMERCIAL (OC-00135/OC-00136, 27/10/2026)
+>
+> A recepção confundia o paciente do comercial com o da clínica ao confirmar
+> e dar chegada. **As agendas continuam JUNTAS** (regra da rede, reafirmada
+> pelo Admin: a recepção acompanha a apresentação de perto). O que mudou é o
+> cartão: contorno fúcsia + ícone + tipo em fúcsia, e o selo **Comercial** no
+> Atendimento (`src/components/marca-comercial.tsx`). Fúcsia por ser a
+> matiz livre nas situações da agenda e nas etapas do Atendimento. A agenda
+> da rede trocou o destaque dourado pela mesma marca. EV-225.
 
 > ## 🎯 0.350.0 / 0324 — GRUPOS DE PROCEDIMENTOS (pedido do dono, 27/10/2026)
 >

@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.351.0",
+    data: "2026-10-27",
+    migracao: null,
+    titulo: "Agenda e Atendimento: a apresentação comercial tem marca própria",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A apresentação comercial continua na mesma agenda e no mesmo Atendimento da unidade (regra da rede: a recepção acompanha de perto), mas agora se distingue de relance: contorno rosa, o ícone de apresentação e o tipo escrito na mesma cor e, no Atendimento, o selo Comercial ao lado do nome. A cor de fundo continua dizendo a situação (agendado, confirmado).",
+        papeis: ["receptionist", "unit_manager", "commercial_consultant"],
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.350.0",
     data: "2026-10-27",
     migracao: "0324",

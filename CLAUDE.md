@@ -390,6 +390,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (2) — PC Administrador (core 0.350.0 → 0.351.0, sem migração)**
+
+- **Relatos OC-00135/OC-00136 (um caso):** a recepção não distinguia o
+  paciente do comercial do da clínica. ⚠️ **As agendas ficam JUNTAS — regra
+  da rede** (consideração do Admin); não separar em aba nem esconder. O
+  conserto é a marca `src/components/marca-comercial.tsx` (contorno,
+  ícone, tipo e selo em fúcsia) no Atendimento e nas vistas dia, semana e mês
+  da agenda; a agenda da rede deixou o destaque dourado (`highlightType`
+  saiu do `WeekGrid`). A cor de FUNDO continua sendo a situação/etapa —
+  não pintar o cartão inteiro. Visto na tela no treino (Admin de teste,
+  Londrina). `.next-test` limpo.
+
 **27/10/2026 — PC Administrador (core 0.349.0 → 0.350.0, migração 0324)**
 
 - **Grupos de procedimentos (pedido do dono).** Plano e decisões GP1–GP3 em
