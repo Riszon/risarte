@@ -90,13 +90,24 @@ export async function loadBenefits(
     .sort((a, b) => a.procedureName.localeCompare(b.procedureName, "pt-BR"));
 }
 
-export async function loadProcedures(): Promise<{ id: string; name: string }[]> {
+/**
+ * Os procedimentos ativos, com o PREÇO PADRÃO DA REDE (o do cadastro de
+ * Procedimentos) — a tela de benefícios mostra o preço normal e o preço com o
+ * benefício ao lado de cada um. Nulo = sem preço cadastrado.
+ */
+export async function loadProcedures(): Promise<
+  { id: string; name: string; priceCents: number | null }[]
+> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("procedures")
-    .select("id, name")
+    .select("id, name, default_price_cents")
     .eq("is_active", true)
     .order("name")
-    .returns<{ id: string; name: string }[]>();
-  return data ?? [];
+    .returns<{ id: string; name: string; default_price_cents: number | null }[]>();
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    priceCents: p.default_price_cents != null ? Number(p.default_price_cents) : null,
+  }));
 }

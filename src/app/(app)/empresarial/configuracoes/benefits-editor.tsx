@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ListaComBusca } from "@/components/ui/lista-com-busca";
+import { applyBenefit } from "@/lib/empresarial/pricing";
 import {
   BENEFIT_TYPES,
   BENEFIT_TYPE_LABELS,
@@ -25,6 +27,9 @@ import { deleteProcedureBenefit, upsertProcedureBenefit } from "./actions";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
+
+/** O procedimento como a tela de benefícios usa: com o preço padrão da rede. */
+export type ProcedimentoDoBeneficio = { id: string; name: string; priceCents: number | null };
 
 /** A margem que a tela mostra ao lado de cada benefício (I2). */
 export type MargemDaLinha = {
@@ -64,6 +69,34 @@ function describeBenefit(b: BenefitView): string {
   }
   if (b.gracePeriodMonths > 0) parts.push(`carência ${b.gracePeriodMonths}m`);
   return parts.join(" · ");
+}
+
+/**
+ * PREÇO NORMAL × PREÇO COM O BENEFÍCIO (pedido do dono, 27/10/2026). O
+ * normal é o preço padrão do cadastro de Procedimentos; o com benefício é a
+ * mesma conta que a proposta e a cobrança usam (`applyBenefit`).
+ */
+function Precos({ b, precoCents }: { b: BenefitView; precoCents: number | null }) {
+  if (precoCents == null || precoCents <= 0) {
+    return <span className="text-xs text-muted-foreground">sem preço cadastrado</span>;
+  }
+  const { chargedCents, savedCents } = applyBenefit(
+    { benefitType: b.benefitType, benefitValue: b.benefitValue },
+    precoCents
+  );
+  return (
+    <span className="block whitespace-nowrap text-xs leading-tight">
+      <span className="block text-muted-foreground">Normal: {formatBRL(precoCents)}</span>
+      <span className="block font-medium text-foreground">
+        Com benefício: {formatBRL(chargedCents)}
+      </span>
+      {savedCents > 0 && (
+        <span className="block text-emerald-700 dark:text-emerald-400">
+          economiza {formatBRL(savedCents)}
+        </span>
+      )}
+    </span>
+  );
 }
 
 function Margem({ m }: { m?: MargemDaLinha }) {
@@ -108,7 +141,7 @@ export function BenefitsEditor({
   scopeLabel,
 }: {
   companyId: string | null;
-  procedures: { id: string; name: string }[];
+  procedures: ProcedimentoDoBeneficio[];
   benefits: BenefitView[];
   /** Margem por procedimento, na média da rede. Vazio = não calculada. */
   margens?: Map<string, MargemDaLinha>;
@@ -116,6 +149,11 @@ export function BenefitsEditor({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const precoPorId = new Map(procedures.map((p) => [p.id, p.priceCents]));
+  // ⚠️ Procedimento que já tem benefício NÃO volta à lista do "Adicionar":
+  // mudar o benefício dele é pelo Editar da linha (pedido do dono, 27/10/2026).
+  const incluidos = new Set(benefits.map((b) => b.procedureId));
+  const disponiveis = procedures.filter((p) => !incluidos.has(p.id));
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -133,7 +171,13 @@ export function BenefitsEditor({
         <p className="text-sm text-muted-foreground">
           Benefícios por procedimento — {scopeLabel}.
         </p>
-        <BenefitDialog companyId={companyId} procedures={procedures} />
+        {disponiveis.length > 0 ? (
+          <BenefitDialog companyId={companyId} procedures={disponiveis} />
+        ) : (
+          <Button size="sm" disabled title="Todos os procedimentos já têm benefício">
+            Todos os procedimentos já têm benefício
+          </Button>
+        )}
       </div>
 
       {benefits.length === 0 ? (
@@ -149,6 +193,7 @@ export function BenefitsEditor({
               <tr>
                 <th className="px-3 py-2 font-medium">Procedimento</th>
                 <th className="px-3 py-2 font-medium">Benefício</th>
+                <th className="px-3 py-2 font-medium">Preço</th>
                 <th className="px-3 py-2 font-medium">Parcelas</th>
                 {/* ⚠️ A MARGEM ENTRA AQUI porque é aqui que se decide o
                     benefício. Numa tela separada, ninguém olharia na hora que
@@ -165,6 +210,9 @@ export function BenefitsEditor({
                   <td className="px-3 py-2 text-muted-foreground">
                     {describeBenefit(b)}
                   </td>
+                  <td className="px-3 py-2">
+                    <Precos b={b} precoCents={precoPorId.get(b.procedureId) ?? null} />
+                  </td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {b.maxInstallments ? `${b.maxInstallments}x` : "—"}
                   </td>
@@ -173,11 +221,7 @@ export function BenefitsEditor({
                   </td>
                   <td className="px-3 py-2 text-right">
                     <span className="flex justify-end gap-1">
-                      <BenefitDialog
-                        companyId={companyId}
-                        procedures={procedures}
-                        benefit={b}
-                      />
+                      <BenefitDialog companyId={companyId} procedures={[]} benefit={b} />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -205,7 +249,8 @@ function BenefitDialog({
   benefit,
 }: {
   companyId: string | null;
-  procedures: { id: string; name: string }[];
+  /** No "Adicionar": só os que ainda não têm benefício. No Editar, não é usada. */
+  procedures: ProcedimentoDoBeneficio[];
   benefit?: BenefitView;
 }) {
   const router = useRouter();
@@ -270,14 +315,20 @@ function BenefitDialog({
                 <p className="text-sm font-medium">{benefit!.procedureName}</p>
               </>
             ) : (
-              <select id="procedure_id" name="procedure_id" required className={selectClass} defaultValue="">
-                <option value="">Selecione...</option>
-                {procedures.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <>
+                <ListaComBusca
+                  id="procedure_id"
+                  name="procedure_id"
+                  required
+                  placeholder="Digite para procurar…"
+                  aria-label="Procedimento"
+                  options={procedures.map((p) => ({ value: p.id, label: p.name }))}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {procedures.length} procedimento(s) ainda sem benefício. Os que já
+                  têm não aparecem aqui — use o Editar da linha.
+                </p>
+              </>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3">

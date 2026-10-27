@@ -1231,7 +1231,15 @@ A aba tem quatro partes, na ordem do trabalho:
 - **Benefícios e grupos** — tudo o que o programa oferece, numa aba só, em três
   blocos:
   - **Benefícios por procedimento** — os **padrão da rede**, que chegam nas
-    propostas novas. Tem a coluna **Margem (rede)**.
+    propostas novas. Cada linha mostra o **Preço** — o **normal** (o preço
+    padrão do cadastro de Procedimentos), o **com benefício** (o que o
+    beneficiário paga) e quanto ele **economiza** — e a coluna **Margem
+    (rede)**. Procedimento sem preço cadastrado diz *"sem preço cadastrado"*.
+    Em **Adicionar benefício**, a lista tem **busca** (digite parte do nome) e
+    mostra **só os procedimentos que ainda não têm benefício**; para mudar um
+    que já tem, use o **Editar** da linha. Com todos incluídos, o botão diz
+    *"Todos os procedimentos já têm benefício"*. A aba **Plano & Benefícios**
+    de cada empresa funciona igual para os benefícios próprios dela.
   - **Outras vantagens** — o que o programa oferece **além dos
     procedimentos**: desconto em parceiros, palestras na empresa, publicidade
     nas TVs da unidade, unidade exclusiva de atendimento. **Nova vantagem**
