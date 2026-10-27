@@ -122,6 +122,85 @@ export function pacotesDaOpcao(itens: ItemComPacote[]): LinhaDoPacote[] {
   return [...porGrupo.values()].filter((l) => l.deCents !== l.porCents);
 }
 
+// ---------------------------------------------------------------------------
+// O MÍNIMO DO PACOTE (0326, GP7–GP8)
+// ---------------------------------------------------------------------------
+
+/** Limite do mínimo — o mesmo do banco (0326). */
+export const MINIMO_MAXIMO = 200;
+
+/** O mínimo está dentro do que o banco aceita, e não acima do preço do pacote? */
+export function minimoValido(minimoPercent: number | null, ajustePercent: number): string | null {
+  if (minimoPercent === null) return null;
+  if (!Number.isFinite(minimoPercent) || minimoPercent <= 0 || minimoPercent > MINIMO_MAXIMO) {
+    return `O mínimo vai de 0,01% a ${MINIMO_MAXIMO}% do preço de tabela.`;
+  }
+  if (Math.round(minimoPercent * 100) > 10000 + Math.round(ajustePercent * 100)) {
+    return "O mínimo não pode ficar acima do preço do pacote — toda negociação pediria autorização.";
+  }
+  return null;
+}
+
+/** O piso do pacote em R$: o % da tabela, arredondado PARA CIMA (o mínimo não cede centavo). */
+export function pisoDoPacote(tabelaCents: number, minimoPercent: number): number {
+  return Math.ceil((tabelaCents * Math.round(minimoPercent * 100)) / 10000);
+}
+
+export type ItemNaNegociacao = {
+  /** O grupo de onde o item veio e o mínimo dele; nulo = item solto ou grupo sem mínimo. */
+  pacote: { id: string; nome: string; minimoPercent: number | null } | null;
+  quantidade: number;
+  precoCents: number;
+  precoDeTabelaCents: number | null;
+  /** Benefício do programa neste item (> 0 = fora da base do desconto manual). */
+  beneficioCents: number;
+  incluido: boolean;
+};
+
+/**
+ * Os motivos "Pacote X abaixo do mínimo" de uma negociação — a MESMA conta de
+ * `_negotiation_package_floor` (0326), para a tela avisar antes de salvar. O
+ * cobrado pelo pacote = o preço dos itens dele − a PARTE do desconto manual
+ * que cabe a eles (proporcional sobre a base descontável, como o teto). O
+ * benefício do programa não conta: é direito do cliente.
+ */
+export function pacotesAbaixoDoMinimo(
+  itens: ItemNaNegociacao[],
+  ajusteCents: number,
+  baseDescontavelCents: number
+): string[] {
+  const porGrupo = new Map<string, { nome: string; minimo: number; tabela: number; preco: number; descontavel: number }>();
+  for (const i of itens) {
+    if (!i.incluido || !i.pacote || i.pacote.minimoPercent === null) continue;
+    const g = porGrupo.get(i.pacote.id) ?? { nome: i.pacote.nome, minimo: i.pacote.minimoPercent, tabela: 0, preco: 0, descontavel: 0 };
+    g.tabela += i.quantidade * (i.precoDeTabelaCents ?? i.precoCents);
+    g.preco += i.quantidade * i.precoCents;
+    if (!(i.beneficioCents > 0)) g.descontavel += i.quantidade * i.precoCents;
+    porGrupo.set(i.pacote.id, g);
+  }
+  const motivos: string[] = [];
+  for (const g of [...porGrupo.values()].sort((a, b) => (a.nome < b.nome ? -1 : a.nome > b.nome ? 1 : 0))) {
+    const parte =
+      ajusteCents < 0 && baseDescontavelCents > 0
+        ? roundHalfUp((ajusteCents * g.descontavel) / baseDescontavelCents)
+        : 0;
+    const cobrado = g.preco + parte;
+    const piso = pisoDoPacote(g.tabela, g.minimo);
+    if (cobrado < piso) {
+      motivos.push(
+        `${rotuloDoPacote(g.nome)} abaixo do mínimo: ${brlTexto(cobrado)} (mínimo ${brlTexto(piso)}, ${numeroBr(g.minimo)}% da tabela)`
+      );
+    }
+  }
+  return motivos;
+}
+
+/** "R$ 1.599,99" — o mesmo formato do `brl()` do banco, para o motivo sair igual. */
+function brlTexto(cents: number): string {
+  const [inteiro, frac] = (Math.abs(cents) / 100).toFixed(2).split(".");
+  return `${cents < 0 ? "-" : ""}R$ ${inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${frac}`;
+}
+
 export type ItemDoGrupo = {
   procedureId: string;
   /** Vale para procedimento SEM dente; o de dente entra uma vez por dente. */
@@ -143,6 +222,11 @@ export type GrupoDeProcedimentos = {
    * pacote em vez de mostrar "sem ajuste".
    */
   ajustePercent: number | null;
+  /**
+   * 0326: o mínimo na negociação, em % do preço de tabela (nulo = sem mínimo).
+   * `undefined` = não deu para ler (o banco sem a 0326).
+   */
+  minimoPercent?: number | null;
   /** Na ordem de lançar — a ordem importa (implante antes da prótese). */
   itens: ItemDoGrupo[];
 };
@@ -167,8 +251,13 @@ export function validarGrupo(
   return null;
 }
 
-/** Os códigos das funções da 0324 e da 0325 em pt-BR. Nulo = erro que não é delas. */
+/** Os códigos das funções da 0324, 0325 e 0326 em pt-BR. Nulo = erro que não é delas. */
 export function mensagemDoGrupo(erro: string): string | null {
+  // O mínimo é da 0326 — antes das regras da 0325 e da 0324.
+  if (/set_procedure_group_pricing|min_price_percent/i.test(erro) &&
+      /could not find|schema cache|does not exist/i.test(erro)) {
+    return "O banco ainda não recebeu a atualização 0326 (preço mínimo do grupo).";
+  }
   // A porta do preço é da 0325 — antes da regra geral, que fala da 0324.
   if (/set_procedure_group_price|price_adjust_percent|list_price_cents/i.test(erro) &&
       /could not find|schema cache|does not exist/i.test(erro)) {
@@ -191,6 +280,8 @@ export function mensagemDoGrupo(erro: string): string | null {
     ["GROUP_IN_USE", "Este grupo já foi usado em planos: inative em vez de excluir."],
     ["PRICE_NOT_ALLOWED", "Só o Admin Master define o preço do pacote."],
     ["INVALID_ADJUST", `O desconto vai até ${DESCONTO_MAXIMO}% e o acréscimo até ${ACRESCIMO_MAXIMO}%.`],
+    ["INVALID_MIN", `O mínimo vai de 0,01% a ${MINIMO_MAXIMO}% do preço de tabela.`],
+    ["MIN_ABOVE_PRICE", "O mínimo não pode ficar acima do preço do pacote — baixe o mínimo antes de dar mais desconto."],
   ];
   return m.find(([codigo]) => erro.includes(codigo))?.[1] ?? null;
 }

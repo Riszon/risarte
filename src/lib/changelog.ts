@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.354.0",
+    data: "2026-10-27",
+    migracao: "0326",
+    titulo: "Grupos de procedimentos: preço mínimo, repasse do pacote e vínculo rápido",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O Admin Master define o preço mínimo de cada grupo (em % da tabela ou o total). Se o desconto da negociação deixar o pacote abaixo do mínimo, a negociação fica aguardando a autorização do Gerente, como o desconto acima do teto — e o painel avisa antes de salvar.",
+        papeis: ["commercial_consultant", "unit_manager", "planner_dentist"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No cartão do grupo, o repasse ao dentista de cada procedimento por nível, em R$ e em % do preço no pacote, com o total. No cartão do procedimento, a linha Grupos mostra em quais grupos ele está, e o botão Vincular a grupo põe ou tira o procedimento de um grupo sem abrir o grupo.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.353.0",
     data: "2026-10-27",
     migracao: "0325",

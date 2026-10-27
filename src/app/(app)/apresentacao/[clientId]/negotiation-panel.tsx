@@ -55,6 +55,7 @@ import {
   savePlanNegotiation,
 } from "./negotiation-actions";
 import { todayInBrazil } from "@/lib/dates";
+import { pacotesAbaixoDoMinimo } from "@/lib/procedimentos/grupos";
 import { Odontograma } from "@/components/odontograma/odontograma";
 import {
   alternarDente,
@@ -79,6 +80,10 @@ export type NegotiationOption = {
     gutGravity: number | null;
     gutUrgency: number | null;
     gutTendency: number | null;
+    /** 0326 (GP7): o grupo de onde o item veio e o mínimo dele (nulo = sem mínimo). */
+    pacote?: { id: string; nome: string; minimoPercent: number | null } | null;
+    /** 0325: o preço de tabela quando o pacote ajustou o preço. */
+    precoDeTabelaCents?: number | null;
     /** OD3/OD4: o lugar do item — com um item por dente, o aceite é dente a dente. */
     toothCode?: string | null;
     faceCodes?: string[] | null;
@@ -451,8 +456,8 @@ export function NegotiationPanel({
 
   // Pré-checagem da regra (o servidor revalida sempre).
   const liveViolations = useMemo(
-    () =>
-      negotiationViolations(
+    () => [
+      ...negotiationViolations(
         {
           subtotalCents,
           adjustmentCents: effectiveAdjustmentCents,
@@ -461,12 +466,29 @@ export function NegotiationPanel({
         },
         rule
       ),
+      // 0326 (GP7): o pacote abaixo do mínimo — a mesma conta do banco.
+      ...pacotesAbaixoDoMinimo(
+        (option?.items ?? []).map((i) => ({
+          pacote: i.pacote ?? null,
+          quantidade: i.quantity,
+          precoCents: i.unitPriceCents,
+          precoDeTabelaCents: i.precoDeTabelaCents ?? null,
+          beneficioCents: i.programDiscountCents ?? 0,
+          incluido: !excluded.has(i.id),
+        })),
+        effectiveAdjustmentCents,
+        discountBaseCents
+      ),
+    ],
     [
       subtotalCents,
       effectiveAdjustmentCents,
       installmentsNum,
       effectiveMethod,
       rule,
+      option,
+      excluded,
+      discountBaseCents,
     ]
   );
 

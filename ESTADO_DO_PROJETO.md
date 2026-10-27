@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.353.0** · Última migração: **0325** (0318 a 0325 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.354.0** · Última migração: **0326** (0318 a 0325 aplicadas na produção e no treino; ⏳ **0326 só no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.354.0 / 0326 — MÍNIMO, REPASSE E VÍNCULO RÁPIDO NOS GRUPOS (27/10/2026)
+>
+> Pedido do dono. Decisões GP7–GP8 (`docs/procedimentos/GRUPOS-PLANO.md` §7):
+> o **preço mínimo** do grupo (em % da tabela) **trava a negociação** — abaixo
+> dele, autorização do Gerente, pelo mesmo caminho do teto
+> (`evaluate_negotiation_rules` recriada + `_negotiation_package_floor`).
+> Repasse por nível no cartão do grupo, em % do preço no pacote; e no cartão do
+> procedimento, a linha **Grupos** e o botão **Vincular a grupo**. Achado: o
+> mínimo do PROCEDIMENTO não trava nada hoje. ✅ 0326 no treino; ⏳ **falta a
+> produção**. EV-228.
 
 > ## 🎯 0.353.0 / 0325 — PREÇO DE PACOTE NOS GRUPOS (pedido do dono, 27/10/2026)
 >

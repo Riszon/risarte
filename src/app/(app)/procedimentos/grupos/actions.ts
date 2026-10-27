@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext, type SessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { ajusteValido, mensagemDoGrupo, validarGrupo } from "@/lib/procedimentos/grupos";
+import { ajusteValido, mensagemDoGrupo, minimoValido, validarGrupo } from "@/lib/procedimentos/grupos";
 
 export type GrupoResult = { ok: boolean; error?: string; id?: string };
 
@@ -22,6 +22,8 @@ function podeMexer(session: SessionContext): boolean {
 
 function atualizar() {
   revalidatePath("/procedimentos/grupos");
+  // O cartão do procedimento mostra os grupos dele (e o botão rápido mexe aqui).
+  revalidatePath("/procedimentos");
 }
 
 export async function salvarGrupo(input: {
@@ -58,35 +60,104 @@ export async function salvarGrupo(input: {
 }
 
 /**
- * 0325 (GP4–GP6): o ajuste de preço do pacote. SÓ o Admin Master — o preço é
- * dele (OC-00068), e o banco repete a regra (`set_procedure_group_price`).
- * Vale para os itens lançados DEPOIS e no envio do plano; o que já foi
- * enviado não muda.
+ * 0325/0326 (GP4–GP8): o preço do pacote (ajuste) e o MÍNIMO na negociação.
+ * SÓ o Admin Master — o preço é dele (OC-00068), e o banco repete a regra.
+ * O ajuste vale para os itens lançados DEPOIS e no envio do plano; o mínimo
+ * vale na próxima vez que a negociação for salva.
+ *
+ * `minimoPercent` undefined = a tela não conseguiu ler o mínimo (banco sem a
+ * 0326): grava só o ajuste, pela porta da 0325.
  */
-export async function definirPrecoDoPacote(id: string, ajustePercent: number): Promise<GrupoResult> {
+export async function definirPrecoDoPacote(
+  id: string,
+  ajustePercent: number,
+  minimoPercent?: number | null
+): Promise<GrupoResult> {
   const session = await getSessionContext();
   if (!session.isAdminMaster) return { ok: false, error: "Só o Admin Master define o preço do pacote." };
   if (!ajusteValido(ajustePercent)) {
     return { ok: false, error: mensagemDoGrupo("INVALID_ADJUST") ?? "Ajuste inválido." };
   }
+  const ajuste = Math.round(ajustePercent * 100) / 100;
+  const minimo = minimoPercent == null ? null : Math.round(minimoPercent * 100) / 100;
+  if (minimoPercent !== undefined) {
+    const problema = minimoValido(minimo, ajuste);
+    if (problema) return { ok: false, error: problema };
+  }
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_procedure_group_price", {
-    p_id: id,
-    p_percent: Math.round(ajustePercent * 100) / 100,
-  });
+  const { error } =
+    minimoPercent === undefined
+      ? await supabase.rpc("set_procedure_group_price", { p_id: id, p_percent: ajuste })
+      : await supabase.rpc("set_procedure_group_pricing", { p_id: id, p_percent: ajuste, p_min_percent: minimo });
   if (error) {
-    console.error("set_procedure_group_price failed:", error.message);
+    console.error("set_procedure_group_pricing failed:", error.message);
     return { ok: false, error: mensagemDoGrupo(error.message) ?? "Não foi possível salvar o preço do pacote." };
   }
   await logAudit({
     action: "update",
     entityType: "procedure_group",
     entityId: id,
-    details: { price_adjust_percent: Math.round(ajustePercent * 100) / 100 },
+    details: { price_adjust_percent: ajuste, ...(minimoPercent !== undefined ? { min_price_percent: minimo } : {}) },
   });
   atualizar();
   revalidatePath("/procedimentos");
   return { ok: true };
+}
+
+/**
+ * O botão rápido do procedimento (pedido do dono, 27/10/2026): pôr ou tirar o
+ * procedimento de um grupo sem abrir o editor do grupo. Quem entra vai para o
+ * FIM do grupo, com quantidade 1 (a ordem se ajusta no editor). Pela mesma
+ * porta do editor (`save_procedure_group`): as mesmas regras (2 a 30, ativo,
+ * sem repetir) e a mesma permissão (GP1: Admin Master e Planner).
+ */
+export async function vincularAoGrupo(input: {
+  grupoId: string;
+  procedureId: string;
+  vincular: boolean;
+}): Promise<GrupoResult> {
+  const session = await getSessionContext();
+  if (!podeMexer(session)) return { ok: false, error: "Só o Admin Master e o Planner mexem nos grupos." };
+  const supabase = await createClient();
+  const { data: grupo, error: erroDoGrupo } = await supabase
+    .from("procedure_groups")
+    .select("id, name, description, procedure_group_items ( procedure_id, quantity, sort_order, procedure:procedures ( is_active ) )")
+    .eq("id", input.grupoId)
+    .maybeSingle<{
+      id: string;
+      name: string;
+      description: string | null;
+      procedure_group_items: {
+        procedure_id: string;
+        quantity: number;
+        sort_order: number;
+        procedure: { is_active: boolean } | { is_active: boolean }[] | null;
+      }[];
+    }>();
+  if (erroDoGrupo || !grupo) {
+    if (erroDoGrupo) console.error("vincularAoGrupo (ler) failed:", erroDoGrupo.message);
+    return { ok: false, error: "Não foi possível ler o grupo agora. Nada foi alterado." };
+  }
+  // Procedimento que saiu do catálogo não volta: o banco recusaria salvar.
+  const atuais = [...grupo.procedure_group_items]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .filter((i) => (Array.isArray(i.procedure) ? i.procedure[0] : i.procedure)?.is_active !== false)
+    .map((i) => ({ procedureId: i.procedure_id, quantidade: i.quantity }));
+  const jaEsta = atuais.some((i) => i.procedureId === input.procedureId);
+  if (input.vincular === jaEsta) return { ok: true, id: grupo.id };
+  const itens = input.vincular
+    ? [...atuais, { procedureId: input.procedureId, quantidade: 1 }]
+    : atuais.filter((i) => i.procedureId !== input.procedureId);
+  const problema = validarGrupo(grupo.name, itens);
+  if (problema) {
+    return {
+      ok: false,
+      error: input.vincular
+        ? problema
+        : `${problema} Para desfazer o grupo, inative ou exclua o grupo.`,
+    };
+  }
+  return salvarGrupo({ id: grupo.id, nome: grupo.name, descricao: grupo.description ?? "", itens });
 }
 
 export async function ativarGrupo(id: string, ativo: boolean): Promise<GrupoResult> {

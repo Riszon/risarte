@@ -13,6 +13,7 @@ import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import type { ScheduleEntry } from "@/lib/payments";
 import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
+import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
 import { planoDaNegociacao, type OdontoDaApresentacao } from "@/lib/odontograma/aceite";
 import type {
   NegotiationData,
@@ -220,6 +221,37 @@ export async function loadNegotiationBlock(
       })),
   }));
   if (options.length === 0) return null;
+
+  // 0326 (GP7): de que grupo veio cada item, o preço de tabela e o MÍNIMO do
+  // grupo — para o painel avisar antes de salvar (quem trava é o banco). À
+  // parte: sem a 0325/0326, a leitura falha e o painel segue sem o aviso.
+  {
+    const pacoteDe = await pacoteDosItens(
+      supabase,
+      options.flatMap((o) => o.items.map((i) => i.id))
+    );
+    const grupoIds = [...new Set([...pacoteDe.values()].map((p) => p.grupo.id))];
+    const minimoDe = new Map<string, number | null>();
+    if (grupoIds.length > 0) {
+      const { data: minRows, error: minErro } = await supabase
+        .from("procedure_groups")
+        .select("id, min_price_percent")
+        .in("id", grupoIds)
+        .returns<{ id: string; min_price_percent: number | string | null }[]>();
+      if (minErro) console.error("negotiation-loader (mínimo do pacote) failed:", minErro.message);
+      for (const m of minRows ?? []) {
+        minimoDe.set(m.id, m.min_price_percent === null ? null : Number(m.min_price_percent));
+      }
+    }
+    for (const o of options) {
+      for (const i of o.items) {
+        const p = pacoteDe.get(i.id);
+        if (!p) continue;
+        i.pacote = { id: p.grupo.id, nome: p.grupo.nome, minimoPercent: minimoDe.get(p.grupo.id) ?? null };
+        i.precoDeTabelaCents = p.precoDeTabelaCents;
+      }
+    }
+  }
 
   // OD4: o desenho do aceite (o mesmo da apresentação).
   const { data: cliRow } = await supabase

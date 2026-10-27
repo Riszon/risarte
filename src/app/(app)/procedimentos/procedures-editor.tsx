@@ -70,6 +70,7 @@ import {
   valorDoPercentual,
 } from "@/lib/finance/repasse-percentual";
 import { RepasseValorOuPercentual } from "./repasse-valor-percentual";
+import { GruposDoProcedimento, type GrupoParaVincular } from "./grupos-do-procedimento";
 import {
   dataBr,
   proximoReajuste,
@@ -713,6 +714,9 @@ export function ProceduresEditor({
   usageByProcedure = null,
   agendamentos = [],
   nomesDasUnidades = {},
+  // "grupos" aqui dentro já são os blocos por especialidade.
+  grupos: gruposDeProcedimentos = null,
+  podeVincularGrupo = false,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -747,6 +751,10 @@ export function ProceduresEditor({
   /** 0309: reajustes agendados (ainda não aplicados), de toda a rede. */
   agendamentos?: Agendamento[];
   nomesDasUnidades?: Record<string, string>;
+  /** Os grupos de procedimentos (nulo = não deu para ler) — "Grupos:" no cartão. */
+  grupos?: GrupoParaVincular[] | null;
+  /** GP1: Admin Master e Planner põem e tiram procedimento de grupo. */
+  podeVincularGrupo?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -830,6 +838,8 @@ export function ProceduresEditor({
         inativo={inativo}
         agendamentos={agendamentos.filter((a) => a.procedureId === p.id)}
         nomesDasUnidades={nomesDasUnidades}
+        grupos={gruposDeProcedimentos}
+        podeVincularGrupo={podeVincularGrupo}
       />
     );
   };
@@ -1242,6 +1252,8 @@ function ProcedureRow({
   inativo,
   agendamentos,
   nomesDasUnidades,
+  grupos,
+  podeVincularGrupo,
 }: {
   procedure: Procedure;
   specialties: string[];
@@ -1282,6 +1294,8 @@ function ProcedureRow({
   /** 0309: os reajustes agendados DESTE procedimento (rede e unidades). */
   agendamentos: Agendamento[];
   nomesDasUnidades: Record<string, string>;
+  grupos: GrupoParaVincular[] | null;
+  podeVincularGrupo: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [showKits, setShowKits] = useState(false);
@@ -1726,6 +1740,15 @@ function ProcedureRow({
           canEdit={canEditPayout}
           isPending={isPending}
           run={run}
+        />
+      )}
+
+      {networkMode && (
+        <GruposDoProcedimento
+          procedureId={p.id}
+          procedimentoAtivo={p.isActive}
+          grupos={grupos}
+          podeVincular={podeVincularGrupo}
         />
       )}
 

@@ -39,6 +39,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
+- [ ] **AP79** — o preço mínimo/máximo do PROCEDIMENTO não é conferido em lugar nenhum (só aparece na "Faixa")
 - [ ] **AP78** — campo de busca dos Procedimentos solta aviso do Base UI no console (`defaultValue` que muda)
 - [ ] **AP77** — comissão em massa (Precificação) ainda grava % e mostra "% + R$" (o cadastro grava R$ desde a 0.352.0)
 - [ ] **AP76** — manual 6.3 ("Cuidados") ainda cita o botão Reabrir para edição, que saiu na 0.336.0
@@ -2654,6 +2655,16 @@ o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produç�
 se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
+
+### AP79. O preço mínimo e o máximo do procedimento não travam nada (27/10/2026)
+
+**Confirmado lendo o código** (achado ao decidir o mínimo do grupo, 0.354.0):
+`min_price_cents`/`max_price_cents` de `procedures` são gravados, entram no
+reajuste em massa (0309) e aparecem na linha "Faixa" do cartão — e nenhuma
+tela nem função os confere: a negociação, a venda direta e o plano aceitam
+qualquer preço final. O mínimo do GRUPO (0326) trava, por decisão do dono; o
+do procedimento, não. Perguntar ao dono se deve travar (e como — a negociação
+desconta sobre a opção inteira, não por item).
 
 ### AP78. Campo de busca dos Procedimentos: aviso do Base UI no console (27/10/2026)
 

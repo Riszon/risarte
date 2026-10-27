@@ -87,6 +87,8 @@ apresentação, negociação, sessões, repasse, estoque, odontograma.
 | GP4 | Onde vale o preço do grupo (desconto/acréscimo)? | **No plano** — o item lançado pelo grupo já entra com o preço do pacote (27/10/2026, §6) |
 | GP5 | O grupo guarda o percentual ou o total? | **O percentual** — digita-se um ou outro; vale para qualquer nº de dentes e acompanha o catálogo (27/10/2026) |
 | GP6 | O paciente vê o ajuste? | **Sim, "de … por …"** — os itens seguem um a um, mais a linha do pacote (27/10/2026) |
+| GP7 | O que o preço mínimo do grupo faz? | **Trava a negociação** — abaixo dele, autorização do Gerente (27/10/2026, §7; contra a recomendação, que era só avisar) |
+| GP8 | Como o mínimo é guardado? | **Em % do preço de tabela** — digita-se % ou total (27/10/2026) |
 
 As três como recomendado.
 
@@ -150,3 +152,41 @@ preço do catálogo (OC-00068). O Planner monta o grupo (GP1) e vê o preço.
   de margem da negociação já mostra).
 - O plano enviado antes da 0325 não muda; itens do grupo lançados antes dela
   pegam o ajuste no envio.
+
+## 7. Mínimo, repasse e o botão rápido (0.354.0 / migração 0326, 27/10/2026)
+
+**O pedido do dono:** preço mínimo no grupo; ver quanto a unidade paga de
+repasse em % do que é cobrado no pacote, "como aparece nas configurações dos
+procedimentos"; botão rápido no procedimento para vincular a um grupo; ver em
+quais grupos o procedimento está.
+
+**Achado antes de decidir:** o preço MÍNIMO do PROCEDIMENTO não trava nada
+hoje — é gravado e aparece na faixa de preço, mas nenhuma tela o confere. Por
+isso o dono decidiu, para o grupo, o que o mínimo FAZ (GP7).
+
+**O mínimo (0326):**
+- `procedure_groups.min_price_percent` (nulo = sem mínimo; 0,01 a 200, e
+  nunca acima de 100 + ajuste — `MIN_ABOVE_PRICE`). Porta nova
+  `set_procedure_group_pricing(id, ajuste, mínimo)`, só Admin Master; a
+  `set_procedure_group_price` da 0325 continua e respeita o mínimo.
+- **Trava:** `evaluate_negotiation_rules` (0182, recriada) chama
+  `_negotiation_package_floor` — um motivo por pacote abaixo do mínimo, que
+  põe a negociação em `aguardando_autorizacao` e avisa o Gerente (o caminho
+  do teto). Cobrado pelo pacote = preço dos itens dele − a parte do desconto
+  manual que cabe a eles (proporcional à base descontável, a do teto). O
+  benefício do programa NÃO conta. Piso = tabela × % arredondado para cima.
+- **Espelho em TS:** `pacotesAbaixoDoMinimo` (mesmo texto do motivo), no
+  painel de negociação antes de salvar. ⚠️ **Ao recriar
+  `evaluate_negotiation_rules`, levar a chamada junto.**
+- O mínimo vale pelo valor ATUAL do grupo em cada avaliação (não congela no
+  envio do plano, ao contrário do preço).
+
+**O repasse no pacote (sem migração):** `payout_matrix` da unidade ativa
+(a mesma fonte do cartão do procedimento), por nível, em % do preço NO
+pacote (padrão da rede ajustado). Tabela em `repasse-do-pacote.tsx`.
+
+**O botão rápido (sem migração):** `vincularAoGrupo` lê o grupo e regrava
+pela MESMA porta do editor (`save_procedure_group`) — mesmas regras e a
+permissão do GP1 (Admin Master e Planner). Entra no FIM, quantidade 1;
+desmarcar que deixaria o grupo com 1 é recusado com explicação. Grupos no
+cartão: `GruposDoProcedimento`.

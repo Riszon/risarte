@@ -16,6 +16,7 @@ import {
 } from "@/lib/procedimentos/grupos";
 import { ativarGrupo, excluirGrupo, salvarGrupo } from "./actions";
 import { PrecoDoPacote } from "./preco-do-pacote";
+import { RepasseDoPacote, type RepasseDoNivel } from "./repasse-do-pacote";
 
 export type ProcedimentoParaGrupo = {
   id: string;
@@ -43,11 +44,18 @@ export function GruposEditor({
   grupos,
   procedimentos,
   podeDefinirPreco,
+  niveis = [],
+  repasses = {},
+  unidade = null,
 }: {
   grupos: GrupoDeProcedimentos[];
   procedimentos: ProcedimentoParaGrupo[];
   /** 0325: só o Admin Master define o preço do pacote; o Planner vê. */
   podeDefinirPreco: boolean;
+  /** O repasse por nível de cada procedimento (unidade ativa), para o pacote. */
+  niveis?: { id: string; name: string }[];
+  repasses?: Record<string, Record<string, RepasseDoNivel>>;
+  unidade?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -129,6 +137,9 @@ export function GruposEditor({
             precoDe={precoDe}
             ocupado={isPending}
             podeDefinirPreco={podeDefinirPreco}
+            niveis={niveis}
+            repasses={repasses}
+            unidade={unidade}
             onEditar={() => editar(g)}
             onAtivar={() => rodar(() => ativarGrupo(g.id, false), "Grupo inativado: não aparece mais no plano.")}
             onExcluir={() => {
@@ -150,6 +161,9 @@ export function GruposEditor({
                 precoDe={precoDe}
                 ocupado={isPending}
                 podeDefinirPreco={podeDefinirPreco}
+                niveis={niveis}
+                repasses={repasses}
+                unidade={unidade}
                 onEditar={() => editar(g)}
                 onAtivar={() => rodar(() => ativarGrupo(g.id, true), "Grupo reativado.")}
                 onExcluir={() => {
@@ -170,6 +184,9 @@ function CartaoDoGrupo({
   precoDe,
   ocupado,
   podeDefinirPreco,
+  niveis,
+  repasses,
+  unidade,
   onEditar,
   onAtivar,
   onExcluir,
@@ -178,6 +195,9 @@ function CartaoDoGrupo({
   precoDe: Map<string, number>;
   ocupado: boolean;
   podeDefinirPreco: boolean;
+  niveis: { id: string; name: string }[];
+  repasses: Record<string, Record<string, RepasseDoNivel>>;
+  unidade: string | null;
   onEditar: () => void;
   onAtivar: () => void;
   onExcluir: () => void;
@@ -230,7 +250,16 @@ function CartaoDoGrupo({
         itens={noCatalogo}
         precoDe={precoDe}
         ajustePercent={grupo.ajustePercent}
+        minimoPercent={grupo.minimoPercent}
         podeDefinir={podeDefinirPreco}
+      />
+      <RepasseDoPacote
+        itens={noCatalogo}
+        precoDe={precoDe}
+        ajustePercent={grupo.ajustePercent ?? 0}
+        niveis={niveis}
+        repasses={repasses}
+        unidade={unidade}
       />
     </li>
   );

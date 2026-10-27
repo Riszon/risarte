@@ -390,6 +390,22 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (5) — PC Administrador (core 0.353.0 → 0.354.0, migração 0326)**
+
+- **Mínimo, repasse e vínculo rápido nos grupos (pedido do dono).** GP7–GP8
+  em `docs/procedimentos/GRUPOS-PLANO.md` §7. ⚠️ **GP7 contra a minha
+  recomendação** (eu sugeri só avisar): o mínimo TRAVA — negociação com o
+  pacote abaixo dele vai para `aguardando_autorizacao` (Gerente).
+- ⚠️ **`evaluate_negotiation_rules` foi recriada (0326) com a chamada a
+  `_negotiation_package_floor`.** Ao recriar a função, levar a chamada.
+  Espelho em TS: `pacotesAbaixoDoMinimo` (o MESMO texto do motivo).
+- ⚠️ **Achado (não mexi):** o preço mínimo/máximo do PROCEDIMENTO não é
+  conferido em lugar nenhum — só aparece na "Faixa". Registrado como AP79.
+- Botão rápido = `vincularAoGrupo` pela porta do editor (GP1).
+- ✅ 0326 no treino (ensaio 22/22 + quebra). ⏳ **Falta a produção.**
+- Resíduo no treino (meu): o "Pacote teste (pode ignorar)" ganhou mínimo de
+  85%. `.next-test` limpo.
+
 **27/10/2026 (4) — PC Administrador (core 0.352.0 → 0.353.0, migração 0325)**
 
 - **Preço de pacote nos grupos (pedido do dono).** Decisões GP4–GP6 em

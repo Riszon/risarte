@@ -23,7 +23,8 @@ export default async function GruposPage() {
   if (!session.isAdminMaster && !isPlanner) redirect("/");
 
   const supabase = await createClient();
-  const [grupos, { data: procRows, error: procErro }] = await Promise.all([
+  const activeClinicId = session.activeClinic?.id ?? null;
+  const [grupos, { data: procRows, error: procErro }, { data: levelRows }, { data: matrixRows }] = await Promise.all([
     carregarGrupos(supabase),
     supabase
       .from("procedures")
@@ -35,7 +36,23 @@ export default async function GruposPage() {
       .returns<
         { id: string; code: string | null; name: string; specialty: string | null; default_price_cents: number }[]
       >(),
+    // O repasse por nível — a MESMA fonte do cartão do procedimento (0212):
+    // `payout_matrix` aplica os quatro degraus da apuração, na unidade ativa.
+    supabase
+      .from("career_levels")
+      .select("id, name, clinic_id, sort_order")
+      .eq("active", true)
+      .order("sort_order")
+      .order("name"),
+    supabase.rpc("payout_matrix", { p_clinic_id: activeClinicId, p_date: null }),
   ]);
+  const niveis = (levelRows ?? [])
+    .filter((l) => l.clinic_id === null || l.clinic_id === activeClinicId)
+    .map((l) => ({ id: l.id as string, name: l.name as string }));
+  const repasses: Record<string, Record<string, { amountCents: number; source: string }>> = {};
+  for (const r of (matrixRows ?? []) as { procedure_id: string; level_id: string; amount_cents: number; source: string }[]) {
+    (repasses[r.procedure_id] ??= {})[r.level_id] = { amountCents: Number(r.amount_cents ?? 0), source: r.source };
+  }
 
   const procedimentos: ProcedimentoParaGrupo[] = (procRows ?? []).map((p) => ({
     id: p.id,
@@ -81,6 +98,9 @@ export default async function GruposPage() {
           grupos={grupos.grupos}
           procedimentos={procedimentos}
           podeDefinirPreco={session.isAdminMaster}
+          niveis={niveis}
+          repasses={repasses}
+          unidade={session.activeClinic?.name ?? null}
         />
       )}
     </div>

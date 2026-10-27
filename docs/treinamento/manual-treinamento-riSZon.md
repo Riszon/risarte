@@ -2429,11 +2429,32 @@ o Planner e o Admin Master montam os grupos que o plano oferece no botão
 
 **Preço do pacote — desconto ou acréscimo** (versão 0.353.0). Quem define é o
 **Admin Master** (o Planner vê o preço, mas não muda — como no catálogo). No
-cartão do grupo, **Definir desconto ou acréscimo** (ou **Alterar**): escolha
+cartão do grupo, **Definir preço e mínimo** (ou **Alterar**): escolha
 *Desconto* ou *Acréscimo* e digite **o percentual ou o total do pacote** — o
 outro aparece sozinho (ex.: R$ 1.400,00 por R$ 1.260,00 = 10% de desconto).
-**Salvar preço do pacote** grava o **percentual**; **Tirar o ajuste** volta
+**Salvar preço do pacote** grava o **percentual**; apagar o percentual volta
 cada item ao preço do catálogo.
+
+**Preço mínimo do pacote** (versão 0.354.0), no mesmo lugar e também só do
+Admin Master: digite o **% da tabela ou o total mínimo** (ex.: 85% de R$
+1.400,00 = R$ 1.190,00). Ele **trava a negociação**: se o desconto do Comercial
+deixar o pacote abaixo do mínimo, a negociação fica **aguardando autorização**
+do Gerente, como o desconto acima do teto. O mínimo não pode ficar acima do
+preço do pacote (a tela não deixa salvar). Em branco = sem mínimo.
+
+**Repasse ao dentista no pacote** (versão 0.354.0). Abra a linha no cartão do
+grupo: cada procedimento com o preço **no pacote** e o repasse de cada nível,
+em R$ e em % desse preço (*Júnior: R$ 100,00 · 11,7%*), mais o total do
+pacote. É o mesmo repasse do cadastro do procedimento, na unidade em que você
+está; em vermelho, o que ainda não tem repasse. Como o repasse é fixo, o
+desconto do pacote **aumenta** o percentual.
+
+**Vincular um procedimento a um grupo sem abrir o grupo** (versão 0.354.0).
+No cartão aberto do procedimento (em **Procedimentos**), a linha **Grupos:**
+mostra em quais grupos ele está. **Vincular a grupo** abre a lista: marcar põe
+o procedimento no **fim** do grupo, com quantidade 1 (a ordem e a quantidade
+se ajustam no editor do grupo); desmarcar tira. Um grupo precisa de pelo menos
+2 procedimentos — para desfazer um grupo, inative ou exclua o grupo.
 
 - **No plano,** cada procedimento lançado pelo botão **Grupo** entra com o
   preço do catálogo da unidade **já ajustado** pelo percentual — por isso vale
@@ -2595,7 +2616,11 @@ para ver; ou, se não houver horário, a agenda da unidade — e para quem agend
 ficar sem horário mais tempo do que devia, avise a Recepção da unidade.
 
 **Cuidado:** desconto acima do teto da unidade fica **aguardando autorização**,
-e a cobrança não muda até alguém autorizar.
+e a cobrança não muda até alguém autorizar. O mesmo vale para o **pacote
+abaixo do mínimo** (versão 0.354.0): se o plano tem procedimentos de um grupo
+com preço mínimo e o desconto deixa o pacote abaixo dele, o painel avisa
+*"Pacote … abaixo do mínimo"* antes de salvar, e o Gerente precisa autorizar.
+O benefício do programa (PPR+, Empresarial) não conta — é direito do cliente.
 
 **O odontograma na apresentação e no aceite (desde a 0.338.0).**
 

@@ -48,6 +48,15 @@ export async function carregarGrupos(
     .returns<{ id: string; price_adjust_percent: number | string }[]>();
   if (erroDoAjuste) console.error("carregarGrupos (ajuste) failed:", erroDoAjuste.message);
   const ajusteDe = new Map((ajustes ?? []).map((a) => [a.id, Number(a.price_adjust_percent)]));
+  // 0326: o mínimo, à parte de novo (a 0325 pode estar no banco sem a 0326).
+  const { data: minimos, error: erroDoMinimo } = await supabase
+    .from("procedure_groups")
+    .select("id, min_price_percent")
+    .returns<{ id: string; min_price_percent: number | string | null }[]>();
+  if (erroDoMinimo) console.error("carregarGrupos (mínimo) failed:", erroDoMinimo.message);
+  const minimoDe = new Map(
+    (minimos ?? []).map((m) => [m.id, m.min_price_percent === null ? null : Number(m.min_price_percent)])
+  );
   return {
     ok: true,
     grupos: (data ?? []).map((g) => ({
@@ -56,6 +65,7 @@ export async function carregarGrupos(
       descricao: g.description,
       ativo: g.is_active,
       ajustePercent: erroDoAjuste ? null : (ajusteDe.get(g.id) ?? 0),
+      minimoPercent: erroDoMinimo ? undefined : (minimoDe.get(g.id) ?? null),
       itens: [...(g.procedure_group_items ?? [])]
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((i) => {

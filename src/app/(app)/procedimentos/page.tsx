@@ -20,6 +20,7 @@ import { todayInBrazil } from "@/lib/dates";
 import { ProtocolProposals, type PendingProposal } from "./protocol-proposals";
 import { SugestoesDeProcedimento, type SugestaoNaTela } from "./sugestoes";
 import type { SituacaoDaSugestao } from "@/lib/sugestao-de-procedimento";
+import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
 
 export const metadata: Metadata = { title: "Procedimentos" };
 
@@ -346,6 +347,10 @@ export default async function ProceduresPage(
 
   // 0216: quais kits cada procedimento usa, e o que compõe cada um — pedido do
   // dono: dá para ver o kit sem sair do catálogo.
+  // Os grupos de procedimentos (0324): a linha "Grupos:" e o botão rápido do
+  // cartão (pedido do dono, 27/10/2026). Leitura que falha não vira "nenhum".
+  const grupos = await carregarGrupos(supabase);
+
   const [{ data: kitDetailRows }, { data: kitItemRows }] = await Promise.all([
     supabase.rpc("procedure_kits_detail", { p_clinic_id: activeClinicId }),
     supabase
@@ -639,6 +644,17 @@ export default async function ProceduresPage(
         usageByProcedure={usageByProcedure}
         agendamentos={agendamentos}
         nomesDasUnidades={nomesDasUnidades}
+        grupos={
+          grupos.ok
+            ? grupos.grupos.map((g) => ({
+                id: g.id,
+                nome: g.nome,
+                ativo: g.ativo,
+                procedureIds: g.itens.map((i) => i.procedureId),
+              }))
+            : null
+        }
+        podeVincularGrupo={canSeeCatalog}
       />
     </div>
   );
