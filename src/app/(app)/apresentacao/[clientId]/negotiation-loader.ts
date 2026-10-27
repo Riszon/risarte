@@ -14,6 +14,8 @@ import { applyBenefit } from "@/lib/empresarial/pricing";
 import type { ScheduleEntry } from "@/lib/payments";
 import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
 import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
+import { carregarCustosDaMargem } from "@/lib/finance/custos-da-margem-db";
+import type { CustosDaMargem } from "@/lib/finance/custos-da-margem";
 import { planoDaNegociacao, type OdontoDaApresentacao } from "@/lib/odontograma/aceite";
 import type {
   NegotiationData,
@@ -48,6 +50,11 @@ export type NegotiationBlock = {
   /** FIN5: repasse estimado por opção + margem mínima da unidade. */
   payoutByOption: Record<string, number>;
   minMarginPercent: number | null;
+  /**
+   * Os custos da unidade para a margem (pedido do dono, 27/10/2026: a mesma
+   * conta da Precificação). Nulo = não deu para ler: a tela avisa.
+   */
+  custosDaMargem: CustosDaMargem | null;
   /** Descrições dos itens não aprovados pelo cliente (aprovação parcial). */
   excludedDescriptions: string[];
   /** Resumo da apresentação (vai no contrato do fechamento). */
@@ -115,7 +122,7 @@ export async function loadNegotiationBlock(
       supabase
         .from("treatment_plan_options")
         .select(
-          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency, tooth_code, face_codes, region_code )"
+          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency, tooth_code, face_codes, region_code, planned_total_minutes )"
         )
         .eq("plan_id", planId)
         .eq("review_status", "approved")
@@ -140,6 +147,7 @@ export async function loadNegotiationBlock(
               tooth_code: string | null;
               face_codes: string[] | null;
               region_code: string | null;
+              planned_total_minutes: number | null;
             }[];
           }[]
         >(),
@@ -454,6 +462,21 @@ export async function loadNegotiationBlock(
     p_clinic: clinicId,
   });
 
+  // A margem com os custos da Precificação: cadeira (minutos planejados do
+  // item; sem eles, os do cadastro × quantidade), material e laboratório.
+  const custosDaMargem = await carregarCustosDaMargem(
+    supabase,
+    clinicId,
+    (optRows ?? []).flatMap((o) =>
+      (o.treatment_plan_option_items ?? []).map((i) => ({
+        itemId: i.id,
+        procedureId: i.procedure_id,
+        quantidade: i.quantity,
+        minutosPlanejados: i.planned_total_minutes,
+      }))
+    )
+  );
+
   return {
     planId,
     options,
@@ -461,6 +484,7 @@ export async function loadNegotiationBlock(
     odonto,
     payoutByOption,
     minMarginPercent: minMargin === null ? null : Number(minMargin),
+    custosDaMargem,
     // J4b/J5: MESMA regra da venda direta — o PPR+ amplia teto/parcelas e as
     // formas de pagamento pelo plano, e o Empresarial pela condição da empresa
     // parceira (boleto + parcelamento próprio).

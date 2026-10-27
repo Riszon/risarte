@@ -533,6 +533,7 @@ export default async function CommercialCockpitPage(
                 scheduleLocked={negotiationBlock.scheduleLocked}
                 canAuthorize={canAuthorize}
                 payoutByOption={negotiationBlock.payoutByOption}
+                custosDaMargem={negotiationBlock.custosDaMargem}
                 minMarginPercent={negotiationBlock.minMarginPercent}
                 odonto={negotiationBlock.odonto}
               />

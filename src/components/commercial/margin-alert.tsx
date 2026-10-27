@@ -21,6 +21,7 @@ export function MarginAlert({
   priceCents,
   payoutCents,
   acquirerFeeCents = 0,
+  custos = null,
   minimumPercent = null,
   className,
 }: {
@@ -28,6 +29,18 @@ export function MarginAlert({
   /** Repasse estimado dos procedimentos da venda. */
   payoutCents: number;
   acquirerFeeCents?: number;
+  /**
+   * Pedido do dono (27/10/2026): a mesma conta da Precificação — cadeira,
+   * material, laboratório e imposto + taxa média sobre o preço. Nulo = não
+   * deu para ler os custos (a tela diz que a margem está incompleta).
+   */
+  custos?: {
+    chairCents: number;
+    materialCents: number;
+    labCents: number;
+    /** Imposto + taxa média do pagamento (%). */
+    proportionalPercent: number;
+  } | null;
   minimumPercent?: number | null;
   className?: string;
 }) {
@@ -35,7 +48,15 @@ export function MarginAlert({
   if (payoutCents <= 0 || priceCents <= 0) return null;
 
   const m = computeMargin(
-    { priceCents, payoutCents, acquirerFeeCents },
+    {
+      priceCents,
+      payoutCents,
+      acquirerFeeCents,
+      chairCents: custos?.chairCents ?? 0,
+      materialCents: custos?.materialCents ?? 0,
+      labCents: custos?.labCents ?? 0,
+      proportionalPercent: custos?.proportionalPercent ?? 0,
+    },
     minimumPercent
   );
 
@@ -65,7 +86,7 @@ export function MarginAlert({
         </span>
         <span className="text-sm font-semibold tabular-nums">
           {formatBRL(m.marginCents)}{" "}
-          <span className="text-xs font-normal">({m.marginPercent}%)</span>
+          <span className="text-xs font-normal">({pct(m.marginPercent)})</span>
         </span>
       </div>
 
@@ -76,17 +97,39 @@ export function MarginAlert({
           cents={-m.payoutCents}
           note="fixo — não cai com o desconto"
         />
+        {m.chairCents > 0 && <Row label="Hora de cadeira" cents={-m.chairCents} />}
+        {m.materialCents + m.labCents > 0 && (
+          <Row label="Material e laboratório" cents={-(m.materialCents + m.labCents)} />
+        )}
+        {m.proportionalCents > 0 && (
+          <Row
+            label={`Imposto + taxa média (${pct(custos?.proportionalPercent ?? 0)})`}
+            cents={-m.proportionalCents}
+            note="sobre o preço"
+          />
+        )}
         {m.acquirerFeeCents > 0 && (
           <Row label="Taxa do meio de pagamento" cents={-m.acquirerFeeCents} />
         )}
       </dl>
 
-      {m.materialsPending && (
+      {custos === null ? (
         <p className="mt-1 text-[11px] opacity-80">
-          Materiais e laboratório ainda não entram nesta conta — a margem real
-          será menor. (Entram quando o módulo de Estoque existir.)
+          Não consegui ler os custos da unidade (cadeira, material, imposto): esta
+          margem conta só o repasse — a real é menor.
         </p>
+      ) : (
+        m.materialsPending && (
+          <p className="mt-1 text-[11px] opacity-80">
+            Nenhum procedimento desta venda tem kit de material: o material não
+            entra — a margem real é menor.
+          </p>
+        )
       )}
+      <p className="mt-1 text-[10px] opacity-70">
+        A mesma conta da Precificação: repasse, cadeira, material e laboratório,
+        e imposto + taxa média sobre o preço.
+      </p>
       {m.negative && (
         <p className="mt-1 text-[11px] font-medium">
           Neste preço a venda dá prejuízo: o repasse e as taxas custam mais que
@@ -95,12 +138,17 @@ export function MarginAlert({
       )}
       {!m.negative && m.belowMinimum && minimumPercent !== null && (
         <p className="mt-1 text-[11px]">
-          A unidade trabalha com mínimo de {minimumPercent}%. Isto é um aviso,
+          A unidade trabalha com mínimo de {pct(minimumPercent)}. Isto é um aviso,
           não um bloqueio — quem decide é você.
         </p>
       )}
     </div>
   );
+}
+
+/** "33,33%" — o percentual como se lê no Brasil. */
+function pct(n: number): string {
+  return `${String(n).replace(".", ",")}%`;
 }
 
 function Row({

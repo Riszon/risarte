@@ -104,6 +104,13 @@ export type DirectSaleRow = {
   /** FIN5: repasse estimado da venda + margem mínima (alerta de margem). */
   payoutCents?: number;
   minMarginPercent?: number | null;
+  /** A mesma conta da Precificação (cadeira, material, imposto + taxa); nulo = não lido. */
+  custosDaMargem?: {
+    chairCents: number;
+    materialCents: number;
+    labCents: number;
+    proportionalPercent: number;
+  } | null;
 };
 
 type AdjustMode = "none" | "desc_reais" | "desc_pct" | "acresc";
@@ -575,6 +582,7 @@ export function SaleItem({
                   className="mt-2"
                   priceCents={sale.finalCents}
                   payoutCents={sale.payoutCents ?? 0}
+                  custos={sale.custosDaMargem ?? null}
                   minimumPercent={sale.minMarginPercent ?? null}
                 />
               </div>

@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.359.0",
+    data: "2026-10-27",
+    migracao: null,
+    titulo: "A margem da venda conta cadeira, imposto e material",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O quadro Margem da venda, na negociação e na venda direta, passou a fazer a mesma conta da Precificação: além do repasse, a hora de cadeira, o material e o laboratório dos kits e o imposto + taxa média sobre o preço. Na compra parcial, só os itens aceitos entram. Assim a margem mínima vale a mesma coisa nas duas telas.",
+        papeis: ["commercial_consultant", "unit_manager", "receptionist"],
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.358.0",
     data: "2026-10-27",
     migracao: null,

@@ -39,7 +39,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
-- [ ] **AP80** — o alerta de margem da negociação não conta a hora de cadeira nem o imposto (a Precificação conta) — a mesma margem mínima vale coisas diferentes
+- [x] **AP80** — o alerta de margem da negociação não contava cadeira nem imposto — resolvido na 0.359.0 (igual à Precificação)
+- [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
 - [ ] **AP79** — o preço MÁXIMO do procedimento não é conferido em lugar nenhum (o mínimo trava desde a 0.356.0)
 - [ ] **AP78** — campo de busca dos Procedimentos solta aviso do Base UI no console (`defaultValue` que muda)
 - [ ] **AP77** — comissão em massa (Precificação) ainda grava % e mostra "% + R$" (o cadastro grava R$ desde a 0.352.0)
@@ -2657,7 +2658,19 @@ se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
 
+### AP81. O repasse estimado da opção conta os itens excluídos (27/10/2026)
+
+**Confirmado lendo o código** (achado ao igualar a margem da venda à da
+Precificação, 0.359.0): `estimated_option_payout` (0209, porta na 0282) soma
+o repasse de TODOS os itens da opção; na compra parcial, o painel tira do
+preço os itens excluídos, mas o repasse deles continua na conta. O erro vai
+para o lado conservador (a margem aparece menor). Os custos novos da 0.359.0
+(cadeira, material, imposto) já contam só os aceitos. O conserto é uma função
+que devolva o repasse POR ITEM (ou receba os itens aceitos) — migração.
+
 ### AP80. A margem do alerta da negociação não é a margem da Precificação (27/10/2026)
+
+**✅ Resolvido na 0.359.0** (pedido do dono: igual à Precificação).
 
 **Confirmado lendo o código** (achado ao ligar a margem mínima da Precificação
 ao alerta, 0.358.0, decisão do dono: "a mesma"). `computeMargin`

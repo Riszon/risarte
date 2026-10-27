@@ -1,6 +1,14 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.358.0** · Última migração: **0327** (0318 a 0327 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.359.0** · Última migração: **0327** (0318 a 0327 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.359.0 (sem migração) — A MARGEM DA VENDA = A DA PRECIFICAÇÃO (27/10/2026)
+>
+> Pedido do dono (fecha o AP80): o alerta de margem da negociação e da venda
+> direta conta repasse, cadeira, material/lab e imposto + taxa média, pelas
+> fontes da Precificação (`custos-da-margem{,-db}.ts`). Compra parcial: os
+> custos novos só dos aceitos; o repasse estimado ainda conta todos (AP81).
+> EV-233.
 
 > ## 🎯 0.358.0 (sem migração) — MARGEM MÍNIMA NA PRECIFICAÇÃO (27/10/2026)
 >

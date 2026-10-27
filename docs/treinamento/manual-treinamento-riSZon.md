@@ -1713,9 +1713,9 @@ pela desejada. A mínima não pode passar da desejada (a tela não deixa salvar)
 > direta: salvar aqui **liga aquele aviso** para o Comercial (ele avisa, não
 > bloqueia). Ela vale para a unidade em que você está; em **Regras
 > comerciais**, *Remover ajuste* da unidade apaga também a margem mínima dela,
-> e volta a valer a da rede. **Atenção:** no alerta da negociação a conta não
-> inclui a hora de cadeira nem o imposto — o mesmo percentual é mais fácil de
-> cumprir lá do que aqui.
+> e volta a valer a da rede. Desde a versão 0.359.0 a conta do alerta é **a
+> mesma desta tela** (cadeira, material, laboratório, repasse e imposto + taxa
+> média): o mesmo percentual vale a mesma coisa nos dois lugares.
 
 O filtro **Mostrar**, no alto da lista, separa: **Na margem desejada ou
 acima**, **Abaixo da margem desejada** (pelo preço normal), **Abaixo da margem
@@ -2676,6 +2676,16 @@ com preço mínimo e o desconto deixa o pacote abaixo dele, o painel avisa
 O mesmo vale para o **preço mínimo de cada procedimento** (versão 0.356.0):
 *"<procedimento> abaixo do mínimo"*. O benefício do programa (PPR+,
 Empresarial) não conta — é direito do cliente.
+
+**O quadro "Margem da venda"** (embaixo do resumo da negociação e na venda
+direta) mostra quanto sobra para a clínica no preço negociado. Desde a versão
+0.359.0 ele conta **tudo o que a Precificação conta**: o repasse do dentista,
+a **hora de cadeira** (pelos minutos planejados de cada item), o **material e o
+laboratório** dos kits e o **imposto + taxa média** sobre o preço — por isso o
+desconto corta também o imposto. Na compra parcial, só os itens aceitos
+entram. Abaixo da **margem mínima** da unidade o quadro fica amarelo; com
+prejuízo, vermelho. É aviso, não bloqueio. Se aparecer *"Não consegui ler os
+custos da unidade"*, a margem mostrada conta só o repasse — a real é menor.
 
 **O odontograma na apresentação e no aceite (desde a 0.338.0).**
 

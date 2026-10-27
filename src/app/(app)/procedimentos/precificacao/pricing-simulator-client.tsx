@@ -354,8 +354,8 @@ export function PricingSimulator({
             O <strong>preço normal</strong> se mede pela margem <strong>desejada</strong>; o{" "}
             <strong>preço mínimo</strong>, pela margem <strong>mínima</strong> (em branco = pela
             desejada). A margem mínima é a mesma do <strong>alerta de margem</strong> da negociação e
-            da venda direta — salvar aqui liga aquele aviso. Lá a conta não inclui a hora de cadeira
-            nem o imposto, então o mesmo percentual é mais fácil de cumprir na negociação.
+            da venda direta — salvar aqui liga aquele aviso. Lá a conta é a mesma desta tela
+            (cadeira, material, repasse e imposto + taxa), então o percentual vale o mesmo.
             {!minMarginReadable && " Não consegui ler a margem mínima agora: o campo fica travado."}
           </p>
           {minMarginProblem && <p className="text-xs text-destructive">{minMarginProblem}</p>}

@@ -17,10 +17,19 @@ export type MarginInput = {
   priceCents: number;
   /** Repasse ao dentista — FIXO: não cai quando o preço cai. */
   payoutCents: number;
-  /** Materiais e laboratório. Zero enquanto o Estoque não existir. */
+  /** Material dos kits (o mesmo da Precificação). */
   materialCents?: number;
-  /** Taxa estimada do meio de pagamento escolhido. */
+  /** Taxa estimada do meio de pagamento escolhido, em R$. */
   acquirerFeeCents?: number;
+  /**
+   * Pedido do dono (27/10/2026): a margem da venda é a MESMA conta da
+   * Precificação — também a hora de cadeira, o laboratório e o que sai do
+   * preço em percentual (imposto + taxa média do pagamento).
+   */
+  chairCents?: number;
+  labCents?: number;
+  /** Imposto + taxa média (%), sobre o preço negociado. */
+  proportionalPercent?: number;
 };
 
 export type MarginResult = {
@@ -28,6 +37,10 @@ export type MarginResult = {
   payoutCents: number;
   materialCents: number;
   acquirerFeeCents: number;
+  chairCents: number;
+  labCents: number;
+  /** Imposto + taxa média em R$ (o percentual aplicado ao preço). */
+  proportionalCents: number;
   costCents: number;
   marginCents: number;
   /** Sobre o preço. Zero quando o preço é zero (nada a distribuir). */
@@ -37,9 +50,8 @@ export type MarginResult = {
   /** Margem negativa: a venda dá prejuízo direto. */
   negative: boolean;
   /**
-   * Materiais ainda não entram (o módulo de Estoque vem depois do FIN5). A
-   * tela precisa DIZER isso — margem incompleta apresentada como completa é
-   * pior que margem nenhuma.
+   * Nenhum material entrou (nenhum procedimento com kit). A tela precisa DIZER
+   * isso — margem incompleta apresentada como completa é pior que nenhuma.
    */
   materialsPending: boolean;
 };
@@ -52,8 +64,13 @@ export function computeMargin(
   const payout = Math.max(0, Math.round(input.payoutCents));
   const material = Math.max(0, Math.round(input.materialCents ?? 0));
   const fee = Math.max(0, Math.round(input.acquirerFeeCents ?? 0));
+  const chair = Math.max(0, Math.round(input.chairCents ?? 0));
+  const lab = Math.max(0, Math.round(input.labCents ?? 0));
+  // Sobre o PREÇO, como na Precificação (`simulatePrice`): é o que faz o
+  // desconto cortar o imposto junto.
+  const proportional = roundHalfUp((price * Math.max(0, input.proportionalPercent ?? 0)) / 100);
 
-  const cost = payout + material + fee;
+  const cost = payout + material + fee + chair + lab + proportional;
   const margin = price - cost;
   const percent = price > 0 ? roundHalfUp((margin * 10000) / price) / 100 : 0;
 
@@ -62,6 +79,9 @@ export function computeMargin(
     payoutCents: payout,
     materialCents: material,
     acquirerFeeCents: fee,
+    chairCents: chair,
+    labCents: lab,
+    proportionalCents: proportional,
     costCents: cost,
     marginCents: margin,
     marginPercent: percent,
@@ -78,6 +98,46 @@ export function computeMargin(
  * Com repasse fixo a resposta é sempre "um real" — mas dito assim, na tela,
  * o consultor entende por que 10% de desconto pode virar 30% da margem.
  */
+export type CustoDoItem = {
+  procedureId: string | null;
+  quantidade: number;
+  /** Minutos de cadeira do item (o planejado; sem ele, o do cadastro × quantidade). */
+  minutos: number;
+};
+
+/**
+ * O custo direto dos itens de uma venda, pelas MESMAS fontes da Precificação:
+ * a hora de cadeira da unidade (`cost_settings_for`) e o material e o
+ * laboratório de cada procedimento (`material_costs_for_clinic`), vezes a
+ * quantidade. A cadeira é arredondada uma vez, sobre o total de minutos.
+ */
+export function custoDiretoDosItens(
+  itens: CustoDoItem[],
+  ctx: {
+    horaDeCadeiraCents: number;
+    materialDe: (procedureId: string) => { materialCents: number; labCents: number } | undefined;
+  }
+): { chairCents: number; materialCents: number; labCents: number; minutos: number } {
+  let minutos = 0;
+  let materialCents = 0;
+  let labCents = 0;
+  for (const i of itens) {
+    const q = Math.max(1, Math.round(i.quantidade || 1));
+    minutos += Math.max(0, i.minutos || 0);
+    const m = i.procedureId ? ctx.materialDe(i.procedureId) : undefined;
+    if (m) {
+      materialCents += m.materialCents * q;
+      labCents += m.labCents * q;
+    }
+  }
+  return {
+    chairCents: roundHalfUp((Math.max(0, ctx.horaDeCadeiraCents) * minutos) / 60),
+    materialCents,
+    labCents,
+    minutos,
+  };
+}
+
 export function marginLostByDiscount(input: {
   discountCents: number;
   marginBeforeDiscountCents: number;

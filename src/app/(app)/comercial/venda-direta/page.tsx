@@ -20,6 +20,8 @@ import {
 import { loadEmpresarialConditionsForClients } from "@/lib/empresarial/conditions";
 import { directSaleStatusOf } from "@/lib/direct-sale";
 import type { ScheduleEntry } from "@/lib/payments";
+import { carregarCustosDaMargem } from "@/lib/finance/custos-da-margem-db";
+import { custosDosItensAceitos, type CustosDaMargem } from "@/lib/finance/custos-da-margem";
 import {
   VendaDiretaClient,
   type DirectSaleRow,
@@ -124,7 +126,7 @@ export default async function VendasDiretasPage(
   let salesQuery = supabase
     .from("direct_sales")
     .select(
-      "id, code, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_issued_by, payment_confirmed, payment_confirmed_by, down_payment_cents, cancelled, status, attendance_done_before, created_by, created_at, closed_at, clinic:clinics!direct_sales_clinic_id_fkey ( name ), items:direct_sale_items ( id, description, quantity, unit_price_cents, program_discount_cents, final_cents )"
+      "id, code, clinic_id, client_id, client_name, subtotal_cents, discount_cents, program_discount_cents, surcharge_cents, final_cents, installments, payment_method, contract_signed, contract_signed_by, payment_issued, payment_issued_by, payment_confirmed, payment_confirmed_by, down_payment_cents, cancelled, status, attendance_done_before, created_by, created_at, closed_at, clinic:clinics!direct_sales_clinic_id_fkey ( name ), items:direct_sale_items ( id, description, quantity, unit_price_cents, program_discount_cents, final_cents, procedure_id )"
     )
     .order("created_at", { ascending: false })
     .limit(300);
@@ -228,6 +230,30 @@ export default async function VendasDiretasPage(
   const minMarginBase =
     minMarginRow === null ? null : Number(minMarginRow);
 
+  // A margem com os custos da Precificação (pedido do dono, 27/10/2026) —
+  // por UNIDADE da venda (cada uma tem a sua hora de cadeira e o seu imposto).
+  // Venda direta não tem minutos planejados: vale o tempo do cadastro.
+  const custosPorUnidade = new Map<string, CustosDaMargem | null>();
+  for (const clinicId of [...new Set(rows.map((s) => s.clinic_id))]) {
+    custosPorUnidade.set(
+      clinicId,
+      await carregarCustosDaMargem(
+        supabase,
+        clinicId,
+        rows
+          .filter((s) => s.clinic_id === clinicId)
+          .flatMap((s) =>
+            (s.items ?? []).map((i) => ({
+              itemId: i.id,
+              procedureId: i.procedure_id,
+              quantidade: i.quantity,
+              minutosPlanejados: null,
+            }))
+          )
+      )
+    );
+  }
+
   const sales: DirectSaleRow[] = rows.map((s) => {
     const clinicName =
       (Array.isArray(s.clinic) ? s.clinic[0] : s.clinic)?.name ?? null;
@@ -296,6 +322,10 @@ export default async function VendasDiretasPage(
       // FIN5: repasse estimado + margem mínima — base do alerta de margem.
       payoutCents: payoutBySale.get(s.id) ?? 0,
       minMarginPercent: minMarginBase,
+      custosDaMargem: custosDosItensAceitos(
+        custosPorUnidade.get(s.clinic_id) ?? null,
+        (s.items ?? []).map((i) => i.id)
+      ),
     };
   });
 
@@ -411,6 +441,7 @@ type SaleQueryRow = {
         unit_price_cents: number;
         program_discount_cents: number;
         final_cents: number;
+        procedure_id: string | null;
       }[]
     | null;
 };

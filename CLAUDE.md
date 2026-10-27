@@ -390,6 +390,21 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (10) — PC Administrador (core 0.358.0 → 0.359.0, sem migração)**
+
+- **A margem da venda = a da Precificação (pedido do dono, AP80 fechado).**
+  Decisão do dono: "igual à Precificação" (não só cadeira e imposto).
+  `computeMargin` ganhou cadeira, laboratório e imposto + taxa média sobre o
+  preço; as fontes são as da Precificação (`custos-da-margem-db.ts`:
+  `cost_settings_for` + `material_costs_for_clinic`). Teste prende:
+  mesmos custos ⇒ mesma margem que `simulatePrice`.
+- ⚠️ **Mudou a conta da Precificação? Mude junto a da venda** — a régua
+  `margem-da-venda.test.ts` reprova se divergirem.
+- **AP81 (BACKLOG):** o repasse estimado da opção conta os itens excluídos
+  (precisa de migração).
+- Não visto com números (treino sem venda direta e com preços zerados).
+  `.next-test` limpo.
+
 **27/10/2026 (9) — PC Administrador (core 0.357.0 → 0.358.0, sem migração)**
 
 - **Margem mínima na Precificação (pedido do dono).** Normal × desejada;

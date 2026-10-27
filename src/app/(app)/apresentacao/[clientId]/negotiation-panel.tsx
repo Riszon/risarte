@@ -43,6 +43,7 @@ import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
 import { MarginAlert } from "@/components/commercial/margin-alert";
+import { custosDosItensAceitos, type CustosDaMargem } from "@/lib/finance/custos-da-margem";
 import {
   PaymentFields,
   type PayMode,
@@ -156,6 +157,7 @@ export function NegotiationPanel({
   scheduleLocked = false,
   programConditions = null,
   payoutByOption = {},
+  custosDaMargem = null,
   minMarginPercent = null,
   odonto = null,
 }: {
@@ -171,6 +173,8 @@ export function NegotiationPanel({
   canAuthorize: boolean;
   /** FIN5: repasse estimado por opção + margem mínima (alerta de margem). */
   payoutByOption?: Record<string, number>;
+  /** A mesma conta da Precificação (cadeira, material, imposto + taxa). */
+  custosDaMargem?: CustosDaMargem | null;
   minMarginPercent?: number | null;
   /**
    * Já existe recebimento (ou renegociação) nas cobranças desta venda: o plano
@@ -1122,6 +1126,11 @@ export function NegotiationPanel({
           <MarginAlert
             priceCents={finalCents}
             payoutCents={payoutByOption[option.id] ?? 0}
+            // Só os itens ACEITOS (compra parcial tira o custo do que saiu).
+            custos={custosDosItensAceitos(
+              custosDaMargem,
+              option.items.filter((i) => !excluded.has(i.id)).map((i) => i.id)
+            )}
             minimumPercent={minMarginPercent}
           />
 
