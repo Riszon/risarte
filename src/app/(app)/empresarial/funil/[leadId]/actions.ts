@@ -33,6 +33,12 @@ import {
 } from "@/lib/empresarial/condicoes-da-proposta";
 import { formatPhone } from "@/lib/masks";
 import {
+  metasDoFormulario,
+  metasParaGravar,
+  problemasDasMetas,
+} from "@/lib/empresarial/riso-social";
+import { PAYMENT_METHODS as PAYMENT_METHODS_DO_TRATAMENTO } from "@/lib/empresarial/constants";
+import {
   limparDetalhe,
   problemasDasVantagens,
   type VantagemEscolhida,
@@ -955,6 +961,66 @@ export async function saveAsBenefitGroup(
   revalidatePath(`/empresarial/funil/${leadId}`);
   revalidatePath("/empresarial/configuracoes");
   return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// 1034 — pagamento do tratamento e Riso+ Social
+// -----------------------------------------------------------------------------
+
+/**
+ * Salva o pagamento do tratamento e o Riso+ Social da proposta.
+ *
+ * O Riso+ Social só é escrito quando o bloco estava na tela (empresa que
+ * paga): no "titular paga" ele não existe, e gravar "não participa" apagaria a
+ * escolha feita antes de alguém trocar o modelo por engano.
+ */
+export async function savePaymentAndSocial(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+
+  const metodos = formData
+    .getAll("treatment_payment_methods")
+    .map(String)
+    .filter((m): m is (typeof PAYMENT_METHODS_DO_TRATAMENTO)[number] =>
+      (PAYMENT_METHODS_DO_TRATAMENTO as readonly string[]).includes(m)
+    );
+  if (metodos.length === 0) {
+    return { ok: false, error: "Marque ao menos um meio de pagamento do tratamento." };
+  }
+  const parcelas = inteiro(formData, "treatment_max_installments") ?? 24;
+  if (parcelas < 1 || parcelas > 24) {
+    return { ok: false, error: "O parcelamento vai de 1 a 24 vezes." };
+  }
+
+  const comSocial = texto(formData, "social_no_formulario") === "1";
+  const participa = formData.get("social_participates") === "on";
+  const metas = comSocial && participa ? metasDoFormulario((k) => texto(formData, k)) : [];
+  const problemas = problemasDasMetas(metas);
+  if (problemas.length > 0) {
+    return { ok: false, error: `Confira as metas do Riso+ Social: ${problemas.join("; ")}.` };
+  }
+
+  return gravarNoLevantamento(
+    leadId,
+    {
+      treatment_payment_methods: metodos,
+      treatment_max_installments: parcelas,
+      ...(comSocial
+        ? {
+            social_participates: participa,
+            // Não participar não apaga as metas: voltar atrás não custa refazê-las.
+            ...(participa && formData.has("metas_no_formulario")
+              ? { social_goals: metasParaGravar(metas) }
+              : {}),
+          }
+        : {}),
+      updated_by: session.userId,
+    },
+    "o pagamento e o Riso+ Social"
+  );
 }
 
 // -----------------------------------------------------------------------------

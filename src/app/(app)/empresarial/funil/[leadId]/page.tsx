@@ -62,6 +62,8 @@ import {
 } from "@/lib/empresarial/implantacao";
 import { ApresentacaoEditor } from "./apresentacao-editor";
 import type { Vantagem, VantagemEscolhida } from "@/lib/empresarial/vantagens";
+import { lerMetas } from "@/lib/empresarial/riso-social";
+import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/empresarial/constants";
 import { EnvioESelos, type EnvioView } from "./envio-e-selos";
 import { FechamentoEImplantacao } from "./fechamento-e-implantacao";
 
@@ -227,6 +229,11 @@ type QualRow = {
   dependents_calc_mode: "DISTRIBUTION" | "AS_INDIVIDUAL" | "NONE" | null;
   dependents_distribution: unknown;
   implantation_includes_dependents: boolean | null;
+  // 1034: pagamento do tratamento e Riso+ Social
+  treatment_payment_methods: string[] | null;
+  treatment_max_installments: number | null;
+  social_participates: boolean | null;
+  social_goals: unknown;
   // I3 (1019)
   main_clinic_id: string | null;
   // I4 (1020)
@@ -796,6 +803,17 @@ export default async function FichaDoLeadPage({
           podeCriarGrupo={isProgramManager(session)}
           vantagens={vantagens}
           vantagensDaProposta={vantagensDaProposta}
+          pagamentoESocial={{
+            metodos:
+              qual?.treatment_payment_methods == null
+                ? null
+                : qual.treatment_payment_methods.filter((m): m is PaymentMethod =>
+                    (PAYMENT_METHODS as readonly string[]).includes(m)
+                  ),
+            parcelas: qual?.treatment_max_installments ?? null,
+            participa: qual?.social_participates ?? null,
+            metas: lerMetas(qual?.social_goals),
+          }}
           condicoes={condicoes}
           unidades={unidadesRows ?? []}
           unidadePrincipal={qual?.main_clinic_id ?? null}

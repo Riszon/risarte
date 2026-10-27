@@ -22,7 +22,14 @@ import {
   rotuloDoUso,
   type BeneficioDaProposta,
 } from "@/lib/empresarial/beneficios-da-proposta";
+import type { PaymentModel } from "@/lib/empresarial/constants";
 import { carregarVantagensDaProposta } from "@/lib/empresarial/vantagens-servidor";
+import {
+  lerMetas,
+  participaDoSocial,
+  rotuloDaMeta,
+  textoDoPagamento,
+} from "@/lib/empresarial/riso-social";
 import {
   LINHA_EM_BRANCO,
   montarContrato,
@@ -69,6 +76,12 @@ type QualRow = {
   dependent_family_size: number | null;
   company_grace_days: number | null;
   employee_grace_days: number | null;
+  // 1034
+  payment_model: PaymentModel | null;
+  treatment_payment_methods: string[] | null;
+  treatment_max_installments: number | null;
+  social_participates: boolean | null;
+  social_goals: unknown;
 };
 
 type BeneficioRow = {
@@ -488,6 +501,33 @@ export default async function ContratoPage({
                 ))}
               </tbody>
             </table>
+          )}
+
+          {/* 1034: o pagamento do tratamento e o Riso+ Social combinados. */}
+          <div className="space-y-1 text-left">
+            <p className="font-semibold">Pagamento do tratamento</p>
+            <p>
+              {textoDoPagamento(q?.treatment_payment_methods, q?.treatment_max_installments)},
+              somado às condições da unidade.
+            </p>
+          </div>
+          {participaDoSocial(q?.payment_model) && q?.social_participates !== false && (
+            <div className="space-y-1 text-left">
+              <p className="font-semibold">Riso+ Social</p>
+              <p>
+                A CONTRATANTE poderá indicar pessoas carentes para tratamento
+                {lerMetas(q?.social_goals).length > 0
+                  ? ", conforme as metas abaixo:"
+                  : ", em quantidade combinada com a CONTRATADA."}
+              </p>
+              {lerMetas(q?.social_goals).length > 0 && (
+                <ul className="list-disc space-y-0.5 pl-5">
+                  {lerMetas(q?.social_goals).map((m) => (
+                    <li key={m.tipo}>{rotuloDaMeta(m)}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
 
           {(vantagens ?? []).length > 0 && (

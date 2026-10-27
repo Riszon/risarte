@@ -30,7 +30,14 @@ import {
   SplitRulesForm,
 } from "../configuracoes/pricing-forms";
 import { BenefitsEditor, type BenefitView } from "../configuracoes/benefits-editor";
-import { SocialTab, type SocialTokenView } from "./social-tab";
+import { SocialTab, type SocialView } from "./social-tab";
+import {
+  conquistasDasMetas,
+  lerMetas,
+  painelDasMetas,
+  type TipoDeMeta,
+} from "@/lib/empresarial/riso-social";
+import type { PaymentModel } from "@/lib/empresarial/constants";
 import { BillingTab, type BillingView } from "./billing-tab";
 import { isAsaasConfigured } from "@/lib/empresarial/asaas";
 import { ContratosTab, type ContractView } from "./contratos-tab";
@@ -75,7 +82,7 @@ import {
 } from "@/lib/empresarial/constants";
 import type { Company } from "@/lib/empresarial/types";
 import { CompanyFormDialog } from "../company-form-dialog";
-import { formatIsoDateBr } from "@/lib/dates";
+import { formatIsoDateBr, isoDateIn, todayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Empresa · Risarte Empresarial" };
 
@@ -801,16 +808,37 @@ export default async function CompanyDetailPage(props: {
     };
   }
 
-  // Aba Riso+ Social: fichas sociais + candidatos a beneficiário.
-  let social: {
-    tokens: SocialTokenView[];
-    candidates: { clientId: string; name: string }[];
-  } | null = null;
+  // Aba Riso+ Social (1034): participação, metas, o que cada meta conquistou,
+  // as fichas liberadas e as indicações.
+  let social: SocialView | null = null;
   if (aba === "social") {
-    const [{ data: tokenRows }, { data: empCands }] = await Promise.all([
+    const [
+      { data: emp },
+      { count: ativos, error: eAtivos },
+      { data: metricas, error: eMetricas },
+      { data: tokenRows },
+      { data: indRows },
+    ] = await Promise.all([
+      db
+        .from("companies")
+        .select("payment_model, social_participates, social_goals, contract_started_at, created_at")
+        .eq("id", companyId)
+        .maybeSingle<{
+          payment_model: PaymentModel;
+          social_participates: boolean;
+          social_goals: unknown;
+          contract_started_at: string | null;
+          created_at: string;
+        }>(),
+      db
+        .from("employees")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("status", "ACTIVE"),
+      db.rpc("social_metrics", { p_company_id: companyId }),
       db
         .from("social_tokens")
-        .select("id, trigger_type, is_pool, status, beneficiary_client_id")
+        .select("id, trigger_type, is_pool, status, beneficiary_client_id, created_at")
         .eq("company_id", companyId)
         .order("created_at", { ascending: false })
         .returns<
@@ -820,45 +848,87 @@ export default async function CompanyDetailPage(props: {
             is_pool: boolean;
             status: "AVAILABLE" | "ASSIGNED" | "USED";
             beneficiary_client_id: string | null;
+            created_at: string;
           }[]
         >(),
       db
-        .from("employees")
-        .select("id, client_id, full_name")
+        .from("social_referrals")
+        .select("id, full_name, phone, cpf, reason, status, decision_note, token_id, client_id, created_at")
         .eq("company_id", companyId)
-        .returns<{ id: string; client_id: string | null; full_name: string }[]>(),
+        .order("created_at", { ascending: false })
+        .returns<
+          {
+            id: string;
+            full_name: string;
+            phone: string | null;
+            cpf: string | null;
+            reason: string | null;
+            status: "IN_REVIEW" | "APPROVED" | "REJECTED";
+            decision_note: string | null;
+            token_id: string | null;
+            client_id: string | null;
+            created_at: string;
+          }[]
+        >(),
     ]);
-    const candidateMap = new Map<string, string>();
-    for (const e of empCands ?? [])
-      if (e.client_id) candidateMap.set(e.client_id, e.full_name);
-    // Dependentes vinculados dos titulares desta empresa.
-    const empIds = (empCands ?? []).map((e) => e.id);
-    if (empIds.length > 0) {
-      const { data: depCands } = await db
-        .from("dependents")
-        .select("client_id, full_name")
-        .in("employee_id", empIds)
-        .not("client_id", "is", null)
-        .returns<{ client_id: string; full_name: string | null }[]>();
-      for (const d of depCands ?? [])
-        if (d.client_id && !candidateMap.has(d.client_id))
-          candidateMap.set(d.client_id, d.full_name ?? "Dependente");
+    const metas = lerMetas(emp?.social_goals);
+    // ⚠️ Medida que falhou NÃO vira zero (AP11): o painel diz que não mediu.
+    const medido = !eAtivos && !eMetricas && ativos != null;
+    if (eMetricas) console.error("social_metrics:", eMetricas.message);
+    const conquistas = medido
+      ? conquistasDasMetas(metas, {
+          titularesAtivos: ativos ?? 0,
+          inicio:
+            emp?.contract_started_at ??
+            (emp?.created_at ? isoDateIn(new Date(emp.created_at)) : todayInBrazil()),
+          hoje: todayInBrazil(),
+          meses: ((metricas ?? []) as {
+            mes: string;
+            avaliacoes: number;
+            comparecimentos: number;
+            gasto_cents: number;
+          }[]).map((m) => ({
+            mes: m.mes,
+            avaliacoes: m.avaliacoes,
+            comparecimentos: m.comparecimentos,
+            gastoCents: Number(m.gasto_cents),
+          })),
+        })
+      : [];
+    const liberadasPorTipo: Partial<Record<TipoDeMeta, number>> = {};
+    for (const t of tokenRows ?? []) {
+      const tipo = t.trigger_type as TipoDeMeta;
+      liberadasPorTipo[tipo] = (liberadasPorTipo[tipo] ?? 0) + 1;
     }
-    const candidates = [...candidateMap.entries()].map(([clientId, name]) => ({
-      clientId,
-      name,
-    }));
-    const tokens: SocialTokenView[] = (tokenRows ?? []).map((t) => ({
-      id: t.id,
-      triggerType: t.trigger_type,
-      isPool: t.is_pool,
-      status: t.status,
-      beneficiaryClientId: t.beneficiary_client_id,
-      beneficiaryName: t.beneficiary_client_id
-        ? candidateMap.get(t.beneficiary_client_id) ?? null
-        : null,
-    }));
-    social = { tokens, candidates };
+    const nomePorFicha = new Map(
+      (indRows ?? []).filter((r) => r.token_id).map((r) => [r.token_id!, r.full_name])
+    );
+    social = {
+      paymentModel: emp?.payment_model ?? "EMPLOYEE_PAYS",
+      participa: emp?.social_participates ?? true,
+      metas,
+      medido,
+      painel: painelDasMetas(conquistas, liberadasPorTipo),
+      tokens: (tokenRows ?? []).map((t) => ({
+        id: t.id,
+        triggerType: t.trigger_type,
+        isPool: t.is_pool,
+        status: t.status,
+        beneficiaryName: nomePorFicha.get(t.id) ?? null,
+      })),
+      indicacoes: (indRows ?? []).map((r) => ({
+        id: r.id,
+        nome: r.full_name,
+        telefone: r.phone,
+        cpf: r.cpf,
+        motivo: r.reason,
+        status: r.status,
+        motivoDaDecisao: r.decision_note,
+        tokenId: r.token_id,
+        vinculado: r.client_id != null,
+        criadaEm: r.created_at,
+      })),
+    };
   }
 
   // Aba Contratos: contratos da empresa (ZapSign) + proposta (Gamma).
@@ -1421,12 +1491,7 @@ export default async function CompanyDetailPage(props: {
       )}
 
       {aba === "social" && social && (
-        <SocialTab
-          companyId={company.id}
-          paymentModel={company.paymentModel}
-          tokens={social.tokens}
-          candidates={social.candidates}
-        />
+        <SocialTab companyId={company.id} social={social} podeEditar={canManage} />
       )}
 
       {aba === "contratos" && contracts && (

@@ -2627,6 +2627,19 @@ O preço por família passou a sair da **quantidade** de dependentes
 - A implantação de **segunda etapa** (titulares novos por termo de inclusão)
   cobra só os titulares novos, mesmo na empresa "titulares e dependentes".
 
+### AP75. O que a 1034 (Riso+ Social) deixou de fora, declarado (27/10/2026)
+
+**Confirmado lendo o código.**
+
+- **Quem registra a indicação é a equipe**, em nome da empresa: a empresa
+  parceira não tem acesso ao sistema (portal adiado).
+- **O cliente não nasce da indicação**: a recepção cadastra pelo caminho normal
+  (CPF, consentimento) e a indicação é vinculada pelo CPF depois.
+- **Liberar não avisa ninguém**: não há aviso no sino para a empresa nem para o
+  consultor quando uma meta é atingida — o painel mostra, e só quem abre vê.
+- As **fichas antigas** atribuídas pelo "Atribuir" de antes (a titulares e
+  dependentes da própria empresa) continuam como estão, sem indicação ligada.
+
 ### AP72. A anamnese antiga (`clinical_anamnesis` e `saveAnamnesis`) ficou sem uso (26/10/2026)
 
 **Confirmado lendo o código e o treino (achado no OC-00134).** `saveAnamnesis`

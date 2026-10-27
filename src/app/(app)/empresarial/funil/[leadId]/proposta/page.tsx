@@ -21,6 +21,12 @@ import {
 import { rotuloDaFaixa } from "@/lib/empresarial/condicoes-da-proposta";
 import { carregarVantagensDaProposta } from "@/lib/empresarial/vantagens-servidor";
 import {
+  lerMetas,
+  participaDoSocial,
+  rotuloDaMeta,
+  textoDoPagamento,
+} from "@/lib/empresarial/riso-social";
+import {
   estimativaDaProposta,
   pricingDaProposta,
 } from "@/lib/empresarial/dependentes-da-proposta";
@@ -85,6 +91,11 @@ type QualRow = {
   main_clinic_id: string | null;
   // 1032
   dependents_calc_mode: "DISTRIBUTION" | "AS_INDIVIDUAL" | "NONE" | null;
+  // 1034
+  treatment_payment_methods: string[] | null;
+  treatment_max_installments: number | null;
+  social_participates: boolean | null;
+  social_goals: unknown;
   dependents_distribution: unknown;
   implantation_includes_dependents: boolean | null;
 };
@@ -259,6 +270,7 @@ export default async function PropostaPage({
   if (erroBen) console.error("benefícios da proposta:", erroBen.message);
   // 1033: as outras vantagens (além dos procedimentos).
   const vantagens = (await carregarVantagensDaProposta(db, leadId)) ?? [];
+  const metasSociais = lerMetas(q.social_goals);
 
   const beneficios: (BeneficioDaProposta & { nome: string })[] = [];
   if (benRows?.length) {
@@ -634,6 +646,33 @@ export default async function PropostaPage({
                 );
               })}
             </ul>
+          </section>
+        )}
+
+        {/* 1034: como o colaborador paga o tratamento, e o Riso+ Social. */}
+        <section className="space-y-2 break-inside-avoid">
+          <h2 className="text-lg font-medium">Pagamento do tratamento</h2>
+          <p className="leading-relaxed text-muted-foreground">
+            {textoDoPagamento(q.treatment_payment_methods, q.treatment_max_installments)}
+            , somado às condições da unidade.
+          </p>
+        </section>
+        {participaDoSocial(q.payment_model) && q.social_participates !== false && (
+          <section className="space-y-2 break-inside-avoid">
+            <h2 className="text-lg font-medium">Riso+ Social</h2>
+            <p className="leading-relaxed text-muted-foreground">
+              A empresa indica pessoas carentes para tratamento na rede Risarte.
+              {metasSociais.length > 0
+                ? " As indicações são conquistadas por estas metas:"
+                : " As indicações são combinadas com a Risarte ao longo do programa."}
+            </p>
+            {metasSociais.length > 0 && (
+              <ul className="list-disc space-y-0.5 pl-5 text-muted-foreground">
+                {metasSociais.map((m) => (
+                  <li key={m.tipo}>{rotuloDaMeta(m)}</li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
 

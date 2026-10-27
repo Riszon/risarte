@@ -1516,3 +1516,39 @@ antigo), o catálogo semeado, a seção na proposta — o Salvar interceptado
 levava `vant_0` com o detalhe "2 palestras por ano" —, e o cartão da empresa.
 Teste do fechamento: as vantagens viram compromissos com nome e detalhe
 copiados; falha é relatada. Build do zero, testes e lint.
+
+### Bloco S — pagamento do tratamento e Riso+ Social na proposta ✅ (migração 1034, v0.85.0)
+
+Pedido do dono (26/10/2026): configurar na proposta as formas de pagamento
+("liberar boletos e parcelamentos em até 24x") e, quando a empresa paga pelo
+colaborador, a participação no Riso+ Social para indicar pessoas carentes
+conforme metas. Decisões dele: o pagamento é o do **tratamento** (o que já
+existia na empresa desde a 0181); as **quatro metas** do briefing §5.6;
+indicação é **cadastro analisado**, vinculado ao cliente pelo CPF; o **sistema
+mostra, o gestor libera**.
+
+- **1034:** proposta ganha `treatment_payment_methods`,
+  `treatment_max_installments`, `social_participates`, `social_goals`; a
+  empresa ganha `social_participates` (padrão verdadeiro — o que valia) e
+  `social_goals`; tabela `social_referrals`; função
+  `empresarial.social_metrics` (só agregados por mês, guarda de acesso,
+  revoke/grant da AP15).
+- `riso-social.ts` (puro, testado): metas, leitura/gravação, a conta de cada
+  meta — comparecimento só em períodos FECHADOS —, o painel e a frase do
+  pagamento.
+- Proposta: cartão "Pagamento do tratamento / Riso+ Social" (salvar próprio);
+  o editor de metas é o mesmo da empresa (`metas-do-social.tsx`).
+- Documento e contrato: seções de pagamento e Riso+ Social. Fechamento leva os
+  quatro campos (antes toda empresa nascia com os três meios em 24x).
+- Empresa, aba Riso+ Social reescrita: metas; "conquistou × liberadas" com
+  **Liberar (n)** por meta (a ficha leva o gatilho da meta) e ficha avulsa;
+  indicações (registrar, aprovar consumindo ficha livre, recusar com motivo,
+  vincular pelo CPF); fichas com "Tratamento iniciado". O antigo "Atribuir"
+  (que só oferecia titulares e dependentes da própria empresa) saiu.
+
+**Conferido no treino, logado, sem salvar:** o Salvar da proposta levaria
+boleto + cartão, 12x e as duas metas; o documento abriu com o pagamento; a
+aba da empresa **mediu** (a função respondeu para o usuário logado). Build do
+zero, testes e lint.
+
+**Fora, declarado:** AP75.

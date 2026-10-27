@@ -14,6 +14,7 @@ import {
 } from "./condicoes-da-proposta";
 import { fixoDoFechamento } from "./mensalidade";
 import { estimativaDaProposta } from "./dependentes-da-proposta";
+import { lerMetas, metasParaGravar } from "./riso-social";
 
 export const BILLING_BASES = ["PER_EMPLOYEE", "FIXED_PER_COMPANY"] as const;
 export type BillingBasis = (typeof BILLING_BASES)[number];
@@ -263,6 +264,11 @@ export type QualificacaoDoLead = {
   dependents_calc_mode?: "DISTRIBUTION" | "AS_INDIVIDUAL" | "NONE" | null;
   dependents_distribution?: unknown;
   implantation_includes_dependents?: boolean | null;
+  // ---- 1034: pagamento do tratamento e Riso+ Social ------------------------
+  treatment_payment_methods?: string[] | null;
+  treatment_max_installments?: number | null;
+  social_participates?: boolean | null;
+  social_goals?: unknown;
   main_clinic_id?: string | null;
   includes_dependents?: boolean | null;
   dependents_estimate?: number | null;
@@ -341,6 +347,17 @@ export function camposDaEmpresa(
     // cadastros não estão completos — como a quantidade contratada faz com os
     // titulares. Sem estimativa (não calculou), não há o que cobrar deles.
     ...implantacaoDosDependentes(qual),
+    // ⚠️ 1034: O PAGAMENTO DO TRATAMENTO E O RISO+ SOCIAL VIAJAM JUNTO. Antes
+    // toda empresa nascia com boleto, Pix e cartão em 24x, qualquer que fosse
+    // a negociação. Nulo = a proposta não definiu, e vale o padrão de sempre.
+    payment_methods:
+      qual?.treatment_payment_methods && qual.treatment_payment_methods.length > 0
+        ? qual.treatment_payment_methods
+        : ["BOLETO", "PIX", "CARD"],
+    default_max_installments: qual?.treatment_max_installments ?? 24,
+    social_participates: qual?.social_participates ?? true,
+    social_goals:
+      qual?.social_participates === false ? null : metasParaGravar(lerMetas(qual?.social_goals)),
   };
 }
 

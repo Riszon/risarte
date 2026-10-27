@@ -57,6 +57,7 @@ import {
 } from "./beneficios-editor";
 import type { BeneficioDaProposta } from "@/lib/empresarial/beneficios-da-proposta";
 import type { Vantagem, VantagemEscolhida } from "@/lib/empresarial/vantagens";
+import { PagamentoESocial, type PagamentoESocialView } from "./pagamento-e-social";
 import {
   avisoDoValorMinimo,
   avisosDosLimites,
@@ -113,6 +114,7 @@ export function FichaDaProposta({
   podeCriarGrupo,
   vantagens,
   vantagensDaProposta,
+  pagamentoESocial,
   condicoes,
   unidades,
   unidadePrincipal,
@@ -146,6 +148,8 @@ export function FichaDaProposta({
   /** 1033: o catálogo das outras vantagens e as escolhidas nesta proposta. */
   vantagens: Vantagem[];
   vantagensDaProposta: VantagemEscolhida[];
+  /** 1034: o pagamento do tratamento e o Riso+ Social desta proposta. */
+  pagamentoESocial: PagamentoESocialView;
   /** H3: limites, valor mínimo, faixas, implantação e dependentes. */
   condicoes: CondicoesView;
   /** I3: as unidades do sistema, e as desta parceria. */
@@ -786,6 +790,11 @@ export function FichaDaProposta({
                   unidadesDaParceria={unidades.filter((u) =>
                     unidadesDaParceria.includes(u.id)
                   )}
+                />
+                <PagamentoESocial
+                  leadId={leadId}
+                  inicial={pagamentoESocial}
+                  modeloDePagamento={paymentModel}
                 />
               </>
             )}

@@ -578,6 +578,28 @@ fechamento, viram **compromissos** na ficha da empresa (seção 8).
 (*Guardar esta combinação como grupo da rede*) e ser inserida em outras
 propostas — com os procedimentos **e** as outras vantagens.
 
+**5. Pagamento do tratamento e Riso+ Social** (último cartão do passo, com
+**salvar próprio**):
+
+- **Pagamento do tratamento** — como o titular e o dependente pagam o
+  tratamento na clínica: os meios aceitos (**boleto, Pix, cartão**) e o
+  **parcelamento em até** (1 a 24x). Soma-se à regra da unidade: o programa
+  acrescenta meios, nunca tira. Sem definir, vale o padrão (os três, 24x).
+- **Riso+ Social** — só aparece quando a empresa **paga pelo colaborador**
+  (integral ou parcial, no passo 1). Marque se ela participa e combine as
+  **metas** que rendem indicações de pessoas carentes. Em **Incluir meta…**:
+  - **Titulares ativos** — *a cada N titulares ativos*;
+  - **Tempo no programa** — *a cada N meses de programa*;
+  - **Comparecimento às avaliações** — *a cada período de N meses com
+    comparecimento de pelo menos X%* às avaliações e reavaliações;
+  - **Gasto em tratamento** — *a cada R$ X em tratamentos fechados*.
+
+  Cada meta diz quantas indicações **rende**, e embaixo dela aparece a frase
+  exatamente como sai na proposta.
+
+O pagamento e as metas saem no **documento da proposta**, no **contrato** e
+**vão para a empresa** no fechamento.
+
 > **De onde vêm os benefícios na proposta nova.** Uma empresa que ainda não tem
 > benefício salvo chega com os **benefícios padrão da rede** (Configurações →
 > Benefícios), marcados como vindos do padrão e **ainda não salvos**. Depois do
@@ -718,6 +740,9 @@ Ao **criar a empresa**, o sistema **leva a proposta junto**:
 - **Preços de adesão** — os da proposta, não os da rede.
 - **Faixas por quantidade** — continuam valendo no cadastro.
 - **Benefícios** — inclusive o "vale só para o titular".
+- **Pagamento do tratamento** — os meios aceitos e o parcelamento combinados
+  (antes, toda empresa nascia com boleto, Pix e cartão em 24x).
+- **Riso+ Social** — se participa, e as metas.
 - **Outras vantagens** — viram **compromissos** da empresa, com o nome e o
   detalhe copiados da proposta e a situação **Pendente** (seção 8).
 - **Carência** — a da empresa e a do titular.
@@ -740,7 +765,7 @@ Menu **Empresarial**, clique na empresa. Sete abas:
 | **Titulares** | as pessoas do programa |
 | **Plano & Benefícios** | **outras vantagens combinadas**, mensalidade atual, simulador, preços de adesão, benefícios |
 | **Financeiro** | cobranças, economia gerada, benefícios utilizados |
-| **Riso+ Social** | as fichas sociais |
+| **Riso+ Social** | metas, o que elas conquistaram, indicações e fichas (seção 14) |
 | **Contratos** | contratos e assinatura |
 
 **Outras vantagens combinadas** (cartão no alto de Plano & Benefícios) — o que
@@ -1129,12 +1154,45 @@ economia acumulada, benefícios usados, disponíveis agora e histórico.
 
 ## 14. Riso+ Social
 
-Aba **Riso+ Social** da empresa. Nos modelos **integral** e **parcial**, escolha
-um gatilho e **Gerar ficha social**; depois **Atribuir** um beneficiário e
-**Marcar utilizada**.
+Aba **Riso+ Social** da empresa. Participa só a empresa que **paga pelo
+colaborador** — no modelo **integral**, cada ficha indica um beneficiário
+próprio; no **parcial**, as fichas entram no pool coletivo da rede. No modelo
+**titular paga** a aba explica que a empresa não participa — e isso é regra,
+não defeito: não há parcela da empresa de onde tirar a ficha.
 
-No modelo **Titular paga**, o botão explica que a empresa não participa — e isso
-é regra, não defeito: não há parcela da empresa de onde tirar a ficha.
+A aba tem quatro partes, na ordem do trabalho:
+
+1. **Metas da empresa** — a participação e as metas combinadas na proposta.
+   **Editar participação e metas** muda as duas (para a empresa cadastrada
+   direto, ou uma renegociação).
+2. **O que as metas conquistaram** — para cada meta, a conta escrita (ex.:
+   *"45 titulares ativos — 2 vez(es) 20"*), quantas indicações ela
+   **conquistou** e quantas já foram **liberadas**. O botão **Liberar (n)**
+   libera uma ficha daquela meta. **O sistema conta, quem libera é o gestor.**
+   - O comparecimento conta só **períodos fechados**: o período em andamento
+     ainda não terminou. Período sem nenhuma avaliação não rende.
+   - Ficha liberada **não é recolhida** se a conta cair depois (titulares que
+     saíram, por exemplo).
+   - **Liberar ficha avulsa** — para uma exceção combinada fora das metas.
+   - Se aparecer *"Não foi possível medir as metas agora"*, nada foi liberado:
+     tente de novo em instantes.
+3. **Indicações de pessoas carentes** — **Nova indicação** registra quem a
+   empresa indicou (nome, telefone, CPF se houver, por que precisa). A
+   indicação entra **Em análise**:
+   - **Aprovar (usa 1 ficha)** — consome uma ficha liberada e livre. Sem ficha
+     livre, o botão diz isso: libere antes pelas metas.
+   - **Recusar…** — pede o motivo, que fica registrado.
+   - Aprovada, a pessoa é cadastrada como cliente **pela recepção, do jeito de
+     sempre** (CPF, consentimento). Depois, **Vincular ao cliente pelo CPF**
+     liga a indicação e a ficha ao cadastro.
+4. **Fichas liberadas** — cada ficha com a situação: **Livre**, **Com
+   indicação** ou **Tratamento iniciado** (botão quando o tratamento começa).
+   Ficha livre pode ser removida.
+
+> Medidas usadas: os clientes com o selo da empresa; avaliações e
+> reavaliações **já decididas** (compareceu ou faltou — agendamento que
+> ninguém marcou não conta como falta); e vendas **fechadas** do Comercial e
+> da venda direta, sem as canceladas.
 
 ---
 
@@ -1166,6 +1224,7 @@ No modelo **Titular paga**, o botão explica que a empresa não participa — e 
   Mudar o modelo muda o contrato de toda empresa que não tem texto próprio.
   Enquanto faltar o nome, o RG ou o CPF de quem assina pela Risarte, todo
   contrato sai com essa linha em branco e a tela avisa.
+
 ### A coluna Margem
 
 Mostra quanto sobra em cada procedimento depois do benefício, usando preço e

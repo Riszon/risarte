@@ -237,6 +237,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   empresarial_benefit_group: "Grupo de benefícios",
   empresarial_benefit_group_excluido: "Grupo de benefícios (excluído)",
   empresarial_perk: "Outra vantagem do programa",
+  empresarial_social_metas: "Metas do Riso+ Social da empresa",
+  empresarial_social_indicacao: "Indicação do Riso+ Social",
   empresarial_perk_excluida: "Outra vantagem do programa (excluída)",
   empresarial_company_perk: "Vantagem combinada com a empresa",
   empresarial_company_perk_removido: "Vantagem combinada com a empresa (retirada)",

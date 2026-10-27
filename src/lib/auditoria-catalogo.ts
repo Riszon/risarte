@@ -220,6 +220,7 @@ export const TABELAS: Record<string, string> = {
   "empresarial.lead_price_tiers": "Faixa de preço da proposta",
   "empresarial.lead_qualification": "Levantamento",
   "empresarial.perks": "Outra vantagem do programa",
+  "empresarial.social_referrals": "Indicação do Riso+ Social",
   "empresarial.presentation_templates": "Modelo de apresentação",
   "empresarial.procedure_benefits": "Benefício por procedimento",
   "empresarial.proposal_templates": "Modelo de proposta",
