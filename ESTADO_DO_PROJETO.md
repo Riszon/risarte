@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.353.0** · Última migração: **0325** (0318 a 0324 aplicadas na produção e no treino; ⏳ **0325 só no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.353.0** · Última migração: **0325** (0318 a 0325 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.353.0 / 0325 — PREÇO DE PACOTE NOS GRUPOS (pedido do dono, 27/10/2026)
 >
@@ -11,7 +11,7 @@ _Atualizado em: 27/10/2026 · Versão do sistema: **0.353.0** · Última migraç
 > orçamento e na apresentação. ⚠️ Três regras mudaram de propósito (o dono foi
 > avisado): o grupo ganhou ajuste; o preço do item é o catálogo AJUSTADO; e
 > acréscimo no plano existe só por esta via. Quem calcula é o banco (trava do
-> item e envio do plano). ✅ 0325 no treino; ⏳ **falta a produção**. EV-227.
+> item e envio do plano). ✅ **0325 APLICADA nos dois bancos** (o dono rodou na produção em 27/10/2026; conferência 2·3·2·0; conferido de fora: sem login a porta do preço recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é Admin, para em PRICE_NOT_ALLOWED; a coluna nova responde — a produção tem 1 grupo, sem ajuste, e 0 itens com "de"). EV-227.
 
 > ## 🎯 0.352.0 (sem migração) — REPASSE EM R$ OU EM % (pedido do dono, 27/10/2026)
 >

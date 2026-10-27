@@ -406,7 +406,7 @@ Syncthing se comportarem de forma estranha.**
   (F4) — régua em `preco-do-pacote.test.ts`.
 - ⚠️ **Código antes da migração:** ajuste e "de" lidos À PARTE; sem a 0325 a
   tela de grupos avisa e o plano abre como antes.
-- ✅ 0325 no treino (ensaio 27/27 + quebra). ⏳ **Falta a produção.**
+- ✅ **0325 APLICADA nos dois bancos** (o dono rodou na produção em 27/10/2026; conferência 2·3·2·0; conferido de fora: sem login a porta do preço recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é Admin, para em PRICE_NOT_ALLOWED; a coluna nova responde — a produção tem 1 grupo, sem ajuste, e 0 itens com "de"). Ensaio no treino 27/27 + quebra.
 - Resíduo no treino (meu): grupo **"Pacote teste (pode ignorar)"** (canal +
   restauração 3 faces, −10%) e os 2 itens dele no plano em rascunho do "Teste
   do portão 2". Nada enviado, ninguém avisado. `.next-test` limpo.
