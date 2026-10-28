@@ -1,5 +1,6 @@
 "use server";
 
+import { indicesDoFormulario } from "@/lib/indices-do-formulario";
 import { revalidatePath } from "next/cache";
 import { getSessionContext, requireAdminMaster } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
@@ -546,7 +547,7 @@ export async function salvarItensDoGrupo(
   if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
 
   const itens: Record<string, unknown>[] = [];
-  for (let i = 0; i < 200; i += 1) {
+  for (const i of indicesDoFormulario(formData, "proc_")) {
     const procedureId = field(formData, `proc_${i}`);
     const tipo = field(formData, `tipo_${i}`);
     if (!procedureId || !tipo) continue;
@@ -644,7 +645,7 @@ export async function salvarItensDoGrupo(
 /** As vantagens escolhidas num formulário: `vant_i` (id) e `vant_det_i` (detalhe). */
 function vantagensDoFormulario(formData: FormData): VantagemEscolhida[] {
   const lista: VantagemEscolhida[] = [];
-  for (let i = 0; i < 100; i += 1) {
+  for (const i of indicesDoFormulario(formData, "vant_")) {
     const perkId = field(formData, `vant_${i}`);
     if (!perkId) continue;
     lista.push({ perkId, detail: limparDetalhe(field(formData, `vant_det_${i}`)) });

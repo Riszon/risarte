@@ -1,5 +1,6 @@
 "use server";
 
+import { indicesDoFormulario } from "@/lib/indices-do-formulario";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
@@ -141,7 +142,7 @@ function lerDependentesDaTela(
 /** As outras vantagens do formulário (1033): `vant_i` e `vant_det_i`. */
 function vantagensDoFormulario(formData: FormData): VantagemEscolhida[] {
   const lista: VantagemEscolhida[] = [];
-  for (let i = 0; i < 100; i += 1) {
+  for (const i of indicesDoFormulario(formData, "vant_")) {
     const perkId = texto(formData, `vant_${i}`);
     if (!perkId) continue;
     lista.push({ perkId, detail: limparDetalhe(texto(formData, `vant_det_${i}`)) });
@@ -754,7 +755,7 @@ export async function setImplementationStep(
  */
 function beneficiosDoFormulario(formData: FormData): BeneficioDaProposta[] {
   const lista: BeneficioDaProposta[] = [];
-  for (let i = 0; i < 200; i += 1) {
+  for (const i of indicesDoFormulario(formData, "proc_")) {
     const procedureId = texto(formData, `proc_${i}`);
     if (!procedureId) continue;
     const tipo = daLista(formData, `tipo_${i}`, BENEFIT_TYPES);
