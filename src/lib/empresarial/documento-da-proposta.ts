@@ -113,7 +113,8 @@ export const ROTULO_INTERNO_DO_PAGAMENTO = PAYMENT_MODEL_LABELS;
 export function comoOColaboradorPaga(meiosEParcelas: string): string[] {
   const meios = meiosEParcelas.charAt(0).toLowerCase() + meiosEParcelas.slice(1);
   return [
-    "O colaborador contrata o tratamento diretamente na unidade Risarte, e o desconto do programa já vem aplicado no orçamento dele.",
+    // 1037: "Titular", e não "colaborador" (dono, 28/10/2026).
+    "O Titular contrata o tratamento diretamente na unidade Risarte, e o desconto do programa já vem aplicado no orçamento dele.",
     `O pagamento pode ser feito por ${meios}, somado às condições da unidade.`,
     "O desconto vale para as parcelas pagas em dia. A parcela paga com atraso perde o desconto do programa naquela parcela; as demais seguem com o desconto normalmente.",
   ];
@@ -137,6 +138,24 @@ export function relatorioMensal(model: PaymentModel): string {
     `Todo mês a empresa recebe o relatório dos titulares e dependentes vinculados a ela${cobranca}. ` +
     "Se houver alguma divergência — alguém que entrou, saiu ou não deveria constar —, cabe à empresa solicitar a correção à Risarte."
   );
+}
+
+/**
+ * A PERMANÊNCIA NO PROGRAMA, como a proposta a apresenta (1037). É a mesma
+ * regra da cláusula quinta do contrato, dita para quem decide.
+ */
+export function textoDaPermanencia(
+  meses: number | null | undefined,
+  multaCents: number | null | undefined
+): string {
+  if (!meses || meses <= 0) {
+    return "Sem prazo mínimo de fidelidade: a empresa pode encerrar a participação no programa a qualquer tempo, com aviso por escrito de 30 dias.";
+  }
+  const prazo = `${meses} ${meses === 1 ? "mês" : "meses"}`;
+  const base = `Prazo mínimo de fidelidade de ${prazo}, contados da assinatura do contrato.`;
+  if (!multaCents || multaCents <= 0) return base;
+  const reais = `R$ ${(multaCents / 100).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+  return `${base} Se a empresa encerrar a participação antes desse prazo, há multa de ${reais}, em parcela única.`;
 }
 
 /**

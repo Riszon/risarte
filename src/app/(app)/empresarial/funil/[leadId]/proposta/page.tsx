@@ -36,6 +36,7 @@ import { comparacaoComOPadrao } from "@/lib/empresarial/padrao-da-proposta";
 import { loadPricing } from "../../../configuracoes/data";
 import {
   comoOColaboradorPaga,
+  textoDaPermanencia,
   comoSeraCobrado,
   comparacaoComOAtual,
   nomeDoArquivo,
@@ -134,6 +135,9 @@ type QualRow = {
   implantation_includes_dependents: boolean | null;
   // 1036: ausente = a migração ainda não rodou (vale o padrão: mostrar).
   show_standard_comparison?: boolean;
+  // 1037: ausentes = a migração ainda não rodou (o documento não fala nisso).
+  min_term_months?: number | null;
+  early_exit_fee_cents?: number | null;
 };
 
 type BeneficioRow = {
@@ -825,9 +829,9 @@ export default async function PropostaPage({
           </section>
         )}
 
-        {/* 1034: como o colaborador paga o tratamento, e o Riso+ Social. */}
+        {/* 1034: como o Titular paga o tratamento, e o Riso+ Social. */}
         <section className="space-y-2">
-          <h2 className={H2}>Como o colaborador paga o tratamento</h2>
+          <h2 className={H2}>Como o Titular paga o tratamento</h2>
           {/* 0.91.0 (dono, 28/10/2026): contrata, recebe o desconto, paga
               pelo meio combinado — e a parcela atrasada perde o desconto. */}
           {comoOColaboradorPaga(
@@ -851,7 +855,7 @@ export default async function PropostaPage({
             <p className="leading-relaxed text-muted-foreground">
               A empresa indica pessoas carentes para tratamento na rede Risarte,
               enquanto pagar, integral ou parcialmente, a mensalidade dos
-              colaboradores.
+              Titulares.
               {metasSociais.length > 0
                 ? " As indicações são conquistadas por estas metas (em cada uma, todas as condições ao mesmo tempo):"
                 : " As indicações são combinadas com a Risarte ao longo do programa."}
@@ -882,6 +886,16 @@ export default async function PropostaPage({
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {/* 1037: a fidelidade combinada — a mesma regra da cláusula quinta. */}
+        {"min_term_months" in q && (
+          <section className="space-y-2">
+            <h2 className={H2}>Permanência no programa</h2>
+            <p className="leading-relaxed text-muted-foreground">
+              {textoDaPermanencia(q.min_term_months, q.early_exit_fee_cents)}
+            </p>
           </section>
         )}
 

@@ -68,6 +68,11 @@ export const CAMPOS_DO_CONTRATO: readonly CampoDoContrato[] = [
   { chave: "contratante_nacionalidade", grupo: "Empresa", rotulo: "Nacionalidade de quem assina (opcional)" },
   { chave: "contratante_rg", grupo: "Empresa", rotulo: "RG de quem assina (opcional)" },
   { chave: "contratante_cpf", grupo: "Empresa", rotulo: "CPF de quem assina" },
+  // 1037 (dono, 28/10/2026): o texto concorda com quem assina — "por sua
+  // presidente", "portadora do RG". Sem Sr./Sra. escolhido, sai "seu(sua)".
+  { chave: "contratante_seu", grupo: "Empresa", rotulo: "\"seu\" ou \"sua\", conforme quem assina" },
+  { chave: "contratante_portador", grupo: "Empresa", rotulo: "\"portador\" ou \"portadora\"" },
+  { chave: "contratante_inscrito", grupo: "Empresa", rotulo: "\"inscrito\" ou \"inscrita\"" },
   { chave: "contratada_razao_social", grupo: "Risarte", rotulo: "Razão social da contratada" },
   { chave: "contratada_cnpj", grupo: "Risarte", rotulo: "CNPJ da contratada" },
   { chave: "contratada_endereco", grupo: "Risarte", rotulo: "Endereço da contratada" },
@@ -76,6 +81,9 @@ export const CAMPOS_DO_CONTRATO: readonly CampoDoContrato[] = [
   { chave: "contratada_nacionalidade", grupo: "Risarte", rotulo: "Nacionalidade do representante" },
   { chave: "contratada_rg", grupo: "Risarte", rotulo: "RG do representante" },
   { chave: "contratada_cpf", grupo: "Risarte", rotulo: "CPF do representante" },
+  { chave: "contratada_seu", grupo: "Risarte", rotulo: "\"seu\" ou \"sua\", conforme o representante" },
+  { chave: "contratada_portador", grupo: "Risarte", rotulo: "\"portador\" ou \"portadora\"" },
+  { chave: "contratada_inscrito", grupo: "Risarte", rotulo: "\"inscrito\" ou \"inscrita\"" },
   { chave: "valor_titular", grupo: "Valores", rotulo: "Mensalidade por titular, com o valor por extenso" },
   { chave: "valor_dependente", grupo: "Valores", rotulo: "Mensalidade por dependente, com o valor por extenso" },
   { chave: "familia_tamanho", grupo: "Valores", rotulo: "Quantos dependentes cabem no pacote familiar" },
@@ -84,6 +92,11 @@ export const CAMPOS_DO_CONTRATO: readonly CampoDoContrato[] = [
   { chave: "valor_fixo_mensal", grupo: "Valores", rotulo: "Valor fixo mensal por empresa (só quando a proposta é de valor fixo)" },
   { chave: "dia_vencimento", grupo: "Condições", rotulo: "Dia de vencimento, com o número por extenso" },
   { chave: "abrangencia", grupo: "Condições", rotulo: "As cidades das unidades da parceria" },
+  {
+    chave: "fidelidade",
+    grupo: "Condições",
+    rotulo: "A permanência mínima da empresa (fidelidade e multa), escrita a partir da proposta",
+  },
   { chave: "cidade_assinatura", grupo: "Condições", rotulo: "Cidade onde o contrato é assinado" },
   { chave: "data_assinatura", grupo: "Condições", rotulo: "A data de hoje, por extenso" },
 ] as const;
@@ -363,6 +376,52 @@ export function enderecoEmLinha(a: CompanyAddress | null | undefined): string | 
   return `${partes}${cep}, em ${cidade}${a.state?.trim() ? `/${a.state.trim().toUpperCase()}` : ""}`;
 }
 
+// ------------------------------------------------------------ a concordância
+
+/** Quem assina: "F" (Sra.), "M" (Sr.) ou nulo (não informado). */
+export type Genero = "F" | "M";
+
+export function lerGenero(v: unknown): Genero | null {
+  return v === "F" || v === "M" ? v : null;
+}
+
+/**
+ * AS PALAVRAS QUE MUDAM COM QUEM ASSINA (dono, 28/10/2026): *"adequar o texto
+ * para feminino e masculino. por exemplo: por seu presidente ou sua
+ * presidente; portador ou portadora"*. Sem a escolha, a forma dupla —
+ * melhor que adivinhar pelo nome.
+ */
+export function concordancia(g: Genero | null): {
+  seu: string;
+  portador: string;
+  inscrito: string;
+} {
+  if (g === "F") return { seu: "sua", portador: "portadora", inscrito: "inscrita" };
+  if (g === "M") return { seu: "seu", portador: "portador", inscrito: "inscrito" };
+  return { seu: "seu(sua)", portador: "portador(a)", inscrito: "inscrito(a)" };
+}
+
+/**
+ * A PERMANÊNCIA MÍNIMA DA EMPRESA, como a cláusula quinta a escreve (1037).
+ *
+ * Pedido: *"na proposta deve ter como configurar se terá prazo mínimo de
+ * fidelidade no programa, se sim quanto tempo. E esta informação deve ir para
+ * o contrato."* A multa, quando há, é um valor FIXO em reais (decisão do dono
+ * na mesma conversa). Sem fidelidade, a empresa sai com aviso de 30 dias.
+ */
+export function textoDaFidelidade(
+  meses: number | null | undefined,
+  multaCents: number | null | undefined
+): string {
+  if (!meses || meses <= 0) {
+    return "não há prazo mínimo de permanência da CONTRATANTE no Programa Risarte Empresarial, podendo o presente instrumento ser rescindido a qualquer tempo, mediante comunicação por escrito com 30 (trinta) dias de antecedência";
+  }
+  const prazo = `${numeroComExtenso(meses)} ${meses === 1 ? "mês" : "meses"}`;
+  const base = `a CONTRATANTE compromete-se a permanecer no Programa Risarte Empresarial pelo prazo mínimo de ${prazo}, contados da assinatura do presente instrumento`;
+  if (!multaCents || multaCents <= 0) return base;
+  return `${base}; a rescisão por iniciativa da CONTRATANTE antes de completado esse prazo implicará o pagamento de multa de ${valorComExtenso(multaCents)}, em parcela única`;
+}
+
 // ------------------------------------------------------- os dados do contrato
 
 /** A parte da Risarte, guardada em Configurações (`contract_settings`). */
@@ -376,6 +435,8 @@ export type Contratada = {
   repRg: string | null;
   repCpf: string | null;
   signingCity: string | null;
+  /** 1037: Sr./Sra. — nulo até alguém escolher em Configurações → Contrato. */
+  repGender?: Genero | null;
 };
 
 export type DadosDaEmpresaNoContrato = {
@@ -390,6 +451,12 @@ export type DadosDaEmpresaNoContrato = {
   responsibleNationality: string | null;
   responsibleRg: string | null;
   responsibleCpf: string | null;
+  /** 1037: Sr./Sra. de quem assina pela empresa. */
+  responsibleGender?: Genero | null;
+  /** 1037: fidelidade da empresa, em meses. Nulo = sem fidelidade. */
+  minTermMonths?: number | null;
+  /** 1037: multa fixa por sair antes do prazo. Nulo = sem multa. */
+  earlyExitFeeCents?: number | null;
   /** Dia de vencimento combinado. Nulo = o padrão do programa (dia 5). */
   dueDay: number | null;
   billingBasis: "PER_EMPLOYEE" | "FIXED_PER_COMPANY" | null;
@@ -476,8 +543,8 @@ export function montarContrato(entrada: {
   if (fixo) {
     avisos.push(
       e.fixedMonthlyCents != null
-        ? `A proposta é de VALOR FIXO por empresa (${formatBRL(e.fixedMonthlyCents).replace(/ /g, " ")} por mês), e a cláusula de valores do modelo fala em valor por colaborador. Personalize o texto desta empresa antes de enviar.`
-        : "A proposta é de VALOR FIXO por empresa, sem o valor preenchido, e a cláusula de valores do modelo fala em valor por colaborador. Complete a proposta e personalize o texto desta empresa antes de enviar."
+        ? `A proposta é de VALOR FIXO por empresa (${formatBRL(e.fixedMonthlyCents).replace(/ /g, " ")} por mês), e a cláusula de valores do modelo fala em valor por titular. Personalize o texto desta empresa antes de enviar.`
+        : "A proposta é de VALOR FIXO por empresa, sem o valor preenchido, e a cláusula de valores do modelo fala em valor por titular. Complete a proposta e personalize o texto desta empresa antes de enviar."
     );
   } else if (entrada.faixas.length > 0) {
     avisos.push(
@@ -501,6 +568,20 @@ export function montarContrato(entrada: {
     );
   }
 
+  // ---- quem assina (1037): sem Sr./Sra., o texto sai na forma dupla
+  if (!e.responsibleGender) {
+    avisos.push(
+      "Não foi informado se quem assina pela empresa é Sr. ou Sra.: o contrato sai com \"seu(sua)\", \"portador(a)\". Escolha em \"Quem assina é\", nos dados do contrato desta página."
+    );
+  }
+  if (c && !c.repGender) {
+    avisos.push(
+      "Não foi informado se o representante da Risarte é Sr. ou Sra. (Configurações → Contrato): o contrato sai com \"seu(sua)\", \"portador(a)\"."
+    );
+  }
+  const daEmpresa = concordancia(e.responsibleGender ?? null);
+  const daRisarte = concordancia(c?.repGender ?? null);
+
   // ---- as condições
   const onde = abrangencia(entrada.unidades);
   if (!onde) {
@@ -521,6 +602,9 @@ export function montarContrato(entrada: {
     // Sempre com a máscara: o levantamento aceita o CPF digitado só com
     // números, e num contrato "12345678901" parece erro (visto no treino).
     contratante_cpf: cpf.length === 11 ? maskDocument("CPF", cpf) : null,
+    contratante_seu: daEmpresa.seu,
+    contratante_portador: daEmpresa.portador,
+    contratante_inscrito: daEmpresa.inscrito,
     contratada_razao_social: c?.legalName?.trim() || null,
     contratada_cnpj: c?.cnpj?.trim() || null,
     contratada_endereco: c?.address?.trim() || null,
@@ -530,6 +614,9 @@ export function montarContrato(entrada: {
     contratada_rg: c?.repRg?.trim() || null,
     contratada_cpf:
       cpfDaRisarte.length === 11 ? maskDocument("CPF", cpfDaRisarte) : null,
+    contratada_seu: daRisarte.seu,
+    contratada_portador: daRisarte.portador,
+    contratada_inscrito: daRisarte.inscrito,
     valor_titular: valorComExtenso(naFaixa.precoCents),
     valor_dependente: valorComExtenso(
       e.dependentFeeCents ?? DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents
@@ -545,6 +632,7 @@ export function montarContrato(entrada: {
       fixo && e.fixedMonthlyCents != null ? valorComExtenso(e.fixedMonthlyCents) : null,
     dia_vencimento: numeroComExtenso(dia),
     abrangencia: onde,
+    fidelidade: textoDaFidelidade(e.minTermMonths, e.earlyExitFeeCents),
     cidade_assinatura: c?.signingCity?.trim() || null,
     data_assinatura: dataPorExtenso(entrada.hoje),
   };

@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { empresarialDb } from "./db";
+import { lerGenero } from "./contrato";
 import type {
   BlocoDoContrato,
   Contratada,
@@ -78,6 +79,8 @@ type ContratadaRow = {
   rep_rg: string | null;
   rep_cpf: string | null;
   signing_city: string | null;
+  /** 1037. Ausente = a migração ainda não rodou neste banco. */
+  rep_gender?: string | null;
 };
 
 /** A parte da Risarte no contrato. `contratada: null` = linha ainda não existe. */
@@ -86,9 +89,10 @@ export async function lerContratada(
 ): Promise<{ contratada: Contratada | null; erro: string | null }> {
   const { data, error } = await db
     .from("contract_settings")
-    .select(
-      "legal_name, cnpj, address, rep_name, rep_role, rep_nationality, rep_rg, rep_cpf, signing_city"
-    )
+    // "*" e não a lista: a coluna do gênero (1037) chega com a migração, que
+    // viaja à mão. Pedir uma coluna que ainda não existe derrubaria o contrato
+    // inteiro entre o deploy e o dia em que a migração rodar.
+    .select("*")
     .maybeSingle<ContratadaRow>();
   if (error) {
     console.error("dados da contratada:", error.message);
@@ -106,6 +110,8 @@ export async function lerContratada(
       repRg: data.rep_rg,
       repCpf: data.rep_cpf,
       signingCity: data.signing_city,
+      // undefined = coluna ausente (a tela não oferece a escolha); null = não escolhido.
+      repGender: "rep_gender" in data ? lerGenero(data.rep_gender) : undefined,
     },
     erro: null,
   };

@@ -122,6 +122,7 @@ export function FichaDaProposta({
   condicoes,
   precoPadrao,
   mostrarPadrao,
+  fidelidade,
   unidades,
   unidadePrincipal,
   unidadesDaParceria,
@@ -165,6 +166,11 @@ export function FichaDaProposta({
    * ainda não rodou (ou não há levantamento): a caixa não aparece.
    */
   mostrarPadrao: boolean | null;
+  /**
+   * 1037: o prazo mínimo de fidelidade da empresa e a multa fixa. Nulo = a
+   * migração 1037 ainda não rodou: o bloco não aparece.
+   */
+  fidelidade: { meses: number | null; multaCents: number | null } | null;
   /** I3: as unidades do sistema, e as desta parceria. */
   unidades: Unidade[];
   unidadePrincipal: string | null;
@@ -703,6 +709,7 @@ export function FichaDaProposta({
               />
             </Campo>
           </div>
+          {fidelidade && <CamposDaFidelidade fidelidade={fidelidade} />}
         </Secao>
 
             </PainelDoPasso>
@@ -1305,6 +1312,67 @@ function SimuladorDaProposta({
   );
 }
 
+
+/**
+ * 1037 (dono, 28/10/2026): *"na proposta deve ter como configurar se terá
+ * prazo mínimo de fidelidade no programa, se sim quanto tempo. E esta
+ * informação deve ir para o contrato."* Quem sai antes paga uma multa FIXA em
+ * reais (decisão dele na mesma conversa) — opcional.
+ */
+function CamposDaFidelidade({
+  fidelidade,
+}: {
+  fidelidade: { meses: number | null; multaCents: number | null };
+}) {
+  const [tem, setTem] = useState(fidelidade.meses != null && fidelidade.meses > 0);
+  return (
+    <div className="space-y-3 rounded-md border p-3">
+      <input type="hidden" name="fidelidade_na_tela" value="1" />
+      <Campo
+        id="tem_fidelidade"
+        rotulo="Prazo mínimo de fidelidade da empresa"
+        ajuda="Vai para a proposta e para a cláusula quinta do contrato. Sem fidelidade, a empresa pode sair a qualquer tempo, com aviso de 30 dias."
+      >
+        <select
+          id="tem_fidelidade"
+          name="tem_fidelidade"
+          value={tem ? "SIM" : "NAO"}
+          onChange={(e) => setTem(e.target.value === "SIM")}
+          className={selectClass}
+        >
+          <option value="NAO">Sem fidelidade</option>
+          <option value="SIM">Com fidelidade</option>
+        </select>
+      </Campo>
+      {tem && (
+        <div className="grid gap-3 @xl:grid-cols-2">
+          <Campo id="min_term_months" rotulo="Por quantos meses *">
+            <Input
+              id="min_term_months"
+              name="min_term_months"
+              type="number"
+              min={1}
+              max={120}
+              defaultValue={fidelidade.meses ?? 12}
+            />
+          </Campo>
+          <Campo
+            id="early_exit_fee"
+            rotulo="Multa se sair antes (R$)"
+            ajuda="Valor fixo, em parcela única. Em branco = sem multa."
+          >
+            <Input
+              id="early_exit_fee"
+              name="early_exit_fee"
+              defaultValue={emReais(fidelidade.multaCents)}
+              placeholder="0,00"
+            />
+          </Campo>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** 1036: padrão da rede × proposta, com a economia. */
 function PadraoXProposta({

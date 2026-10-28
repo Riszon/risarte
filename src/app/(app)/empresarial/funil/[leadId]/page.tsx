@@ -244,6 +244,9 @@ type QualRow = {
   excess_dependent_fee_cents: number | null;
   // 1036: ausente = a migração ainda não rodou neste banco.
   show_standard_comparison?: boolean;
+  // 1037
+  min_term_months?: number | null;
+  early_exit_fee_cents?: number | null;
 };
 
 export default async function FichaDoLeadPage({
@@ -822,6 +825,16 @@ export default async function FichaDoLeadPage({
           }}
           condicoes={condicoes}
           precoPadrao={precoPadrao}
+          fidelidade={
+            // Sem a coluna (migração 1037 pendente) ou sem levantamento, o
+            // bloco não aparece — e salvar não grava onde não existe.
+            qual && "min_term_months" in qual
+              ? {
+                  meses: qual.min_term_months ?? null,
+                  multaCents: qual.early_exit_fee_cents ?? null,
+                }
+              : null
+          }
           mostrarPadrao={
             // Sem a coluna (migração 1036 pendente) ou sem levantamento, a
             // caixa não aparece — e salvar não tenta gravar onde não existe.

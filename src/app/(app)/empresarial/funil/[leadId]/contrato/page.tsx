@@ -32,6 +32,7 @@ import {
 } from "@/lib/empresarial/riso-social";
 import {
   LINHA_EM_BRANCO,
+  lerGenero,
   montarContrato,
   paragrafosDoBloco,
   preencher,
@@ -101,6 +102,10 @@ type QualRow = {
   treatment_max_installments: number | null;
   social_participates: boolean | null;
   social_goals: unknown;
+  // 1037: ausentes = a migração ainda não rodou neste banco.
+  responsible_gender?: string | null;
+  min_term_months?: number | null;
+  early_exit_fee_cents?: number | null;
 };
 
 type BeneficioRow = {
@@ -308,6 +313,9 @@ export default async function ContratoPage({
       dependentFamilyFeeCents: q?.dependent_family_fee_cents ?? null,
       dependentFamilyExtraFeeCents: q?.dependent_family_extra_fee_cents ?? null,
       dependentFamilySize: q?.dependent_family_size ?? null,
+      responsibleGender: lerGenero(q?.responsible_gender),
+      minTermMonths: q?.min_term_months ?? null,
+      earlyExitFeeCents: q?.early_exit_fee_cents ?? null,
     },
     faixas: (faixasRows ?? []).map((f) => ({
       minQuantity: f.min_quantity,
@@ -409,6 +417,9 @@ export default async function ContratoPage({
                 rg={q?.responsible_rg ?? null}
                 nacionalidade={q?.responsible_nationality ?? null}
                 diaDeVencimento={q?.due_day ?? null}
+                genero={
+                  q && "responsible_gender" in q ? lerGenero(q.responsible_gender) : undefined
+                }
               />
             </div>
           </details>
@@ -543,7 +554,7 @@ export default async function ContratoPage({
               <p className="font-semibold">Riso+ Social</p>
               <p>
                 Enquanto pagar, integral ou parcialmente, a mensalidade dos
-                colaboradores, a CONTRATANTE poderá indicar pessoas carentes
+                Titulares, a CONTRATANTE poderá indicar pessoas carentes
                 para tratamento
                 {lerMetas(q?.social_goals).length > 0
                   ? ", conforme as metas abaixo (em cada uma, todas as condições ao mesmo tempo):"

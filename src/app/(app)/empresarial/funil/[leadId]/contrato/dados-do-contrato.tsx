@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCep } from "@/lib/masks";
 import type { CompanyAddress } from "@/lib/empresarial/types";
+import type { Genero } from "@/lib/empresarial/contrato";
 import { saveContractData } from "../actions";
 
 /**
@@ -24,12 +25,15 @@ export function DadosDoContrato({
   rg,
   nacionalidade,
   diaDeVencimento,
+  genero,
 }: {
   leadId: string;
   endereco: CompanyAddress | null;
   rg: string | null;
   nacionalidade: string | null;
   diaDeVencimento: number | null;
+  /** 1037: Sr./Sra. de quem assina. `undefined` = coluna ainda não existe. */
+  genero?: Genero | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -51,7 +55,7 @@ export function DadosDoContrato({
     // são controlados: sem ela, depois de salvar eles receberiam outro valor
     // inicial ainda montados, e o Base UI acusa erro (visto no treino).
     <form
-      key={JSON.stringify([endereco, rg, nacionalidade, diaDeVencimento])}
+      key={JSON.stringify([endereco, rg, nacionalidade, diaDeVencimento, genero])}
       onSubmit={onSubmit}
       className="space-y-3"
     >
@@ -105,6 +109,22 @@ export function DadosDoContrato({
             placeholder="PR"
           />
         </div>
+        {genero !== undefined && (
+          <div className="sm:col-span-2">
+            <Label htmlFor="ct-responsible_gender">Quem assina é</Label>
+            <input type="hidden" name="responsible_gender_na_tela" value="1" />
+            <select
+              id="ct-responsible_gender"
+              name="responsible_gender"
+              defaultValue={genero ?? ""}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="">— escolha —</option>
+              <option value="M">Sr. (“seu”, “portador”)</option>
+              <option value="F">Sra. (“sua”, “portadora”)</option>
+            </select>
+          </div>
+        )}
         <div className="sm:col-span-2">
           <Label htmlFor="ct-responsible_rg">RG de quem assina</Label>
           <Input id="ct-responsible_rg" name="responsible_rg" defaultValue={rg ?? ""} />

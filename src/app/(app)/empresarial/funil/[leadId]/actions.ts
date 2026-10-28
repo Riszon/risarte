@@ -44,7 +44,7 @@ import {
   problemasDasVantagens,
   type VantagemEscolhida,
 } from "@/lib/empresarial/vantagens";
-import { lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
+import { lerGenero, lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
 import {
   CALCULOS_DOS_DEPENDENTES,
   dependentesDoQuadro,
@@ -270,6 +270,26 @@ export async function saveProposal(
     }
   }
 
+  // 1037: a fidelidade da empresa. Só escreve quando o bloco estava na tela —
+  // sem a migração ele não aparece, e a coluna que não existe derrubaria o
+  // salvar inteiro.
+  let fidelidade: Record<string, number | null> = {};
+  if (formData.has("fidelidade_na_tela")) {
+    if (texto(formData, "tem_fidelidade") === "SIM") {
+      const meses = inteiro(formData, "min_term_months");
+      if (meses == null || meses < 1 || meses > 120) {
+        return { ok: false, error: "O prazo de fidelidade vai de 1 a 120 meses." };
+      }
+      const multa = centavos(formData, "early_exit_fee");
+      if (multa != null && multa < 0) {
+        return { ok: false, error: "A multa não pode ser negativa." };
+      }
+      fidelidade = { min_term_months: meses, early_exit_fee_cents: multa || null };
+    } else {
+      fidelidade = { min_term_months: null, early_exit_fee_cents: null };
+    }
+  }
+
   // 1032: COMO OS DEPENDENTES ENTRAM NA CONTA, o quadro e a implantação. Só
   // escreve quando o bloco estava na tela — gravar nulo ao responder "Não"
   // apagaria o quadro que alguém montou.
@@ -284,6 +304,7 @@ export async function saveProposal(
       proposal_valid_days: prazo,
       company_grace_days: carenciaEmpresa,
       employee_grace_days: carenciaColaborador,
+      ...fidelidade,
       payment_model: daLista(formData, "payment_model", PAYMENT_MODELS),
       subsidy_type: daLista(formData, "subsidy_type", ["PERCENT", "AMOUNT"] as const),
       subsidy_value:
@@ -1240,6 +1261,10 @@ export async function saveContractData(
       responsible_rg: texto(formData, "responsible_rg"),
       responsible_nationality: texto(formData, "responsible_nationality"),
       due_day: dia,
+      // 1037: só quando a escolha estava na tela (a coluna pode não existir).
+      ...(formData.has("responsible_gender_na_tela")
+        ? { responsible_gender: lerGenero(texto(formData, "responsible_gender")) }
+        : {}),
       updated_by: session.userId,
     },
     "os dados do contrato"

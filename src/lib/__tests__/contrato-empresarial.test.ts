@@ -190,6 +190,7 @@ const contratada: Contratada = {
   repRg: "1234567",
   repCpf: "111.222.333-44",
   signingCity: "Cambé/PR",
+  repGender: "M",
 };
 
 const empresa: DadosDaEmpresaNoContrato = {
@@ -203,6 +204,7 @@ const empresa: DadosDaEmpresaNoContrato = {
   responsibleNationality: null,
   responsibleRg: null,
   responsibleCpf: "999.888.777-66",
+  responsibleGender: "F",
   dueDay: null,
   billingBasis: "PER_EMPLOYEE",
   fixedMonthlyCents: null,

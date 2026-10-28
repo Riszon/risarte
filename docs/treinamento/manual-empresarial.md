@@ -369,6 +369,23 @@ redigitadas depois.
 > é a maior das duas. Benefício pode ainda ter carência própria, que é tratada
 > procedimento a procedimento.
 
+**Prazo mínimo de fidelidade da empresa.** No mesmo passo:
+
+- **Sem fidelidade** — a empresa pode sair a qualquer tempo, com aviso por
+  escrito de 30 dias.
+- **Com fidelidade** — informe **por quantos meses** (1 a 120) e, se houver, a
+  **multa se sair antes**, um **valor fixo em R$**, em parcela única. Em branco,
+  sem multa.
+
+A escolha vai para o documento da proposta (*Permanência no programa*) e para a
+**cláusula quinta do contrato**, escrita sozinha — por exemplo *"a CONTRATANTE
+compromete-se a permanecer no Programa Risarte Empresarial pelo prazo mínimo de
+12 (doze) meses… multa de R$ 1.500,00 (mil e quinhentos reais), em parcela
+única"*.
+
+> **Fidelidade é da EMPRESA, não do Titular.** O Titular é excluído quando a
+> empresa pedir, com 30 dias de aviso, sem multa e sem prazo mínimo.
+
 ### 6.2. Quantas pessoas e por quanto
 
 - **Quantos titulares entram** e **mensalidade por titular**.
@@ -731,11 +748,13 @@ empresa para outra o sistema preenche sozinho:
 | No contrato | De onde vem |
 |---|---|
 | Razão social, CNPJ/CAEPF, quem assina, cargo e CPF | Passo 6 da proposta (*Dados do contrato*) |
-| Endereço da sede, RG, nacionalidade | Na própria tela do contrato (abaixo) |
+| Endereço da sede, RG, nacionalidade e **quem assina é Sr./Sra.** | Na própria tela do contrato (abaixo) |
+| "seu/sua", "portador/portadora", "inscrito/inscrita" | Sr./Sra. de quem assina; sem a escolha, sai "seu(sua)", "portador(a)" e o contrato avisa |
+| Cláusula quinta — permanência mínima (fidelidade) e multa | Passo *Prazo e carência* da proposta |
 | Valores da cláusula quarta (titular, dependente, pacote familiar, dependente extra) | A proposta desta empresa, com o valor por extenso |
 | Dia de vencimento | O dia combinado; sem combinado, dia 5 |
 | Cidades de abrangência | As unidades da parceria; sem parceria definida, todas as unidades da rede |
-| A Risarte (razão social, CNPJ, endereço, quem assina) | Configurações → Contrato |
+| A Risarte (razão social, CNPJ, endereço, quem assina e se é Sr./Sra.) | Configurações → Contrato |
 | Data | A de hoje |
 | **Anexo I** — procedimentos, cobertura, limite e carência | Os benefícios salvos no passo 3 da proposta |
 
@@ -751,8 +770,26 @@ empresa para outra o sistema preenche sozinho:
 > **RG e nacionalidade são opcionais.** Em branco, o contrato sai com a linha
 > para preencher à mão.
 
+**O texto do modelo da rede (desde a 1037):**
+
+- usa **Titular** (nunca colaborador, funcionário ou empregado) e **Programa
+  Risarte Empresarial** (nunca convênio ou plano);
+- **reajuste anual** (cláusula sexta): **IPCA/IBGE de 12 meses + 3%** — IPCA
+  negativo conta como zero;
+- **cobertura** (cláusulas primeira, oitava e décima): **exclusivamente o
+  Anexo I**, que é a lista de benefícios da proposta. Não existe mais
+  "co-participação de 50%". O que não está no Anexo I é pago integralmente,
+  pela tabela da unidade; a parcela paga com atraso perde o desconto daquela
+  parcela;
+- **exames feitos fora** (cláusula décima primeira): tomografias, radiografias
+  panorâmicas, documentações ortodônticas e exames laboratoriais são feitos fora
+  da Risarte e pagos pelo Titular ou Dependente, mesmo com as condições
+  especiais dos parceiros;
+- **relatório mensal** (cláusula terceira): a empresa recebe todo mês a lista
+  dos Titulares e dependentes com a cobrança; divergência, ela pede a correção.
+
 > ⚠️ **Proposta de VALOR FIXO ou com PREÇO POR QUANTIDADE.** A cláusula quarta
-> do modelo fala em valor por colaborador. O contrato avisa quando a proposta
+> do modelo fala em valor por Titular. O contrato avisa quando a proposta
 > é diferente disso. Nesses casos use **Personalizar o texto** (abaixo) e
 > ajuste a cláusula daquela empresa — no valor fixo, o campo
 > `{{valor_fixo_mensal}}` traz o valor já por extenso.
@@ -1347,7 +1384,7 @@ A aba tem quatro partes, na ordem do trabalho:
 - **Proposta comercial** — validade padrão e os **blocos de texto** que saem em
   toda proposta sem texto próprio.
 - **Contrato** — **A Risarte no contrato** (razão social, CNPJ, endereço,
-  cidade da assinatura e quem assina pela Risarte: nome, cargo, nacionalidade,
+  cidade da assinatura e quem assina pela Risarte: nome, **Sr./Sra.**, cargo, nacionalidade,
   RG e CPF) e o **modelo de contrato da rede**, cláusula por cláusula.
   Mudar o modelo muda o contrato de toda empresa que não tem texto próprio.
   Enquanto faltar o nome, o RG ou o CPF de quem assina pela Risarte, todo

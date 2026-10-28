@@ -8,7 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager } from "@/lib/empresarial/access";
 import { BENEFIT_TYPES } from "@/lib/empresarial/constants";
-import { lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
+import { lerGenero, lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
 import { maskDocument } from "@/lib/empresarial/documents";
 import {
   limparDetalhe,
@@ -822,6 +822,10 @@ export async function salvarDadosDaContratada(
       rep_rg: field(formData, "rep_rg"),
       rep_cpf: cpf ? maskDocument("CPF", cpf) : null,
       signing_city: field(formData, "signing_city"),
+      // 1037: só quando a escolha estava na tela (a coluna pode não existir).
+      ...(formData.has("rep_gender_na_tela")
+        ? { rep_gender: lerGenero(field(formData, "rep_gender")) }
+        : {}),
       updated_by: session.userId,
     },
     { onConflict: "id" }

@@ -146,6 +146,24 @@ function DadosDaContratada({ contratada }: { contratada: Contratada | null }) {
                 autoComplete="off"
               />
             </div>
+            {/* 1037: só aparece quando a coluna existe — antes da migração,
+                gravar o campo derrubaria o salvar inteiro. */}
+            {contratada?.repGender !== undefined && (
+              <div>
+                <Label htmlFor="ct-rep_gender">Quem assina é</Label>
+                <input type="hidden" name="rep_gender_na_tela" value="1" />
+                <select
+                  id="ct-rep_gender"
+                  name="rep_gender"
+                  defaultValue={contratada?.repGender ?? ""}
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                >
+                  <option value="">— escolha —</option>
+                  <option value="M">Sr. (o texto diz “seu”, “portador”)</option>
+                  <option value="F">Sra. (o texto diz “sua”, “portadora”)</option>
+                </select>
+              </div>
+            )}
             <div>
               <Label htmlFor="ct-rep_role">Cargo</Label>
               <Input
