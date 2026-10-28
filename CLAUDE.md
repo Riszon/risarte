@@ -407,10 +407,11 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Achado no ensaio:** `ortho_plan_maintenances` calculava `seq` só entre
   as não canceladas → reabrir depois da entrega violava `(case_id, seq)`.
   Corrigido na 0331 (conta todas).
-- ✅ 0331 aplicada no treino (`migrar:teste`) e reaplicada idempotente;
-  ensaio em transação desfeita 37/37 (`scratchpad/ensaio-orto-0331.mjs`).
-  ⚠️ **PENDENTE NA PRODUÇÃO** (conferência esperada 1·6·3·1·0·1·1). Não
-  visto na tela.
+- ✅ **0331 APLICADA nos dois bancos** (o dono rodou na produção em
+  28/10/2026; conferência 1·6·3·1·0·1·1, como esperado). No treino via
+  `migrar:teste`, reaplicada idempotente; ensaio em transação desfeita 37/37
+  (`scratchpad/ensaio-orto-0331.mjs`). Push `a652f8c` feito DEPOIS da
+  migração (o app exige as assinaturas novas). Não visto na tela.
 
 **27/10/2026 (13) — PC Administrador (core 0.361.0 → 0.362.0, migração 0330)**
 

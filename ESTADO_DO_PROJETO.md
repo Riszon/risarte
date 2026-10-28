@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.363.0** · Última migração: **0331** (0318 a 0330 aplicadas na produção e no treino; **0331 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.363.0** · Última migração: **0331** (0318 a 0331 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.363.0 / 0331 — ORTODONTIA: CONTENÇÃO, QUEM DÁ BAIXA E AS FALTAS NO PRAZO (28/10/2026)
 >
@@ -4763,10 +4763,11 @@ previstas canceladas, cliente segue em ortodontia, não gera mais mensalidade,
 entregar de novo recusa; alta → `discharged_at`, cliente sai; reabrir limpa;
 editar troca a contenção; sem login nada executa. `npm run verificar`,
 `npm test`, `npm run lint`: ver a entrada da sessão no `CLAUDE.md`.
-**NÃO visto na tela.** ⚠️ **0331 PENDENTE NA PRODUÇÃO** — o dono roda; as
+**NÃO visto na tela.** ✅ **0331 APLICADA NA PRODUÇÃO** em 28/10/2026 (o dono
+rodou; conferência 1·6·3·1·0·1·1, como esperado) e só então o push
+`a652f8c` foi feito — a ordem importava porque o app desta versão exige as
 assinaturas novas de `ortho_create_case`/`ortho_update_case`/
-`ortho_save_settings` são exigidas pelo app desta versão (Configuração, Novo
-caso e Editar quebram com "função não encontrada" até a 0331 rodar).
+`ortho_save_settings`.
 
 **Roteiro para o dono testar no treino (além do da ORTO1):**
 
