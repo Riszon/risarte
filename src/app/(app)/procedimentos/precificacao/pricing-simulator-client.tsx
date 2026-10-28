@@ -22,6 +22,15 @@ import {
   type FiltroDaMargem,
   type MargemNoPreco,
 } from "@/lib/finance/pricing-simulator";
+import {
+  OCUPACAO_PADRAO,
+  calcularHoraClinica,
+  formatarPercentual,
+  ocupacaoValida,
+  porMesUsado,
+  type HoraClinica,
+} from "@/lib/finance/hora-clinica";
+import { formatarHoras } from "@/lib/horas-da-agenda";
 import { CommissionPanel, ReadjustPanel } from "../bulk-panels";
 import {
   applySuggestedPrice,
@@ -69,6 +78,7 @@ export function PricingSimulator({
   suggestedFee,
   levels,
   procedures,
+  horaClinica,
 }: {
   clinicId: string | null;
   clinicName: string | null;
@@ -92,6 +102,11 @@ export function PricingSimulator({
   } | null;
   levels: Level[];
   procedures: Proc[];
+  /**
+   * A hora clínica calculada da unidade (0330). Nula na Franqueadora (não há
+   * cadeira): lá o campo segue digitado e vale para as unidades sem dados.
+   */
+  horaClinica: HoraClinica | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -100,6 +115,9 @@ export function PricingSimulator({
     settings.chairCostPerHourCents
       ? (settings.chairCostPerHourCents / 100).toFixed(2).replace(".", ",")
       : ""
+  );
+  const [occupancy, setOccupancy] = useState(
+    String(horaClinica?.ocupacaoEsperadaPercent ?? OCUPACAO_PADRAO).replace(".", ",")
   );
   const [tax, setTax] = useState(String(settings.taxPercent));
   const [fee, setFee] = useState(String(settings.avgAcquirerFeePercent));
@@ -122,7 +140,22 @@ export function PricingSimulator({
   const [simLevel, setSimLevel] = useState<string>(CATALOG);
 
   const num = (v: string) => Number(v.replace(",", ".")) || 0;
-  const chairCents = parseBRLToCents(chair) ?? 0;
+  const manualChairCents = parseBRLToCents(chair) ?? 0;
+  // A HORA CLÍNICA (0330): calculada com a ocupação da tela (antes de salvar);
+  // sem dados, o valor provisório digitado (HC3).
+  const occupancyValue = num(occupancy);
+  const occupancyProblem =
+    horaClinica && !ocupacaoValida(occupancyValue) ? "A ocupação esperada vai de 1% a 100%." : null;
+  const hora = horaClinica
+    ? calcularHoraClinica({
+        periodo: horaClinica.periodo,
+        meses: horaClinica.meses,
+        ocupacaoEsperadaPercent: occupancyValue,
+        manualCents: manualChairCents,
+        naoLido: horaClinica.naoLido,
+      })
+    : null;
+  const chairCents = hora ? hora.efetivaCents : manualChairCents;
   // A régua do preço mínimo: a margem mínima, ou a desejada quando não há.
   const minMarginValue = minMargin.trim() === "" ? null : num(minMargin);
   const minTarget = margemDeReferenciaDoMinimo(num(target), minMarginValue);
@@ -220,7 +253,10 @@ export function PricingSimulator({
     startTransition(async () => {
       const r = await saveCostSettings({
         clinicId,
-        chairCostPerHourCents: chairCents,
+        // O valor DIGITADO (o provisório) — a calculada não se grava: ela é
+        // refeita a cada leitura, e gravada envelheceria em silêncio.
+        chairCostPerHourCents: manualChairCents,
+        expectedOccupancyPercent: horaClinica ? occupancyValue : undefined,
         taxPercent: num(tax),
         avgAcquirerFeePercent: num(fee),
         targetMarginPercent: num(target),
@@ -228,7 +264,8 @@ export function PricingSimulator({
         minMarginPercent: minMarginReadable ? minMarginValue : undefined,
       });
       if (r.ok) {
-        toast.success("Configuração salva.");
+        if (r.error) toast.info(r.error);
+        else toast.success("Configuração salva.");
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -300,17 +337,29 @@ export function PricingSimulator({
               mais lucrativo do que é.
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-5">
-            <label className="block">
-              <Label className="text-[11px]">Hora de cadeira (R$)</Label>
-              <Input
-                className="h-8"
-                inputMode="decimal"
-                value={chair}
-                onChange={(e) => setChair(e.target.value)}
-                placeholder="180,00"
-              />
-            </label>
+          {hora && (
+            <QuadroDaHoraClinica
+              hora={hora}
+              occupancy={occupancy}
+              setOccupancy={setOccupancy}
+              occupancyProblem={occupancyProblem}
+              chair={chair}
+              setChair={setChair}
+            />
+          )}
+          <div className={cn("grid gap-2", hora ? "sm:grid-cols-4" : "sm:grid-cols-5")}>
+            {!hora && (
+              <label className="block">
+                <Label className="text-[11px]">Hora de cadeira (R$)</Label>
+                <Input
+                  className="h-8"
+                  inputMode="decimal"
+                  value={chair}
+                  onChange={(e) => setChair(e.target.value)}
+                  placeholder="180,00"
+                />
+              </label>
+            )}
             <label className="block">
               <Label className="text-[11px]">Imposto (%)</Label>
               <Input
@@ -988,6 +1037,124 @@ function Row({ label, cents }: { label: string; cents: number }) {
     <div className="flex justify-between">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="tabular-nums">{formatBRL(cents)}</dd>
+    </div>
+  );
+}
+
+const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+function nomeDoMes(mes: string): string {
+  const [y, m] = mes.split("-").map(Number);
+  return `${MESES_CURTOS[m - 1]}/${y}`;
+}
+
+/**
+ * A HORA CLÍNICA DA UNIDADE (pedido do dono, 27/10/2026; 0330): o número e a
+ * conta inteira à vista — custo fixo ÷ (horas de cadeira × ocupação esperada),
+ * dos últimos 3 meses fechados. Sem dados, vale o valor provisório.
+ */
+function QuadroDaHoraClinica({
+  hora,
+  occupancy,
+  setOccupancy,
+  occupancyProblem,
+  chair,
+  setChair,
+}: {
+  hora: HoraClinica;
+  occupancy: string;
+  setOccupancy: (v: string) => void;
+  occupancyProblem: string | null;
+  chair: string;
+  setChair: (v: string) => void;
+}) {
+  const calculada = hora.origem === "calculada";
+  const periodo = `${nomeDoMes(hora.periodo.meses[0])} a ${nomeDoMes(hora.periodo.meses[hora.periodo.meses.length - 1])}`;
+  const mensal = (v: number) => Math.round(porMesUsado(v, hora));
+  return (
+    <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-xs">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[10rem]">
+          <span className="block text-[11px] text-muted-foreground">Hora clínica (hora de cadeira)</span>
+          <span className="text-lg font-semibold tabular-nums">
+            {hora.efetivaCents > 0 ? `${formatBRL(hora.efetivaCents)}/h` : "—"}
+          </span>
+          <span
+            className={cn(
+              "ml-2 rounded-full px-2 py-0.5 text-[10px] font-medium",
+              calculada
+                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+            )}
+          >
+            {calculada ? "calculada" : hora.origem === "provisoria" ? "provisória (digitada)" : "sem valor"}
+          </span>
+        </div>
+        <label className="block w-36">
+          <Label className="text-[11px]">Ocupação esperada (%)</Label>
+          <Input
+            className="h-8"
+            inputMode="decimal"
+            value={occupancy}
+            onChange={(e) => setOccupancy(e.target.value)}
+          />
+        </label>
+        <label className="block w-40">
+          <Label className="text-[11px]">Valor provisório (R$/h)</Label>
+          <Input
+            className="h-8"
+            inputMode="decimal"
+            value={chair}
+            onChange={(e) => setChair(e.target.value)}
+            placeholder="180,00"
+          />
+        </label>
+      </div>
+      {occupancyProblem && <p className="text-destructive">{occupancyProblem}</p>}
+      {calculada ? (
+        <div className="space-y-1">
+          <p>
+            <strong>Como é calculada</strong> ({periodo}
+            {hora.mesesUsados.length < hora.periodo.meses.length &&
+              `; ${hora.mesesUsados.length} de ${hora.periodo.meses.length} meses tinham custo e agenda`}
+            ):
+          </p>
+          <p className="tabular-nums">
+            Custo fixo {formatBRL(mensal(hora.custoFixoCents))}/mês
+            {hora.depreciacaoCents > 0 && ` + depreciação ${formatBRL(mensal(hora.depreciacaoCents))}/mês`}{" "}
+            ÷ ({formatarHoras(mensal(hora.minutosCadeira))} de cadeira/mês ×{" "}
+            {formatarPercentual(hora.ocupacaoEsperadaPercent)} de ocupação ={" "}
+            {formatarHoras(mensal(hora.minutosClinicos))} clínicas/mês) ={" "}
+            <strong>{formatBRL(hora.efetivaCents)}/h</strong>
+          </p>
+          <p className="text-muted-foreground">
+            {hora.horaRealCents !== null ? (
+              <>
+                Na ocupação de verdade ({formatarPercentual(hora.ocupacaoRealPercent)} das horas de
+                cadeira, pelos atendimentos concluídos), a hora custou{" "}
+                <strong>{formatBRL(hora.horaRealCents)}/h</strong>. É comparação: o preço usa a
+                ocupação esperada, para um mês fraco não encarecer tudo.
+              </>
+            ) : (
+              "Sem atendimentos concluídos nesses meses: não há hora real para comparar."
+            )}
+          </p>
+          <p className="text-muted-foreground">
+            O custo fixo é o das contas marcadas como <strong>fixo</strong> no Plano de contas (o mesmo
+            do Ponto de equilíbrio), mais a depreciação dos bens. Material, laboratório, repasse,
+            taxa e imposto ficam de fora — eles já entram em cada procedimento. As horas de cadeira
+            são as do Planejamento Anual. O valor provisório só vale se faltar dado.
+          </p>
+        </div>
+      ) : (
+        <p className="text-amber-800 dark:text-amber-300">
+          <TriangleAlert className="mr-1 inline size-3.5" />
+          Ainda não dá para calcular ({periodo}): {hora.motivo}{" "}
+          {hora.origem === "provisoria"
+            ? "Enquanto isso vale o valor provisório."
+            : "Informe um valor provisório — sem ele a conta ignora a estrutura."}
+        </p>
+      )}
     </div>
   );
 }

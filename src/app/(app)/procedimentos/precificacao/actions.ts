@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { margemMinimaValida } from "@/lib/finance/pricing-simulator";
+import { ocupacaoValida } from "@/lib/finance/hora-clinica";
 
 export type PricingResult = { ok: boolean; error?: string };
 
@@ -26,9 +27,18 @@ export async function saveCostSettings(input: {
    * dono, 27/10/2026). `undefined` = a tela não conseguiu ler: não mexe.
    */
   minMarginPercent?: number | null;
+  /**
+   * A ocupação esperada da hora clínica (0330), 1 a 100. `undefined` = a tela
+   * não mostra a hora calculada (Franqueadora): não mexe.
+   */
+  expectedOccupancyPercent?: number;
 }): Promise<PricingResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
+
+  if (input.expectedOccupancyPercent !== undefined && !ocupacaoValida(input.expectedOccupancyPercent)) {
+    return { ok: false, error: "A ocupação esperada vai de 1% a 100%." };
+  }
 
   if (input.minMarginPercent !== undefined) {
     const problema = margemMinimaValida(input.minMarginPercent, Math.max(0, input.targetMarginPercent));
@@ -75,6 +85,26 @@ export async function saveCostSettings(input: {
     return { ok: false, error: "Não foi possível salvar a configuração." };
   }
 
+  // A ocupação esperada da hora clínica (0330), na linha do MESMO escopo. À
+  // parte: sem a 0330 a coluna não existe, e os custos já estão salvos.
+  let aviso: string | undefined;
+  if (input.expectedOccupancyPercent !== undefined) {
+    const ocupacao = Math.round(input.expectedOccupancyPercent * 100) / 100;
+    const { error: erroDaOcupacao } = input.clinicId
+      ? await supabase
+          .from("clinic_cost_settings")
+          .update({ expected_occupancy_percent: ocupacao })
+          .eq("clinic_id", input.clinicId)
+      : await supabase
+          .from("clinic_cost_settings")
+          .update({ expected_occupancy_percent: ocupacao })
+          .is("clinic_id", null);
+    if (erroDaOcupacao) {
+      console.error("saveCostSettings (ocupação) failed:", erroDaOcupacao.message);
+      aviso = "Os custos foram salvos, mas a ocupação esperada não — ela grava depois da atualização 0330.";
+    }
+  }
+
   // A margem mínima mora na regra comercial do MESMO escopo (unidade ou rede).
   // Só esta coluna: os outros campos da regra (teto, parcelas…) não mudam, e
   // a unidade sem regra própria ganha uma linha que herda o resto da rede.
@@ -113,7 +143,7 @@ export async function saveCostSettings(input: {
     entityId: input.clinicId ?? "rede",
   });
   refresh();
-  return { ok: true };
+  return aviso ? { ok: true, error: aviso } : { ok: true };
 }
 
 /** Material e laboratório de um procedimento. */

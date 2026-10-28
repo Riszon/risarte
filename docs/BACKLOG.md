@@ -41,6 +41,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
 - [x] **AP80** — o alerta de margem da negociação não contava cadeira nem imposto — resolvido na 0.359.0 (igual à Precificação)
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
+- [ ] **AP82** — a hora clínica é lida unidade por unidade (custo fixo + agenda + atendimentos); a aba do Painel da rede e cada negociação pagam essas leituras
 - [ ] **AP79** — o preço MÁXIMO do procedimento não é conferido em lugar nenhum (o mínimo trava desde a 0.356.0)
 - [ ] **AP78** — campo de busca dos Procedimentos solta aviso do Base UI no console (`defaultValue` que muda)
 - [ ] **AP77** — comissão em massa (Precificação) ainda grava % e mostra "% + R$" (o cadastro grava R$ desde a 0.352.0)
@@ -2657,6 +2658,19 @@ o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produç�
 se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
+
+### AP82. A hora clínica é calculada a cada leitura, unidade por unidade (27/10/2026)
+
+**Confirmado lendo o código** (é escolha da 0.362.0, não defeito):
+`carregarHoraClinica` lê o custo fixo, a agenda (jornada, salas, feriados,
+períodos, avulsos, fechamentos) e — na Precificação e no Painel — os
+atendimentos de 3 meses. A aba **Hora clínica** do Painel da rede faz isso para
+CADA unidade; a negociação e a venda direta, uma vez por abertura. Com 3
+unidades é rápido; **suspeita** (não medido): com dezenas de unidades a aba
+fica lenta, como o AP68 do fluxo de caixa. Saídas possíveis: guardar a hora do
+mês quando ele fecha (retrato, como o `progress_snapshot`) ou levar a conta
+das horas para o banco. Não se guardou o número de propósito: guardado,
+envelheceria em silêncio.
 
 ### AP81. O repasse estimado da opção conta os itens excluídos (27/10/2026)
 

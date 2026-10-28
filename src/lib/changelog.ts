@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.362.0",
+    data: "2026-10-27",
+    migracao: "0330",
+    titulo: "A hora clínica calculada sozinha, e comparada entre as unidades",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na Precificação, a hora de cadeira deixou de ser digitada: o sistema calcula a hora clínica da unidade pelos últimos 3 meses fechados — o custo fixo do Financeiro (pessoal, aluguel, contas, administrativo, marketing e a depreciação dos bens) dividido pelas horas de cadeira da agenda vezes a ocupação esperada (80%, ajustável). A tela mostra a conta passo a passo e, ao lado, quanto a hora custou de verdade pelos atendimentos concluídos.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "Admin Master",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Enquanto a unidade não tiver custo fixo lançado no Financeiro ou horas de cadeira na agenda, vale o valor digitado — agora chamado \"Valor provisório\" — e a tela diz o que falta. A negociação e a venda direta passam a usar a mesma hora da Precificação.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "Admin Master",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No Financeiro, o Painel da rede ganhou a aba Hora clínica: a hora de cada unidade lado a lado, com custo fixo por mês, horas de cadeira, ocupação esperada e real, a hora real e quanto cada uma está acima ou abaixo da hora da rede. Abrir na unidade leva ao Ponto de equilíbrio dela.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.361.0",
     data: "2026-10-27",
     migracao: "0329",

@@ -1,6 +1,20 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.360.0** · Última migração: **0328** (0318 a 0328 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.362.0** · Última migração: **0330** (0318 a 0328 aplicadas na produção e no treino; 0329 e 0330 aplicadas no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.362.0 / 0330 — A HORA CLÍNICA CALCULADA + COMPARAÇÃO NA REDE (27/10/2026)
+>
+> Pedido do dono. Decisões HC1–HC4 (as quatro como recomendado): hora clínica
+> = custo fixo ÷ (horas de cadeira × ocupação esperada, padrão 80%); últimos 3
+> meses fechados; o digitado vira "valor provisório" e vale só sem dados; a
+> depreciação entra. A conta mora em `src/lib/finance/hora-clinica.ts` (pura)
+> e a leitura em `hora-clinica-db.ts` — UMA leitura para Precificação,
+> negociação, venda direta e Painel da rede (aba nova **Hora clínica**). O
+> banco entrega só o custo fixo do mês (`clinic_fixed_costs_by_month`, 0330,
+> mesmo recorte do Ponto de equilíbrio); as horas são as do Planejamento
+> Anual. A hora calculada NÃO se grava (envelheceria). ⏳ **0330 a aplicar na
+> produção** — até lá a tela usa o valor digitado e diz que falta a 0330.
+> AP82 (leitura por unidade). EV-240 a EV-242.
 
 > ## 🎯 0.360.0 / 0328 — DE ONDE SAI O DESCONTO DO PACOTE (27/10/2026)
 >

@@ -390,6 +390,25 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (13) — PC Administrador (core 0.361.0 → 0.362.0, migração 0330)**
+
+- **A hora clínica calculada (pedido do dono, HC1–HC4 como recomendado).**
+  Custo fixo ÷ (horas de cadeira × ocupação esperada); 3 meses fechados; o
+  digitado é "valor provisório" (só sem dados); depreciação entra. Aba
+  **Hora clínica** no Painel da rede.
+- ⚠️ **UMA leitura só: `carregarHoraClinica`** (Precificação, negociação,
+  venda direta, Painel). O custo fixo é o do Ponto de equilíbrio
+  (`clinic_fixed_costs_by_month` ↔ `breakeven_lines`, régua em
+  `hora-clinica.test.ts`); as horas, as do Planejamento Anual. Mudou uma das
+  três contas, muda junto.
+- ⚠️ **A hora calculada NÃO se grava** — o `chair_cost_per_hour_cents` passou
+  a ser o valor provisório. AP82: leitura por unidade (lenta com rede grande).
+- ⏳ **0330 a aplicar na produção.** Ensaio no treino 8/8 + quebras; aplicada
+  no treino. Visto na tela (Admin de teste; nada gravado; unidade ativa dele
+  voltou para Londrina). `.next-test` limpo.
+- ⚠️ A sessão da Ortodontia (12) trabalhou ao mesmo tempo: esperei o commit
+  dela para mexer em versão, novidades, manual e documentos.
+
 **27/10/2026 (12) — PC Administrador (core 0.360.0 → 0.361.0, migração 0329)**
 
 - **MÓDULO DE ORTODONTIA (ORTO1, pedido do dono).** Plano e decisões O1–O6

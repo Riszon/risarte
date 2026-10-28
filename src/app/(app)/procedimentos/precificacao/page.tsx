@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { Calculator, ChevronLeft } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { todayInBrazil } from "@/lib/dates";
+import { carregarHoraClinica } from "@/lib/finance/hora-clinica-db";
 import { PricingSimulator } from "./pricing-simulator-client";
 
 export const metadata: Metadata = { title: "Precificação" };
@@ -63,6 +65,13 @@ export default async function PricingPage() {
     // 27/10/2026): `commercial_rules.min_margin_percent`, rede → unidade.
     supabase.rpc("min_margin_percent", { p_clinic: clinicId }),
   ]);
+  // A HORA CLÍNICA (pedido do dono, 27/10/2026; 0330): calculada na UNIDADE.
+  // Na Franqueadora não há cadeira — lá o campo segue digitado.
+  const ehUnidade = clinicId !== null && session.activeClinic?.type !== "franchisor";
+  const horaClinica = ehUnidade
+    ? await carregarHoraClinica(supabase, clinicId, { hoje: todayInBrazil(), comTrabalhadas: true })
+    : null;
+
   if (minMarginErro) console.error("min_margin_percent failed:", minMarginErro.message);
 
   const settings = Array.isArray(settingsRow) ? settingsRow[0] : settingsRow;
@@ -198,6 +207,7 @@ export default async function PricingPage() {
             : null
         }
         levels={levels}
+        horaClinica={horaClinica}
         procedures={(procRows ?? []).map((p) => ({
           id: p.id as string,
           name: p.name as string,

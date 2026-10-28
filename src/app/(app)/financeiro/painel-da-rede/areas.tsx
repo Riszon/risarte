@@ -3,6 +3,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import {
+  distanciaDaRede,
+  farolHora,
+  formatarPercentual,
+  porAtencaoHora,
+  porMesUsado,
+  totaisHora,
+  type UnidadeHora,
+} from "@/lib/finance/hora-clinica";
+import { formatarHoras } from "@/lib/horas-da-agenda";
+import {
   distanciaDaMedia,
   farolCaixa,
   farolDre,
@@ -446,6 +456,114 @@ export function AbaDre({ unidades, ctx }: { unidades: UnidadeDre[]; ctx: Context
         resultado da Franqueadora: a Franqueadora ganha as taxas das franqueadas,
         não o faturamento delas. O resultado do grupo está no{" "}
         <em>Consolidado</em>.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const nomeDoMes = (mes: string) => {
+  const [y, m] = mes.split("-").map(Number);
+  return `${MESES_CURTOS[m - 1]}/${y}`;
+};
+const porHora = (cents: number | null) => (cents === null ? "—" : `${formatBRL(cents)}/h`);
+
+/**
+ * A HORA CLÍNICA DE CADA UNIDADE (pedido do dono, 27/10/2026; 0330) — a mesma
+ * conta da Precificação: custo fixo ÷ (horas de cadeira × ocupação esperada),
+ * nos 3 meses fechados até o mês escolhido.
+ */
+export function AbaHora({ unidades, ctx }: { unidades: UnidadeHora[]; ctx: Contexto }) {
+  const t = totaisHora(unidades);
+  const periodo = unidades[0]?.hora.periodo;
+  return (
+    <div className="space-y-4">
+      <Explica>
+        Quanto custa, por hora, manter a cadeira de pé em cada unidade
+        {periodo && (
+          <>
+            {" "}— média de <strong>{nomeDoMes(periodo.meses[0])}</strong> a{" "}
+            <strong>{nomeDoMes(periodo.meses[periodo.meses.length - 1])}</strong> (os 3 meses
+            fechados até o mês escolhido)
+          </>
+        )}
+        . A conta é a da Precificação: <strong>custo fixo ÷ (horas de cadeira × ocupação
+        esperada)</strong>. A cor compara a hora de cada unidade com a da rede; a{" "}
+        <strong>hora real</strong> é a mesma conta pelas horas trabalhadas de verdade.
+      </Explica>
+      <TabelaDaArea
+        unidades={[...unidades].sort(porAtencaoHora)}
+        farol={(u) => farolHora(u, t.horaCents)}
+        farois={t.farois}
+        redeNota={
+          t.calculadas < unidades.length
+            ? `${unidades.length - t.calculadas} sem dados para calcular (fora da média)`
+            : undefined
+        }
+        aba="hora"
+        ctx={ctx}
+        colunas={[
+          {
+            rotulo: "Hora clínica",
+            unidade: (u) =>
+              u.hora.origem === "calculada" ? (
+                porHora(u.hora.calculadaCents)
+              ) : (
+                <span className="text-muted-foreground">
+                  {u.hora.manualCents > 0 ? porHora(u.hora.manualCents) : "—"}
+                  <span className="block text-[11px]">
+                    {u.hora.manualCents > 0 ? "provisória" : "sem valor"}
+                  </span>
+                </span>
+              ),
+            rede: porHora(t.horaCents),
+          },
+          {
+            rotulo: "vs rede",
+            unidade: (u) => formatarPercentual(distanciaDaRede(u.hora.calculadaCents, t.horaCents), true),
+            rede: "—",
+          },
+          {
+            rotulo: "Custo fixo/mês",
+            unidade: (u) =>
+              u.hora.mesesUsados.length > 0
+                ? formatBRL(Math.round(porMesUsado(u.hora.custoFixoCents + u.hora.depreciacaoCents, u.hora)))
+                : "—",
+            rede: formatBRL(t.custoMensalCents),
+          },
+          {
+            rotulo: "Cadeira/mês",
+            unidade: (u) =>
+              u.hora.mesesUsados.length > 0
+                ? formatarHoras(Math.round(porMesUsado(u.hora.minutosCadeira, u.hora)))
+                : "—",
+            rede: formatarHoras(t.minutosCadeiraMes),
+          },
+          {
+            rotulo: "Ocupação esperada",
+            unidade: (u) => formatarPercentual(u.hora.ocupacaoEsperadaPercent),
+            rede: "—",
+          },
+          {
+            rotulo: "Ocupação real",
+            unidade: (u) => (u.hora.origem === "calculada" ? formatarPercentual(u.hora.ocupacaoRealPercent) : "—"),
+            rede: formatarPercentual(t.ocupacaoRealPercent),
+          },
+          {
+            rotulo: "Hora real",
+            unidade: (u) => (u.hora.origem === "calculada" ? porHora(u.hora.horaRealCents) : "—"),
+            rede: porHora(t.horaRealCents),
+          },
+        ]}
+      />
+      <p className="text-xs text-muted-foreground">
+        O custo fixo é o das contas marcadas como <strong>fixo</strong> no Plano de contas, mais a
+        depreciação dos bens; as horas de cadeira são as do Planejamento Anual. Unidade sem custo
+        fixo lançado ou sem agenda nesses meses fica sem conta (vale o valor digitado na
+        Precificação) e não entra na média. <strong>Abrir na unidade</strong> leva ao Ponto de
+        equilíbrio dela, com o custo fixo conta a conta.
       </p>
     </div>
   );

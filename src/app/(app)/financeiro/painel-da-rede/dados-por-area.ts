@@ -17,6 +17,8 @@ import {
   type UnidadePagar,
   type UnidadeReceber,
 } from "@/lib/finance/network-areas";
+import { carregarHoraClinica } from "@/lib/finance/hora-clinica-db";
+import type { UnidadeHora } from "@/lib/finance/hora-clinica";
 
 /**
  * OC-00121 — os números de cada aba do Painel da rede.
@@ -369,4 +371,33 @@ export async function carregarDre(
       resultadoCents: Number(r.result_cents ?? 0),
     })),
   };
+}
+
+// ---------------------------------------------------------------------------
+// HORA CLÍNICA (pedido do dono, 27/10/2026; 0330)
+// ---------------------------------------------------------------------------
+
+/**
+ * A hora clínica de cada unidade, pela MESMA leitura da Precificação
+ * (`carregarHoraClinica`) — a tela da unidade e a da rede não podem divergir.
+ * ⚠️ Lê unidade por unidade (custo fixo + agenda + atendimentos): com a rede
+ * grande, ver o AP82 no BACKLOG.
+ */
+export async function carregarHora(
+  supabase: SupabaseClient,
+  unidades: Base[],
+  hoje: string,
+  ateMes: string
+): Promise<Lido<UnidadeHora>> {
+  try {
+    const horas = await Promise.all(
+      unidades.map((u) =>
+        carregarHoraClinica(supabase as never, u.clinicId, { hoje, ateMes, comTrabalhadas: true })
+      )
+    );
+    return { ok: true, unidades: unidades.map((u, i) => ({ ...u, hora: horas[i] })) };
+  } catch (e) {
+    console.error("painel da rede — hora clínica:", e instanceof Error ? e.message : e);
+    return { ok: false, erro: "Não foi possível calcular a hora clínica das unidades." };
+  }
 }

@@ -14,10 +14,11 @@ import {
 import { parseNetworkTab, periodoDoMes } from "@/lib/finance/network-areas";
 import { NetworkPanelView } from "./panel-client";
 import { AbasDaRede } from "./abas-da-rede";
-import { AbaCaixa, AbaDre, AbaPagar, AbaReceber, AvisoDeLeitura } from "./areas";
+import { AbaCaixa, AbaDre, AbaHora, AbaPagar, AbaReceber, AvisoDeLeitura } from "./areas";
 import {
   carregarCaixa,
   carregarDre,
+  carregarHora,
   carregarPagar,
   carregarReceber,
   unidadesDaRede,
@@ -78,6 +79,14 @@ export default async function NetworkPanelPage(
     const base = await unidadesDaRede(supabase);
     if (!base.ok) {
       conteudo = <AvisoDeLeitura erro={base.erro} />;
+    } else if (aba === "hora") {
+      const r = await carregarHora(
+        supabase,
+        base.unidades,
+        today,
+        `${periodo.ano}-${String(periodo.mes).padStart(2, "0")}`
+      );
+      conteudo = r.ok ? <AbaHora unidades={r.unidades} ctx={ctx} /> : <AvisoDeLeitura erro={r.erro} />;
     } else if (aba === "pagar") {
       const r = await carregarPagar(supabase, base.unidades, periodo, today);
       conteudo = r.ok ? <AbaPagar unidades={r.unidades} ctx={ctx} /> : <AvisoDeLeitura erro={r.erro} />;

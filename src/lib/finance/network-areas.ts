@@ -13,7 +13,8 @@
  * junta, compara, colore e ordena.
  */
 
-import { monthRangeOf } from "@/lib/dates";
+import { monthRangeOf, todayInBrazil } from "@/lib/dates";
+import { periodoDaHoraClinica } from "./hora-clinica";
 import { firstNegative, type CashPeriod } from "./cash-flow";
 import {
   acimaDoLimite,
@@ -30,6 +31,8 @@ export const NETWORK_TABS = [
   { key: "receber", label: "Recebíveis" },
   { key: "caixa", label: "Fluxo de caixa" },
   { key: "dre", label: "DRE" },
+  // Pedido do dono, 27/10/2026 (0330): comparar o custo da hora clínica.
+  { key: "hora", label: "Hora clínica" },
 ] as const;
 
 export type NetworkTab = (typeof NETWORK_TABS)[number]["key"];
@@ -484,7 +487,12 @@ const DATA = /^\d{4}-\d{2}-\d{2}$/;
  * O relatório da unidade sobre o MESMO assunto e o MESMO período da aba.
  * Lista fechada: o destino nunca vem montado do navegador.
  */
-export function destinoNaUnidade(aba: NetworkTab, de: string, ate: string): string {
+export function destinoNaUnidade(
+  aba: NetworkTab,
+  de: string,
+  ate: string,
+  hoje: string = todayInBrazil()
+): string {
   const periodo = DATA.test(de) && DATA.test(ate) ? `?de=${de}&ate=${ate}` : "";
   switch (aba) {
     case "pagar":
@@ -497,6 +505,11 @@ export function destinoNaUnidade(aba: NetworkTab, de: string, ate: string): stri
       return `/financeiro/fluxo-de-caixa${periodo}`;
     case "dre":
       return `/financeiro/dre${periodo}`;
+    // O custo fixo da hora clínica, nos MESMOS 3 meses fechados da aba.
+    case "hora": {
+      const p = periodoDaHoraClinica(hoje, DATA.test(de) ? de.slice(0, 7) : null);
+      return `/financeiro/ponto-de-equilibrio?de=${p.de}&ate=${p.ate}`;
+    }
     case "visao":
       return "/financeiro";
   }

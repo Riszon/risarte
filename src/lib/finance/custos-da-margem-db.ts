@@ -1,12 +1,15 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
+import { todayInBrazil } from "@/lib/dates";
 import { minutosDoItem, type CustosDaMargem } from "./custos-da-margem";
+import { carregarHoraClinica } from "./hora-clinica-db";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 /**
  * Lê os custos da margem da venda com as MESMAS fontes da Precificação:
- * `cost_settings_for` (cadeira, imposto, taxa média) e
+ * `cost_settings_for` (imposto, taxa média), a HORA CLÍNICA calculada
+ * (`carregarHoraClinica`, 0330 — a mesma da Precificação) e
  * `material_costs_for_clinic` (material e laboratório por procedimento), mais
  * os minutos do cadastro para o item sem minutos planejados.
  *
@@ -19,20 +22,21 @@ export async function carregarCustosDaMargem(
   itens: { itemId: string; procedureId: string | null; quantidade: number; minutosPlanejados: number | null }[]
 ): Promise<CustosDaMargem | null> {
   const procIds = [...new Set(itens.map((i) => i.procedureId).filter((x): x is string => Boolean(x)))];
-  const [{ data: settingsRow, error: e1 }, { data: costRows, error: e2 }, { data: procRows, error: e3 }] =
+  const [{ data: settingsRow, error: e1 }, { data: costRows, error: e2 }, { data: procRows, error: e3 }, hora] =
     await Promise.all([
       supabase.rpc("cost_settings_for", { p_clinic: clinicId }),
       supabase.rpc("material_costs_for_clinic", { p_clinic_id: clinicId }),
       procIds.length > 0
         ? supabase.from("procedures").select("id, estimated_minutes").in("id", procIds)
         : Promise.resolve({ data: [], error: null }),
+      carregarHoraClinica(supabase, clinicId, { hoje: todayInBrazil() }),
     ]);
   if (e1 || e2 || e3) {
     console.error("carregarCustosDaMargem failed:", (e1 ?? e2 ?? e3)?.message);
     return null;
   }
   const s = (Array.isArray(settingsRow) ? settingsRow[0] : settingsRow) as
-    | { chair_cost_per_hour_cents: number; tax_percent: number; avg_acquirer_fee_percent: number }
+    | { tax_percent: number; avg_acquirer_fee_percent: number }
     | null
     | undefined;
   const minutosDoCadastro = new Map(
@@ -58,7 +62,8 @@ export async function carregarCustosDaMargem(
     };
   }
   return {
-    horaDeCadeiraCents: Number(s?.chair_cost_per_hour_cents ?? 0),
+    // A hora clínica calculada; sem dados, o valor provisório (HC3).
+    horaDeCadeiraCents: hora.efetivaCents,
     proportionalPercent: Number(s?.tax_percent ?? 0) + Number(s?.avg_acquirer_fee_percent ?? 0),
     porItem,
     materialPorProcedimento,

@@ -387,7 +387,7 @@ quando ela foi; apurar na hora é botão do Painel da rede.
 #### O Painel da rede por área *(desde a 0.341.0, relato OC-00121)*
 
 Em **Rede → Painel da rede** (Admin Master e Financeiro da Franqueadora), no
-alto, o **mês e o ano** — valem para todas as abas — e cinco abas:
+alto, o **mês e o ano** — valem para todas as abas — e seis abas:
 
 | Aba | O que mostra de cada unidade | Vermelho | Amarelo |
 |---|---|---|---|
@@ -396,6 +396,7 @@ alto, o **mês e o ano** — valem para todas as abas — e cinco abas:
 | **Recebíveis** | o que tem a receber **hoje** e o que recebeu no mês | inadimplência acima do limite da unidade | vencido dentro do limite |
 | **Fluxo de caixa** | saldo no início, entradas, saídas e saldo no fim do mês | o saldo fica negativo em algum dia do mês | sai mais do que entra, com o saldo aguentando |
 | **DRE** | receita líquida, resultado e **margem** do mês | prejuízo | margem mais de 2 pontos abaixo da margem da rede |
+| **Hora clínica** *(desde a 0.362.0)* | a **hora clínica** (custo fixo por mês, horas de cadeira, ocupação esperada e real, hora real) nos **3 meses fechados** até o mês escolhido | — | hora mais de 10% acima da hora da rede |
 
 Cada aba é uma **tabela em colunas** (desde a 0.341.1, relato OC-00122). A
 primeira linha, **Rede**, traz o total nas **mesmas colunas** das unidades —
@@ -419,6 +420,14 @@ dia.
 > todas dividido pela receita de todas — não a média das margens. A soma da
 > aba é **comparação**: ela não é o resultado da Franqueadora (esse está no
 > **Consolidado**).
+
+> **Na Hora clínica, a conta é a da Precificação** (veja *A hora clínica
+> calculada*, na parte do Admin Master): custo fixo ÷ (horas de cadeira × ocupação esperada). A
+> hora da rede é o custo de todas dividido pelas horas de todas. Unidade sem
+> custo fixo lançado ou sem agenda nos 3 meses fica cinza, mostra o valor
+> provisório digitado e **não entra na média**. Ali, **Abrir na unidade** leva
+> ao **Ponto de equilíbrio** dela, nos mesmos 3 meses, com o custo conta a
+> conta.
 
 > **No Fluxo de caixa não existe "saldo da rede".** O dinheiro de uma unidade
 > não paga a conta da outra; por isso a linha Rede mostra um traço nos saldos
@@ -1813,6 +1822,33 @@ pela desejada. A mínima não pode passar da desejada (a tela não deixa salvar)
 > mesma desta tela** (cadeira, material, laboratório, repasse e imposto + taxa
 > média): o mesmo percentual vale a mesma coisa nos dois lugares.
 
+**A hora clínica calculada** (versão 0.362.0). Em *Custos e metas*, a **hora
+de cadeira** não é mais digitada: o quadro **Hora clínica** mostra o valor
+calculado para a unidade e a conta inteira:
+
+> **hora clínica = custo fixo ÷ (horas de cadeira × ocupação esperada)**
+
+- **Custo fixo:** a média dos **últimos 3 meses fechados** (em outubro:
+  julho, agosto e setembro), das contas marcadas como **fixo** no Plano de
+  contas — pessoal, aluguel, contas, administrativo, marketing — **mais a
+  depreciação dos bens**. É o mesmo custo fixo do **Ponto de equilíbrio**.
+  Material, laboratório, repasse, taxa e imposto **não entram**: eles já são
+  somados em cada procedimento.
+- **Horas de cadeira:** as do **Planejamento Anual** (horário da unidade ×
+  cadeiras, descontados feriados, recessos e fechamentos de agenda).
+- **Ocupação esperada:** quanto das horas de cadeira a unidade deve ocupar
+  (**80%** se ninguém mudar). O campo fica no quadro; mudar o número refaz a
+  conta na hora, e **Salvar configuração** guarda para a unidade.
+- **Hora real:** a mesma conta pelas horas **trabalhadas de verdade**
+  (atendimentos concluídos). É só comparação — o preço usa a ocupação
+  esperada, para um mês fraco não encarecer todos os preços.
+
+Mês sem custo fixo lançado ou sem agenda fica fora da conta (a tela diz *"1 de
+3 meses tinham custo e agenda"*). **Sem nenhum dado**, vale o **Valor
+provisório (R$/h)** digitado, e o quadro diz em amarelo o que falta. A
+**negociação** e a **venda direta** usam a mesma hora desta tela. Na
+**Franqueadora** não há cadeira: lá o campo continua digitado.
+
 O filtro **Mostrar**, no alto da lista, separa: **Na margem desejada ou
 acima**, **Abaixo da margem desejada** (pelo preço normal), **Abaixo da margem
 no preço mínimo** — desde a 0.358.0, **Abaixo da margem mínima no preço
@@ -2798,7 +2834,7 @@ Empresarial) não conta — é direito do cliente.
 **O quadro "Margem da venda"** (embaixo do resumo da negociação e na venda
 direta) mostra quanto sobra para a clínica no preço negociado. Desde a versão
 0.359.0 ele conta **tudo o que a Precificação conta**: o repasse do dentista,
-a **hora de cadeira** (pelos minutos planejados de cada item), o **material e o
+a **hora de cadeira** (a hora clínica calculada da unidade, desde a 0.362.0, pelos minutos planejados de cada item), o **material e o
 laboratório** dos kits e o **imposto + taxa média** sobre o preço — por isso o
 desconto corta também o imposto. Na compra parcial, só os itens aceitos
 entram. Abaixo da **margem mínima** da unidade o quadro fica amarelo; com
