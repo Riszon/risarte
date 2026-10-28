@@ -408,14 +408,15 @@ Syncthing se comportarem de forma estranha.**
   `SALE_NOT_CLOSED`); `ortho_create_legacy_case` + `legacy_entry_enabled`
   (só o Admin mexe) + `ortho_cases.origin`; Painel/Atenção/Início com
   "aguardando início com/sem horário" (`loadStartAppointments`).
-- ⚠️ `ortho_effective_settings` (+4 colunas) e `ortho_save_settings` (+4
-  args) **derrubadas e recriadas**; o app lê `plan_negotiation_ortho` e
-  `ortho_cases.origin`: **o push espera a 0334 na produção**.
-- ✅ 0334 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
-  conferência 4·1·4·1·1·1·0); ensaio em transação desfeita **24/24**
-  (`scratchpad/ensaio-orto-0334.mjs`). Achado ao ensaiar: `text[] || 'literal'`
-  sem `::text` vira "malformed array literal" — corrigido na própria 0334.
-  ⚠️ **PENDENTE NA PRODUÇÃO.** Não visto na tela.
+- ✅ **0334 APLICADA nos dois bancos** (o dono rodou na produção em
+  28/10/2026; conferência 4·1·4·1·1·1·0, como esperado) e só então o push
+  `87a51bc` saiu — a ordem importava: `ortho_effective_settings` (+4
+  colunas) e `ortho_save_settings` (+4 args) foram derrubadas e recriadas, e
+  o app lê `plan_negotiation_ortho` e `ortho_cases.origin`. No treino via
+  `migrar:teste` + reaplicada, idempotente; ensaio em transação desfeita
+  **24/24** (`scratchpad/ensaio-orto-0334.mjs`). Achado ao ensaiar: `text[] ||
+  'literal'` sem `::text` vira "malformed array literal" — corrigido na
+  própria 0334. Não visto na tela.
 
 **28/10/2026 (16) — PC Administrador (core 0.364.0 → 0.365.0, migração 0333)**
 

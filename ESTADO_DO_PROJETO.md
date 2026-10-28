@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.366.0** · Última migração: **0334** (0318 a 0333 aplicadas na produção e no treino; **0334 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.366.0** · Última migração: **0334** (0318 a 0334 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.366.0 / 0334 — ORTODONTIA (ORTO8): DO COMERCIAL AO CASO (28/10/2026)
 >
@@ -18,12 +18,11 @@ _Atualizado em: 28/10/2026 · Versão do sistema: **0.366.0** · Última migraç
 > `ortho_create_case` exige venda fechada; **caso legado** (Q1:
 > `ortho_create_legacy_case`, porta `legacy_entry_enabled` só do Admin,
 > `ortho_cases.origin`). Painel "Aguardando início" com/sem horário, Atenção
-> e cartão no Início (`loadStartAppointments`). ⚠️ **0334 aplicada no treino**
-> (reaplicada, idempotente); ensaio em transação desfeita **24/24**;
-> **pendente na produção** (conferência esperada 4·1·4·1·1·1·0). ⚠️ **O
-> push espera a migração:** `ortho_effective_settings`/`ortho_save_settings`
-> mudaram de assinatura e o app lê `plan_negotiation_ortho` e
-> `ortho_cases.origin`. EV-252 a EV-254.
+> e cartão no Início (`loadStartAppointments`). ✅ **0334 APLICADA nos dois
+> bancos** (o dono rodou na produção em 28/10/2026; conferência
+> 4·1·4·1·1·1·0, como esperado) e só então o push `87a51bc` saiu (assinaturas
+> novas + tabelas novas lidas pelo app). No treino reaplicada, idempotente;
+> ensaio em transação desfeita **24/24**. Não visto na tela. EV-252 a EV-254.
 
 > ## 🎯 0.365.0 / 0333 — ORTODONTIA (ORTO7): DO CLÍNICO AO PLANO (28/10/2026)
 >
@@ -4830,10 +4829,11 @@ com motivo, porta fechada recusa; backfill; sem login nada executa). **Achado
 ao ensaiar, corrigido na própria 0334:** `text[] || 'literal'` sem `::text`
 vira "malformed array literal" no Postgres. `npm run verificar`, `npm test`,
 `npm run lint`: ver a entrada da sessão no `CLAUDE.md`. **NÃO visto na
-tela.** ⚠️ **0334 PENDENTE NA PRODUÇÃO — e o push espera por ela:**
-`ortho_effective_settings` e `ortho_save_settings` mudaram de assinatura
-(Configuração, Novo caso, Painel), o app lê `plan_negotiation_ortho` (painel
-da negociação, orçamento) e `ortho_cases.origin` (toda ficha e lista).
+tela.** ✅ **0334 APLICADA NA PRODUÇÃO** em 28/10/2026 (o dono rodou;
+conferência 4·1·4·1·1·1·0, como esperado) e só então o push `87a51bc` saiu —
+a ordem importava porque `ortho_effective_settings` e `ortho_save_settings`
+mudaram de assinatura e o app lê `plan_negotiation_ortho` e
+`ortho_cases.origin`.
 
 **Roteiro para o dono testar no treino:**
 
