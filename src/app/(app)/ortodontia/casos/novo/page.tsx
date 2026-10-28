@@ -128,6 +128,9 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
           intervalDays: settings?.maintenance_interval_days ?? 30,
           billingDay: settings?.billing_day ?? 10,
           procedureId: settings?.maintenance_procedure_id ?? null,
+          retainerCharged: settings?.retainer_charge_enabled === true,
+          retainerFeeCents: settings?.retainer_fee_cents ?? 0,
+          retainerTerms: settings?.retainer_terms ?? null,
         }}
         orthodontists={orthodontists}
         procedures={procedures}

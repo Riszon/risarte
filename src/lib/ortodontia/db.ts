@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { lerPorLotes, lerTodasAsPaginas, type TudoLido } from "@/lib/paginar";
 import type {
+  OrthoChargeKind,
   OrthoChargeStatus,
   OrthoKind,
   OrthoMaintenanceStatus,
@@ -46,6 +47,14 @@ export type OrthoCaseRow = {
   finish_reason: string | null;
   interrupted_at: string | null;
   interrupt_reason: string | null;
+  /** O1: a contenção combinada no caso (cópia da configuração ao abrir). */
+  retainer_charged: boolean;
+  retainer_fee_cents: number;
+  retainer_terms: string | null;
+  retainer_delivered_at: string | null;
+  discharged_at: string | null;
+  /** O3: faltas × intervalo — já somado em `planned_end_date`. */
+  extension_days: number;
   notes: string | null;
   created_at: string;
   client: OrthoClientLite | null;
@@ -75,6 +84,7 @@ export type OrthoChargeRow = {
   case_id: string;
   clinic_id: string;
   client_id: string;
+  kind: OrthoChargeKind;
   reference_month: string;
   due_date: string;
   amount_cents: number;
@@ -96,7 +106,7 @@ const one = <T,>(v: T | T[] | null | undefined): T | null =>
   Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 
 const CASE_SELECT =
-  "id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, monthly_fee_cents, billing_day, installation_fee_cents, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, notes, created_at, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )";
+  "id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, monthly_fee_cents, billing_day, installation_fee_cents, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_charged, retainer_fee_cents, retainer_terms, retainer_delivered_at, discharged_at, extension_days, notes, created_at, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )";
 
 function toCase(r: Record<string, unknown>): OrthoCaseRow {
   return {
@@ -106,6 +116,12 @@ function toCase(r: Record<string, unknown>): OrthoCaseRow {
     planned_months: Number(r.planned_months ?? 24),
     maintenance_interval_days: Number(r.maintenance_interval_days ?? 30),
     billing_day: Number(r.billing_day ?? 10),
+    retainer_charged: r.retainer_charged === true,
+    retainer_fee_cents: Number(r.retainer_fee_cents ?? 0),
+    retainer_terms: (r.retainer_terms as string | null) ?? null,
+    retainer_delivered_at: (r.retainer_delivered_at as string | null) ?? null,
+    discharged_at: (r.discharged_at as string | null) ?? null,
+    extension_days: Number(r.extension_days ?? 0),
     client: one(r.client as OrthoClientLite | OrthoClientLite[] | null),
     clinic: one(r.clinic as { name: string } | { name: string }[] | null),
     orthodontist: one(r.orthodontist as { full_name: string } | { full_name: string }[] | null),
@@ -166,7 +182,7 @@ export async function loadMaintenancesFor(
 }
 
 const CHARGE_SELECT =
-  "id, case_id, clinic_id, client_id, reference_month, due_date, amount_cents, status, paid_at, payment_method, notes";
+  "id, case_id, clinic_id, client_id, kind, reference_month, due_date, amount_cents, status, paid_at, payment_method, notes";
 
 export async function loadChargesFor(
   supabase: SupabaseClient,
@@ -321,17 +337,25 @@ export type OrthoSettingsRow = {
   finish_tolerance_days: number;
   maintenance_procedure_id: string | null;
   billing_day: number;
+  retainer_charge_enabled: boolean;
+  retainer_fee_cents: number;
+  retainer_terms: string | null;
 };
 
 export async function loadOrthoSettingsRows(supabase: SupabaseClient): Promise<OrthoSettingsRow[] | null> {
   const { data, error } = await supabase
     .from("ortho_settings")
     .select(
-      "id, clinic_id, monthly_fee_cents, planned_months, maintenance_interval_days, reevaluation_interval_months, finish_tolerance_days, maintenance_procedure_id, billing_day"
+      "id, clinic_id, monthly_fee_cents, planned_months, maintenance_interval_days, reevaluation_interval_months, finish_tolerance_days, maintenance_procedure_id, billing_day, retainer_charge_enabled, retainer_fee_cents, retainer_terms"
     )
     .limit(500);
   if (error) return null;
-  return (data ?? []) as OrthoSettingsRow[];
+  return (data ?? []).map((r) => ({
+    ...(r as OrthoSettingsRow),
+    retainer_charge_enabled: r.retainer_charge_enabled === true,
+    retainer_fee_cents: Number(r.retainer_fee_cents ?? 0),
+    retainer_terms: (r.retainer_terms as string | null) ?? null,
+  }));
 }
 
 export type EffectiveSettings = {
@@ -342,6 +366,9 @@ export type EffectiveSettings = {
   finish_tolerance_days: number;
   maintenance_procedure_id: string | null;
   billing_day: number;
+  retainer_charge_enabled: boolean;
+  retainer_fee_cents: number;
+  retainer_terms: string | null;
 };
 
 export async function loadEffectiveSettings(

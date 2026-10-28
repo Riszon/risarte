@@ -390,6 +390,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**28/10/2026 (14) — PC Administrador (core 0.362.0 → 0.363.0, migração 0331)**
+
+- **Ortodontia: as decisões O1/O2/O3 do dono** (ESTADO §2). **O1:** a
+  mensalidade vai até a **entrega das contenções**, que FINALIZA o tratamento
+  e abre o acompanhamento — `contencao` **mudou de sentido** (finalizado, em
+  acompanhamento; `finalizado` = alta). Contenção cobrável (configuração →
+  caso → `ortho_deliver_retainers` → `ortho_charges.kind = 'contencao'`, conta
+  1.1.04 renomeada). **O2:** baixa = Gerente + Financeiro da Franqueadora
+  (`ortho_can_settle`; Recepção/Franqueado só veem — `canViewOrthoMoney`).
+  **O3:** cada falta prorroga o término em um intervalo (`extension_days` por
+  gatilho) + assiduidade nas telas. Tudo no termo (`orthoClauses`).
+- ⚠️ **Assinaturas DERRUBADAS e recriadas** (`ortho_create_case`,
+  `ortho_update_case`, `ortho_save_settings`, `ortho_effective_settings`): o
+  app desta versão exige a 0331 no banco.
+- ⚠️ **Achado no ensaio:** `ortho_plan_maintenances` calculava `seq` só entre
+  as não canceladas → reabrir depois da entrega violava `(case_id, seq)`.
+  Corrigido na 0331 (conta todas).
+- ✅ 0331 aplicada no treino (`migrar:teste`) e reaplicada idempotente;
+  ensaio em transação desfeita 37/37 (`scratchpad/ensaio-orto-0331.mjs`).
+  ⚠️ **PENDENTE NA PRODUÇÃO** (conferência esperada 1·6·3·1·0·1·1). Não
+  visto na tela.
+
 **27/10/2026 (13) — PC Administrador (core 0.361.0 → 0.362.0, migração 0330)**
 
 - **A hora clínica calculada (pedido do dono, HC1–HC4 como recomendado).**

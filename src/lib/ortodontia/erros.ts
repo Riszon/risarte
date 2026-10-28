@@ -10,7 +10,7 @@ const MENSAGENS: Record<string, string> = {
   CASE_ALREADY_OPEN: "Este paciente já tem um caso ortodôntico aberto. Finalize ou interrompa o atual antes de abrir outro.",
   CASE_CLOSED: "O caso está finalizado ou interrompido: reabra antes de mexer no cronograma.",
   INVALID_STATUS: "Situação inválida.",
-  INVALID_TRANSITION: "Esta mudança de situação não é possível agora.",
+  INVALID_TRANSITION: "Esta mudança de situação não é possível agora (as contenções só são entregues a um caso em tratamento; a alta, a um caso em acompanhamento).",
   REASON_REQUIRED: "Escreva o motivo.",
   ALREADY_DONE: "Esta manutenção já foi realizada — para desfazer, use a evolução.",
   MAINTENANCE_CANCELLED: "Esta manutenção foi cancelada.",

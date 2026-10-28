@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.363.0",
+    data: "2026-10-28",
+    migracao: "0331",
+    titulo: "Ortodontia: contenção, quem dá baixa e o prazo que conta as faltas",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A mensalidade da ortodontia é cobrada até a entrega das contenções. Na ficha do caso, o botão \"Entregar contenções\" finaliza o tratamento na hora: a mensalidade dos meses seguintes é cancelada e o paciente passa a \"Em acompanhamento\" (controle daqui a um intervalo de reavaliação). \"Dar alta\" encerra o acompanhamento.",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist", "dentist"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A contenção pode ser cobrada: na Configuração da Ortodontia (rede e unidade) você liga a cobrança, informa o valor e uma condição especial (ex.: em até 3x sem juros). Cada caso nasce com a cópia e pode ajustar. Ao entregar, a cobrança da contenção aparece em Mensalidades e entra na DRE na mesma linha da ortodontia (\"Ortodontia — mensalidades e contenções\"). O termo do paciente diz se a contenção é cobrada ou incluída.",
+        papeis: ["unit_manager", "clinical_coordinator", "franchisee", "franchisor_staff", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Quem dá baixa na mensalidade da ortodontia passou a ser o Gerente da unidade e o Financeiro (da Franqueadora), além do Admin. A Recepção continua vendo a situação de cada paciente (na ficha do caso, em Atenção e na tela Mensalidades, sem botões) para ajudar o Gerente e o Financeiro.",
+        papeis: ["unit_manager", "receptionist", "franchisee", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Cada falta a uma manutenção prorroga o término previsto em um intervalo de manutenção (30 dias por padrão) e o cronograma ganha a vaga correspondente no fim. A ficha do caso, a lista de casos e o Painel mostram a assiduidade do paciente (realizadas ÷ realizadas + faltas) e quantos dias as faltas prorrogaram. A falta fica registrada: para reagendar, basta agendar — o novo horário liga-se à próxima prevista.",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist", "dentist", "franchisee", "franchisor_staff"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O termo do tratamento ortodôntico e as condições no orçamento impresso passaram a dizer: a mensalidade vai até a entrega das contenções, que finaliza o tratamento e abre o acompanhamento; se a contenção é cobrada (valor e condição) ou incluída; e que cada falta prorroga o término previsto.",
+        papeis: ["unit_manager", "clinical_coordinator", "commercial_consultant", "receptionist"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.362.0",
     data: "2026-10-27",
     migracao: "0330",

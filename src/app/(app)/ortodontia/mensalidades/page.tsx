@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import { Wallet } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canManageOrtho, canSettleOrtho, canViewOrtho, canViewOrthoDashboard } from "@/lib/ortodontia/access";
+import { canManageOrtho, canSettleOrtho, canViewOrtho, canViewOrthoDashboard, canViewOrthoMoney } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
 import { loadCases, loadChargesByClinic } from "@/lib/ortodontia/db";
 import { chargeStatusToday } from "@/lib/ortodontia/regras";
 import {
+  ORTHO_CHARGE_KIND_LABELS,
   ORTHO_CHARGE_STATUS_LABELS,
   ORTHO_CHARGE_STATUSES,
   ORTHO_PAYMENT_METHOD_LABELS,
@@ -34,7 +35,9 @@ const CHARGE_TONE: Record<OrthoChargeStatus, string> = {
 
 /**
  * As mensalidades da ortodontia: gerar o mês, dar baixa, marcar as atrasadas.
- * Só quem tem `acao.ortodontia.financeiro` (decisão O2: a Recepção também).
+ * Decisão O2 (28/10/2026): a baixa é do Gerente e do Financeiro
+ * (`acao.ortodontia.financeiro`); a Recepção abre a tela SÓ PARA VER a
+ * situação de cada paciente, sem botões.
  */
 export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia/mensalidades">) {
   const session = await getSessionContext();
@@ -45,7 +48,8 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
     return Array.isArray(v) ? v[0] : v;
   };
   const scope = resolveOrthoScope(session, pick("unidade"));
-  if (!canSettleOrtho(session, scope.clinicId)) redirect("/ortodontia/atencao");
+  if (!canViewOrthoMoney(session, scope.clinicId)) redirect("/ortodontia/atencao");
+  const canSettle = canSettleOrtho(session, scope.clinicId);
 
   const situacao = pick("situacao");
   const status = (ORTHO_CHARGE_STATUSES as readonly string[]).includes(situacao ?? "") ? (situacao as OrthoChargeStatus) : null;
@@ -75,9 +79,15 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
         chapeu="Ortodontia"
         icone={Wallet}
         titulo="Mensalidades"
-        descricao="A mensalidade do tratamento ortodôntico é devida mesmo sem comparecer à manutenção. Cada uma entra na DRE em “Ortodontia — mensalidades” (1.1.04)."
+        descricao="A mensalidade do tratamento ortodôntico é devida mesmo sem comparecer à manutenção, até a entrega das contenções. Cada cobrança (mensalidade ou contenção) entra na DRE em “Ortodontia — mensalidades e contenções” (1.1.04)."
         voltar={canViewOrthoDashboard(session) ? { href: "/ortodontia", rotulo: "Painel" } : { href: "/ortodontia/atencao", rotulo: "Atenção" }}
       />
+
+      {!canSettle && (
+        <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+          Você vê a situação de cada paciente para ajudar; a baixa e a geração do mês são do <strong>Gerente da unidade</strong> e do <strong>Financeiro</strong>.
+        </p>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Recebido este mês</p><p className="text-2xl font-semibold tabular-nums">{formatBRL(soma(pagasMes))}</p><p className="text-[11px] text-muted-foreground">{pagasMes.length} mensalidade{pagasMes.length === 1 ? "" : "s"}</p></CardContent></Card>
@@ -85,9 +95,8 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
         <Card className={atrasadas.length ? "border-rose-300" : undefined}><CardContent className="p-4"><p className="text-xs text-muted-foreground">Atrasadas</p><p className="text-2xl font-semibold tabular-nums">{formatBRL(soma(atrasadas))}</p><p className="text-[11px] text-muted-foreground">{atrasadas.length}</p></CardContent></Card>
       </div>
 
-      {scope.clinicId ? (
-        <OrthoBillingToolbar clinicId={scope.clinicId} canManage={canManage} />
-      ) : (
+      {canSettle && scope.clinicId && <OrthoBillingToolbar clinicId={scope.clinicId} canManage={canManage} />}
+      {canSettle && !scope.clinicId && (
         <p className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
           Escolha uma unidade no filtro para gerar as mensalidades do mês.
         </p>
@@ -140,7 +149,10 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
                       {c ? <Link href={`/ortodontia/casos/${c.id}`} className="font-medium hover:underline">{c.client?.full_name ?? "—"}</Link> : "—"}
                       {scope.clinicIds === null && c?.clinic && <span className="block text-[11px] text-muted-foreground">{c.clinic.name}</span>}
                     </td>
-                    <td className="px-3 py-2">{formatIsoMonthBr(ch.reference_month)}</td>
+                    <td className="px-3 py-2">
+                      {formatIsoMonthBr(ch.reference_month)}
+                      {ch.kind === "contencao" && <span className="ml-1 rounded-full border border-sky-300 bg-sky-50 px-1.5 text-[10px] text-sky-800">{ORTHO_CHARGE_KIND_LABELS.contencao}</span>}
+                    </td>
                     <td className="px-3 py-2">{formatIsoDateBr(ch.due_date)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{formatBRL(ch.amount_cents)}</td>
                     <td className="px-3 py-2">
@@ -151,7 +163,7 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
                       {ch.status === "paga" && ch.paid_at && <span className="ml-1 text-[11px] text-muted-foreground">em {formatIsoDateBr(ch.paid_at.slice(0, 10))}</span>}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {ch.status !== "cancelada" && <OrthoChargeRow chargeId={ch.id} paid={ch.status === "paga"} canCancel={canManage} />}
+                      {canSettle && ch.status !== "cancelada" && <OrthoChargeRow chargeId={ch.id} paid={ch.status === "paga"} canCancel={canManage} />}
                     </td>
                   </tr>
                 );

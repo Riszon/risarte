@@ -40,6 +40,9 @@ export default async function OrtoContratoPage(props: PageProps<"/ortodontia/cas
     maintenanceIntervalDays: c.maintenance_interval_days,
     billingDay: c.billing_day,
     installationCents: c.installation_fee_cents,
+    retainerCharged: c.retainer_charged,
+    retainerFeeCents: c.retainer_fee_cents,
+    retainerTerms: c.retainer_terms,
   });
   const hoje = todayInBrazil();
 
@@ -75,11 +78,12 @@ export default async function OrtoContratoPage(props: PageProps<"/ortodontia/cas
             <tr className="border-b"><td className="py-1">Ortodontista responsável</td><td className="py-1 text-right">{c.orthodontist?.full_name ?? "a definir"}</td></tr>
             <tr className="border-b"><td className="py-1">Início</td><td className="py-1 text-right">{c.start_date ? formatIsoDateBr(c.start_date) : "a definir"}</td></tr>
             <tr className="border-b"><td className="py-1">Duração prevista</td><td className="py-1 text-right">{c.planned_months} meses{c.planned_end_date ? ` (término previsto ${formatIsoDateBr(c.planned_end_date)})` : ""}</td></tr>
-            <tr className="border-b"><td className="py-1">Manutenções</td><td className="py-1 text-right">a cada {c.maintenance_interval_days} dias</td></tr>
+            <tr className="border-b"><td className="py-1">Manutenções</td><td className="py-1 text-right">a cada {c.maintenance_interval_days} dias · cada falta prorroga o término em {c.maintenance_interval_days} dias</td></tr>
+            <tr className="border-b"><td className="py-1">Contenções (fim do tratamento)</td><td className="py-1 text-right tabular-nums">{c.retainer_charged && c.retainer_fee_cents > 0 ? `${formatBRL(c.retainer_fee_cents)} na entrega${c.retainer_terms ? ` · ${c.retainer_terms}` : ""}` : "incluídas, sem cobrança"}</td></tr>
             {c.installation_fee_cents > 0 && (
               <tr className="border-b"><td className="py-1">Instalação / documentação</td><td className="py-1 text-right tabular-nums">{formatBRL(c.installation_fee_cents)}</td></tr>
             )}
-            <tr className="font-bold"><td className="py-1">Mensalidade de tratamento</td><td className="py-1 text-right tabular-nums">{formatBRL(c.monthly_fee_cents)} · vencimento dia {c.billing_day}</td></tr>
+            <tr className="font-bold"><td className="py-1">Mensalidade de tratamento</td><td className="py-1 text-right tabular-nums">{formatBRL(c.monthly_fee_cents)} · vencimento dia {c.billing_day} · até a entrega das contenções</td></tr>
           </tbody>
         </table>
       </section>

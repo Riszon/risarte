@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canManageOrtho, canViewOrtho, canViewOrthoDashboard, orthoRestrictedToOwn } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
 import { groupByCase, loadCases, loadMaintenancesFor } from "@/lib/ortodontia/db";
-import { TIMELINESS_LABELS, caseTimeliness, nextMaintenance, progressPercent, type MaintenanceLike } from "@/lib/ortodontia/regras";
+import { TIMELINESS_LABELS, attendance, caseTimeliness, nextMaintenance, progressPercent, type MaintenanceLike } from "@/lib/ortodontia/regras";
 import { ORTHO_KIND_LABELS, ORTHO_STATUS_LABELS, ORTHO_STATUSES, type OrthoStatus } from "@/lib/ortodontia/constants";
 import { ORTHO_STATUS_TONE } from "@/components/ortodontia/ortho-client-card";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
@@ -112,8 +112,8 @@ export default async function OrtoCasosPage(props: PageProps<"/ortodontia/casos"
             appointment_date: m.appointment?.starts_at ? m.appointment.starts_at.slice(0, 10) : null,
           }));
           const next = nextMaintenance(ms, today);
-          const done = ms.filter((m) => m.status === "realizada").length;
-          const missed = ms.filter((m) => m.status === "faltou").length;
+          const a = attendance(ms, c.maintenance_interval_days);
+          const { done, missed } = a;
           const t = caseTimeliness(c, today);
           const pct = progressPercent(c, today);
           return (
@@ -135,10 +135,11 @@ export default async function OrtoCasosPage(props: PageProps<"/ortodontia/casos"
                         {ORTHO_KIND_LABELS[c.treatment_kind]}
                         {c.orthodontist ? ` · ${c.orthodontist.full_name}` : ""}
                         {c.start_date ? ` · início ${formatIsoDateBr(c.start_date)}` : ""}
-                        {c.planned_end_date ? ` · término previsto ${formatIsoDateBr(c.planned_end_date)}` : ""}
-                        {c.monthly_fee_cents > 0 ? ` · ${formatBRL(c.monthly_fee_cents)}/mês` : ""}
+                        {c.status === "em_tratamento" && c.planned_end_date ? ` · término previsto ${formatIsoDateBr(c.planned_end_date)}${c.extension_days > 0 ? ` (+${c.extension_days} dias pelas faltas)` : ""}` : ""}
+                        {c.retainer_delivered_at ? ` · contenções entregues ${formatIsoDateBr(c.retainer_delivered_at)}` : ""}
+                        {c.status === "em_tratamento" && c.monthly_fee_cents > 0 ? ` · ${formatBRL(c.monthly_fee_cents)}/mês` : ""}
                       </p>
-                      {pct !== null && (c.status === "em_tratamento" || c.status === "contencao") && (
+                      {pct !== null && c.status === "em_tratamento" && (
                         <div className="mt-1.5 h-1.5 w-full max-w-md rounded bg-muted" title={`${pct}% do prazo previsto`}>
                           <div className={cn("h-1.5 rounded", t === "atrasado" ? "bg-rose-500" : "bg-primary/70")} style={{ width: `${pct}%` }} />
                         </div>
@@ -148,6 +149,7 @@ export default async function OrtoCasosPage(props: PageProps<"/ortodontia/casos"
                       <span>
                         {done} realizada{done === 1 ? "" : "s"}
                         {missed > 0 && <span className="text-rose-700"> · {missed} falta{missed === 1 ? "" : "s"}</span>}
+                        {a.ratePercent !== null && <span className={a.ratePercent < 80 ? " text-amber-700" : undefined}> · {a.ratePercent}%</span>}
                       </span>
                       <span>{next ? `próx. ${formatIsoDateBr((next.appointment_date ?? next.planned_date ?? "").slice(0, 10))}` : "—"}</span>
                       <ChevronRight className="size-4" />

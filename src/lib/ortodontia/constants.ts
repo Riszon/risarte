@@ -13,13 +13,29 @@ export const ORTHO_STATUSES = [
 ] as const;
 export type OrthoStatus = (typeof ORTHO_STATUSES)[number];
 
+/**
+ * Decisão O1 (28/10/2026): entregar as contenções FINALIZA o tratamento; o
+ * caso segue em ACOMPANHAMENTO (`contencao`) até a alta (`finalizado`).
+ */
 export const ORTHO_STATUS_LABELS: Record<OrthoStatus, string> = {
   aguardando_inicio: "Aguardando início",
   em_tratamento: "Em tratamento",
-  contencao: "Em contenção",
-  finalizado: "Finalizado",
+  contencao: "Em acompanhamento",
+  finalizado: "Alta",
   interrompido: "Interrompido",
 };
+
+/** Uma linha a mais para quem precisa entender a situação. */
+export const ORTHO_STATUS_HINTS: Record<OrthoStatus, string> = {
+  aguardando_inicio: "caso aberto, aparelho ainda não instalado",
+  em_tratamento: "aparelho instalado; a mensalidade é cobrada",
+  contencao: "contenções entregues: tratamento finalizado, sem mensalidade",
+  finalizado: "acompanhamento encerrado",
+  interrompido: "desistência, transferência ou abandono",
+};
+
+/** Os casos cujo tratamento está FINALIZADO (contenções entregues ou alta). */
+export const ORTHO_FINISHED_STATUSES: OrthoStatus[] = ["contencao", "finalizado"];
 
 /** Os casos que ainda contam como "paciente de ortodontia" da unidade. */
 export const ORTHO_OPEN_STATUSES: OrthoStatus[] = [
@@ -80,6 +96,15 @@ export const ORTHO_CHARGE_STATUS_LABELS: Record<OrthoChargeStatus, string> = {
   cancelada: "Cancelada",
 };
 
+/** O que a cobrança é: a mensalidade do mês ou a contenção entregue (O1). */
+export const ORTHO_CHARGE_KINDS = ["mensalidade", "contencao"] as const;
+export type OrthoChargeKind = (typeof ORTHO_CHARGE_KINDS)[number];
+
+export const ORTHO_CHARGE_KIND_LABELS: Record<OrthoChargeKind, string> = {
+  mensalidade: "Mensalidade",
+  contencao: "Contenção",
+};
+
 /** Formas de pagamento da mensalidade (as mesmas do comercial + dinheiro). */
 export const ORTHO_PAYMENT_METHODS = [
   "pix",
@@ -105,8 +130,13 @@ export const ORTHO_REVENUE_ACCOUNT = "1.1.04";
 export const ORTHO_MANAGER_ROLES: UserRole[] = ["unit_manager", "clinical_coordinator"];
 /** Quem registra a manutenção e a evolução — espelho de `ortho_can_evolve`. */
 export const ORTHO_CLINICAL_ROLES: UserRole[] = ["dentist", "clinical_coordinator"];
-/** Quem dá baixa na mensalidade — espelho de `ortho_can_settle`. */
-export const ORTHO_SETTLE_ROLES: UserRole[] = ["unit_manager", "receptionist", "franchisee"];
+/**
+ * Quem dá baixa na mensalidade NA UNIDADE — espelho de `ortho_can_settle`
+ * (decisão O2, 28/10/2026: Gerente e Financeiro; a Recepção só vê).
+ */
+export const ORTHO_SETTLE_ROLES: UserRole[] = ["unit_manager"];
+/** Quem VÊ a situação financeira sem dar baixa (a Recepção, para ajudar). */
+export const ORTHO_MONEY_VIEW_ROLES: UserRole[] = ["unit_manager", "receptionist", "franchisee"];
 
 /** Padrões da rede quando ninguém configurou nada. */
 export const ORTHO_DEFAULTS = {
@@ -115,4 +145,6 @@ export const ORTHO_DEFAULTS = {
   reevaluationIntervalMonths: 6,
   finishToleranceDays: 30,
   billingDay: 10,
+  retainerChargeEnabled: false,
+  retainerFeeCents: 0,
 } as const;

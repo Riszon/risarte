@@ -93,6 +93,10 @@ export async function createOrthoCase(formData: FormData): Promise<OrthoActionRe
     p_negotiation_id: uuidOrNull(formData, "negotiation_id"),
     p_notes: str(formData, "notes") || null,
     p_start_now: str(formData, "start_now") === "on",
+    // O1: a contenção combinada (sem o campo no formulário, vale a configuração).
+    p_retainer_charged: formData.has("retainer_charged_present") ? str(formData, "retainer_charged") === "on" : null,
+    p_retainer_fee_cents: formData.has("retainer_fee") ? cents(formData, "retainer_fee") : null,
+    p_retainer_terms: str(formData, "retainer_terms") || null,
   });
   if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
 
@@ -122,6 +126,9 @@ export async function updateOrthoCase(caseId: string, formData: FormData): Promi
     p_maintenance_procedure_id: uuidOrNull(formData, "maintenance_procedure_id"),
     p_next_reevaluation_date: dateOrNull(formData, "next_reevaluation_date"),
     p_notes: str(formData, "notes") || null,
+    p_retainer_charged: str(formData, "retainer_charged") === "on",
+    p_retainer_fee_cents: cents(formData, "retainer_fee"),
+    p_retainer_terms: str(formData, "retainer_terms") || null,
   });
   if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
   await logAudit({ action: "update", entityType: "ortho_case", entityId: caseId, clinicId: c.clinic_id as string });
@@ -154,6 +161,44 @@ export async function setOrthoStatus(
     entityId: caseId,
     clinicId: c.clinic_id as string,
     details: { status },
+  });
+  refresh(caseId, c.client_id as string);
+  return { ok: true, caseId };
+}
+
+/**
+ * O1: entregar as contenções = finalizar o tratamento. A mensalidade para, a
+ * contenção pode ser cobrada (valor e condição combinados no caso, ajustáveis
+ * na hora) e o caso segue em acompanhamento.
+ */
+export async function deliverOrthoRetainers(
+  caseId: string,
+  input: { date?: string; charge: boolean; amount?: string; reason?: string }
+): Promise<OrthoActionResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: c } = await supabase.from("ortho_cases").select("id, clinic_id, client_id").eq("id", caseId).maybeSingle();
+  if (!c) return { ok: false, error: "Caso não encontrado." };
+  if (!canManageOrtho(session, c.clinic_id as string)) return { ok: false, error: "Só o Gerente e o Coordenador registram a entrega das contenções." };
+
+  const amount = input.amount !== undefined && input.amount.trim() !== "" ? (parseBRLToCents(input.amount) ?? 0) : null;
+  if (input.charge && amount !== null && amount <= 0) {
+    return { ok: false, error: "Informe o valor da contenção (ou desmarque a cobrança)." };
+  }
+  const { error } = await supabase.rpc("ortho_deliver_retainers", {
+    p_case_id: caseId,
+    p_date: input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : null,
+    p_charge: input.charge,
+    p_amount_cents: input.charge ? amount : null,
+    p_reason: input.reason?.trim() || null,
+  });
+  if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
+  await logAudit({
+    action: "update",
+    entityType: "ortho_case",
+    entityId: caseId,
+    clinicId: c.clinic_id as string,
+    details: { status: "contencao", retainer_charged: input.charge },
   });
   refresh(caseId, c.client_id as string);
   return { ok: true, caseId };
@@ -363,6 +408,9 @@ export async function saveOrthoSettings(clinicId: string | null, formData: FormD
     p_tolerance_days: int(formData, "finish_tolerance_days", 30),
     p_maintenance_procedure_id: uuidOrNull(formData, "maintenance_procedure_id"),
     p_billing_day: int(formData, "billing_day", 10),
+    p_retainer_charge_enabled: str(formData, "retainer_charge_enabled") === "on",
+    p_retainer_fee_cents: cents(formData, "retainer_fee"),
+    p_retainer_terms: str(formData, "retainer_terms") || null,
   });
   if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
   await logAudit({ action: "update", entityType: "ortho_settings", entityId: clinicId ?? "rede", clinicId: clinicId ?? undefined });

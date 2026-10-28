@@ -39,7 +39,7 @@ export function OrthoSettingsEditor({
         <Card>
           <CardHeader className="gap-1"><CardTitle className="text-base">Padrão da rede (só leitura)</CardTitle></CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Mensalidade {formatBRL(network.monthly_fee_cents)} · {network.planned_months} meses · manutenção a cada {network.maintenance_interval_days} dias · reavaliação a cada {network.reevaluation_interval_months} meses · tolerância {network.finish_tolerance_days} dias · vencimento dia {network.billing_day}.
+            Mensalidade {formatBRL(network.monthly_fee_cents)} · {network.planned_months} meses · manutenção a cada {network.maintenance_interval_days} dias · reavaliação a cada {network.reevaluation_interval_months} meses · tolerância {network.finish_tolerance_days} dias · vencimento dia {network.billing_day} · contenção {network.retainer_charge_enabled ? `cobrada (${formatBRL(network.retainer_fee_cents)})` : "incluída"}.
           </CardContent>
         </Card>
       )}
@@ -79,6 +79,7 @@ function SettingsForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [chargeRetainer, setChargeRetainer] = useState(row?.retainer_charge_enabled ?? false);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -136,6 +137,28 @@ function SettingsForm({
             </select>
             <p className="text-[11px] text-muted-foreground">O valor do repasse do ortodontista vem da tabela de repasse deste procedimento (Financeiro → Repasses).</p>
           </div>
+
+          <div className="space-y-2 rounded-lg border border-dashed p-3 sm:col-span-2 lg:col-span-4">
+            <p className="text-sm font-medium">A contenção no fim do tratamento</p>
+            <p className="text-[11px] text-muted-foreground">
+              A mensalidade é cobrada até a <strong>entrega das contenções</strong>; a entrega finaliza o tratamento e o paciente passa ao acompanhamento. A contenção pode ser cobrada à parte — e o que estiver aqui sai no termo do paciente.
+            </p>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="retainer_charge_enabled" checked={chargeRetainer} onChange={(e) => setChargeRetainer(e.target.checked)} className="size-4" />
+              Cobrar a contenção na entrega
+            </label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label htmlFor={`ret-fee-${clinicId}`}>Valor da contenção (R$)</Label>
+                <Input id={`ret-fee-${clinicId}`} name="retainer_fee" inputMode="decimal" disabled={!chargeRetainer} defaultValue={row ? (row.retainer_fee_cents / 100).toFixed(2).replace(".", ",") : ""} placeholder="350,00" />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor={`ret-terms-${clinicId}`}>Condição especial (sai no termo)</Label>
+                <Input id={`ret-terms-${clinicId}`} name="retainer_terms" disabled={!chargeRetainer} defaultValue={row?.retainer_terms ?? ""} placeholder="Ex.: em até 3x sem juros; isenta para quem pagou todas as mensalidades em dia" />
+              </div>
+            </div>
+          </div>
+
           <div className="sm:col-span-2 lg:col-span-4">
             <Button type="submit" size="sm" disabled={isPending}>Salvar</Button>
           </div>

@@ -62,9 +62,18 @@ export function monthStart(iso: string): string {
 // Cronograma
 // ---------------------------------------------------------------------------
 
-/** A data prevista de término = início + meses previstos. */
-export function plannedEndDate(startDate: string, plannedMonths: number): string {
-  return addMonths(startDate, Math.max(0, plannedMonths));
+/**
+ * A data prevista de término = início + meses previstos + a prorrogação das
+ * faltas (decisão O3: cada falta prorroga um intervalo de manutenção — o
+ * banco guarda `extension_days` = faltas × intervalo).
+ */
+export function plannedEndDate(startDate: string, plannedMonths: number, extensionDays = 0): string {
+  return addDays(addMonths(startDate, Math.max(0, plannedMonths)), Math.max(0, extensionDays));
+}
+
+/** Quantos dias as faltas prorrogam o término (O3). */
+export function extensionForMisses(missed: number, intervalDays: number): number {
+  return Math.max(0, missed) * Math.max(0, intervalDays);
 }
 
 /**
@@ -94,9 +103,12 @@ export function maintenanceSchedule(
 export type OrthoCaseLike = {
   status: OrthoStatus;
   start_date: string | null;
+  /** Já inclui a prorrogação das faltas (o banco calcula). */
   planned_end_date: string | null;
+  /** Em `contencao` e `finalizado`: a data em que o tratamento terminou (entrega das contenções). */
   finished_at: string | null;
   next_reevaluation_date?: string | null;
+  extension_days?: number | null;
 };
 
 export type Timeliness =
@@ -115,9 +127,10 @@ export const TIMELINESS_LABELS: Record<Timeliness, string> = {
 };
 
 /**
- * No prazo × atrasado (decisão O3): em tratamento (ou contenção) passou da
- * data prevista de término + tolerância = atrasado. Finalizado compara a data
- * em que terminou com a prevista + tolerância.
+ * No prazo × atrasado (decisão O3): em tratamento, passou da data prevista de
+ * término (que já carrega as faltas) + tolerância = atrasado. Tratamento
+ * finalizado (contenções entregues — `contencao` — ou alta) compara a data em
+ * que terminou com a prevista + tolerância.
  */
 export function caseTimeliness(
   c: OrthoCaseLike,
@@ -126,15 +139,45 @@ export function caseTimeliness(
 ): Timeliness {
   if (!c.planned_end_date) return "nao_se_aplica";
   const limit = addDays(c.planned_end_date, Math.max(0, toleranceDays));
-  if (c.status === "em_tratamento" || c.status === "contencao") {
+  if (c.status === "em_tratamento") {
     return daysBetween(limit, today) > 0 ? "atrasado" : "no_prazo";
   }
-  if (c.status === "finalizado" && c.finished_at) {
+  if ((c.status === "finalizado" || c.status === "contencao") && c.finished_at) {
     return daysBetween(limit, c.finished_at.slice(0, 10)) > 0
       ? "finalizado_atrasado"
       : "finalizado_no_prazo";
   }
   return "nao_se_aplica";
+}
+
+/** O tratamento terminou (contenções entregues ou alta)? */
+export function isFinished(c: Pick<OrthoCaseLike, "status">): boolean {
+  return c.status === "contencao" || c.status === "finalizado";
+}
+
+export type Attendance = {
+  done: number;
+  missed: number;
+  /** % de comparecimento entre o que aconteceu (realizadas ÷ (realizadas + faltas)); nulo sem histórico. */
+  ratePercent: number | null;
+  /** Dias que as faltas prorrogaram o término (O3). */
+  extensionDays: number;
+};
+
+/** A assiduidade do paciente: o que ela custou ao prazo e quanto ele compareceu. */
+export function attendance(
+  maintenances: { status: OrthoMaintenanceStatus }[],
+  intervalDays: number = ORTHO_DEFAULTS.maintenanceIntervalDays
+): Attendance {
+  const done = maintenances.filter((m) => m.status === "realizada").length;
+  const missed = maintenances.filter((m) => m.status === "faltou").length;
+  const happened = done + missed;
+  return {
+    done,
+    missed,
+    ratePercent: happened > 0 ? Math.round((done / happened) * 100) : null,
+    extensionDays: extensionForMisses(missed, intervalDays),
+  };
 }
 
 /** Quantos % do prazo previsto já passaram (para a barra da ficha). */
@@ -202,7 +245,10 @@ export function attentionReasons(input: {
 }): AttentionReason[] {
   const { caso, maintenances, today } = input;
   const reasons: AttentionReason[] = [];
-  const active = caso.status === "em_tratamento" || caso.status === "contencao";
+  // Em tratamento pede agendamento e prazo; em acompanhamento (contenções
+  // entregues) só o que foi previsto à mão e a reavaliação (o controle).
+  const inTreatment = caso.status === "em_tratamento";
+  const active = inTreatment || caso.status === "contencao";
 
   if (caso.status === "aguardando_inicio") {
     const scheduled = maintenances.some(
@@ -232,14 +278,14 @@ export function attentionReasons(input: {
         daysBetween(m.planned_date, today) > MAINTENANCE_GRACE_DAYS
     );
     if (overdue && !hasFuture) reasons.push("manutencao_vencida");
-    else if (!hasFuture && caso.status === "em_tratamento" && !reasons.includes("faltou")) {
+    else if (!hasFuture && inTreatment && !reasons.includes("faltou")) {
       reasons.push("sem_agendamento");
     }
 
     if (caso.next_reevaluation_date && daysBetween(caso.next_reevaluation_date, today) > 0) {
       reasons.push("reavaliacao_vencida");
     }
-    if (caseTimeliness(caso, today, input.toleranceDays) === "atrasado") {
+    if (inTreatment && caseTimeliness(caso, today, input.toleranceDays) === "atrasado") {
       reasons.push("termino_atrasado");
     }
   }
@@ -340,12 +386,12 @@ export function monthlyEvolution(
       if (!s) continue;
       const f = c.finished_at?.slice(0, 10) ?? null;
       if (daysBetween(ms, s) >= 0 && daysBetween(s, endOfMonth) >= 0) started += 1;
-      if (f && daysBetween(ms, f) >= 0 && daysBetween(f, endOfMonth) >= 0 && c.status === "finalizado") {
+      if (f && daysBetween(ms, f) >= 0 && daysBetween(f, endOfMonth) >= 0 && isFinished(c)) {
         finished += 1;
       }
       const startedBy = daysBetween(s, endOfMonth) >= 0;
       const stillOpen =
-        c.status === "em_tratamento" || c.status === "contencao"
+        c.status === "em_tratamento"
           ? true
           : f
             ? daysBetween(endOfMonth, f) > 0
@@ -402,6 +448,10 @@ export type OrthoTerms = {
   maintenanceIntervalDays: number;
   billingDay: number;
   installationCents?: number | null;
+  /** O1: a contenção é cobrada? quanto? em que condição? */
+  retainerCharged?: boolean | null;
+  retainerFeeCents?: number | null;
+  retainerTerms?: string | null;
 };
 
 function brl(cents: number): string {
@@ -424,7 +474,7 @@ export function orthoClauses(t: OrthoTerms): string[] {
     );
   }
   out.push(
-    `O paciente paga uma mensalidade de tratamento ortodôntico de ${brl(t.monthlyCents)}, com vencimento todo dia ${t.billingDay}, durante o tratamento. A mensalidade remunera o acompanhamento contínuo do caso e não é um procedimento avulso.`
+    `O paciente paga uma mensalidade de tratamento ortodôntico de ${brl(t.monthlyCents)}, com vencimento todo dia ${t.billingDay}, do início do tratamento até a entrega das contenções. A mensalidade remunera o acompanhamento contínuo do caso e não é um procedimento avulso.`
   );
   out.push(
     `A mensalidade é devida independentemente do comparecimento às manutenções: a falta à manutenção não suspende nem reduz a mensalidade do mês.`
@@ -433,11 +483,21 @@ export function orthoClauses(t: OrthoTerms): string[] {
     `As manutenções acontecem, em média, a cada ${t.maintenanceIntervalDays} dias, em horário agendado com a unidade. O paciente deve comunicar a impossibilidade de comparecer com antecedência para reagendar.`
   );
   out.push(
+    `Cada falta a uma manutenção prorroga a data prevista de término em ${t.maintenanceIntervalDays} dias (um intervalo de manutenção), porque a etapa não realizada precisa ser refeita. A assiduidade do paciente (manutenções realizadas e faltas) fica registrada no caso e é considerada na avaliação do prazo.`
+  );
+  out.push(
     `Atrasos na mensalidade seguem a regra de multa e juros da unidade; a inadimplência pode suspender o atendimento até a regularização, mantendo-se a cobrança dos meses em tratamento.`
   );
   out.push(
-    `Ao término do tratamento ativo, a fase de contenção segue as orientações do ortodontista; a mensalidade de tratamento encerra com a finalização registrada pela unidade.`
+    `A entrega das contenções encerra o tratamento ativo e a cobrança da mensalidade: a partir dela o tratamento é considerado finalizado e o paciente passa ao acompanhamento ortodôntico, com controles periódicos conforme a orientação do ortodontista, sem mensalidade.`
   );
+  if (t.retainerCharged && (t.retainerFeeCents ?? 0) > 0) {
+    out.push(
+      `As contenções são cobradas à parte, no valor de ${brl(t.retainerFeeCents ?? 0)}, na entrega${t.retainerTerms?.trim() ? `, nas seguintes condições: ${t.retainerTerms.trim()}` : ""}.`
+    );
+  } else {
+    out.push(`As contenções estão incluídas no tratamento, sem cobrança adicional na entrega.`);
+  }
   return out;
 }
 
@@ -448,9 +508,10 @@ export function caseSummary(c: {
   planned_end_date: string | null;
 }): string {
   const kind = ORTHO_KIND_LABELS[c.treatment_kind];
-  if (c.planned_end_date && (c.status === "em_tratamento" || c.status === "contencao")) {
+  if (c.planned_end_date && c.status === "em_tratamento") {
     const [y, m] = parts(c.planned_end_date);
     return `${kind} · término previsto ${String(m).padStart(2, "0")}/${y}`;
   }
+  if (c.status === "contencao") return `${kind} · em acompanhamento`;
   return kind;
 }

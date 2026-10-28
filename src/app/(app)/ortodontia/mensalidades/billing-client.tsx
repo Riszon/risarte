@@ -63,8 +63,8 @@ export function OrthoBillingToolbar({ clinicId, canManage }: { clinicId: string;
         </Button>
       )}
       <p className="text-[11px] text-muted-foreground">
-        Gerar cria uma cobrança por caso <strong>em tratamento</strong> com mensalidade (não duplica; contenção e aguardando início não cobram).
-        Marcar atrasadas registra o atraso do que venceu sem pagamento.
+        Gerar cria uma cobrança por caso <strong>em tratamento</strong> com mensalidade (não duplica; a mensalidade vai até a entrega das contenções — em acompanhamento e aguardando início não cobram).
+        A cobrança da contenção nasce na ficha do caso, ao entregar. Marcar atrasadas registra o atraso do que venceu sem pagamento.
       </p>
     </div>
   );
@@ -83,7 +83,7 @@ export function OrthoChargeRow({ chargeId, paid, canCancel }: { chargeId: string
       const r = await markOrthoChargePaid(chargeId, true, method);
       if (!r.ok) toast.error(r.error ?? "Não foi possível dar baixa.");
       else {
-        toast.success("Mensalidade paga! 🎉");
+        toast.success("Cobrança paga! 🎉");
         setOpen(null);
         router.refresh();
       }
@@ -133,7 +133,7 @@ export function OrthoChargeRow({ chargeId, paid, canCancel }: { chargeId: string
       <Dialog open={open === "pagar"} onOpenChange={(o) => !o && setOpen(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Dar baixa na mensalidade</DialogTitle>
+            <DialogTitle>Dar baixa na cobrança</DialogTitle>
             <DialogDescription>Como o paciente pagou? A baixa entra no fluxo de caixa de hoje.</DialogDescription>
           </DialogHeader>
           <select value={method} onChange={(e) => setMethod(e.target.value)} className={selectClass}>

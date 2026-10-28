@@ -36,7 +36,7 @@ export async function condicoesOrtodonticas(
 
   const { data: caso } = await supabase
     .from("ortho_cases")
-    .select("treatment_kind, monthly_fee_cents, planned_months, maintenance_interval_days, billing_day, installation_fee_cents")
+    .select("treatment_kind, monthly_fee_cents, planned_months, maintenance_interval_days, billing_day, installation_fee_cents, retainer_charged, retainer_fee_cents, retainer_terms")
     .eq("client_id", input.clientId)
     .in("status", ["aguardando_inicio", "em_tratamento", "contencao"])
     .order("created_at", { ascending: false })
@@ -51,6 +51,9 @@ export async function condicoesOrtodonticas(
       maintenanceIntervalDays: Number(caso.maintenance_interval_days ?? 30),
       billingDay: Number(caso.billing_day ?? 10),
       installationCents: Number(caso.installation_fee_cents ?? 0),
+      retainerCharged: caso.retainer_charged === true,
+      retainerFeeCents: Number(caso.retainer_fee_cents ?? 0),
+      retainerTerms: (caso.retainer_terms as string | null) ?? null,
     };
     return { clausulas: orthoClauses(termos), origem: "caso", termos };
   }
@@ -60,7 +63,15 @@ export async function condicoesOrtodonticas(
   });
   if (cfgErro) return null;
   const s = (Array.isArray(cfg) ? cfg[0] : cfg) as
-    | { monthly_fee_cents: number; planned_months: number; maintenance_interval_days: number; billing_day: number }
+    | {
+        monthly_fee_cents: number;
+        planned_months: number;
+        maintenance_interval_days: number;
+        billing_day: number;
+        retainer_charge_enabled?: boolean | null;
+        retainer_fee_cents?: number | null;
+        retainer_terms?: string | null;
+      }
     | null
     | undefined;
   if (!s) return null;
@@ -71,6 +82,9 @@ export async function condicoesOrtodonticas(
     maintenanceIntervalDays: Number(s.maintenance_interval_days ?? 30),
     billingDay: Number(s.billing_day ?? 10),
     installationCents: 0,
+    retainerCharged: s.retainer_charge_enabled === true,
+    retainerFeeCents: Number(s.retainer_fee_cents ?? 0),
+    retainerTerms: s.retainer_terms ?? null,
   };
   return { clausulas: orthoClauses(termos), origem: "padrao", termos };
 }

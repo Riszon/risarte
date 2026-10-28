@@ -25,7 +25,16 @@ export function NovoCasoForm({
   clientId: string;
   negotiationId: string | null;
   today: string;
-  defaults: { monthlyCents: number; plannedMonths: number; intervalDays: number; billingDay: number; procedureId: string | null };
+  defaults: {
+    monthlyCents: number;
+    plannedMonths: number;
+    intervalDays: number;
+    billingDay: number;
+    procedureId: string | null;
+    retainerCharged: boolean;
+    retainerFeeCents: number;
+    retainerTerms: string | null;
+  };
   orthodontists: StaffOption[];
   procedures: ProcedureOption[];
 }) {
@@ -35,6 +44,7 @@ export function NovoCasoForm({
   const [months, setMonths] = useState(defaults.plannedMonths);
   const [interval, setInterval] = useState(defaults.intervalDays);
   const [startNow, setStartNow] = useState(true);
+  const [chargeRetainer, setChargeRetainer] = useState(defaults.retainerCharged);
 
   const end = start && months > 0 ? plannedEndDate(start, months) : null;
   const previstas = start && end ? maintenanceSchedule(start, end, interval).length : 0;
@@ -120,7 +130,7 @@ export function NovoCasoForm({
       <Card>
         <CardHeader className="gap-1">
           <CardTitle className="text-base">A mensalidade</CardTitle>
-          <p className="text-sm text-muted-foreground">Não é procedimento: é devida todo mês, com ou sem comparecimento à manutenção. Entra na DRE em “Ortodontia — mensalidades”.</p>
+          <p className="text-sm text-muted-foreground">Não é procedimento: é devida todo mês, com ou sem comparecimento à manutenção, até a entrega das contenções. Entra na DRE em “Ortodontia — mensalidades e contenções”.</p>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1">
@@ -135,6 +145,28 @@ export function NovoCasoForm({
             <Label htmlFor="installation_fee">Instalação / documentação (R$, informativo)</Label>
             <Input id="installation_fee" name="installation_fee" inputMode="decimal" placeholder="0,00" />
             <p className="text-[11px] text-muted-foreground">A instalação é cobrada pelo plano/venda; aqui só aparece no termo.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="gap-1">
+          <CardTitle className="text-base">A contenção</CardTitle>
+          <p className="text-sm text-muted-foreground">A entrega das contenções finaliza o tratamento e encerra a mensalidade. Combine aqui se a contenção é cobrada — isto sai no termo.</p>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-3">
+          <input type="hidden" name="retainer_charged_present" value="1" />
+          <label className="flex items-center gap-2 text-sm sm:col-span-3">
+            <input type="checkbox" name="retainer_charged" checked={chargeRetainer} onChange={(e) => setChargeRetainer(e.target.checked)} className="size-4" />
+            Cobrar a contenção na entrega
+          </label>
+          <div className="space-y-1">
+            <Label htmlFor="retainer_fee">Valor da contenção (R$)</Label>
+            <Input id="retainer_fee" name="retainer_fee" inputMode="decimal" disabled={!chargeRetainer} defaultValue={(defaults.retainerFeeCents / 100).toFixed(2).replace(".", ",")} placeholder="350,00" />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="retainer_terms">Condição especial</Label>
+            <Input id="retainer_terms" name="retainer_terms" disabled={!chargeRetainer} defaultValue={defaults.retainerTerms ?? ""} placeholder="Ex.: em até 3x sem juros" />
           </div>
         </CardContent>
       </Card>

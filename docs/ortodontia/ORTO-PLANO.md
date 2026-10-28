@@ -40,9 +40,17 @@ Um caso = um paciente, numa unidade, com um ortodontista responsável.
 Código **ORT-000001**. Campos que importam:
 
 - **Tipo:** aparelho fixo, alinhadores, aparelho removível, contenção, outro.
-- **Situação:** `aguardando_inicio` → `em_tratamento` → (`contencao`) →
-  `finalizado`; ou `interrompido` (desistência, transferência, abandono).
-  Só **um caso aberto por paciente** (índice parcial).
+- **Situação:** `aguardando_inicio` → `em_tratamento` → `contencao` (**= contenções
+  entregues: tratamento finalizado, em acompanhamento**, O1/0331) →
+  `finalizado` (**alta**); ou `interrompido` (desistência, transferência,
+  abandono). Só **um caso aberto por paciente** (índice parcial; `contencao`
+  ainda conta como aberto — o paciente segue "em ortodontia" sem mensalidade).
+- **Contenção (O1):** `retainer_charged`, `retainer_fee_cents`,
+  `retainer_terms` (cópia da configuração ao abrir), `retainer_delivered_at`
+  (= `finished_at`), `discharged_at` (alta). `ortho_deliver_retainers` faz a
+  entrega.
+- **Faltas (O3):** `extension_days` = faltas × intervalo, mantido pelo gatilho
+  `ortho_maintenances_extension`; `planned_end_date` já o soma.
 - **Cronograma:** data de início, **meses previstos**, **data prevista de
   término** (= início + meses), **intervalo das manutenções** (padrão 30 dias),
   próxima **reavaliação** (padrão a cada 6 meses).
@@ -135,9 +143,10 @@ O Admin passa por cima de tudo. A **barreira real** é o banco: as funções
 conferem o papel (`ortho_can_manage`, `ortho_can_settle`, …) e as regras de
 linha deixam ler só quem é da unidade (ou da rede).
 
-> ⚠️ Decisão deixada para o dono: a Recepção **dá baixa** na mensalidade
-> (nasce ligada em `acao.ortodontia.financeiro`, como no PPR+). Se ela não
-> deve ver dinheiro nenhum, é só desligar na tela de Permissões.
+> ✅ Decidido (O2, 28/10/2026, 0331): a baixa é do **Gerente** e do
+> **Financeiro da Franqueadora** (`acao.ortodontia.financeiro`: `unit_manager`,
+> `franchisor_staff`, `finance_franchisor`). A Recepção e o Franqueado **veem**
+> a situação financeira (`canViewOrthoMoney`), sem dar baixa.
 
 ---
 
@@ -146,6 +155,7 @@ linha deixam ler só quem é da unidade (ou da rede).
 | Fase | Entrega |
 |---|---|
 | **ORTO1** ✅ | Fundação: migração 0329 (tabelas, RLS, funções, razão, repasse, conta 1.1.04, permissões); regras puras + testes; Painel, Atenção, Casos (lista, novo, ficha, termo), Mensalidades, Configuração; selo no prontuário; bloco na proposta; menu; manual; novidades |
+| **ORTO1b** ✅ | Decisões O1/O2/O3 do dono (28/10/2026, migração 0331, v0.363.0): entrega das contenções finaliza + acompanhamento + contenção cobrável; baixa do Gerente e do Financeiro; faltas prorrogam o término + assiduidade; termo atualizado |
 | **ORTO2** | Avisos no sino: manutenção vencida sem agendamento, faltou, reavaliação vencida, mensalidade atrasada (rotina por unidade, como `notify_treatment_alerts`) |
 | **ORTO3** | Indicadores de Metas: pacientes em tratamento, novos casos, finalizados no prazo, receita de ortodontia (recorte do `1.1.04`) — e o modelo pronto "Meta de Ortodontia" passa a usar o caso |
 | **ORTO4** | Cobrança recorrente da mensalidade pelo ASAAS (junto com o lote das integrações) e a mensalidade em aberto na projeção do fluxo de caixa |
@@ -157,9 +167,9 @@ linha deixam ler só quem é da unidade (ou da rede).
 
 | # | Pergunta | O que foi feito |
 |---|---|---|
-| **O1** | A mensalidade é cobrada enquanto o caso está em **contenção**? | **Não**: só `em_tratamento` gera cobrança. Contenção é acompanhamento. |
-| **O2** | Quem recebe a mensalidade na unidade? | Recepção, Gerente (e Franqueado/Financeiro da Franqueadora). Desligável na matriz. |
-| **O3** | "Atrasado" = passou da data prevista de término + tolerância (30 dias, configurável) e ainda `em_tratamento`. | Sim. "No prazo" = antes disso. |
+| **O1** | A mensalidade é cobrada enquanto o caso está em **contenção**? | **Decidido pelo dono em 28/10/2026 (0331):** a mensalidade é cobrada **até a entrega das contenções**. A entrega **finaliza o tratamento** (`finished_at` = data da entrega) e o caso passa a **acompanhamento** (`contencao` ganhou este sentido). A contenção **pode ser cobrada**: liga/desliga, valor e condição especial na configuração (rede → unidade), copiados para o caso ao abrir; ao entregar nasce uma `ortho_charges` de `kind = 'contencao'`, na mesma conta 1.1.04 (renomeada "Ortodontia — mensalidades e contenções"). Tudo escrito no termo. |
+| **O2** | Quem recebe a mensalidade na unidade? | **Decidido pelo dono em 28/10/2026 (0331):** **Gerente da unidade e Financeiro** (da Franqueadora), além do Admin e da Franqueadora/Rede. A Recepção **só vê** a situação do paciente (ficha, Atenção, Mensalidades sem botões). Recepção e Franqueado saíram da guarda `ortho_can_settle` e da matriz. |
+| **O3** | "Atrasado" = passou da data prevista de término + tolerância (30 dias, configurável) e ainda `em_tratamento`. | **Mantido pelo dono em 28/10/2026 (0331)**, com dois acréscimos: **cada falta prorroga o término previsto em um intervalo de manutenção** (`extension_days` = faltas × intervalo, por gatilho; o cronograma ganha a vaga no fim) e as telas mostram a **assiduidade** (realizadas ÷ realizadas + faltas) ao lado de "em tratamento"/"atrasado". No termo. |
 | **O4** | Falta = agendamento com o ortodontista marcado como **não compareceu**; manutenção **vencida** = prevista há mais de 7 dias sem agendamento. | Sim; os 7 dias são regra escrita (`regras.ts`). |
 | **O5** | O repasse do ortodontista usa a **tabela de repasse** do procedimento de manutenção (por nível ou individual). Sem tabela, registra **zero** para alguém perceber — a mesma regra do repasse por sessão. | Sim. |
 | **O6** | A instalação do aparelho (valor de entrada) segue pelo plano/venda normal, em `1.1.01`; só a **mensalidade** vai para `1.1.04`. | Sim. |

@@ -41,11 +41,13 @@ import {
   ORIGIN_LABELS,
   TIMELINESS_LABELS,
   addMonths,
+  attendance,
   attentionReasons,
   caseTimeliness,
   chargeStatusToday,
   daysBetween,
   finishForecast,
+  isFinished,
   monthlyEvolution,
   originOf,
   type MaintenanceLike,
@@ -207,7 +209,8 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
 
   // -- Movimento (período) ---------------------------------------------------
   const novos = cases.filter((c) => inPeriod(c.start_date ?? c.created_at));
-  const finalizados = cases.filter((c) => c.status === "finalizado" && inPeriod(c.finished_at));
+  // Finalizado = contenções entregues (O1): conta o `contencao` e a alta.
+  const finalizados = cases.filter((c) => isFinished(c) && inPeriod(c.finished_at));
   const finalizadosNoPrazo = finalizados.filter((c) => caseTimeliness(c, today) === "finalizado_no_prazo");
   const interrompidos = cases.filter((c) => c.status === "interrompido" && inPeriod(c.interrupted_at));
   const faltas = cases
@@ -222,6 +225,9 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
     (s, c) => s + (maintByCase.get(c.id) ?? []).filter((m) => m.status === "realizada" && inPeriod(m.done_at)).length,
     0
   );
+  const faltasTotal = faltas.reduce((s, x) => s + x.n, 0);
+  const assiduidadeGeral = realizadas + faltasTotal > 0 ? Math.round((realizadas / (realizadas + faltasTotal)) * 100) : null;
+  const assidOf = (c: OrthoCaseRow) => attendance(maintByCase.get(c.id) ?? [], c.maintenance_interval_days);
 
   // -- Atenção -----------------------------------------------------------------
   const atencao = abertos
@@ -274,7 +280,7 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
               emTratamento: tr.length,
               atrasados: tr.filter((c) => caseTimeliness(c, today) === "atrasado").length,
               novos: mine.filter((c) => inPeriod(c.start_date ?? c.created_at)).length,
-              finalizados: mine.filter((c) => c.status === "finalizado" && inPeriod(c.finished_at)).length,
+              finalizados: mine.filter((c) => isFinished(c) && inPeriod(c.finished_at)).length,
               atencao: atencao.filter((x) => x.c.clinic_id === id).length,
               receita: receita.filter((ch) => ch.clinic_id === id).reduce((s, ch) => s + ch.amount_cents, 0),
             };
@@ -347,13 +353,37 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
       {/* Estoque ------------------------------------------------------------ */}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <OrthoDrill items={emTratamento.map((c) => item(c))} dialogTitle="Em tratamento" scopeLabel={scope.label}>
-          <Kpi icon={Users} label="Em tratamento" value={emTratamento.length} hint={`${aguardando.length} aguardando início · ${contencao.length} em contenção`} />
+          <Kpi icon={Users} label="Em tratamento" value={emTratamento.length} hint={`${aguardando.length} aguardando início · ${contencao.length} em acompanhamento`} />
         </OrthoDrill>
-        <OrthoDrill items={noPrazo.map((c) => item(c, { value: c.planned_end_date ? `até ${formatIsoDateBr(c.planned_end_date)}` : null }))} dialogTitle="No prazo" scopeLabel={scope.label} dialogHint="término previsto ainda não passou (com a tolerância)">
+        <OrthoDrill
+          items={noPrazo.map((c) => {
+            const a = assidOf(c);
+            return item(c, {
+              value: c.planned_end_date ? `até ${formatIsoDateBr(c.planned_end_date)}` : null,
+              badge: a.missed > 0 ? `${a.missed} falta${a.missed === 1 ? "" : "s"} · assiduidade ${a.ratePercent ?? 0}%` : a.ratePercent !== null ? `assiduidade ${a.ratePercent}%` : ORTHO_STATUS_LABELS[c.status],
+              badgeTone: a.missed > 0 ? "amber" : "emerald",
+            });
+          })}
+          dialogTitle="No prazo"
+          scopeLabel={scope.label}
+          dialogHint="término previsto (já com a prorrogação das faltas) ainda não passou, com a tolerância"
+        >
           <Kpi icon={CheckCircle2} label="No prazo" value={noPrazo.length} hint={emTratamento.length ? `${Math.round((noPrazo.length / emTratamento.length) * 100)}% dos em tratamento` : undefined} tone="border-emerald-200" />
         </OrthoDrill>
-        <OrthoDrill items={atrasados.map((c) => item(c, { value: c.planned_end_date ? `+${daysBetween(c.planned_end_date, today)} dias` : null, badgeTone: "rose" }))} dialogTitle="Atrasados" scopeLabel={scope.label} dialogHint="já deviam ter finalizado">
-          <Kpi icon={Clock} label="Atrasados" value={atrasados.length} hint="passaram do término previsto" tone={atrasados.length > 0 ? "border-rose-300" : undefined} />
+        <OrthoDrill
+          items={atrasados.map((c) => {
+            const a = assidOf(c);
+            return item(c, {
+              value: c.planned_end_date ? `+${daysBetween(c.planned_end_date, today)} dias` : null,
+              badge: `${a.missed} falta${a.missed === 1 ? "" : "s"}${a.ratePercent !== null ? ` · assiduidade ${a.ratePercent}%` : ""}${a.extensionDays > 0 ? ` · prazo +${a.extensionDays} dias` : ""}`,
+              badgeTone: "rose",
+            });
+          })}
+          dialogTitle="Atrasados"
+          scopeLabel={scope.label}
+          dialogHint="já deviam ter finalizado — o término previsto já conta a prorrogação das faltas"
+        >
+          <Kpi icon={Clock} label="Atrasados" value={atrasados.length} hint="passaram do término previsto (já prorrogado pelas faltas)" tone={atrasados.length > 0 ? "border-rose-300" : undefined} />
         </OrthoDrill>
         <OrthoDrill items={semAgendamento.map((x) => item(x.c, { badge: "sem agendamento", badgeTone: "amber" }))} dialogTitle="Sem agendamento" scopeLabel={scope.label}>
           <Kpi icon={CalendarX2} label="Sem agendamento" value={semAgendamento.length} hint={`${atencao.length} precisam de atenção`} tone={semAgendamento.length > 0 ? "border-amber-300" : undefined} />
@@ -368,8 +398,8 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
         <OrthoDrill items={finalizados.map((c) => item(c, { value: TIMELINESS_LABELS[caseTimeliness(c, today)] }))} dialogTitle="Finalizados" scopeLabel={scopeLabel}>
           <Kpi icon={Sparkles} label="Finalizados" value={finalizados.length} hint={finalizados.length ? `${finalizadosNoPrazo.length} no prazo · ${interrompidos.length} interrompidos` : `${interrompidos.length} interrompidos`} />
         </OrthoDrill>
-        <OrthoDrill items={faltas.map((x) => item(x.c, { value: `${x.n} falta${x.n === 1 ? "" : "s"}` }))} dialogTitle="Faltas nas manutenções" scopeLabel={scopeLabel}>
-          <Kpi icon={CalendarX2} label="Faltas" value={faltas.reduce((s, x) => s + x.n, 0)} hint={`${realizadas} manutenções realizadas`} />
+        <OrthoDrill items={faltas.map((x) => item(x.c, { value: `${x.n} falta${x.n === 1 ? "" : "s"}`, badge: `prazo +${assidOf(x.c).extensionDays} dias`, badgeTone: "rose" }))} dialogTitle="Faltas nas manutenções" scopeLabel={scopeLabel} dialogHint="cada falta prorroga o término previsto em um intervalo de manutenção">
+          <Kpi icon={CalendarX2} label="Faltas" value={faltasTotal} hint={`${realizadas} realizadas${assiduidadeGeral !== null ? ` · assiduidade ${assiduidadeGeral}%` : ""}`} />
         </OrthoDrill>
         <Card>
           <CardContent className="p-4">
@@ -404,7 +434,7 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
             dialogTitle="Mensalidades recebidas"
             scopeLabel={scopeLabel}
           >
-            <Kpi icon={Wallet} label="Receita recebida" value={formatBRL(receitaCents)} hint={`${receita.length} mensalidade${receita.length === 1 ? "" : "s"} · conta 1.1.04 na DRE`} />
+            <Kpi icon={Wallet} label="Receita recebida" value={formatBRL(receitaCents)} hint={`${receita.length} cobrança${receita.length === 1 ? "" : "s"} (mensalidades e contenções) · conta 1.1.04 na DRE`} />
           </OrthoDrill>
           <Kpi icon={TrendingUp} label="Receita prevista / mês" value={formatBRL(receitaPrevistaMes)} hint={`mensalidade média ${formatBRL(mensalidadeMedia)}`} />
           <OrthoDrill

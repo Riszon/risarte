@@ -45,6 +45,7 @@ export function OrthoBadge({ badge }: { badge: OrthoClientBadge }) {
 export function OrthoClientCard({ badge }: { badge: OrthoClientBadge | null }) {
   if (!badge) return null;
   const closed = badge.status === "finalizado" || badge.status === "interrompido";
+  const inTreatment = badge.status === "em_tratamento";
 
   return (
     <Card className="overflow-hidden">
@@ -63,8 +64,9 @@ export function OrthoClientCard({ badge }: { badge: OrthoClientBadge | null }) {
           {badge.code}
           {badge.orthodontistName && ` · ${badge.orthodontistName}`}
           {badge.startDate && ` · início ${formatIsoDateBr(badge.startDate)}`}
-          {badge.plannedEndDate && !closed && ` · término previsto ${formatIsoDateBr(badge.plannedEndDate)}`}
-          {badge.monthlyCents > 0 && !closed && ` · ${formatBRL(badge.monthlyCents)}/mês`}
+          {badge.plannedEndDate && inTreatment && ` · término previsto ${formatIsoDateBr(badge.plannedEndDate)}`}
+          {badge.monthlyCents > 0 && inTreatment && ` · ${formatBRL(badge.monthlyCents)}/mês`}
+          {badge.status === "contencao" && " · contenções entregues, sem mensalidade"}
         </p>
       </CardHeader>
       <CardContent className="space-y-3">

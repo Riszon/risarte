@@ -19,6 +19,7 @@ import { ORTHO_KIND_LABELS, ORTHO_KINDS, type OrthoKind, type OrthoMaintenanceSt
 import type { ProcedureOption, StaffOption } from "@/lib/ortodontia/db";
 import {
   addOrthoMaintenance,
+  deliverOrthoRetainers,
   linkOrthoAppointment,
   markOrthoMaintenance,
   saveOrthoEvolution,
@@ -28,30 +29,50 @@ import {
 
 const selectClass = "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 const textareaClass = "w-full rounded-lg border border-input bg-transparent p-2 text-sm";
+const brlText = (c: number) => (c / 100).toFixed(2).replace(".", ",");
 
 // ---------------------------------------------------------------------------
-// Situação do caso: iniciar, contenção, finalizar, interromper, reabrir
+// Situação do caso: iniciar, entregar contenções (= finalizar), alta,
+// interromper, reabrir (decisão O1)
 // ---------------------------------------------------------------------------
-export function CaseStatusActions({ caseId, status, today }: { caseId: string; status: OrthoStatus; today: string }) {
+export function CaseStatusActions({
+  caseId,
+  status,
+  today,
+  retainer,
+}: {
+  caseId: string;
+  status: OrthoStatus;
+  today: string;
+  /** A contenção combinada no caso (valor e condição) — pré-preenche a entrega. */
+  retainer: { charged: boolean; feeCents: number; terms: string | null };
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [open, setOpen] = useState<null | "em_tratamento" | "contencao" | "finalizado" | "interrompido">(null);
+  const [open, setOpen] = useState<null | "em_tratamento" | "finalizado" | "interrompido">(null);
+  const [deliverOpen, setDeliverOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [date, setDate] = useState(today);
+  const [charge, setCharge] = useState(retainer.charged);
+  const [amount, setAmount] = useState(brlText(retainer.feeCents));
 
   const TITULO = {
-    em_tratamento: status === "aguardando_inicio" ? "Iniciar o tratamento" : "Reabrir o caso",
-    contencao: "Passar para contenção",
-    finalizado: "Finalizar o tratamento",
+    em_tratamento:
+      status === "aguardando_inicio" ? "Iniciar o tratamento" : status === "contencao" ? "Voltar a tratamento" : "Reabrir o caso",
+    finalizado: status === "contencao" ? "Dar alta do acompanhamento" : "Encerrar o tratamento",
     interrompido: "Interromper o tratamento",
   } as const;
   const AJUDA = {
     em_tratamento:
       status === "aguardando_inicio"
         ? "O aparelho foi instalado. O cronograma de manutenções é gerado a partir desta data e a mensalidade passa a ser cobrada."
-        : "O caso volta a 'em tratamento' e o cronograma é completado.",
-    contencao: "O tratamento ativo terminou; o paciente segue em acompanhamento. A mensalidade dos meses seguintes é cancelada.",
-    finalizado: "Encerra o caso. As manutenções previstas e as mensalidades dos meses seguintes são canceladas.",
+        : status === "contencao"
+          ? "O paciente volta ao tratamento ativo (recidiva, nova fase): a mensalidade volta a ser cobrada e o cronograma é completado."
+          : "O caso volta a 'em tratamento' e o cronograma é completado.",
+    finalizado:
+      status === "contencao"
+        ? "Encerra o acompanhamento: o caso deixa de aparecer entre os abertos. O tratamento continua contado como finalizado na data da entrega das contenções."
+        : "Encerra o caso sem a entrega das contenções (ex.: mudança de cidade). As manutenções previstas e as mensalidades dos meses seguintes são canceladas.",
     interrompido: "Desistência, transferência ou abandono. Escreva o motivo — ele fica no histórico.",
   } as const;
 
@@ -69,19 +90,32 @@ export function CaseStatusActions({ caseId, status, today }: { caseId: string; s
     });
   }
 
+  function deliver() {
+    startTransition(async () => {
+      const r = await deliverOrthoRetainers(caseId, { date, charge, amount: charge ? amount : undefined, reason });
+      if (!r.ok) toast.error(r.error ?? "Não foi possível registrar a entrega.");
+      else {
+        toast.success(charge ? "Contenções entregues — tratamento finalizado; a cobrança da contenção foi gerada." : "Contenções entregues — tratamento finalizado.");
+        setDeliverOpen(false);
+        setReason("");
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <div className="flex flex-wrap gap-1.5 pt-1">
       {status === "aguardando_inicio" && <Button size="sm" onClick={() => setOpen("em_tratamento")}>Iniciar tratamento</Button>}
       {status === "em_tratamento" && (
         <>
-          <Button size="sm" variant="outline" onClick={() => setOpen("contencao")}>Contenção</Button>
-          <Button size="sm" onClick={() => setOpen("finalizado")}>Finalizar</Button>
+          <Button size="sm" onClick={() => setDeliverOpen(true)}>Entregar contenções</Button>
+          <Button size="sm" variant="outline" onClick={() => setOpen("finalizado")}>Encerrar sem contenção</Button>
         </>
       )}
       {status === "contencao" && (
         <>
+          <Button size="sm" onClick={() => setOpen("finalizado")}>Dar alta</Button>
           <Button size="sm" variant="outline" onClick={() => setOpen("em_tratamento")}>Voltar a tratamento</Button>
-          <Button size="sm" onClick={() => setOpen("finalizado")}>Finalizar</Button>
         </>
       )}
       {(status === "aguardando_inicio" || status === "em_tratamento" || status === "contencao") && (
@@ -90,6 +124,42 @@ export function CaseStatusActions({ caseId, status, today }: { caseId: string; s
       {(status === "finalizado" || status === "interrompido") && (
         <Button size="sm" variant="outline" onClick={() => setOpen("em_tratamento")}>Reabrir</Button>
       )}
+
+      <Dialog open={deliverOpen} onOpenChange={(o) => !o && setDeliverOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Entregar as contenções</DialogTitle>
+            <DialogDescription>
+              A entrega <strong>finaliza o tratamento</strong>: a mensalidade dos meses seguintes é cancelada, as manutenções previstas saem e o paciente passa ao <strong>acompanhamento</strong> (controle daqui a um intervalo de reavaliação).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="deliver-date">Data da entrega</Label>
+              <Input id="deliver-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={charge} onChange={(e) => setCharge(e.target.checked)} className="size-4" />
+              Cobrar a contenção (gera a cobrança, vencendo na entrega)
+            </label>
+            {charge && (
+              <div className="space-y-1">
+                <Label htmlFor="deliver-amount">Valor da contenção (R$)</Label>
+                <Input id="deliver-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                {retainer.terms && <p className="text-[11px] text-muted-foreground">Condição combinada no termo: {retainer.terms}</p>}
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label htmlFor="deliver-reason">Observação</Label>
+              <textarea id="deliver-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} className={textareaClass} placeholder="Ex.: contenção fixa inferior + placa superior" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeliverOpen(false)} disabled={isPending}>Voltar</Button>
+            <Button onClick={deliver} disabled={isPending}>Confirmar entrega</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)}>
         <DialogContent className="sm:max-w-md">
@@ -141,6 +211,9 @@ export function EditCaseDialog({
     procedureId: string | null;
     nextReevaluationDate: string | null;
     notes: string | null;
+    retainerCharged: boolean;
+    retainerFeeCents: number;
+    retainerTerms: string | null;
   };
   orthodontists: StaffOption[];
   procedures: ProcedureOption[];
@@ -148,7 +221,8 @@ export function EditCaseDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const brl = (c: number) => (c / 100).toFixed(2).replace(".", ",");
+  const [chargeRetainer, setChargeRetainer] = useState(initial.retainerCharged);
+  const brl = brlText;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -230,6 +304,22 @@ export function EditCaseDialog({
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-2 rounded-lg border border-dashed p-3 sm:col-span-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="retainer_charged" checked={chargeRetainer} onChange={(e) => setChargeRetainer(e.target.checked)} className="size-4" />
+                Cobrar a contenção na entrega
+              </label>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1">
+                  <Label htmlFor="e-ret-fee">Valor da contenção (R$)</Label>
+                  <Input id="e-ret-fee" name="retainer_fee" inputMode="decimal" disabled={!chargeRetainer} defaultValue={brl(initial.retainerFeeCents)} />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="e-ret-terms">Condição especial (sai no termo)</Label>
+                  <Input id="e-ret-terms" name="retainer_terms" disabled={!chargeRetainer} defaultValue={initial.retainerTerms ?? ""} placeholder="Ex.: em até 3x sem juros" />
+                </div>
+              </div>
             </div>
             <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="e-notes">Observações</Label>
@@ -389,13 +479,13 @@ export function MaintenanceRowActions({
   return (
     <>
       {(status === "agendada" || status === "prevista") && (
-        <Button size="sm" variant="ghost" disabled={isPending} onClick={() => mark("faltou")} title="Marcar falta">
+        <Button size="sm" variant="ghost" disabled={isPending} onClick={() => mark("faltou")} title="Marcar falta (prorroga o término previsto em um intervalo)">
           <CalendarX2 className="size-3.5" />
         </Button>
       )}
       {status === "faltou" && (
-        <Button size="sm" variant="ghost" disabled={isPending} onClick={() => mark("prevista")} title="Voltar a prevista (reagendar)">
-          Reagendar
+        <Button size="sm" variant="ghost" disabled={isPending} onClick={() => mark("prevista")} title="A falta foi marcada por engano: volta a prevista e desfaz a prorrogação. Para reagendar, use Agendar — o novo horário liga-se à próxima prevista.">
+          Desfazer falta
         </Button>
       )}
       {status !== "cancelada" && linkable.length > 0 && (

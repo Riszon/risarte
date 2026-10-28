@@ -40,6 +40,7 @@ import {
   ATTENTION_LABELS,
   ORIGIN_LABELS,
   TIMELINESS_LABELS,
+  attendance,
   attentionReasons,
   caseTimeliness,
   chargeStatusToday,
@@ -49,9 +50,11 @@ import {
   type MaintenanceLike,
 } from "@/lib/ortodontia/regras";
 import {
+  ORTHO_CHARGE_KIND_LABELS,
   ORTHO_CHARGE_STATUS_LABELS,
   ORTHO_KIND_LABELS,
   ORTHO_MAINTENANCE_STATUS_LABELS,
+  ORTHO_STATUS_HINTS,
   ORTHO_STATUS_LABELS,
   type OrthoChargeStatus,
   type OrthoMaintenanceStatus,
@@ -141,8 +144,8 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
   const timeliness = caseTimeliness(c, today, settings?.finish_tolerance_days);
   const pct = progressPercent(c, today);
   const next = nextMaintenance(likes, today);
-  const done = maintenances.filter((m) => m.status === "realizada").length;
-  const missed = maintenances.filter((m) => m.status === "faltou").length;
+  const assiduidade = attendance(maintenances, c.maintenance_interval_days);
+  const { done, missed } = assiduidade;
   const origin = originOf({ ...(c.client ?? {}), has_indica_referral: indicaSet.has(c.client_id) });
   const trouxe = referrals.get(c.client_id) ?? [];
   const isOpen = c.status === "aguardando_inicio" || c.status === "em_tratamento" || c.status === "contencao";
@@ -189,6 +192,9 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
               procedureId: c.maintenance_procedure_id,
               nextReevaluationDate: c.next_reevaluation_date,
               notes: c.notes,
+              retainerCharged: c.retainer_charged,
+              retainerFeeCents: c.retainer_fee_cents,
+              retainerTerms: c.retainer_terms,
             }}
             orthodontists={orthodontists}
             procedures={procedures}
@@ -203,24 +209,46 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>
                 Início <strong>{c.start_date ? formatIsoDateBr(c.start_date) : "a definir"}</strong>
-                {c.planned_end_date && <> · término previsto <strong>{formatIsoDateBr(c.planned_end_date)}</strong> ({c.planned_months} meses)</>}
+                {c.planned_end_date && (
+                  <>
+                    {" "}· término previsto <strong>{formatIsoDateBr(c.planned_end_date)}</strong> ({c.planned_months} meses
+                    {c.extension_days > 0 ? ` + ${c.extension_days} dias pelas faltas` : ""})
+                  </>
+                )}
+                {c.retainer_delivered_at && <> · contenções entregues <strong>{formatIsoDateBr(c.retainer_delivered_at)}</strong></>}
+                {c.status === "finalizado" && c.finished_at && !c.retainer_delivered_at && <> · encerrado <strong>{formatIsoDateBr(c.finished_at)}</strong></>}
+                {c.discharged_at && <> · alta <strong>{formatIsoDateBr(c.discharged_at)}</strong></>}
               </span>
-              {timeliness !== "nao_se_aplica" && (
-                <span className={cn("rounded-full border px-2 py-0.5 text-xs", timeliness === "atrasado" || timeliness === "finalizado_atrasado" ? "border-rose-300 bg-rose-50 text-rose-800" : "border-emerald-300 bg-emerald-50 text-emerald-800")}>
-                  {TIMELINESS_LABELS[timeliness]}
-                </span>
-              )}
+              <span className="flex flex-wrap items-center gap-1.5">
+                {timeliness !== "nao_se_aplica" && (
+                  <span className={cn("rounded-full border px-2 py-0.5 text-xs", timeliness === "atrasado" || timeliness === "finalizado_atrasado" ? "border-rose-300 bg-rose-50 text-rose-800" : "border-emerald-300 bg-emerald-50 text-emerald-800")}>
+                    {TIMELINESS_LABELS[timeliness]}
+                  </span>
+                )}
+                {assiduidade.ratePercent !== null && (
+                  <span
+                    className={cn("rounded-full border px-2 py-0.5 text-xs", assiduidade.ratePercent >= 80 ? "border-emerald-300 bg-emerald-50 text-emerald-800" : assiduidade.ratePercent >= 60 ? "border-amber-300 bg-amber-50 text-amber-800" : "border-rose-300 bg-rose-50 text-rose-800")}
+                    title="Assiduidade: manutenções realizadas ÷ (realizadas + faltas)"
+                  >
+                    assiduidade {assiduidade.ratePercent}%
+                  </span>
+                )}
+              </span>
             </div>
-            {pct !== null && isOpen && (
+            <p className="text-[11px] text-muted-foreground">{ORTHO_STATUS_HINTS[c.status]}.</p>
+            {pct !== null && c.status === "em_tratamento" && (
               <div className="h-2 w-full rounded bg-muted" title={`${pct}% do prazo previsto`}>
                 <div className={cn("h-2 rounded", timeliness === "atrasado" ? "bg-rose-500" : "bg-primary/70")} style={{ width: `${pct}%` }} />
               </div>
             )}
             <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
               <span>{done} manutenç{done === 1 ? "ão realizada" : "ões realizadas"}</span>
-              <span className={missed > 0 ? "text-rose-700" : undefined}>{missed} falta{missed === 1 ? "" : "s"}</span>
+              <span className={missed > 0 ? "text-rose-700" : undefined}>
+                {missed} falta{missed === 1 ? "" : "s"}
+                {missed > 0 ? ` (o término previsto foi prorrogado em ${c.extension_days} dias)` : ""}
+              </span>
               <span>manutenção a cada {c.maintenance_interval_days} dias</span>
-              {c.next_reevaluation_date && <span>reavaliação {formatIsoDateBr(c.next_reevaluation_date)}</span>}
+              {c.next_reevaluation_date && <span>{c.status === "contencao" ? "controle da contenção" : "reavaliação"} {formatIsoDateBr(c.next_reevaluation_date)}</span>}
               {next && <span>próxima: {formatIsoDateBr((next.appointment_date ?? next.planned_date ?? "").slice(0, 10))} ({ORTHO_MAINTENANCE_STATUS_LABELS[next.status]})</span>}
             </div>
             {reasons.length > 0 && (
@@ -240,17 +268,28 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
             {canMoney ? (
               <>
                 <p className="text-xs text-muted-foreground">Mensalidade</p>
-                <p className="text-xl font-semibold tabular-nums">{formatBRL(c.monthly_fee_cents)}<span className="text-xs font-normal text-muted-foreground"> /mês · dia {c.billing_day}</span></p>
+                <p className="text-xl font-semibold tabular-nums">{formatBRL(c.monthly_fee_cents)}<span className="text-xs font-normal text-muted-foreground"> /mês · dia {c.billing_day}{c.status === "em_tratamento" ? " · até a entrega das contenções" : ""}</span></p>
                 {c.installation_fee_cents > 0 && <p className="text-xs text-muted-foreground">Instalação {formatBRL(c.installation_fee_cents)} (pelo plano)</p>}
                 <p className="text-xs text-muted-foreground">
+                  Contenção: {c.retainer_charged && c.retainer_fee_cents > 0 ? <>cobrada, <strong>{formatBRL(c.retainer_fee_cents)}</strong>{c.retainer_terms ? ` (${c.retainer_terms})` : ""}</> : "incluída no tratamento"}
+                </p>
+                <p className="text-xs text-muted-foreground">
                   {charges.filter((ch) => ch.status === "paga").length} pagas · {charges.filter((ch) => chargeStatusToday(ch, today) === "atrasada").length} atrasadas
+                  {!canSettle && " · a baixa é do Gerente e do Financeiro"}
                 </p>
               </>
             ) : (
               <p className="text-xs text-muted-foreground">A situação financeira é vista por quem tem a permissão de mensalidades.</p>
             )}
             <p className="text-xs text-muted-foreground">Origem do paciente: <strong>{ORIGIN_LABELS[origin]}</strong></p>
-            {canManage && <CaseStatusActions caseId={c.id} status={c.status} today={today} />}
+            {canManage && (
+              <CaseStatusActions
+                caseId={c.id}
+                status={c.status}
+                today={today}
+                retainer={{ charged: c.retainer_charged, feeCents: c.retainer_fee_cents, terms: c.retainer_terms }}
+              />
+            )}
           </CardContent>
         </Card>
       </section>
@@ -335,7 +374,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
           <Card>
             <CardHeader className="gap-1">
               <CardTitle className="flex items-center gap-1.5 text-base"><Wallet className="size-4 text-primary" /> Mensalidades</CardTitle>
-              <p className="text-xs text-muted-foreground">Devidas com ou sem comparecimento. Geradas em <Link href="/ortodontia/mensalidades" className="underline">Mensalidades</Link>.</p>
+              <p className="text-xs text-muted-foreground">Devidas com ou sem comparecimento, até a entrega das contenções. Geradas em <Link href="/ortodontia/mensalidades" className="underline">Mensalidades</Link>.</p>
             </CardHeader>
             <CardContent className="p-0">
               {charges.length === 0 ? (
@@ -347,7 +386,10 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
                       const s = chargeStatusToday(ch, today);
                       return (
                         <tr key={ch.id} className="border-b">
-                          <td className="px-3 py-1.5">{formatIsoMonthBr(ch.reference_month)}</td>
+                          <td className="px-3 py-1.5">
+                            {formatIsoMonthBr(ch.reference_month)}
+                            {ch.kind === "contencao" && <span className="ml-1 rounded-full border border-sky-300 bg-sky-50 px-1.5 text-[10px] text-sky-800">{ORTHO_CHARGE_KIND_LABELS.contencao}</span>}
+                          </td>
                           <td className="px-3 py-1.5 text-xs text-muted-foreground">venc. {formatIsoDateBr(ch.due_date)}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums">{formatBRL(ch.amount_cents)}</td>
                           <td className="px-3 py-1.5"><span className={cn("rounded-full border px-2 py-0.5 text-[11px]", CHARGE_TONE[s])}>{ORTHO_CHARGE_STATUS_LABELS[s]}</span></td>

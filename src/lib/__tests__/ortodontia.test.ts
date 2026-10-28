@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   addMonths,
+  attendance,
   attentionReasons,
   caseTimeliness,
   chargeStatusToday,
   daysBetween,
   dueDateFor,
+  extensionForMisses,
   finishForecast,
+  isFinished,
   maintenanceSchedule,
   monthlyEvolution,
   nextMaintenance,
@@ -17,9 +20,11 @@ import {
   type OrthoCaseLike,
 } from "@/lib/ortodontia/regras";
 import {
+  ORTHO_CHARGE_KINDS,
   ORTHO_CHARGE_STATUSES,
   ORTHO_KINDS,
   ORTHO_MAINTENANCE_STATUSES,
+  ORTHO_SETTLE_ROLES,
   ORTHO_STATUSES,
 } from "@/lib/ortodontia/constants";
 import { CAPACIDADES } from "@/lib/permissions";
@@ -27,11 +32,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 // Ortodontia (docs/ortodontia/ORTO-PLANO.md). Trava as decisões do dono: a
-// mensalidade é devida sem comparecimento (O-regra), atrasado = passou do
-// término previsto + tolerância (O3), manutenção vencida depois de 7 dias (O4),
-// contenção não cobra (O1).
+// mensalidade é devida sem comparecimento e vai ATÉ A ENTREGA DAS CONTENÇÕES,
+// que finaliza o tratamento (O1, 28/10/2026); a baixa é do Gerente e do
+// Financeiro (O2); atrasado = passou do término previsto + tolerância, e cada
+// falta prorroga o término em um intervalo (O3); manutenção vencida depois de
+// 7 dias (O4).
 
 const TODAY = "2026-10-27";
+const MIG = (n: string) => join(__dirname, "..", "..", "..", "supabase", "migrations", n);
 
 const caso = (p: Partial<OrthoCaseLike> = {}): OrthoCaseLike => ({
   status: "em_tratamento",
@@ -57,6 +65,26 @@ describe("datas", () => {
 describe("cronograma", () => {
   it("término previsto = início + meses", () => {
     expect(plannedEndDate("2026-03-10", 24)).toBe("2028-03-10");
+  });
+  it("cada falta prorroga o término em um intervalo de manutenção (O3)", () => {
+    expect(extensionForMisses(2, 30)).toBe(60);
+    expect(extensionForMisses(0, 30)).toBe(0);
+    expect(plannedEndDate("2026-03-10", 24, 60)).toBe("2028-05-09");
+  });
+  it("assiduidade = realizadas ÷ (realizadas + faltas); sem histórico não há taxa", () => {
+    const a = attendance(
+      [
+        { status: "realizada" },
+        { status: "realizada" },
+        { status: "realizada" },
+        { status: "faltou" },
+        { status: "prevista" },
+        { status: "cancelada" },
+      ],
+      30
+    );
+    expect(a).toEqual({ done: 3, missed: 1, ratePercent: 75, extensionDays: 30 });
+    expect(attendance([{ status: "prevista" }]).ratePercent).toBeNull();
   });
   it("gera uma manutenção a cada intervalo até o término", () => {
     const datas = maintenanceSchedule("2026-01-01", "2026-07-01", 30);
@@ -90,6 +118,18 @@ describe("no prazo × atrasado (O3)", () => {
   it("sem término previsto não se aplica; o progresso acompanha", () => {
     expect(caseTimeliness(caso({ planned_end_date: null }), TODAY)).toBe("nao_se_aplica");
     expect(progressPercent(caso({ start_date: "2026-01-01", planned_end_date: "2026-12-31" }), "2026-07-02")).toBe(50);
+  });
+  it("contenções entregues = tratamento finalizado (O1): compara a data da entrega, não a de hoje", () => {
+    // Entregou dentro do prazo, mesmo que hoje já tenha passado dele.
+    expect(
+      caseTimeliness(caso({ status: "contencao", planned_end_date: "2026-06-01", finished_at: "2026-06-10" }), TODAY)
+    ).toBe("finalizado_no_prazo");
+    expect(
+      caseTimeliness(caso({ status: "contencao", planned_end_date: "2026-06-01", finished_at: "2026-09-20" }), TODAY)
+    ).toBe("finalizado_atrasado");
+    expect(isFinished({ status: "contencao" })).toBe(true);
+    expect(isFinished({ status: "finalizado" })).toBe(true);
+    expect(isFinished({ status: "em_tratamento" })).toBe(false);
   });
 });
 
@@ -162,6 +202,13 @@ describe("atenção (a lista da recepção)", () => {
   it("finalizado e interrompido não pedem nada", () => {
     expect(attentionReasons({ caso: caso({ status: "finalizado", finished_at: "2026-10-01" }), maintenances: [], today: TODAY })).toEqual([]);
     expect(attentionReasons({ caso: caso({ status: "interrompido" }), maintenances: [], today: TODAY })).toEqual([]);
+  });
+  it("em acompanhamento (contenções entregues) não pede agendamento nem conta atraso — só o controle vencido", () => {
+    const base = caso({ status: "contencao", planned_end_date: "2026-06-01", finished_at: "2026-06-10" });
+    expect(attentionReasons({ caso: base, maintenances: [], today: TODAY })).toEqual([]);
+    expect(
+      attentionReasons({ caso: { ...base, next_reevaluation_date: "2026-10-01" }, maintenances: [], today: TODAY })
+    ).toEqual(["reavaliacao_vencida"]);
   });
   it("próxima manutenção: a agendada futura antes da prevista", () => {
     const m = nextMaintenance(
@@ -248,13 +295,32 @@ describe("as cláusulas do acordo (proposta e termo)", () => {
     expect(orthoClauses({ ...terms, installationCents: 0 }).join(" ")).not.toMatch(/instalação do aparelho/);
     expect(orthoClauses(terms).join(" ")).toMatch(/R\$\s?500,00/);
   });
+  it("O1 no termo: mensalidade até a entrega das contenções, que finaliza o tratamento e abre o acompanhamento", () => {
+    const texto = orthoClauses(terms).join(" ");
+    expect(texto).toMatch(/até a entrega das contenções/);
+    expect(texto).toMatch(/considerado finalizado/);
+    expect(texto).toMatch(/acompanhamento ortodôntico/);
+  });
+  it("O1 no termo: a contenção cobrada sai com valor e condição; sem cobrança, diz que está incluída", () => {
+    const cobrada = orthoClauses({ ...terms, retainerCharged: true, retainerFeeCents: 35000, retainerTerms: "em até 3x sem juros" }).join(" ");
+    expect(cobrada).toMatch(/contenções são cobradas à parte/);
+    expect(cobrada).toMatch(/R\$\s?350,00/);
+    expect(cobrada).toMatch(/em até 3x sem juros/);
+    const incluida = orthoClauses({ ...terms, retainerCharged: false }).join(" ");
+    expect(incluida).toMatch(/incluídas no tratamento/);
+    expect(incluida).not.toMatch(/cobradas à parte/);
+    // Ligada mas sem valor = incluída (não se promete cobrança de zero).
+    expect(orthoClauses({ ...terms, retainerCharged: true, retainerFeeCents: 0 }).join(" ")).toMatch(/incluídas/);
+  });
+  it("O3 no termo: cada falta prorroga o término em um intervalo e a assiduidade fica registrada", () => {
+    const texto = orthoClauses(terms).join(" ");
+    expect(texto).toMatch(/Cada falta a uma manutenção prorroga a data prevista de término em 30 dias/);
+    expect(texto).toMatch(/assiduidade/);
+  });
 });
 
 describe("espelho do banco (migração 0329)", () => {
-  const sql = readFileSync(
-    join(__dirname, "..", "..", "..", "supabase", "migrations", "0329_ortodontia.sql"),
-    "utf8"
-  );
+  const sql = readFileSync(MIG("0329_ortodontia.sql"), "utf8");
   it("as situações do código são as do check constraint", () => {
     for (const s of ORTHO_STATUSES) expect(sql).toContain(`'${s}'`);
     for (const s of ORTHO_MAINTENANCE_STATUSES) expect(sql).toContain(`'${s}'`);
@@ -283,5 +349,42 @@ describe("espelho do banco (migração 0329)", () => {
     const where = gen.slice(0, gen.indexOf("$$;"));
     expect(where).toMatch(/status = 'em_tratamento'/);
     expect(where).not.toMatch(/'contencao'/);
+  });
+});
+
+describe("espelho do banco (migração 0331 — decisões O1, O2, O3)", () => {
+  const sql = readFileSync(MIG("0331_ortodontia_contencao_baixa_faltas.sql"), "utf8");
+  const fn = (name: string) => {
+    const from = sql.slice(sql.indexOf(`function public.${name}(`));
+    return from.slice(0, from.indexOf("$$;"));
+  };
+  it("O1: a mensalidade continua só em tratamento, e a cobrança tem tipo (mensalidade | contenção)", () => {
+    const gen = fn("ortho_generate_charges");
+    expect(gen).toMatch(/status = 'em_tratamento'/);
+    expect(gen).toMatch(/'mensalidade'/);
+    for (const k of ORTHO_CHARGE_KINDS) expect(sql).toContain(`'${k}'`);
+    expect(sql).toMatch(/kind in \('mensalidade', 'contencao'\)/);
+  });
+  it("O1: entregar as contenções finaliza (finished_at) e passa a acompanhamento (contencao)", () => {
+    const d = fn("ortho_deliver_retainers");
+    expect(d).toMatch(/status = 'contencao'/);
+    expect(d).toMatch(/finished_at = v_date/);
+    expect(d).toMatch(/retainer_delivered_at = v_date/);
+    expect(d).toMatch(/kind = 'mensalidade'/);
+    expect(d).toMatch(/'contencao',\s*\n?\s*date_trunc/);
+  });
+  it("O2: a guarda da baixa tem o Gerente e o Financeiro, e NÃO a Recepção nem o Franqueado", () => {
+    const g = fn("ortho_can_settle");
+    expect(g).toMatch(/'unit_manager'/);
+    expect(g).toMatch(/'finance_franchisor'/);
+    expect(g).not.toMatch(/'receptionist'/);
+    expect(g).not.toMatch(/'franchisee'/);
+    expect(sql).toMatch(/delete from public\.permission_matrix\s+where capability = 'acao\.ortodontia\.financeiro'\s+and role in \('receptionist', 'franchisee'\)/);
+    expect(ORTHO_SETTLE_ROLES).toEqual(["unit_manager"]);
+  });
+  it("O3: o término previsto soma a prorrogação, mantida por gatilho a partir das faltas", () => {
+    expect(fn("ortho_case_before_write")).toMatch(/\+ coalesce\(new\.extension_days, 0\)/);
+    expect(fn("_ortho_recompute_extension")).toMatch(/status = 'faltou'/);
+    expect(sql).toMatch(/create trigger ortho_maintenances_extension/);
   });
 });

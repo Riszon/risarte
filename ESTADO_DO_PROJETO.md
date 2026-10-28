@@ -1,6 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.362.0** · Última migração: **0330** (0318 a 0330 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.363.0** · Última migração: **0331** (0318 a 0330 aplicadas na produção e no treino; **0331 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.363.0 / 0331 — ORTODONTIA: CONTENÇÃO, QUEM DÁ BAIXA E AS FALTAS NO PRAZO (28/10/2026)
+>
+> As decisões O1, O2 e O3 do dono. **O1:** a mensalidade vai até a **entrega
+> das contenções**, que **finaliza** o tratamento (`finished_at`) e abre o
+> **acompanhamento** (`contencao` mudou de sentido); a contenção pode ser
+> **cobrada** (configuração rede → unidade: liga, valor, condição; copiada
+> para o caso; `ortho_charges.kind = 'contencao'` na 1.1.04, renomeada
+> "Ortodontia — mensalidades e contenções"). **O2:** a baixa é do **Gerente**
+> e do **Financeiro da Franqueadora** (Recepção e Franqueado só veem;
+> `ortho_can_settle` + matriz). **O3:** mantido; **cada falta prorroga o
+> término em um intervalo** (`extension_days` por gatilho; o cronograma ganha a
+> vaga) e as telas mostram a **assiduidade**. Tudo no termo. ⚠️ **0331
+> aplicada no treino** (`migrar:teste` + reaplicada, idempotente); ensaio em
+> transação desfeita **37/37**; **pendente na produção** (conferência
+> esperada 1·6·3·1·0·1·1). Achado no ensaio e corrigido: reabrir um caso
+> depois da entrega colidia o `seq` do cronograma (`ortho_plan_maintenances`
+> conta as canceladas). EV-243 a EV-245.
 
 > ## 🎯 0.362.0 / 0330 — A HORA CLÍNICA CALCULADA + COMPARAÇÃO NA REDE (27/10/2026)
 >
@@ -4670,6 +4688,100 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### ORTODONTIA — decisões O1/O2/O3 (28/10/2026, v0.363.0, migração 0331)
+
+O dono respondeu às três perguntas abertas do módulo (ORTO-PLANO §4):
+
+- **O1 — contenção.** *"A mensalidade é cobrada até a entrega das contenções.
+  Quando for entregue as contenções o tratamento será considerado finalizado,
+  e a partir daí entra como acompanhamento ortodôntico… deve ter como
+  configurar se será ou não cobrado as contenções no final do tratamento e se
+  for cobrado terá alguma condição especial."*
+- **O2 — baixa.** *"Gerente da unidade e Financeiro. A recepção apenas
+  visualiza a situação do cliente para ajudar tanto o gerente quanto o
+  financeiro."*
+- **O3 — atrasado.** *"Mantém, mas ao mostrar se está atrasado ou em
+  tratamento deve aparecer a quantidade de faltas do paciente, assiduidade no
+  tratamento. Conforme o cliente falta o prazo vai se estendendo."*
+
+**O que mudou (0331 + código):**
+
+- ⚠️ **`contencao` MUDOU DE SENTIDO**: deixou de ser "fase ativa sem
+  cobrança" e virou **"tratamento finalizado (contenções entregues), em
+  acompanhamento"**. `finished_at` = `retainer_delivered_at` = data da entrega;
+  `finalizado` = **alta** (`discharged_at`). O Painel conta como finalizado
+  quem entregou (`isFinished` = `contencao` ∪ `finalizado`); `caseTimeliness`
+  compara a entrega com a previsão; em acompanhamento não se pede agendamento
+  nem se conta atraso (só o controle/reavaliação vencida). Quem já estava em
+  `contencao` antes da 0331 recebeu `finished_at` = data da última alteração.
+- ⚠️ **A contenção é cobrável**: `ortho_settings.retainer_charge_enabled /
+  retainer_fee_cents / retainer_terms` (cascata), copiados para
+  `ortho_cases.retainer_*` ao abrir (`ortho_create_case` ganhou 3 argumentos
+  com `default null`; `ortho_update_case` e `ortho_save_settings` idem —
+  assinaturas antigas DERRUBADAS). `ortho_deliver_retainers(case, date,
+  charge, amount, reason)` faz a entrega: status, datas, cancela mensalidades
+  seguintes e previstas, gera `ortho_charges` com **`kind = 'contencao'`**
+  (unicidade passou a `(case_id, reference_month, kind)`), marca o controle
+  em `next_reevaluation_date`. `ortho_set_status('contencao')` delega.
+  A conta 1.1.04 foi **renomeada** "Ortodontia — mensalidades e contenções";
+  o razão descreve "Contenção ortodôntica MM/AAAA".
+- ⚠️ **`ortho_can_settle` = Admin, Franqueadora/Rede, `finance_franchisor`
+  (a 0329 o esquecia no banco), `unit_manager`.** Recepção e Franqueado saíram
+  da guarda e da matriz (`delete` com `where`). No app: `canSettleOrtho`
+  (baixa) ≠ `canViewOrthoMoney` (baixa ∪ Recepção/Franqueado só leitura). A
+  tela Mensalidades abre para a Recepção **sem botões**.
+- ⚠️ **As faltas prorrogam**: `ortho_cases.extension_days` = faltas ×
+  intervalo, recalculado pelo gatilho `ortho_maintenances_extension` (insert/
+  delete/update de status) e somado em `planned_end_date` pelo
+  `ortho_case_before_write`. Marcar falta (tela ou agenda `no_show`) chama
+  `ortho_plan_maintenances`, que acrescenta a vaga no fim. **A falta fica
+  registrada**: cancelar o agendamento de uma falta só solta o agendamento;
+  "prevista" a partir de "faltou" é *desfazer* (engano). `attendance()` em
+  `regras.ts` dá realizadas, faltas, % e dias de prorrogação; ficha, lista,
+  Painel (drills de no prazo / atrasados / faltas) mostram.
+- **Termo e proposta** (`orthoClauses`): mensalidade até a entrega; entrega
+  = finalizado + acompanhamento; contenção cobrada (valor + condição) ou
+  incluída; cada falta prorroga N dias; assiduidade registrada.
+- **Achado no ensaio, corrigido na própria 0331:** `ortho_plan_maintenances`
+  calculava o próximo `seq` só entre as não canceladas → reabrir um caso depois
+  da entrega (que cancela as previstas) violava `(case_id, seq)`. Agora o
+  `seq` conta todas.
+
+**Conferido:** `check-migrations 0331` OK; `migrar:teste` aplicou no treino
+(215 tabelas, 653 funções) e a 0331 foi **reaplicada** por cima sem erro
+(idempotente; conferência 1·6·3·1·0·1·1). **Ensaio no treino, transação
+DESFEITA, 37/37** (`scratchpad/ensaio-orto-0331.mjs`, fora do repositório):
+matriz sem Recepção/Franqueado; configuração da contenção na cascata; caso
+nasce com a cópia; falta pela tela → +30 dias e vaga no fim, desfazer zera;
+falta pela agenda → +30, cancelar o agendamento mantém a falta; Recepção vê a
+mensalidade e NÃO dá baixa nem gera; Gerente e Financeiro da Franqueadora dão;
+entrega (Recepção recusada) → `contencao`, `finished_at` hoje, controle em 6
+meses, cobrança da contenção R$ 350,00 vencendo hoje com a condição nas notas,
+razão 1.1.04 `open` "Contenção ortodôntica", mês seguinte cancelado,
+previstas canceladas, cliente segue em ortodontia, não gera mais mensalidade,
+entregar de novo recusa; alta → `discharged_at`, cliente sai; reabrir limpa;
+editar troca a contenção; sem login nada executa. `npm run verificar`,
+`npm test`, `npm run lint`: ver a entrada da sessão no `CLAUDE.md`.
+**NÃO visto na tela.** ⚠️ **0331 PENDENTE NA PRODUÇÃO** — o dono roda; as
+assinaturas novas de `ortho_create_case`/`ortho_update_case`/
+`ortho_save_settings` são exigidas pelo app desta versão (Configuração, Novo
+caso e Editar quebram com "função não encontrada" até a 0331 rodar).
+
+**Roteiro para o dono testar no treino (além do da ORTO1):**
+
+1. Ortodontia → Configuração: ligar "Cobrar a contenção", R$ 350,00, condição
+   "em até 3x sem juros" → Salvar.
+2. Novo caso: o bloco "A contenção" já vem preenchido; abrir em tratamento.
+3. Ficha do caso: marcar uma falta (ícone de calendário) → "término previsto
+   … + 30 dias pelas faltas", assiduidade, uma manutenção a mais no fim.
+4. Como Recepção: Mensalidades abre sem botões; na ficha, sem "Dar baixa".
+5. Como Gerente: Gerar mensalidades → Dar baixa.
+6. Ficha → **Entregar contenções** (cobrar, R$ 350,00) → situação "Em
+   acompanhamento", Mensalidades mostra a linha "Contenção", DRE 1.1.04
+   "Ortodontia — mensalidades e contenções"; Painel conta 1 finalizado.
+7. Termo (botão Termo): cláusulas da entrega, da contenção e das faltas.
+8. **Dar alta** → "Alta"; cartão do prontuário some.
 
 ### ORTODONTIA — ORTO1, o módulo inteiro (27/10/2026, v0.361.0, migração 0329)
 

@@ -5,6 +5,7 @@ import { hasRoleInClinic, pode, type SessionContext } from "@/lib/auth";
 import {
   ORTHO_CLINICAL_ROLES,
   ORTHO_MANAGER_ROLES,
+  ORTHO_MONEY_VIEW_ROLES,
   ORTHO_SETTLE_ROLES,
 } from "./constants";
 
@@ -47,7 +48,11 @@ export function canEvolveOrtho(
   );
 }
 
-/** Vê as mensalidades e dá baixa. */
+/**
+ * Gera e dá baixa na mensalidade (decisão O2, 28/10/2026): o Gerente da
+ * unidade e o Financeiro da Franqueadora (e a Franqueadora/Rede, o Admin).
+ * O banco (`ortho_can_settle`) confere de novo.
+ */
 export function canSettleOrtho(session: SessionContext, clinicId: string | null): boolean {
   if (session.isAdminMaster) return true;
   if (!pode(session, "acao.ortodontia.financeiro", clinicId)) return false;
@@ -56,9 +61,16 @@ export function canSettleOrtho(session: SessionContext, clinicId: string | null)
   return ehRede(session);
 }
 
-/** Vê os números de DINHEIRO do módulo (receita, inadimplência). */
+/**
+ * Vê os números de DINHEIRO do módulo (mensalidades, receita, inadimplência).
+ * Quem dá baixa vê; a Recepção e o Franqueado veem SEM dar baixa (O2: a
+ * Recepção acompanha a situação do paciente para ajudar o Gerente e o
+ * Financeiro).
+ */
 export function canViewOrthoMoney(session: SessionContext, clinicId: string | null): boolean {
-  return canSettleOrtho(session, clinicId);
+  if (canSettleOrtho(session, clinicId)) return true;
+  if (!clinicId || !pode(session, "modulo.ortodontia", clinicId)) return false;
+  return hasRoleInClinic(session, clinicId, ORTHO_MONEY_VIEW_ROLES);
 }
 
 /** Espelho de `is_network_viewer()`: Franqueadora/Rede ou Financeiro da Franqueadora. */
