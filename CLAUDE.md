@@ -403,8 +403,7 @@ Syncthing se comportarem de forma estranha.**
   três contas, muda junto.
 - ⚠️ **A hora calculada NÃO se grava** — o `chair_cost_per_hour_cents` passou
   a ser o valor provisório. AP82: leitura por unidade (lenta com rede grande).
-- ⏳ **0330 a aplicar na produção.** Ensaio no treino 8/8 + quebras; aplicada
-  no treino. Visto na tela (Admin de teste; nada gravado; unidade ativa dele
+- ✅ **0330 APLICADA nos dois bancos** (o dono rodou na produção em 27/10/2026; conferência 1·80·1·false; conferido de fora: sem login a função do custo fixo recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a rede tem ocupação de 80%; Cambé e Londrina não têm custo fixo lançado em jul–set/2026 — as duas seguem no valor provisório até o Financeiro ser usado). Ensaio no treino 8/8 + quebras. Visto na tela (Admin de teste; nada gravado; unidade ativa dele
   voltou para Londrina). `.next-test` limpo.
 - ⚠️ A sessão da Ortodontia (12) trabalhou ao mesmo tempo: esperei o commit
   dela para mexer em versão, novidades, manual e documentos.
