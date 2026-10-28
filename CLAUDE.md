@@ -390,6 +390,25 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**28/10/2026 (19) — PC Administrador (core 0.367.0 → 0.368.0, migração 0336)**
+
+- **Ortodontia ORTO2 — os avisos da rotina diária** (ESTADO §2).
+  `ortho_daily_alerts` (0335) ganhou, além do lote, quatro avisos por caso
+  aberto (em tratamento/acompanhamento), **um por caso, assunto e fato**
+  (`ortho_case_notices`, PK case/kind/key; fora da auditoria; porta interna
+  `_ortho_case_notify` + `_ortho_recipients`): **manutenção vencida** (régua
+  O4: prevista há >7 dias, sem agendamento, nada marcado à frente — **uma
+  por vez**, a mais antiga: o legado entra no meio com várias no passado) e
+  **faltou na última** → Recepção + Gerente; **reavaliação/controle vencido**
+  → Coordenador + ortodontista do caso (chave = a data); **mensalidade
+  atrasada** → Gerente + Financeiro (chave = a cobrança). A rotina também
+  marca `atrasada` sozinha. Sem tela nova (os avisos vão pelo link).
+- ✅ 0336 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
+  conferência 1·2·1·1·1); ensaio em transação desfeita **14/14**
+  (`scratchpad/ensaio-orto-0336.mjs`). Assinatura de `ortho_daily_alerts`
+  **não mudou** e o app não lê nada novo: o push NÃO depende da migração
+  (mas sem ela os avisos simplesmente não saem). ⚠️ **PENDENTE NA PRODUÇÃO.**
+
 **28/10/2026 (18) — PC Administrador (core 0.366.0 → 0.367.0, migração 0335)**
 
 - **Ortodontia ORTO9 — mensalidades por lote** (ESTADO §2; fecha o pedido

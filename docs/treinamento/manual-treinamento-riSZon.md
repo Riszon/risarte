@@ -1616,6 +1616,24 @@ assiduidade.
     reajuste anual; e que, sem assumir as novas mensalidades, o tratamento é
     suspenso e pode ser cancelado.
 
+#### Os avisos no sino (desde a 0.368.0)
+
+A mesma rotina diária (11h) confere cada caso em tratamento ou em
+acompanhamento e avisa **uma vez por fato**, com o link da ficha do caso
+(categoria **Ortodontia** no sino):
+
+| Aviso | Quando | Para quem |
+|---|---|---|
+| **Manutenção vencida sem agendamento** | Manutenção prevista há mais de 7 dias, sem agendamento e nada marcado para a frente — **uma por vez** (a mais antiga; agendada ou cancelada ela, a seguinte avisa) | Recepção e Gerente |
+| **Faltou à última manutenção — reagendar** | A última manutenção passada foi falta e não há nada marcado depois | Recepção e Gerente |
+| **Reavaliação vencida** (ou controle da contenção) | A data da próxima reavaliação passou | Coordenador e o ortodontista do caso |
+| **Mensalidade atrasada** | Venceu e não foi paga — a rotina marca como atrasada sozinha | Gerente e Financeiro da Franqueadora |
+| **Lote de mensalidades terminando / terminou** | 60, 30 e 15 dias do fim e depois de vencido (0.367.0) | Gerente e Financeiro da Franqueadora |
+
+Nada se repete: o mesmo fato (a mesma manutenção, a mesma cobrança, a mesma
+data de reavaliação) avisa uma vez só. A tela Atenção continua mostrando
+tudo isso em lista.
+
 #### O que o ortodontista vê — e o que não vê
 
 Desde a 0.364.0, **o Dentista não vê nenhum valor da ortodontia**: nem a
@@ -1682,7 +1700,8 @@ da ortodontia (desde a 0.364.0).
 **Evidência:** EV-235 a EV-242; contenção, baixa e faltas (0.363.0): EV-243 a
 EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
 (0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254;
-mensalidades por lote (0.367.0): EV-255 a EV-257.
+mensalidades por lote (0.367.0): EV-255 a EV-257; os avisos da rotina
+(0.368.0): EV-258.
 
 ## A barra de cima
 

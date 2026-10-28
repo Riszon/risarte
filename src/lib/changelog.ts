@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.368.0",
+    data: "2026-10-28",
+    migracao: "0336",
+    titulo: "Ortodontia: os avisos da rotina diária — manutenção vencida, falta, reavaliação vencida e mensalidade atrasada",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A rotina diária da ortodontia passou a avisar no sino, uma vez por fato: manutenção vencida sem agendamento (prevista há mais de 7 dias, nada marcado — uma por vez) e falta na última manutenção sem nada marcado depois vão para a Recepção e o Gerente; reavaliação (ou controle da contenção) vencida vai para o Coordenador e o ortodontista do caso; mensalidade atrasada vai para o Gerente e o Financeiro. O aviso abre a ficha do caso.",
+        papeis: ["receptionist", "unit_manager", "clinical_coordinator", "dentist", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A mensalidade que venceu e não foi paga passa a ficar \"Atrasada\" sozinha, todo dia, pela rotina. O botão \"Marcar atrasadas\" continua para quem não quer esperar.",
+        papeis: ["unit_manager", "finance_franchisor", "receptionist"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.367.0",
     data: "2026-10-28",
     migracao: "0335",

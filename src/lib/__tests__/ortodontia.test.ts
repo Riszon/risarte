@@ -568,6 +568,44 @@ describe("espelho do banco (migração 0335 — ORTO9, mensalidades por lote)", 
   });
 });
 
+describe("espelho do banco (migração 0336 — ORTO2, os avisos da rotina diária)", () => {
+  const sql = readFileSync(MIG("0336_ortodontia_avisos_da_rotina.sql"), "utf8");
+  const fn = (name: string) => {
+    const from = sql.slice(sql.indexOf(`function public.${name}(`));
+    return from.slice(0, from.indexOf("$$;"));
+  };
+  it("um aviso por caso, assunto e fato; as portas internas não respondem à API", () => {
+    expect(sql).toMatch(/create table if not exists public\.ortho_case_notices/);
+    expect(sql).toMatch(/primary key \(case_id, kind, key\)/);
+    expect(sql).toMatch(/'ortho_case_notices', 'Registro técnico/);
+    expect(fn("_ortho_case_notify")).toMatch(/on conflict \(case_id, kind, key\) do nothing/);
+    expect(sql).toMatch(/revoke execute on function public\._ortho_case_notify\(uuid, text, text, uuid\[\], text, text\) from public, anon, authenticated;/);
+    expect(sql).not.toMatch(/grant execute on function public\._ortho_case_notify/);
+    expect(sql).not.toMatch(/grant execute on function public\._ortho_recipients/);
+  });
+  it("a rotina avisa quem age: manutenção vencida e falta → Recepção/Gerente; reavaliação → Coordenador + ortodontista; atraso → Gerente/Financeiro", () => {
+    const d = fn("ortho_daily_alerts");
+    // A própria rotina marca a mensalidade atrasada e continua cuidando do lote (0335).
+    expect(d).toMatch(/update public\.ortho_charges set status = 'atrasada'/);
+    expect(d).toMatch(/v_days <= 60 then 'd60'/);
+    // Manutenção vencida: a régua O4 (7 dias), sem nada marcado, UMA por vez.
+    expect(d).toMatch(/m\.planned_date < v_today - 7/);
+    expect(d).toMatch(/order by m\.planned_date\s+limit 1/);
+    expect(d).toMatch(/'manutencao_vencida', v_m\.id::text,\s+public\._ortho_recipients\(v_c\.clinic_id, array\['receptionist','unit_manager'\]/);
+    // Faltou na última: a mesma régua da tela (última passada = faltou, nada marcado).
+    expect(d).toMatch(/if v_m\.id is not null and v_m\.status = 'faltou' then/);
+    expect(d).toMatch(/'faltou', v_m\.id::text,\s+public\._ortho_recipients\(v_c\.clinic_id, array\['receptionist','unit_manager'\]/);
+    // Reavaliação (ou controle da contenção) vencida: Coordenador + o ortodontista do caso.
+    expect(d).toMatch(/'reavaliacao_vencida', v_c\.next_reevaluation_date::text,\s+public\._ortho_recipients\(v_c\.clinic_id, array\['clinical_coordinator'\]/);
+    expect(d).toMatch(/array\[v_c\.orthodontist_id\]/);
+    // Mensalidade atrasada: quem dá baixa, uma vez por cobrança.
+    expect(d).toMatch(/'mensalidade_atrasada', v_ch\.id::text,\s+public\._ortho_recipients\(v_c\.clinic_id, array\['unit_manager','finance_franchisor'\]/);
+    // Só casos abertos em tratamento ou acompanhamento; o cron passa sem usuário.
+    expect(d).toMatch(/c\.status in \('em_tratamento','contencao'\)/);
+    expect(d).toMatch(/if v_user is not null then/);
+  });
+});
+
 describe("espelho do banco (migração 0329)", () => {
   const sql = readFileSync(MIG("0329_ortodontia.sql"), "utf8");
   it("as situações do código são as do check constraint", () => {

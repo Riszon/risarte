@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.367.0** · Última migração: **0335** (0318 a 0335 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.368.0** · Última migração: **0336** (0318 a 0335 aplicadas na produção e no treino; **0336 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.368.0 / 0336 — ORTODONTIA (ORTO2): OS AVISOS DA ROTINA DIÁRIA (28/10/2026)
+>
+> A rotina `ortho_daily_alerts` (0335) ganhou os quatro avisos do caso, **um
+> por caso, assunto e fato** (`ortho_case_notices`): manutenção vencida sem
+> agendamento (régua O4, **uma por vez**) e falta na última → Recepção e
+> Gerente; reavaliação/controle vencido → Coordenador e o ortodontista do
+> caso; mensalidade atrasada → Gerente e Financeiro — e a rotina marca a
+> atrasada sozinha. Sem tela nova (link da ficha; categoria Ortodontia).
+> ⚠️ **0336 aplicada no treino** (reaplicada, idempotente); ensaio em
+> transação desfeita **14/14**; **pendente na produção** (conferência
+> esperada 1·2·1·1·1). O push **não depende** dela (assinatura igual; nada
+> novo lido pelo app) — mas sem ela os avisos não saem. EV-258. Com isto, o
+> módulo de Ortodontia do pedido de 27–28/10 está completo, salvo o ORTO4
+> (emissão pelo ASAAS, com as integrações).
 
 > ## 🎯 0.367.0 / 0335 — ORTODONTIA (ORTO9): MENSALIDADES POR LOTE (28/10/2026)
 >
@@ -4778,6 +4793,52 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### ORTODONTIA — ORTO2, os avisos da rotina diária (28/10/2026, v0.368.0, migração 0336)
+
+O que ficou de fora da ORTO9, pedido pelo dono em seguida: os avisos de
+**manutenção vencida sem agendamento**, **falta na última manutenção**,
+**reavaliação vencida** e **mensalidade atrasada** na rotina diária da
+ortodontia. Só banco; o app já categoriza pelo link (`/ortodontia/...`).
+
+- **O registro.** `ortho_case_notices` (PK `case_id, kind, key`, fora da
+  auditoria): um aviso por caso, assunto e fato. `_ortho_case_notify`
+  (interna) grava o registro, e só se for novo insere as notificações para a
+  lista de pessoas; `_ortho_recipients` (interna) resolve papéis da unidade
+  (+ Financeiro da Franqueadora quando pedido, + pessoas avulsas).
+- **A rotina** (`ortho_daily_alerts`, mesma assinatura; cron 11:00; sem
+  usuário passa; à mão, Admin ou quem dá baixa): (0) marca `atrasada` o que
+  venceu e não foi pago; (1) o lote (0335, inalterado); (2) para cada caso em
+  tratamento ou acompanhamento da unidade: **manutenção vencida** — só em
+  tratamento, prevista há mais de 7 dias (O4) sem agendamento e nada marcado
+  à frente, **uma por vez** (a mais antiga; chave = a manutenção) → Recepção
+  + Gerente; **faltou** — a última manutenção passada foi falta e nada marcado
+  à frente (a mesma régua de `attentionReasons`) → Recepção + Gerente;
+  **reavaliação/controle vencido** (chave = a data) → Coordenador + o
+  ortodontista do caso; **mensalidade atrasada** (chave = a cobrança) →
+  Gerente + Financeiro. Títulos "Ortodontia: …", link da ficha.
+
+**Conferido:** `check-migrations 0336` OK; `migrar:teste` aplicou (221
+tabelas, 671 funções) e a 0336 foi reaplicada por cima sem erro (conferência
+1·2·1·1·1); ensaio em transação desfeita **14/14** (caso legado com 3
+previstas vencidas → UM aviso; reavaliação e atrasada avisam para os papéis
+certos, o dentista do caso recebe a reavaliação; a atrasada é marcada
+sozinha; rodar de novo = 0; falta → aviso único; com agendamento futuro a
+manutenção e a falta ficam quietas; data nova de reavaliação = fato novo;
+sem login nada executa). `npm run verificar`, `npm test`, `npm run lint`: ver
+a entrada da sessão no `CLAUDE.md`. **NÃO visto na tela.** ⚠️ **0336
+PENDENTE NA PRODUÇÃO.** O push não depende dela (assinatura igual, nada novo
+lido pelo app), mas sem ela os avisos não saem.
+
+**Roteiro para o dono testar no treino:** com um caso em tratamento que
+tenha uma manutenção prevista vencida há mais de 7 dias e sem agendamento,
+o Admin roda `select public.ortho_daily_alerts();` no SQL Editor do treino
+→ a Recepção e o Gerente veem "Ortodontia: manutenção vencida sem
+agendamento" no sino (aba Ortodontia), abrindo a ficha. Rodar de novo não
+repete. Marcar uma falta sem nada marcado → "faltou à última manutenção".
+Deixar a reavaliação no passado → o Coordenador e o ortodontista recebem.
+Uma mensalidade vencida → vira Atrasada e o Gerente recebe. (A rotina roda
+sozinha às 11h.)
 
 ### ORTODONTIA — ORTO9, mensalidades por lote (28/10/2026, v0.367.0, migração 0335)
 
