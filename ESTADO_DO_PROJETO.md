@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 27/10/2026 · Versão do sistema: **0.362.0** · Última migração: **0330** (0318 a 0328 e 0330 aplicadas na produção e no treino; 0329 aplicada no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 27/10/2026 · Versão do sistema: **0.362.0** · Última migração: **0330** (0318 a 0330 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.362.0 / 0330 — A HORA CLÍNICA CALCULADA + COMPARAÇÃO NA REDE (27/10/2026)
 >

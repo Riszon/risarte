@@ -422,7 +422,12 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Permissões semeadas na 0329** (Recepção sem o Painel, com mensalidades
   — O2, decisão deixada para o dono).
 - ✅ **0329 APLICADA nos dois bancos** (treino por `migrar:teste`; o dono
-  rodou na produção em 27/10/2026 e a conferência deu o esperado). ⏳ **Falta
+  rodou na produção em 27/10/2026 e a conferência deu o esperado; conferido de
+  fora em 28/10: sem login `ortho_set_status` e `ortho_generate_charges`
+  recusam com "permission denied" (uma função inexistente, de controle,
+  responde "não encontrada") e os casos não aparecem; a produção tem a linha
+  da configuração da rede, a conta 1.1.04 e 0 casos, manutenções,
+  mensalidades e eventos). ⏳ **Falta
   o dono testar na tela** pelo roteiro do ESTADO §2. **Nada visto na tela**
   nesta sessão. Portão: check-migrations OK, `npm run verificar` OK, `npm test`
   OK (2.903), `npm run lint` zero. **Ensaio no treino 35/35, transação
