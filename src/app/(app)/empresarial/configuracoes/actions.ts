@@ -148,6 +148,105 @@ export async function saveSplitRules(
   return { ok: true };
 }
 
+/** As regras do benefício (cobertura, usos, carência, parcelas), iguais para um ou vários. */
+function lerRegrasDoBeneficio(
+  formData: FormData
+): { values: Record<string, unknown> } | { error: string } {
+  const benefitType = field(formData, "benefit_type") ?? "";
+  if (!(BENEFIT_TYPES as readonly string[]).includes(benefitType)) {
+    return { error: "Tipo de benefício inválido." };
+  }
+
+  let benefitValue: number | null = null;
+  if (benefitType === "DISCOUNT_PERCENT") {
+    benefitValue = num(field(formData, "benefit_value"));
+    if (benefitValue == null || benefitValue < 0 || benefitValue > 100) {
+      return { error: "Informe um percentual entre 0 e 100." };
+    }
+  } else if (benefitType === "DISCOUNT_AMOUNT") {
+    benefitValue = reaisToCents(field(formData, "benefit_value"));
+    if (benefitValue == null || benefitValue <= 0) {
+      return { error: "Informe o valor do desconto." };
+    }
+  }
+
+  return {
+    values: {
+      benefit_type: benefitType,
+      benefit_value: benefitValue,
+      usage_limit_count: intOrNull(field(formData, "usage_limit_count")),
+      usage_period_months: intOrNull(field(formData, "usage_period_months")),
+      grace_period_months: intOrNull(field(formData, "grace_period_months")) ?? 0,
+      max_installments: intOrNull(field(formData, "max_installments")),
+    },
+  };
+}
+
+/** Um procedimento por vez acima disso seria engano (a rede inteira tem ~400). */
+const MAXIMO_DE_UMA_VEZ = 500;
+
+/**
+ * VÁRIOS PROCEDIMENTOS, AS MESMAS REGRAS (pedido do dono, 28/10/2026: "inserir
+ * 10 procedimentos que têm as mesmas regras sem fazer um por vez"). Só cria —
+ * procedimento que já tem benefício neste escopo faz recusar tudo (mudar é
+ * pelo Editar da linha). Um INSERT só: ou entram todos, ou nenhum.
+ */
+export async function adicionarBeneficios(
+  companyId: string | null,
+  formData: FormData
+): Promise<ActionResult & { quantos?: number }> {
+  const session = await getSessionContext();
+  if (!canEditConfig(session, companyId)) {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const ids = [
+    ...new Set(
+      formData
+        .getAll("procedure_id")
+        .map((v) => String(v).trim())
+        .filter(Boolean)
+    ),
+  ];
+  if (ids.length === 0) return { ok: false, error: "Marque pelo menos um procedimento." };
+  if (ids.length > MAXIMO_DE_UMA_VEZ) {
+    return { ok: false, error: `No máximo ${MAXIMO_DE_UMA_VEZ} procedimentos de uma vez.` };
+  }
+  const regras = lerRegrasDoBeneficio(formData);
+  if ("error" in regras) return { ok: false, error: regras.error };
+
+  const db = await empresarialDb();
+  let sel = db.from("procedure_benefits").select("procedure_id").in("procedure_id", ids);
+  sel = companyId === null ? sel.is("company_id", null) : sel.eq("company_id", companyId);
+  const { data: jaTem, error: erroDaLeitura } = await sel;
+  if (erroDaLeitura) {
+    console.error("adicionarBeneficios read failed:", erroDaLeitura);
+    return { ok: false, error: "Não foi possível conferir os benefícios que já existem." };
+  }
+  if ((jaTem ?? []).length > 0) {
+    return {
+      ok: false,
+      error: `${jaTem!.length} dos procedimentos marcados já têm benefício (alguém acabou de incluir?). Atualize a tela e tente de novo — nada foi gravado.`,
+    };
+  }
+
+  const { error } = await db
+    .from("procedure_benefits")
+    .insert(ids.map((procedureId) => ({ company_id: companyId, procedure_id: procedureId, ...regras.values })));
+  if (error) {
+    console.error("adicionarBeneficios failed:", error);
+    return { ok: false, error: "Não foi possível salvar os benefícios. Nada foi gravado." };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "empresarial_procedure_benefit",
+    entityId: companyId ?? "network",
+    details: { procedure_ids: ids },
+  });
+  revalidatePath("/empresarial/configuracoes");
+  if (companyId) revalidatePath(`/empresarial/${companyId}`);
+  return { ok: true, quantos: ids.length };
+}
+
 export async function upsertProcedureBenefit(
   companyId: string | null,
   formData: FormData
@@ -158,32 +257,9 @@ export async function upsertProcedureBenefit(
   }
   const procedureId = field(formData, "procedure_id");
   if (!procedureId) return { ok: false, error: "Escolha o procedimento." };
-  const benefitType = field(formData, "benefit_type") ?? "";
-  if (!(BENEFIT_TYPES as readonly string[]).includes(benefitType)) {
-    return { ok: false, error: "Tipo de benefício inválido." };
-  }
-
-  let benefitValue: number | null = null;
-  if (benefitType === "DISCOUNT_PERCENT") {
-    benefitValue = num(field(formData, "benefit_value"));
-    if (benefitValue == null || benefitValue < 0 || benefitValue > 100) {
-      return { ok: false, error: "Informe um percentual entre 0 e 100." };
-    }
-  } else if (benefitType === "DISCOUNT_AMOUNT") {
-    benefitValue = reaisToCents(field(formData, "benefit_value"));
-    if (benefitValue == null || benefitValue <= 0) {
-      return { ok: false, error: "Informe o valor do desconto." };
-    }
-  }
-
-  const values = {
-    benefit_type: benefitType,
-    benefit_value: benefitValue,
-    usage_limit_count: intOrNull(field(formData, "usage_limit_count")),
-    usage_period_months: intOrNull(field(formData, "usage_period_months")),
-    grace_period_months: intOrNull(field(formData, "grace_period_months")) ?? 0,
-    max_installments: intOrNull(field(formData, "max_installments")),
-  };
+  const regras = lerRegrasDoBeneficio(formData);
+  if ("error" in regras) return { ok: false, error: regras.error };
+  const values = regras.values;
 
   const db = await empresarialDb();
   const { error } = await upsertCascadeRow(db, "procedure_benefits", companyId, values, {

@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import { atendeABusca } from "@/lib/busca";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,11 @@ import {
   BENEFIT_TYPE_LABELS,
   type BenefitType,
 } from "@/lib/empresarial/constants";
-import { deleteProcedureBenefit, upsertProcedureBenefit } from "./actions";
+import {
+  adicionarBeneficios,
+  deleteProcedureBenefit,
+  upsertProcedureBenefit,
+} from "./actions";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
@@ -237,7 +240,7 @@ export function BenefitsEditor({
           Benefícios por procedimento — {scopeLabel}.
         </p>
         {disponiveis.length > 0 ? (
-          <BenefitDialog companyId={companyId} procedures={disponiveis} />
+          <NovosBeneficiosDialog companyId={companyId} procedures={disponiveis} />
         ) : (
           <Button size="sm" disabled title="Todos os procedimentos já têm benefício">
             Todos os procedimentos já têm benefício
@@ -371,7 +374,7 @@ export function BenefitsEditor({
                                 )}
                                 <td className="px-3 py-2 text-right">
                                   <span className="flex justify-end gap-1">
-                                    <BenefitDialog companyId={companyId} procedures={[]} benefit={b} />
+                                    <BenefitDialog companyId={companyId} benefit={b} />
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -401,20 +404,8 @@ export function BenefitsEditor({
   );
 }
 
-function BenefitDialog({
-  companyId,
-  procedures,
-  benefit,
-}: {
-  companyId: string | null;
-  /** No "Adicionar": só os que ainda não têm benefício. No Editar, não é usada. */
-  procedures: ProcedimentoDoBeneficio[];
-  benefit?: BenefitView;
-}) {
-  const router = useRouter();
-  const isEdit = Boolean(benefit);
-  const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+/** As regras do benefício — as mesmas no "Adicionar" (vários) e no Editar (um). */
+function CamposDaRegra({ benefit }: { benefit?: BenefitView }) {
   const [benefitType, setBenefitType] = useState<string>(
     benefit?.benefitType ?? "DISCOUNT_PERCENT"
   );
@@ -428,6 +419,98 @@ function BenefitDialog({
         ? (benefit.benefitValue / 100).toFixed(2).replace(".", ",")
         : String(benefit.benefitValue)
       : "";
+
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="min-w-0">
+          <Label htmlFor="benefit_type">Cobertura *</Label>
+          <select
+            id="benefit_type"
+            name="benefit_type"
+            value={benefitType}
+            onChange={(e) => setBenefitType(e.target.value)}
+            className={selectClass}
+          >
+            {BENEFIT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {BENEFIT_TYPE_LABELS[t]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {showValue && (
+          <div className="min-w-0">
+            <Label htmlFor="benefit_value">{valueLabel}</Label>
+            <Input id="benefit_value" name="benefit_value" defaultValue={valueDefault} />
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="min-w-0">
+          <Label htmlFor="usage_limit_count">Usos</Label>
+          <Input
+            id="usage_limit_count"
+            name="usage_limit_count"
+            type="number"
+            min={0}
+            placeholder="ilimitado"
+            defaultValue={benefit?.usageLimitCount ?? ""}
+          />
+        </div>
+        <div className="min-w-0">
+          <Label htmlFor="usage_period_months">A cada (meses)</Label>
+          <Input
+            id="usage_period_months"
+            name="usage_period_months"
+            type="number"
+            min={0}
+            placeholder="—"
+            defaultValue={benefit?.usagePeriodMonths ?? ""}
+          />
+        </div>
+        <div className="min-w-0">
+          <Label htmlFor="grace_period_months">Carência (meses)</Label>
+          <Input
+            id="grace_period_months"
+            name="grace_period_months"
+            type="number"
+            min={0}
+            defaultValue={benefit?.gracePeriodMonths ?? 0}
+          />
+        </div>
+        <div className="min-w-0">
+          <Label htmlFor="max_installments">Parcelas (x)</Label>
+          <Input
+            id="max_installments"
+            name="max_installments"
+            type="number"
+            min={1}
+            max={24}
+            placeholder="da empresa"
+            defaultValue={benefit?.maxInstallments ?? ""}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Ex.: limpeza grátis a cada 6 meses = Cobertura “Sem custo”, Usos “1”, A cada
+        “6”. Parcelas em branco = usa o parcelamento da empresa.
+      </p>
+    </>
+  );
+}
+
+/** Editar UM benefício (o procedimento não muda). */
+function BenefitDialog({
+  companyId,
+  benefit,
+}: {
+  companyId: string | null;
+  benefit: BenefitView;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -446,133 +529,259 @@ function BenefitDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          isEdit ? (
-            <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-              Editar
-            </Button>
-          ) : (
-            <Button size="sm">
-              <Plus className="mr-1 size-4" />
-              Adicionar benefício
-            </Button>
-          )
+          <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+            Editar
+          </Button>
         }
       />
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Editar benefício" : "Novo benefício"}
-          </DialogTitle>
+          <DialogTitle>Editar benefício</DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="min-w-0 space-y-3">
           <div>
-            <Label htmlFor="procedure_id">Procedimento *</Label>
-            {isEdit ? (
-              <>
-                <input type="hidden" name="procedure_id" value={benefit!.procedureId} />
-                <p className="text-sm font-medium">{benefit!.procedureName}</p>
-              </>
-            ) : (
-              <>
-                <ListaComBusca
-                  id="procedure_id"
-                  name="procedure_id"
-                  required
-                  placeholder="Digite para procurar…"
-                  aria-label="Procedimento"
-                  options={procedures.map((p) => ({ value: p.id, label: p.name }))}
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {procedures.length} procedimento(s) ainda sem benefício. Os que já
-                  têm não aparecem aqui — use o Editar da linha.
-                </p>
-              </>
-            )}
+            <Label>Procedimento</Label>
+            <input type="hidden" name="procedure_id" value={benefit.procedureId} />
+            <p className="text-sm font-medium break-words">{benefit.procedureName}</p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="benefit_type">Cobertura *</Label>
-              <select
-                id="benefit_type"
-                name="benefit_type"
-                value={benefitType}
-                onChange={(e) => setBenefitType(e.target.value)}
-                className={selectClass}
-              >
-                {BENEFIT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {BENEFIT_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {showValue && (
-              <div>
-                <Label htmlFor="benefit_value">{valueLabel}</Label>
-                <Input
-                  id="benefit_value"
-                  name="benefit_value"
-                  defaultValue={valueDefault}
-                />
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label htmlFor="usage_limit_count">Usos</Label>
-              <Input
-                id="usage_limit_count"
-                name="usage_limit_count"
-                type="number"
-                min={0}
-                placeholder="ilimitado"
-                defaultValue={benefit?.usageLimitCount ?? ""}
-              />
-            </div>
-            <div>
-              <Label htmlFor="usage_period_months">A cada (meses)</Label>
-              <Input
-                id="usage_period_months"
-                name="usage_period_months"
-                type="number"
-                min={0}
-                placeholder="—"
-                defaultValue={benefit?.usagePeriodMonths ?? ""}
-              />
-            </div>
-            <div>
-              <Label htmlFor="grace_period_months">Carência (meses)</Label>
-              <Input
-                id="grace_period_months"
-                name="grace_period_months"
-                type="number"
-                min={0}
-                defaultValue={benefit?.gracePeriodMonths ?? 0}
-              />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="max_installments">Parcelamento (x) — opcional</Label>
-            <Input
-              id="max_installments"
-              name="max_installments"
-              type="number"
-              min={1}
-              max={24}
-              placeholder="usa o da empresa"
-              defaultValue={benefit?.maxInstallments ?? ""}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Ex.: limpeza grátis a cada 6 meses = Cobertura “Sem custo”, Usos “1”, A
-            cada “6”.
-          </p>
+          <CamposDaRegra benefit={benefit} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={isPending}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isEdit ? "Salvar" : "Adicionar"}
+              Salvar
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * ADICIONAR VÁRIOS DE UMA VEZ (pedido do dono, 28/10/2026). Marca os
+ * procedimentos (só os que ainda não têm benefício), preenche as regras uma
+ * vez e grava todos juntos — ou nenhum, se algo der errado.
+ */
+function NovosBeneficiosDialog({
+  companyId,
+  procedures,
+}: {
+  companyId: string | null;
+  /** Só os que ainda não têm benefício neste escopo. */
+  procedures: ProcedimentoDoBeneficio[];
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [busca, setBusca] = useState("");
+  const [marcados, setMarcados] = useState<Set<string>>(new Set());
+  const porId = new Map(procedures.map((p) => [p.id, p]));
+
+  const procurando = busca.trim().length > 0;
+  const visiveis = procedures.filter((p) => !procurando || atendeABusca(p.name, busca));
+  const blocos = new Map<string, ProcedimentoDoBeneficio[]>();
+  for (const p of visiveis) {
+    const esp = p.specialty?.trim() || SEM_ESPECIALIDADE;
+    blocos.set(esp, [...(blocos.get(esp) ?? []), p]);
+  }
+  const ordem = [...blocos.keys()].sort((x, y) =>
+    x === SEM_ESPECIALIDADE ? 1 : y === SEM_ESPECIALIDADE ? -1 : x.localeCompare(y, "pt-BR")
+  );
+  for (const lista of blocos.values()) lista.sort((a, z) => a.name.localeCompare(z.name, "pt-BR"));
+  const escolhidos = [...marcados]
+    .map((id) => porId.get(id))
+    .filter((p): p is ProcedimentoDoBeneficio => Boolean(p));
+
+  const alternar = (id: string) =>
+    setMarcados((m) => {
+      const n = new Set(m);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  // "Marcar todos" do bloco marca só o que está à vista (respeita a busca).
+  const marcarBloco = (lista: ProcedimentoDoBeneficio[], marcar: boolean) =>
+    setMarcados((m) => {
+      const n = new Set(m);
+      for (const p of lista) {
+        if (marcar) n.add(p.id);
+        else n.delete(p.id);
+      }
+      return n;
+    });
+
+  function mudarAberta(aberta: boolean) {
+    setOpen(aberta);
+    if (!aberta) {
+      setBusca("");
+      setMarcados(new Set());
+    }
+  }
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (marcados.size === 0) {
+      toast.error("Marque pelo menos um procedimento.");
+      return;
+    }
+    const formData = new FormData(e.currentTarget);
+    for (const id of marcados) formData.append("procedure_id", id);
+    startTransition(async () => {
+      const r = await adicionarBeneficios(companyId, formData);
+      if (r.ok) {
+        toast.success(
+          r.quantos === 1 ? "Benefício adicionado." : `${r.quantos} benefícios adicionados.`
+        );
+        mudarAberta(false);
+        router.refresh();
+      } else toast.error(r.error ?? "Erro.");
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={mudarAberta}>
+      <DialogTrigger
+        render={
+          <Button size="sm">
+            <Plus className="mr-1 size-4" />
+            Adicionar benefícios
+          </Button>
+        }
+      />
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Novos benefícios</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="min-w-0 space-y-3">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <Label>1. Marque os procedimentos *</Label>
+              <span className="text-xs text-muted-foreground">
+                {procedures.length} sem benefício · os que já têm não aparecem (use o Editar
+                da linha)
+              </span>
+            </div>
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.preventDefault();
+                }}
+                placeholder="Procurar procedimento…"
+                aria-label="Procurar procedimento para o benefício"
+                className="h-8 pl-8"
+              />
+            </div>
+            <div
+              className="max-h-64 overflow-y-auto rounded-lg border"
+              role="group"
+              aria-label="Procedimentos sem benefício"
+            >
+              {ordem.length === 0 ? (
+                <p className="p-3 text-center text-sm text-muted-foreground">
+                  Nenhum procedimento com essa busca.
+                </p>
+              ) : (
+                ordem.map((esp) => {
+                  const lista = blocos.get(esp) ?? [];
+                  const todos = lista.every((p) => marcados.has(p.id));
+                  return (
+                    <div key={esp} className="border-b last:border-0">
+                      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-muted px-3 py-1.5 text-xs font-medium">
+                        <span className="min-w-0 truncate">
+                          {esp}{" "}
+                          <span className="font-normal text-muted-foreground">({lista.length})</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 text-primary underline-offset-2 hover:underline"
+                          onClick={() => marcarBloco(lista, !todos)}
+                        >
+                          {todos ? "Desmarcar todos" : "Marcar todos"}
+                        </button>
+                      </div>
+                      <ul>
+                        {lista.map((p) => (
+                          <li key={p.id}>
+                            <label className="flex cursor-pointer items-start gap-2 px-3 py-1.5 text-sm hover:bg-muted/50">
+                              <input
+                                type="checkbox"
+                                className="mt-0.5 size-4 shrink-0 accent-primary"
+                                checked={marcados.has(p.id)}
+                                onChange={() => alternar(p.id)}
+                              />
+                              <span className="min-w-0 flex-1 break-words">{p.name}</span>
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {p.priceCents != null && p.priceCents > 0
+                                  ? formatBRL(p.priceCents)
+                                  : "sem preço"}
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            {escolhidos.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">
+                    {escolhidos.length === 1 ? "1 escolhido" : `${escolhidos.length} escolhidos`}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-muted-foreground underline-offset-2 hover:underline"
+                    onClick={() => setMarcados(new Set())}
+                  >
+                    Limpar
+                  </button>
+                </div>
+                <ul className="flex max-h-24 flex-wrap gap-1 overflow-y-auto" aria-label="Procedimentos escolhidos">
+                  {escolhidos.map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex max-w-full items-center gap-1 rounded-full border bg-muted/50 py-0.5 pr-1 pl-2 text-xs"
+                    >
+                      <span className="min-w-0 truncate" title={p.name}>
+                        {p.name}
+                      </span>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded-full px-1 text-muted-foreground hover:text-foreground"
+                        aria-label={`Tirar ${p.name}`}
+                        onClick={() => alternar(p.id)}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 space-y-3 border-t pt-3">
+            <Label>2. As regras (valem para todos os marcados)</Label>
+            <CamposDaRegra />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => mudarAberta(false)} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isPending || marcados.size === 0}>
+              {marcados.size === 0
+                ? "Adicionar"
+                : marcados.size === 1
+                  ? "Adicionar 1 benefício"
+                  : `Adicionar ${marcados.size} benefícios`}
             </Button>
           </div>
         </form>

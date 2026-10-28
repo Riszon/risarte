@@ -1249,9 +1249,22 @@ A aba tem quatro partes, na ordem do trabalho:
     incompleto**: passe o mouse ou clique nele para ler o que falta (a margem
     mostrada é um teto otimista). Procedimento sem preço cadastrado diz
     *"sem preço cadastrado"*.
-    Em **Adicionar benefício**, a lista tem **busca** (digite parte do nome) e
-    mostra **só os procedimentos que ainda não têm benefício**; para mudar um
-    que já tem, use o **Editar** da linha. Com todos incluídos, o botão diz
+    **Adicionar benefícios** inclui **vários procedimentos de uma vez**, com as
+    mesmas regras:
+    1. **Marque os procedimentos.** A lista mostra **só os que ainda não têm
+       benefício**, separados por especialidade e com o preço ao lado; o campo
+       **Procurar** filtra, e **Marcar todos** pega a especialidade inteira (só
+       o que está à vista, se houver busca). Os escolhidos aparecem embaixo,
+       cada um com um **×** para tirar, e **Limpar** desmarca tudo.
+    2. **Preencha as regras uma vez** — cobertura, desconto, usos, a cada
+       (meses), carência e parcelas. Valem para todos os marcados.
+    3. Clique em **Adicionar N benefícios**. Entram **todos ou nenhum**: se
+       algum dos marcados ganhou benefício nesse meio-tempo (outra pessoa
+       incluiu), a tela recusa, diz quantos, e nada é gravado — atualize a
+       página e marque de novo.
+
+    Para mudar um que já tem, use o **Editar** da linha (um por vez, o
+    procedimento não muda). Com todos incluídos, o botão diz
     *"Todos os procedimentos já têm benefício"*. A aba **Plano & Benefícios**
     de cada empresa funciona igual para os benefícios próprios dela.
   - **Outras vantagens** — o que o programa oferece **além dos
