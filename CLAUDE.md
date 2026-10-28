@@ -390,6 +390,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/10/2026 (12) — PC Administrador (core 0.360.0 → 0.361.0, migração 0329)**
+
+- **MÓDULO DE ORTODONTIA (ORTO1, pedido do dono).** Plano e decisões O1–O6
+  em `docs/ortodontia/ORTO-PLANO.md`; estado completo e roteiro de teste no
+  `ESTADO_DO_PROJETO.md` §2. Caso (`ortho_cases`) + manutenções + mensalidades;
+  Painel, Atenção, Casos, ficha, Termo, Mensalidades, Configuração; cartão no
+  prontuário; condições no orçamento impresso.
+- ⚠️ **A agenda liga sozinha** (`ortho_appointment_sync` em `appointments`);
+  **repasse por manutenção** em `provider_payouts` (`session_id` NULO +
+  `ortho_maintenance_id`); **mensalidade = UM lançamento** na conta nova
+  `1.1.04` (open → settled com cash_date). Ver as decisões no ESTADO.
+- ⚠️ **Permissões semeadas na 0329** (Recepção sem o Painel, com mensalidades
+  — O2, decisão deixada para o dono).
+- ✅ 0329 aplicada no TREINO (`migrar:teste`, sem erro). ⏳ **Falta o dono
+  rodar na produção** e testar pelo roteiro do ESTADO. **Nada visto na tela**
+  nesta sessão. Portão: check-migrations OK, `npm run verificar` OK, `npm test`
+  OK (2.903), `npm run lint` zero. **Ensaio no treino 35/35, transação
+  desfeita** (agenda liga, repasse nasce, DRE mostra 1.1.04, recusas por
+  papel e sem login) — detalhe no ESTADO §2.
+- Pendente de decisão do dono: O1 (contenção não cobra), O2 (Recepção dá
+  baixa), e o AP69 (Riso+ fora do razão — a ortodontia entrou).
+
 **27/10/2026 (11) — PC Administrador (core 0.359.0 → 0.360.0, migração 0328)**
 
 - **De onde sai o desconto do pacote (pedido do dono, GP9).** Percentual

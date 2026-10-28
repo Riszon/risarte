@@ -40,6 +40,7 @@ import {
   Users,
   ShieldCheck,
   Smile,
+  SmilePlus,
   Contact,
   ChevronsUpDown,
   type LucideIcon,
@@ -103,6 +104,8 @@ type Props = {
   canViewIndica?: boolean;
   /** 0318: módulo de Metas. Opcional: só o layout informa. */
   canViewMetas?: boolean;
+  /** 0329: módulo de Ortodontia. Opcional: só o layout informa. */
+  canViewOrtho?: boolean;
   /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
   canViewFinance: boolean;
   /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
@@ -195,6 +198,14 @@ const INDICA_ITEM = {
   icon: HeartHandshake,
 };
 
+// 0329: Ortodontia — os pacientes em tratamento ortodôntico, o cronograma de
+// manutenções e a mensalidade. Fica ao lado dos programas (PPR+, Indica).
+const ORTHO_ITEM = {
+  href: "/ortodontia",
+  label: "Ortodontia",
+  icon: SmilePlus,
+};
+
 // 0318: Metas SMART (rede e unidades). Fica perto do Início de propósito:
 // a meta só estimula se a equipe a vê todo dia.
 const METAS_ITEM = {
@@ -280,6 +291,7 @@ export function AppSidebar({
   canViewPpr,
   canViewIndica = false,
   canViewMetas = false,
+  canViewOrtho = false,
   canViewFinance,
   canViewStock,
   canViewPurchases,
@@ -393,6 +405,9 @@ export function AppSidebar({
   }
   if (canViewPpr) {
     navItems = [...navItems, PPR_ITEM];
+  }
+  if (canViewOrtho) {
+    navItems = [...navItems, ORTHO_ITEM];
   }
   if (canViewIndica) {
     navItems = [...navItems, INDICA_ITEM];

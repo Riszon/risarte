@@ -19,6 +19,7 @@ import { PrintButton } from "@/app/renegociacoes/[id]/acordo/print-button";
 import { LinhasDoPacote } from "@/components/linhas-do-pacote";
 import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
 import { pacotesDaOpcao } from "@/lib/procedimentos/grupos";
+import { condicoesOrtodonticas } from "@/lib/ortodontia/proposta";
 
 export const metadata: Metadata = { title: "Orçamento" };
 
@@ -148,6 +149,15 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
   );
   const fora = porDente(conta.excluidos, regioes);
 
+  // 0329: os acordos ortodônticos vão NA PROPOSTA (regra do dono) — quando a
+  // opção aceita tem procedimento de Ortodontia. Leitura à parte e tolerante:
+  // sem a 0329 no banco, o bloco não sai e o resto do orçamento não muda.
+  const orto = await condicoesOrtodonticas(supabase, {
+    clientId: n.client_id as string,
+    clinicId: n.clinic_id as string,
+    procedureIds: conta.incluidos.map((i) => i.procedureId).filter((x): x is string => Boolean(x)),
+  });
+
   const status = n.status as string;
   const aceita = status === "aceita";
   const hoje = todayInBrazil();
@@ -274,6 +284,22 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
           </tbody>
         </table>
       </section>
+
+      {orto && (
+        <section className="avoid-break mb-5">
+          <h2 className="mb-1 font-semibold">Condições do tratamento ortodôntico</h2>
+          <ol className="list-inside list-decimal space-y-1 text-xs">
+            {orto.clausulas.map((c, i) => (
+              <li key={i}>{c}</li>
+            ))}
+          </ol>
+          <p className="mt-1 text-[10px] text-neutral-600">
+            {orto.origem === "caso"
+              ? "Valores do caso ortodôntico já aberto para este paciente."
+              : "Valores padrão da unidade para tratamento ortodôntico; podem ser ajustados ao abrir o caso."}
+          </p>
+        </section>
+      )}
 
       <section className="mb-5">
         <h2 className="mb-1 font-semibold">Pagamento</h2>

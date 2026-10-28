@@ -1386,6 +1386,101 @@ Em **Metas → Resultados**: as metas **encerradas** num período (padrão: os
 
 **Evidência:** EV-209 e EV-210 (etapa 1); EV-211 e EV-212 (etapa 2); EV-213 e EV-214 (etapa 3).
 
+### 2.8. Ortodontia
+
+**Desde a versão 0.361.0 (migração 0329).** O item **Ortodontia** do menu
+acompanha todos os pacientes em tratamento ortodôntico da unidade. A ideia é
+uma só: **cada paciente de ortodontia vira um caso**, com ortodontista, tipo de
+aparelho, cronograma de manutenções, mensalidade e situação — e o sistema mostra
+quem está no prazo, quem atrasou, quem faltou, quem precisa de agendamento e
+quanto a ortodontia rende.
+
+**O que é diferente de um tratamento comum.** A ortodontia **não é um
+procedimento com preço fechado**: o paciente paga uma **mensalidade de
+tratamento**, devida todo mês **com ou sem comparecimento à manutenção** (regra
+da rede, escrita na proposta e no termo). E o **ortodontista recebe por
+manutenção realizada**: cada manutenção concluída gera uma linha no Repasse,
+pela tabela de repasse do procedimento de manutenção configurado.
+
+#### As telas
+
+| Tela | Quem usa | O que faz |
+|---|---|---|
+| **Painel** (`/ortodontia`) | Gerente, Coordenador, Franqueado, Franqueadora, Admin | Os números: em tratamento, aguardando início, em contenção; **no prazo × atrasados**; sem agendamento; novos, finalizados, faltas e manutenções realizadas no período; **previsão de término** (3, 6 e 12 meses); receita recebida, prevista e inadimplência (para quem vê dinheiro); **de onde vêm os pacientes** (Indica +Risos, Riso+, Empresarial, indicação de cliente, direto); a evolução mês a mês; e, para a rede, a tabela **por unidade**. Todo número abre a lista por trás. |
+| **Atenção** (`/ortodontia/atencao`) | **Recepção** (é a tela dela), e todos | Quem precisa de ação agora: **sem próximo agendamento**, **manutenção vencida** (prevista há mais de 7 dias sem agendar), **faltou na última**, **aguardando início**, **reavaliação vencida**, **pedido clínico em aberto**, **término atrasado** e, para quem vê dinheiro, **mensalidade atrasada**. Cada linha tem o WhatsApp, o botão **Agendar** (abre a agenda com o paciente) e o atalho para o caso. Em dia, o paciente não aparece. |
+| **Casos** (`/ortodontia/casos`) | Todos do módulo | A lista com busca (paciente, código, ortodontista) e filtros por situação. O Dentista vê só os casos em que é o ortodontista. |
+| **Novo caso** (`/ortodontia/casos/novo`) | Gerente, Coordenador, Admin | Passo 1: procurar o paciente da unidade. Passo 2: ortodontista, tipo, início, meses previstos, intervalo das manutenções, procedimento da manutenção (repasse), mensalidade, dia de vencimento, instalação (informativo). Os valores vêm da **Configuração** e podem ser ajustados. Marcando **"O aparelho já foi instalado"**, o caso nasce **em tratamento** e o cronograma é gerado na hora. |
+| **A ficha do caso** (`/ortodontia/casos/[id]`) | Todos do módulo | Situação e prazo (com a barra do tempo), os motivos de atenção, o **cronograma** manutenção a manutenção (prevista, agendamento ligado, situação, quem fez e a **evolução**: fio/arco, observações, próximo passo), as **mensalidades** com baixa, as **indicações** que o paciente trouxe, a origem dele e o **histórico**. Botões: **Prontuário**, **Agendar**, **Termo** (imprimir/PDF), **Editar**; e as mudanças de situação (abaixo). |
+| **Mensalidades** (`/ortodontia/mensalidades`) | Gerente, Recepção, Franqueado, Franqueadora, Financeiro da Franqueadora, Admin | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa, **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. |
+| **Configuração** (`/ortodontia/configuracao`) | Admin (rede) e Gerente (a própria unidade) | O padrão da rede e o ajuste por unidade: mensalidade padrão, meses previstos, intervalo das manutenções, reavaliação a cada N meses, tolerância do prazo, dia de vencimento e o **procedimento da manutenção** (de onde sai o valor do repasse). |
+
+#### A situação do caso
+
+**Aguardando início** (caso aberto, aparelho ainda não instalado) → **Em
+tratamento** (o botão **Iniciar tratamento** gera o cronograma a partir da
+data) → **Em contenção** (opcional; não cobra mensalidade) → **Finalizado**. A
+qualquer momento, **Interromper** (com motivo obrigatório: desistência,
+transferência…). Finalizado ou interrompido pode ser **reaberto** por quem
+gere. Só existe **um caso aberto por paciente**.
+
+**No prazo × atrasado:** o caso é "atrasado" quando passou da **data prevista de
+término + a tolerância** configurada (30 dias por padrão) e ainda está em
+tratamento. Finalizado compara a data em que terminou com a prevista.
+
+#### Como a agenda e o cronograma se falam
+
+- Ao iniciar o caso, o sistema gera as **manutenções previstas**: uma a cada
+  intervalo (30 dias por padrão), do início até o término previsto.
+- A recepção **agenda como sempre**, em Agenda, com o **ortodontista do caso**
+  (sessão de tratamento, início de tratamento ou retorno). O sistema **liga
+  sozinho** o agendamento à manutenção prevista mais próxima (até 45 dias de
+  diferença) — ou cria uma manutenção extra. Ela passa a **Agendada**.
+- **Concluir o atendimento** marca a manutenção como **Realizada** e gera o
+  **repasse** do ortodontista. **Não compareceu** marca **Faltou**. Cancelar o
+  agendamento devolve a manutenção a **Prevista**.
+- Quando o profissional do agendamento não é o ortodontista do caso, ou o
+  agendamento veio antes do caso, use **Vincular** (ícone de elo) na linha da
+  manutenção, na ficha do caso.
+- O ortodontista (ou o Coordenador) registra a **evolução** no botão
+  **Registrar** / **Evolução** da manutenção — e pode marcar como realizada por
+  ali uma manutenção feita sem agendamento. Desfazer uma realizada é do
+  Gerente/Coordenador e só antes do fechamento do repasse do mês.
+- **Manutenção extra** (bráquete solto, urgência): botão na ficha do caso.
+
+#### A mensalidade e a DRE
+
+- A mensalidade é **devida independentemente do comparecimento**. Essa regra
+  está escrita nas **Condições do tratamento ortodôntico** que saem no
+  **orçamento impresso** (quando o plano tem procedimento de Ortodontia) e no
+  **Termo do tratamento ortodôntico** da ficha do caso.
+- **Gerar mensalidades do mês** cria uma cobrança por caso **em tratamento**
+  (contenção e aguardando início não cobram) com vencimento no dia configurado.
+  Finalizar ou interromper cancela as mensalidades dos meses **seguintes**.
+- Cada mensalidade entra na **DRE da unidade** na linha **"Ortodontia —
+  mensalidades" (1.1.04)**, no mês de competência, assim que é gerada; a
+  **baixa** leva o valor para o **fluxo de caixa** do dia; desfazer a baixa
+  volta; cancelar tira da DRE.
+- A **instalação do aparelho** continua sendo cobrada pelo plano/venda normal
+  (linha "Procedimentos — plano de tratamento"); no caso ela é só informativa.
+
+#### Ortodontia, Metas, Indica +Risos, Riso+ e Empresarial
+
+O Painel mostra **de onde vêm** os pacientes de ortodontia: se chegaram por uma
+indicação do **Indica +Risos**, se são beneficiários do **Riso+ (PPR+)**, se são
+colaboradores do **Empresarial**, se vieram por **indicação de cliente** (o
+"indicado por" da ficha) ou **direto**. Na ficha do caso, o bloco **Indicações**
+lista quem o paciente trouxe. As **Metas** continuam medindo os procedimentos
+de Ortodontia (modelo "Ortodontia no trimestre"); indicadores pelo caso vêm na
+próxima etapa do módulo.
+
+#### No prontuário
+
+A ficha do paciente ganhou o cartão **Ortodontia** (situação, ortodontista,
+próxima manutenção, mensalidades em atraso) com o botão **Abrir o caso
+ortodôntico**. Sem caso, o cartão não aparece.
+
+**Evidência:** EV-235 a EV-242.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu
@@ -1515,6 +1610,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 | Estoque | `/estoque` | Itens, kits, saldo, inventário |
 | Compras | `/compras` | Requisição, cotação, pedido, recebimento |
 | PPR+ | `/ppr` | Programa de prevenção |
+| Ortodontia | `/ortodontia` | Os pacientes em tratamento ortodôntico: casos, cronograma de manutenções, mensalidade e a lista de quem precisa de atenção (ver [seção 2.8](#28-ortodontia)) |
 | Empresarial | `/empresarial` | Convênio com empresas parceiras. **Funil**: o quadro comercial de 8 fases, da captação à implantação — clicar no nome da empresa abre o levantamento, a simulação da proposta, a apresentação em PDF, o registro do envio e, no fechamento, a conferência do consultor e os passos da implantação. **Painel**: conversão fase a fase, tempo em cada fase, quem está parado e o desempenho por consultor e por canal. **Agenda**: as reuniões do programa. **Cobranças**: as de todas as empresas. **Boas-vindas**: a fila de ligação da recepção/SDR em cada empresa. ⚠️ **Este módulo tem MANUAL PRÓPRIO**, no botão **Manual** dentro dele (ou `/empresarial/manual`): titular, faixa, carência, proposta, termo de inclusão e cobrança estão explicados lá, não aqui |
 | Risartanos | `/risartanos` | A equipe: cadastro, unidades e **acesso ao sistema** na mesma ficha (ver [seção 2.5](#25-risartanos-a-equipe-e-o-acesso-na-mesma-ficha)) |
 | Relatórios | `/relatorios` | Indicadores de agenda, rede e produtividade |
@@ -1961,6 +2057,11 @@ diferença.
 
 | Ação | Quem pode |
 |---|---|
+| Ortodontia — ver o módulo | Admin, **Gerente**, **Coordenador**, **Recepção**, Franqueado, Franqueadora/Rede, Financeiro da Franqueadora, **Dentista** (só os casos em que é o ortodontista) |
+| Ortodontia — ver o Painel (os números) | Admin, **Gerente**, **Coordenador**, Franqueado, Franqueadora/Rede, Financeiro da Franqueadora (a Recepção cai na tela Atenção) |
+| Ortodontia — abrir, editar, iniciar, finalizar o caso | Admin, **Gerente**, **Coordenador** |
+| Ortodontia — registrar a manutenção e a evolução | Admin, **Coordenador**, o **Dentista** que é o ortodontista do caso |
+| Ortodontia — mensalidades (gerar, dar baixa) | Admin, **Gerente**, **Recepção**, Franqueado, Franqueadora/Rede, Financeiro da Franqueadora |
 | Lançar/editar dinheiro | Admin, Financeiro da Franqueadora, **Gerente** |
 | Configurar financeiro da REDE | Admin, Financeiro da Franqueadora |
 | Entrada e inventário de estoque | Admin, Financeiro da Franqueadora, **Gerente**, **ASB** (na unidade dele, desde a 0.320.0) |
@@ -2994,6 +3095,11 @@ cadastro, só Admin).
 `repasses`, `taxas-da-rede`.
 
 **Estoque e compras:** `/estoque`, `/compras`.
+
+**Ortodontia (desde a versão 0.361.0):** `/ortodontia` (Painel), `/ortodontia/atencao`,
+`/ortodontia/casos`, `/ortodontia/casos/novo`, `/ortodontia/casos/[id]` (a ficha do
+caso), `/ortodontia/casos/[id]/contrato` (o termo para imprimir),
+`/ortodontia/mensalidades`, `/ortodontia/configuracao`.
 
 **Programas:** `/ppr`, `/empresarial`.
 

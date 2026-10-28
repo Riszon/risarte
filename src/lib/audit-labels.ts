@@ -36,6 +36,12 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   session: "Acesso",
   access_idle_settings: "Tempo de inatividade",
   audit_activity_report: "Relatório de atividade (Auditoria)",
+  // ------------------------------------------------ ortodontia (0329)
+  ortho_case: "Caso ortodôntico",
+  ortho_maintenance: "Manutenção ortodôntica",
+  ortho_charge: "Mensalidade ortodôntica",
+  ortho_settings: "Configuração da Ortodontia",
+  ortho_dashboard: "Painel da Ortodontia",
   // ------------------------------------------------ cliente e prontuário
   client: "Cliente",
   client_consent: "Consentimento do cliente",

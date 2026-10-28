@@ -104,6 +104,7 @@ const FIXTURE_SOURCES = {
   lead: () =>
     admin.schema("empresarial").from("commercial_leads").select("id").limit(1),
   pprMembership: () => admin.from("ppr_memberships").select("id").limit(1),
+  orthoCase: () => admin.from("ortho_cases").select("id").limit(1),
   indicacao: () => admin.schema("indica").from("indicacoes").select("id").limit(1),
   embaixador: () => admin.schema("indica").from("embaixadores").select("id").limit(1),
   campanha: () => admin.schema("indica").from("campanhas").select("id").limit(1),

@@ -207,6 +207,7 @@ export const NOME_DA_TELA: Record<string, string> = {
   "minha-agenda": "Minha Agenda",
   notificacoes: "Notificações",
   novidades: "Novidades do sistema",
+  ortodontia: "Ortodontia",
   perfil: "Meu perfil",
   planejamento: "Centro de Planejamento",
   planos: "Planos de Tratamento",

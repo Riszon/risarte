@@ -62,6 +62,66 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.361.0",
+    data: "2026-10-27",
+    migracao: "0329",
+    titulo: "Ortodontia: o módulo para acompanhar quem está em tratamento ortodôntico",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novo item Ortodontia no menu. Cada paciente em tratamento ortodôntico vira um caso, com ortodontista, tipo de aparelho, cronograma de manutenções, mensalidade e situação (aguardando início, em tratamento, contenção, finalizado, interrompido). A ficha do caso mostra o cronograma, a evolução de cada manutenção, as mensalidades, as indicações do paciente e o histórico.",
+        papeis: [
+          "unit_manager", "clinical_coordinator", "receptionist", "franchisee",
+          "franchisor_staff", "finance_franchisor", "dentist",
+        ],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A tela Atenção da Ortodontia lista quem precisa de ação: sem próximo agendamento, manutenção vencida, faltou na última, reavaliação vencida, pedido clínico aberto, término atrasado e mensalidade atrasada — é a tela da Recepção.",
+        papeis: ["receptionist", "unit_manager", "clinical_coordinator"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A agenda liga sozinha: um agendamento do paciente com o ortodontista do caso vira a manutenção do cronograma; concluir o atendimento marca a manutenção como realizada e gera o repasse do ortodontista (que recebe por manutenção realizada); falta marca como faltou.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A mensalidade da ortodontia é uma cobrança própria (não é procedimento): a tela Mensalidades gera o mês, dá baixa e marca as atrasadas. Cada mensalidade entra na DRE da unidade na linha nova \"Ortodontia — mensalidades\" (1.1.04), e a baixa entra no fluxo de caixa.",
+        papeis: ["unit_manager", "receptionist", "franchisee", "franchisor_staff", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Painel da Ortodontia mostra, por unidade e para a rede: em tratamento, novos, finalizados, no prazo × atrasados, faltas, sem agendamento, previsão de término (3, 6 e 12 meses), receita das mensalidades, inadimplência, de onde vêm os pacientes (Indica +Risos, Riso+, Empresarial, indicação) e a evolução mês a mês.",
+        papeis: ["unit_manager", "clinical_coordinator", "franchisee", "franchisor_staff", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O orçamento impresso (proposta) ganha o bloco \"Condições do tratamento ortodôntico\" quando o plano tem procedimento de Ortodontia, e a ficha do caso imprime o Termo do tratamento ortodôntico — os dois dizem que a mensalidade é devida mesmo sem comparecer à manutenção.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager", "clinical_coordinator"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Permissões novas em Administração → Permissões: Ortodontia (o módulo), Painel da Ortodontia, Gerir o caso ortodôntico, Registrar manutenção ortodôntica e Mensalidades da ortodontia. A Recepção nasce com o módulo e as mensalidades, sem o Painel.",
+        papeis: "todos",
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+    ],
+  },
+  {
     versao: "0.360.0",
     data: "2026-10-27",
     migracao: "0328",

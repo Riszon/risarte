@@ -70,6 +70,9 @@ export const ROUTE_FIXTURES = {
   "/metas/[id]": "goal",
   "/metas/[id]/editar": "goal",
   "/ppr/adesoes/[id]/contrato": "pprMembership",
+  // 0329: a ficha do caso ortodôntico e o termo para imprimir.
+  "/ortodontia/casos/[id]": "orthoCase",
+  "/ortodontia/casos/[id]/contrato": "orthoCase",
   "/ppr/configuracao/[planId]": "pprPlan",
   "/ppr/cartao/[beneficiaryId]": "pprBeneficiary",
   "/cancelamentos/[id]/termo": "cancellation",
@@ -168,6 +171,18 @@ export const PERMISSION_RULES = [
     route: "/financeiro/dre",
     expect: "bloqueado",
     why: "dentista não vê financeiro",
+  },
+  {
+    role: "dentist",
+    route: "/ortodontia/mensalidades",
+    expect: "bloqueado",
+    why: "dentista não vê a mensalidade da ortodontia (ORTO-PLANO §2.6: acao.ortodontia.financeiro)",
+  },
+  {
+    role: "receptionist",
+    route: "/ortodontia/configuracao",
+    expect: "bloqueado",
+    why: "a configuração da ortodontia é do Admin (rede) e do Gerente (unidade)",
   },
   {
     role: "dentist",

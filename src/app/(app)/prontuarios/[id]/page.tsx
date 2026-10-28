@@ -74,6 +74,8 @@ import { loadPprOffer } from "@/lib/ppr/offer-loader";
 import { PprOfferButton } from "@/components/ppr-offer-dialog";
 import { loadPprClientBadge } from "@/lib/ppr/client-badge-loader";
 import { PprBadge, PprClientCard } from "@/components/ppr-client-card";
+import { loadOrthoClientBadge } from "@/lib/ortodontia/client-badge-loader";
+import { OrthoClientCard } from "@/components/ortodontia/ortho-client-card";
 import { DirectSaleDialog } from "./direct-sale-dialog";
 import { DirectSaleSessionsList } from "./direct-sale-sessions-list";
 import { SaleItem } from "../../comercial/venda-direta/direct-sale-item";
@@ -809,6 +811,9 @@ export default async function ClientDetailPage(
   const pprOffer = await loadPprOffer(client.id, scheduleClinicId, "venda_direta");
   // PPR4: selo do programa + família (titular/dependentes) + histórico.
   const ppr = await loadPprClientBadge(client.id);
+  // 0329: o caso de ortodontia do paciente (situação, próxima manutenção,
+  // atalho para a ficha do caso). Lê à parte: sem a 0329 no banco, nada aparece.
+  const ortho = await loadOrthoClientBadge(client.id);
   // VD (ajuste de fluxo): vendas diretas deste cliente para FECHAR no próprio
   // prontuário + os procedimentos avulsos (aberto/concluído).
   const clientDirectSales = await loadClientDirectSales(
@@ -2869,6 +2874,9 @@ export default async function ClientDetailPage(
 
       {/* PPR4: bloco do programa — situação, família clicável e cartão. */}
       <PprClientCard badge={ppr.current} past={ppr.past} />
+
+      {/* 0329: o caso de ortodontia — situação, próxima manutenção e a ficha. */}
+      <OrthoClientCard badge={ortho} />
 
       <PendingDecision
         decisions={decisions.map((d) => ({

@@ -119,6 +119,11 @@ export const TABELAS: Record<string, string> = {
   "public.ppr_plans": "Plano PPR+",
   "public.ppr_settings": "Configuração do PPR+",
   "public.ppr_social_points": "Pontos sociais do PPR+",
+  // ------------------------------------------------------------- ortodontia (0329)
+  "public.ortho_settings": "Configuração da Ortodontia",
+  "public.ortho_cases": "Caso ortodôntico",
+  "public.ortho_maintenances": "Manutenção ortodôntica",
+  "public.ortho_charges": "Mensalidade ortodôntica",
   "public.procedure_cost_items": "Item de custo do procedimento",
   "public.procedure_costs": "Custo do procedimento",
   "public.procedure_kit_links": "Kit do procedimento",

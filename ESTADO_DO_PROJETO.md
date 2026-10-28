@@ -4658,6 +4658,101 @@ Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 p
 
 ## 2. O que está em andamento agora
 
+### ORTODONTIA — ORTO1, o módulo inteiro (27/10/2026, v0.361.0, migração 0329)
+
+Pedido do dono: *"criar o módulo de ortodontia… acompanhar todos os clientes
+em tratamento ortodôntico… receita própria na DRE… mensalidade que não é
+procedimento… o ortodontista recebe por manutenção realizada… acordos na
+proposta e no contrato… acesso por função."* Plano, desenho e decisões
+O1–O6 em `docs/ortodontia/ORTO-PLANO.md`.
+
+**O desenho em uma frase:** cada paciente de ortodontia vira um **caso**
+(`ortho_cases`, ORT-000001) com cronograma de **manutenções**
+(`ortho_maintenances`), **mensalidades** (`ortho_charges`) e histórico
+(`ortho_events`). Só um caso aberto por paciente.
+
+**O que a equipe vê:** menu **Ortodontia** → Painel (números clicáveis, por
+unidade para a rede), **Atenção** (a tela da Recepção: sem agendamento,
+vencida, faltou, aguardando início, reavaliação vencida, pedido clínico,
+término atrasado, mensalidade atrasada), Casos, Novo caso, a ficha do caso
+(cronograma + evolução + mensalidades + indicações + histórico + Termo para
+imprimir), Mensalidades, Configuração (cascata). Cartão **Ortodontia** no
+prontuário e bloco **Condições do tratamento ortodôntico** no orçamento
+impresso quando a opção tem procedimento de Ortodontia.
+
+**Decisões de desenho que valem daqui em diante:**
+
+- ⚠️ **A AGENDA LIGA SOZINHA** (`ortho_appointment_sync`, gatilho blindado em
+  `appointments`): agendamento do paciente COM O ORTODONTISTA do caso (sessão,
+  início, retorno) → manutenção prevista mais próxima (±45 dias) ou extra.
+  `completed` → realizada (+ repasse); `no_show` → faltou; `cancelled` →
+  prevista. Ao mexer nos status do agendamento, lembrar deste gatilho.
+- ⚠️ **O REPASSE DO ORTODONTISTA ENTRA EM `provider_payouts`**: `session_id`
+  passou a aceitar NULO e a linha aponta para `ortho_maintenance_id` (check:
+  exatamente uma origem). `close_payout_month` não muda. Quem ler
+  `provider_payouts` esperando `session_id` sempre preenchido precisa tratar o
+  nulo (a tela de Repasses não lê a sessão — conferido).
+- ⚠️ **A MENSALIDADE É UM LANÇAMENTO SÓ NO RAZÃO** (`ortho_charge_ledger`,
+  conta `1.1.04 Ortodontia — mensalidades`): `open` na competência (DRE),
+  `settled` + `cash_date` na baixa (fluxo realizado), volta a `open` ao
+  desfazer, `cancelled` ao cancelar. Duas linhas (como as parcelas) fariam a
+  DRE contar duas vezes — ela exclui liquidação só pelo NOME
+  `receipt_cash`/`payable_cash` (0226). Limite v1: a mensalidade em aberto
+  NÃO entra na projeção do fluxo de caixa nem na conciliação (ORTO4).
+- ⚠️ **Só `em_tratamento` gera mensalidade** (O1): contenção e aguardando
+  início não cobram. Finalizar/interromper/contenção cancela os meses
+  seguintes.
+- ⚠️ **Permissões novas SEMEADAS na matriz pela 0329** (lição da 0294):
+  `modulo.ortodontia`, `modulo.ortodontia.painel`, `acao.ortodontia.gerir`,
+  `acao.ortodontia.evoluir`, `acao.ortodontia.financeiro`. A Recepção nasce
+  SEM o Painel e COM as mensalidades (O2 — decisão deixada para o dono).
+- ⚠️ **As regras moram em `src/lib/ortodontia/regras.ts`** (25 testes):
+  atrasado = término previsto + tolerância (O3); manutenção vencida = prevista
+  há > 7 dias sem agendamento (O4); origem do paciente na ordem Indica → Riso+
+  → Empresarial → indicação → unidade. O banco espelha o que precisa
+  (`ortho_can_*`, `ortho_plan_maintenances`).
+- ⚠️ **O orçamento lê a especialidade** (`/ortod/i` em `procedures.specialty`)
+  para decidir se imprime as condições. Renomear a especialidade "Ortodontia"
+  para algo sem "ortod" apaga o bloco.
+
+**Conferido:** `check-migrations 0329` OK; `migrar:teste` aplicou a 0329 no
+treino sem erro (215 tabelas, 649 funções); `npm run verificar` verde (build
+do zero + tipos); `npm test` verde (2.903 testes); `npm run lint` zero.
+**Ensaio no treino, transação DESFEITA, 35/35:** recepção não abre caso;
+caso ORT-000001 em tratamento com 12 previstas; segundo caso recusado;
+agendamento com o ortodontista liga sozinho à prevista mais próxima →
+concluir = realizada + repasse em `provider_payouts` (R$ 0,00 — o treino não
+tem tabela de repasse para o procedimento; a regra do zero vale), concluir de
+novo não duplica; falta → faltou; gerar mensalidade → 1.1.04 `open` e a DRE
+do mês mostra R$ 189,90; baixa → `settled` com `cash_date` (fluxo realizado);
+desfazer → `open`; outro dentista não registra evolução, o ortodontista sim;
+recepção dá baixa (O2) mas não finaliza; finalizar cancela previstas e o mês
+seguinte (razão `cancelled`) e o cliente deixa de ser "em ortodontia"; sem
+login nada executa. Roteiro em `scratchpad/ensaio-orto.mjs` (fora do repositório).
+**NÃO visto na tela:** nenhuma tela foi aberta nesta sessão (o treino não tem
+caso e não quis criar agendamento com profissional real). **Roteiro para o
+dono testar no treino:**
+
+1. Admin → Administração → Permissões: conferir as 5 permissões de Ortodontia.
+2. Ortodontia → Configuração: mensalidade padrão, intervalo, procedimento da
+   manutenção (um procedimento de Ortodontia com tabela de repasse).
+3. Ortodontia → Casos → **Novo caso**: um paciente de teste, com um dentista
+   de teste como ortodontista, "aparelho já instalado" marcado → a ficha abre
+   com o cronograma.
+4. Agenda: agendar sessão de tratamento do paciente com esse dentista → na
+   ficha do caso a manutenção vira **Agendada**; concluir o atendimento →
+   **Realizada**; Financeiro → Repasses mostra a linha do ortodontista.
+5. Mensalidades → **Gerar mensalidades do mês** → **Dar baixa** → DRE da
+   unidade mostra "Ortodontia — mensalidades"; fluxo de caixa mostra a entrada.
+6. Atenção: tirar o agendamento → o paciente aparece em "Sem próximo agendamento".
+7. Orçamento impresso de um plano com procedimento de Ortodontia → bloco
+   "Condições do tratamento ortodôntico".
+
+**Próximas etapas (plano §3):** ORTO2 avisos no sino; ORTO3 indicadores de
+Metas pelo caso; ORTO4 ASAAS + projeção do fluxo; ORTO5 abertura automática
+no fechamento da venda. **AP69** (Riso+ e Empresarial fora do razão) segue
+aberto — a ortodontia entrou no razão de propósito.
+
 ### PRINT COM A LISTA ABERTA — "CAPTURAR COM TEMPO" (23/09/2026, v0.273.0 e v0.274.0, sem migração)
 
 Pergunta do dono: *"quando quero fazer a captura de uma tela e quero mostrar

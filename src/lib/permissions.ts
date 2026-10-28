@@ -244,6 +244,35 @@ export const CAPACIDADES: Capability[] = [
     padrao: TODOS,
   },
   {
+    // 0329 — Ortodontia. O menu e a lista de casos; o BANCO (`ortho_can_view`)
+    // deixa ler quem é da unidade ou da rede, e o dentista só vê os casos em
+    // que é o ortodontista (regra de tela, `orthoRestrictedToOwn`).
+    id: "modulo.ortodontia",
+    rotulo: "Ortodontia",
+    grupo: "Módulos",
+    descricao:
+      "Os pacientes em tratamento ortodôntico: casos, cronograma de manutenções e a lista de quem precisa de atenção.",
+    dependeDoBanco: true,
+    padrao: [
+      "unit_manager", "clinical_coordinator", "receptionist", "franchisee",
+      "franchisor_staff", "finance_franchisor", "dentist",
+    ],
+  },
+  {
+    // A Recepção fica de fora de propósito (decisão do dono): ela acompanha
+    // quem precisa de agendamento, não os números da especialidade.
+    id: "modulo.ortodontia.painel",
+    rotulo: "Painel da Ortodontia",
+    grupo: "Módulos",
+    descricao:
+      "Os números da ortodontia: em tratamento, novos, finalizados, no prazo × atrasados, faltas, previsão e receita.",
+    dependeDoBanco: true,
+    padrao: [
+      "unit_manager", "clinical_coordinator", "franchisee",
+      "franchisor_staff", "finance_franchisor",
+    ],
+  },
+  {
     id: "modulo.financeiro",
     rotulo: "Financeiro",
     grupo: "Módulos",
@@ -340,6 +369,41 @@ export const CAPACIDADES: Capability[] = [
       "Ver as cotações dos fornecedores e escolher o vencedor. Quem compra não é quem paga.",
     dependeDoBanco: true,
     padrao: ["purchaser"],
+  },
+  {
+    // 0329 — o banco (`ortho_can_manage`) só aceita Gerente e Coordenador.
+    id: "acao.ortodontia.gerir",
+    rotulo: "Gerir o caso ortodôntico",
+    grupo: "Ações — Programas",
+    descricao:
+      "Abrir, editar, iniciar, pôr em contenção, finalizar e interromper o caso de ortodontia.",
+    dependeDoBanco: true,
+    padrao: ["unit_manager", "clinical_coordinator"],
+  },
+  {
+    // O banco (`ortho_can_evolve`) aceita o Coordenador e o DENTISTA que é o
+    // ortodontista do caso.
+    id: "acao.ortodontia.evoluir",
+    rotulo: "Registrar manutenção ortodôntica",
+    grupo: "Ações — Programas",
+    descricao:
+      "Registrar a manutenção realizada e a evolução (fio, observações, próximo passo). Gera o repasse do ortodontista.",
+    dependeDoBanco: true,
+    padrao: ["dentist", "clinical_coordinator"],
+  },
+  {
+    // Decisão O2 (ORTO-PLANO §4): a Recepção dá baixa, como no PPR+. O banco
+    // (`ortho_can_settle`) aceita Gerente, Recepção, Franqueado e a rede.
+    id: "acao.ortodontia.financeiro",
+    rotulo: "Mensalidades da ortodontia",
+    grupo: "Ações — Programas",
+    descricao:
+      "Ver a situação financeira dos casos, gerar as mensalidades do mês e dar baixa.",
+    dependeDoBanco: true,
+    padrao: [
+      "unit_manager", "receptionist", "franchisee",
+      "franchisor_staff", "finance_franchisor",
+    ],
   },
   {
     id: "acao.ppr.configurar",
