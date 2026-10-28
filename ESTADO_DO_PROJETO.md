@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.367.0** · Última migração: **0335** (0318 a 0334 aplicadas na produção e no treino; **0335 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.367.0** · Última migração: **0335** (0318 a 0335 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.367.0 / 0335 — ORTODONTIA (ORTO9): MENSALIDADES POR LOTE (28/10/2026)
 >
@@ -19,11 +19,11 @@ _Atualizado em: 28/10/2026 · Versão do sistema: **0.367.0** · Última migraç
 > **R9/Q5:** situação **suspenso** (com motivo, nunca automático; previstas
 > param, mensalidades seguintes saem, lotes encerram; retomar ou interromper).
 > **R9:** termo com lote, renovação, pontualidade, reajuste e suspensão.
-> ⚠️ **0335 aplicada no treino** (reaplicada, idempotente); ensaio em
-> transação desfeita **28/28**; **pendente na produção** (conferência
-> esperada 2·4·1·4·1·1·1). ⚠️ **O push espera a migração** (três assinaturas
-> mudaram; o app lê `ortho_billing_batches` e as colunas novas da cobrança).
-> **ORTO2 segue pendente** (a rotina existe; faltam os outros avisos nela).
+> ✅ **0335 APLICADA nos dois bancos** (o dono rodou na produção em
+> 28/10/2026; conferência 2·4·1·4·1·1·1, como esperado) e só então o push
+> `e608fd2` saiu (três assinaturas mudaram; o app lê `ortho_billing_batches`).
+> No treino reaplicada, idempotente; ensaio em transação desfeita **28/28**.
+> Não visto na tela. **ORTO2 segue pendente** (a rotina existe; faltam os outros avisos nela).
 > EV-255 a EV-257.
 
 > ## 🎯 0.366.0 / 0334 — ORTODONTIA (ORTO8): DO COMERCIAL AO CASO (28/10/2026)
@@ -4846,10 +4846,12 @@ não roda nem decide; renovar emite lote 2 no mês seguinte e atualiza o
 acordo; não renovar no histórico; suspender exige motivo e para tudo;
 retomar sem lote automático; emitir à mão depois; de suspenso interrompe;
 sem login nada executa). `npm run verificar`, `npm test`, `npm run lint`:
-ver a entrada da sessão no `CLAUDE.md`. **NÃO visto na tela.** ⚠️ **0335
-PENDENTE NA PRODUÇÃO — e o push espera por ela:** `ortho_effective_settings`,
-`ortho_save_settings` e `ortho_mark_charge_paid` mudaram de assinatura e o
-app lê `ortho_billing_batches` e as colunas novas de `ortho_charges`.
+ver a entrada da sessão no `CLAUDE.md`. **NÃO visto na tela.** ✅ **0335
+APLICADA NA PRODUÇÃO** em 28/10/2026 (o dono rodou; conferência
+2·4·1·4·1·1·1, como esperado) e só então o push `e608fd2` saiu — a ordem
+importava porque `ortho_effective_settings`, `ortho_save_settings` e
+`ortho_mark_charge_paid` mudaram de assinatura e o app lê
+`ortho_billing_batches` e as colunas novas de `ortho_charges`.
 **O que ficou de fora:** ORTO2 (os avisos de manutenção vencida, falta,
 reavaliação e mensalidade atrasada no sino) — a rotina diária agora existe e
 é o lugar deles; ORTO4 (emissão real pelo ASAAS) segue com as integrações.

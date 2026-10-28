@@ -415,13 +415,14 @@ Syncthing se comportarem de forma estranha.**
   renovação, pontualidade, reajuste e suspensão. App: `lote-client.tsx`
   (BatchActions), baixa com data e prévia do desconto, Atenção/Painel com
   `batchAttention` (`lote_terminando`, `lote_encerrado`, `suspenso`).
-- ⚠️ **O push espera a 0335 na produção:** três assinaturas mudaram
+- ✅ **0335 APLICADA nos dois bancos** (o dono rodou na produção em
+  28/10/2026; conferência 2·4·1·4·1·1·1, como esperado) e só então o push
+  `e608fd2` saiu — a ordem importava: três assinaturas mudaram
   (`ortho_effective_settings`, `ortho_save_settings`, `ortho_mark_charge_paid`)
   e o app lê `ortho_billing_batches` e as colunas novas de `ortho_charges`.
-- ✅ 0335 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
-  conferência 2·4·1·4·1·1·1); ensaio em transação desfeita **28/28**
-  (`scratchpad/ensaio-orto-0335.mjs`). ⚠️ **PENDENTE NA PRODUÇÃO.** Não
-  visto na tela. **ORTO2 segue pendente** (a rotina diária existe; faltam os
+  No treino via `migrar:teste` + reaplicada, idempotente; ensaio em transação
+  desfeita **28/28** (`scratchpad/ensaio-orto-0335.mjs`). Não visto na tela.
+  **ORTO2 segue pendente** (a rotina diária existe; faltam os
   avisos de manutenção vencida/falta/reavaliação/mensalidade atrasada nela).
 
 **28/10/2026 (17) — PC Administrador (core 0.365.0 → 0.366.0, migração 0334)**
