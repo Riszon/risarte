@@ -25,6 +25,7 @@ import {
   ORTHO_KINDS,
   ORTHO_MAINTENANCE_STATUSES,
   ORTHO_MONEY_VIEW_ROLES,
+  ORTHO_RETAINER_KINDS,
   ORTHO_SETTLE_ROLES,
   ORTHO_STATUSES,
 } from "@/lib/ortodontia/constants";
@@ -317,6 +318,72 @@ describe("as cláusulas do acordo (proposta e termo)", () => {
     const texto = orthoClauses(terms).join(" ");
     expect(texto).toMatch(/Cada falta a uma manutenção prorroga a data prevista de término em 30 dias/);
     expect(texto).toMatch(/assiduidade/);
+  });
+  it("R6 no termo (ORTO7): o prazo é uma referência, não compromisso de data", () => {
+    const texto = orthoClauses(terms).join(" ");
+    expect(texto).toMatch(/24 meses\. Esse prazo é uma referência/);
+    expect(texto).toMatch(/não um compromisso de conclusão em data certa/);
+    expect(texto).toMatch(/podendo ser menor ou maior/);
+  });
+  it("R10 no termo (ORTO7): diz quem INICIA e que outro ortodontista da equipe pode continuar", () => {
+    const comNome = orthoClauses({ ...terms, orthodontistName: "Dra. Ana Lima" }).join(" ");
+    expect(comNome).toMatch(/será iniciado pelo\(a\) ortodontista Dra\. Ana Lima/);
+    expect(comNome).toMatch(/continuado por outro\(a\) ortodontista da equipe Risarte/);
+    expect(comNome).toMatch(/saída do profissional da equipe/);
+    const semNome = orthoClauses(terms).join(" ");
+    expect(semNome).toMatch(/será designado\(a\) pela clínica/);
+    expect(semNome).toMatch(/continuado por outro\(a\) ortodontista/);
+    expect(semNome).not.toMatch(/Ana Lima/);
+  });
+  it("R5 no termo (ORTO7): a contenção prevista pelo Planner sai, salvo 'a definir'", () => {
+    expect(orthoClauses({ ...terms, retainerKind: "placa_removivel" }).join(" ")).toMatch(/Contenção prevista: placa removível/);
+    expect(orthoClauses({ ...terms, retainerKind: "a_definir" }).join(" ")).not.toMatch(/Contenção prevista/);
+    expect(orthoClauses(terms).join(" ")).not.toMatch(/Contenção prevista/);
+  });
+});
+
+describe("espelho do banco (migração 0333 — ORTO7, do clínico ao plano)", () => {
+  const sql = readFileSync(MIG("0333_ortodontia_indicacao_proposta_quem_inicia.sql"), "utf8");
+  const fn = (name: string) => {
+    const from = sql.slice(sql.indexOf(`function public.${name}(`));
+    return from.slice(0, from.indexOf("$$;"));
+  };
+  it("R3: a indicação vive na rodada da avaliação e só o Coordenador marca (rodada finalizada não muda)", () => {
+    for (const col of ["ortho_indicated", "ortho_indication_note", "ortho_indicated_by", "ortho_indicated_at"]) {
+      expect(sql).toContain(`add column if not exists ${col}`);
+    }
+    const f = fn("set_evaluation_ortho_indication");
+    expect(f).toMatch(/'clinical_coordinator'/);
+    expect(f).toMatch(/ensure_open_evaluation\(p_client, p_clinic\)/);
+    expect(f).toMatch(/EVALUATION_LOCKED/);
+  });
+  it("R3/R5: a proposta ortodôntica é por opção, lida por quem lê a opção, escrita só pelo Planner/titular com o plano editável", () => {
+    expect(sql).toMatch(/create table if not exists public\.treatment_plan_ortho/);
+    expect(sql).toContain("treatment_plan_ortho_option_id_fkey");
+    for (const k of ORTHO_RETAINER_KINDS) expect(sql).toContain(`'${k}'`);
+    for (const k of ORTHO_KINDS) expect(sql).toContain(`'${k}'`);
+    expect(sql).toMatch(/create policy "treatment_plan_ortho_select" on public\.treatment_plan_ortho\s+for select to authenticated\s+using \(\s*public\.is_admin_master\(\)\s+or clinic_id in \(select public\.user_full_access_clinic_ids\(\)\)\s+or public\.is_planner\(\)/);
+    const s = fn("save_plan_option_ortho");
+    expect(s).toMatch(/public\.is_planner\(\) or public\.is_owner\(\)/);
+    expect(s).toMatch(/_plan_is_editable\(v_o\.plan_id\)/);
+    expect(s).toMatch(/PLAN_LOCKED/);
+    expect(fn("delete_plan_option_ortho")).toMatch(/PLAN_LOCKED/);
+    expect(sql).toMatch(/select public\.audit_attach_all\(\);/);
+  });
+  it("R10/Q3: trocar o responsável fica no histórico; sem ortodontista, o dentista da instalação assume", () => {
+    expect(fn("ortho_update_case")).toMatch(/'ortodontista_alterado'/);
+    const sync = fn("ortho_appointment_sync");
+    expect(sync).toMatch(/v_c\.orthodontist_id is null/);
+    expect(sync).toMatch(/'ortodontista_definido'/);
+    expect(sync).toMatch(/r\.role in \('dentist','clinical_coordinator'\)/);
+    // Só quem instala/atende assume — nunca um retorno.
+    expect(sync).toMatch(/new\.type::text in \('treatment_start','treatment_session'\)/);
+  });
+  it("o caso aberto a partir da venda herda a proposta da opção", () => {
+    const c = fn("ortho_create_case");
+    expect(c).toMatch(/from public\.treatment_plan_ortho where option_id = v_option/);
+    expect(c).toMatch(/coalesce\(p_treatment_kind, v_p\.treatment_kind, 'aparelho_fixo'\)/);
+    expect(c).toMatch(/coalesce\(p_planned_months, v_p\.planned_months, 24\)/);
   });
 });
 

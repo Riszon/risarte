@@ -43,6 +43,8 @@ export default async function OrtoContratoPage(props: PageProps<"/ortodontia/cas
     retainerCharged: c.retainer_charged,
     retainerFeeCents: c.retainer_fee_cents,
     retainerTerms: c.retainer_terms,
+    // R10 (0333): quem INICIA; nulo = "a ser designado pela clínica".
+    orthodontistName: c.orthodontist?.full_name ?? null,
   });
   const hoje = todayInBrazil();
 
@@ -75,9 +77,9 @@ export default async function OrtoContratoPage(props: PageProps<"/ortodontia/cas
         <table className="w-full text-xs">
           <tbody>
             <tr className="border-b"><td className="py-1">Tipo</td><td className="py-1 text-right">{ORTHO_KIND_LABELS[c.treatment_kind]}</td></tr>
-            <tr className="border-b"><td className="py-1">Ortodontista responsável</td><td className="py-1 text-right">{c.orthodontist?.full_name ?? "a definir"}</td></tr>
+            <tr className="border-b"><td className="py-1">Ortodontista que inicia o tratamento</td><td className="py-1 text-right">{c.orthodontist?.full_name ?? "a ser designado(a) pela clínica"}</td></tr>
             <tr className="border-b"><td className="py-1">Início</td><td className="py-1 text-right">{c.start_date ? formatIsoDateBr(c.start_date) : "a definir"}</td></tr>
-            <tr className="border-b"><td className="py-1">Duração prevista</td><td className="py-1 text-right">{c.planned_months} meses{c.planned_end_date ? ` (término previsto ${formatIsoDateBr(c.planned_end_date)})` : ""}</td></tr>
+            <tr className="border-b"><td className="py-1">Duração prevista (referência)</td><td className="py-1 text-right">{c.planned_months} meses{c.planned_end_date ? ` (término previsto ${formatIsoDateBr(c.planned_end_date)})` : ""}</td></tr>
             <tr className="border-b"><td className="py-1">Manutenções</td><td className="py-1 text-right">a cada {c.maintenance_interval_days} dias · cada falta prorroga o término em {c.maintenance_interval_days} dias</td></tr>
             <tr className="border-b"><td className="py-1">Contenções (fim do tratamento)</td><td className="py-1 text-right tabular-nums">{c.retainer_charged && c.retainer_fee_cents > 0 ? `${formatBRL(c.retainer_fee_cents)} na entrega${c.retainer_terms ? ` · ${c.retainer_terms}` : ""}` : "incluídas, sem cobrança"}</td></tr>
             {c.installation_fee_cents > 0 && (

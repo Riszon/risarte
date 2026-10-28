@@ -213,12 +213,28 @@ export function repartirTempo(
   return partes;
 }
 
+/**
+ * ORTO7 (0333, R3/R5): as características do caso ortodôntico que o Planner
+ * define na opção do plano. O Coordenador aprova junto com a opção; o
+ * Comercial fecha o acordo (preço, contenção, forma) por cima disto.
+ */
+export type PlanOptionOrtho = {
+  treatmentKind: "aparelho_fixo" | "alinhadores" | "aparelho_removivel" | "contencao" | "outro";
+  /** Referência, não compromisso (R6). */
+  plannedMonths: number;
+  maintenanceIntervalDays: number;
+  retainerKind: "placa_removivel" | "fixa_colada" | "ambas" | "a_definir";
+  notes: string | null;
+};
+
 export type PlanOption = {
   id: string;
   isPrimary: boolean;
   title: string;
   description: string | null;
   sortOrder: number;
+  /** ORTO7: a proposta ortodôntica desta opção (nula quando não é ortodontia). */
+  ortho: PlanOptionOrtho | null;
   /** Budget lines for this option (Etapa 5.2). */
   items: BudgetItem[];
   /** H4.5: etapas do tratamento desta opção (ordenadas). */

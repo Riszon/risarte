@@ -5,6 +5,7 @@ import type {
   PlanEvent,
   PlanLifecycle,
   PlanOption,
+  PlanOptionOrtho,
   PlanStage,
   TreatmentPlan,
   TreatmentPlanStatus,
@@ -95,7 +96,7 @@ export async function loadClientPlans(
   const { data: optRows } = await supabase
     .from("treatment_plan_options")
     .select(
-      "id, plan_id, is_primary, title, description, sort_order, review_status, review_notes"
+      "id, plan_id, is_primary, title, description, sort_order, review_status, review_notes, ortho:treatment_plan_ortho!treatment_plan_ortho_option_id_fkey ( treatment_kind, planned_months, maintenance_interval_days, retainer_kind, notes )"
     )
     .in("plan_id", planIds)
     .order("is_primary", { ascending: false })
@@ -110,6 +111,22 @@ export async function loadClientPlans(
         sort_order: number;
         review_status: "pending" | "approved" | "rejected";
         review_notes: string | null;
+        ortho:
+          | {
+              treatment_kind: PlanOptionOrtho["treatmentKind"];
+              planned_months: number;
+              maintenance_interval_days: number;
+              retainer_kind: PlanOptionOrtho["retainerKind"];
+              notes: string | null;
+            }
+          | {
+              treatment_kind: PlanOptionOrtho["treatmentKind"];
+              planned_months: number;
+              maintenance_interval_days: number;
+              retainer_kind: PlanOptionOrtho["retainerKind"];
+              notes: string | null;
+            }[]
+          | null;
       }[]
     >();
   const opts = optRows ?? [];
@@ -282,12 +299,22 @@ export async function loadClientPlans(
   const optionsByPlan = new Map<string, PlanOption[]>();
   for (const o of opts) {
     const list = optionsByPlan.get(o.plan_id) ?? [];
+    const orthoRaw = Array.isArray(o.ortho) ? (o.ortho[0] ?? null) : (o.ortho ?? null);
     list.push({
       id: o.id,
       isPrimary: o.is_primary,
       title: o.title,
       description: o.description,
       sortOrder: o.sort_order,
+      ortho: orthoRaw
+        ? {
+            treatmentKind: orthoRaw.treatment_kind,
+            plannedMonths: Number(orthoRaw.planned_months ?? 24),
+            maintenanceIntervalDays: Number(orthoRaw.maintenance_interval_days ?? 30),
+            retainerKind: orthoRaw.retainer_kind,
+            notes: orthoRaw.notes ?? null,
+          }
+        : null,
       items: itemsByOption.get(o.id) ?? [],
       stages: stagesByOption.get(o.id) ?? [],
       reviewStatus: o.review_status,

@@ -109,6 +109,26 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
     loadOrthoProcedures(supabase),
   ]);
 
+  // ORTO7 (0333): vindo de uma venda, as características do caso são as que o
+  // Planner definiu na opção (tipo, meses de referência, intervalo).
+  type Proposta = { treatment_kind: string; planned_months: number; maintenance_interval_days: number };
+  let proposta: Proposta | null = null;
+  if (negociacaoId) {
+    const { data: neg } = await supabase
+      .from("plan_negotiations")
+      .select("option_id")
+      .eq("id", negociacaoId)
+      .maybeSingle();
+    if (neg?.option_id) {
+      const { data: p } = await supabase
+        .from("treatment_plan_ortho")
+        .select("treatment_kind, planned_months, maintenance_interval_days")
+        .eq("option_id", neg.option_id as string)
+        .maybeSingle();
+      proposta = (p as Proposta | null) ?? null;
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
       <CabecalhoDeModulo
@@ -123,9 +143,10 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
         negotiationId={negociacaoId || null}
         today={todayInBrazil()}
         defaults={{
+          kind: proposta?.treatment_kind ?? null,
           monthlyCents: settings?.monthly_fee_cents ?? 0,
-          plannedMonths: settings?.planned_months ?? 24,
-          intervalDays: settings?.maintenance_interval_days ?? 30,
+          plannedMonths: proposta?.planned_months ?? settings?.planned_months ?? 24,
+          intervalDays: proposta?.maintenance_interval_days ?? settings?.maintenance_interval_days ?? 30,
           billingDay: settings?.billing_day ?? 10,
           procedureId: settings?.maintenance_procedure_id ?? null,
           retainerCharged: settings?.retainer_charge_enabled === true,

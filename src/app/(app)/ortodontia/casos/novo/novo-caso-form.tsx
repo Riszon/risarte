@@ -26,6 +26,8 @@ export function NovoCasoForm({
   negotiationId: string | null;
   today: string;
   defaults: {
+    /** ORTO7: o tipo definido pelo Planner na proposta da opção vendida. */
+    kind?: string | null;
     monthlyCents: number;
     plannedMonths: number;
     intervalDays: number;
@@ -83,7 +85,7 @@ export function NovoCasoForm({
           </div>
           <div className="space-y-1">
             <Label htmlFor="treatment_kind">Tipo</Label>
-            <select id="treatment_kind" name="treatment_kind" className={selectClass} defaultValue="aparelho_fixo">
+            <select id="treatment_kind" name="treatment_kind" className={selectClass} defaultValue={defaults.kind ?? "aparelho_fixo"}>
               {ORTHO_KINDS.map((k) => (
                 <option key={k} value={k}>{ORTHO_KIND_LABELS[k]}</option>
               ))}

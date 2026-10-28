@@ -57,7 +57,7 @@ export async function loadEvaluationWorkspace(
     supabase
       .from("clinical_evaluations")
       .select(
-        "id, kind, seq, status, title, opened_at, closed_at, opened_by, clinic:clinics ( name )"
+        "id, kind, seq, status, title, opened_at, closed_at, opened_by, ortho_indicated, ortho_indication_note, ortho_indicated_by, ortho_indicated_at, clinic:clinics ( name )"
       )
       .eq("client_id", clientId)
       .order("opened_at", { ascending: false }),
@@ -73,6 +73,7 @@ export async function loadEvaluationWorkspace(
         ...(noteRows ?? []).map((n) => n.updated_by),
         ...(mediaRows ?? []).map((m) => m.uploaded_by),
         ...(evalRows ?? []).map((e) => e.opened_by),
+        ...(evalRows ?? []).map((e) => (e as { ortho_indicated_by?: string | null }).ortho_indicated_by),
       ].filter((x): x is string => Boolean(x))
     ),
   ];
@@ -158,6 +159,14 @@ export async function loadEvaluationWorkspace(
       openedByName: e.opened_by ? (nameById.get(e.opened_by) ?? null) : null,
       clinicName: (Array.isArray(cRaw) ? cRaw[0] : cRaw)?.name ?? null,
       diagnosisFinalizedAt: finalizadas.get(e.id as string) ?? null,
+      // ORTO7 (0333): a indicação de ortodontia do Coordenador nesta rodada.
+      orthoIndicated: (e as { ortho_indicated?: boolean | null }).ortho_indicated === true,
+      orthoIndicationNote: (e as { ortho_indication_note?: string | null }).ortho_indication_note ?? null,
+      orthoIndicatedAt: (e as { ortho_indicated_at?: string | null }).ortho_indicated_at ?? null,
+      orthoIndicatedByName: (() => {
+        const by = (e as { ortho_indicated_by?: string | null }).ortho_indicated_by;
+        return by ? (nameById.get(by) ?? null) : null;
+      })(),
     };
   });
 

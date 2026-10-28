@@ -45,6 +45,11 @@ export type EvaluationRound = {
   clinicName: string | null;
   /** OD2 (0310): o Planner finalizou o diagnóstico — a rodada está trancada. */
   diagnosisFinalizedAt?: string | null;
+  /** ORTO7 (0333, R3): o Coordenador indicou ortodontia nesta rodada. */
+  orthoIndicated?: boolean;
+  orthoIndicationNote?: string | null;
+  orthoIndicatedAt?: string | null;
+  orthoIndicatedByName?: string | null;
 };
 
 /** Rótulo curto da rodada: "Avaliação 1", "Reavaliação 2" (+ título, se houver). */

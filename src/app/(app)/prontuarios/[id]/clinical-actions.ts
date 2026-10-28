@@ -279,6 +279,54 @@ export async function recordConsent(clientId: string): Promise<ClinicalResult> {
   return { ok: true };
 }
 
+/**
+ * ORTO7 (0333, R3): o Coordenador INDICA (ou desfaz a indicação de)
+ * tratamento ortodôntico na rodada aberta da avaliação/reavaliação. O banco
+ * (`set_evaluation_ortho_indication`) confere o papel, cria a rodada se não
+ * houver e recusa rodada com o diagnóstico finalizado.
+ */
+export async function setOrthoIndication(
+  clientId: string,
+  indicated: boolean,
+  note: string
+): Promise<ClinicalResult> {
+  const guard = await requireCoordinator(clientId);
+  if ("error" in guard) return { ok: false, error: guard.error };
+  if (!(await hasConsent(clientId))) {
+    return {
+      ok: false,
+      error: "Registre o consentimento do paciente antes de adicionar dados.",
+    };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_evaluation_ortho_indication", {
+    p_client: clientId,
+    p_clinic: guard.clinicId,
+    p_indicated: indicated,
+    p_note: note.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("EVALUATION_LOCKED")) return { ok: false, error: RODADA_TRANCADA };
+    if (error.message.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Apenas o Coordenador Clínico indica ortodontia na avaliação." };
+    }
+    console.error("setOrthoIndication failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a indicação." };
+  }
+  await chamarSeEstiverEsperando(clientId);
+  await logAudit({
+    action: "update",
+    entityType: "clinical_evaluation_ortho_indication",
+    entityId: clientId,
+    clinicId: guard.clinicId,
+    details: { indicated },
+  });
+  revalidatePath(`/prontuarios/${clientId}`);
+  revalidatePath(`/avaliacao/${clientId}`);
+  revalidatePath(`/planejamento/${clientId}`);
+  return { ok: true };
+}
+
 export async function addClinicalNote(
   clientId: string,
   body: string

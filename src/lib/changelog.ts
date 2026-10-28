@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.365.0",
+    data: "2026-10-28",
+    migracao: "0333",
+    titulo: "Ortodontia: do clínico ao plano — indicação na avaliação, proposta no plano e o termo com quem inicia",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na avaliação e na reavaliação, o Coordenador Clínico pode marcar \"Indicar tratamento ortodôntico\" (com uma observação) no passo do exame clínico. É uma sugestão: o Dentista Planner vê a indicação no cockpit dele, num cartão próprio, e decide no plano.",
+        papeis: ["clinical_coordinator", "planner_dentist"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A opção do plano que tem procedimento de Ortodontia ganhou o bloco \"Proposta ortodôntica\": o Planner define o tipo de aparelho, os meses previstos (uma referência), o intervalo das manutenções e a contenção final. O Coordenador aprova junto com a opção, como sempre; depois de enviado, o bloco tranca com o plano. O Consultor vê a proposta no orçamento impresso, e o caso aberto a partir da venda já nasce com essas características.",
+        papeis: ["planner_dentist", "clinical_coordinator", "commercial_consultant", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O termo do tratamento ortodôntico passou a dizer que o prazo previsto é uma referência, não um compromisso de data; quem é o ortodontista que inicia o tratamento (ou que será designado pela clínica) e que outro ortodontista da equipe pode continuar; e qual a contenção prevista pelo Planner.",
+        papeis: ["unit_manager", "clinical_coordinator", "commercial_consultant", "receptionist"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Caso sem ortodontista escolhido: quando a Recepção agenda a instalação (início de tratamento ou sessão) com um dentista da unidade, ele passa a ser o ortodontista responsável, e isso fica no histórico do caso. Trocar o responsável na ficha também fica registrado (de quem para quem).",
+        papeis: ["receptionist", "unit_manager", "clinical_coordinator", "dentist"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.364.0",
     data: "2026-10-28",
     migracao: "0332",

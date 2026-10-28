@@ -390,6 +390,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**28/10/2026 (16) — PC Administrador (core 0.364.0 → 0.365.0, migração 0333)**
+
+- **Ortodontia ORTO7 — do clínico ao plano** (ESTADO §2). **R3:** o
+  Coordenador indica na rodada aberta da avaliação
+  (`clinical_evaluations.ortho_*`, `set_evaluation_ortho_indication`; bloco no
+  passo 3 do cockpit; cartão "Ortodontia indicada" no cockpit do Planner).
+  **R3/R5:** `treatment_plan_ortho` (uma por opção; `save/delete_plan_option_ortho`
+  = Planner/titular + `_plan_is_editable`; `PlanOption.ortho`; bloco "Proposta
+  ortodôntica" no editor; orçamento usa a proposta; `ortho_create_case` herda).
+  **R6/R10:** `orthoClauses` — prazo como referência, "quem inicia" + outro da
+  equipe continua, contenção prevista. **Q3:** `ortho_appointment_sync` —
+  sem ortodontista, o dentista da instalação assume (`ortodontista_definido`);
+  `ortho_update_case` registra `ortodontista_alterado`.
+- ⚠️ **O push espera a 0333 na produção:** `plan-loader.ts` embute
+  `treatment_plan_ortho` e o cockpit da avaliação seleciona as colunas novas —
+  sem a migração, o plano e a avaliação não carregam.
+- ✅ 0333 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
+  conferência 4·1·3·1·1·1); ensaio em transação desfeita **24/24**
+  (`scratchpad/ensaio-orto-0333.mjs`); a trava da rodada finalizada não foi
+  medida (a 0310 recusa simular por fora). ⚠️ **PENDENTE NA PRODUÇÃO.** Não
+  visto na tela.
+
 **28/10/2026 (15) — PC Administrador (core 0.363.0 → 0.364.0, migração 0332)**
 
 - **Ortodontia ORTO6 — a tela do ortodontista** (ESTADO §2; plano completo

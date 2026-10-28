@@ -473,6 +473,95 @@ export async function editPlanOption(
 }
 
 /** Quick action: make an option the primary one (unmarks the others). */
+/**
+ * ORTO7 (0333, R3/R5): o Planner define a PROPOSTA ORTODÔNTICA da opção
+ * (tipo de aparelho, meses previstos — referência —, intervalo das
+ * manutenções, contenção final). O banco (`save_plan_option_ortho`) confere
+ * quem é e se o plano ainda está editável (rascunho/devolvido).
+ */
+export async function savePlanOptionOrtho(
+  optionId: string,
+  input: {
+    treatmentKind: string;
+    plannedMonths: number;
+    maintenanceIntervalDays: number;
+    retainerKind: string;
+    notes: string;
+  }
+): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const months = Math.round(Number(input.plannedMonths));
+  const interval = Math.round(Number(input.maintenanceIntervalDays));
+  if (!Number.isFinite(months) || months < 1 || months > 120) {
+    return { ok: false, error: "Informe os meses previstos (entre 1 e 120)." };
+  }
+  if (!Number.isFinite(interval) || interval < 7 || interval > 180) {
+    return { ok: false, error: "Informe o intervalo das manutenções (entre 7 e 180 dias)." };
+  }
+  const supabase = await createClient();
+  const { data: option } = await supabase
+    .from("treatment_plan_options")
+    .select("plan_id")
+    .eq("id", optionId)
+    .single();
+  if (!option) return { ok: false, error: "Opção não encontrada." };
+  const ctx = await loadPlanContext(option.plan_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+
+  const { error } = await supabase.rpc("save_plan_option_ortho", {
+    p_option_id: optionId,
+    p_treatment_kind: input.treatmentKind,
+    p_planned_months: months,
+    p_retainer_kind: input.retainerKind,
+    p_interval_days: interval,
+    p_notes: input.notes.trim() || null,
+  });
+  if (error) {
+    if (error.message.includes("PLAN_LOCKED")) {
+      return { ok: false, error: "O plano já foi enviado: a proposta ortodôntica não muda mais. Reabra o plano para alterar." };
+    }
+    console.error("savePlanOptionOrtho failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar a proposta ortodôntica." };
+  }
+  await touchPlan(option.plan_id);
+  await logAudit({
+    action: "update",
+    entityType: "treatment_plan_ortho",
+    entityId: optionId,
+    clinicId: ctx.clinicId,
+  });
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
+  return { ok: true };
+}
+
+export async function removePlanOptionOrtho(optionId: string): Promise<PlanResult> {
+  const guard = await requirePlanner();
+  if ("error" in guard) return { ok: false, error: guard.error };
+  const supabase = await createClient();
+  const { data: option } = await supabase
+    .from("treatment_plan_options")
+    .select("plan_id")
+    .eq("id", optionId)
+    .single();
+  if (!option) return { ok: false, error: "Opção não encontrada." };
+  const ctx = await loadPlanContext(option.plan_id);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  const { error } = await supabase.rpc("delete_plan_option_ortho", { p_option_id: optionId });
+  if (error) {
+    if (error.message.includes("PLAN_LOCKED")) {
+      return { ok: false, error: "O plano já foi enviado: a proposta ortodôntica não muda mais." };
+    }
+    console.error("removePlanOptionOrtho failed:", error.message);
+    return { ok: false, error: "Não foi possível remover a proposta ortodôntica." };
+  }
+  await touchPlan(option.plan_id);
+  revalidatePath(`/prontuarios/${ctx.clientId}`);
+  revalidatePath(`/planejamento/${ctx.clientId}`);
+  return { ok: true };
+}
+
 export async function setPrimaryOption(optionId: string): Promise<PlanResult> {
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };

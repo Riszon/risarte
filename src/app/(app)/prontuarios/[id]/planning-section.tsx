@@ -52,6 +52,7 @@ import {
   type TreatmentPillar,
 } from "@/lib/journey";
 import { setTreatmentPillar } from "../../jornada/actions";
+import { OrthoProposalBlock } from "./ortho-proposal-block";
 import {
   budgetTotalCents,
   formatBRL,
@@ -1048,6 +1049,18 @@ export function PlanningSection({
                         programBenefits={
                           programActive ? programBenefits : undefined
                         }
+                      />
+                      {/* ORTO7 (R3/R5): as características do caso ortodôntico,
+                          definidas pelo Planner e aprovadas com a opção. */}
+                      <OrthoProposalBlock
+                        optionId={o.id}
+                        ortho={o.ortho}
+                        canEdit={canEditContent}
+                        suggested={o.items.some((it) => {
+                          if (!it.procedureId) return false;
+                          const p = catalog.find((c) => c.id === it.procedureId);
+                          return /ortod/i.test(p?.specialty ?? "");
+                        })}
                       />
                       {o.reviewNotes && (
                         <p className="mt-1 rounded-md border bg-muted/30 p-2 text-xs">

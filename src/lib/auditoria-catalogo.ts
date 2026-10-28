@@ -125,6 +125,7 @@ export const TABELAS: Record<string, string> = {
   "public.ortho_maintenances": "Manutenção ortodôntica",
   "public.ortho_charges": "Mensalidade ortodôntica",
   "public.ortho_case_terms": "Condições financeiras do caso ortodôntico",
+  "public.treatment_plan_ortho": "Proposta ortodôntica da opção do plano",
   "public.procedure_cost_items": "Item de custo do procedimento",
   "public.procedure_costs": "Custo do procedimento",
   "public.procedure_kit_links": "Kit do procedimento",

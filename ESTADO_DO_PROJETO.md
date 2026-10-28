@@ -1,6 +1,30 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.364.0** · Última migração: **0332** (0318 a 0332 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.365.0** · Última migração: **0333** (0318 a 0332 aplicadas na produção e no treino; **0333 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.365.0 / 0333 — ORTODONTIA (ORTO7): DO CLÍNICO AO PLANO (28/10/2026)
+>
+> Segunda etapa do pedido de 28/10/2026 (ORTO-PLANO §5). **R3:** o
+> Coordenador **indica** ortodontia na rodada aberta da avaliação/reavaliação
+> (`clinical_evaluations.ortho_indicated/_note/_by/_at`,
+> `set_evaluation_ortho_indication`; bloco no passo do exame do cockpit); o
+> Planner vê o cartão **"Ortodontia indicada"**. **R3/R5:**
+> **`treatment_plan_ortho`** (uma por opção: tipo, meses de referência,
+> intervalo, contenção final, obs; `save/delete_plan_option_ortho` — Planner ou
+> titular, só com o plano editável; aprova junto com a opção; bloco "Proposta
+> ortodôntica" no editor); o orçamento impresso usa a proposta (origem
+> `proposta`); `ortho_create_case` herda tipo/meses/intervalo da opção da
+> venda e Novo caso pré-preenche. **R6/R10:** `orthoClauses` — prazo como
+> referência; "quem inicia" (ou "a ser designado pela clínica") + outro da
+> equipe pode continuar; contenção prevista. **Q3:** `ortho_appointment_sync`
+> — caso sem ortodontista + instalação/sessão com dentista da unidade → ele
+> assume (`ortodontista_definido`); `ortho_update_case` registra a troca
+> (`ortodontista_alterado`). ⚠️ **0333 aplicada no treino** (reaplicada,
+> idempotente); ensaio em transação desfeita **24/24**; **pendente na
+> produção** (conferência esperada 4·1·3·1·1·1). ⚠️ **O push espera a
+> migração:** o carregador do plano embute `treatment_plan_ortho` e o cockpit
+> lê as colunas novas da avaliação — sem a 0333 na produção, o plano não
+> carrega. EV-249 a EV-251.
 
 > ## 🎯 0.364.0 / 0332 — ORTODONTIA (ORTO6): A TELA DO ORTODONTISTA (28/10/2026)
 >
@@ -4709,6 +4733,96 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### ORTODONTIA — ORTO7, do clínico ao plano (28/10/2026, v0.365.0, migração 0333)
+
+Segunda etapa do pedido de 28/10/2026 (ORTO-PLANO §5; a ordem ORTO6→ORTO9 e
+as decisões Q1–Q8 foram aprovadas pelo dono). Entrega as regras **R3** (quem
+indica, quem define, quem aprova), **R5 parte clínica**, **R6** (prazo como
+referência), **R10** (quem inicia) e a decisão **Q3**.
+
+- **R3 — a indicação na avaliação.** `clinical_evaluations` ganhou
+  `ortho_indicated`, `ortho_indication_note`, `ortho_indicated_by/_at`.
+  `set_evaluation_ortho_indication(client, clinic, indicated, note)`: só o
+  Coordenador da unidade (ou de uma unidade compartilhada) ou o Admin, na
+  rodada ABERTA (`ensure_open_evaluation`), recusa rodada com o diagnóstico
+  finalizado (`EVALUATION_LOCKED`); desfazer limpa tudo. No cockpit do
+  Coordenador (`/avaliacao/[clientId]`), o bloco **"Ortodontia — indicar o
+  tratamento?"** no passo 3 (exame clínico), abaixo do odontograma
+  (`ortho-indication-block.tsx`, ação `setOrthoIndication` em
+  `clinical-actions.ts`, que exige consentimento como as considerações). No
+  cockpit do Planner, o `PopupCard` **"Ortodontia indicada"** com a rodada, a
+  data, quem indicou e a observação. `EvaluationRound` carrega os campos.
+- **R3/R5 — a proposta ortodôntica da opção.** Tabela **`treatment_plan_ortho`**
+  (PK `option_id`, ligação `treatment_plan_ortho_option_id_fkey`; `plan_id`,
+  `clinic_id`, `client_id`, `treatment_kind`, `planned_months` 1–120,
+  `maintenance_interval_days` 7–180, `retainer_kind` em placa_removivel /
+  fixa_colada / ambas / a_definir, `notes`). Leitura = a regra da opção
+  (unidade com escopo da Franqueadora — o Consultor —, Planner, Admin);
+  escrita só por `save_plan_option_ortho` / `delete_plan_option_ortho`
+  (Planner ou titular, `_plan_is_editable` → senão `PLAN_LOCKED`). Entra na
+  auditoria (`audit_attach_all`). `PlanOption.ortho` (`plan-loader.ts` embute);
+  bloco **"Proposta ortodôntica"** (`ortho-proposal-block.tsx`) dentro da
+  opção expandida: editor para o Planner com o plano editável (aparece sozinho
+  quando a opção tem procedimento de Ortodontia; senão, botão "Adicionar"),
+  leitura para o Coordenador/Admin; ações `savePlanOptionOrtho` /
+  `removePlanOptionOrtho`. `condicoesOrtodonticas` ganhou `optionId`: sem caso,
+  tipo/meses/intervalo/contenção vêm da proposta (origem `proposta`) e o
+  dinheiro do padrão da unidade. `ortho_create_case` com negociação herda
+  tipo/meses/intervalo da opção (`coalesce(p_*, v_p.*, padrão)`), e a tela
+  Novo caso pré-preenche. `ORTHO_RETAINER_KINDS` em `constants.ts`.
+- **R6/R10 — o termo.** `orthoClauses`: a primeira cláusula diz que o prazo é
+  **referência**, não compromisso de data; cláusula nova de **quem inicia**
+  (nome, ou "será designado(a) pela clínica") + outro ortodontista da equipe
+  pode continuar sem alterar as condições; a cláusula da contenção cita a
+  **contenção prevista** (salvo "a definir"). `OrthoTerms` ganhou
+  `orthodontistName` e `retainerKind`; o termo da ficha mostra "Ortodontista
+  que inicia o tratamento" e "Duração prevista (referência)".
+- **Q3 — quem instala assume.** `ortho_appointment_sync`: caso aberto
+  (aguardando início/em tratamento) **sem ortodontista** + agendamento de
+  **início de tratamento ou sessão** com um profissional que é dentista ou
+  coordenador da unidade → `orthodontist_id` = ele, histórico
+  `ortodontista_definido`, e o agendamento liga como sempre. Retorno não
+  define; quem não é dentista não assume. `ortho_update_case` registra
+  `ortodontista_alterado` ("de → para", nomes de profissionais).
+
+**Conferido:** `check-migrations 0333` OK; `migrar:teste` aplicou (217 tabelas,
+659 funções) e a 0333 foi reaplicada por cima sem erro; ensaio em transação
+desfeita **24/24** (coordenador indica, recepção e dentista não, desfazer
+limpa; dentista e coordenador não definem a proposta, o Planner define e
+atualiza, enviado → `PLAN_LOCKED`, rascunho remove; o caso pela venda herda a
+proposta sem ortodontista; retorno/não-dentista não assumem, dentista da
+instalação assume com histórico e o agendamento liga; a troca fica no
+histórico e editar sem trocar não registra; sem login nada executa). A trava
+da rodada com diagnóstico finalizado **não foi medida** (a 0310 recusa
+simular a finalização por fora; a regra está escrita e é a mesma das
+considerações). `npm run verificar`, `npm test`, `npm run lint`: ver a entrada
+da sessão no `CLAUDE.md`. **NÃO visto na tela.** ⚠️ **0333 PENDENTE NA
+PRODUÇÃO — e o push espera por ela:** o carregador do plano (`plan-loader.ts`)
+embute `treatment_plan_ortho` e o cockpit da avaliação seleciona as colunas
+novas; sem a 0333, o plano e a avaliação não carregam na produção.
+
+**Roteiro para o dono testar no treino:**
+
+1. **Coordenador**, cockpit da avaliação de um paciente em Avaliação: no passo
+   3, abaixo do odontograma, marcar **"Indicar tratamento ortodôntico"** com
+   uma observação → Salvar. Desmarcar e salvar de novo → some.
+2. **Planner**, cockpit do mesmo paciente: o cartão **"Ortodontia indicada"**
+   com a observação. Na opção do plano com procedimento de Ortodontia, o
+   bloco **"Proposta ortodôntica"** já aberto: tipo, meses, intervalo,
+   contenção → Salvar. Enviar o plano → o bloco vira leitura.
+3. **Coordenador**, Planos: a opção mostra a proposta; aprovar como sempre.
+4. **Consultor**, orçamento impresso: o bloco "Condições do tratamento
+   ortodôntico" com o tipo e os meses da proposta e a frase de origem.
+5. **Gerente**, Ortodontia → Painel → "vendas sem caso" → Novo caso: o tipo,
+   os meses e o intervalo já vêm da proposta; abrir sem ortodontista.
+   Recepção agenda o **início de tratamento** com um dentista → na ficha, o
+   dentista virou o responsável e o histórico diz de onde veio. Editar e
+   trocar o ortodontista → histórico "de → para". Termo: "Ortodontista que
+   inicia o tratamento", "Duração prevista (referência)" e as cláusulas novas.
+
+**Próximas etapas (aprovadas):** ORTO8 (do Comercial ao caso — 0334), ORTO9
+(mensalidades por lote — 0335).
 
 ### ORTODONTIA — ORTO6, a tela do ortodontista (28/10/2026, v0.364.0, migração 0332)
 

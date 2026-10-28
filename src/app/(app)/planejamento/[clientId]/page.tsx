@@ -11,6 +11,7 @@ import {
   FileImage,
   Link2,
   MessageSquareText,
+  SmilePlus,
   TriangleAlert,
 } from "lucide-react";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
@@ -141,6 +142,37 @@ export default async function PlanningCockpitPage(
         .eq("client_id", clientId)
         .order("created_at", { ascending: false }),
     ]);
+
+  // ORTO7 (0333, R3): a indicação de ortodontia do Coordenador (a mais
+  // recente). Leitura tolerante: sem a 0333 no banco, o cartão não aparece.
+  const { data: indicacaoRows } = await supabase
+    .from("clinical_evaluations")
+    .select(
+      "id, kind, seq, title, ortho_indication_note, ortho_indicated_at, indicated_by:profiles!clinical_evaluations_ortho_indicated_by_fkey ( full_name )"
+    )
+    .eq("client_id", clientId)
+    .eq("ortho_indicated", true)
+    .order("ortho_indicated_at", { ascending: false })
+    .limit(1);
+  const indicacaoRaw = indicacaoRows?.[0] as
+    | {
+        id: string;
+        kind: "avaliacao" | "reavaliacao";
+        seq: number;
+        title: string | null;
+        ortho_indication_note: string | null;
+        ortho_indicated_at: string | null;
+        indicated_by: { full_name: string } | { full_name: string }[] | null;
+      }
+    | undefined;
+  const indicacaoOrto = indicacaoRaw
+    ? {
+        rodada: `${indicacaoRaw.kind === "avaliacao" ? "Avaliação" : "Reavaliação"} ${indicacaoRaw.seq}`,
+        nota: indicacaoRaw.ortho_indication_note,
+        em: indicacaoRaw.ortho_indicated_at,
+        por: (Array.isArray(indicacaoRaw.indicated_by) ? indicacaoRaw.indicated_by[0] : indicacaoRaw.indicated_by)?.full_name ?? null,
+      }
+    : null;
 
   // H3.11: informações complementares do Coordenador — mostra e marca como
   // vistas (limpa o ícone da fila) ao abrir o cockpit.
@@ -732,6 +764,32 @@ export default async function PlanningCockpitPage(
                 </li>
               ))}
             </ul>
+          </PopupCard>
+        )}
+        {/* ORTO7 (R3): o Coordenador indicou ortodontia — o Planner decide no plano. */}
+        {indicacaoOrto && (
+          <PopupCard
+            label="Ortodontia indicada"
+            icon={<SmilePlus className="size-4 text-gold-foreground" />}
+            badge={<span className="rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium">pelo Coordenador</span>}
+            dialogTitle="Indicação de tratamento ortodôntico"
+          >
+            <div className="space-y-2 text-sm">
+              <p>
+                O Coordenador Clínico <strong>indicou tratamento ortodôntico</strong> na {indicacaoOrto.rodada}
+                {indicacaoOrto.em ? ` (${fmtDateTime(indicacaoOrto.em)}` : ""}
+                {indicacaoOrto.por ? `${indicacaoOrto.em ? ", " : " ("}${indicacaoOrto.por}` : ""}
+                {indicacaoOrto.em || indicacaoOrto.por ? ")" : ""}.
+              </p>
+              {indicacaoOrto.nota && (
+                <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-2">{indicacaoOrto.nota}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Para propor, inclua um procedimento de Ortodontia na opção do plano e preencha a <strong>Proposta
+                ortodôntica</strong> (tipo de aparelho, meses previstos, contenção final). O Coordenador aprova junto
+                com a opção; o Comercial fecha o acordo.
+              </p>
+            </div>
           </PopupCard>
         )}
         {summaryOption && (

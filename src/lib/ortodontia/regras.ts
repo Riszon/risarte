@@ -7,9 +7,11 @@
 import {
   ORTHO_DEFAULTS,
   ORTHO_KIND_LABELS,
+  ORTHO_RETAINER_KIND_LABELS,
   type OrthoChargeStatus,
   type OrthoKind,
   type OrthoMaintenanceStatus,
+  type OrthoRetainerKind,
   type OrthoStatus,
 } from "./constants";
 
@@ -452,6 +454,13 @@ export type OrthoTerms = {
   retainerCharged?: boolean | null;
   retainerFeeCents?: number | null;
   retainerTerms?: string | null;
+  /** R5 (0333): o tipo de contenção final definido pelo Planner na proposta. */
+  retainerKind?: OrthoRetainerKind | null;
+  /**
+   * R10 (0333): quem INICIA o tratamento. Nulo = "a ser designado pela
+   * clínica". O termo diz que outro ortodontista da equipe pode continuar.
+   */
+  orthodontistName?: string | null;
 };
 
 function brl(cents: number): string {
@@ -465,8 +474,15 @@ function brl(cents: number): string {
 export function orthoClauses(t: OrthoTerms): string[] {
   const tipo = t.kind ? ORTHO_KIND_LABELS[t.kind].toLowerCase() : "ortodôntico";
   const out: string[] = [];
+  // R6: o prazo é REFERÊNCIA, não compromisso de data (decisão do dono, 28/10/2026).
   out.push(
-    `O tratamento ortodôntico (${tipo}) tem duração prevista de ${t.plannedMonths} ${t.plannedMonths === 1 ? "mês" : "meses"}, podendo variar conforme a resposta biológica e a colaboração do paciente.`
+    `O tratamento ortodôntico (${tipo}) tem duração prevista de ${t.plannedMonths} ${t.plannedMonths === 1 ? "mês" : "meses"}. Esse prazo é uma referência, e não um compromisso de conclusão em data certa: a duração real depende da resposta biológica de cada paciente, da colaboração com as orientações e da assiduidade às manutenções, podendo ser menor ou maior.`
+  );
+  // R10: quem INICIA; outro ortodontista da equipe pode continuar.
+  out.push(
+    t.orthodontistName?.trim()
+      ? `O tratamento será iniciado pelo(a) ortodontista ${t.orthodontistName.trim()}. Ao longo do tratamento, por necessidade da clínica (como a saída do profissional da equipe) ou do paciente, o acompanhamento poderá ser continuado por outro(a) ortodontista da equipe Risarte, sem prejuízo da continuidade e sem alteração das condições deste termo.`
+      : `O(a) ortodontista que iniciará o tratamento será designado(a) pela clínica. Ao longo do tratamento, por necessidade da clínica (como a saída do profissional da equipe) ou do paciente, o acompanhamento poderá ser continuado por outro(a) ortodontista da equipe Risarte, sem prejuízo da continuidade e sem alteração das condições deste termo.`
   );
   if (t.installationCents && t.installationCents > 0) {
     out.push(
@@ -491,12 +507,16 @@ export function orthoClauses(t: OrthoTerms): string[] {
   out.push(
     `A entrega das contenções encerra o tratamento ativo e a cobrança da mensalidade: a partir dela o tratamento é considerado finalizado e o paciente passa ao acompanhamento ortodôntico, com controles periódicos conforme a orientação do ortodontista, sem mensalidade.`
   );
+  const contencaoPrevista =
+    t.retainerKind && t.retainerKind !== "a_definir"
+      ? ` Contenção prevista: ${ORTHO_RETAINER_KIND_LABELS[t.retainerKind].toLowerCase()}, podendo ser ajustada pelo ortodontista ao fim do tratamento.`
+      : "";
   if (t.retainerCharged && (t.retainerFeeCents ?? 0) > 0) {
     out.push(
-      `As contenções são cobradas à parte, no valor de ${brl(t.retainerFeeCents ?? 0)}, na entrega${t.retainerTerms?.trim() ? `, nas seguintes condições: ${t.retainerTerms.trim()}` : ""}.`
+      `As contenções são cobradas à parte, no valor de ${brl(t.retainerFeeCents ?? 0)}, na entrega${t.retainerTerms?.trim() ? `, nas seguintes condições: ${t.retainerTerms.trim()}` : ""}.${contencaoPrevista}`
     );
   } else {
-    out.push(`As contenções estão incluídas no tratamento, sem cobrança adicional na entrega.`);
+    out.push(`As contenções estão incluídas no tratamento, sem cobrança adicional na entrega.${contencaoPrevista}`);
   }
   return out;
 }

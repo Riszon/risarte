@@ -1496,6 +1496,48 @@ marcada por engano (desfaz a prorrogação).
   **valor zero** — para alguém perceber e configurar (corrigido na 0.364.0:
   antes dava erro e travava a conclusão do atendimento).
 
+#### Do clínico ao plano: quem indica, quem define, quem aprova (desde a 0.365.0)
+
+A ortodontia entra pelo caminho normal do paciente — e cada papel faz a sua
+parte:
+
+1. **O Coordenador Clínico indica.** Na avaliação ou na reavaliação, no passo
+   do exame clínico (logo abaixo do odontograma), marca **"Indicar tratamento
+   ortodôntico"** e escreve o que observou. É uma **sugestão**, não uma
+   decisão: dá para desfazer enquanto a rodada não tem o diagnóstico
+   finalizado. A Recepção e o Dentista não marcam.
+2. **O Dentista Planner define.** No cockpit dele aparece o cartão
+   **"Ortodontia indicada"** (com a observação do Coordenador). Ao montar a
+   opção do plano com um procedimento de Ortodontia, o bloco **"Proposta
+   ortodôntica"** pede o **tipo de aparelho**, os **meses previstos**
+   (referência), o **intervalo das manutenções** e a **contenção final**
+   (placa removível, fixa colada, ambas ou a definir). Só o Planner (ou o
+   titular) preenche, e só com o plano em rascunho/devolvido — enviado,
+   tranca com o plano.
+3. **O Coordenador aprova** a opção como sempre: a proposta vai junto. Não há
+   passo novo.
+4. **O Consultor Comercial vê** a proposta nas Condições do tratamento
+   ortodôntico do orçamento impresso (tipo, meses, contenção prevista) e
+   fecha o acordo — mensalidade, contenção cobrada ou não, descontos e forma
+   entram na próxima etapa (ORTO8).
+5. **O caso** aberto a partir da venda **já nasce** com o tipo, os meses e o
+   intervalo da proposta; o ortodontista pode ficar em branco até a
+   instalação.
+
+**Quem inicia o tratamento.** O termo diz o nome do(a) ortodontista que
+**inicia** (ou "a ser designado(a) pela clínica") e que, por necessidade da
+clínica ou do paciente, **outro(a) ortodontista da equipe pode continuar**,
+sem mudar as condições. Caso sem ortodontista escolhido: quando a Recepção
+agenda a **instalação** (início de tratamento ou sessão) com um **dentista da
+unidade**, ele passa a ser o responsável — fica no histórico do caso. Um
+retorno não define, e quem não é dentista não assume. Trocar o responsável em
+**Editar** também fica registrado (de quem → para quem).
+
+**O prazo é uma referência.** O termo passou a dizer que os meses previstos
+são uma estimativa, e não um compromisso de conclusão em data certa: a
+duração real depende da resposta de cada paciente, da colaboração e da
+assiduidade.
+
 #### O que o ortodontista vê — e o que não vê
 
 Desde a 0.364.0, **o Dentista não vê nenhum valor da ortodontia**: nem a
@@ -1560,7 +1602,8 @@ cartão não aparece. Na aba **Desenvolvimento Clínico** aparecem as evoluçõe
 da ortodontia (desde a 0.364.0).
 
 **Evidência:** EV-235 a EV-242; contenção, baixa e faltas (0.363.0): EV-243 a
-EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248.
+EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
+(0.365.0): EV-249 a EV-251.
 
 ## A barra de cima
 
@@ -2168,6 +2211,8 @@ diferença.
 | Ortodontia — ver o módulo | Admin, **Gerente**, **Coordenador**, **Recepção**, Franqueado, Franqueadora/Rede, Financeiro da Franqueadora, **Dentista** (só os casos em que é o ortodontista) |
 | Ortodontia — ver o Painel (os números) | Admin, **Gerente**, **Coordenador**, Franqueado, Franqueadora/Rede, Financeiro da Franqueadora (a Recepção cai na tela Atenção) |
 | Ortodontia — abrir, editar, iniciar, entregar contenções, dar alta, interromper o caso | Admin, **Gerente**, **Coordenador** |
+| Ortodontia — indicar na avaliação/reavaliação (0.365.0) | Admin, **Coordenador** (sugestão; o Planner decide no plano) |
+| Ortodontia — a proposta ortodôntica da opção do plano (0.365.0) | **Dentista Planner** e o titular, com o plano em rascunho/devolvido; o Coordenador aprova junto com a opção |
 | Ortodontia — registrar a manutenção e a evolução | Admin, **Coordenador**, o **Dentista** que é o ortodontista do caso |
 | Ortodontia — mensalidades (gerar, dar baixa) | Admin, **Gerente**, Franqueadora/Rede, **Financeiro da Franqueadora** (desde a 0.363.0: a Recepção e o Franqueado só **veem** a situação; desde a 0.364.0 o **Coordenador** também vê, e o **Dentista não vê valor nenhum** — nem o banco lhe entrega) |
 | Lançar/editar dinheiro | Admin, Financeiro da Franqueadora, **Gerente** |

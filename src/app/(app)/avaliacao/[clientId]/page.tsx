@@ -29,6 +29,8 @@ import { loadAnamnesisWorkspace } from "../../prontuarios/[id]/anamnesis-loader"
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
 import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
 import { StepGuide } from "./step-guide";
+import { OrthoIndicationBlock, type OrthoIndicationState } from "./ortho-indication-block";
+import { evaluationLabel } from "@/lib/clinical";
 import {
   AudioBlock,
   ConsentGate,
@@ -486,6 +488,21 @@ export default async function EvaluationCockpitPage(
       )}
     </div>
   );
+  // ORTO7 (R3): a indicação de ortodontia vive na rodada ABERTA desta unidade
+  // (é nela que o Coordenador escreve); se não houver, a mais recente marcada.
+  const rodadaAberta = evaluations.find((e) => e.status === "open" && e.clinicName === clinicName) ?? evaluations.find((e) => e.status === "open");
+  const rodadaIndicada = evaluations.find((e) => e.orthoIndicated);
+  const rodadaDaIndicacao = rodadaAberta ?? rodadaIndicada ?? null;
+  const orthoIndication: OrthoIndicationState = {
+    indicated: rodadaDaIndicacao?.orthoIndicated === true,
+    note: rodadaDaIndicacao?.orthoIndicationNote ?? null,
+    at: rodadaDaIndicacao?.orthoIndicatedAt ?? null,
+    byName: rodadaDaIndicacao?.orthoIndicatedByName ?? null,
+    roundLabel: rodadaDaIndicacao ? evaluationLabel(rodadaDaIndicacao) : null,
+    locked: Boolean(rodadaDaIndicacao?.diagnosisFinalizedAt),
+  };
+  const blocoDaIndicacao = <OrthoIndicationBlock clientId={client.id} current={orthoIndication} />;
+
   const toolsByStep: Record<number, ReactNode> = flowKind
     ? {
         2: (
@@ -510,6 +527,8 @@ export default async function EvaluationCockpitPage(
           <div className="space-y-4">
             {/* OD2: o exame dos dentes é o momento da avaliação clínica. */}
             {blocoDoOdontograma}
+            {/* ORTO7 (R3): a indicação de ortodontia nasce no exame clínico. */}
+            {blocoDaIndicacao}
             {qualityChecklist && (
               <QualityChecklist
                 clientId={client.id}

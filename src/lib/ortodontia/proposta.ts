@@ -1,13 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { orthoClauses, type OrthoTerms } from "./regras";
-import type { OrthoKind } from "./constants";
+import type { OrthoKind, OrthoRetainerKind } from "./constants";
 import { CASE_TERMS_EMBED } from "./db";
 
 export type CondicoesOrtodonticas = {
   clausulas: string[];
-  /** De onde vieram os números: do caso já aberto, ou do padrão da unidade. */
-  origem: "caso" | "padrao";
+  /**
+   * De onde vieram os números: do caso já aberto; da proposta do Planner na
+   * opção (ORTO7) + padrão da unidade para o dinheiro; ou só do padrão.
+   */
+  origem: "caso" | "proposta" | "padrao";
   termos: OrthoTerms;
 };
 
@@ -24,7 +27,7 @@ export function ehOrtodontia(specialty: string | null | undefined): boolean {
  */
 export async function condicoesOrtodonticas(
   supabase: SupabaseClient,
-  input: { clientId: string; clinicId: string; procedureIds: string[] }
+  input: { clientId: string; clinicId: string; procedureIds: string[]; optionId?: string | null }
 ): Promise<CondicoesOrtodonticas | null> {
   const ids = [...new Set(input.procedureIds)].filter(Boolean);
   if (ids.length === 0) return null;
@@ -34,6 +37,24 @@ export async function condicoesOrtodonticas(
     .select("id, specialty")
     .in("id", ids.slice(0, 150));
   if (error || !procs?.some((p) => ehOrtodontia(p.specialty as string | null))) return null;
+
+  // ORTO7 (0333): as características que o Planner definiu na opção (tipo,
+  // meses de referência, intervalo, contenção final). Sem proposta, nulo.
+  type Proposta = {
+    treatment_kind: string;
+    planned_months: number;
+    maintenance_interval_days: number;
+    retainer_kind: string;
+  };
+  let proposta: Proposta | null = null;
+  if (input.optionId) {
+    const { data } = await supabase
+      .from("treatment_plan_ortho")
+      .select("treatment_kind, planned_months, maintenance_interval_days, retainer_kind")
+      .eq("option_id", input.optionId)
+      .maybeSingle();
+    proposta = (data as Proposta | null) ?? null;
+  }
 
   // 0332: o dinheiro do caso vive na irmã `ortho_case_terms` (só quem vê
   // dinheiro a lê). Sem a irmã na resposta, vale o padrão da unidade.
@@ -66,6 +87,7 @@ export async function condicoesOrtodonticas(
       retainerCharged: t.retainer_charged === true,
       retainerFeeCents: Number(t.retainer_fee_cents ?? 0),
       retainerTerms: t.retainer_terms ?? null,
+      retainerKind: (proposta?.retainer_kind as OrthoRetainerKind | undefined) ?? null,
     };
     return { clausulas: orthoClauses(termos), origem: "caso", termos };
   }
@@ -87,16 +109,19 @@ export async function condicoesOrtodonticas(
     | null
     | undefined;
   if (!s) return null;
+  // Sem caso: as características vêm da proposta do Planner (quando há) e o
+  // dinheiro do padrão da unidade — o Comercial ajusta na negociação (ORTO8).
   const termos: OrthoTerms = {
-    kind: null,
+    kind: (proposta?.treatment_kind as OrthoKind | undefined) ?? null,
     monthlyCents: Number(s.monthly_fee_cents ?? 0),
-    plannedMonths: Number(s.planned_months ?? 24),
-    maintenanceIntervalDays: Number(s.maintenance_interval_days ?? 30),
+    plannedMonths: Number(proposta?.planned_months ?? s.planned_months ?? 24),
+    maintenanceIntervalDays: Number(proposta?.maintenance_interval_days ?? s.maintenance_interval_days ?? 30),
     billingDay: Number(s.billing_day ?? 10),
     installationCents: 0,
     retainerCharged: s.retainer_charge_enabled === true,
     retainerFeeCents: Number(s.retainer_fee_cents ?? 0),
     retainerTerms: s.retainer_terms ?? null,
+    retainerKind: (proposta?.retainer_kind as OrthoRetainerKind | undefined) ?? null,
   };
-  return { clausulas: orthoClauses(termos), origem: "padrao", termos };
+  return { clausulas: orthoClauses(termos), origem: proposta ? "proposta" : "padrao", termos };
 }

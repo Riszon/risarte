@@ -62,6 +62,20 @@ export const ORTHO_KIND_LABELS: Record<OrthoKind, string> = {
   outro: "Outro",
 };
 
+/**
+ * Tipo de contenção FINAL, definido pelo Planner na proposta ortodôntica da
+ * opção do plano (0333, R5). Espelha o check de `treatment_plan_ortho`.
+ */
+export const ORTHO_RETAINER_KINDS = ["placa_removivel", "fixa_colada", "ambas", "a_definir"] as const;
+export type OrthoRetainerKind = (typeof ORTHO_RETAINER_KINDS)[number];
+
+export const ORTHO_RETAINER_KIND_LABELS: Record<OrthoRetainerKind, string> = {
+  placa_removivel: "Placa removível",
+  fixa_colada: "Contenção fixa (colada)",
+  ambas: "Placa + fixa",
+  a_definir: "A definir no fim do tratamento",
+};
+
 /** Situação de cada manutenção do cronograma. */
 export const ORTHO_MAINTENANCE_STATUSES = [
   "prevista",
