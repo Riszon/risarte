@@ -72,7 +72,11 @@ import {
   type CalculoDosDependentes,
   type EstimativaDosDependentes,
 } from "@/lib/empresarial/dependentes-da-proposta";
-import type { DependentMode } from "@/lib/empresarial/pricing";
+import type { AdhesionPricing, DependentMode } from "@/lib/empresarial/pricing";
+import {
+  comparacaoComOPadrao,
+  type ComparacaoComOPadrao,
+} from "@/lib/empresarial/padrao-da-proposta";
 import { CondicoesComerciais, type CondicoesView } from "./condicoes-editor";
 import { UnidadesDaParceria, type Unidade } from "./unidades-editor";
 import { PainelDoPasso, TrilhaDaProposta } from "./passos-da-proposta";
@@ -116,6 +120,8 @@ export function FichaDaProposta({
   vantagensDaProposta,
   pagamentoESocial,
   condicoes,
+  precoPadrao,
+  mostrarPadrao,
   unidades,
   unidadePrincipal,
   unidadesDaParceria,
@@ -152,6 +158,13 @@ export function FichaDaProposta({
   pagamentoESocial: PagamentoESocialView;
   /** H3: limites, valor mínimo, faixas, implantação e dependentes. */
   condicoes: CondicoesView;
+  /** 1036: o preço padrão da rede (Configurações → Preço da adesão). */
+  precoPadrao: AdhesionPricing;
+  /**
+   * 1036: mostrar padrão × proposta no documento. Nulo = a migração 1036
+   * ainda não rodou (ou não há levantamento): a caixa não aparece.
+   */
+  mostrarPadrao: boolean | null;
   /** I3: as unidades do sistema, e as desta parceria. */
   unidades: Unidade[];
   unidadePrincipal: string | null;
@@ -279,6 +292,22 @@ export function FichaDaProposta({
     // meia condição preenchida, e ninguém saberia qual número acreditar.
     faixas: condicoes.faixas,
   });
+
+  // 1036: a mesma empresa pelo preço padrão da rede — quanto ela economiza.
+  const padrao = comparacaoComOPadrao({
+    proposta,
+    padrao: precoPadrao,
+    basis,
+    titulares: Number.parseInt(employeeCount || "0", 10) || 0,
+    incluiDependentes,
+    calculo,
+    quadro: linhasDoQuadro,
+    dependentes: dependentesDaProposta,
+    implantacaoComDependentes: implantacaoComDeps,
+  });
+  const [mostrarPadraoNoDocumento, setMostrarPadraoNoDocumento] = useState(
+    mostrarPadrao ?? true
+  );
 
   // Os avisos das condições, calculados com o que está sendo digitado acima.
   const avisos = [
@@ -595,6 +624,29 @@ export function FichaDaProposta({
             iniciar o programa: o valor dos titulares
             {estimativaDeps ? " — e dos dependentes, se marcado acima" : ""}.
           </p>
+          {mostrarPadrao !== null && (
+            <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
+              {/* O marcador diz ao servidor que a caixa estava na tela:
+                  caixa desmarcada não vai no formulário, e sem ele "não
+                  marcada" e "não estava aqui" seriam a mesma coisa. */}
+              <input type="hidden" name="show_standard_comparison_na_tela" value="1" />
+              <input
+                type="checkbox"
+                name="show_standard_comparison"
+                checked={mostrarPadraoNoDocumento}
+                onChange={(e) => setMostrarPadraoNoDocumento(e.target.checked)}
+                className="mt-0.5 size-4"
+              />
+              <span>
+                <strong>Mostrar no documento: padrão × proposta</strong>
+                <span className="block text-xs text-muted-foreground">
+                  Quando a proposta sai mais barata que o preço padrão da rede,
+                  o documento mostra os dois valores e quanto a empresa
+                  economiza. Igual ou mais cara, nada aparece.
+                </span>
+              </span>
+            </label>
+          )}
         </Secao>
 
             </PainelDoPasso>
@@ -829,6 +881,8 @@ export function FichaDaProposta({
             avisos={avisos}
             incluiDependentes={incluiDependentes}
             estimativaDependentes={estimativaDeps}
+            padrao={padrao}
+            padraoNoDocumento={mostrarPadrao === null ? null : mostrarPadraoNoDocumento}
           />
         </aside>
       </div>
@@ -1065,6 +1119,8 @@ function SimuladorDaProposta({
   avisos,
   incluiDependentes,
   estimativaDependentes,
+  padrao,
+  padraoNoDocumento,
 }: {
   proposta: ReturnType<typeof simularProposta>;
   basis: BillingBasis;
@@ -1077,6 +1133,10 @@ function SimuladorDaProposta({
   incluiDependentes: boolean;
   /** Estimativa dos dependentes — só tela, nunca vai para a proposta. */
   estimativaDependentes: EstimativaDosDependentes | null;
+  /** 1036: a mesma empresa pelo preço padrão da rede. */
+  padrao: ComparacaoComOPadrao | null;
+  /** 1036: a caixa "mostrar no documento" (nulo = migração pendente). */
+  padraoNoDocumento: boolean | null;
 }) {
   const economia = proposta.economiaMensalCents;
   return (
@@ -1143,6 +1203,10 @@ function SimuladorDaProposta({
             </p>
           )}
         </div>
+
+        {/* 1036 (dono, 28/10/2026): proposta mais barata que o padrão mostra
+            os dois valores e quanto a empresa economiza. */}
+        {padrao && <PadraoXProposta padrao={padrao} noDocumento={padraoNoDocumento} />}
 
         {/* A FAIXA E A ESTIMATIVA APARECEM ONDE O NÚMERO APARECE. Mostrar
             R$ 29,90 sem dizer que veio de uma faixa faria o consultor procurar
@@ -1241,6 +1305,54 @@ function SimuladorDaProposta({
   );
 }
 
+
+/** 1036: padrão da rede × proposta, com a economia. */
+function PadraoXProposta({
+  padrao,
+  noDocumento,
+}: {
+  padrao: ComparacaoComOPadrao;
+  noDocumento: boolean | null;
+}) {
+  return (
+    <div className="space-y-1 rounded-md border p-3 text-sm">
+      <p className="text-xs font-medium text-muted-foreground">Padrão × proposta</p>
+      <p>
+        Padrão {formatBRL(padrao.padraoMensalCents)}/mês → Proposta{" "}
+        {formatBRL(padrao.propostaMensalCents)}/mês
+      </p>
+      {padrao.maisBarata ? (
+        <p className="text-emerald-700 dark:text-emerald-400">
+          <strong>
+            A empresa economiza {formatBRL(padrao.economiaMensalCents)}/mês (
+            {formatBRL(padrao.economiaAnualCents)}/ano)
+          </strong>
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          {padrao.economiaMensalCents === 0
+            ? "A proposta está no preço padrão."
+            : "A proposta está acima do preço padrão."}{" "}
+          Nada disso vai para o documento.
+        </p>
+      )}
+      {padrao.maisBarata && padrao.economiaImplantacaoCents > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Implantação: padrão {formatBRL(padrao.padraoImplantacaoCents)} → proposta{" "}
+          {formatBRL(padrao.propostaImplantacaoCents)} (economia de{" "}
+          {formatBRL(padrao.economiaImplantacaoCents)})
+        </p>
+      )}
+      {padrao.maisBarata && noDocumento !== null && (
+        <p className="text-xs text-muted-foreground">
+          {noDocumento
+            ? "Vai no documento (caixa marcada nos preços)."
+            : "Não vai no documento (caixa desmarcada nos preços)."}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * OS VALORES DOS DEPENDENTES — abrem junto do "Sim" em "dependentes entram?".

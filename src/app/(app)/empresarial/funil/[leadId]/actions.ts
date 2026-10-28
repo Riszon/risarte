@@ -323,6 +323,11 @@ export async function saveProposal(
       fixed_monthly_cents: centavos(formData, "fixed_monthly"),
       // AP18: implantation_per_employee_cents não é mais escrito — o campo
       // saiu da tela, e escrever nulo apagaria o valor antigo guardado.
+      // 1036: só escreve quando a caixa estava na tela — sem a migração ela
+      // não aparece, e gravar a coluna que não existe derrubaria o salvar.
+      ...(formData.has("show_standard_comparison_na_tela")
+        ? { show_standard_comparison: formData.get("show_standard_comparison") === "on" }
+        : {}),
 
       legal_name: texto(formData, "legal_name"),
       category: daLista(formData, "category", COMPANY_CATEGORIES),

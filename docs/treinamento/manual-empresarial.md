@@ -401,6 +401,26 @@ na mensalidade, na ficha, no painel e na cobrança.
 > Fechar uma proposta de valor fixo **sem o valor preenchido** é recusado: não
 > existe mensalidade sem o número combinado.
 
+**Padrão × proposta — quanto a empresa economiza.** O quadro *Simulação da
+proposta* (ao lado da tela) compara esta proposta com o **preço padrão da
+rede** (Configurações → Preço da adesão), para a **mesma empresa**: os mesmos
+titulares e os mesmos dependentes estimados, pelo preço de tabela, sem faixa.
+Por exemplo: *"Padrão R$ 3.990,00/mês → Proposta R$ 2.990,00/mês · a empresa
+economiza R$ 1.000,00/mês (R$ 12.000,00/ano)"*. Se a implantação também ficar
+mais barata, a economia dela aparece embaixo.
+
+- A caixa **"Mostrar no documento: padrão × proposta"**, logo abaixo dos
+  preços, decide se essa comparação vai para o papel. Ela **já vem marcada**;
+  desmarque e salve a proposta para tirar.
+- Marcada, o documento ganha a seção **Condição especial para a sua empresa**
+  com o preço padrão, o proposto e a economia por mês e por ano — **só quando
+  a proposta sai mais barata**. Igual ou mais cara que o padrão, nada aparece
+  no documento (a tela avisa).
+- Dependentes: o padrão conta do mesmo jeito que a proposta (o mesmo quadro ou
+  "como individual"). Se a proposta não calcula dependentes, o padrão também
+  não. No valor fixo por empresa, o padrão conta os dependentes como
+  individuais.
+
 ### 6.3. Dependentes
 
 Os valores dos dependentes ficam no passo **Quem paga e quanto**. Ao responder
@@ -638,9 +658,25 @@ Botão **Ver a proposta**. Abre em outra aba, pronta para imprimir ou salvar em
 PDF; os botões do topo somem na impressão.
 
 O que o documento traz: cabeçalho, razão social, CNPJ, data de emissão,
-validade, o quadro de valores, quem paga o quê, *O que está coberto*, *Quando o
-programa começa a valer*, *Onde o programa é atendido*, e a comparação com o
-convênio atual.
+validade, o quadro de valores, quem paga o quê, a *Condição especial para a sua
+empresa* (padrão × proposta, quando marcada e mais barata — ver 6.2), *O que
+está coberto*, *Quando o programa começa a valer*, *Onde o programa é
+atendido*, e a comparação com o convênio atual.
+
+**Os benefícios saem resumidos.** *O que está coberto* mostra só o resumo —
+por exemplo, *"12 procedimentos sem custo (R$ 0,00)"* e *"48 procedimentos com
+descontos de 10% a 40%"*. A relação completa vai no **Anexo — Procedimentos e
+descontos**, no fim do documento (na impressão, começa em página nova):
+
+- ordem do **maior desconto para o menor** — os sem custo primeiro; empate,
+  pelo nome;
+- cada linha traz o desconto, para quem vale, o limite de uso, a carência e,
+  quando houver, as unidades;
+- desconto em **reais** é convertido em % pelo preço de tabela do procedimento,
+  para entrar na faixa e na ordem — por exemplo *"R$ 50,00 (25%)"*. Sem preço
+  cadastrado, ele é contado à parte (*"3 procedimentos com desconto em reais"*)
+  e vai para o fim do anexo;
+- os **não cobertos** não entram no resumo nem no anexo.
 
 > ⚠️ **O que NÃO pode estar lá:** interesse, chance de fechar e observações do
 > consultor são **notas internas**. O documento vai para a mão da empresa.

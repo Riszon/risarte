@@ -10,6 +10,7 @@ import {
 } from "@/lib/empresarial/access";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { DEFAULT_ADHESION_PRICING } from "@/lib/empresarial/pricing";
+import { loadPricing } from "../../configuracoes/data";
 import { createClient } from "@/lib/supabase/server";
 import type {
   DispatchChannel,
@@ -241,6 +242,8 @@ type QualRow = {
   excess_fixed_cents: number | null;
   excess_holder_fee_cents: number | null;
   excess_dependent_fee_cents: number | null;
+  // 1036: ausente = a migração ainda não rodou neste banco.
+  show_standard_comparison?: boolean;
 };
 
 export default async function FichaDoLeadPage({
@@ -489,6 +492,9 @@ export default async function FichaDoLeadPage({
     excessHolderFeeCents: qual?.excess_holder_fee_cents ?? null,
     excessDependentFeeCents: qual?.excess_dependent_fee_cents ?? null,
   };
+
+  // 1036: o preço padrão da rede, para a proposta mostrar quanto economiza.
+  const { pricing: precoPadrao } = await loadPricing(db, null);
 
   // I3 (1019): as unidades do sistema e as desta parceria.
   const { data: unidadesRows } = await (await createClient())
@@ -815,6 +821,14 @@ export default async function FichaDoLeadPage({
             metas: lerMetas(qual?.social_goals),
           }}
           condicoes={condicoes}
+          precoPadrao={precoPadrao}
+          mostrarPadrao={
+            // Sem a coluna (migração 1036 pendente) ou sem levantamento, a
+            // caixa não aparece — e salvar não tenta gravar onde não existe.
+            qual && typeof qual.show_standard_comparison === "boolean"
+              ? qual.show_standard_comparison
+              : null
+          }
           unidades={unidadesRows ?? []}
           unidadePrincipal={qual?.main_clinic_id ?? null}
           unidadesDaParceria={(parceriaRows ?? []).map((c) => c.clinic_id)}

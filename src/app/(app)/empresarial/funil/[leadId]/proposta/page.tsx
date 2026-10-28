@@ -27,9 +27,13 @@ import {
   textoDoPagamento,
 } from "@/lib/empresarial/riso-social";
 import {
+  calculoDaProposta,
   estimativaDaProposta,
+  lerQuadro,
   pricingDaProposta,
 } from "@/lib/empresarial/dependentes-da-proposta";
+import { comparacaoComOPadrao } from "@/lib/empresarial/padrao-da-proposta";
+import { loadPricing } from "../../../configuracoes/data";
 import {
   comoSeraCobrado,
   comparacaoComOAtual,
@@ -38,12 +42,15 @@ import {
 } from "@/lib/empresarial/documento-da-proposta";
 import type { BenefitType, PaymentModel } from "@/lib/empresarial/constants";
 import {
+  descontoNoAnexo,
+  frasesDoResumo,
+  ordenarParaOAnexo,
   paraQuemVale,
+  resumoDosBeneficios,
   rotuloDasUnidades,
   rotuloDaCarencia,
-  rotuloDoBeneficio,
   rotuloDoUso,
-  type BeneficioDaProposta,
+  type BeneficioDoAnexo,
 } from "@/lib/empresarial/beneficios-da-proposta";
 import { createClient } from "@/lib/supabase/server";
 import { BotaoImprimir } from "../botao-imprimir";
@@ -98,6 +105,8 @@ type QualRow = {
   social_goals: unknown;
   dependents_distribution: unknown;
   implantation_includes_dependents: boolean | null;
+  // 1036: ausente = a migração ainda não rodou (vale o padrão: mostrar).
+  show_standard_comparison?: boolean;
 };
 
 type BeneficioRow = {
@@ -246,6 +255,23 @@ export default async function PropostaPage({
     faixas,
   });
 
+  // 1036 (dono, 28/10/2026): a mesma empresa pelo preço padrão da rede. Só
+  // vai para o papel quando a proposta sai mais barata e a caixa está marcada.
+  const { pricing: precoPadrao } = await loadPricing(db, null);
+  const padrao = comparacaoComOPadrao({
+    proposta: conta,
+    padrao: precoPadrao,
+    basis,
+    titulares,
+    incluiDependentes: Boolean(q.includes_dependents),
+    calculo: calculoDaProposta(q),
+    quadro: lerQuadro(q.dependents_distribution),
+    dependentes: q.dependents_estimate ?? 0,
+    implantacaoComDependentes: Boolean(q.implantation_includes_dependents),
+  });
+  const mostrarPadrao =
+    padrao != null && padrao.maisBarata && q.show_standard_comparison !== false;
+
   // O TEXTO da proposta (1014), na cascata: o desta empresa, senão o da rede.
   const { data: modelos, error: erroModelo } = await db
     .from("proposal_templates")
@@ -272,18 +298,21 @@ export default async function PropostaPage({
   const vantagens = (await carregarVantagensDaProposta(db, leadId)) ?? [];
   const metasSociais = lerMetas(q.social_goals);
 
-  const beneficios: (BeneficioDaProposta & { nome: string })[] = [];
+  const beneficios: BeneficioDoAnexo[] = [];
   if (benRows?.length) {
     const supabaseProc = await createClient();
     const { data: procs } = await supabaseProc
       .from("procedures")
-      .select("id, name")
+      .select("id, name, default_price_cents")
       .in("id", benRows.map((b) => b.procedure_id))
-      .returns<{ id: string; name: string }[]>();
+      .returns<{ id: string; name: string; default_price_cents: number | null }[]>();
     const nomePorId = new Map((procs ?? []).map((x) => [x.id, x.name]));
+    // O preço de tabela converte o desconto em reais para % (1036).
+    const precoPorId = new Map((procs ?? []).map((x) => [x.id, x.default_price_cents]));
     for (const b of benRows) {
       beneficios.push({
         nome: nomePorId.get(b.procedure_id) ?? "Procedimento",
+        precoCents: precoPorId.get(b.procedure_id) ?? null,
         procedureId: b.procedure_id,
         benefitType: b.benefit_type,
         benefitValue: b.benefit_value,
@@ -296,8 +325,10 @@ export default async function PropostaPage({
         clinicIds: b.clinic_ids ?? [],
       });
     }
-    beneficios.sort((a, z) => a.nome.localeCompare(z.nome, "pt-BR"));
   }
+  // 1036: no corpo, o resumo; no fim, o anexo do maior desconto ao menor.
+  const anexo = ordenarParaOAnexo(beneficios);
+  const resumo = frasesDoResumo(resumoDosBeneficios(beneficios));
 
   // I3 (1019): as unidades da parceria, para o documento dizer ONDE o
   // programa é atendido — e para cada benefício poder dizer a sua exceção.
@@ -588,6 +619,46 @@ export default async function PropostaPage({
 
         </section>
 
+        {mostrarPadrao && padrao && (
+          <section className="space-y-2 break-inside-avoid">
+            <h2 className="text-lg font-medium">Condição especial para a sua empresa</h2>
+            <p className="leading-relaxed text-muted-foreground">
+              Esta proposta sai abaixo do preço padrão do programa.
+            </p>
+            <div className="grid grid-cols-2 gap-4 rounded-lg border p-4 sm:grid-cols-4">
+              <Numero rotulo="Preço padrão" valor={`${formatBRL(padrao.padraoMensalCents)}/mês`} />
+              <Numero
+                rotulo="Nossa proposta"
+                valor={`${formatBRL(padrao.propostaMensalCents)}/mês`}
+              />
+              <Numero
+                rotulo="Economia por mês"
+                valor={formatBRL(padrao.economiaMensalCents)}
+                destaque
+              />
+              <Numero
+                rotulo="Economia por ano"
+                valor={formatBRL(padrao.economiaAnualCents)}
+                destaque
+              />
+            </div>
+            {padrao.propostaPorTitularCents != null &&
+              padrao.propostaPorTitularCents < padrao.padraoPorTitularCents && (
+                <p className="text-sm text-muted-foreground">
+                  Por titular: {formatBRL(padrao.padraoPorTitularCents)} no padrão,{" "}
+                  {formatBRL(padrao.propostaPorTitularCents)} nesta proposta.
+                </p>
+              )}
+            {padrao.economiaImplantacaoCents > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Implantação: {formatBRL(padrao.padraoImplantacaoCents)} no padrão,{" "}
+                {formatBRL(padrao.propostaImplantacaoCents)} nesta proposta — economia de{" "}
+                {formatBRL(padrao.economiaImplantacaoCents)}.
+              </p>
+            )}
+          </section>
+        )}
+
         {comparacao && (
           <section className="space-y-2 break-inside-avoid">
             <h2 className="text-lg font-medium">
@@ -617,35 +688,25 @@ export default async function PropostaPage({
 
         {/* ⚠️ OS BENEFÍCIOS SÃO O QUE A EMPRESA COMPRA. Ficam ANTES do texto
             geral do programa: quem lê quer saber o que ganha, e o texto
-            explica como funciona. Cada linha diz para quem vale — a marca
-            feita na proposta sai impressa, senão ela não teria consequência
-            nenhuma para quem decide. */}
-        {beneficios.length > 0 && (
+            explica como funciona.
+            1036 (dono, 28/10/2026): a lista inteira deixava o documento
+            comprido demais. Aqui vai o resumo; a relação completa, com para
+            quem vale, uso e carência, fica no anexo do fim. */}
+        {resumo.length > 0 && (
           <section className="space-y-2 break-inside-avoid">
             <h2 className="text-lg font-medium">O que está coberto</h2>
-            <ul className="divide-y rounded-lg border">
-              {beneficios.map((b) => {
-                const uso = rotuloDoUso(b);
-                const carencia = rotuloDaCarencia(b);
-                return (
-                  <li key={b.procedureId} className="flex flex-wrap gap-x-3 gap-y-0.5 p-3">
-                    <span className="min-w-48 flex-1 font-medium">{b.nome}</span>
-                    <span>{rotuloDoBeneficio(b)}</span>
-                    <span className="w-full text-sm text-muted-foreground">
-                      {paraQuemVale(b)}
-                      {uso ? ` · ${uso}` : ""}
-                      {carencia ? ` · ${carencia}` : ""}
-                      {/* A exceção de unidade só é escrita quando EXISTE:
-                          repetir "em todas as unidades" em cada linha viraria
-                          ruído e esconderia justamente a linha restrita. */}
-                      {b.clinicIds && b.clinicIds.length > 0 && idsDaParceria.length > 1
-                        ? ` · ${rotuloDasUnidades(b.clinicIds, nomeDaUnidade)}`
-                        : ""}
-                    </span>
-                  </li>
-                );
-              })}
+            <ul className="space-y-1 rounded-lg border p-4">
+              {resumo.map((frase) => (
+                <li key={frase} className="font-medium">
+                  {frase}
+                </li>
+              ))}
             </ul>
+            <p className="text-sm text-muted-foreground">
+              A relação completa está no{" "}
+              <strong className="text-foreground">Anexo — Procedimentos e descontos</strong>,
+              no fim deste documento.
+            </p>
           </section>
         )}
 
@@ -793,6 +854,51 @@ export default async function PropostaPage({
           {consultor && <p>Consultor responsável: {consultor}</p>}
           <p className="pt-2">Risarte Odontologia · Risarte Empresarial</p>
         </footer>
+
+        {/* ⚠️ O ANEXO COMEÇA EM PÁGINA NOVA na impressão, do maior desconto
+            para o menor (sem custo primeiro). Cada linha diz para quem vale —
+            a marca feita na proposta sai impressa, senão ela não teria
+            consequência nenhuma para quem decide. */}
+        {anexo.length > 0 && (
+          <section className="space-y-2 print:break-before-page">
+            <h2 className="text-lg font-medium">Anexo — Procedimentos e descontos</h2>
+            <p className="text-sm text-muted-foreground">Do maior desconto para o menor.</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="py-1.5 pr-3 font-medium">Procedimento</th>
+                  <th className="py-1.5 pr-3 font-medium whitespace-nowrap">Desconto</th>
+                  <th className="py-1.5 font-medium">Condições</th>
+                </tr>
+              </thead>
+              <tbody>
+                {anexo.map((b) => {
+                  const uso = rotuloDoUso(b);
+                  const carencia = rotuloDaCarencia(b);
+                  return (
+                    <tr key={b.procedureId} className="break-inside-avoid border-b align-top">
+                      <td className="py-1.5 pr-3 break-words">{b.nome}</td>
+                      <td className="py-1.5 pr-3 font-medium whitespace-nowrap">
+                        {descontoNoAnexo(b)}
+                      </td>
+                      <td className="py-1.5 text-muted-foreground">
+                        {paraQuemVale(b)}
+                        {uso ? ` · ${uso}` : ""}
+                        {carencia ? ` · ${carencia}` : ""}
+                        {/* A exceção de unidade só é escrita quando EXISTE:
+                            repetir "em todas as unidades" em cada linha viraria
+                            ruído e esconderia justamente a linha restrita. */}
+                        {b.clinicIds && b.clinicIds.length > 0 && idsDaParceria.length > 1
+                          ? ` · ${rotuloDasUnidades(b.clinicIds, nomeDaUnidade)}`
+                          : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        )}
       </article>
     </div>
   );

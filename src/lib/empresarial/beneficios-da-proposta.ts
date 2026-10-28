@@ -254,3 +254,125 @@ export function rotuloDasUnidades(
   if (nomes.length === 0) return "Em todas as unidades da parceria";
   return nomes.length === 1 ? `Só em ${nomes[0]}` : `Só em: ${nomes.join(", ")}`;
 }
+
+// -----------------------------------------------------------------------------
+// 1036 — O RESUMO NO DOCUMENTO E O ANEXO
+// -----------------------------------------------------------------------------
+// Pedido do dono (28/10/2026): *"No documento da proposta a lista de
+// benefícios está muito grande, deve mostrar apenas resumido X procedimentos
+// com custo R$ 0,00 e Y procedimentos com descontos de X% a Y%. E no final do
+// documento, como anexo, a relação dos procedimentos com os descontos.
+// Classificar os procedimentos por desconto, do maior desconto pro menor."*
+
+/** O benefício como o anexo precisa: com nome e o preço de tabela. */
+export type BeneficioDoAnexo = BeneficioDaProposta & {
+  nome: string;
+  /** Preço de tabela da rede. Nulo/zero = sem preço cadastrado. */
+  precoCents: number | null;
+};
+
+/**
+ * QUANTOS POR CENTO O BENEFÍCIO DESCONTA.
+ *
+ * Sem custo é 100%. O desconto em reais vira % pelo preço de tabela — é o
+ * único jeito de ele entrar na mesma faixa e na mesma ordem dos outros. Sem
+ * preço cadastrado não há como saber, e a resposta é nula: inventar um % seria
+ * imprimir uma promessa que ninguém fez.
+ */
+export function percentualDoDesconto(
+  b: Pick<BeneficioDoAnexo, "benefitType" | "benefitValue" | "precoCents">
+): number | null {
+  if (b.benefitType === "FREE") return 100;
+  if (b.benefitType === "DISCOUNT_PERCENT") return Math.min(100, Math.max(0, b.benefitValue ?? 0));
+  if (b.benefitType === "DISCOUNT_AMOUNT") {
+    if (!b.precoCents || b.precoCents <= 0) return null;
+    return Math.min(100, Math.round(((b.benefitValue ?? 0) / b.precoCents) * 100));
+  }
+  return null;
+}
+
+/**
+ * A ORDEM DO ANEXO: do maior desconto para o menor (sem custo primeiro), e
+ * pelo nome quando empata. Desconto em reais sem preço vai para o fim — não
+ * dá para dizer onde ele cairia. "Não coberto" não é benefício e não entra.
+ */
+export function ordenarParaOAnexo<T extends BeneficioDoAnexo>(lista: readonly T[]): T[] {
+  return lista
+    .filter((b) => b.benefitType !== "NOT_COVERED")
+    .map((b) => ({ b, pct: percentualDoDesconto(b) }))
+    .sort((x, y) => {
+      if (x.pct !== y.pct) {
+        if (x.pct == null) return 1;
+        if (y.pct == null) return -1;
+        return y.pct - x.pct;
+      }
+      return x.b.nome.localeCompare(y.b.nome, "pt-BR");
+    })
+    .map(({ b }) => b);
+}
+
+export type ResumoDosBeneficios = {
+  semCusto: number;
+  /** Com desconto cujo % se conhece (inclui o em reais com preço). */
+  comDesconto: number;
+  menorPercent: number | null;
+  maiorPercent: number | null;
+  /** Desconto em reais em procedimento sem preço: % desconhecido. */
+  emReaisSemPreco: number;
+};
+
+export function resumoDosBeneficios(lista: readonly BeneficioDoAnexo[]): ResumoDosBeneficios {
+  const r: ResumoDosBeneficios = {
+    semCusto: 0,
+    comDesconto: 0,
+    menorPercent: null,
+    maiorPercent: null,
+    emReaisSemPreco: 0,
+  };
+  for (const b of lista) {
+    if (b.benefitType === "NOT_COVERED") continue;
+    if (b.benefitType === "FREE") {
+      r.semCusto += 1;
+      continue;
+    }
+    const pct = percentualDoDesconto(b);
+    if (pct == null) {
+      r.emReaisSemPreco += 1;
+      continue;
+    }
+    r.comDesconto += 1;
+    r.menorPercent = r.menorPercent == null ? pct : Math.min(r.menorPercent, pct);
+    r.maiorPercent = r.maiorPercent == null ? pct : Math.max(r.maiorPercent, pct);
+  }
+  return r;
+}
+
+const pctTexto = (n: number) => `${String(n).replace(".", ",")}%`;
+const procedimentos = (n: number) => `${n} procedimento${n === 1 ? "" : "s"}`;
+
+/** As frases do resumo, na ordem em que o documento as imprime. */
+export function frasesDoResumo(r: ResumoDosBeneficios): string[] {
+  const f: string[] = [];
+  if (r.semCusto > 0) f.push(`${procedimentos(r.semCusto)} sem custo (R$ 0,00)`);
+  if (r.comDesconto > 0 && r.menorPercent != null && r.maiorPercent != null) {
+    f.push(
+      r.menorPercent === r.maiorPercent
+        ? `${procedimentos(r.comDesconto)} com ${pctTexto(r.maiorPercent)} de desconto`
+        : `${procedimentos(r.comDesconto)} com descontos de ${pctTexto(r.menorPercent)} a ${pctTexto(r.maiorPercent)}`
+    );
+  }
+  if (r.emReaisSemPreco > 0) f.push(`${procedimentos(r.emReaisSemPreco)} com desconto em reais`);
+  return f;
+}
+
+/** O desconto como a coluna do anexo escreve. */
+export function descontoNoAnexo(b: BeneficioDoAnexo): string {
+  if (b.benefitType === "FREE") return "Sem custo";
+  if (b.benefitType === "DISCOUNT_PERCENT") return pctTexto(b.benefitValue ?? 0);
+  if (b.benefitType === "DISCOUNT_AMOUNT") {
+    const reais = `R$ ${((b.benefitValue ?? 0) / 100).toFixed(2).replace(".", ",")}`;
+    const pct = percentualDoDesconto(b);
+    return pct == null ? reais : `${reais} (${pctTexto(pct)})`;
+  }
+  return "Não coberto";
+}
