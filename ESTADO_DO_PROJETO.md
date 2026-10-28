@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.365.0** · Última migração: **0333** (0318 a 0332 aplicadas na produção e no treino; **0333 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.365.0** · Última migração: **0333** (0318 a 0333 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.365.0 / 0333 — ORTODONTIA (ORTO7): DO CLÍNICO AO PLANO (28/10/2026)
 >
@@ -19,12 +19,11 @@ _Atualizado em: 28/10/2026 · Versão do sistema: **0.365.0** · Última migraç
 > equipe pode continuar; contenção prevista. **Q3:** `ortho_appointment_sync`
 > — caso sem ortodontista + instalação/sessão com dentista da unidade → ele
 > assume (`ortodontista_definido`); `ortho_update_case` registra a troca
-> (`ortodontista_alterado`). ⚠️ **0333 aplicada no treino** (reaplicada,
-> idempotente); ensaio em transação desfeita **24/24**; **pendente na
-> produção** (conferência esperada 4·1·3·1·1·1). ⚠️ **O push espera a
-> migração:** o carregador do plano embute `treatment_plan_ortho` e o cockpit
-> lê as colunas novas da avaliação — sem a 0333 na produção, o plano não
-> carrega. EV-249 a EV-251.
+> (`ortodontista_alterado`). ✅ **0333 APLICADA nos dois bancos** (o dono
+> rodou na produção em 28/10/2026; conferência 4·1·3·1·1·1, como esperado) e
+> só então o push `f0dae5f` saiu (o carregador do plano embute
+> `treatment_plan_ortho`). No treino reaplicada, idempotente; ensaio em
+> transação desfeita **24/24**. Não visto na tela. EV-249 a EV-251.
 
 > ## 🎯 0.364.0 / 0332 — ORTODONTIA (ORTO6): A TELA DO ORTODONTISTA (28/10/2026)
 >
@@ -4797,10 +4796,11 @@ histórico e editar sem trocar não registra; sem login nada executa). A trava
 da rodada com diagnóstico finalizado **não foi medida** (a 0310 recusa
 simular a finalização por fora; a regra está escrita e é a mesma das
 considerações). `npm run verificar`, `npm test`, `npm run lint`: ver a entrada
-da sessão no `CLAUDE.md`. **NÃO visto na tela.** ⚠️ **0333 PENDENTE NA
-PRODUÇÃO — e o push espera por ela:** o carregador do plano (`plan-loader.ts`)
-embute `treatment_plan_ortho` e o cockpit da avaliação seleciona as colunas
-novas; sem a 0333, o plano e a avaliação não carregam na produção.
+da sessão no `CLAUDE.md`. **NÃO visto na tela.** ✅ **0333 APLICADA NA
+PRODUÇÃO** em 28/10/2026 (o dono rodou; conferência 4·1·3·1·1·1, como
+esperado) e só então o push `f0dae5f` saiu — a ordem importava porque o
+carregador do plano (`plan-loader.ts`) embute `treatment_plan_ortho` e o
+cockpit da avaliação seleciona as colunas novas.
 
 **Roteiro para o dono testar no treino:**
 

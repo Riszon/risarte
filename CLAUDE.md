@@ -403,14 +403,13 @@ Syncthing se comportarem de forma estranha.**
   equipe continua, contenção prevista. **Q3:** `ortho_appointment_sync` —
   sem ortodontista, o dentista da instalação assume (`ortodontista_definido`);
   `ortho_update_case` registra `ortodontista_alterado`.
-- ⚠️ **O push espera a 0333 na produção:** `plan-loader.ts` embute
-  `treatment_plan_ortho` e o cockpit da avaliação seleciona as colunas novas —
-  sem a migração, o plano e a avaliação não carregam.
-- ✅ 0333 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
-  conferência 4·1·3·1·1·1); ensaio em transação desfeita **24/24**
-  (`scratchpad/ensaio-orto-0333.mjs`); a trava da rodada finalizada não foi
-  medida (a 0310 recusa simular por fora). ⚠️ **PENDENTE NA PRODUÇÃO.** Não
-  visto na tela.
+- ✅ **0333 APLICADA nos dois bancos** (o dono rodou na produção em
+  28/10/2026; conferência 4·1·3·1·1·1, como esperado) e só então o push
+  `f0dae5f` saiu — a ordem importava: `plan-loader.ts` embute
+  `treatment_plan_ortho` e o cockpit da avaliação seleciona as colunas novas.
+  No treino via `migrar:teste` + reaplicada, idempotente; ensaio em transação
+  desfeita **24/24** (`scratchpad/ensaio-orto-0333.mjs`); a trava da rodada
+  finalizada não foi medida (a 0310 recusa simular por fora). Não visto na tela.
 
 **28/10/2026 (15) — PC Administrador (core 0.363.0 → 0.364.0, migração 0332)**
 
