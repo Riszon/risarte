@@ -390,6 +390,22 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**28/10/2026 (20) — PC Administrador (core 0.368.0 → 0.369.0, sem migração)**
+
+- **Prontuário reorganizado** (ESTADO §2): painel **Precisa de atenção**
+  (`atencao-painel.tsx`; `PendingDecision` virou linhas dele), faixa
+  **Programas e tratamentos** (`programas-faixa.tsx` sobre
+  `components/prontuario/mini-cartao.tsx` + `pessoa-chip.tsx`; PPR+,
+  Ortodontia e Empresarial com a situação dita uma vez; o botão PPR+ do
+  cabeçalho só para quem não participa), abas em **grupos** e **aba inicial
+  por papel** (`src/lib/prontuario/aba-inicial.ts`, com teste),
+  Desenvolvimento Clínico com a evolução primeiro (odontograma e plano em
+  `<details>`). Tons de situação com modo escuro em `src/lib/tons.ts`
+  (`ORTHO_STATUS_TONE` deriva de lá). Ids e nomes das abas intactos.
+- ✅ Visto na tela nos dois modos pelo servidor local de teste (porta 3100,
+  `.env.test.local`, `.next-test` — o arranjo do Playwright, sem encostar
+  no servidor do dono). EV-259. Pendente: o dono testar com os papéis.
+
 **28/10/2026 (19) — PC Administrador (core 0.367.0 → 0.368.0, migração 0336)**
 
 - **Ortodontia ORTO2 — os avisos da rotina diária** (ESTADO §2).

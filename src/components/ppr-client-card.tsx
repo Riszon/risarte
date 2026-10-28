@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, CreditCard, HeartPulse, Users } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreditCard, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import { PPR_STATUS_LABELS, type PprStatus } from "@/lib/ppr/constants";
 import type {
@@ -10,34 +8,32 @@ import type {
   PprPastMembership,
 } from "@/lib/ppr/client-badge-loader";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import type { Tom } from "@/lib/tons";
+import { MiniCartao } from "@/components/prontuario/mini-cartao";
+import { PessoaChip } from "@/components/prontuario/pessoa-chip";
 
-const TONE: Record<PprStatus, string> = {
-  aguardando_ativacao: "border-amber-300 bg-amber-50 text-amber-800",
-  ativo: "border-emerald-300 bg-emerald-50 text-emerald-800",
-  suspenso: "border-rose-300 bg-rose-50 text-rose-800",
-  cancelado: "border-border bg-muted text-muted-foreground",
+const TOM_PPR: Record<PprStatus, Tom> = {
+  aguardando_ativacao: "ambar",
+  ativo: "verde",
+  suspenso: "vermelho",
+  cancelado: "neutro",
 };
 
-/** Selo curto do PPR+ para a linha de badges do prontuário. */
-export function PprBadge({ badge }: { badge: PprClientBadge }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium",
-        TONE[badge.status]
-      )}
-      title={`PPR+ ${badge.planName} — ${PPR_STATUS_LABELS[badge.status]}`}
-    >
-      <HeartPulse className="size-3" />
-      PPR+ {badge.planName}
-      {badge.status !== "ativo" && ` · ${PPR_STATUS_LABELS[badge.status]}`}
-    </span>
-  );
+/** O que a situação implica — sem repetir o nome dela (o selo já diz). */
+const EXPLICACAO: Partial<Record<PprStatus, string>> = {
+  aguardando_ativacao:
+    "Os benefícios liberam com o contrato assinado e a primeira mensalidade paga.",
+  suspenso: "Os benefícios ficam parados até as mensalidades serem regularizadas.",
+};
+
+function dataBr(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 }
 
 /**
- * Bloco do PPR+ no prontuário: situação do plano, se é titular ou dependente,
- * a família ligada (clicável) e o cartão do beneficiário.
+ * O PPR+ no prontuário, como mini-cartão da faixa "Programas e tratamentos"
+ * (28/10/2026): a situação dita uma vez, a família como fichas clicáveis, o
+ * cartão do beneficiário e a adesão. Sem adesão atual e sem passado, nada.
  */
 export function PprClientCard({
   badge,
@@ -48,109 +44,49 @@ export function PprClientCard({
 }) {
   if (!badge) {
     if (past.length === 0) return null;
+    const p = past[0];
     return (
-      <Card>
-        <CardHeader className="gap-1">
-          <CardTitle className="flex items-center gap-1.5 text-base">
-            <HeartPulse className="size-4 text-muted-foreground" />
-            Programa de Prevenção Riso+
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-1 text-sm text-muted-foreground">
-            {past.map((p, i) => (
-              <li key={i}>
-                Fez parte do <strong>{p.planName}</strong>
-                {p.cancelledAt &&
-                  ` até ${new Date(p.cancelledAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`}
-                {p.reason && ` — ${p.reason}`}
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      <MiniCartao
+        icone={HeartPulse}
+        titulo="PPR+ · Riso+"
+        situacao={{ rotulo: "Encerrado", tom: "neutro" }}
+        linha={
+          <>
+            Fez parte do <strong>{p.planName}</strong>
+            {p.cancelledAt && ` até ${dataBr(p.cancelledAt)}`}
+            {p.reason && ` — ${p.reason}`}
+            {past.length > 1 && ` · e mais ${past.length - 1}`}
+          </>
+        }
+      />
     );
   }
 
   const isHolder = badge.role === "titular";
+  const explicacao = EXPLICACAO[badge.status];
 
   return (
-    <Card className="overflow-hidden">
-      <span className="block h-1 bg-gold" aria-hidden />
-      <CardHeader className="gap-1">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-1.5 text-base">
-            <HeartPulse className="size-4 text-gold-foreground" />
-            PPR+ · {badge.planName}
-          </CardTitle>
-          <span
-            className={cn(
-              "rounded-full border px-2 py-0.5 text-xs",
-              TONE[badge.status]
-            )}
-          >
-            {PPR_STATUS_LABELS[badge.status]}
-          </span>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {isHolder ? "Titular do plano" : `Dependente${badge.relationship ? ` · ${badge.relationship}` : ""}`}
-          {badge.activatedAt &&
-            ` · ativo desde ${new Date(badge.activatedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`}
+    <MiniCartao
+      icone={HeartPulse}
+      titulo={`PPR+ · ${badge.planName}`}
+      situacao={{ rotulo: PPR_STATUS_LABELS[badge.status], tom: TOM_PPR[badge.status] }}
+      linha={
+        <>
+          {isHolder
+            ? "Titular"
+            : `Dependente${badge.relationship ? ` · ${badge.relationship}` : ""}`}
           {isHolder && ` · ${formatBRL(badge.monthlyCents)}/mês`}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {badge.status === "suspenso" && (
-          <p className="rounded-lg border border-rose-300 bg-rose-50 p-2 text-xs text-rose-800">
-            Plano <strong>suspenso</strong> — os benefícios não podem ser usados
-            até a regularização das mensalidades.
-          </p>
-        )}
-        {badge.status === "aguardando_ativacao" && (
-          <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800">
-            Aguardando <strong>contrato assinado</strong> e{" "}
-            <strong>primeira mensalidade</strong> para liberar os benefícios.
-          </p>
-        )}
-
-        {/* Família ------------------------------------------------------- */}
-        {!isHolder && badge.holder && (
-          <div>
-            <p className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              <Users className="size-3" />
-              Titular do plano
-            </p>
-            <MemberLink
-              href={`/prontuarios/${badge.holder.clientId}`}
-              name={badge.holder.name}
-              code={badge.holder.code}
-              tag="titular"
-            />
-          </div>
-        )}
-
-        {isHolder && badge.dependents.length > 0 && (
-          <div>
-            <p className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              <Users className="size-3" />
-              Dependentes ({badge.dependents.length})
-            </p>
-            <ul className="space-y-1.5">
-              {badge.dependents.map((d) => (
-                <li key={d.beneficiaryId}>
-                  <MemberLink
-                    href={`/prontuarios/${d.clientId}`}
-                    name={d.name}
-                    code={d.code}
-                    tag={d.relationship ?? "dependente"}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          {badge.activatedAt && ` · desde ${dataBr(badge.activatedAt)}`}
+          {badge.cardCode && (
+            <>
+              {" · "}
+              <span className="font-mono">{badge.cardCode}</span>
+            </>
+          )}
+        </>
+      }
+      acoes={
+        <>
           <Button
             size="sm"
             variant="outline"
@@ -158,7 +94,7 @@ export function PprClientCard({
             render={<Link href={`/ppr/cartao/${badge.beneficiaryId}`} target="_blank" />}
           >
             <CreditCard className="mr-1 size-3.5" />
-            Cartão do beneficiário
+            Cartão
           </Button>
           <Button
             size="sm"
@@ -168,55 +104,49 @@ export function PprClientCard({
           >
             Ver adesão
           </Button>
-          {badge.cardCode && (
-            <span className="ml-auto font-mono text-xs text-muted-foreground">
-              {badge.cardCode}
-            </span>
-          )}
-        </div>
-
-        {past.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Histórico:{" "}
-            {past
-              .map(
-                (p) =>
-                  `${p.planName}${p.cancelledAt ? ` (até ${new Date(p.cancelledAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })})` : ""}`
-              )
-              .join(" · ")}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function MemberLink({
-  href,
-  name,
-  code,
-  tag,
-}: {
-  href: string;
-  name: string;
-  code: string | null;
-  tag: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors hover:border-primary/40 hover:bg-muted/40"
+        </>
+      }
     >
-      <span className="min-w-0">
-        <span className="block truncate font-medium">{name}</span>
-        <span className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-          {code && <span className="font-mono">{code}</span>}
-          <span className="rounded-full border px-1.5 py-0.5 uppercase">
-            {tag}
+      {explicacao && <p className="text-xs text-muted-foreground">{explicacao}</p>}
+
+      {!isHolder && badge.holder && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">Titular:</span>
+          <PessoaChip
+            href={`/prontuarios/${badge.holder.clientId}`}
+            nome={badge.holder.name}
+            codigo={badge.holder.code}
+          />
+        </div>
+      )}
+
+      {isHolder && badge.dependents.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">
+            {badge.dependents.length === 1
+              ? "Dependente:"
+              : `${badge.dependents.length} dependentes:`}
           </span>
-        </span>
-      </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-    </Link>
+          {badge.dependents.map((d) => (
+            <PessoaChip
+              key={d.beneficiaryId}
+              href={`/prontuarios/${d.clientId}`}
+              nome={d.name}
+              codigo={d.code}
+              etiqueta={d.relationship}
+            />
+          ))}
+        </div>
+      )}
+
+      {past.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Antes:{" "}
+          {past
+            .map((p) => `${p.planName}${p.cancelledAt ? ` (até ${dataBr(p.cancelledAt)})` : ""}`)
+            .join(" · ")}
+        </p>
+      )}
+    </MiniCartao>
   );
 }

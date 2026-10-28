@@ -1,6 +1,21 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.368.0** · Última migração: **0336** (0318 a 0336 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.369.0** · Última migração: **0336** (0318 a 0336 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.369.0 — O PRONTUÁRIO REORGANIZADO (28/10/2026, sem migração)
+>
+> O dono abriu a ficha e viu "muita informação misturada" e o PPR+ dito três
+> vezes (uma invisível no escuro). O topo virou: cabeçalho enxuto → painel
+> **Precisa de atenção** (uma linha por aviso, botão da ação ao lado:
+> decisão, alertas da anamnese, anamnese a preencher, QC, atraso, cadastro
+> incompleto; some vazio) → faixa **Programas e tratamentos** (PPR+,
+> Ortodontia, Empresarial em mini-cartões, a situação dita uma vez) → abas em
+> quatro grupos (Pessoa, Clínico, Tratamento, Dinheiro), **abrindo na aba do
+> papel** (`abaInicialDoProntuario`, com teste). Desenvolvimento Clínico com a
+> evolução primeiro; odontograma e plano recolhidos. Tons com modo escuro
+> centralizados em `src/lib/tons.ts`. Nomes e ids das abas intactos (E2E e
+> `aviso-abre-na-aba` dependem). ✅ Visto na tela nos dois modos (servidor
+> local 3100 + banco de treino). EV-259.
 
 > ## 🎯 0.368.0 / 0336 — ORTODONTIA (ORTO2): OS AVISOS DA ROTINA DIÁRIA (28/10/2026)
 >
@@ -4792,6 +4807,53 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### PRONTUÁRIO — reorganização do topo e das abas (28/10/2026, v0.369.0, sem migração)
+
+Pedido do dono ao abrir a aba Desenvolvimento Clínico: "tela toda confusa com
+muita informação misturada", o PPR+ em três lugares, um deles invisível no
+modo escuro. Só tela: nenhuma migração, nenhuma regra de permissão.
+
+- **Painel "Precisa de atenção"** (`atencao-painel.tsx`: `AtencaoPainel` +
+  `AtencaoItem`): decisão obrigatória (`PendingDecision` virou linhas do
+  painel, com Sim/Não inline), alertas da anamnese (uma linha por alerta, as
+  etiquetas do que foi marcado), anamnese a preencher (`anamnesisNudge`),
+  QC pendente, cobranças em atraso (ação "Ver financeiro" só para quem vê
+  recebíveis), cadastro incompleto (ação `?aba=cadastro&editar=1`). A página
+  conta (`avisosDaFicha`) e o painel some em zero. Saíram do cabeçalho os
+  selos de atraso, cadastro incompleto e Empresarial — viraram linhas/cartão.
+- **Faixa "Programas e tratamentos"** (`programas-faixa.tsx`): `PprClientCard`
+  e `OrthoClientCard` reescritos sobre `components/prontuario/mini-cartao.tsx`
+  (ícone, título, selo de situação, linha, miolo, ações); Empresarial ganhou
+  o seu (`EmpresarialMiniCartao`); pessoas ligadas em `pessoa-chip.tsx`. A
+  situação aparece só no selo; a explicação ("libera com contrato + 1ª
+  mensalidade") vira linha cinza. O botão `PprOfferButton` do cabeçalho só
+  aparece para quem ainda NÃO participa (o cartão tem "Ver adesão").
+- **Abas em grupos** (`prontuario-tabs.tsx`, `GRUPOS`): título pequeno por
+  grupo; aba sem grupo cai no último. **Aba inicial por papel**
+  (`src/lib/prontuario/aba-inicial.ts`, teste com 5 casos): aviso > Admin
+  (cadastro) > Coordenador (clinico) > Planner (plano) > Dentista
+  (desenvolvimento) > cadastro. A `key` das abas segue sendo o `?aba=`.
+- **Desenvolvimento Clínico:** ordem = procedimentos de hoje →
+  `ClinicalProgressSection` → `<details>` odontograma (aberto só quando
+  quem atende pode sugerir) → `<details>` resumo do plano (ou linha discreta
+  "nenhum plano aprovado ainda").
+- **Tons** (`src/lib/tons.ts`, `TOM`): âmbar/verde/azul/vermelho/laranja/
+  neutro com `dark:`. `ORTHO_STATUS_TONE` (usado nas 4 telas da ortodontia)
+  passou a derivar daí — ganhou o escuro de graça.
+- ✅ Visto na tela em 28/10/2026 nos dois modos (servidor local na 3100 com
+  `.env.test.local` e `.next-test`, ficha do treino com PPR+ aguardando +
+  Ortodontia em tratamento + 2 alertas). Não visto com dentista logado (a
+  regra da aba inicial tem teste). EV-259.
+
+**Roteiro para o dono testar no treino:** abrir a ficha de um paciente com
+PPR+ e ortodontia (ex.: Caio Henrique Martins) — ver o painel de atenção, a
+faixa dos programas e os grupos de abas; alternar o tema (lua/sol na barra de
+cima) e conferir os selos; entrar como Dentista e abrir uma ficha (deve cair
+no Desenvolvimento Clínico); como Coordenador (Clínico); como Planner
+(Plano); abrir um aviso do sino com "Abrir" (deve cair na aba do assunto);
+num paciente com cadastro incompleto, clicar **Completar** no painel (abre o
+Cadastro em edição).
 
 ### ORTODONTIA — ORTO2, os avisos da rotina diária (28/10/2026, v0.368.0, migração 0336)
 

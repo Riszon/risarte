@@ -3,9 +3,8 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
+import { CircleHelp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DECISION_QUESTIONS, type DecisionKind } from "@/lib/journey";
 import { answerDecision } from "../../jornada/actions";
 
@@ -16,6 +15,11 @@ export type OpenDecision = {
   isAssignee: boolean;
 };
 
+/**
+ * As decisões obrigatórias, como linhas do painel "Precisa de atenção"
+ * (28/10/2026): a pergunta e os botões na mesma linha. Antes era um cartão
+ * vermelho inteiro por decisão, acima de tudo.
+ */
 export function PendingDecision({
   decisions,
   canAnswer,
@@ -43,51 +47,45 @@ export function PendingDecision({
   return (
     <>
       {decisions.map((d) => (
-        <Card key={d.id} className="border-destructive bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-destructive">
-              <AlertTriangle className="size-4" />
-              Decisão obrigatória
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm font-medium">{DECISION_QUESTIONS[d.kind]}</p>
-            {canAnswer ? (
-              <div className="flex flex-wrap gap-2">
+        <li
+          key={d.id}
+          className="flex flex-wrap items-start gap-x-3 gap-y-1.5 px-3 py-2 text-sm"
+        >
+          <CircleHelp className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-destructive">Decisão obrigatória</p>
+            <p className="mt-0.5 text-xs text-foreground/80">{DECISION_QUESTIONS[d.kind]}</p>
+          </div>
+          {canAnswer ? (
+            <div className="flex shrink-0 flex-wrap gap-1.5">
+              <Button size="sm" disabled={isPending} onClick={() => answer(d.id, "yes")}>
+                Sim
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => answer(d.id, "no")}
+              >
+                Não
+              </Button>
+              {d.kind === "needs_reevaluation" && d.isAssignee && (
                 <Button
                   size="sm"
+                  variant="ghost"
                   disabled={isPending}
-                  onClick={() => answer(d.id, "yes")}
+                  onClick={() => answer(d.id, "unsure")}
                 >
-                  Sim
+                  Não sei (encaminhar ao Coordenador)
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isPending}
-                  onClick={() => answer(d.id, "no")}
-                >
-                  Não
-                </Button>
-                {d.kind === "needs_reevaluation" && d.isAssignee && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={isPending}
-                    onClick={() => answer(d.id, "unsure")}
-                  >
-                    Não sei (encaminhar ao Coordenador)
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Aguardando definição do profissional responsável / Coordenador
-                Clínico.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </div>
+          ) : (
+            <p className="shrink-0 text-xs text-muted-foreground">
+              Aguardando o profissional responsável / Coordenador Clínico.
+            </p>
+          )}
+        </li>
       ))}
     </>
   );

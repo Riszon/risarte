@@ -1703,6 +1703,50 @@ EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
 mensalidades por lote (0.367.0): EV-255 a EV-257; os avisos da rotina
 (0.368.0): EV-258.
 
+### 2.9. O prontuário: o que você vê primeiro *(desde a 0.369.0)*
+
+A ficha do paciente foi reorganizada para dizer, em dois segundos, **quem é**,
+**o que precisa de atenção** e **de que programas participa** — e só então as
+abas. De cima para baixo:
+
+1. **O cabeçalho.** Nome, código, situação, os botões de ação (indicar,
+   oferecer o PPR+ a quem ainda não participa, venda direta, novo
+   agendamento, apresentação) e as pílulas: fase e pilar da jornada, o
+   odontograma em miniatura, unidade, nascimento e idade.
+2. **Precisa de atenção.** Um painel só, com **uma linha por aviso** e o
+   botão da ação ao lado: a **decisão obrigatória** ("necessita
+   reavaliação?", com Sim/Não na própria linha), os **alertas da anamnese**
+   (o que foi marcado, ex.: "Diabetes"), a **anamnese a preencher ou
+   atualizar**, o **controle de qualidade pendente**, as **cobranças em
+   atraso** e o **cadastro incompleto** (com o botão **Completar**, que já
+   abre o cadastro em edição). Sem nada a avisar, o painel não aparece.
+3. **Programas e tratamentos.** O **PPR+ (Riso+)**, a **Ortodontia** e o
+   **Empresarial**, lado a lado, em cartões pequenos: a situação dita **uma
+   vez** (o selo colorido), uma linha de contexto, a família ou a próxima
+   manutenção, e os botões (**Cartão**, **Ver adesão**, **Abrir o caso**).
+   Só aparece o que o paciente tem.
+4. **As abas, em quatro grupos.** *Pessoa* (Cadastro, Jornada, Histórico),
+   *Clínico* (Clínico, Odontograma, Desenvolvimento Clínico, Linha do tempo),
+   *Tratamento* (Plano, Sessões & Procedimentos, Pedidos, Documentos) e
+   *Dinheiro* (Financeiro, Indica +Risos). Os nomes das abas são os de sempre.
+
+> **A ficha abre na aba do seu trabalho.** O **Dentista** cai no
+> **Desenvolvimento Clínico**, o **Coordenador** no **Clínico**, o **Planner**
+> no **Plano**; Recepção, Gerente, Comercial e Admin, no **Cadastro**. O
+> "Abrir" de um aviso continua mandando: ele leva à aba do assunto.
+
+> **Desenvolvimento Clínico, para quem atende.** A aba começa pelo que importa
+> no atendimento: os procedimentos de hoje e o campo da evolução. O
+> **odontograma do atendimento** e o **resumo do plano aprovado** ficam
+> recolhidos logo abaixo — um clique abre (o odontograma já vem aberto quando
+> é você quem está atendendo e pode sugerir um achado).
+
+> **Modo escuro.** Os selos de situação (amarelo "aguardando", verde "ativo",
+> vermelho "suspenso", azul "contenção") passaram a ter a versão escura. Antes
+> o fundo claro do selo sumia no tema escuro.
+
+**Evidência:** EV-259.
+
 ## A barra de cima
 
 **O que você usa de dentro de qualquer tela mora no alto**, e não no menu
@@ -1766,7 +1810,8 @@ coisa, quem manda é este.
 > fase em **Jornada**. Se a sua função não tem aquela aba, o prontuário abre
 > na primeira. Abrir um aviso não lido também o marca como lido (o botão mostra
 > "Abrindo…" enquanto isso). As decisões pendentes ("necessita reavaliação?")
-> não têm aba: a caixa delas fica no topo do prontuário, acima das abas.
+> não têm aba: elas ficam no painel **Precisa de atenção**, no topo do
+> prontuário, acima das abas (seção 2.9).
 
 > **Por que o triângulo não tem número.** O que é urgente já chega pelo sino: os
 > alertas do financeiro disparam notificação. O triângulo é para consultar a

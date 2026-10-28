@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.369.0",
+    data: "2026-10-28",
+    migracao: null,
+    titulo: "Prontuário reorganizado: atenção num painel só, programas lado a lado, abas em grupos e a aba certa para cada função",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O topo do prontuário ficou enxuto: abaixo do cabeçalho vem um painel \"Precisa de atenção\" com uma linha por aviso (decisão obrigatória, alertas da anamnese, anamnese a preencher, controle de qualidade, cobranças em atraso, cadastro incompleto) e o botão da ação ao lado; depois, PPR+, Ortodontia e Empresarial lado a lado, em cartões pequenos, com a situação dita uma vez. Antes eram nove blocos empilhados, e o PPR+ repetia a situação em três lugares.",
+        papeis: "todos",
+        manual: "2.9. O prontuário: o que você vê primeiro",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "As abas do prontuário ganharam grupos (Pessoa, Clínico, Tratamento, Dinheiro) e a ficha abre na aba do seu trabalho: o Dentista no Desenvolvimento Clínico, o Coordenador no Clínico, o Planner no Plano, os demais no Cadastro. O \"Abrir\" dos avisos continua levando à aba do assunto.",
+        papeis: "todos",
+        manual: "2.9. O prontuário: o que você vê primeiro",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na aba Desenvolvimento Clínico, o campo da evolução e os procedimentos de hoje vêm primeiro; o odontograma do atendimento e o resumo do plano aprovado ficam recolhidos, abrindo com um clique.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "2.9. O prontuário: o que você vê primeiro",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "No modo escuro, os selos de situação do PPR+ e da Ortodontia (aguardando, ativo, suspenso, contenção) sumiam sobre o fundo. Ganharam a versão escura.",
+        papeis: "todos",
+        manual: "2.9. O prontuário: o que você vê primeiro",
+      },
+    ],
+  },
+  {
     versao: "0.368.0",
     data: "2026-10-28",
     migracao: "0336",

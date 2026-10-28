@@ -1,18 +1,21 @@
-import { AlertasDaAnamnese } from "@/components/alertas-da-anamnese";
 import type { AlertaDaAnamnese } from "@/lib/anamnesis";
 import type { Metadata } from "next";
 import { idadeCurta, idadeDetalhada } from "@/lib/idade";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  AlertTriangle,
   Baby,
   Building2,
   CalendarDays,
   Cake,
+  ClipboardCheck,
+  ClipboardList,
+  HeartPulse,
   Route,
   Sparkles,
+  UserPen,
   Users,
+  Wallet,
 } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
 import { Odontograma } from "@/components/odontograma/odontograma";
@@ -44,10 +47,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { missingClientFields } from "@/lib/clients";
-import {
-  RELATIONSHIP_LABELS,
-  type Relationship,
-} from "@/lib/empresarial/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,9 +72,10 @@ import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-load
 import { loadPprOffer } from "@/lib/ppr/offer-loader";
 import { PprOfferButton } from "@/components/ppr-offer-dialog";
 import { loadPprClientBadge } from "@/lib/ppr/client-badge-loader";
-import { PprBadge, PprClientCard } from "@/components/ppr-client-card";
 import { loadOrthoClientBadge } from "@/lib/ortodontia/client-badge-loader";
-import { OrthoClientCard } from "@/components/ortodontia/ortho-client-card";
+import { ProgramasFaixa } from "./programas-faixa";
+import { AtencaoItem, AtencaoPainel } from "./atencao-painel";
+import { abaInicialDoProntuario } from "@/lib/prontuario/aba-inicial";
 import { DirectSaleDialog } from "./direct-sale-dialog";
 import { DirectSaleSessionsList } from "./direct-sale-sessions-list";
 import { SaleItem } from "../../comercial/venda-direta/direct-sale-item";
@@ -2619,6 +2619,23 @@ export default async function ClientDetailPage(
   const program = isProgramMember ? await loadClientPrograms(client.id) : null;
   const usage = isProgramMember ? await loadClientUsage(client.id) : null;
 
+  // A aba em que a ficha abre: o aviso (`?aba=`) manda; sem aviso, o papel
+  // de quem abre decide (28/10/2026).
+  const abaInicial = abaInicialDoProntuario({
+    abaPedida: initialTab,
+    isAdminMaster: session.isAdminMaster,
+    rolesNaUnidade: session.rolesByClinic[scheduleClinicId] ?? clinicRoles,
+    isPlannerAnywhere,
+  });
+  // O painel "Precisa de atenção" conta o que vai mostrar.
+  const avisosDaFicha =
+    decisions.length +
+    anamnesisAlerts.length +
+    (anamnesisNudge ? 1 : 0) +
+    (qcRedoPending ? 1 : 0) +
+    (lateInstallmentCount > 0 ? 1 : 0) +
+    (registrationGaps.length > 0 ? 1 : 0);
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <div className="relative overflow-hidden rounded-xl border bg-card p-4 sm:p-5">
@@ -2667,52 +2684,10 @@ export default async function ClientDetailPage(
                         ★ É um Risartano
                       </Badge>
                     ))}
-                  {/* I6: o selo agora diz POR QUAL EMPRESA. */}
-                  {client.empresarial_company_id &&
-                    (client.empresarial_active === false ? (
-                      <Badge
-                        variant="outline"
-                        className="border-gold/50 text-muted-foreground"
-                      >
-                        ★ Ex-Risarte Empresarial
-                        {client.empresarial_company_name
-                          ? ` · ${client.empresarial_company_name}`
-                          : ""}
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-gold/20 text-gold-tinta">
-                        ★ Risarte Empresarial
-                        {client.empresarial_company_name
-                          ? ` · ${client.empresarial_company_name}`
-                          : ""}
-                      </Badge>
-                    ))}
                   {viewerIsFormerClinicOnly && (
                     <Badge variant="destructive">
                       Transferido para{" "}
                       {currentClinicEntry?.clinics?.name ?? "outra unidade"}
-                    </Badge>
-                  )}
-                  {/* FIN1.1: atraso aparece no cabeçalho, não só na aba — a
-                      barra de abas rola e o selo ficava fora da tela. */}
-                  {lateInstallmentCount > 0 && (
-                    <Badge
-                      variant="destructive"
-                      title="Veja a aba Financeiro"
-                    >
-                      {lateInstallmentCount === 1
-                        ? "1 cobrança em atraso"
-                        : `${lateInstallmentCount} cobranças em atraso`}
-                    </Badge>
-                  )}
-                  {/* I4: cadastro incompleto não pode ser agendado. */}
-                  {registrationGaps.length > 0 && (
-                    <Badge
-                      variant="outline"
-                      className="border-amber-300 bg-amber-50 text-amber-800"
-                      title={registrationGaps.join(", ")}
-                    >
-                      Cadastro incompleto
                     </Badge>
                   )}
                 </div>
@@ -2730,8 +2705,7 @@ export default async function ClientDetailPage(
             {(canScheduleFromFicha ||
               (hasApprovedPlan && canPresent) ||
               directSale.canLaunch ||
-              pprOffer.canSell ||
-              pprOffer.membership ||
+              (pprOffer.canSell && !pprOffer.membership) ||
               podeIndicarNaFicha) && (
               <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {podeIndicarNaFicha && (
@@ -2741,14 +2715,18 @@ export default async function ClientDetailPage(
                     unidadeId={scheduleClinicId}
                   />
                 )}
-                {/* PPR3: oferecer o programa de prevenção (ou abrir a adesão). */}
-                <PprOfferButton
-                  clientId={client.id}
-                  clientName={client.full_name}
-                  clinicId={scheduleClinicId}
-                  origin="venda_direta"
-                  context={pprOffer}
-                />
+                {/* PPR3: oferecer o programa de prevenção. Quem já participa
+                    tem o mini-cartão do PPR+ logo abaixo (com "Ver adesão"):
+                    o botão não repete a situação no cabeçalho (28/10/2026). */}
+                {!pprOffer.membership && (
+                  <PprOfferButton
+                    clientId={client.id}
+                    clientName={client.full_name}
+                    clinicId={scheduleClinicId}
+                    origin="venda_direta"
+                    context={pprOffer}
+                  />
+                )}
                 {/* VD2: venda direta ao lado de "Novo agendamento". */}
                 {directSale.canLaunch && (
                   <DirectSaleDialog
@@ -2854,8 +2832,6 @@ export default async function ClientDetailPage(
                 {shortAgeText}
               </span>
             )}
-            {/* PPR4: selo do Programa de Prevenção Riso+. */}
-            {ppr.current && <PprBadge badge={ppr.current} />}
           </div>
 
           {isBirthdayToday && (
@@ -2872,120 +2848,117 @@ export default async function ClientDetailPage(
         </div>
       </div>
 
-      {/* PPR4: bloco do programa — situação, família clicável e cartão. */}
-      <PprClientCard badge={ppr.current} past={ppr.past} />
-
-      {/* 0329: o caso de ortodontia — situação, próxima manutenção e a ficha. */}
-      <OrthoClientCard badge={ortho} />
-
-      <PendingDecision
-        decisions={decisions.map((d) => ({
-          id: d.id,
-          kind: d.kind,
-          isAssignee: d.assignee_user_id === session.userId,
-        }))}
-        canAnswer={canAnswerDecision}
-      />
-
-      {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
-      <AlertasDaAnamnese alertas={anamnesisAlerts} />
-
-      {anamnesisNudge && (
-        <div className="flex items-center gap-2 rounded-md border border-amber-400/60 bg-amber-50 p-3 text-sm text-amber-900">
-          <AlertTriangle className="size-4 shrink-0 text-amber-600" />
-          {anamnesisNudge}
-        </div>
-      )}
-
-      {/* Entrega 3: indicador insistente do controle de qualidade — não some até
-          todos os procedimentos serem refeitos/revistos e reaprovados. */}
-      {qcRedoPending && (
-        <div className="flex items-start gap-2 rounded-md border border-rose-400/70 bg-rose-50 p-3 text-sm text-rose-900">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-rose-600" />
-          <span>
-            <strong>Controle de qualidade pendente.</strong> Há procedimento(s)
-            para <strong>revisar/refazer</strong> — abra a aba{" "}
-            <strong>Sessões &amp; Procedimentos</strong>, finalize-os e solicite ao
-            Coordenador uma nova avaliação. Este aviso só desaparece quando 100%
-            dos procedimentos estiverem finalizados e aprovados.
-          </span>
-        </div>
-      )}
-
-      {/* I6: o programa Empresarial na ficha — empresa + quem está junto. */}
-      {client.empresarial_company_id && (
-        <div className="rounded-md border border-gold/40 bg-gold/5 p-3 text-sm">
-          <p className="flex flex-wrap items-center gap-1.5 font-medium text-gold-foreground">
-            <Building2 className="size-4 shrink-0" />
-            Risarte Empresarial
-            {client.empresarial_company_name && (
-              <>
-                {" · "}
-                <span>{client.empresarial_company_name}</span>
-              </>
-            )}
-            {client.empresarial_active === false && (
-              <Badge variant="outline" className="text-[10px]">
-                vínculo encerrado
-              </Badge>
-            )}
-          </p>
-          {empresarialFamily.length > 0 ? (
-            <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              {empresarialFamily.map((f, i) => (
-                <li key={`${f.client_id ?? "sem"}-${i}`} className="flex items-center gap-1">
-                  <span className="text-muted-foreground">
-                    {f.role === "titular"
-                      ? "Titular:"
-                      : `${RELATIONSHIP_LABELS[f.relationship as Relationship] ?? "Dependente"}:`}
+      {/* 28/10/2026: tudo o que pede ação num painel só, uma linha por aviso,
+          com o botão da ação ao lado. Sem nada, o painel não aparece. */}
+      <AtencaoPainel quantos={avisosDaFicha}>
+        <PendingDecision
+          decisions={decisions.map((d) => ({
+            id: d.id,
+            kind: d.kind,
+            isAssignee: d.assignee_user_id === session.userId,
+          }))}
+          canAnswer={canAnswerDecision}
+        />
+        {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
+        {anamnesisAlerts.map((a, i) => (
+          <AtencaoItem
+            key={i}
+            icone={HeartPulse}
+            titulo={a.message}
+            acao={{ href: `/prontuarios/${client.id}?aba=clinico`, rotulo: "Ver anamnese" }}
+          >
+            {(a.itens.length > 0 || a.detalhe) && (
+              <span className="flex flex-wrap items-center gap-1.5">
+                {a.itens.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-destructive/40 bg-background px-2 py-0.5 text-xs font-medium text-destructive"
+                  >
+                    {item}
                   </span>
-                  {f.client_id ? (
-                    <Link
-                      href={`/prontuarios/${f.client_id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {f.full_name}
-                    </Link>
-                  ) : (
-                    <span className="font-medium">{f.full_name}</span>
-                  )}
-                  {!f.active && (
-                    <span className="text-[10px] text-muted-foreground">
-                      (inativo)
-                    </span>
-                  )}
-                  {!f.client_id && (
-                    <span className="text-[10px] text-muted-foreground">
-                      (ainda não é cliente)
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sem dependentes cadastrados no programa.
-            </p>
-          )}
-        </div>
-      )}
+                ))}
+                {a.detalhe && (
+                  <span>
+                    {a.itens.length > 0 ? "· " : ""}
+                    {a.detalhe}
+                  </span>
+                )}
+              </span>
+            )}
+          </AtencaoItem>
+        ))}
+        {anamnesisNudge && (
+          <AtencaoItem
+            icone={ClipboardList}
+            tom="ambar"
+            titulo="Anamnese"
+            acao={{ href: `/prontuarios/${client.id}?aba=clinico`, rotulo: "Abrir o Clínico" }}
+          >
+            {anamnesisNudge}
+          </AtencaoItem>
+        )}
+        {/* Entrega 3: indicador insistente do controle de qualidade — não some
+            até todos os procedimentos serem refeitos/revistos e reaprovados. */}
+        {qcRedoPending && (
+          <AtencaoItem
+            icone={ClipboardCheck}
+            titulo="Controle de qualidade pendente"
+            acao={{ href: `/prontuarios/${client.id}?aba=sessoes`, rotulo: "Ver sessões" }}
+          >
+            Há procedimento(s) para <strong>revisar/refazer</strong>. Finalize-os
+            e peça ao Coordenador uma nova avaliação — este aviso só sai quando
+            todos estiverem finalizados e aprovados.
+          </AtencaoItem>
+        )}
+        {/* FIN1.1: o atraso fica acima das abas, sempre à vista. */}
+        {lateInstallmentCount > 0 && (
+          <AtencaoItem
+            icone={Wallet}
+            titulo={
+              lateInstallmentCount === 1
+                ? "1 cobrança em atraso"
+                : `${lateInstallmentCount} cobranças em atraso`
+            }
+            acao={
+              canSeeReceivables
+                ? { href: `/prontuarios/${client.id}?aba=financeiro`, rotulo: "Ver financeiro" }
+                : null
+            }
+          />
+        )}
+        {/* I4: enquanto faltar dado, este cliente não pode ser agendado. */}
+        {registrationGaps.length > 0 && (
+          <AtencaoItem
+            icone={UserPen}
+            tom="ambar"
+            titulo="Cadastro incompleto — não dá para agendar"
+            acao={{ href: `/prontuarios/${client.id}?aba=cadastro&editar=1`, rotulo: "Completar" }}
+          >
+            Falta preencher: <strong>{registrationGaps.join(", ")}</strong>.
+          </AtencaoItem>
+        )}
+      </AtencaoPainel>
 
-      {/* I4: enquanto faltar dado, este cliente não pode ser agendado. */}
-      {registrationGaps.length > 0 && (
-        <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <span>
-            <strong>Cadastro incompleto.</strong> Falta preencher:{" "}
-            <strong>{registrationGaps.join(", ")}</strong>. Enquanto isso, o
-            sistema <strong>não permite agendar</strong> este cliente — complete
-            os dados na aba <strong>Cadastro</strong>.
-          </span>
-        </div>
-      )}
+      {/* Programas e tratamentos: PPR+, Ortodontia e Empresarial lado a lado,
+          a situação dita uma vez em cada (28/10/2026). */}
+      <ProgramasFaixa
+        ppr={ppr.current}
+        pprPassado={ppr.past}
+        ortho={ortho}
+        empresarial={
+          client.empresarial_company_id
+            ? {
+                companyName: client.empresarial_company_name ?? null,
+                active: client.empresarial_active !== false,
+                family: empresarialFamily,
+              }
+            : null
+        }
+      />
 
       {/* A chave refaz as abas só quando a aba pedida muda (outro aviso para o
           mesmo cliente); sem ela a aba ficaria presa na anterior. */}
-      <ProntuarioTabs key={initialTab ?? ""} initialTab={initialTab}>
+      <ProntuarioTabs key={initialTab ?? ""} initialTab={abaInicial}>
         <TabPanel id="cadastro" label="Cadastro">
           {/* Dados do cliente primeiro (o principal da aba). */}
           <ClientDataSection
@@ -3323,50 +3296,6 @@ export default async function ClientDetailPage(
                 </p>
               </div>
             )}
-            {/* OD5: o odontograma da execução — o que foi feito (azul), o que
-                falta (vermelho) e, para quem atende, "sugerir achado" preso à
-                sessão de hoje (H3: o Planner decide). */}
-            {odontograma && todayAttendance && todayAttendance.sessions.length > 0 && (
-              <details className="mb-3 rounded-lg border p-3" open>
-                <summary className="cursor-pointer text-sm font-semibold">
-                  Odontograma do atendimento
-                  <span className="ml-1 text-xs font-normal text-muted-foreground">
-                    {canWriteProgress && !todayAttendance.concluded
-                      ? "— viu algo novo na boca? Toque no dente e sugira; o Planner decide."
-                      : "— feito em azul, a fazer em vermelho"}
-                  </span>
-                </summary>
-                <div className="mt-3">
-                  <PainelDoDiagnostico
-                    clientId={client.id}
-                    modo={canWriteProgress && !todayAttendance.concluded ? "sugerir" : "leitura"}
-                    sessaoId={
-                      canWriteProgress && !todayAttendance.concluded
-                        ? todayAttendance.sessions[0].id
-                        : undefined
-                    }
-                    dados={odontograma}
-                    euId={session.userId}
-                    podeMudarDenticao={false}
-                    // O que FALTA pelas sessões (quem executa não lê o plano).
-                    marcasDoPlano={odontograma.aFazer}
-                  />
-                </div>
-              </details>
-            )}
-            {planSummary ? (
-              <PlanSummarySection
-                diagnosis={planSummary.diagnosis}
-                objectives={planSummary.objectives}
-                optionTitle={planSummary.optionTitle}
-                stages={planSummary.stages}
-              />
-            ) : (
-              <p className="mb-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-                Nenhum plano aprovado para executar ainda. Assim que houver um
-                plano aprovado, ele aparece aqui como referência da execução.
-              </p>
-            )}
             <ClinicalProgressSection
               clientId={client.id}
               clinicId={scheduleClinicId}
@@ -3409,6 +3338,66 @@ export default async function ClientDetailPage(
                   : null
               }
             />
+            {/* OD5: o odontograma da execução — o que foi feito (azul), o que
+                falta (vermelho) e, para quem atende, "sugerir achado" preso à
+                sessão de hoje (H3: o Planner decide). Recolhido; já aberto
+                para quem pode sugerir no atendimento de agora. */}
+            {odontograma && todayAttendance && todayAttendance.sessions.length > 0 && (
+              <details
+                className="rounded-lg border p-3"
+                open={canWriteProgress && !todayAttendance.concluded}
+              >
+                <summary className="cursor-pointer text-sm font-semibold">
+                  Odontograma do atendimento
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    {canWriteProgress && !todayAttendance.concluded
+                      ? "— viu algo novo na boca? Toque no dente e sugira; o Planner decide."
+                      : "— feito em azul, a fazer em vermelho"}
+                  </span>
+                </summary>
+                <div className="mt-3">
+                  <PainelDoDiagnostico
+                    clientId={client.id}
+                    modo={canWriteProgress && !todayAttendance.concluded ? "sugerir" : "leitura"}
+                    sessaoId={
+                      canWriteProgress && !todayAttendance.concluded
+                        ? todayAttendance.sessions[0].id
+                        : undefined
+                    }
+                    dados={odontograma}
+                    euId={session.userId}
+                    podeMudarDenticao={false}
+                    // O que FALTA pelas sessões (quem executa não lê o plano).
+                    marcasDoPlano={odontograma.aFazer}
+                  />
+                </div>
+              </details>
+            )}
+            {/* O plano aprovado é a referência da execução — recolhido, para a
+                evolução de hoje ficar em primeiro (28/10/2026). */}
+            {planSummary ? (
+              <details className="rounded-lg border p-3">
+                <summary className="cursor-pointer text-sm font-semibold">
+                  Plano aprovado (resumo)
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    — diagnóstico, objetivos e procedimentos por etapa, sem valores
+                  </span>
+                </summary>
+                <div className="mt-3">
+                  <PlanSummarySection
+                    diagnosis={planSummary.diagnosis}
+                    objectives={planSummary.objectives}
+                    optionTitle={planSummary.optionTitle}
+                    stages={planSummary.stages}
+                  />
+                </div>
+              </details>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Nenhum plano aprovado ainda — quando houver, o resumo aparece
+                aqui como referência da execução.
+              </p>
+            )}
           </TabPanel>
         )}
 
