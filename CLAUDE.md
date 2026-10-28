@@ -390,6 +390,30 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**28/10/2026 (15) — PC Administrador (core 0.363.0 → 0.364.0, migração 0332)**
+
+- **Ortodontia ORTO6 — a tela do ortodontista** (ESTADO §2; plano completo
+  do pedido de 28/10/2026 em `docs/ortodontia/ORTO-PLANO.md` §5, com as
+  regras R1–R13, a ordem ORTO6→ORTO9 e as decisões Q1–Q8 aprovadas; **Q8
+  mudada pelo dono: o Coordenador vê valores**). **R13:** o dinheiro do caso
+  saiu de `ortho_cases` para **`ortho_case_terms`** (RLS `ortho_can_see_money`
+  — o dentista fora, NO BANCO); `ortho_charges`/`ortho_settings` idem; o app
+  embute a irmã (`CASE_TERMS_EMBED`, `terms_visible`); selo, lista e ficha
+  sem valor; `ortho_events` sem o valor da contenção. **R11:** evolução →
+  `clinical_progress_notes` (`_ortho_mirror_evolution`; adendo na trancada,
+  0315). **R12:** alertas da anamnese + botões Planos/Desenvolvimento na ficha.
+- ⚠️ **Achado no ensaio (defeito da 0329):** `_ortho_complete_maintenance`
+  quebrava sem procedimento de manutenção (`v_rate` não atribuído) — também
+  pela agenda ao concluir o atendimento. Corrigido na 0332 (repasse zero).
+- ⚠️ Assinaturas das funções não mudaram, mas o app **lê a tabela irmã**
+  (`ortho_case_terms`) em toda tela da Ortodontia: **o push espera a 0332 na
+  produção** (sem ela, "relação não encontrada" na ficha, lista, Painel e
+  selo). 0332 aplicada no treino (`migrar:teste` + reaplicada,
+  idempotente; conferência 1·0·0·1·1·1·0); ensaio em transação desfeita
+  **30/30 com `set local role authenticated`** (a regra de linha valendo —
+  o ensaio da 0331 lia como superusuário e não media a RLS).
+  ⚠️ **PENDENTE NA PRODUÇÃO.** Não visto na tela.
+
 **28/10/2026 (14) — PC Administrador (core 0.362.0 → 0.363.0, migração 0331)**
 
 - **Ortodontia: as decisões O1/O2/O3 do dono** (ESTADO §2). **O1:** a

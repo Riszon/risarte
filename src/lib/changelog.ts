@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.364.0",
+    data: "2026-10-28",
+    migracao: "0332",
+    titulo: "Ortodontia: a tela do ortodontista — sem valores, com os alertas e o prontuário a um clique",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O dentista ortodontista não vê mais nenhum valor da ortodontia: nem a mensalidade, nem as cobranças, nem o que o paciente pagou. Isso vale na ficha do caso, na lista de casos e no cartão do prontuário — e o próprio banco deixou de entregar esses números a ele. Quem gere, a Recepção, o Franqueado e o Financeiro continuam vendo.",
+        papeis: ["dentist", "unit_manager", "clinical_coordinator", "receptionist", "franchisee"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O Coordenador Clínico passou a ver os valores da ortodontia (mensalidade, cobranças e situação financeira do paciente). A baixa continua sendo do Gerente e do Financeiro.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A evolução que o ortodontista registra na manutenção (fio/arco, observações, próximo passo) vai também para o Desenvolvimento Clínico do prontuário, como uma anotação dele. Se a anotação daquele atendimento já estiver trancada (atendimento concluído), a evolução entra como adendo — nada se apaga.",
+        papeis: ["dentist", "clinical_coordinator", "planner_dentist", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha do caso ortodôntico mostra, logo no alto, os alertas da anamnese do paciente (alergia, gestante, medicamentos…) e ganhou dois botões: \"Planos de tratamento\" e \"Desenvolvimento clínico\", que abrem a aba certa do prontuário para o ortodontista ver o que os outros profissionais estão propondo e fazendo.",
+        papeis: ["dentist", "clinical_coordinator", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Concluir uma manutenção de um caso que ainda não tinha procedimento de manutenção configurado dava erro (e travava a conclusão do atendimento na agenda). Agora a manutenção é concluída e o repasse nasce com valor zero, para alguém perceber e configurar o procedimento.",
+        papeis: ["dentist", "clinical_coordinator", "receptionist", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.363.0",
     data: "2026-10-28",
     migracao: "0331",

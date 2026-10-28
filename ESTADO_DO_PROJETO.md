@@ -1,6 +1,28 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.363.0** · Última migração: **0331** (0318 a 0331 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.364.0** · Última migração: **0332** (0318 a 0331 aplicadas na produção e no treino; **0332 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.364.0 / 0332 — ORTODONTIA (ORTO6): A TELA DO ORTODONTISTA (28/10/2026)
+>
+> Primeira etapa do pedido de 28/10/2026 (ORTO-PLANO §5: regras R1–R13, ordem
+> ORTO6→ORTO9 e decisões Q1–Q8 aprovadas pelo dono). **R13:** o dentista não
+> vê valor — o dinheiro do caso saiu de `ortho_cases` para a irmã
+> **`ortho_case_terms`** (regra de linha `ortho_can_see_money`), `ortho_charges`
+> e `ortho_settings` só para quem vê dinheiro; o app embute a irmã
+> (`CASE_TERMS_EMBED`) e esconde valor no selo do prontuário, na lista e na
+> ficha; o histórico do caso perdeu o valor da contenção. **Q8:** o
+> **Coordenador vê** (não dá baixa). **R11:** a evolução vai também para o
+> **Desenvolvimento Clínico** (`_ortho_mirror_evolution`: atualiza a aberta,
+> adendo na trancada ou quando o atendimento já tem anotação — 0315). **R12:**
+> alertas da anamnese e botões "Planos de tratamento"/"Desenvolvimento
+> clínico" na ficha. **Achado e corrigido:** `_ortho_complete_maintenance`
+> quebrava sem procedimento de manutenção (`v_rate`), inclusive pela agenda.
+> ⚠️ **0332 aplicada no treino** (reaplicada, idempotente); ensaio em
+> transação desfeita **30/30 com a regra de linha valendo**; **pendente na
+> produção** (conferência esperada 1·0·0·1·1·1·0). ⚠️ **O push espera a
+> migração:** as assinaturas não mudaram, mas o app desta versão **lê a tabela
+> irmã** (`ortho_case_terms`) em toda ficha, lista e selo — sem a 0332 na
+> produção, as telas da Ortodontia quebram. EV-246 a EV-248.
 
 > ## 🎯 0.363.0 / 0331 — ORTODONTIA: CONTENÇÃO, QUEM DÁ BAIXA E AS FALTAS NO PRAZO (28/10/2026)
 >
@@ -4688,6 +4710,93 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### ORTODONTIA — ORTO6, a tela do ortodontista (28/10/2026, v0.364.0, migração 0332)
+
+**O pedido de 28/10/2026** (texto do dono resumido em 13 regras em
+`docs/ortodontia/ORTO-PLANO.md` §5): a ortodontia passa a entrar pelo fluxo
+normal — Coordenador indica na avaliação, Planner define as características
+no plano, Coordenador aprova, Consultor fecha o acordo dentro dos limites, o
+caso nasce no fechamento; mensalidades por lote de N com avisos a 60/30/15
+dias, desconto por pontualidade, reajuste anual, suspensão; termo com prazo
+como referência e "quem inicia"; evolução no Desenvolvimento Clínico; alertas
+do prontuário e atalhos na tela do ortodontista; **o dentista não vê valor**.
+O dono aprovou a ordem **ORTO6 → ORTO7 → ORTO8 → ORTO9** e as respostas
+propostas Q1–Q7, mudando a **Q8: o Coordenador vê os valores**.
+
+**ORTO6 (esta entrega) — R11, R12, R13, Q8:**
+
+- **R13 — o dinheiro sai do alcance do dentista NO BANCO.** `ortho_cases`
+  perdeu `monthly_fee_cents`, `billing_day`, `installation_fee_cents`,
+  `retainer_charged/_fee_cents/_terms`; nasceu **`ortho_case_terms`** (1:1,
+  ligação `ortho_case_terms_case_id_fkey`), com regra de linha
+  **`ortho_can_see_money`** = Admin, rede, Financeiro da Franqueadora,
+  Gerente, **Coordenador**, Recepção, Franqueado. `ortho_charges_select` e
+  `ortho_settings_select` passaram para a mesma régua; `ortho_refresh_delinquency`
+  exige quem dá baixa. `ortho_create_case`/`ortho_update_case`/
+  `ortho_generate_charges`/`ortho_deliver_retainers` leem e gravam na irmã
+  (**mesmas assinaturas**). O histórico do caso (`ortho_events`, que o
+  dentista lê) deixou de carregar o valor da contenção, inclusive o já gravado.
+  No app: `CASE_SELECT` embute `terms:…` (`CASE_TERMS_EMBED`; para o dentista
+  vem vazio → `terms_visible = false`), o selo do prontuário
+  (`loadOrthoClientBadge.moneyVisible`) e a lista de casos escondem o valor,
+  `ORTHO_MONEY_VIEW_ROLES` ganhou `clinical_coordinator`, e `permissions.ts`
+  espelha a 0331 (Recepção/Franqueado fora da capacidade de baixa).
+- **R11 — evolução no Desenvolvimento Clínico.** `clinical_progress_notes`
+  ganhou `ortho_maintenance_id`; `ortho_save_evolution` chama
+  `_ortho_mirror_evolution`: texto "Ortodontia — manutenção N realizada em …
+  / Fio/arco / Observações / Próximo passo"; anotação aberta é atualizada;
+  trancada (0315) ganha **adendo** com motivo; atendimento que já tem a
+  anotação de quem atendeu recebe a evolução como adendo dela (uma por
+  atendimento); vazia não gera; nada se apaga.
+- **R12 — a tela do ortodontista.** `casos/[id]/page.tsx` mostra
+  `AlertasDaAnamnese` (só Dentista/Coordenador/Gerente/Admin, a régua do
+  prontuário) e os botões **Planos de tratamento** (`?aba=plano`) e
+  **Desenvolvimento clínico** (`?aba=desenvolvimento`).
+- **Achado no ensaio (defeito da 0329), corrigido na 0332:**
+  `_ortho_complete_maintenance` quebrava com `record "v_rate" is not assigned`
+  quando o caso não tinha procedimento de manutenção (nem na configuração) —
+  e a agenda chama essa função ao concluir o atendimento. Agora o repasse
+  nasce com zero (regra O5).
+
+**Conferido:** `check-migrations 0332` OK; `migrar:teste` aplicou (216 tabelas,
+656 funções) e a 0332 foi **reaplicada** por cima sem erro (conferência
+1·0·0·1·1·1·0); ensaio em transação desfeita **30/30**, desta vez **com a
+regra de linha valendo** (`set local role authenticated`, como a API): o
+dentista vê o caso e não vê a irmã, as cobranças nem a configuração; o embed
+vem vazio; Coordenador e Recepção veem; Coordenador não dá baixa; a evolução
+nasce, atualiza, vira adendo nos dois casos; a entrega lê a irmã e o histórico
+sai sem valor; editar grava na irmã; sem login nada executa. `npm run
+verificar`, `npm test`, `npm run lint`: ver a entrada da sessão no `CLAUDE.md`.
+**NÃO visto na tela.** ⚠️ **0332 PENDENTE NA PRODUÇÃO — e o push espera por
+ela:** as assinaturas das funções não mudaram, mas o app desta versão **lê
+`ortho_case_terms`** (embutida em `CASE_SELECT`, no selo do prontuário e na
+proposta); sem a tabela na produção, a ficha, a lista, o Painel e o cartão do
+prontuário da Ortodontia quebram ("relação não encontrada"). Ordem: o dono
+roda a 0332 → push.
+
+**Roteiro para o dono testar no treino:**
+
+1. Entrar como **Dentista** (ortodontista de um caso): abrir a ficha do caso
+   — sem mensalidade, sem bloco Mensalidades, sem valor da contenção; no
+   prontuário, o cartão Ortodontia sem "R$ …/mês" e sem "em atraso"; a lista
+   de casos sem valor; o Termo não abre.
+2. Ainda como Dentista: **Registrar** a evolução de uma manutenção (fio,
+   observações, próximo passo) → abrir o prontuário, aba **Desenvolvimento
+   Clínico**: a anotação "Ortodontia — manutenção N…" assinada por ele.
+   Corrigir a evolução no mesmo dia → a mesma anotação muda. Num atendimento
+   já concluído → aparece como **adendo**.
+3. Na ficha do caso: os **alertas da anamnese** no alto (paciente com alergia
+   marcada na anamnese) e os botões **Planos de tratamento** e
+   **Desenvolvimento clínico** abrindo a aba certa.
+4. Entrar como **Coordenador**: vê a mensalidade, o bloco Mensalidades e a
+   tela Mensalidades (sem botões de baixa).
+5. Caso sem procedimento de manutenção: concluir uma manutenção (pela
+   evolução ou pela agenda) funciona e o Repasse mostra a linha com zero.
+
+**Próximas etapas (aprovadas):** ORTO7 (indicação na avaliação, proposta
+ortodôntica no plano, "quem inicia", prazo como referência — 0333), ORTO8 (do
+Comercial ao caso — 0334), ORTO9 (mensalidades por lote — 0335).
 
 ### ORTODONTIA — decisões O1/O2/O3 (28/10/2026, v0.363.0, migração 0331)
 

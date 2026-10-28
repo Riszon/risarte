@@ -12,6 +12,12 @@ export type OrthoClientBadge = {
   orthodontistName: string | null;
   startDate: string | null;
   plannedEndDate: string | null;
+  /**
+   * R13 (0332): o banco só devolve o dinheiro a quem vê dinheiro; para o
+   * dentista vem falso, `monthlyCents` é zero e `lateCharges` é zero — e o
+   * selo não fala de valor nem de atraso.
+   */
+  moneyVisible: boolean;
   monthlyCents: number;
   /** A próxima manutenção (agendada futura, senão a prevista mais próxima). */
   next: { date: string; status: string } | null;
@@ -31,7 +37,7 @@ export async function loadOrthoClientBadge(clientId: string): Promise<OrthoClien
   const { data: rows, error } = await supabase
     .from("ortho_cases")
     .select(
-      "id, code, status, treatment_kind, start_date, planned_end_date, monthly_fee_cents, created_at, orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )"
+      "id, code, status, treatment_kind, start_date, planned_end_date, created_at, terms:ortho_case_terms!ortho_case_terms_case_id_fkey ( monthly_fee_cents ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )"
     )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
@@ -69,6 +75,7 @@ export async function loadOrthoClientBadge(clientId: string): Promise<OrthoClien
     };
   });
   const next = nextMaintenance(ms, today);
+  const terms = one(c.terms as { monthly_fee_cents: number | null } | { monthly_fee_cents: number | null }[] | null);
 
   return {
     caseId: c.id as string,
@@ -78,7 +85,8 @@ export async function loadOrthoClientBadge(clientId: string): Promise<OrthoClien
     orthodontistName: one(c.orthodontist as { full_name: string } | { full_name: string }[] | null)?.full_name ?? null,
     startDate: (c.start_date as string | null) ?? null,
     plannedEndDate: (c.planned_end_date as string | null) ?? null,
-    monthlyCents: Number(c.monthly_fee_cents ?? 0),
+    moneyVisible: terms !== null,
+    monthlyCents: Number(terms?.monthly_fee_cents ?? 0),
     next: next
       ? { date: (next.appointment_date ?? next.planned_date ?? "").slice(0, 10), status: next.status }
       : null,

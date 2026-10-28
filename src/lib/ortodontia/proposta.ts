@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { orthoClauses, type OrthoTerms } from "./regras";
 import type { OrthoKind } from "./constants";
+import { CASE_TERMS_EMBED } from "./db";
 
 export type CondicoesOrtodonticas = {
   clausulas: string[];
@@ -34,26 +35,37 @@ export async function condicoesOrtodonticas(
     .in("id", ids.slice(0, 150));
   if (error || !procs?.some((p) => ehOrtodontia(p.specialty as string | null))) return null;
 
+  // 0332: o dinheiro do caso vive na irmã `ortho_case_terms` (só quem vê
+  // dinheiro a lê). Sem a irmã na resposta, vale o padrão da unidade.
   const { data: caso } = await supabase
     .from("ortho_cases")
-    .select("treatment_kind, monthly_fee_cents, planned_months, maintenance_interval_days, billing_day, installation_fee_cents, retainer_charged, retainer_fee_cents, retainer_terms")
+    .select(`treatment_kind, planned_months, maintenance_interval_days, ${CASE_TERMS_EMBED}`)
     .eq("client_id", input.clientId)
     .in("status", ["aguardando_inicio", "em_tratamento", "contencao"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (caso) {
+  type Terms = {
+    monthly_fee_cents: number | null;
+    billing_day: number | null;
+    installation_fee_cents: number | null;
+    retainer_charged: boolean | null;
+    retainer_fee_cents: number | null;
+    retainer_terms: string | null;
+  };
+  const t = caso ? (Array.isArray(caso.terms) ? (caso.terms[0] as Terms | undefined) ?? null : (caso.terms as Terms | null)) : null;
+  if (caso && t) {
     const termos: OrthoTerms = {
       kind: caso.treatment_kind as OrthoKind,
-      monthlyCents: Number(caso.monthly_fee_cents ?? 0),
+      monthlyCents: Number(t.monthly_fee_cents ?? 0),
       plannedMonths: Number(caso.planned_months ?? 24),
       maintenanceIntervalDays: Number(caso.maintenance_interval_days ?? 30),
-      billingDay: Number(caso.billing_day ?? 10),
-      installationCents: Number(caso.installation_fee_cents ?? 0),
-      retainerCharged: caso.retainer_charged === true,
-      retainerFeeCents: Number(caso.retainer_fee_cents ?? 0),
-      retainerTerms: (caso.retainer_terms as string | null) ?? null,
+      billingDay: Number(t.billing_day ?? 10),
+      installationCents: Number(t.installation_fee_cents ?? 0),
+      retainerCharged: t.retainer_charged === true,
+      retainerFeeCents: Number(t.retainer_fee_cents ?? 0),
+      retainerTerms: t.retainer_terms ?? null,
     };
     return { clausulas: orthoClauses(termos), origem: "caso", termos };
   }

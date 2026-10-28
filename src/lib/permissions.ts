@@ -392,18 +392,17 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["dentist", "clinical_coordinator"],
   },
   {
-    // Decisão O2 (ORTO-PLANO §4): a Recepção dá baixa, como no PPR+. O banco
-    // (`ortho_can_settle`) aceita Gerente, Recepção, Franqueado e a rede.
+    // Decisão O2 (28/10/2026, 0331): a baixa é do Gerente e do Financeiro da
+    // Franqueadora (e da Franqueadora/Rede). A Recepção, o Franqueado e o
+    // Coordenador VEEM a situação financeira sem esta capacidade
+    // (`ortho_can_see_money`, 0332); o banco (`ortho_can_settle`) confere.
     id: "acao.ortodontia.financeiro",
     rotulo: "Mensalidades da ortodontia",
     grupo: "Ações — Programas",
     descricao:
-      "Ver a situação financeira dos casos, gerar as mensalidades do mês e dar baixa.",
+      "Gerar as mensalidades do mês e dar baixa (quem só vê a situação financeira não precisa disto).",
     dependeDoBanco: true,
-    padrao: [
-      "unit_manager", "receptionist", "franchisee",
-      "franchisor_staff", "finance_franchisor",
-    ],
+    padrao: ["unit_manager", "franchisor_staff", "finance_franchisor"],
   },
   {
     id: "acao.ppr.configurar",

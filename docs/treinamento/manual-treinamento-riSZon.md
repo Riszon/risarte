@@ -1420,8 +1420,8 @@ pela tabela de repasse do procedimento de manutenção configurado.
 | **Atenção** (`/ortodontia/atencao`) | **Recepção** (é a tela dela), e todos | Quem precisa de ação agora: **sem próximo agendamento**, **manutenção vencida** (prevista há mais de 7 dias sem agendar), **faltou na última**, **aguardando início**, **reavaliação vencida**, **pedido clínico em aberto**, **término atrasado** e, para quem vê dinheiro, **mensalidade atrasada**. Cada linha tem o WhatsApp, o botão **Agendar** (abre a agenda com o paciente) e o atalho para o caso. Em dia, o paciente não aparece. |
 | **Casos** (`/ortodontia/casos`) | Todos do módulo | A lista com busca (paciente, código, ortodontista) e filtros por situação. O Dentista vê só os casos em que é o ortodontista. |
 | **Novo caso** (`/ortodontia/casos/novo`) | Gerente, Coordenador, Admin | Passo 1: procurar o paciente da unidade. Passo 2: ortodontista, tipo, início, meses previstos, intervalo das manutenções, procedimento da manutenção (repasse), mensalidade, dia de vencimento, instalação (informativo). Os valores vêm da **Configuração** e podem ser ajustados. Marcando **"O aparelho já foi instalado"**, o caso nasce **em tratamento** e o cronograma é gerado na hora. |
-| **A ficha do caso** (`/ortodontia/casos/[id]`) | Todos do módulo | Situação e prazo (com a barra do tempo), os motivos de atenção, o **cronograma** manutenção a manutenção (prevista, agendamento ligado, situação, quem fez e a **evolução**: fio/arco, observações, próximo passo), as **mensalidades** com baixa, as **indicações** que o paciente trouxe, a origem dele e o **histórico**. Botões: **Prontuário**, **Agendar**, **Termo** (imprimir/PDF), **Editar**; e as mudanças de situação (abaixo). |
-| **Mensalidades** (`/ortodontia/mensalidades`) | **Gerente** e **Financeiro da Franqueadora** (dão baixa), Franqueadora, Admin; **Recepção e Franqueado só veem** | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa, **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. A cobrança da **contenção** (quando cobrada) aparece aqui com a etiqueta "Contenção". Desde a 0.363.0 a Recepção abre a tela **sem botões**: vê a situação de cada paciente para ajudar o Gerente e o Financeiro. |
+| **A ficha do caso** (`/ortodontia/casos/[id]`) | Todos do módulo | Logo no alto, os **alertas da anamnese** do paciente (desde a 0.364.0, para o Dentista, o Coordenador e o Gerente). Situação e prazo (com a barra do tempo), os motivos de atenção, o **cronograma** manutenção a manutenção (prevista, agendamento ligado, situação, quem fez e a **evolução**: fio/arco, observações, próximo passo), as **mensalidades** com baixa (só para quem vê dinheiro), as **indicações** que o paciente trouxe, a origem dele e o **histórico**. Botões: **Prontuário**, **Planos de tratamento** e **Desenvolvimento clínico** (abrem a aba certa do prontuário — desde a 0.364.0), **Agendar**, **Termo** (imprimir/PDF), **Editar**; e as mudanças de situação (abaixo). |
+| **Mensalidades** (`/ortodontia/mensalidades`) | **Gerente** e **Financeiro da Franqueadora** (dão baixa), Franqueadora, Admin; **Coordenador, Recepção e Franqueado só veem** | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa, **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. A cobrança da **contenção** (quando cobrada) aparece aqui com a etiqueta "Contenção". Desde a 0.363.0 a Recepção abre a tela **sem botões**: vê a situação de cada paciente para ajudar o Gerente e o Financeiro. |
 | **Configuração** (`/ortodontia/configuracao`) | Admin (rede) e Gerente (a própria unidade) | O padrão da rede e o ajuste por unidade: mensalidade padrão, meses previstos, intervalo das manutenções, reavaliação a cada N meses, tolerância do prazo, dia de vencimento, o **procedimento da manutenção** (de onde sai o valor do repasse) e **a contenção no fim do tratamento**: cobrar ou não, o valor e uma condição especial (ex.: "em até 3x sem juros") — o que estiver aqui sai no termo do paciente. |
 
 #### A situação do caso
@@ -1483,7 +1483,35 @@ marcada por engano (desfaz a prorrogação).
   **Registrar** / **Evolução** da manutenção — e pode marcar como realizada por
   ali uma manutenção feita sem agendamento. Desfazer uma realizada é do
   Gerente/Coordenador e só antes do fechamento do repasse do mês.
+- **A evolução vai também para o Desenvolvimento Clínico** (desde a 0.364.0):
+  cada evolução registrada vira uma anotação no prontuário, assinada por quem
+  registrou ("Ortodontia — manutenção N: fio/arco…, observações…, próximo
+  passo…"). Corrigir no mesmo dia atualiza a anotação; se ela já estiver
+  **trancada** (atendimento concluído ou dia encerrado), a correção entra como
+  **adendo**, e se o atendimento já tem a anotação de quem atendeu, a evolução
+  entra como adendo dela — uma anotação por atendimento, nada se apaga.
 - **Manutenção extra** (bráquete solto, urgência): botão na ficha do caso.
+- Se o caso ainda não tem **procedimento de manutenção** (nem na
+  Configuração), a manutenção é concluída do mesmo jeito e o repasse nasce com
+  **valor zero** — para alguém perceber e configurar (corrigido na 0.364.0:
+  antes dava erro e travava a conclusão do atendimento).
+
+#### O que o ortodontista vê — e o que não vê
+
+Desde a 0.364.0, **o Dentista não vê nenhum valor da ortodontia**: nem a
+mensalidade, nem as cobranças, nem o que o paciente pagou — na ficha do caso,
+na lista de casos, no cartão do prontuário e no termo. Não é só a tela que
+esconde: o banco deixou de entregar esses números a ele (as condições
+financeiras do caso vivem numa tabela própria, lida só por quem vê dinheiro).
+Quem **vê** a situação financeira: o Gerente, o **Coordenador** (desde a
+0.364.0), a Recepção, o Franqueado, o Financeiro da Franqueadora e a
+Franqueadora/Rede. Quem **dá baixa**: o Gerente e o Financeiro (O2).
+
+Para o ortodontista entender o que os outros profissionais propõem e fazem, a
+ficha do caso tem os botões **Planos de tratamento** e **Desenvolvimento
+clínico** (abrem a aba certa do prontuário) e mostra, no alto, os **alertas da
+anamnese** (alergia, gestante, medicamentos, sangramento…), os mesmos do
+prontuário.
 
 #### A mensalidade e a DRE
 
@@ -1506,9 +1534,10 @@ marcada por engano (desfaz a prorrogação).
   competência, assim que é gerada; a **baixa** leva o valor para o **fluxo de
   caixa** do dia; desfazer a baixa volta; cancelar tira da DRE.
 - **Quem dá baixa** (desde a 0.363.0): o **Gerente da unidade** e o
-  **Financeiro da Franqueadora** (e o Admin). A Recepção **vê** a situação de
-  cada paciente — na ficha do caso, em Atenção ("mensalidade atrasada") e na
-  tela Mensalidades, sem botões — para ajudar quem cobra.
+  **Financeiro da Franqueadora** (e o Admin). A Recepção e, desde a 0.364.0,
+  o **Coordenador** **veem** a situação de cada paciente — na ficha do caso,
+  em Atenção ("mensalidade atrasada") e na tela Mensalidades, sem botões —
+  para ajudar quem cobra. O **Dentista não vê valor nenhum**.
 - A **instalação do aparelho** continua sendo cobrada pelo plano/venda normal
   (linha "Procedimentos — plano de tratamento"); no caso ela é só informativa.
 
@@ -1525,11 +1554,13 @@ próxima etapa do módulo.
 #### No prontuário
 
 A ficha do paciente ganhou o cartão **Ortodontia** (situação, ortodontista,
-próxima manutenção, mensalidades em atraso) com o botão **Abrir o caso
-ortodôntico**. Sem caso, o cartão não aparece.
+próxima manutenção e, só para quem vê dinheiro, a mensalidade e as
+mensalidades em atraso) com o botão **Abrir o caso ortodôntico**. Sem caso, o
+cartão não aparece. Na aba **Desenvolvimento Clínico** aparecem as evoluções
+da ortodontia (desde a 0.364.0).
 
 **Evidência:** EV-235 a EV-242; contenção, baixa e faltas (0.363.0): EV-243 a
-EV-245.
+EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248.
 
 ## A barra de cima
 
@@ -2138,7 +2169,7 @@ diferença.
 | Ortodontia — ver o Painel (os números) | Admin, **Gerente**, **Coordenador**, Franqueado, Franqueadora/Rede, Financeiro da Franqueadora (a Recepção cai na tela Atenção) |
 | Ortodontia — abrir, editar, iniciar, entregar contenções, dar alta, interromper o caso | Admin, **Gerente**, **Coordenador** |
 | Ortodontia — registrar a manutenção e a evolução | Admin, **Coordenador**, o **Dentista** que é o ortodontista do caso |
-| Ortodontia — mensalidades (gerar, dar baixa) | Admin, **Gerente**, Franqueadora/Rede, **Financeiro da Franqueadora** (desde a 0.363.0: a Recepção e o Franqueado só **veem** a situação) |
+| Ortodontia — mensalidades (gerar, dar baixa) | Admin, **Gerente**, Franqueadora/Rede, **Financeiro da Franqueadora** (desde a 0.363.0: a Recepção e o Franqueado só **veem** a situação; desde a 0.364.0 o **Coordenador** também vê, e o **Dentista não vê valor nenhum** — nem o banco lhe entrega) |
 | Lançar/editar dinheiro | Admin, Financeiro da Franqueadora, **Gerente** |
 | Configurar financeiro da REDE | Admin, Financeiro da Franqueadora |
 | Entrada e inventário de estoque | Admin, Financeiro da Franqueadora, **Gerente**, **ASB** (na unidade dele, desde a 0.320.0) |

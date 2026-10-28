@@ -3,17 +3,21 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   CalendarPlus,
+  ClipboardList,
   FileSignature,
   HeartHandshake,
   History,
   ListChecks,
   SmilePlus,
+  Stethoscope,
   User,
   Wallet,
 } from "lucide-react";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { AlertasDaAnamnese } from "@/components/alertas-da-anamnese";
+import { evaluateAlerts, mapAnswer, type AlertaDaAnamnese, type AnamnesisAnswerRow } from "@/lib/anamnesis";
 import {
   canEvolveOrtho,
   canManageOrtho,
@@ -120,6 +124,31 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
   ]);
   const maintenances = (maintRead.ok ? maintRead.linhas : []).sort((a, b) => a.seq - b.seq);
   const charges = chargesRead.ok ? chargesRead.linhas : [];
+
+  // R12: os alertas da anamnese (os mesmos do prontuário e do cockpit do
+  // Planner) na tela do ortodontista. Só para quem já pode ler a anamnese
+  // inteira — a mesma régua do prontuário (`canViewAnamnesis`).
+  const canSeeAnamnesis =
+    session.isAdminMaster || hasRoleInClinic(session, c.clinic_id, ["dentist", "clinical_coordinator", "unit_manager"]);
+  let anamnesisAlerts: AlertaDaAnamnese[] = [];
+  if (canSeeAnamnesis) {
+    const { data: latestFill } = await supabase
+      .from("anamnesis_fills")
+      .select("id")
+      .eq("client_id", c.client_id)
+      .order("filled_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latestFill) {
+      const { data: ansRows } = await supabase
+        .from("anamnesis_answers")
+        .select("id, question_id, section, label, kind, value, detail, is_adhoc, sort_order, alert_when, alert_message")
+        .eq("fill_id", latestFill.id)
+        .order("sort_order")
+        .returns<AnamnesisAnswerRow[]>();
+      anamnesisAlerts = evaluateAlerts((ansRows ?? []).map(mapAnswer));
+    }
+  }
   const [linkable, orthodontists, procedures] = await Promise.all([
     canSchedule ? loadLinkableAppointments(supabase, c.client_id, maintenances.map((m) => m.appointment_id).filter((x): x is string => Boolean(x))) : Promise.resolve([]),
     canManage ? loadOrthodontistOptions(supabase, c.clinic_id) : Promise.resolve([]),
@@ -167,6 +196,13 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
         <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/prontuarios/${c.client_id}`} />}>
           <User className="mr-1 size-3.5" /> Prontuário
         </Button>
+        {/* R12: o que os outros profissionais propõem e fazem, a um clique. */}
+        <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/prontuarios/${c.client_id}?aba=plano`} />}>
+          <ClipboardList className="mr-1 size-3.5" /> Planos de tratamento
+        </Button>
+        <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/prontuarios/${c.client_id}?aba=desenvolvimento`} />}>
+          <Stethoscope className="mr-1 size-3.5" /> Desenvolvimento clínico
+        </Button>
         {canSchedule && isOpen && (
           <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/agenda?cliente=${c.client_id}&tipo=treatment_session`} />}>
             <CalendarPlus className="mr-1 size-3.5" /> Agendar
@@ -201,6 +237,9 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
           />
         )}
       </CabecalhoDeModulo>
+
+      {/* R12: alertas importantes do prontuário, antes de qualquer coisa. */}
+      <AlertasDaAnamnese alertas={anamnesisAlerts} />
 
       {/* Situação ------------------------------------------------------------ */}
       <section className="grid gap-3 md:grid-cols-3">

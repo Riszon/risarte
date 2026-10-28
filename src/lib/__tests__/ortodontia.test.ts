@@ -24,6 +24,7 @@ import {
   ORTHO_CHARGE_STATUSES,
   ORTHO_KINDS,
   ORTHO_MAINTENANCE_STATUSES,
+  ORTHO_MONEY_VIEW_ROLES,
   ORTHO_SETTLE_ROLES,
   ORTHO_STATUSES,
 } from "@/lib/ortodontia/constants";
@@ -386,5 +387,66 @@ describe("espelho do banco (migração 0331 — decisões O1, O2, O3)", () => {
     expect(fn("ortho_case_before_write")).toMatch(/\+ coalesce\(new\.extension_days, 0\)/);
     expect(fn("_ortho_recompute_extension")).toMatch(/status = 'faltou'/);
     expect(sql).toMatch(/create trigger ortho_maintenances_extension/);
+  });
+});
+
+describe("espelho do banco (migração 0332 — ORTO6, a tela do ortodontista)", () => {
+  const sql = readFileSync(MIG("0332_ortodontia_tela_do_ortodontista.sql"), "utf8");
+  const fn = (name: string) => {
+    const from = sql.slice(sql.indexOf(`function public.${name}(`));
+    return from.slice(0, from.indexOf("$$;"));
+  };
+  it("R13: o dinheiro do caso sai de ortho_cases e vai para a irmã, lida só por quem vê dinheiro", () => {
+    expect(sql).toMatch(/create table if not exists public\.ortho_case_terms/);
+    for (const col of ["monthly_fee_cents", "billing_day", "installation_fee_cents", "retainer_charged", "retainer_fee_cents", "retainer_terms"]) {
+      expect(sql).toContain(`alter table public.ortho_cases drop column if exists ${col};`);
+    }
+    expect(sql).toMatch(/create policy "ortho_case_terms_select" on public\.ortho_case_terms\s+for select to authenticated using \(public\.ortho_can_see_money\(clinic_id\)\)/);
+    expect(sql).toMatch(/create policy "ortho_charges_select" on public\.ortho_charges\s+for select to authenticated using \(public\.ortho_can_see_money\(clinic_id\)\)/);
+    // A ligação de nome fixo que o app embute.
+    expect(sql).toContain("ortho_case_terms_case_id_fkey");
+    expect(sql).toMatch(/select public\.audit_attach_all\(\);/);
+  });
+  it("Q8: o Coordenador vê dinheiro; o dentista não — no banco e no código", () => {
+    const g = fn("ortho_can_see_money");
+    expect(g).toMatch(/'clinical_coordinator'/);
+    expect(g).toMatch(/'finance_franchisor'/);
+    expect(g).not.toMatch(/'dentist'/);
+    expect(ORTHO_MONEY_VIEW_ROLES).toContain("clinical_coordinator");
+    expect(ORTHO_MONEY_VIEW_ROLES).not.toContain("dentist");
+    // A baixa não muda (O2): quem vê não é quem dá baixa.
+    expect(ORTHO_SETTLE_ROLES).toEqual(["unit_manager"]);
+    const fin = CAPACIDADES.find((c) => c.id === "acao.ortodontia.financeiro");
+    expect(fin?.padrao).not.toContain("receptionist");
+    expect(fin?.padrao).not.toContain("franchisee");
+    expect(fin?.padrao).not.toContain("clinical_coordinator");
+  });
+  it("R13: as funções leem e gravam o dinheiro na irmã, e o histórico não carrega valor", () => {
+    expect(fn("ortho_create_case")).toMatch(/insert into public\.ortho_case_terms/);
+    expect(fn("ortho_update_case")).toMatch(/update public\.ortho_case_terms set/);
+    expect(fn("ortho_generate_charges")).toMatch(/join public\.ortho_case_terms t on t\.case_id = c\.id/);
+    const d = fn("ortho_deliver_retainers");
+    expect(d).toMatch(/v_t public\.ortho_case_terms/);
+    expect(d).not.toMatch(/R\$/);
+    expect(sql).toMatch(/update public\.ortho_events\s+set description = regexp_replace/);
+  });
+  it("achado do ensaio: concluir a manutenção sem procedimento registra repasse ZERO (não quebra)", () => {
+    const c = fn("_ortho_complete_maintenance");
+    expect(c).toMatch(/v_amount integer := 0/);
+    expect(c).toMatch(/v_rate_id uuid := null/);
+    expect(c).not.toMatch(/v_rate record/);
+    expect(c).toMatch(/coalesce\(v_amount, 0\), v_rate_id/);
+  });
+  it("R11: a evolução vai também para o Desenvolvimento Clínico, respeitando a tranca (adendo)", () => {
+    expect(sql).toMatch(/alter table public\.clinical_progress_notes\s+add column if not exists ortho_maintenance_id/);
+    const m = fn("_ortho_mirror_evolution");
+    expect(m).toMatch(/_progress_note_locked\(/);
+    expect(m).toMatch(/addendum_of, addendum_reason, ortho_maintenance_id/);
+    expect(m).toMatch(/Ortodontia — manutenção/);
+    expect(m).not.toMatch(/delete from/);
+    expect(fn("ortho_save_evolution")).toMatch(/perform public\._ortho_mirror_evolution\(p_maintenance_id\)/);
+    // Interna: ninguém a chama pela API.
+    expect(sql).toMatch(/revoke execute on function public\._ortho_mirror_evolution\(uuid\) from public, anon, authenticated;/);
+    expect(sql).not.toMatch(/grant execute on function public\._ortho_mirror_evolution/);
   });
 });

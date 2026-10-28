@@ -135,8 +135,17 @@ export const ORTHO_CLINICAL_ROLES: UserRole[] = ["dentist", "clinical_coordinato
  * (decisão O2, 28/10/2026: Gerente e Financeiro; a Recepção só vê).
  */
 export const ORTHO_SETTLE_ROLES: UserRole[] = ["unit_manager"];
-/** Quem VÊ a situação financeira sem dar baixa (a Recepção, para ajudar). */
-export const ORTHO_MONEY_VIEW_ROLES: UserRole[] = ["unit_manager", "receptionist", "franchisee"];
+/**
+ * Quem VÊ a situação financeira sem dar baixa — espelho de `ortho_can_see_money`
+ * (0332): a Recepção e o Franqueado (O2, para ajudar) e o Coordenador (Q8,
+ * 28/10/2026). O dentista fica de fora (R13): o banco nem lhe devolve o valor.
+ */
+export const ORTHO_MONEY_VIEW_ROLES: UserRole[] = [
+  "unit_manager",
+  "clinical_coordinator",
+  "receptionist",
+  "franchisee",
+];
 
 /** Padrões da rede quando ninguém configurou nada. */
 export const ORTHO_DEFAULTS = {

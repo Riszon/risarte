@@ -65,7 +65,7 @@ export function OrthoClientCard({ badge }: { badge: OrthoClientBadge | null }) {
           {badge.orthodontistName && ` · ${badge.orthodontistName}`}
           {badge.startDate && ` · início ${formatIsoDateBr(badge.startDate)}`}
           {badge.plannedEndDate && inTreatment && ` · término previsto ${formatIsoDateBr(badge.plannedEndDate)}`}
-          {badge.monthlyCents > 0 && inTreatment && ` · ${formatBRL(badge.monthlyCents)}/mês`}
+          {badge.moneyVisible && badge.monthlyCents > 0 && inTreatment && ` · ${formatBRL(badge.monthlyCents)}/mês`}
           {badge.status === "contencao" && " · contenções entregues, sem mensalidade"}
         </p>
       </CardHeader>
@@ -91,7 +91,7 @@ export function OrthoClientCard({ badge }: { badge: OrthoClientBadge | null }) {
             </span>
           </div>
         )}
-        {badge.lateCharges > 0 && (
+        {badge.moneyVisible && badge.lateCharges > 0 && (
           <p className="flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 p-2 text-xs text-rose-800">
             <TriangleAlert className="size-3.5" />
             {badge.lateCharges} mensalidade{badge.lateCharges === 1 ? "" : "s"} em atraso.

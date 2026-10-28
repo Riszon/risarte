@@ -55,6 +55,12 @@ export type OrthoCaseRow = {
   discharged_at: string | null;
   /** O3: faltas × intervalo — já somado em `planned_end_date`. */
   extension_days: number;
+  /**
+   * R13 (0332): o dinheiro vive em `ortho_case_terms`, que o banco só devolve a
+   * quem vê dinheiro. Para o dentista o embed vem vazio e os campos acima
+   * ficam em zero — a tela nem os pede (`canViewOrthoMoney`); isto diz se vieram.
+   */
+  terms_visible: boolean;
   notes: string | null;
   created_at: string;
   client: OrthoClientLite | null;
@@ -105,20 +111,35 @@ export type OrthoEventRow = {
 const one = <T,>(v: T | T[] | null | undefined): T | null =>
   Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 
+/** O dinheiro do caso (0332): a irmã `ortho_case_terms`, embutida pela ligação de nome fixo. */
+export const CASE_TERMS_EMBED =
+  "terms:ortho_case_terms!ortho_case_terms_case_id_fkey ( monthly_fee_cents, billing_day, installation_fee_cents, retainer_charged, retainer_fee_cents, retainer_terms )";
+
+type TermsEmbed = {
+  monthly_fee_cents: number | null;
+  billing_day: number | null;
+  installation_fee_cents: number | null;
+  retainer_charged: boolean | null;
+  retainer_fee_cents: number | null;
+  retainer_terms: string | null;
+};
+
 const CASE_SELECT =
-  "id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, monthly_fee_cents, billing_day, installation_fee_cents, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_charged, retainer_fee_cents, retainer_terms, retainer_delivered_at, discharged_at, extension_days, notes, created_at, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )";
+  `id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_delivered_at, discharged_at, extension_days, notes, created_at, ${CASE_TERMS_EMBED}, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )`;
 
 function toCase(r: Record<string, unknown>): OrthoCaseRow {
+  const t = one(r.terms as TermsEmbed | TermsEmbed[] | null);
   return {
     ...(r as Omit<OrthoCaseRow, "client" | "clinic" | "orthodontist">),
-    monthly_fee_cents: Number(r.monthly_fee_cents ?? 0),
-    installation_fee_cents: Number(r.installation_fee_cents ?? 0),
+    terms_visible: t !== null,
+    monthly_fee_cents: Number(t?.monthly_fee_cents ?? 0),
+    installation_fee_cents: Number(t?.installation_fee_cents ?? 0),
     planned_months: Number(r.planned_months ?? 24),
     maintenance_interval_days: Number(r.maintenance_interval_days ?? 30),
-    billing_day: Number(r.billing_day ?? 10),
-    retainer_charged: r.retainer_charged === true,
-    retainer_fee_cents: Number(r.retainer_fee_cents ?? 0),
-    retainer_terms: (r.retainer_terms as string | null) ?? null,
+    billing_day: Number(t?.billing_day ?? 10),
+    retainer_charged: t?.retainer_charged === true,
+    retainer_fee_cents: Number(t?.retainer_fee_cents ?? 0),
+    retainer_terms: t?.retainer_terms ?? null,
     retainer_delivered_at: (r.retainer_delivered_at as string | null) ?? null,
     discharged_at: (r.discharged_at as string | null) ?? null,
     extension_days: Number(r.extension_days ?? 0),

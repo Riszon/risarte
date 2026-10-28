@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ChevronRight, ListChecks, UserPlus } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canManageOrtho, canViewOrtho, canViewOrthoDashboard, orthoRestrictedToOwn } from "@/lib/ortodontia/access";
+import { canManageOrtho, canViewOrtho, canViewOrthoDashboard, canViewOrthoMoney, orthoRestrictedToOwn } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
 import { groupByCase, loadCases, loadMaintenancesFor } from "@/lib/ortodontia/db";
 import { TIMELINESS_LABELS, attendance, caseTimeliness, nextMaintenance, progressPercent, type MaintenanceLike } from "@/lib/ortodontia/regras";
@@ -37,6 +37,8 @@ export default async function OrtoCasosPage(props: PageProps<"/ortodontia/casos"
   const status = (ORTHO_STATUSES as readonly string[]).includes(situacao ?? "") ? (situacao as OrthoStatus) : null;
   const busca = (pick("busca") ?? "").trim();
   const soMeus = orthoRestrictedToOwn(session, scope.clinicId);
+  // R13: o dentista não vê valor (o banco já não o devolve; a tela nem tenta).
+  const canMoney = canViewOrthoMoney(session, scope.clinicId);
   const today = todayInBrazil();
 
   const supabase = await createClient();
@@ -137,7 +139,7 @@ export default async function OrtoCasosPage(props: PageProps<"/ortodontia/casos"
                         {c.start_date ? ` · início ${formatIsoDateBr(c.start_date)}` : ""}
                         {c.status === "em_tratamento" && c.planned_end_date ? ` · término previsto ${formatIsoDateBr(c.planned_end_date)}${c.extension_days > 0 ? ` (+${c.extension_days} dias pelas faltas)` : ""}` : ""}
                         {c.retainer_delivered_at ? ` · contenções entregues ${formatIsoDateBr(c.retainer_delivered_at)}` : ""}
-                        {c.status === "em_tratamento" && c.monthly_fee_cents > 0 ? ` · ${formatBRL(c.monthly_fee_cents)}/mês` : ""}
+                        {canMoney && c.terms_visible && c.status === "em_tratamento" && c.monthly_fee_cents > 0 ? ` · ${formatBRL(c.monthly_fee_cents)}/mês` : ""}
                       </p>
                       {pct !== null && c.status === "em_tratamento" && (
                         <div className="mt-1.5 h-1.5 w-full max-w-md rounded bg-muted" title={`${pct}% do prazo previsto`}>

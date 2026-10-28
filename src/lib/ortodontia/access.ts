@@ -63,9 +63,10 @@ export function canSettleOrtho(session: SessionContext, clinicId: string | null)
 
 /**
  * Vê os números de DINHEIRO do módulo (mensalidades, receita, inadimplência).
- * Quem dá baixa vê; a Recepção e o Franqueado veem SEM dar baixa (O2: a
- * Recepção acompanha a situação do paciente para ajudar o Gerente e o
- * Financeiro).
+ * Quem dá baixa vê; a Recepção, o Franqueado e o Coordenador (Q8) veem SEM dar
+ * baixa (O2: a Recepção acompanha a situação do paciente para ajudar o Gerente
+ * e o Financeiro). O dentista NÃO vê (R13) — e desde a 0332 o banco também não
+ * lhe devolve valor nenhum (`ortho_can_see_money`): aqui é só a tela.
  */
 export function canViewOrthoMoney(session: SessionContext, clinicId: string | null): boolean {
   if (canSettleOrtho(session, clinicId)) return true;
