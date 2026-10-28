@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.364.0** · Última migração: **0332** (0318 a 0331 aplicadas na produção e no treino; **0332 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.364.0** · Última migração: **0332** (0318 a 0332 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.364.0 / 0332 — ORTODONTIA (ORTO6): A TELA DO ORTODONTISTA (28/10/2026)
 >
@@ -17,12 +17,11 @@ _Atualizado em: 28/10/2026 · Versão do sistema: **0.364.0** · Última migraç
 > alertas da anamnese e botões "Planos de tratamento"/"Desenvolvimento
 > clínico" na ficha. **Achado e corrigido:** `_ortho_complete_maintenance`
 > quebrava sem procedimento de manutenção (`v_rate`), inclusive pela agenda.
-> ⚠️ **0332 aplicada no treino** (reaplicada, idempotente); ensaio em
-> transação desfeita **30/30 com a regra de linha valendo**; **pendente na
-> produção** (conferência esperada 1·0·0·1·1·1·0). ⚠️ **O push espera a
-> migração:** as assinaturas não mudaram, mas o app desta versão **lê a tabela
-> irmã** (`ortho_case_terms`) em toda ficha, lista e selo — sem a 0332 na
-> produção, as telas da Ortodontia quebram. EV-246 a EV-248.
+> ✅ **0332 APLICADA nos dois bancos** (o dono rodou na produção em
+> 28/10/2026; conferência 1·0·0·1·1·1·0, como esperado) e só então o push
+> `a2ee907` saiu (o app lê a tabela irmã em toda tela da Ortodontia). No
+> treino reaplicada, idempotente; ensaio em transação desfeita **30/30 com a
+> regra de linha valendo**. Não visto na tela. EV-246 a EV-248.
 
 > ## 🎯 0.363.0 / 0331 — ORTODONTIA: CONTENÇÃO, QUEM DÁ BAIXA E AS FALTAS NO PRAZO (28/10/2026)
 >
@@ -35,10 +34,10 @@ _Atualizado em: 28/10/2026 · Versão do sistema: **0.364.0** · Última migraç
 > e do **Financeiro da Franqueadora** (Recepção e Franqueado só veem;
 > `ortho_can_settle` + matriz). **O3:** mantido; **cada falta prorroga o
 > término em um intervalo** (`extension_days` por gatilho; o cronograma ganha a
-> vaga) e as telas mostram a **assiduidade**. Tudo no termo. ⚠️ **0331
-> aplicada no treino** (`migrar:teste` + reaplicada, idempotente); ensaio em
-> transação desfeita **37/37**; **pendente na produção** (conferência
-> esperada 1·6·3·1·0·1·1). Achado no ensaio e corrigido: reabrir um caso
+> vaga) e as telas mostram a **assiduidade**. Tudo no termo. ✅ **0331
+> APLICADA nos dois bancos** (o dono rodou na produção em 28/10/2026;
+> conferência 1·6·3·1·0·1·1); no treino via `migrar:teste` + reaplicada,
+> idempotente; ensaio em transação desfeita **37/37**. Achado no ensaio e corrigido: reabrir um caso
 > depois da entrega colidia o `seq` do cronograma (`ortho_plan_maintenances`
 > conta as canceladas). EV-243 a EV-245.
 
@@ -4768,12 +4767,10 @@ vem vazio; Coordenador e Recepção veem; Coordenador não dá baixa; a evoluç�
 nasce, atualiza, vira adendo nos dois casos; a entrega lê a irmã e o histórico
 sai sem valor; editar grava na irmã; sem login nada executa. `npm run
 verificar`, `npm test`, `npm run lint`: ver a entrada da sessão no `CLAUDE.md`.
-**NÃO visto na tela.** ⚠️ **0332 PENDENTE NA PRODUÇÃO — e o push espera por
-ela:** as assinaturas das funções não mudaram, mas o app desta versão **lê
-`ortho_case_terms`** (embutida em `CASE_SELECT`, no selo do prontuário e na
-proposta); sem a tabela na produção, a ficha, a lista, o Painel e o cartão do
-prontuário da Ortodontia quebram ("relação não encontrada"). Ordem: o dono
-roda a 0332 → push.
+**NÃO visto na tela.** ✅ **0332 APLICADA NA PRODUÇÃO** em 28/10/2026 (o dono
+rodou; conferência 1·0·0·1·1·1·0, como esperado) e só então o push `a2ee907`
+saiu — a ordem importava porque o app desta versão **lê `ortho_case_terms`**
+(embutida em `CASE_SELECT`, no selo do prontuário e na proposta).
 
 **Roteiro para o dono testar no treino:**
 

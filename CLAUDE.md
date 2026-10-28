@@ -405,14 +405,14 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Achado no ensaio (defeito da 0329):** `_ortho_complete_maintenance`
   quebrava sem procedimento de manutenção (`v_rate` não atribuído) — também
   pela agenda ao concluir o atendimento. Corrigido na 0332 (repasse zero).
-- ⚠️ Assinaturas das funções não mudaram, mas o app **lê a tabela irmã**
-  (`ortho_case_terms`) em toda tela da Ortodontia: **o push espera a 0332 na
-  produção** (sem ela, "relação não encontrada" na ficha, lista, Painel e
-  selo). 0332 aplicada no treino (`migrar:teste` + reaplicada,
-  idempotente; conferência 1·0·0·1·1·1·0); ensaio em transação desfeita
-  **30/30 com `set local role authenticated`** (a regra de linha valendo —
-  o ensaio da 0331 lia como superusuário e não media a RLS).
-  ⚠️ **PENDENTE NA PRODUÇÃO.** Não visto na tela.
+- ✅ **0332 APLICADA nos dois bancos** (o dono rodou na produção em
+  28/10/2026; conferência 1·0·0·1·1·1·0, como esperado) e só então o push
+  `a2ee907` saiu — a ordem importava: as assinaturas não mudaram, mas o app
+  **lê a tabela irmã** (`ortho_case_terms`) em toda tela da Ortodontia. No
+  treino via `migrar:teste` + reaplicada, idempotente; ensaio em transação
+  desfeita **30/30 com `set local role authenticated`** (a regra de linha
+  valendo — o ensaio da 0331 lia como superusuário e não media a RLS).
+  Não visto na tela.
 
 **28/10/2026 (14) — PC Administrador (core 0.362.0 → 0.363.0, migração 0331)**
 
