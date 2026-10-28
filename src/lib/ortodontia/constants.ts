@@ -10,6 +10,7 @@ export const ORTHO_STATUSES = [
   "contencao",
   "finalizado",
   "interrompido",
+  "suspenso",
 ] as const;
 export type OrthoStatus = (typeof ORTHO_STATUSES)[number];
 
@@ -23,6 +24,7 @@ export const ORTHO_STATUS_LABELS: Record<OrthoStatus, string> = {
   contencao: "Em acompanhamento",
   finalizado: "Alta",
   interrompido: "Interrompido",
+  suspenso: "Suspenso",
 };
 
 /** Uma linha a mais para quem precisa entender a situação. */
@@ -32,7 +34,18 @@ export const ORTHO_STATUS_HINTS: Record<OrthoStatus, string> = {
   contencao: "contenções entregues: tratamento finalizado, sem mensalidade",
   finalizado: "acompanhamento encerrado",
   interrompido: "desistência, transferência ou abandono",
+  suspenso: "parado por decisão da unidade (ex.: não assumiu as próximas mensalidades); pode ser retomado ou interrompido",
 };
+
+/** R8 (0335): a decisão sobre o lote de mensalidades que está acabando. */
+export const ORTHO_BATCH_DECISIONS = ["renovar", "nao_renovar"] as const;
+export type OrthoBatchDecision = (typeof ORTHO_BATCH_DECISIONS)[number];
+export const ORTHO_BATCH_DECISION_LABELS: Record<OrthoBatchDecision, string> = {
+  renovar: "Novas mensalidades emitidas",
+  nao_renovar: "Não será necessário (finalizando)",
+};
+/** R8: os marcos da rotina diária — a quantos dias do fim do lote o aviso sai. */
+export const ORTHO_BATCH_ALERT_DAYS = [60, 30, 15] as const;
 
 /** Os casos cujo tratamento está FINALIZADO (contenções entregues ou alta). */
 export const ORTHO_FINISHED_STATUSES: OrthoStatus[] = ["contencao", "finalizado"];
@@ -42,6 +55,7 @@ export const ORTHO_OPEN_STATUSES: OrthoStatus[] = [
   "aguardando_inicio",
   "em_tratamento",
   "contencao",
+  "suspenso",
 ];
 
 /** Tipo de tratamento. */

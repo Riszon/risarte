@@ -3,6 +3,7 @@ import {
   addMonths,
   attendance,
   attentionReasons,
+  batchAttention,
   caseTimeliness,
   chargeStatusToday,
   daysBetween,
@@ -17,6 +18,8 @@ import {
   originOf,
   plannedEndDate,
   progressPercent,
+  punctualityDiscount,
+  suggestedRenewalAmount,
   type OrthoCaseLike,
 } from "@/lib/ortodontia/regras";
 import {
@@ -26,6 +29,7 @@ import {
   ORTHO_MAINTENANCE_STATUSES,
   ORTHO_BILLING_METHODS,
   ORTHO_MONEY_VIEW_ROLES,
+  ORTHO_OPEN_STATUSES,
   ORTHO_RETAINER_KINDS,
   ORTHO_SETTLE_ROLES,
   ORTHO_STATUSES,
@@ -446,10 +450,129 @@ describe("espelho do banco (migração 0334 — ORTO8, do Comercial ao caso)", (
   });
 });
 
+describe("o lote de mensalidades, a pontualidade e o reajuste (ORTO9 — regras puras)", () => {
+  it("R8: o lote pede atenção a 60 dias do fim e 'encerrado' depois da última; renovado não pede", () => {
+    const hoje = "2026-10-28";
+    expect(batchAttention({ status: "ativo", decision: null, last_due_date: "2026-12-27" }, hoje)).toBe("lote_terminando");
+    expect(batchAttention({ status: "ativo", decision: null, last_due_date: "2027-01-10" }, hoje)).toBeNull();
+    expect(batchAttention({ status: "ativo", decision: null, last_due_date: "2026-10-27" }, hoje)).toBe("lote_encerrado");
+    expect(batchAttention({ status: "ativo", decision: "nao_renovar", last_due_date: "2026-11-10" }, hoje)).toBeNull();
+    expect(batchAttention({ status: "ativo", decision: "nao_renovar", last_due_date: "2026-10-20" }, hoje)).toBe("lote_encerrado");
+    expect(batchAttention({ status: "ativo", decision: "renovar", last_due_date: "2026-10-20" }, hoje)).toBeNull();
+    expect(batchAttention({ status: "encerrado", decision: null, last_due_date: "2026-10-20" }, hoje)).toBeNull();
+    expect(batchAttention(null, hoje)).toBeNull();
+  });
+  it("R8: a atenção do caso traz o lote só em tratamento e só para quem vê dinheiro", () => {
+    const caso = { status: "em_tratamento" as const, start_date: "2026-01-10", planned_end_date: "2028-01-10", finished_at: null };
+    const m = [{ status: "agendada" as const, planned_date: "2026-11-05", done_at: null, appointment_date: "2026-11-05" }];
+    expect(attentionReasons({ caso, maintenances: m, today: "2026-10-28", batch: { status: "ativo", decision: null, last_due_date: "2026-11-10" } })).toContain("lote_terminando");
+    expect(attentionReasons({ caso, maintenances: m, today: "2026-10-28", includeMoney: false, batch: { status: "ativo", decision: null, last_due_date: "2026-11-10" } })).not.toContain("lote_terminando");
+    expect(attentionReasons({ caso: { ...caso, status: "contencao", finished_at: "2026-10-01" }, maintenances: m, today: "2026-10-28", batch: { status: "ativo", decision: null, last_due_date: "2026-10-01" } })).not.toContain("lote_encerrado");
+  });
+  it("Q5: suspenso só pede uma decisão — nada de agendamento nem cobrança", () => {
+    const caso = { status: "suspenso" as const, start_date: "2026-01-10", planned_end_date: "2028-01-10", finished_at: null };
+    expect(attentionReasons({ caso, maintenances: [], charges: [{ status: "atrasada", due_date: "2026-09-10" }], today: "2026-10-28" })).toEqual(["suspenso"]);
+  });
+  it("Q2: o reajuste anual entra na sugestão só depois de 12 meses do início", () => {
+    expect(suggestedRenewalAmount(18990, "2026-01-10", "2026-10-28", 8)).toEqual({ amountCents: 18990, adjusted: false });
+    expect(suggestedRenewalAmount(18990, "2025-01-10", "2026-10-28", 8)).toEqual({ amountCents: 20509, adjusted: true });
+    expect(suggestedRenewalAmount(18990, "2025-01-10", "2026-10-28", 0)).toEqual({ amountCents: 18990, adjusted: false });
+    expect(suggestedRenewalAmount(18990, null, "2026-10-28", 8)).toEqual({ amountCents: 18990, adjusted: false });
+  });
+  it("R1/Q6: a pontualidade desconta até o vencimento (inclusive) e nada depois", () => {
+    expect(punctualityDiscount(18990, "2026-10-10", "2026-10-10", 5)).toBe(950);
+    expect(punctualityDiscount(18990, "2026-10-10", "2026-10-01", 5)).toBe(950);
+    expect(punctualityDiscount(18990, "2026-10-10", "2026-10-11", 5)).toBe(0);
+    expect(punctualityDiscount(18990, "2026-10-10", "2026-10-10", 0)).toBe(0);
+    expect(punctualityDiscount(100, "2026-10-10", "2026-10-10", 100)).toBe(100);
+  });
+  it("R9 no termo: X mensalidades por lote + renovação, pontualidade, reajuste anual e suspensão", () => {
+    const base = { kind: "aparelho_fixo" as const, monthlyCents: 18990, plannedMonths: 24, maintenanceIntervalDays: 30, billingDay: 10 };
+    const texto = orthoClauses({ ...base, installmentsCount: 12, billingMethod: "pix_recorrente", punctualityDiscountPercent: 5, annualAdjustmentPercent: 8 }).join(" ");
+    expect(texto).toMatch(/Serão emitidas 12 mensalidades, por PIX recorrente/);
+    expect(texto).toMatch(/novas mensalidades serão emitidas nas mesmas condições/);
+    expect(texto).toMatch(/desconto de pontualidade de 5%/);
+    expect(texto).toMatch(/reajuste anual de 8%/);
+    expect(texto).toMatch(/não assumir as novas mensalidades.*tratamento será suspenso/);
+    expect(texto).toMatch(/poderá ser cancelado/);
+    const semNumeros = orthoClauses(base).join(" ");
+    expect(semNumeros).not.toMatch(/Serão emitidas/);
+    expect(semNumeros).not.toMatch(/desconto de pontualidade/);
+    expect(semNumeros).toMatch(/sujeitas a reajuste anual/);
+  });
+});
+
+describe("espelho do banco (migração 0335 — ORTO9, mensalidades por lote)", () => {
+  const sql = readFileSync(MIG("0335_ortodontia_lotes_de_mensalidades.sql"), "utf8");
+  const fn = (name: string) => {
+    const from = sql.slice(sql.indexOf(`function public.${name}(`));
+    return from.slice(0, from.indexOf("$$;"));
+  };
+  it("R7/R8: o lote existe, lido por quem vê dinheiro, com os marcos da rotina e um aviso por marco", () => {
+    expect(sql).toMatch(/create table if not exists public\.ortho_billing_batches/);
+    expect(sql).toMatch(/create table if not exists public\.ortho_notices/);
+    expect(sql).toMatch(/for select to authenticated using \(public\.ortho_can_see_money\(clinic_id\)\)/);
+    for (const m of ORTHO_BILLING_METHODS) expect(sql).toContain(`'${m}'`);
+    const d = fn("ortho_daily_alerts");
+    expect(d).toMatch(/v_days <= 15 then 'd15'/);
+    expect(d).toMatch(/v_days <= 30 then 'd30'/);
+    expect(d).toMatch(/v_days <= 60 then 'd60'/);
+    expect(d).toMatch(/v_days < 0 then 'vencido'/);
+    expect(d).toMatch(/on conflict \(batch_id, kind\) do nothing/);
+    expect(d).toMatch(/ucr\.role = 'unit_manager'/);
+    expect(d).toMatch(/ucr\.role = 'finance_franchisor'/);
+    expect(d).toMatch(/if v_user is not null then/); // o cron passa sem usuário
+    expect(sql).toMatch(/'risarte-ortho-daily', '0 11 \* \* \*'/);
+  });
+  it("R7: o lote nasce no início do tratamento e na abertura já em tratamento; o botão do mês pula quem tem lote", () => {
+    expect(fn("ortho_set_status")).toMatch(/v_c\.status = 'aguardando_inicio'\s+and not exists \(select 1 from public\.ortho_billing_batches/);
+    expect(sql).toMatch(/create trigger ortho_case_terms_batch\s+after insert on public\.ortho_case_terms/);
+    expect(fn("ortho_generate_charges")).toMatch(/and not exists \(select 1 from public\.ortho_billing_batches b where b\.case_id = c\.id\)/);
+    const e = fn("_ortho_emit_batch");
+    expect(e).toMatch(/greatest\(date_trunc\('month', coalesce\(v_c\.start_date, public\.today_br\(\)\)\)::date,/); // o legado entra no meio
+    expect(e).toMatch(/on conflict \(case_id, reference_month, kind\) do update/);
+  });
+  it("R8: decidir o lote = renovar (lote novo no mês seguinte) ou não renovar; emitir à mão só sem lote ativo", () => {
+    const dec = fn("ortho_decide_batch");
+    expect(dec).toMatch(/ortho_can_manage\(v_b\.clinic_id\) or public\.ortho_can_settle\(v_b\.clinic_id\)/);
+    expect(dec).toMatch(/\(v_b\.last_month \+ interval '1 month'\)::date/);
+    expect(dec).toMatch(/'lote_nao_renovado'/);
+    expect(fn("ortho_emit_batch")).toMatch(/BATCH_ACTIVE/);
+  });
+  it("R1/Q6: a baixa com data aplica a pontualidade e o razão vale o líquido (e volta ao cheio ao desfazer)", () => {
+    expect(sql).toMatch(/drop function if exists public\.ortho_mark_charge_paid\(uuid, boolean, text\);/);
+    const p = fn("ortho_mark_charge_paid");
+    expect(p).toMatch(/p_paid_on date default null/);
+    expect(p).toMatch(/PAID_ON_FUTURE/);
+    expect(p).toMatch(/v_on <= v_ch\.due_date and v_pct > 0/);
+    expect(p).toMatch(/paid_amount_cents = case when p_paid then amount_cents - v_disc end/);
+    const l = fn("ortho_charge_ledger");
+    expect(l).toMatch(/amount_cents = coalesce\(new\.paid_amount_cents, new\.amount_cents\)/);
+    expect(l).toMatch(/amount_cents = new\.amount_cents,\s+reversal_reason/);
+  });
+  it("R9/Q5: suspenso é uma situação (com motivo, nunca automático) e continua 'caso aberto'", () => {
+    expect(sql).toMatch(/check \(status in \('aguardando_inicio','em_tratamento','contencao','finalizado','interrompido','suspenso'\)\)/);
+    expect(sql).toMatch(/where status in \('aguardando_inicio','em_tratamento','contencao','suspenso'\)/);
+    const s = fn("ortho_set_status");
+    expect(s).toMatch(/elsif p_status = 'suspenso' then/);
+    expect(s).toMatch(/if v_c\.status <> 'em_tratamento' then raise exception 'INVALID_TRANSITION'; end if;\s+if nullif\(btrim\(p_reason\), ''\) is null then raise exception 'REASON_REQUIRED'/);
+    expect(s).toMatch(/'Tratamento retomado em '/);
+    expect(fn("ortho_case_sync_client")).toMatch(/'contencao','suspenso'/);
+    expect(ORTHO_STATUSES).toContain("suspenso");
+    expect(ORTHO_OPEN_STATUSES).toContain("suspenso");
+  });
+  it("Q2: o reajuste anual mora na configuração (rede → unidade)", () => {
+    expect(sql).toMatch(/annual_adjustment_percent numeric\(5,2\) not null default 0/);
+    expect(fn("ortho_effective_settings")).toMatch(/coalesce\(u\.annual_adjustment_percent, n\.annual_adjustment_percent, 0\)/);
+    expect(sql).toMatch(/select public\.audit_attach_all\(\);/);
+  });
+});
+
 describe("espelho do banco (migração 0329)", () => {
   const sql = readFileSync(MIG("0329_ortodontia.sql"), "utf8");
   it("as situações do código são as do check constraint", () => {
-    for (const s of ORTHO_STATUSES) expect(sql).toContain(`'${s}'`);
+    // `suspenso` entrou na 0335 (o espelho dela confere).
+    for (const s of ORTHO_STATUSES.filter((x) => x !== "suspenso")) expect(sql).toContain(`'${s}'`);
     for (const s of ORTHO_MAINTENANCE_STATUSES) expect(sql).toContain(`'${s}'`);
     for (const s of ORTHO_CHARGE_STATUSES) expect(sql).toContain(`'${s}'`);
     for (const k of ORTHO_KINDS) expect(sql).toContain(`'${k}'`);

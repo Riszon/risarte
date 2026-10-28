@@ -49,7 +49,7 @@ export function CaseStatusActions({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [open, setOpen] = useState<null | "em_tratamento" | "finalizado" | "interrompido">(null);
+  const [open, setOpen] = useState<null | "em_tratamento" | "finalizado" | "interrompido" | "suspenso">(null);
   const [deliverOpen, setDeliverOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [date, setDate] = useState(today);
@@ -58,22 +58,33 @@ export function CaseStatusActions({
 
   const TITULO = {
     em_tratamento:
-      status === "aguardando_inicio" ? "Iniciar o tratamento" : status === "contencao" ? "Voltar a tratamento" : "Reabrir o caso",
+      status === "aguardando_inicio"
+        ? "Iniciar o tratamento"
+        : status === "contencao"
+          ? "Voltar a tratamento"
+          : status === "suspenso"
+            ? "Retomar o tratamento"
+            : "Reabrir o caso",
     finalizado: status === "contencao" ? "Dar alta do acompanhamento" : "Encerrar o tratamento",
     interrompido: "Interromper o tratamento",
+    suspenso: "Suspender o tratamento",
   } as const;
   const AJUDA = {
     em_tratamento:
       status === "aguardando_inicio"
-        ? "O aparelho foi instalado. O cronograma de manutenções é gerado a partir desta data e a mensalidade passa a ser cobrada."
+        ? "O aparelho foi instalado. O cronograma de manutenções é gerado a partir desta data e o lote de mensalidades do acordo é emitido de uma vez."
         : status === "contencao"
-          ? "O paciente volta ao tratamento ativo (recidiva, nova fase): a mensalidade volta a ser cobrada e o cronograma é completado."
-          : "O caso volta a 'em tratamento' e o cronograma é completado.",
+          ? "O paciente volta ao tratamento ativo (recidiva, nova fase): o cronograma é completado. Emita o lote de mensalidades na ficha."
+          : status === "suspenso"
+            ? "O paciente assumiu as próximas mensalidades: o cronograma é completado. Depois, emita o lote de mensalidades novo na ficha."
+            : "O caso volta a 'em tratamento' e o cronograma é completado.",
     finalizado:
       status === "contencao"
         ? "Encerra o acompanhamento: o caso deixa de aparecer entre os abertos. O tratamento continua contado como finalizado na data da entrega das contenções."
         : "Encerra o caso sem a entrega das contenções (ex.: mudança de cidade). As manutenções previstas e as mensalidades dos meses seguintes são canceladas.",
     interrompido: "Desistência, transferência ou abandono. Escreva o motivo — ele fica no histórico.",
+    suspenso:
+      "O paciente não assumiu as próximas mensalidades (ou outro motivo da unidade): as manutenções previstas param, as mensalidades dos meses seguintes são canceladas e o caso fica parado até ser retomado ou interrompido. Nunca é automático. Escreva o motivo.",
   } as const;
 
   function confirm() {
@@ -110,6 +121,7 @@ export function CaseStatusActions({
         <>
           <Button size="sm" onClick={() => setDeliverOpen(true)}>Entregar contenções</Button>
           <Button size="sm" variant="outline" onClick={() => setOpen("finalizado")}>Encerrar sem contenção</Button>
+          <Button size="sm" variant="outline" onClick={() => setOpen("suspenso")}>Suspender</Button>
         </>
       )}
       {status === "contencao" && (
@@ -118,7 +130,8 @@ export function CaseStatusActions({
           <Button size="sm" variant="outline" onClick={() => setOpen("em_tratamento")}>Voltar a tratamento</Button>
         </>
       )}
-      {(status === "aguardando_inicio" || status === "em_tratamento" || status === "contencao") && (
+      {status === "suspenso" && <Button size="sm" onClick={() => setOpen("em_tratamento")}>Retomar o tratamento</Button>}
+      {(status === "aguardando_inicio" || status === "em_tratamento" || status === "contencao" || status === "suspenso") && (
         <Button size="sm" variant="ghost" onClick={() => setOpen("interrompido")}>Interromper</Button>
       )}
       {(status === "finalizado" || status === "interrompido") && (
@@ -173,13 +186,13 @@ export function CaseStatusActions({
               <Input id="status-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="status-reason">{open === "interrompido" ? "Motivo (obrigatório)" : "Observação"}</Label>
+              <Label htmlFor="status-reason">{open === "interrompido" || open === "suspenso" ? "Motivo (obrigatório)" : "Observação"}</Label>
               <textarea id="status-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className={textareaClass} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)} disabled={isPending}>Voltar</Button>
-            <Button onClick={confirm} disabled={isPending || (open === "interrompido" && reason.trim().length < 3)} variant={open === "interrompido" ? "destructive" : "default"}>
+            <Button onClick={confirm} disabled={isPending || ((open === "interrompido" || open === "suspenso") && reason.trim().length < 3)} variant={open === "interrompido" ? "destructive" : "default"}>
               Confirmar
             </Button>
           </DialogFooter>

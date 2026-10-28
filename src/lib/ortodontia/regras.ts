@@ -216,7 +216,10 @@ export type AttentionReason =
   | "termino_atrasado"
   | "mensalidade_atrasada"
   | "pedido_clinico_aberto"
-  | "aguardando_inicio";
+  | "aguardando_inicio"
+  | "lote_terminando"
+  | "lote_encerrado"
+  | "suspenso";
 
 export const ATTENTION_LABELS: Record<AttentionReason, string> = {
   sem_agendamento: "Sem próximo agendamento",
@@ -227,7 +230,68 @@ export const ATTENTION_LABELS: Record<AttentionReason, string> = {
   mensalidade_atrasada: "Mensalidade atrasada",
   pedido_clinico_aberto: "Pedido clínico em aberto",
   aguardando_inicio: "Aguardando início (agendar instalação)",
+  lote_terminando: "Lote de mensalidades terminando (renovar ou encerrar?)",
+  lote_encerrado: "Sem mensalidades assumidas (lote terminou)",
+  suspenso: "Tratamento suspenso",
 };
+
+/**
+ * R8 (0335): o lote de mensalidades que vale para o caso — o que a tela
+ * precisa para dizer "terminando" ou "terminou sem decisão".
+ */
+export type BatchLike = {
+  status: "ativo" | "encerrado";
+  decision: "renovar" | "nao_renovar" | null;
+  /** O vencimento da última mensalidade do lote (ISO). */
+  last_due_date: string;
+};
+
+/** A quantos dias do fim do lote o aviso começa (o primeiro marco da rotina). */
+export const BATCH_ALERT_FROM_DAYS = 60;
+
+/**
+ * R8: o que o lote ativo do caso pede. Nulo = nada. Só em tratamento; lote
+ * com decisão "renovar" já virou outro; "não renovar" só avisa quando acabou.
+ */
+export function batchAttention(
+  batch: BatchLike | null | undefined,
+  today: string
+): "lote_terminando" | "lote_encerrado" | null {
+  if (!batch || batch.status !== "ativo") return null;
+  const days = daysBetween(today, batch.last_due_date.slice(0, 10));
+  if (batch.decision === "renovar") return null;
+  if (days < 0) return "lote_encerrado";
+  if (batch.decision === null && days <= BATCH_ALERT_FROM_DAYS) return "lote_terminando";
+  return null;
+}
+
+/**
+ * Q2: o valor SUGERIDO para o lote novo — o reajuste anual entra quando o
+ * tratamento já passou de 12 meses desde o início (uma vez por renovação; a
+ * tela mostra, quem gere decide).
+ */
+export function suggestedRenewalAmount(
+  amountCents: number,
+  startDate: string | null,
+  today: string,
+  annualAdjustmentPercent: number
+): { amountCents: number; adjusted: boolean } {
+  if (!startDate || !(annualAdjustmentPercent > 0)) return { amountCents, adjusted: false };
+  const months = Math.floor(daysBetween(startDate.slice(0, 10), today) / 30.4375);
+  if (months < 12) return { amountCents, adjusted: false };
+  return { amountCents: Math.round(amountCents * (1 + annualAdjustmentPercent / 100)), adjusted: true };
+}
+
+/** R1/Q6: o desconto de pontualidade de uma cobrança paga até o vencimento. */
+export function punctualityDiscount(
+  amountCents: number,
+  dueDate: string,
+  paidOn: string,
+  percent: number
+): number {
+  if (!(percent > 0) || daysBetween(dueDate.slice(0, 10), paidOn.slice(0, 10)) > 0) return 0;
+  return Math.min(amountCents, Math.round((amountCents * percent) / 100));
+}
 
 /** Em quantos dias uma manutenção prevista vira "vencida" (decisão O4). */
 export const MAINTENANCE_GRACE_DAYS = 7;
@@ -251,9 +315,13 @@ export function attentionReasons(input: {
    * marcado não precisa de atenção.
    */
   startScheduled?: boolean;
+  /** R8 (0335): o lote de mensalidades ativo (só para quem vê dinheiro). */
+  batch?: BatchLike | null;
 }): AttentionReason[] {
   const { caso, maintenances, today } = input;
   const reasons: AttentionReason[] = [];
+  // Q5: suspenso não pede agendamento nem cobra — pede uma decisão (retomar ou interromper).
+  if (caso.status === "suspenso") return ["suspenso"];
   // Em tratamento pede agendamento e prazo; em acompanhamento (contenções
   // entregues) só o que foi previsto à mão e a reavaliação (o controle).
   const inTreatment = caso.status === "em_tratamento";
@@ -310,6 +378,11 @@ export function attentionReasons(input: {
       (c) => c.status === "atrasada" || (c.status === "em_aberto" && daysBetween(c.due_date, today) > 0)
     );
     if (late) reasons.push("mensalidade_atrasada");
+    // R8: o lote está acabando (ou acabou) sem decisão.
+    if (inTreatment) {
+      const b = batchAttention(input.batch, today);
+      if (b) reasons.push(b);
+    }
   }
 
   return reasons;
@@ -470,6 +543,23 @@ export type OrthoTerms = {
    * clínica". O termo diz que outro ortodontista da equipe pode continuar.
    */
   orthodontistName?: string | null;
+  /** R7/R9 (0335): o lote — quantas mensalidades são emitidas de uma vez. */
+  installmentsCount?: number | null;
+  /** R1/Q6: desconto para pagamento até o vencimento (%). */
+  punctualityDiscountPercent?: number | null;
+  /** Q2: o reajuste anual (%), quando houver. */
+  annualAdjustmentPercent?: number | null;
+  /** R7: como as mensalidades são emitidas. */
+  billingMethod?: string | null;
+};
+
+const BILLING_METHOD_TEXT: Record<string, string> = {
+  pix_recorrente: "PIX recorrente",
+  debito_recorrente: "débito recorrente",
+  credito_recorrente: "cartão de crédito recorrente",
+  cartao_parcelado: "cartão de crédito parcelado",
+  boleto: "boleto",
+  avista_periodo: "pagamento à vista do período",
 };
 
 function brl(cents: number): string {
@@ -500,6 +590,27 @@ export function orthoClauses(t: OrthoTerms): string[] {
   }
   out.push(
     `O paciente paga uma mensalidade de tratamento ortodôntico de ${brl(t.monthlyCents)}, com vencimento todo dia ${t.billingDay}, do início do tratamento até a entrega das contenções. A mensalidade remunera o acompanhamento contínuo do caso e não é um procedimento avulso.`
+  );
+  // R7/R8/R9 (0335): o lote, a renovação, a pontualidade, o reajuste e a suspensão.
+  if (t.installmentsCount && t.installmentsCount > 0) {
+    out.push(
+      `Serão emitidas ${t.installmentsCount} ${t.installmentsCount === 1 ? "mensalidade" : "mensalidades"}${t.billingMethod && BILLING_METHOD_TEXT[t.billingMethod] ? `, por ${BILLING_METHOD_TEXT[t.billingMethod]}` : ""}. Ao fim desse lote, se o tratamento continuar, novas mensalidades serão emitidas nas mesmas condições, até a entrega das contenções.`
+    );
+  }
+  if (t.punctualityDiscountPercent && t.punctualityDiscountPercent > 0) {
+    out.push(
+      `O pagamento da mensalidade até a data de vencimento tem desconto de pontualidade de ${String(t.punctualityDiscountPercent).replace(".", ",")}%; após o vencimento, vale o valor integral.`
+    );
+  }
+  if (t.annualAdjustmentPercent && t.annualAdjustmentPercent > 0) {
+    out.push(
+      `As mensalidades sofrem reajuste anual de ${String(t.annualAdjustmentPercent).replace(".", ",")}%, aplicado a cada 12 meses do início do tratamento, na emissão das novas mensalidades.`
+    );
+  } else {
+    out.push(`As mensalidades estão sujeitas a reajuste anual, aplicado a cada 12 meses do início do tratamento, na emissão das novas mensalidades.`);
+  }
+  out.push(
+    `Se o paciente não assumir as novas mensalidades ao fim do lote, o tratamento será suspenso — as manutenções param e nenhuma mensalidade nova é emitida — e, mantida a situação, poderá ser cancelado pela unidade, sem prejuízo das mensalidades já devidas.`
   );
   out.push(
     `A mensalidade é devida independentemente do comparecimento às manutenções: a falta à manutenção não suspende nem reduz a mensalidade do mês.`

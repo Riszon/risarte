@@ -390,6 +390,40 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**28/10/2026 (18) — PC Administrador (core 0.366.0 → 0.367.0, migração 0335)**
+
+- **Ortodontia ORTO9 — mensalidades por lote** (ESTADO §2; fecha o pedido
+  de 28/10/2026, R1–R13). **R7/R8:** `ortho_billing_batches` (lote de N;
+  `_ortho_emit_batch` interna: as N cobranças de uma vez, competência mês a
+  mês, nunca antes do mês atual — o legado entra no meio); o lote nasce ao
+  **iniciar** (`ortho_set_status`) ou na abertura já em tratamento (gatilho
+  `ortho_case_terms_batch` na irmã); `ortho_generate_charges` pula quem tem
+  lote; `ortho_decide_batch` (renovar = lote novo no mês seguinte; não
+  renovar) e `ortho_emit_batch` (à mão, `BATCH_ACTIVE`); **rotina diária**
+  `ortho_daily_alerts` (cron `risarte-ortho-daily` 11:00; marcos d60/d30/d15/
+  vencido, um por lote e marco em `ortho_notices`; Gerente + Financeiro da
+  Franqueadora; sem usuário passa, como `check_finance_alerts`). **R1/Q6:**
+  `ortho_mark_charge_paid` ganhou `p_paid_on` (drop + create): até o
+  vencimento aplica a pontualidade do lote/caso (`discount_cents`,
+  `paid_amount_cents`); `ortho_charge_ledger` liquida o LÍQUIDO e volta ao
+  cheio ao desfazer; `PAID_ON_FUTURE`. **Q2:** `annual_adjustment_percent`
+  na configuração (`ortho_effective_settings` +1 coluna, `ortho_save_settings`
+  +1 arg — drop + create); a tela sugere (`suggestedRenewalAmount`).
+  **R9/Q5:** situação **`suspenso`** (check + índice de "um aberto" +
+  `ortho_case_sync_client` + `_ortho_open_from_sale`; `ortho_set_status`
+  suspenso/retomar; nunca automático). **R9:** `orthoClauses` com lote,
+  renovação, pontualidade, reajuste e suspensão. App: `lote-client.tsx`
+  (BatchActions), baixa com data e prévia do desconto, Atenção/Painel com
+  `batchAttention` (`lote_terminando`, `lote_encerrado`, `suspenso`).
+- ⚠️ **O push espera a 0335 na produção:** três assinaturas mudaram
+  (`ortho_effective_settings`, `ortho_save_settings`, `ortho_mark_charge_paid`)
+  e o app lê `ortho_billing_batches` e as colunas novas de `ortho_charges`.
+- ✅ 0335 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
+  conferência 2·4·1·4·1·1·1); ensaio em transação desfeita **28/28**
+  (`scratchpad/ensaio-orto-0335.mjs`). ⚠️ **PENDENTE NA PRODUÇÃO.** Não
+  visto na tela. **ORTO2 segue pendente** (a rotina diária existe; faltam os
+  avisos de manutenção vencida/falta/reavaliação/mensalidade atrasada nela).
+
 **28/10/2026 (17) — PC Administrador (core 0.365.0 → 0.366.0, migração 0334)**
 
 - **Ortodontia ORTO8 — do Comercial ao caso** (ESTADO §2). **R5/R7/Q4:**

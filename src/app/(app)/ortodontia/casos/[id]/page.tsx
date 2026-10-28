@@ -28,10 +28,13 @@ import {
   orthoRestrictedToOwn,
 } from "@/lib/ortodontia/access";
 import {
+  activeBatch,
+  loadBatchesFor,
   loadCase,
   loadChargesFor,
   loadEffectiveSettings,
   loadEvents,
+  type OrthoBatchRow,
   loadIndicaReferredSet,
   loadLinkableAppointments,
   loadMaintenancesFor,
@@ -51,9 +54,12 @@ import {
   nextMaintenance,
   originOf,
   progressPercent,
+  suggestedRenewalAmount,
   type MaintenanceLike,
 } from "@/lib/ortodontia/regras";
 import {
+  ORTHO_BATCH_DECISION_LABELS,
+  ORTHO_BILLING_METHOD_LABELS,
   ORTHO_CHARGE_KIND_LABELS,
   ORTHO_CHARGE_STATUS_LABELS,
   ORTHO_KIND_LABELS,
@@ -72,6 +78,7 @@ import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr, todayInBrazil } fr
 import { cn } from "@/lib/utils";
 import { OrthoChargeRow } from "../../mensalidades/billing-client";
 import { AddMaintenance, CaseStatusActions, EditCaseDialog, EvolutionDialog, MaintenanceRowActions } from "./caso-client";
+import { BatchActions } from "./lote-client";
 
 export const metadata: Metadata = { title: "Caso ortodôntico" };
 
@@ -113,7 +120,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
 
   await logAudit({ action: "view", entityType: "ortho_case", entityId: c.id, clinicId: c.clinic_id });
 
-  const [maintRead, chargesRead, events, referrals, indicaSet, openRequests, settings] = await Promise.all([
+  const [maintRead, chargesRead, events, referrals, indicaSet, openRequests, settings, batchesByCase] = await Promise.all([
     loadMaintenancesFor(supabase, [c.id]),
     canMoney ? loadChargesFor(supabase, [c.id]) : Promise.resolve({ ok: true as const, linhas: [], paginas: 0 }),
     loadEvents(supabase, c.id),
@@ -121,9 +128,13 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
     loadIndicaReferredSet(supabase, [c.client_id]),
     loadOpenRequestsFor(supabase, [c.client_id]),
     loadEffectiveSettings(supabase, c.clinic_id),
+    canMoney ? loadBatchesFor(supabase, [c.id]) : Promise.resolve(new Map<string, OrthoBatchRow[]>()),
   ]);
   const maintenances = (maintRead.ok ? maintRead.linhas : []).sort((a, b) => a.seq - b.seq);
   const charges = chargesRead.ok ? chargesRead.linhas : [];
+  // R8 (0335): o lote de mensalidades que vale hoje, e o valor sugerido para o próximo (Q2).
+  const lote = activeBatch(batchesByCase.get(c.id));
+  const sugestao = suggestedRenewalAmount(lote?.amount_cents ?? c.monthly_fee_cents, c.start_date, today, settings?.annual_adjustment_percent ?? 0);
 
   // R12: os alertas da anamnese (os mesmos do prontuário e do cockpit do
   // Planner) na tela do ortodontista. Só para quem já pode ler a anamnese
@@ -169,6 +180,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
     today,
     toleranceDays: settings?.finish_tolerance_days,
     includeMoney: canMoney,
+    batch: lote,
   });
   const timeliness = caseTimeliness(c, today, settings?.finish_tolerance_days);
   const pct = progressPercent(c, today);
@@ -177,7 +189,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
   const { done, missed } = assiduidade;
   const origin = originOf({ ...(c.client ?? {}), has_indica_referral: indicaSet.has(c.client_id) });
   const trouxe = referrals.get(c.client_id) ?? [];
-  const isOpen = c.status === "aguardando_inicio" || c.status === "em_tratamento" || c.status === "contencao";
+  const isOpen = c.status === "aguardando_inicio" || c.status === "em_tratamento" || c.status === "contencao" || c.status === "suspenso";
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-8">
@@ -299,6 +311,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
             )}
             {c.finish_reason && <p className="text-xs text-muted-foreground">Finalização: {c.finish_reason}</p>}
             {c.interrupt_reason && <p className="text-xs text-rose-700">Interrupção: {c.interrupt_reason}</p>}
+            {c.status === "suspenso" && c.suspend_reason && <p className="text-xs text-orange-800">Suspensão{c.suspended_at ? ` em ${formatIsoDateBr(c.suspended_at)}` : ""}: {c.suspend_reason}</p>}
             {c.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{c.notes}</p>}
           </CardContent>
         </Card>
@@ -316,6 +329,25 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
                   {charges.filter((ch) => ch.status === "paga").length} pagas · {charges.filter((ch) => chargeStatusToday(ch, today) === "atrasada").length} atrasadas
                   {!canSettle && " · a baixa é do Gerente e do Financeiro"}
                 </p>
+                {/* R8 (0335): o lote que vale hoje. */}
+                {lote ? (
+                  <p className="text-xs text-muted-foreground">
+                    Lote {lote.seq}: <strong>{lote.installments_count} mensalidades</strong>, {formatIsoMonthBr(lote.first_month)} a {formatIsoMonthBr(lote.last_month)} · última vence {formatIsoDateBr(lote.last_due_date)}
+                    {lote.billing_method ? ` · ${ORTHO_BILLING_METHOD_LABELS[lote.billing_method].toLowerCase()}` : ""}
+                    {lote.punctuality_discount_percent > 0 ? ` · ${String(lote.punctuality_discount_percent).replace(".", ",")}% até o vencimento` : ""}
+                    {lote.decision ? ` · ${ORTHO_BATCH_DECISION_LABELS[lote.decision].toLowerCase()}` : ""}
+                  </p>
+                ) : (
+                  c.status === "em_tratamento" && <p className="text-xs text-amber-800">Sem lote de mensalidades emitido.</p>
+                )}
+                {(canManage || canSettle) && c.status === "em_tratamento" && (
+                  <BatchActions
+                    caseId={c.id}
+                    batch={lote ? { id: lote.id, seq: lote.seq, installmentsCount: lote.installments_count, amountCents: lote.amount_cents, method: lote.billing_method, punctuality: lote.punctuality_discount_percent, decision: lote.decision, lastDue: lote.last_due_date } : null}
+                    suggested={{ amountCents: sugestao.amountCents, adjusted: sugestao.adjusted, adjustmentPercent: settings?.annual_adjustment_percent ?? 0 }}
+                    defaults={{ count: c.installments_count, method: c.billing_method, punctuality: c.punctuality_discount_percent }}
+                  />
+                )}
               </>
             ) : (
               <p className="text-xs text-muted-foreground">A situação financeira é vista por quem tem a permissão de mensalidades.</p>
@@ -430,9 +462,14 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
                             {ch.kind === "contencao" && <span className="ml-1 rounded-full border border-sky-300 bg-sky-50 px-1.5 text-[10px] text-sky-800">{ORTHO_CHARGE_KIND_LABELS.contencao}</span>}
                           </td>
                           <td className="px-3 py-1.5 text-xs text-muted-foreground">venc. {formatIsoDateBr(ch.due_date)}</td>
-                          <td className="px-3 py-1.5 text-right tabular-nums">{formatBRL(ch.amount_cents)}</td>
+                          <td className="px-3 py-1.5 text-right tabular-nums">
+                            {formatBRL(ch.amount_cents)}
+                            {ch.status === "paga" && ch.discount_cents > 0 && (
+                              <span className="block text-[10px] text-emerald-700">pago {formatBRL(ch.paid_amount_cents ?? ch.amount_cents - ch.discount_cents)} (pontualidade)</span>
+                            )}
+                          </td>
                           <td className="px-3 py-1.5"><span className={cn("rounded-full border px-2 py-0.5 text-[11px]", CHARGE_TONE[s])}>{ORTHO_CHARGE_STATUS_LABELS[s]}</span></td>
-                          <td className="px-3 py-1.5 text-right">{canSettle && ch.status !== "cancelada" && <OrthoChargeRow chargeId={ch.id} paid={ch.status === "paga"} canCancel={canManage} />}</td>
+                          <td className="px-3 py-1.5 text-right">{canSettle && ch.status !== "cancelada" && <OrthoChargeRow chargeId={ch.id} paid={ch.status === "paga"} canCancel={canManage} dueDate={ch.due_date} amountCents={ch.amount_cents} punctualityPercent={ch.kind === "mensalidade" ? (lote?.punctuality_discount_percent ?? c.punctuality_discount_percent) : 0} today={today} />}</td>
                         </tr>
                       );
                     })}

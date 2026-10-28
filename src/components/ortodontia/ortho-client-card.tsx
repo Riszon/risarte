@@ -20,6 +20,7 @@ export const ORTHO_STATUS_TONE: Record<OrthoStatus, string> = {
   contencao: "border-sky-300 bg-sky-50 text-sky-800",
   finalizado: "border-border bg-muted text-muted-foreground",
   interrompido: "border-rose-300 bg-rose-50 text-rose-800",
+  suspenso: "border-orange-300 bg-orange-50 text-orange-800",
 };
 
 /** Selo curto para a linha de pílulas do prontuário. */
@@ -44,7 +45,7 @@ export function OrthoBadge({ badge }: { badge: OrthoClientBadge }) {
  */
 export function OrthoClientCard({ badge }: { badge: OrthoClientBadge | null }) {
   if (!badge) return null;
-  const closed = badge.status === "finalizado" || badge.status === "interrompido";
+  const closed = badge.status === "finalizado" || badge.status === "interrompido" || badge.status === "suspenso";
   const inTreatment = badge.status === "em_tratamento";
 
   return (

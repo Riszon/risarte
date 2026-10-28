@@ -196,7 +196,7 @@ export async function updateOrthoCase(caseId: string, formData: FormData): Promi
 
 export async function setOrthoStatus(
   caseId: string,
-  status: "em_tratamento" | "contencao" | "finalizado" | "interrompido",
+  status: "em_tratamento" | "contencao" | "finalizado" | "interrompido" | "suspenso",
   reason?: string,
   date?: string
 ): Promise<OrthoActionResult> {
@@ -386,7 +386,9 @@ export async function generateOrthoCharges(clinicId: string, month?: string): Pr
 export async function markOrthoChargePaid(
   chargeId: string,
   paid: boolean,
-  method?: string | null
+  method?: string | null,
+  /** R1/Q6 (0335): a data do pagamento — até o vencimento, o desconto de pontualidade entra. */
+  paidOn?: string | null
 ): Promise<OrthoActionResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
@@ -402,6 +404,7 @@ export async function markOrthoChargePaid(
     p_charge_id: chargeId,
     p_paid: paid,
     p_payment_method: m,
+    p_paid_on: paidOn && /^\d{4}-\d{2}-\d{2}$/.test(paidOn) ? paidOn : null,
   });
   if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
   await logAudit({
@@ -413,6 +416,81 @@ export async function markOrthoChargePaid(
   });
   refresh(ch.case_id as string, ch.client_id as string);
   return { ok: true, caseId: ch.case_id as string };
+}
+
+/**
+ * R8 (0335): a decisão sobre o lote que está acabando — "Emitir novas
+ * mensalidades" (lote novo, com o valor que a tela mandar; o reajuste é
+ * sugestão da tela) ou "Não será necessário". Gerente/Coordenador/Financeiro.
+ */
+export async function decideOrthoBatch(
+  batchId: string,
+  decision: "renovar" | "nao_renovar",
+  input?: { count?: number; amountCents?: number; method?: string | null; punctuality?: number; note?: string }
+): Promise<OrthoActionResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: b } = await supabase
+    .from("ortho_billing_batches")
+    .select("id, case_id, clinic_id")
+    .eq("id", batchId)
+    .maybeSingle();
+  if (!b) return { ok: false, error: "Lote não encontrado." };
+  if (!(canManageOrtho(session, b.clinic_id as string) || canSettleOrtho(session, b.clinic_id as string))) {
+    return { ok: false, error: "Só quem gere o caso ou dá baixa decide o lote de mensalidades." };
+  }
+  if (decision === "renovar") {
+    // Sem quantidade não há lote: NaN reprova (nunca vira zero).
+    const n = Math.round(Number(input?.count));
+    if (!Number.isFinite(n) || n < 1 || n > 120) return { ok: false, error: "Quantas mensalidades: entre 1 e 120." };
+  }
+  const { data, error } = await supabase.rpc("ortho_decide_batch", {
+    p_batch_id: batchId,
+    p_decision: decision,
+    p_count: decision === "renovar" ? Math.round(Number(input?.count)) : null,
+    p_amount_cents: decision === "renovar" && typeof input?.amountCents === "number" ? Math.max(0, Math.round(input.amountCents)) : null,
+    p_billing_method: decision === "renovar" ? (input?.method ?? null) : null,
+    p_punctuality: decision === "renovar" && typeof input?.punctuality === "number" ? input.punctuality : null,
+    p_note: input?.note?.trim() || null,
+  });
+  if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
+  await logAudit({
+    action: "update",
+    entityType: "ortho_batch",
+    entityId: batchId,
+    clinicId: b.clinic_id as string,
+    details: { decision, newBatchId: (data as string | null) ?? null },
+  });
+  const { data: c } = await supabase.from("ortho_cases").select("client_id").eq("id", b.case_id as string).maybeSingle();
+  refresh(b.case_id as string, (c?.client_id as string | undefined) ?? undefined);
+  return { ok: true, caseId: b.case_id as string };
+}
+
+/** R7 (0335): emitir um lote à mão — caso em tratamento sem lote (os de antes, ou depois de retomar). */
+export async function emitOrthoBatch(
+  caseId: string,
+  input: { count: number; amountCents: number; method?: string | null; punctuality?: number }
+): Promise<OrthoActionResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: c } = await supabase.from("ortho_cases").select("id, clinic_id, client_id").eq("id", caseId).maybeSingle();
+  if (!c) return { ok: false, error: "Caso não encontrado." };
+  if (!(canManageOrtho(session, c.clinic_id as string) || canSettleOrtho(session, c.clinic_id as string))) {
+    return { ok: false, error: "Só quem gere o caso ou dá baixa emite o lote de mensalidades." };
+  }
+  const n = Math.round(Number(input.count));
+  if (!Number.isFinite(n) || n < 1 || n > 120) return { ok: false, error: "Quantas mensalidades: entre 1 e 120." };
+  const { error } = await supabase.rpc("ortho_emit_batch", {
+    p_case_id: caseId,
+    p_count: n,
+    p_amount_cents: Math.max(0, Math.round(input.amountCents)),
+    p_billing_method: input.method ?? null,
+    p_punctuality: typeof input.punctuality === "number" ? input.punctuality : null,
+  });
+  if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
+  await logAudit({ action: "create", entityType: "ortho_batch", entityId: caseId, clinicId: c.clinic_id as string, details: { count: n } });
+  refresh(caseId, c.client_id as string);
+  return { ok: true, caseId };
 }
 
 export async function cancelOrthoCharge(chargeId: string, reason: string): Promise<OrthoActionResult> {
@@ -475,6 +553,8 @@ export async function saveOrthoSettings(clinicId: string | null, formData: FormD
     p_min_monthly_fee_cents: cents(formData, "min_monthly_fee"),
     // Q1: a porta do caso legado é do Admin — o Gerente nem a manda (nulo = fica).
     p_legacy_entry_enabled: session.isAdminMaster && formData.has("legacy_entry_present") ? str(formData, "legacy_entry_enabled") === "on" : null,
+    // Q2 (0335): o reajuste anual sugerido na renovação do lote.
+    p_annual_adjustment_percent: percent(formData, "annual_adjustment_percent", 0),
   });
   if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
   await logAudit({ action: "update", entityType: "ortho_settings", entityId: clinicId ?? "rede", clinicId: clinicId ?? undefined });

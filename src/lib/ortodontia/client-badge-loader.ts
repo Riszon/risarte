@@ -46,7 +46,7 @@ export async function loadOrthoClientBadge(clientId: string): Promise<OrthoClien
 
   type Row = (typeof rows)[number];
   const open = rows.find((r: Row) =>
-    ["aguardando_inicio", "em_tratamento", "contencao"].includes(r.status as string)
+    ["aguardando_inicio", "em_tratamento", "contencao", "suspenso"].includes(r.status as string)
   );
   const c = open ?? rows[0];
   const one = <T,>(v: T | T[] | null | undefined): T | null =>

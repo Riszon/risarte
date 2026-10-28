@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.367.0",
+    data: "2026-10-28",
+    migracao: "0335",
+    titulo: "Ortodontia: mensalidades por lote — avisos a 60/30/15 dias, renovar ou encerrar, pontualidade na baixa, reajuste e suspensão",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "As mensalidades da ortodontia passam a ser emitidas por lote: ao iniciar o tratamento, as N mensalidades do acordo nascem de uma vez (uma por mês, cada uma na sua competência da DRE). A ficha do caso mostra o lote que vale (quantas, de que mês a que mês, quando vence a última). Casos antigos sem lote continuam com o botão \"Gerar mensalidades do mês\" ou ganham um lote pela ficha.",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor", "receptionist"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Faltando 60 dias para a última mensalidade do lote, e de novo a 30 e a 15 dias, e quando ela vence sem decisão, o Gerente e o Financeiro recebem o aviso \"Ortodontia: lote de mensalidades termina em…\" (um por marco). Na ficha do caso: \"Emitir novas mensalidades\" (lote novo, com o valor sugerido já com o reajuste anual depois de 12 meses) ou \"Não será necessário\" (finalizando).",
+        papeis: ["unit_manager", "finance_franchisor", "clinical_coordinator"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Dar baixa pede a data do pagamento. Pago até o vencimento, o desconto de pontualidade do acordo entra sozinho e a tela mostra o valor líquido antes de confirmar; a DRE e o caixa passam a valer o líquido. Desfeita a baixa, o valor cheio volta.",
+        papeis: ["unit_manager", "finance_franchisor", "receptionist", "clinical_coordinator"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Situação nova: \"Suspenso\". Quando o lote termina e o paciente não assume as próximas mensalidades (ou por outro motivo da unidade), o Gerente ou o Coordenador suspende o tratamento com motivo: as manutenções previstas param e as mensalidades seguintes saem. Nunca é automático. Dá para retomar (e emitir um lote novo) ou interromper. A tela Atenção avisa \"lote terminando\", \"sem mensalidades assumidas\" e \"suspenso\".",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist", "dentist"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O termo do tratamento passou a dizer quantas mensalidades são emitidas por lote e por qual forma, que novas serão emitidas se o tratamento continuar, o desconto de pontualidade, o reajuste anual (percentual da Configuração da Ortodontia) e que, sem assumir as novas mensalidades, o tratamento é suspenso e pode ser cancelado.",
+        papeis: ["unit_manager", "clinical_coordinator", "commercial_consultant", "receptionist"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.366.0",
     data: "2026-10-28",
     migracao: "0334",

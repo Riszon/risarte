@@ -28,7 +28,9 @@ import {
 } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
 import {
+  activeBatch,
   groupByCase,
+  loadBatchesFor,
   loadCases,
   loadChargesFor,
   loadIndicaReferredSet,
@@ -37,6 +39,7 @@ import {
   loadOpenRequestsFor,
   loadSalesWithoutCase,
   loadStartAppointments,
+  type OrthoBatchRow,
   type OrthoCaseRow,
 } from "@/lib/ortodontia/db";
 import {
@@ -181,9 +184,11 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
   const leituraIncompleta = !maintRead.ok || !chargesRead.ok;
   // R4 (0334): quem aguarda início tem horário de instalação marcado? E a
   // porta do caso legado (Q1) está aberta nesta unidade?
-  const [startByClient, settingsDaUnidade] = await Promise.all([
+  const [startByClient, settingsDaUnidade, batchesByCase] = await Promise.all([
     loadStartAppointments(supabase, cases.filter((c) => c.status === "aguardando_inicio").map((c) => c.client_id)),
     scope.clinicId ? loadEffectiveSettings(supabase, scope.clinicId) : Promise.resolve(null),
+    // R8 (0335): o lote de mensalidades de quem está em tratamento (só quem vê dinheiro).
+    canMoney ? loadBatchesFor(supabase, cases.filter((c) => c.status === "em_tratamento").map((c) => c.id)) : Promise.resolve(new Map<string, OrthoBatchRow[]>()),
   ]);
   const legadoAberto = canManage && Boolean(scope.clinicId) && (settingsDaUnidade?.legacy_entry_enabled ?? true);
 
@@ -250,6 +255,7 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
         today,
         includeMoney: canMoney,
         startScheduled: startByClient.has(c.client_id),
+        batch: activeBatch(batchesByCase.get(c.id)),
       }),
     }))
     .filter((x) => x.reasons.length > 0);

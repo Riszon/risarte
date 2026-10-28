@@ -60,9 +60,9 @@ export async function condicoesOrtodonticas(
   // dinheiro a lê). Sem a irmã na resposta, vale o padrão da unidade.
   const { data: caso } = await supabase
     .from("ortho_cases")
-    .select(`treatment_kind, planned_months, maintenance_interval_days, ${CASE_TERMS_EMBED}`)
+    .select(`treatment_kind, planned_months, maintenance_interval_days, start_date, ${CASE_TERMS_EMBED}`)
     .eq("client_id", input.clientId)
-    .in("status", ["aguardando_inicio", "em_tratamento", "contencao"])
+    .in("status", ["aguardando_inicio", "em_tratamento", "contencao", "suspenso"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -74,24 +74,13 @@ export async function condicoesOrtodonticas(
     retainer_charged: boolean | null;
     retainer_fee_cents: number | null;
     retainer_terms: string | null;
+    installments_count?: number | null;
+    billing_method?: string | null;
+    punctuality_discount_percent?: number | string | null;
   };
   const t = caso ? (Array.isArray(caso.terms) ? (caso.terms[0] as Terms | undefined) ?? null : (caso.terms as Terms | null)) : null;
-  if (caso && t) {
-    const termos: OrthoTerms = {
-      kind: caso.treatment_kind as OrthoKind,
-      monthlyCents: Number(t.monthly_fee_cents ?? 0),
-      plannedMonths: Number(caso.planned_months ?? 24),
-      maintenanceIntervalDays: Number(caso.maintenance_interval_days ?? 30),
-      billingDay: Number(t.billing_day ?? 10),
-      installationCents: Number(t.installation_fee_cents ?? 0),
-      retainerCharged: t.retainer_charged === true,
-      retainerFeeCents: Number(t.retainer_fee_cents ?? 0),
-      retainerTerms: t.retainer_terms ?? null,
-      retainerKind: (proposta?.retainer_kind as OrthoRetainerKind | undefined) ?? null,
-    };
-    return { clausulas: orthoClauses(termos), origem: "caso", termos };
-  }
 
+  // O padrão da unidade (sempre lido: o reajuste anual vem daqui — Q2).
   const { data: cfg, error: cfgErro } = await supabase.rpc("ortho_effective_settings", {
     p_clinic_id: input.clinicId,
   });
@@ -105,10 +94,33 @@ export async function condicoesOrtodonticas(
         retainer_charge_enabled?: boolean | null;
         retainer_fee_cents?: number | null;
         retainer_terms?: string | null;
+        punctuality_discount_percent?: number | string | null;
+        annual_adjustment_percent?: number | string | null;
       }
     | null
     | undefined;
   if (!s) return null;
+  const reajuste = Number(s.annual_adjustment_percent ?? 0);
+
+  if (caso && t) {
+    const termos: OrthoTerms = {
+      kind: caso.treatment_kind as OrthoKind,
+      monthlyCents: Number(t.monthly_fee_cents ?? 0),
+      plannedMonths: Number(caso.planned_months ?? 24),
+      maintenanceIntervalDays: Number(caso.maintenance_interval_days ?? 30),
+      billingDay: Number(t.billing_day ?? 10),
+      installationCents: Number(t.installation_fee_cents ?? 0),
+      retainerCharged: t.retainer_charged === true,
+      retainerFeeCents: Number(t.retainer_fee_cents ?? 0),
+      retainerTerms: t.retainer_terms ?? null,
+      retainerKind: (proposta?.retainer_kind as OrthoRetainerKind | undefined) ?? null,
+      installmentsCount: Number(t.installments_count ?? 12),
+      billingMethod: t.billing_method ?? null,
+      punctualityDiscountPercent: Number(t.punctuality_discount_percent ?? 0),
+      annualAdjustmentPercent: reajuste,
+    };
+    return { clausulas: orthoClauses(termos), origem: "caso", termos };
+  }
   // ORTO8 (0334): o ACORDO fechado pelo Consultor nesta negociação manda no
   // dinheiro (mensalidade, dia, contenção, pontualidade). Sem acordo, o padrão.
   type Acordo = {
@@ -144,6 +156,10 @@ export async function condicoesOrtodonticas(
     retainerFeeCents: Number(acordo?.retainer_fee_cents ?? s.retainer_fee_cents ?? 0),
     retainerTerms: acordo ? (acordo.retainer_terms ?? null) : (s.retainer_terms ?? null),
     retainerKind: (proposta?.retainer_kind as OrthoRetainerKind | undefined) ?? null,
+    installmentsCount: Number(acordo?.installments_count ?? 12),
+    billingMethod: acordo?.billing_method ?? null,
+    punctualityDiscountPercent: Number(acordo?.punctuality_discount_percent ?? s.punctuality_discount_percent ?? 0),
+    annualAdjustmentPercent: reajuste,
   };
   return { clausulas: orthoClauses(termos), origem: acordo ? "negociacao" : proposta ? "proposta" : "padrao", termos };
 }

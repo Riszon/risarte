@@ -127,6 +127,7 @@ export const TABELAS: Record<string, string> = {
   "public.ortho_case_terms": "Condições financeiras do caso ortodôntico",
   "public.treatment_plan_ortho": "Proposta ortodôntica da opção do plano",
   "public.plan_negotiation_ortho": "Acordo ortodôntico da negociação",
+  "public.ortho_billing_batches": "Lote de mensalidades ortodônticas",
   "public.procedure_cost_items": "Item de custo do procedimento",
   "public.procedure_costs": "Custo do procedimento",
   "public.procedure_kit_links": "Kit do procedimento",

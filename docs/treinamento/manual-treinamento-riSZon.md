@@ -1428,11 +1428,12 @@ pela tabela de repasse do procedimento de manutenção configurado.
 
 **Aguardando início** (caso aberto, aparelho ainda não instalado) → **Em
 tratamento** (o botão **Iniciar tratamento** gera o cronograma a partir da
-data; a mensalidade é cobrada) → **Entregar contenções** → **Em
+data e emite o lote de mensalidades) → **Entregar contenções** → **Em
 acompanhamento** → **Dar alta** → **Alta**. A qualquer momento,
-**Interromper** (com motivo obrigatório: desistência, transferência…). Alta
-ou interrompido pode ser **reaberto** por quem gere. Só existe **um caso aberto
-por paciente**.
+**Interromper** (com motivo obrigatório: desistência, transferência…). Em
+tratamento pode ser **Suspenso** (desde a 0.367.0, com motivo; retoma ou
+interrompe). Alta ou interrompido pode ser **reaberto** por quem gere. Só
+existe **um caso aberto por paciente** (suspenso conta como aberto).
 
 **A entrega das contenções finaliza o tratamento** (desde a 0.363.0, decisão
 da rede). Na ficha do caso, o Gerente/Coordenador clica **Entregar
@@ -1575,6 +1576,46 @@ assiduidade.
     quando os pacientes antigos estiverem cadastrados. Os casos abertos antes
     da 0.366.0 sem venda por trás já estão marcados como legado.
 
+#### As mensalidades por lote: avisos, renovação, pontualidade, reajuste e suspensão (desde a 0.367.0)
+
+11. **O lote.** O acordo diz quantas mensalidades são emitidas por vez (12,
+    por exemplo). Ao **iniciar o tratamento**, as N mensalidades nascem de
+    uma vez, uma por mês, cada uma na sua competência da DRE. A ficha do
+    caso mostra o lote que vale: quantas, de que mês a que mês e quando vence
+    a última. Caso antigo sem lote: o botão **"Gerar mensalidades do mês"**
+    continua funcionando só para ele, ou a ficha emite um lote de uma vez.
+    Caso legado: o lote começa no mês atual, não no início de antes do
+    sistema.
+12. **Os avisos (60, 30, 15 dias).** Uma rotina diária confere os lotes. A
+    **60 dias** do vencimento da última mensalidade, e de novo a **30** e a
+    **15**, e quando ela **vence** sem decisão, o **Gerente** e o
+    **Financeiro da Franqueadora** recebem o aviso "Ortodontia: lote de
+    mensalidades termina em…" (um por marco, sem repetir; categoria
+    Ortodontia no sino). A tela Atenção mostra **"lote terminando"** e, depois
+    do fim, **"sem mensalidades assumidas"**.
+13. **Decidir.** Na ficha do caso: **"Emitir novas mensalidades"** abre o
+    lote seguinte (quantas, valor, forma, pontualidade) — o valor vem
+    **sugerido com o reajuste anual** (percentual da Configuração) quando o
+    tratamento já passou de 12 meses, e pode ser alterado; **"Não será
+    necessário"** registra que o tratamento está finalizando neste lote.
+14. **A pontualidade na baixa.** Dar baixa pede a **data do pagamento**.
+    Pago até o vencimento, o **desconto de pontualidade** do acordo entra
+    sozinho (a tela mostra o líquido antes de confirmar); depois do
+    vencimento, vale o valor cheio. A DRE e o fluxo de caixa valem o
+    líquido; desfeita a baixa, o cheio volta.
+15. **Suspender (Q5: nunca automático).** Lote terminou e o paciente não
+    assumiu as próximas mensalidades, ou outro motivo da unidade: o Gerente
+    ou o Coordenador clica **Suspender** e escreve o motivo. As manutenções
+    previstas param, as mensalidades dos meses seguintes saem e o caso fica
+    **Suspenso** (continua "em ortodontia", parado). **Retomar** volta a
+    tratamento e completa o cronograma — aí a ficha pede um lote novo.
+    **Interromper** continua possível. Em Atenção o caso aparece como
+    "Tratamento suspenso".
+16. **No termo.** Quantas mensalidades por lote e por qual forma; que novas
+    serão emitidas se o tratamento continuar; o desconto de pontualidade; o
+    reajuste anual; e que, sem assumir as novas mensalidades, o tratamento é
+    suspenso e pode ser cancelado.
+
 #### O que o ortodontista vê — e o que não vê
 
 Desde a 0.364.0, **o Dentista não vê nenhum valor da ortodontia**: nem a
@@ -1640,7 +1681,8 @@ da ortodontia (desde a 0.364.0).
 
 **Evidência:** EV-235 a EV-242; contenção, baixa e faltas (0.363.0): EV-243 a
 EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
-(0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254.
+(0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254;
+mensalidades por lote (0.367.0): EV-255 a EV-257.
 
 ## A barra de cima
 

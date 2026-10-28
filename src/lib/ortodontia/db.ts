@@ -68,6 +68,9 @@ export type OrthoCaseRow = {
   installments_count: number;
   billing_method: OrthoBillingMethod | null;
   punctuality_discount_percent: number;
+  /** R9/Q5 (0335): suspenso — quando e por quê. */
+  suspended_at: string | null;
+  suspend_reason: string | null;
   notes: string | null;
   created_at: string;
   client: OrthoClientLite | null;
@@ -105,6 +108,11 @@ export type OrthoChargeRow = {
   paid_at: string | null;
   payment_method: string | null;
   notes: string | null;
+  /** R8/R1 (0335): de que lote veio; o desconto de pontualidade e o líquido da baixa. */
+  batch_id: string | null;
+  discount_cents: number;
+  paid_amount_cents: number | null;
+  paid_on: string | null;
 };
 
 export type OrthoEventRow = {
@@ -135,7 +143,7 @@ type TermsEmbed = {
 };
 
 const CASE_SELECT =
-  `id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, origin, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_delivered_at, discharged_at, extension_days, notes, created_at, ${CASE_TERMS_EMBED}, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )`;
+  `id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, origin, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_delivered_at, discharged_at, extension_days, suspended_at, suspend_reason, notes, created_at, ${CASE_TERMS_EMBED}, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )`;
 
 function toCase(r: Record<string, unknown>): OrthoCaseRow {
   const t = one(r.terms as TermsEmbed | TermsEmbed[] | null);
@@ -157,6 +165,8 @@ function toCase(r: Record<string, unknown>): OrthoCaseRow {
     retainer_delivered_at: (r.retainer_delivered_at as string | null) ?? null,
     discharged_at: (r.discharged_at as string | null) ?? null,
     extension_days: Number(r.extension_days ?? 0),
+    suspended_at: (r.suspended_at as string | null) ?? null,
+    suspend_reason: (r.suspend_reason as string | null) ?? null,
     client: one(r.client as OrthoClientLite | OrthoClientLite[] | null),
     clinic: one(r.clinic as { name: string } | { name: string }[] | null),
     orthodontist: one(r.orthodontist as { full_name: string } | { full_name: string }[] | null),
@@ -217,7 +227,80 @@ export async function loadMaintenancesFor(
 }
 
 const CHARGE_SELECT =
-  "id, case_id, clinic_id, client_id, kind, reference_month, due_date, amount_cents, status, paid_at, payment_method, notes";
+  "id, case_id, clinic_id, client_id, kind, reference_month, due_date, amount_cents, status, paid_at, payment_method, notes, batch_id, discount_cents, paid_amount_cents, paid_on";
+
+/** R8 (0335): um lote de mensalidades do caso. Só quem vê dinheiro lê. */
+export type OrthoBatchRow = {
+  id: string;
+  case_id: string;
+  clinic_id: string;
+  seq: number;
+  installments_count: number;
+  first_month: string;
+  last_month: string;
+  amount_cents: number;
+  billing_method: OrthoBillingMethod | null;
+  punctuality_discount_percent: number;
+  status: "ativo" | "encerrado";
+  decision: "renovar" | "nao_renovar" | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  created_at: string;
+  /** O vencimento da última mensalidade do lote (calculado a partir das cobranças). */
+  last_due_date: string;
+};
+
+export async function loadBatchesFor(
+  supabase: SupabaseClient,
+  caseIds: string[]
+): Promise<Map<string, OrthoBatchRow[]>> {
+  const out = new Map<string, OrthoBatchRow[]>();
+  const ids = [...new Set(caseIds)].filter(Boolean);
+  if (ids.length === 0) return out;
+  for (let i = 0; i < ids.length; i += 150) {
+    const lote = ids.slice(i, i + 150);
+    const [{ data: rows }, { data: dues }] = await Promise.all([
+      supabase
+        .from("ortho_billing_batches")
+        .select(
+          "id, case_id, clinic_id, seq, installments_count, first_month, last_month, amount_cents, billing_method, punctuality_discount_percent, status, decision, decided_at, decision_note, created_at"
+        )
+        .in("case_id", lote)
+        .order("seq"),
+      supabase
+        .from("ortho_charges")
+        .select("batch_id, due_date")
+        .in("case_id", lote)
+        .not("batch_id", "is", null)
+        .neq("status", "cancelada"),
+    ]);
+    const lastDue = new Map<string, string>();
+    for (const d of dues ?? []) {
+      const b = d.batch_id as string;
+      const due = d.due_date as string;
+      if (!lastDue.has(b) || lastDue.get(b)! < due) lastDue.set(b, due);
+    }
+    for (const r of rows ?? []) {
+      const row: OrthoBatchRow = {
+        ...(r as Omit<OrthoBatchRow, "last_due_date" | "punctuality_discount_percent">),
+        punctuality_discount_percent: Number(r.punctuality_discount_percent ?? 0),
+        // Sem cobrança (valor zero): a última "vence" no dia 10 do último mês.
+        last_due_date: lastDue.get(r.id as string) ?? `${(r.last_month as string).slice(0, 7)}-10`,
+      };
+      const list = out.get(row.case_id) ?? [];
+      list.push(row);
+      out.set(row.case_id, list);
+    }
+  }
+  return out;
+}
+
+/** O lote que vale hoje para o caso: o ativo mais recente. */
+export function activeBatch(batches: OrthoBatchRow[] | undefined): OrthoBatchRow | null {
+  if (!batches || batches.length === 0) return null;
+  const ativos = batches.filter((b) => b.status === "ativo");
+  return (ativos.length > 0 ? ativos : batches).at(-1) ?? null;
+}
 
 export async function loadChargesFor(
   supabase: SupabaseClient,
@@ -381,13 +464,15 @@ export type OrthoSettingsRow = {
   min_monthly_fee_cents: number;
   /** Nulo na unidade = herda da rede. */
   legacy_entry_enabled: boolean | null;
+  /** Q2 (0335): o reajuste anual sugerido na renovação do lote. */
+  annual_adjustment_percent: number;
 };
 
 export async function loadOrthoSettingsRows(supabase: SupabaseClient): Promise<OrthoSettingsRow[] | null> {
   const { data, error } = await supabase
     .from("ortho_settings")
     .select(
-      "id, clinic_id, monthly_fee_cents, planned_months, maintenance_interval_days, reevaluation_interval_months, finish_tolerance_days, maintenance_procedure_id, billing_day, retainer_charge_enabled, retainer_fee_cents, retainer_terms, punctuality_discount_percent, max_punctuality_discount_percent, min_monthly_fee_cents, legacy_entry_enabled"
+      "id, clinic_id, monthly_fee_cents, planned_months, maintenance_interval_days, reevaluation_interval_months, finish_tolerance_days, maintenance_procedure_id, billing_day, retainer_charge_enabled, retainer_fee_cents, retainer_terms, punctuality_discount_percent, max_punctuality_discount_percent, min_monthly_fee_cents, legacy_entry_enabled, annual_adjustment_percent"
     )
     .limit(500);
   if (error) return null;
@@ -400,6 +485,7 @@ export async function loadOrthoSettingsRows(supabase: SupabaseClient): Promise<O
     max_punctuality_discount_percent: Number(r.max_punctuality_discount_percent ?? 10),
     min_monthly_fee_cents: Number(r.min_monthly_fee_cents ?? 0),
     legacy_entry_enabled: typeof r.legacy_entry_enabled === "boolean" ? r.legacy_entry_enabled : null,
+    annual_adjustment_percent: Number(r.annual_adjustment_percent ?? 0),
   }));
 }
 
@@ -418,6 +504,7 @@ export type EffectiveSettings = {
   max_punctuality_discount_percent: number;
   min_monthly_fee_cents: number;
   legacy_entry_enabled: boolean;
+  annual_adjustment_percent: number;
 };
 
 export async function loadEffectiveSettings(
@@ -435,6 +522,7 @@ export async function loadEffectiveSettings(
     max_punctuality_discount_percent: Number(s.max_punctuality_discount_percent ?? 10),
     min_monthly_fee_cents: Number(s.min_monthly_fee_cents ?? 0),
     legacy_entry_enabled: s.legacy_entry_enabled !== false,
+    annual_adjustment_percent: Number(s.annual_adjustment_percent ?? 0),
   };
 }
 

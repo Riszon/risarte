@@ -154,16 +154,31 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
                       {ch.kind === "contencao" && <span className="ml-1 rounded-full border border-sky-300 bg-sky-50 px-1.5 text-[10px] text-sky-800">{ORTHO_CHARGE_KIND_LABELS.contencao}</span>}
                     </td>
                     <td className="px-3 py-2">{formatIsoDateBr(ch.due_date)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{formatBRL(ch.amount_cents)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {formatBRL(ch.amount_cents)}
+                      {ch.status === "paga" && ch.discount_cents > 0 && (
+                        <span className="block text-[10px] text-emerald-700">pago {formatBRL(ch.paid_amount_cents ?? ch.amount_cents - ch.discount_cents)} (pontualidade)</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2">
                       <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", CHARGE_TONE[s])}>{ORTHO_CHARGE_STATUS_LABELS[s]}</span>
                       {ch.status === "paga" && ch.payment_method && (
                         <span className="ml-1 text-[11px] text-muted-foreground">{ORTHO_PAYMENT_METHOD_LABELS[ch.payment_method as OrthoPaymentMethod] ?? ch.payment_method}</span>
                       )}
-                      {ch.status === "paga" && ch.paid_at && <span className="ml-1 text-[11px] text-muted-foreground">em {formatIsoDateBr(ch.paid_at.slice(0, 10))}</span>}
+                      {ch.status === "paga" && (ch.paid_on || ch.paid_at) && <span className="ml-1 text-[11px] text-muted-foreground">em {formatIsoDateBr((ch.paid_on ?? ch.paid_at ?? "").slice(0, 10))}</span>}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {canSettle && ch.status !== "cancelada" && <OrthoChargeRow chargeId={ch.id} paid={ch.status === "paga"} canCancel={canManage} />}
+                      {canSettle && ch.status !== "cancelada" && (
+                        <OrthoChargeRow
+                          chargeId={ch.id}
+                          paid={ch.status === "paga"}
+                          canCancel={canManage}
+                          dueDate={ch.due_date}
+                          amountCents={ch.amount_cents}
+                          punctualityPercent={ch.kind === "mensalidade" ? (c?.punctuality_discount_percent ?? 0) : 0}
+                          today={today}
+                        />
+                      )}
                     </td>
                   </tr>
                 );

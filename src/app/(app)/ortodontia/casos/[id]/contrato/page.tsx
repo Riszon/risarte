@@ -3,9 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canManageOrtho, canSettleOrtho, canViewOrtho } from "@/lib/ortodontia/access";
-import { loadCase } from "@/lib/ortodontia/db";
+import { loadCase, loadEffectiveSettings } from "@/lib/ortodontia/db";
 import { orthoClauses } from "@/lib/ortodontia/regras";
-import { ORTHO_KIND_LABELS } from "@/lib/ortodontia/constants";
+import { ORTHO_BILLING_METHOD_LABELS, ORTHO_KIND_LABELS } from "@/lib/ortodontia/constants";
 import { formatBRL } from "@/lib/pricing";
 import { formatIsoDateBr, todayInBrazil } from "@/lib/dates";
 import { PrintButton } from "@/app/renegociacoes/[id]/acordo/print-button";
@@ -27,11 +27,10 @@ export default async function OrtoContratoPage(props: PageProps<"/ortodontia/cas
   if (!c) notFound();
   if (!(canManageOrtho(session, c.clinic_id) || canSettleOrtho(session, c.clinic_id))) notFound();
 
-  const { data: client } = await supabase
-    .from("clients")
-    .select("full_name, cpf, code, birth_date")
-    .eq("id", c.client_id)
-    .maybeSingle();
+  const [{ data: client }, settings] = await Promise.all([
+    supabase.from("clients").select("full_name, cpf, code, birth_date").eq("id", c.client_id).maybeSingle(),
+    loadEffectiveSettings(supabase, c.clinic_id),
+  ]);
 
   const clausulas = orthoClauses({
     kind: c.treatment_kind,
@@ -45,6 +44,11 @@ export default async function OrtoContratoPage(props: PageProps<"/ortodontia/cas
     retainerTerms: c.retainer_terms,
     // R10 (0333): quem INICIA; nulo = "a ser designado pela clínica".
     orthodontistName: c.orthodontist?.full_name ?? null,
+    // R7/R9 (0335): o lote, a pontualidade, o reajeste anual da unidade e a forma.
+    installmentsCount: c.installments_count,
+    punctualityDiscountPercent: c.punctuality_discount_percent,
+    annualAdjustmentPercent: settings?.annual_adjustment_percent ?? 0,
+    billingMethod: c.billing_method,
   });
   const hoje = todayInBrazil();
 
@@ -86,6 +90,7 @@ export default async function OrtoContratoPage(props: PageProps<"/ortodontia/cas
               <tr className="border-b"><td className="py-1">Instalação / documentação</td><td className="py-1 text-right tabular-nums">{formatBRL(c.installation_fee_cents)}</td></tr>
             )}
             <tr className="font-bold"><td className="py-1">Mensalidade de tratamento</td><td className="py-1 text-right tabular-nums">{formatBRL(c.monthly_fee_cents)} · vencimento dia {c.billing_day} · até a entrega das contenções</td></tr>
+            <tr className="border-b"><td className="py-1">Mensalidades emitidas por lote</td><td className="py-1 text-right">{c.installments_count} por vez{c.billing_method ? ` · ${ORTHO_BILLING_METHOD_LABELS[c.billing_method].toLowerCase()}` : ""}{c.punctuality_discount_percent > 0 ? ` · ${String(c.punctuality_discount_percent).replace(".", ",")}% de desconto até o vencimento` : ""}</td></tr>
           </tbody>
         </table>
       </section>

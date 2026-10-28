@@ -183,6 +183,11 @@ function SettingsForm({
                 <Input id={`min-fee-${clinicId}`} name="min_monthly_fee" inputMode="decimal" defaultValue={row ? (row.min_monthly_fee_cents / 100).toFixed(2).replace(".", ",") : "0,00"} placeholder="150,00" />
                 <p className="text-[11px] text-muted-foreground">Abaixo disto, o Gerente autoriza. 0 = sem mínimo.</p>
               </div>
+              <div className="space-y-1">
+                <Label htmlFor={`adj-${clinicId}`}>Reajuste anual (%)</Label>
+                <Input id={`adj-${clinicId}`} name="annual_adjustment_percent" inputMode="decimal" defaultValue={row ? String(row.annual_adjustment_percent).replace(".", ",") : "0"} placeholder="5" />
+                <p className="text-[11px] text-muted-foreground">Sugerido ao emitir novas mensalidades depois de 12 meses do início; sai no termo.</p>
+              </div>
             </div>
           </div>
 

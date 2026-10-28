@@ -44,6 +44,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   ortho_dashboard: "Painel da Ortodontia",
   clinical_evaluation_ortho_indication: "Indicação de ortodontia na avaliação",
   treatment_plan_ortho: "Proposta ortodôntica da opção do plano",
+  ortho_batch: "Lote de mensalidades ortodônticas",
   // ------------------------------------------------ cliente e prontuário
   client: "Cliente",
   client_consent: "Consentimento do cliente",

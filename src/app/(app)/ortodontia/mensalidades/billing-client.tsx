@@ -14,6 +14,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ORTHO_PAYMENT_METHOD_LABELS, ORTHO_PAYMENT_METHODS } from "@/lib/ortodontia/constants";
+import { punctualityDiscount } from "@/lib/ortodontia/regras";
+import { formatBRL } from "@/lib/pricing";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   cancelOrthoCharge,
   generateOrthoCharges,
@@ -71,19 +75,39 @@ export function OrthoBillingToolbar({ clinicId, canManage }: { clinicId: string;
 }
 
 /** Baixa (com a forma de pagamento), desfazer e cancelar uma mensalidade. */
-export function OrthoChargeRow({ chargeId, paid, canCancel }: { chargeId: string; paid: boolean; canCancel: boolean }) {
+export function OrthoChargeRow({
+  chargeId,
+  paid,
+  canCancel,
+  dueDate,
+  amountCents,
+  punctualityPercent = 0,
+  today,
+}: {
+  chargeId: string;
+  paid: boolean;
+  canCancel: boolean;
+  /** R1/Q6 (0335): para mostrar o desconto de pontualidade antes de confirmar. */
+  dueDate?: string;
+  amountCents?: number;
+  punctualityPercent?: number;
+  today?: string;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState<null | "pagar" | "cancelar">(null);
   const [method, setMethod] = useState<string>("pix");
+  const [paidOn, setPaidOn] = useState<string>(today ?? "");
   const [reason, setReason] = useState("");
+  const desconto =
+    dueDate && amountCents && paidOn ? punctualityDiscount(amountCents, dueDate, paidOn, punctualityPercent) : 0;
 
   function pay() {
     startTransition(async () => {
-      const r = await markOrthoChargePaid(chargeId, true, method);
+      const r = await markOrthoChargePaid(chargeId, true, method, paidOn || null);
       if (!r.ok) toast.error(r.error ?? "Não foi possível dar baixa.");
       else {
-        toast.success("Cobrança paga! 🎉");
+        toast.success(desconto > 0 ? `Cobrança paga com desconto de pontualidade de ${formatBRL(desconto)}.` : "Cobrança paga! 🎉");
         setOpen(null);
         router.refresh();
       }
@@ -134,13 +158,26 @@ export function OrthoChargeRow({ chargeId, paid, canCancel }: { chargeId: string
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Dar baixa na cobrança</DialogTitle>
-            <DialogDescription>Como o paciente pagou? A baixa entra no fluxo de caixa de hoje.</DialogDescription>
+            <DialogDescription>Como e quando o paciente pagou? A baixa entra no fluxo de caixa na data do pagamento; até o vencimento, o desconto de pontualidade do acordo entra sozinho.</DialogDescription>
           </DialogHeader>
-          <select value={method} onChange={(e) => setMethod(e.target.value)} className={selectClass}>
-            {ORTHO_PAYMENT_METHODS.map((m) => (
-              <option key={m} value={m}>{ORTHO_PAYMENT_METHOD_LABELS[m]}</option>
-            ))}
-          </select>
+          <div className="space-y-2">
+            <select value={method} onChange={(e) => setMethod(e.target.value)} className={selectClass}>
+              {ORTHO_PAYMENT_METHODS.map((m) => (
+                <option key={m} value={m}>{ORTHO_PAYMENT_METHOD_LABELS[m]}</option>
+              ))}
+            </select>
+            <div className="space-y-1">
+              <Label htmlFor={`paid-on-${chargeId}`}>Data do pagamento</Label>
+              <Input id={`paid-on-${chargeId}`} type="date" value={paidOn} max={today} onChange={(e) => setPaidOn(e.target.value)} />
+            </div>
+            {amountCents !== undefined && (
+              <p className="text-xs text-muted-foreground">
+                {desconto > 0
+                  ? <>Até o vencimento: desconto de <strong>{formatBRL(desconto)}</strong> ({String(punctualityPercent).replace(".", ",")}%) — o paciente paga <strong>{formatBRL(amountCents - desconto)}</strong>.</>
+                  : <>Valor integral: <strong>{formatBRL(amountCents)}</strong>{punctualityPercent > 0 && dueDate ? ` (o desconto de ${String(punctualityPercent).replace(".", ",")}% valia até ${dueDate.split("-").reverse().join("/")})` : ""}.</>}
+              </p>
+            )}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)} disabled={isPending}>Voltar</Button>
             <Button onClick={pay} disabled={isPending}>Confirmar baixa</Button>

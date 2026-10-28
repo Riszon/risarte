@@ -6,7 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewOrtho, canViewOrthoDashboard, canViewOrthoMoney, orthoRestrictedToOwn } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
-import { groupByCase, loadCases, loadChargesFor, loadMaintenancesFor, loadOpenRequestsFor, loadStartAppointments } from "@/lib/ortodontia/db";
+import { activeBatch, groupByCase, loadBatchesFor, loadCases, loadChargesFor, loadMaintenancesFor, loadOpenRequestsFor, loadStartAppointments, type OrthoBatchRow } from "@/lib/ortodontia/db";
 import {
   ATTENTION_LABELS,
   attentionReasons,
@@ -26,21 +26,27 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Ortodontia — Atenção" };
 
 const ORDEM: AttentionReason[] = [
+  "suspenso",
   "faltou",
   "manutencao_vencida",
   "sem_agendamento",
   "aguardando_inicio",
+  "lote_encerrado",
   "reavaliacao_vencida",
   "pedido_clinico_aberto",
   "termino_atrasado",
   "mensalidade_atrasada",
+  "lote_terminando",
 ];
 
 const TONE: Record<AttentionReason, string> = {
+  suspenso: "border-orange-300 bg-orange-50 text-orange-800",
   faltou: "border-rose-300 bg-rose-50 text-rose-800",
   manutencao_vencida: "border-rose-300 bg-rose-50 text-rose-800",
   sem_agendamento: "border-amber-300 bg-amber-50 text-amber-800",
   aguardando_inicio: "border-amber-300 bg-amber-50 text-amber-800",
+  lote_encerrado: "border-rose-300 bg-rose-50 text-rose-800",
+  lote_terminando: "border-amber-300 bg-amber-50 text-amber-800",
   reavaliacao_vencida: "border-sky-300 bg-sky-50 text-sky-800",
   pedido_clinico_aberto: "border-sky-300 bg-sky-50 text-sky-800",
   termino_atrasado: "border-violet-300 bg-violet-50 text-violet-800",
@@ -75,12 +81,14 @@ export default async function OrtoAtencaoPage(props: PageProps<"/ortodontia/aten
   });
   const cases = casesRead.ok ? casesRead.linhas : [];
   const caseIds = cases.map((c) => c.id);
-  const [maintRead, chargesRead, openRequests, startByClient] = await Promise.all([
+  const [maintRead, chargesRead, openRequests, startByClient, batchesByCase] = await Promise.all([
     loadMaintenancesFor(supabase, caseIds),
     canMoney ? loadChargesFor(supabase, caseIds) : Promise.resolve({ ok: true as const, linhas: [], paginas: 0 }),
     loadOpenRequestsFor(supabase, [...new Set(cases.map((c) => c.client_id))]),
     // R4 (0334): horário de instalação de quem aguarda início.
     loadStartAppointments(supabase, cases.filter((c) => c.status === "aguardando_inicio").map((c) => c.client_id)),
+    // R8 (0335): o lote de mensalidades (só quem vê dinheiro).
+    canMoney ? loadBatchesFor(supabase, cases.filter((c) => c.status === "em_tratamento").map((c) => c.id)) : Promise.resolve(new Map<string, OrthoBatchRow[]>()),
   ]);
   const maintByCase = groupByCase(maintRead.ok ? maintRead.linhas : []);
   const chargesByCase = groupByCase(chargesRead.ok ? chargesRead.linhas : []);
@@ -101,6 +109,7 @@ export default async function OrtoAtencaoPage(props: PageProps<"/ortodontia/aten
         today,
         includeMoney: canMoney,
         startScheduled: startByClient.has(c.client_id),
+        batch: activeBatch(batchesByCase.get(c.id)),
       });
       const next = nextMaintenance(ms, today);
       return { c, reasons, next, instalacao: startByClient.get(c.client_id) ?? null };

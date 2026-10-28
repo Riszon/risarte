@@ -1,6 +1,30 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.366.0** · Última migração: **0334** (0318 a 0334 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.367.0** · Última migração: **0335** (0318 a 0334 aplicadas na produção e no treino; **0335 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.367.0 / 0335 — ORTODONTIA (ORTO9): MENSALIDADES POR LOTE (28/10/2026)
+>
+> Última etapa do pedido de 28/10/2026 (ORTO-PLANO §5 — fecha R1–R13).
+> **R7/R8:** `ortho_billing_batches` — ao iniciar o tratamento (ou abrir já
+> em tratamento) as N mensalidades do acordo nascem de uma vez
+> (`_ortho_emit_batch`; competência mês a mês; nunca antes do mês atual);
+> `ortho_generate_charges` pula quem tem lote; a **rotina diária**
+> `ortho_daily_alerts` (cron 11:00) avisa Gerente + Financeiro a 60/30/15
+> dias do fim e quando vence, um aviso por marco (`ortho_notices`); na ficha,
+> **"Emitir novas mensalidades"** (`ortho_decide_batch` renovar → lote novo
+> no mês seguinte, valor sugerido com o reajuste anual — Q2) ou **"Não será
+> necessário"**. **R1/Q6:** baixa com **data do pagamento**
+> (`ortho_mark_charge_paid` +`p_paid_on`): até o vencimento, o desconto de
+> pontualidade entra e o razão vale o líquido (volta ao cheio ao desfazer).
+> **R9/Q5:** situação **suspenso** (com motivo, nunca automático; previstas
+> param, mensalidades seguintes saem, lotes encerram; retomar ou interromper).
+> **R9:** termo com lote, renovação, pontualidade, reajuste e suspensão.
+> ⚠️ **0335 aplicada no treino** (reaplicada, idempotente); ensaio em
+> transação desfeita **28/28**; **pendente na produção** (conferência
+> esperada 2·4·1·4·1·1·1). ⚠️ **O push espera a migração** (três assinaturas
+> mudaram; o app lê `ortho_billing_batches` e as colunas novas da cobrança).
+> **ORTO2 segue pendente** (a rotina existe; faltam os outros avisos nela).
+> EV-255 a EV-257.
 
 > ## 🎯 0.366.0 / 0334 — ORTODONTIA (ORTO8): DO COMERCIAL AO CASO (28/10/2026)
 >
@@ -4754,6 +4778,104 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### ORTODONTIA — ORTO9, mensalidades por lote (28/10/2026, v0.367.0, migração 0335)
+
+Última etapa do pedido de 28/10/2026 (ORTO-PLANO §5). Entrega **R1 (baixa)**,
+**R7**, **R8**, **R9** e as decisões **Q2**, **Q5**, **Q6**. Com ela, as 13
+regras do pedido estão no sistema.
+
+- **R7/R8 — o lote.** `ortho_billing_batches` (seq, N, mês inicial/final,
+  valor, forma, pontualidade, situação ativo/encerrado, decisão
+  renovar/nao_renovar). `_ortho_emit_batch` (interna) insere o lote e as N
+  cobranças de uma vez (`ortho_charges.batch_id`; competência mês a mês, dia
+  de vencimento das condições; `on conflict … do update` só liga a cobrança
+  já existente ao lote); o primeiro mês nunca é anterior ao atual (o legado
+  entra no meio); lote novo encerra o anterior e atualiza o acordo do caso.
+  O lote nasce ao **iniciar** (`ortho_set_status` aguardando_inicio →
+  em_tratamento) ou na abertura já em tratamento (gatilho
+  `ortho_case_terms_batch` na irmã: as funções de abertura da 0334 ficaram
+  como estavam). `ortho_generate_charges` (botão do mês) pula quem tem lote.
+  `ortho_decide_batch` (Gerente/Coordenador/Financeiro; só em tratamento):
+  renovar = lote novo a partir do mês seguinte ao último; não renovar =
+  marca e registra. `ortho_emit_batch` (à mão): só sem lote ativo sem decisão
+  (`BATCH_ACTIVE`) — os casos de antes e o retorno da suspensão.
+- **R8 — a rotina diária.** `ortho_daily_alerts(p_clinic_id)` — sem usuário
+  passa (cron `risarte-ortho-daily`, 11:00); à mão, Admin ou quem dá baixa.
+  Para cada lote ativo sem decisão de caso em tratamento: dias até o
+  vencimento da última cobrança → marco `d60`/`d30`/`d15`/`vencido`; um aviso
+  por lote e marco (`ortho_notices`, excluída da auditoria); destinatários:
+  Gerentes da unidade e Financeiro da Franqueadora; título "Ortodontia: lote
+  de mensalidades termina em até N dias — renovar ou encerrar?" / "…terminou…",
+  link do caso (categoria Ortodontia).
+- **R1/Q6 — pontualidade na baixa.** `ortho_mark_charge_paid(uuid, boolean,
+  text, date)` (assinatura antiga derrubada): `paid_on` ≤ `due_date` e
+  pontualidade do lote (senão do caso) > 0 → `discount_cents` e
+  `paid_amount_cents`; `PAID_ON_FUTURE`. `ortho_charge_ledger` liquida com o
+  **líquido** e `cash_date = paid_on`; desfeita a baixa, o razão volta ao
+  cheio. Tela: a baixa pede a data (padrão hoje, máximo hoje) e mostra o
+  desconto e o líquido antes de confirmar; a lista mostra "pago R$ X
+  (pontualidade)".
+- **Q2 — reajuste anual.** `ortho_settings.annual_adjustment_percent`
+  (`ortho_effective_settings` +1 coluna, `ortho_save_settings` +1 arg — drop
+  + create); editor com o campo. A sugestão é da tela
+  (`suggestedRenewalAmount`: só depois de 12 meses do início); o banco grava o
+  que a tela mandar. No termo.
+- **R9/Q5 — suspenso.** `ortho_cases.status` ganhou `suspenso` (check
+  recriado; índice "um aberto por paciente" inclui; `ortho_case_sync_client`
+  e `_ortho_open_from_sale` idem), `suspended_at`, `suspend_reason`.
+  `ortho_set_status('suspenso')`: só de em_tratamento, motivo obrigatório;
+  previstas sem agendamento canceladas, mensalidades dos meses seguintes
+  canceladas, lotes ativos encerrados. Retomar (`em_tratamento`) completa o
+  cronograma e **não** emite lote sozinho (a ficha pede). Interromper de
+  suspenso. App: botões Suspender/Retomar, `ORTHO_STATUSES` + suspenso,
+  Atenção com `suspenso` (primeiro da ordem), `lote_encerrado` e
+  `lote_terminando` (`batchAttention`), `OrthoClientCard` fecha o cartão.
+- **R9 — o termo.** `orthoClauses`: "Serão emitidas N mensalidades, por
+  <forma>…novas…nas mesmas condições"; pontualidade; reajuste anual (percentual
+  ou "sujeitas a reajuste anual"); suspensão e cancelamento. O termo da ficha
+  mostra "Mensalidades emitidas por lote".
+
+**Conferido:** `check-migrations 0335` OK; `migrar:teste` aplicou (220
+tabelas, 669 funções) e a 0335 foi reaplicada por cima sem erro (conferência
+2·4·1·4·1·1·1); ensaio em transação desfeita **28/28** (lote nasce pelo
+gatilho da irmã a partir do mês atual; o botão do mês pula; pontualidade
+950/18040 e razão líquido/cheio; data futura recusa; depois do vencimento
+integral; rotina: d30 com 3 destinatários, repetir = 0, vencido; recepção
+não roda nem decide; renovar emite lote 2 no mês seguinte e atualiza o
+acordo; não renovar no histórico; suspender exige motivo e para tudo;
+retomar sem lote automático; emitir à mão depois; de suspenso interrompe;
+sem login nada executa). `npm run verificar`, `npm test`, `npm run lint`:
+ver a entrada da sessão no `CLAUDE.md`. **NÃO visto na tela.** ⚠️ **0335
+PENDENTE NA PRODUÇÃO — e o push espera por ela:** `ortho_effective_settings`,
+`ortho_save_settings` e `ortho_mark_charge_paid` mudaram de assinatura e o
+app lê `ortho_billing_batches` e as colunas novas de `ortho_charges`.
+**O que ficou de fora:** ORTO2 (os avisos de manutenção vencida, falta,
+reavaliação e mensalidade atrasada no sino) — a rotina diária agora existe e
+é o lugar deles; ORTO4 (emissão real pelo ASAAS) segue com as integrações.
+
+**Roteiro para o dono testar no treino:**
+
+1. **Admin**, Configuração da Ortodontia: reajuste anual 8%; pontualidade
+   sugerida 5%.
+2. **Gerente**, caso aguardando início → **Iniciar tratamento**: na ficha, o
+   bloco Mensalidades mostra "Lote 1: 12 mensalidades, mm/aaaa a mm/aaaa,
+   última vence dd/mm" e as 12 linhas.
+3. **Gerente**, Mensalidades → **Dar baixa** na primeira: a data vem hoje; se
+   hoje ≤ vencimento, a tela mostra "desconto de R$ 9,50 — paga R$ 180,40";
+   confirmar → a linha diz "pago R$ 180,40 (pontualidade)". Desfazer → volta.
+4. **Gerente**, ficha do caso: **Emitir novas mensalidades** → quantas,
+   valor (sugerido), forma, pontualidade → lote 2. Ou **Não será
+   necessário**. Em Atenção, um caso com lote terminando em ≤60 dias aparece
+   como "lote terminando".
+5. **Gerente**: **Suspender** sem motivo recusa; com motivo → situação
+   "Suspenso", previstas somem, mensalidades seguintes canceladas; **Retomar**
+   → em tratamento, cronograma completo, a ficha pede o lote; **Interromper**
+   de suspenso funciona.
+6. **Termo**: as cláusulas de lote, pontualidade, reajuste e suspensão.
+7. O aviso da rotina (60/30/15/vencido) só aparece quando houver lote nessa
+   janela — ou o Admin roda `select public.ortho_daily_alerts()` no SQL
+   Editor para forçar a conferência do dia.
 
 ### ORTODONTIA — ORTO8, do Comercial ao caso (28/10/2026, v0.366.0, migração 0334)
 
