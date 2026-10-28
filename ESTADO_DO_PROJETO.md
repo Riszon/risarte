@@ -4730,7 +4730,8 @@ impresso quando a opção tem procedimento de Ortodontia.
   para algo sem "ortod" apaga o bloco.
 
 **Conferido:** `check-migrations 0329` OK; `migrar:teste` aplicou a 0329 no
-treino sem erro (215 tabelas, 649 funções); `npm run verificar` verde (build
+treino sem erro (215 tabelas, 649 funções) e **o dono rodou na PRODUÇÃO em
+27/10/2026 com a conferência no esperado**; `npm run verificar` verde (build
 do zero + tipos); `npm test` verde (2.903 testes); `npm run lint` zero.
 **Ensaio no treino, transação DESFEITA, 35/35:** recepção não abre caso;
 caso ORT-000001 em tratamento com 12 previstas; segundo caso recusado;

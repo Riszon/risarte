@@ -422,8 +422,9 @@ Syncthing se comportarem de forma estranha.**
   `1.1.04` (open → settled com cash_date). Ver as decisões no ESTADO.
 - ⚠️ **Permissões semeadas na 0329** (Recepção sem o Painel, com mensalidades
   — O2, decisão deixada para o dono).
-- ✅ 0329 aplicada no TREINO (`migrar:teste`, sem erro). ⏳ **Falta o dono
-  rodar na produção** e testar pelo roteiro do ESTADO. **Nada visto na tela**
+- ✅ **0329 APLICADA nos dois bancos** (treino por `migrar:teste`; o dono
+  rodou na produção em 27/10/2026 e a conferência deu o esperado). ⏳ **Falta
+  o dono testar na tela** pelo roteiro do ESTADO §2. **Nada visto na tela**
   nesta sessão. Portão: check-migrations OK, `npm run verificar` OK, `npm test`
   OK (2.903), `npm run lint` zero. **Ensaio no treino 35/35, transação
   desfeita** (agenda liga, repasse nasce, DRE mostra 1.1.04, recusas por
