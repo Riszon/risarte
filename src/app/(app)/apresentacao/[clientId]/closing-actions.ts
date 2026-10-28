@@ -8,6 +8,8 @@ export type ClosingResult = {
   ok: boolean;
   error?: string;
   closed?: boolean;
+  /** ORTO8 (0334): o caso ortodôntico aberto no fechamento (venda com ortodontia). */
+  orthoCaseId?: string | null;
 };
 
 /**
@@ -114,5 +116,12 @@ export async function markClosingStep(
   revalidatePath("/jornada");
   revalidatePath("/notificacoes");
   const closed = Boolean((data as { closed?: boolean } | null)?.closed);
-  return { ok: true, closed };
+  // ORTO8 (0334): venda com ortodontia → o caso nasceu no fechamento.
+  const orthoCaseId = ((data as { ortho_case_id?: string | null } | null)?.ortho_case_id as string | null) ?? null;
+  if (orthoCaseId) {
+    revalidatePath("/ortodontia");
+    revalidatePath("/ortodontia/atencao");
+    revalidatePath("/ortodontia/casos");
+  }
+  return { ok: true, closed, orthoCaseId };
 }

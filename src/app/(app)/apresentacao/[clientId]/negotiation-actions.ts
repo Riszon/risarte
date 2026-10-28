@@ -283,6 +283,64 @@ export async function acceptNegotiation(
   return { ok: true };
 }
 
+/**
+ * ORTO8 (0334): o Consultor (ou o Gerente) fecha o ACORDO ORTODÔNTICO da
+ * negociação. O banco (`save_negotiation_ortho`) confere quem é, grava e
+ * reavalia a regra na hora — fora do limite da ortodontia (mensalidade
+ * mínima, pontualidade máxima), a negociação cai em autorização do Gerente.
+ */
+export async function saveNegotiationOrtho(
+  clientId: string,
+  negotiationId: string,
+  input: {
+    monthlyFeeCents: number;
+    installmentsCount: number;
+    billingMethod: string;
+    billingDay: number;
+    punctualityDiscountPercent: number;
+    retainerCharged: boolean;
+    retainerFeeCents: number;
+    retainerTerms: string;
+    notes: string;
+  }
+): Promise<NegotiationActionResult> {
+  await getSessionContext();
+  const count = Math.round(Number(input.installmentsCount));
+  if (!Number.isFinite(count) || count < 1 || count > 120) {
+    return { ok: false, error: "Quantas mensalidades: entre 1 e 120." };
+  }
+  const day = Math.round(Number(input.billingDay));
+  if (!Number.isFinite(day) || day < 1 || day > 28) return { ok: false, error: "Dia de vencimento: entre 1 e 28." };
+  const punct = Number(input.punctualityDiscountPercent);
+  if (!Number.isFinite(punct) || punct < 0 || punct > 100) return { ok: false, error: "Desconto por pontualidade: entre 0 e 100%." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("save_negotiation_ortho", {
+    p_negotiation_id: negotiationId,
+    p_monthly_fee_cents: Math.max(0, Math.round(input.monthlyFeeCents)),
+    p_installments_count: count,
+    p_billing_method: input.billingMethod,
+    p_billing_day: day,
+    p_punctuality_discount_percent: punct,
+    p_retainer_charged: input.retainerCharged,
+    p_retainer_fee_cents: Math.max(0, Math.round(input.retainerFeeCents)),
+    p_retainer_terms: input.retainerTerms.trim() || null,
+    p_notes: input.notes.trim() || null,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("NEGOTIATION_CLOSED"))
+      return { ok: false, error: "A negociação já foi aceita ou encerrada — o acordo ortodôntico não muda mais." };
+    if (m.includes("NOT_ALLOWED"))
+      return { ok: false, error: "Só o Consultor Comercial (ou o Gerente) fecha o acordo ortodôntico." };
+    console.error("save_negotiation_ortho failed:", m);
+    return { ok: false, error: "Não foi possível salvar o acordo ortodôntico." };
+  }
+  revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
+  revalidatePath("/notificacoes");
+  return { ok: true, violations: (data as string[] | null) ?? [], negotiationId };
+}
+
 /** Gerente autoriza (ou nega) a negociação fora da regra comercial. */
 export async function reviewNegotiationAction(
   clientId: string,

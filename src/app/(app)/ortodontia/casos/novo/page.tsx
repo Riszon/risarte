@@ -45,8 +45,27 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
   const busca = (pick("busca") ?? "").trim();
   const supabase = await createClient();
 
-  // Passo 1: escolher o paciente.
+  // R4/Q1 (0334): esta tela tem DOIS caminhos, e nenhum é "novo caso do nada":
+  //   * pela VENDA (`?negociacao=`): venda fechada antes desta versão, ainda
+  //     sem caso (o Painel lista); o caso novo nasce sozinho no fechamento.
+  //   * LEGADO (`?legado=1`): paciente que já estava em tratamento antes do
+  //     sistema, enquanto o Admin deixar a porta aberta na unidade.
+  const legado = pick("legado") === "1";
+  if (!negociacaoId && !legado) redirect("/ortodontia");
+  const settingsDaPorta = legado ? await loadEffectiveSettings(supabase, clinicId) : null;
+  if (legado && settingsDaPorta && !settingsDaPorta.legacy_entry_enabled) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+          O cadastro de <strong>caso legado</strong> está fechado nesta unidade. O caso de ortodontia nasce no fechamento da venda do Comercial; se ainda há pacientes antigos para cadastrar, peça ao Admin para reabrir a porta na Configuração da Ortodontia.
+        </p>
+      </div>
+    );
+  }
+
+  // Passo 1: escolher o paciente (só no caminho legado — pela venda o paciente já vem).
   if (!clienteId) {
+    if (!legado) redirect("/ortodontia");
     let encontrados: { id: string; full_name: string; code: string | null; ortho_active: boolean | null }[] = [];
     if (busca.length >= 2) {
       const { data } = await supabase
@@ -61,7 +80,7 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
     }
     return (
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-        <CabecalhoDeModulo chapeu="Ortodontia" icone={UserPlus} titulo="Novo caso ortodôntico" descricao={`Passo 1 de 2 — escolha o paciente de ${session.activeClinic?.name}.`} voltar={{ href: "/ortodontia/casos", rotulo: "Casos" }} />
+        <CabecalhoDeModulo chapeu="Ortodontia" icone={UserPlus} titulo="Caso legado" descricao={`Passo 1 de 2 — escolha o paciente de ${session.activeClinic?.name} que já estava em tratamento ortodôntico antes do sistema.`} voltar={{ href: "/ortodontia", rotulo: "Painel" }} />
         <FilterForm className="flex items-center gap-2">
           <Search className="size-4 text-muted-foreground" />
           <Input name="busca" defaultValue={busca} placeholder="Nome ou código do paciente (Enter para procurar)" autoFocus />
@@ -81,7 +100,7 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
                       {c.ortho_active ? (
                         <span className="text-xs text-muted-foreground">já tem caso aberto</span>
                       ) : (
-                        <Link href={`/ortodontia/casos/novo?cliente=${c.id}`} className="text-xs font-medium underline-offset-2 hover:underline">Escolher →</Link>
+                        <Link href={`/ortodontia/casos/novo?legado=1&cliente=${c.id}`} className="text-xs font-medium underline-offset-2 hover:underline">Escolher →</Link>
                       )}
                     </li>
                   ))}
@@ -100,7 +119,7 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
     .select("id, full_name, code, clinic_id, ortho_case_id, ortho_active, birth_date")
     .eq("id", clienteId)
     .maybeSingle();
-  if (!client || client.clinic_id !== clinicId) redirect("/ortodontia/casos/novo");
+  if (!client || client.clinic_id !== clinicId) redirect(legado ? "/ortodontia/casos/novo?legado=1" : "/ortodontia");
   if (client.ortho_active && client.ortho_case_id) redirect(`/ortodontia/casos/${client.ortho_case_id}`);
 
   const [settings, orthodontists, procedures] = await Promise.all([
@@ -128,30 +147,52 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
       proposta = (p as Proposta | null) ?? null;
     }
   }
+  // ORTO8 (0334): o acordo fechado pelo Consultor na negociação preenche o dinheiro.
+  type Acordo = {
+    monthly_fee_cents: number;
+    billing_day: number;
+    retainer_charged: boolean;
+    retainer_fee_cents: number;
+    retainer_terms: string | null;
+  };
+  let acordo: Acordo | null = null;
+  if (negociacaoId) {
+    const { data: a } = await supabase
+      .from("plan_negotiation_ortho")
+      .select("monthly_fee_cents, billing_day, retainer_charged, retainer_fee_cents, retainer_terms")
+      .eq("negotiation_id", negociacaoId)
+      .maybeSingle();
+    acordo = (a as Acordo | null) ?? null;
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
       <CabecalhoDeModulo
         chapeu="Ortodontia"
         icone={UserPlus}
-        titulo="Novo caso ortodôntico"
-        descricao={`Passo 2 de 2 — ${client.full_name}${client.code ? ` · ${client.code}` : ""}. Os valores vêm da configuração da unidade e podem ser ajustados.`}
+        titulo={legado ? "Caso legado" : "Abrir o caso da venda"}
+        descricao={
+          legado
+            ? `Passo 2 de 2 — ${client.full_name}${client.code ? ` · ${client.code}` : ""}. Paciente que já estava em tratamento antes do sistema: informe o que foi combinado com ele.`
+            : `${client.full_name}${client.code ? ` · ${client.code}` : ""}. As características vêm da proposta do Planner e o dinheiro do acordo da negociação; ajuste se precisar.`
+        }
         voltar={{ href: "/ortodontia/casos/novo", rotulo: "Trocar o paciente" }}
       />
       <NovoCasoForm
         clientId={client.id as string}
         negotiationId={negociacaoId || null}
+        legado={legado}
         today={todayInBrazil()}
         defaults={{
           kind: proposta?.treatment_kind ?? null,
-          monthlyCents: settings?.monthly_fee_cents ?? 0,
+          monthlyCents: acordo?.monthly_fee_cents ?? settings?.monthly_fee_cents ?? 0,
           plannedMonths: proposta?.planned_months ?? settings?.planned_months ?? 24,
           intervalDays: proposta?.maintenance_interval_days ?? settings?.maintenance_interval_days ?? 30,
-          billingDay: settings?.billing_day ?? 10,
+          billingDay: acordo?.billing_day ?? settings?.billing_day ?? 10,
           procedureId: settings?.maintenance_procedure_id ?? null,
-          retainerCharged: settings?.retainer_charge_enabled === true,
-          retainerFeeCents: settings?.retainer_fee_cents ?? 0,
-          retainerTerms: settings?.retainer_terms ?? null,
+          retainerCharged: acordo ? acordo.retainer_charged === true : settings?.retainer_charge_enabled === true,
+          retainerFeeCents: acordo?.retainer_fee_cents ?? settings?.retainer_fee_cents ?? 0,
+          retainerTerms: acordo ? (acordo.retainer_terms ?? null) : (settings?.retainer_terms ?? null),
         }}
         orthodontists={orthodontists}
         procedures={procedures}

@@ -10,7 +10,7 @@ export type CondicoesOrtodonticas = {
    * De onde vieram os números: do caso já aberto; da proposta do Planner na
    * opção (ORTO7) + padrão da unidade para o dinheiro; ou só do padrão.
    */
-  origem: "caso" | "proposta" | "padrao";
+  origem: "caso" | "negociacao" | "proposta" | "padrao";
   termos: OrthoTerms;
 };
 
@@ -27,7 +27,7 @@ export function ehOrtodontia(specialty: string | null | undefined): boolean {
  */
 export async function condicoesOrtodonticas(
   supabase: SupabaseClient,
-  input: { clientId: string; clinicId: string; procedureIds: string[]; optionId?: string | null }
+  input: { clientId: string; clinicId: string; procedureIds: string[]; optionId?: string | null; negotiationId?: string | null }
 ): Promise<CondicoesOrtodonticas | null> {
   const ids = [...new Set(input.procedureIds)].filter(Boolean);
   if (ids.length === 0) return null;
@@ -109,19 +109,41 @@ export async function condicoesOrtodonticas(
     | null
     | undefined;
   if (!s) return null;
-  // Sem caso: as características vêm da proposta do Planner (quando há) e o
-  // dinheiro do padrão da unidade — o Comercial ajusta na negociação (ORTO8).
+  // ORTO8 (0334): o ACORDO fechado pelo Consultor nesta negociação manda no
+  // dinheiro (mensalidade, dia, contenção, pontualidade). Sem acordo, o padrão.
+  type Acordo = {
+    monthly_fee_cents: number;
+    billing_day: number;
+    installments_count: number;
+    billing_method: string;
+    punctuality_discount_percent: number | string;
+    retainer_charged: boolean;
+    retainer_fee_cents: number;
+    retainer_terms: string | null;
+  };
+  let acordo: Acordo | null = null;
+  if (input.negotiationId) {
+    const { data } = await supabase
+      .from("plan_negotiation_ortho")
+      .select("monthly_fee_cents, billing_day, installments_count, billing_method, punctuality_discount_percent, retainer_charged, retainer_fee_cents, retainer_terms")
+      .eq("negotiation_id", input.negotiationId)
+      .maybeSingle();
+    acordo = (data as Acordo | null) ?? null;
+  }
+
+  // Sem caso: as características vêm da proposta do Planner (quando há), o
+  // dinheiro do acordo da negociação (quando há) — senão do padrão da unidade.
   const termos: OrthoTerms = {
     kind: (proposta?.treatment_kind as OrthoKind | undefined) ?? null,
-    monthlyCents: Number(s.monthly_fee_cents ?? 0),
+    monthlyCents: Number(acordo?.monthly_fee_cents ?? s.monthly_fee_cents ?? 0),
     plannedMonths: Number(proposta?.planned_months ?? s.planned_months ?? 24),
     maintenanceIntervalDays: Number(proposta?.maintenance_interval_days ?? s.maintenance_interval_days ?? 30),
-    billingDay: Number(s.billing_day ?? 10),
+    billingDay: Number(acordo?.billing_day ?? s.billing_day ?? 10),
     installationCents: 0,
-    retainerCharged: s.retainer_charge_enabled === true,
-    retainerFeeCents: Number(s.retainer_fee_cents ?? 0),
-    retainerTerms: s.retainer_terms ?? null,
+    retainerCharged: acordo ? acordo.retainer_charged === true : s.retainer_charge_enabled === true,
+    retainerFeeCents: Number(acordo?.retainer_fee_cents ?? s.retainer_fee_cents ?? 0),
+    retainerTerms: acordo ? (acordo.retainer_terms ?? null) : (s.retainer_terms ?? null),
     retainerKind: (proposta?.retainer_kind as OrthoRetainerKind | undefined) ?? null,
   };
-  return { clausulas: orthoClauses(termos), origem: proposta ? "proposta" : "padrao", termos };
+  return { clausulas: orthoClauses(termos), origem: acordo ? "negociacao" : proposta ? "proposta" : "padrao", termos };
 }

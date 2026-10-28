@@ -104,6 +104,9 @@ describe("M5 — avisos das Metas", () => {
     // não pode cair em outra categoria pelo título.
     expect(categorizeNotification("Compras — nova lista PC-000020 de Risarte Cambé - Centro", "/compras/rodadas")).toBe("compras");
     expect(categorizeNotification("Compras — aprovar a compra da Risarte Cambé - Centro", "/compras/aprovar")).toBe("compras");
+    // ORTO8 (0334): os avisos da Ortodontia também vão pelo link — o título
+    // "caso fechado" cairia em Início de Tratamento.
+    expect(categorizeNotification("Ortodontia: caso fechado — agendar a instalação", "/ortodontia/casos/abc")).toBe("ortodontia");
     // Sem o link, o título sozinho enganaria — é por isso que o link manda.
     expect(categorizeNotification("Meta atingida: Mês do Riso+")).toBe("ppr");
   });

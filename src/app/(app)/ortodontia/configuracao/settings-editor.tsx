@@ -33,7 +33,7 @@ export function OrthoSettingsEditor({
   return (
     <div className="space-y-4">
       {isAdmin && (
-        <SettingsForm title="Padrão da rede" subtitle="Vale para toda unidade que não tiver ajuste próprio." clinicId={null} row={network} procedures={procedures} />
+        <SettingsForm title="Padrão da rede" subtitle="Vale para toda unidade que não tiver ajuste próprio." clinicId={null} row={network} procedures={procedures} isAdmin />
       )}
       {!isAdmin && network && (
         <Card>
@@ -44,7 +44,7 @@ export function OrthoSettingsEditor({
         </Card>
       )}
       {units.map((r) => (
-        <SettingsForm key={r.id} title={nameOf(r.clinic_id)} subtitle="Ajuste desta unidade." clinicId={r.clinic_id} row={r} procedures={procedures} />
+        <SettingsForm key={r.id} title={nameOf(r.clinic_id)} subtitle="Ajuste desta unidade." clinicId={r.clinic_id} row={r} procedures={procedures} isAdmin={isAdmin} />
       ))}
       {without.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed p-3 text-sm">
@@ -58,7 +58,7 @@ export function OrthoSettingsEditor({
         </div>
       )}
       {addUnitId && !units.some((r) => r.clinic_id === addUnitId) && (
-        <SettingsForm title={nameOf(addUnitId)} subtitle="Novo ajuste — salve para valer." clinicId={addUnitId} row={network ? { ...network, clinic_id: addUnitId } : null} procedures={procedures} />
+        <SettingsForm title={nameOf(addUnitId)} subtitle="Novo ajuste — salve para valer." clinicId={addUnitId} row={network ? { ...network, clinic_id: addUnitId, legacy_entry_enabled: null } : null} procedures={procedures} isAdmin={isAdmin} />
       )}
     </div>
   );
@@ -70,9 +70,12 @@ function SettingsForm({
   clinicId,
   row,
   procedures,
+  isAdmin = false,
 }: {
   title: string;
   subtitle?: string;
+  /** Q1: só o Admin abre/fecha a porta do caso legado. */
+  isAdmin?: boolean;
   clinicId: string | null;
   row: OrthoSettingsRow | null;
   procedures: ProcedureOption[];
@@ -158,6 +161,44 @@ function SettingsForm({
               </div>
             </div>
           </div>
+
+          {/* R1/Q4 (0334): o acordo comercial da ortodontia tem limites próprios. */}
+          <div className="space-y-2 rounded-lg border border-dashed p-3 sm:col-span-2 lg:col-span-4">
+            <p className="text-sm font-medium">O acordo comercial: pontualidade e limites</p>
+            <p className="text-[11px] text-muted-foreground">
+              O Consultor fecha o acordo da ortodontia na negociação (mensalidade, quantas mensalidades, forma de emissão, desconto por pontualidade, contenção). O que sair destes limites cai em <strong>autorização do Gerente</strong>, como qualquer negociação fora da regra.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label htmlFor={`punct-${clinicId}`}>Desconto por pontualidade sugerido (%)</Label>
+                <Input id={`punct-${clinicId}`} name="punctuality_discount_percent" inputMode="decimal" defaultValue={row ? String(row.punctuality_discount_percent).replace(".", ",") : "0"} placeholder="5" />
+                <p className="text-[11px] text-muted-foreground">Para quem paga até o vencimento (aplicado na baixa).</p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor={`punct-max-${clinicId}`}>Pontualidade máxima (%)</Label>
+                <Input id={`punct-max-${clinicId}`} name="max_punctuality_discount_percent" inputMode="decimal" defaultValue={row ? String(row.max_punctuality_discount_percent).replace(".", ",") : "10"} placeholder="10" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor={`min-fee-${clinicId}`}>Mensalidade mínima (R$)</Label>
+                <Input id={`min-fee-${clinicId}`} name="min_monthly_fee" inputMode="decimal" defaultValue={row ? (row.min_monthly_fee_cents / 100).toFixed(2).replace(".", ",") : "0,00"} placeholder="150,00" />
+                <p className="text-[11px] text-muted-foreground">Abaixo disto, o Gerente autoriza. 0 = sem mínimo.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Q1 (0334): a porta do caso legado — só o Admin mexe. */}
+          {isAdmin && (
+            <div className="space-y-1 rounded-lg border border-dashed p-3 sm:col-span-2 lg:col-span-4">
+              <input type="hidden" name="legacy_entry_present" value="1" />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="legacy_entry_enabled" defaultChecked={row?.legacy_entry_enabled ?? true} className="size-4" />
+                Permitir cadastrar <strong>caso legado</strong> (paciente que já estava em tratamento antes do sistema, sem venda no Comercial)
+              </label>
+              <p className="text-[11px] text-muted-foreground">
+                O caso novo nasce no fechamento da venda. Esta porta existe para a transição; feche-a quando os pacientes antigos estiverem cadastrados.
+              </p>
+            </div>
+          )}
 
           <div className="sm:col-span-2 lg:col-span-4">
             <Button type="submit" size="sm" disabled={isPending}>Salvar</Button>

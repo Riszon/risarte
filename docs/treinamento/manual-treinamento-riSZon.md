@@ -1419,10 +1419,10 @@ pela tabela de repasse do procedimento de manutenção configurado.
 | **Painel** (`/ortodontia`) | Gerente, Coordenador, Franqueado, Franqueadora, Admin | Os números: em tratamento, aguardando início, em acompanhamento; **no prazo × atrasados** (cada lista mostra as faltas e a **assiduidade** do paciente); sem agendamento; novos, finalizados (= contenções entregues), faltas e manutenções realizadas no período; **previsão de término** (3, 6 e 12 meses); receita recebida, prevista e inadimplência (para quem vê dinheiro); **de onde vêm os pacientes** (Indica +Risos, Riso+, Empresarial, indicação de cliente, direto); a evolução mês a mês; e, para a rede, a tabela **por unidade**. Todo número abre a lista por trás. |
 | **Atenção** (`/ortodontia/atencao`) | **Recepção** (é a tela dela), e todos | Quem precisa de ação agora: **sem próximo agendamento**, **manutenção vencida** (prevista há mais de 7 dias sem agendar), **faltou na última**, **aguardando início**, **reavaliação vencida**, **pedido clínico em aberto**, **término atrasado** e, para quem vê dinheiro, **mensalidade atrasada**. Cada linha tem o WhatsApp, o botão **Agendar** (abre a agenda com o paciente) e o atalho para o caso. Em dia, o paciente não aparece. |
 | **Casos** (`/ortodontia/casos`) | Todos do módulo | A lista com busca (paciente, código, ortodontista) e filtros por situação. O Dentista vê só os casos em que é o ortodontista. |
-| **Novo caso** (`/ortodontia/casos/novo`) | Gerente, Coordenador, Admin | Passo 1: procurar o paciente da unidade. Passo 2: ortodontista, tipo, início, meses previstos, intervalo das manutenções, procedimento da manutenção (repasse), mensalidade, dia de vencimento, instalação (informativo). Os valores vêm da **Configuração** e podem ser ajustados. Marcando **"O aparelho já foi instalado"**, o caso nasce **em tratamento** e o cronograma é gerado na hora. |
+| **Abrir o caso da venda / Caso legado** (`/ortodontia/casos/novo`) | Gerente, Coordenador, Admin | Desde a 0.366.0 **não existe "Novo caso"**: o caso nasce sozinho no fechamento da venda. Esta tela fica para dois casos: **vendas fechadas antes da 0.366.0** ainda sem caso (o Painel lista, botão "Abrir caso": tipo, meses e intervalo vêm da proposta do Planner, o dinheiro do acordo da negociação) e o **caso legado** (paciente que já estava em tratamento antes do sistema — link "Caso legado" no Painel, motivo obrigatório, enquanto o Admin deixar a porta aberta). Marcando **"O aparelho já foi instalado"**, o caso nasce **em tratamento** e o cronograma é gerado na hora. |
 | **A ficha do caso** (`/ortodontia/casos/[id]`) | Todos do módulo | Logo no alto, os **alertas da anamnese** do paciente (desde a 0.364.0, para o Dentista, o Coordenador e o Gerente). Situação e prazo (com a barra do tempo), os motivos de atenção, o **cronograma** manutenção a manutenção (prevista, agendamento ligado, situação, quem fez e a **evolução**: fio/arco, observações, próximo passo), as **mensalidades** com baixa (só para quem vê dinheiro), as **indicações** que o paciente trouxe, a origem dele e o **histórico**. Botões: **Prontuário**, **Planos de tratamento** e **Desenvolvimento clínico** (abrem a aba certa do prontuário — desde a 0.364.0), **Agendar**, **Termo** (imprimir/PDF), **Editar**; e as mudanças de situação (abaixo). |
 | **Mensalidades** (`/ortodontia/mensalidades`) | **Gerente** e **Financeiro da Franqueadora** (dão baixa), Franqueadora, Admin; **Coordenador, Recepção e Franqueado só veem** | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa, **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. A cobrança da **contenção** (quando cobrada) aparece aqui com a etiqueta "Contenção". Desde a 0.363.0 a Recepção abre a tela **sem botões**: vê a situação de cada paciente para ajudar o Gerente e o Financeiro. |
-| **Configuração** (`/ortodontia/configuracao`) | Admin (rede) e Gerente (a própria unidade) | O padrão da rede e o ajuste por unidade: mensalidade padrão, meses previstos, intervalo das manutenções, reavaliação a cada N meses, tolerância do prazo, dia de vencimento, o **procedimento da manutenção** (de onde sai o valor do repasse) e **a contenção no fim do tratamento**: cobrar ou não, o valor e uma condição especial (ex.: "em até 3x sem juros") — o que estiver aqui sai no termo do paciente. |
+| **Configuração** (`/ortodontia/configuracao`) | Admin (rede) e Gerente (a própria unidade) | O padrão da rede e o ajuste por unidade: mensalidade padrão, meses previstos, intervalo das manutenções, reavaliação a cada N meses, tolerância do prazo, dia de vencimento, o **procedimento da manutenção** (de onde sai o valor do repasse), **a contenção no fim do tratamento** (cobrar ou não, valor, condição especial) e, desde a 0.366.0, **o acordo comercial**: desconto por pontualidade sugerido, **pontualidade máxima** e **mensalidade mínima** (fora disso o Gerente autoriza) e, só para o Admin, a **porta do caso legado**. O que estiver aqui sai no termo do paciente. |
 
 #### A situação do caso
 
@@ -1538,6 +1538,43 @@ são uma estimativa, e não um compromisso de conclusão em data certa: a
 duração real depende da resposta de cada paciente, da colaboração e da
 assiduidade.
 
+#### Do Comercial ao caso: o acordo e o fechamento (desde a 0.366.0)
+
+6. **O Consultor fecha o acordo.** Na negociação (Apresentação ou Comercial),
+   quando a opção escolhida é de ortodontia, aparece o bloco **"Acordo
+   ortodôntico"**: **mensalidade**, **quantas mensalidades** neste lote,
+   **como são emitidas** (PIX recorrente, débito recorrente, cartão de
+   crédito recorrente, cartão parcelado, boleto ou à vista do período), **dia
+   de vencimento**, **desconto por pontualidade** (para quem paga até o
+   vencimento) e se a **contenção é cobrada** (valor e condição). Os valores
+   vêm da Configuração da Ortodontia e a proposta do Planner aparece ao lado
+   como referência. O botão grava o acordo sobre a negociação salva.
+7. **Os limites (Q4).** A Configuração da Ortodontia tem a **mensalidade
+   mínima** e a **pontualidade máxima** (rede e unidade). Fora disso — ou
+   contenção "cobrada" sem valor — a negociação cai em **aguardando
+   autorização do Gerente**, pelo mesmo caminho de hoje: o Gerente autoriza
+   ou nega, e só então o cliente pode aceitar.
+8. **O caso nasce no fechamento.** Contrato assinado **e** pagamento
+   confirmado (a regra de ouro) numa venda com ortodontia: o **caso
+   ortodôntico nasce sozinho**, em **Aguardando início**, com tipo, meses e
+   intervalo da proposta do Planner e mensalidade, lote, forma, pontualidade
+   e contenção do acordo do Consultor — e sem ortodontista (quem instala
+   assume). O Gerente, o Coordenador e a Recepção recebem **"Ortodontia: caso
+   fechado — agendar a instalação"** (categoria Ortodontia no sino), além do
+   pop-up de sempre da Recepção. Venda sem ortodontia não abre nada. Se o
+   paciente já tinha caso aberto, a venda só é ligada a ele.
+9. **Aguardando início, com ou sem horário.** O Painel ganhou o número
+   **Aguardando início**: cada paciente mostra **"instalação dd/mm"** (há
+   início ou sessão de tratamento marcados) ou **"sem horário"**. A tela
+   Atenção diz o mesmo, e o Início do Gerente, do Coordenador e da Recepção
+   mostra o cartão **"Ortodontia: aguardando instalação sem horário"**.
+10. **Quem já estava em tratamento antes do sistema (Q1).** Entra como **caso
+    legado**: link "Caso legado" no Painel (Gerente/Coordenador), motivo
+    obrigatório (fica no histórico), marcado como legado. O Admin **abre ou
+    fecha essa porta por unidade** na Configuração da Ortodontia — feche
+    quando os pacientes antigos estiverem cadastrados. Os casos abertos antes
+    da 0.366.0 sem venda por trás já estão marcados como legado.
+
 #### O que o ortodontista vê — e o que não vê
 
 Desde a 0.364.0, **o Dentista não vê nenhum valor da ortodontia**: nem a
@@ -1603,7 +1640,7 @@ da ortodontia (desde a 0.364.0).
 
 **Evidência:** EV-235 a EV-242; contenção, baixa e faltas (0.363.0): EV-243 a
 EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
-(0.365.0): EV-249 a EV-251.
+(0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254.
 
 ## A barra de cima
 
@@ -2213,6 +2250,8 @@ diferença.
 | Ortodontia — abrir, editar, iniciar, entregar contenções, dar alta, interromper o caso | Admin, **Gerente**, **Coordenador** |
 | Ortodontia — indicar na avaliação/reavaliação (0.365.0) | Admin, **Coordenador** (sugestão; o Planner decide no plano) |
 | Ortodontia — a proposta ortodôntica da opção do plano (0.365.0) | **Dentista Planner** e o titular, com o plano em rascunho/devolvido; o Coordenador aprova junto com a opção |
+| Ortodontia — o acordo ortodôntico da negociação (0.366.0) | **Consultor Comercial** (e o Gerente, o Admin); fora do limite, o **Gerente** autoriza |
+| Ortodontia — caso legado (0.366.0) | **Gerente**, **Coordenador** (motivo obrigatório), enquanto o **Admin** deixar a porta aberta na unidade |
 | Ortodontia — registrar a manutenção e a evolução | Admin, **Coordenador**, o **Dentista** que é o ortodontista do caso |
 | Ortodontia — mensalidades (gerar, dar baixa) | Admin, **Gerente**, Franqueadora/Rede, **Financeiro da Franqueadora** (desde a 0.363.0: a Recepção e o Franqueado só **veem** a situação; desde a 0.364.0 o **Coordenador** também vê, e o **Dentista não vê valor nenhum** — nem o banco lhe entrega) |
 | Lançar/editar dinheiro | Admin, Financeiro da Franqueadora, **Gerente** |

@@ -137,6 +137,36 @@ export const ORTHO_PAYMENT_METHOD_LABELS: Record<OrthoPaymentMethod, string> = {
   dinheiro: "Dinheiro",
 };
 
+/**
+ * R7 (0334): como as mensalidades são EMITIDAS — o acordo do Consultor na
+ * negociação, copiado para o caso. A emissão em si fica fora do sistema até o
+ * ASAAS (Q7); aqui é registro e controle. Espelha o check de `plan_negotiation_ortho`.
+ */
+export const ORTHO_BILLING_METHODS = [
+  "pix_recorrente",
+  "debito_recorrente",
+  "credito_recorrente",
+  "cartao_parcelado",
+  "boleto",
+  "avista_periodo",
+] as const;
+export type OrthoBillingMethod = (typeof ORTHO_BILLING_METHODS)[number];
+
+export const ORTHO_BILLING_METHOD_LABELS: Record<OrthoBillingMethod, string> = {
+  pix_recorrente: "PIX recorrente",
+  debito_recorrente: "Débito recorrente",
+  credito_recorrente: "Cartão de crédito recorrente",
+  cartao_parcelado: "Cartão de crédito parcelado",
+  boleto: "Boleto",
+  avista_periodo: "À vista (o período inteiro)",
+};
+
+/** De onde o caso veio (0334, R4/Q1): da venda do Comercial, ou legado (já em tratamento antes do sistema). */
+export const ORTHO_ORIGIN_LABELS: Record<"venda" | "legado", string> = {
+  venda: "Venda do Comercial",
+  legado: "Caso legado",
+};
+
 /** Conta do plano de contas que recebe a mensalidade (0329). */
 export const ORTHO_REVENUE_ACCOUNT = "1.1.04";
 

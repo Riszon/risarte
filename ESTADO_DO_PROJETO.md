@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.365.0** · Última migração: **0333** (0318 a 0333 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.366.0** · Última migração: **0334** (0318 a 0333 aplicadas na produção e no treino; **0334 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.366.0 / 0334 — ORTODONTIA (ORTO8): DO COMERCIAL AO CASO (28/10/2026)
+>
+> Terceira etapa do pedido de 28/10/2026 (ORTO-PLANO §5). **R5/R7/Q4:** o
+> Consultor fecha o **acordo ortodôntico** na negociação
+> (`plan_negotiation_ortho`: mensalidade, lote de N mensalidades, forma de
+> emissão, dia, pontualidade, contenção — bloco "Acordo ortodôntico" no painel
+> da negociação); os **limites** da ortodontia (mensalidade mínima,
+> pontualidade máxima, na `ortho_settings`) entraram em
+> `evaluate_negotiation_rules` → fora deles, `aguardando_autorizacao` do
+> Gerente. **R2/R4:** `commercial_close_step` → `_ortho_open_from_sale`: o
+> caso **nasce no fechamento** (aguardando início, origem `venda`, proposta do
+> Planner + acordo do Consultor, sem ortodontista) e avisa Gerente, Coordenador
+> e Recepção (categoria **Ortodontia** no sino). **"Novo caso" saiu**;
+> `ortho_create_case` exige venda fechada; **caso legado** (Q1:
+> `ortho_create_legacy_case`, porta `legacy_entry_enabled` só do Admin,
+> `ortho_cases.origin`). Painel "Aguardando início" com/sem horário, Atenção
+> e cartão no Início (`loadStartAppointments`). ⚠️ **0334 aplicada no treino**
+> (reaplicada, idempotente); ensaio em transação desfeita **24/24**;
+> **pendente na produção** (conferência esperada 4·1·4·1·1·1·0). ⚠️ **O
+> push espera a migração:** `ortho_effective_settings`/`ortho_save_settings`
+> mudaram de assinatura e o app lê `plan_negotiation_ortho` e
+> `ortho_cases.origin`. EV-252 a EV-254.
 
 > ## 🎯 0.365.0 / 0333 — ORTODONTIA (ORTO7): DO CLÍNICO AO PLANO (28/10/2026)
 >
@@ -4732,6 +4755,111 @@ Cliente em 7 fases + Centro de Planejamento) está pronta.
 Migrações **0001–0045** escritas; **0001–0043 aplicadas**; **0044–0045 pendentes**.
 
 ## 2. O que está em andamento agora
+
+### ORTODONTIA — ORTO8, do Comercial ao caso (28/10/2026, v0.366.0, migração 0334)
+
+Terceira etapa do pedido de 28/10/2026 (ORTO-PLANO §5). Entrega **R1**
+(configuração), **R2**, **R4**, **R5 parte comercial**, **R7** (registro da
+forma) e as decisões **Q1** e **Q4**. **Absorve o ORTO5** do plano original.
+
+- **R1/Q4 — a configuração.** `ortho_settings` ganhou
+  `punctuality_discount_percent` (sugerido), `max_punctuality_discount_percent`,
+  `min_monthly_fee_cents` e `legacy_entry_enabled` (nulo na unidade = herda).
+  `ortho_effective_settings` (+4 colunas) e `ortho_save_settings` (+4 args)
+  **derrubadas e recriadas**; a porta do legado só o Admin mexe (o Gerente
+  manda nulo e ela fica como está). Editor com o bloco "O acordo comercial:
+  pontualidade e limites" e, para o Admin, a porta.
+- **R5/R7 — o acordo na negociação.** Tabela **`plan_negotiation_ortho`**
+  (PK `negotiation_id`, ligação `plan_negotiation_ortho_negotiation_id_fkey`;
+  mensalidade, `installments_count` 1–120, `billing_method` em
+  pix_recorrente/debito_recorrente/credito_recorrente/cartao_parcelado/
+  boleto/avista_periodo, dia, pontualidade, contenção, obs). Leitura = quem lê
+  a negociação; escrita só por `save_negotiation_ortho` (Consultor com
+  acesso à unidade, Gerente, Admin; negociação em
+  em_negociacao/aguardando_autorizacao/devolvida), que **reavalia a regra na
+  hora**. `_negotiation_ortho_violations` (mínimo, pontualidade máxima,
+  contenção cobrada sem valor) entrou em `evaluate_negotiation_rules` — o
+  resto da regra (0327) está inteiro. No app: `NegotiationBlock.ortho`
+  (`negotiation-loader.ts`: proposta por opção, opções com Ortodontia,
+  acordo, padrões/limites), o bloco **"Acordo ortodôntico"**
+  (`ortho-agreement-block.tsx`) entre os passos 2 e 3 do painel, só quando a
+  opção escolhida é de ortodontia; ação `saveNegotiationOrtho`; o orçamento
+  impresso usa o acordo (origem `negociacao`). `ORTHO_BILLING_METHODS` em
+  `constants.ts`.
+- **R2/R4 — o caso nasce no fechamento.** `commercial_close_step` (0202,
+  recriada igual) chama **`_ortho_open_from_sale`** dentro de um bloco de
+  exceção (a ortodontia **nunca derruba a venda**; falha vira `raise
+  warning`). A função: venda sem proposta e sem procedimento de Ortodontia →
+  nada; paciente já com caso aberto → só liga a venda ao caso; senão insere
+  `ortho_cases` (aguardando início, origem `venda`, tipo/meses/intervalo da
+  proposta ou da configuração, **sem ortodontista** — Q3 cuida) +
+  `ortho_case_terms` (do acordo, senão do padrão: mensalidade, dia,
+  contenção, `installments_count`, `billing_method`,
+  `punctuality_discount_percent`) + histórico + avisos **"Ortodontia: caso
+  fechado — agendar a instalação"** para Gerente, Coordenador e Recepção
+  (link do caso; categoria `ortodontia` no sino, pelo link `/ortodontia`). O
+  retorno do fechamento traz `ortho_case_id`; o toast do painel de fechamento
+  diz que o caso abriu.
+- **R4/Q1 — sem venda não se abre caso; o legado tem porta própria.** O
+  botão "Novo caso" saiu do Painel e da lista. `ortho_create_case` exige
+  `p_negotiation_id` com `commercial_sales` fechada (`SALE_REQUIRED` /
+  `SALE_NOT_CLOSED`) — é o caminho das vendas fechadas antes desta versão
+  ("vendas sem caso" no Painel), e preenche o dinheiro pelo acordo.
+  **`ortho_create_legacy_case`** (Gerente/Coordenador, `LEGACY_CLOSED` se a
+  porta está fechada, `LEGACY_NOTE_REQUIRED`): origem `legado`, motivo no
+  histórico. `ortho_cases.origin` (venda | legado; os casos antigos sem venda
+  viraram legado). A tela `casos/novo` tem dois modos (`?negociacao=` ou
+  `?legado=1`); sem nenhum, volta ao Painel. Link "Caso legado" no Painel
+  enquanto a porta está aberta.
+- **R4 — aguardando início com/sem horário.** `loadStartAppointments`
+  (próximo início/sessão de tratamento agendado/confirmado por paciente);
+  `attentionReasons` ganhou `startScheduled`; Painel com o KPI **"Aguardando
+  início"** (lista com "instalação dd/mm" ou "sem horário"); Atenção diz a
+  data ou "sem horário de instalação"; Início com o cartão
+  **"Ortodontia: aguardando instalação sem horário"** (Recepção, Gerente,
+  Coordenador; `contarOrtodontiaSemInstalacao`).
+
+**Conferido:** `check-migrations 0334` OK; `migrar:teste` aplicou (218
+tabelas, 663 funções) e a 0334 foi reaplicada por cima sem erro (conferência
+4·1·4·1·1·1·0); ensaio em transação desfeita **24/24** (configuração e porta;
+recepção não fecha acordo; fora do limite → 3 violações e
+`aguardando_autorizacao`; dentro → gravado; fechamento abre o caso com a
+proposta e o acordo, avisa os três papéis, o cliente vira "em ortodontia";
+venda sem ortodontia não abre nada; `SALE_REQUIRED`/`SALE_NOT_CLOSED`; legado
+com motivo, porta fechada recusa; backfill; sem login nada executa). **Achado
+ao ensaiar, corrigido na própria 0334:** `text[] || 'literal'` sem `::text`
+vira "malformed array literal" no Postgres. `npm run verificar`, `npm test`,
+`npm run lint`: ver a entrada da sessão no `CLAUDE.md`. **NÃO visto na
+tela.** ⚠️ **0334 PENDENTE NA PRODUÇÃO — e o push espera por ela:**
+`ortho_effective_settings` e `ortho_save_settings` mudaram de assinatura
+(Configuração, Novo caso, Painel), o app lê `plan_negotiation_ortho` (painel
+da negociação, orçamento) e `ortho_cases.origin` (toda ficha e lista).
+
+**Roteiro para o dono testar no treino:**
+
+1. **Admin**, Configuração da Ortodontia: pontualidade sugerida 5%, máxima
+   10%, mensalidade mínima R$ 150,00; a porta do legado aberta.
+2. **Consultor**, Apresentação de um paciente com opção de ortodontia
+   aprovada: salvar a negociação; o bloco **"Acordo ortodôntico"** aparece;
+   pôr mensalidade R$ 120,00 e pontualidade 15% → "fora do limite" → ao
+   salvar, aguardando autorização do Gerente. **Gerente** autoriza (ou nega).
+   Corrigir para R$ 189,90 e 5% → salvo sem pendência. Orçamento impresso
+   com o acordo.
+3. **Consultor**: cliente aceitou → fechamento: contrato assinado + pagamento
+   confirmado → toast "caso ortodôntico foi aberto". **Gerente/Coordenador/
+   Recepção**: aviso "Ortodontia: caso fechado — agendar a instalação" (aba
+   Ortodontia do sino). Painel: "Aguardando início" com o paciente "sem
+   horário"; Início: cartão "Ortodontia: aguardando instalação sem horário".
+4. **Recepção** agenda o início de tratamento com um dentista → o Painel
+   mostra "instalação dd/mm", o cartão do Início some, o dentista virou o
+   responsável (ORTO7).
+5. **Gerente**: o Painel não tem mais "Novo caso"; o link **"Caso legado"**
+   abre o cadastro com o motivo obrigatório. **Admin** fecha a porta na
+   Configuração → o link some e a tela recusa.
+
+**Próxima etapa (aprovada):** ORTO9 (mensalidades por lote: avisos a
+60/30/15 dias, renovar/encerrar, reajuste anual, pontualidade na baixa,
+suspensão, cláusulas das mensalidades no termo — 0335).
 
 ### ORTODONTIA — ORTO7, do clínico ao plano (28/10/2026, v0.365.0, migração 0333)
 

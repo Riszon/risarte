@@ -70,7 +70,9 @@ export function ClosingPanel({
       if (r.ok) {
         if (r.closed)
           toast.success(
-            "VENDA CONCLUÍDA! Contrato assinado e pagamento confirmado — a recepção foi acionada para iniciar o tratamento."
+            r.orthoCaseId
+              ? "VENDA CONCLUÍDA! O caso ortodôntico foi aberto (aguardando início) — a recepção, o Gerente e o Coordenador foram acionados para agendar a instalação."
+              : "VENDA CONCLUÍDA! Contrato assinado e pagamento confirmado — a recepção foi acionada para iniciar o tratamento."
           );
         else toast.success("Fechamento atualizado.");
         router.refresh();

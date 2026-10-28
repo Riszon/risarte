@@ -176,6 +176,35 @@ function janelaDeHoje(): { inicio: string; fim: string } {
   return { inicio: inicio.toISOString(), fim: fim.toISOString() };
 }
 
+/**
+ * ORTO8 (0334, R4): quantos casos de ortodontia da unidade aguardam início
+ * SEM horário de instalação (início/sessão de tratamento futuro, agendado ou
+ * confirmado). A mesma régua da tela Atenção. Banco sem a 0329 → zero.
+ */
+async function contarOrtodontiaSemInstalacao(
+  supabase: SupabaseClient,
+  clinicId: string
+): Promise<number> {
+  const { data: casos, error } = await supabase
+    .from("ortho_cases")
+    .select("client_id")
+    .eq("clinic_id", clinicId)
+    .eq("status", "aguardando_inicio")
+    .limit(500);
+  if (error || !casos || casos.length === 0) return 0;
+  const ids = [...new Set(casos.map((c) => c.client_id as string))];
+  const { data: agendados } = await supabase
+    .from("appointments")
+    .select("client_id")
+    .in("client_id", ids)
+    .in("type", ["treatment_start", "treatment_session"])
+    .in("status", ["scheduled", "confirmed"])
+    .gte("starts_at", new Date().toISOString())
+    .limit(1000);
+  const comHorario = new Set((agendados ?? []).map((a) => a.client_id as string));
+  return ids.filter((id) => !comHorario.has(id)).length;
+}
+
 export async function montarPendencias(
   supabase: SupabaseClient,
   session: SessionContext
@@ -220,6 +249,7 @@ export async function montarPendencias(
     followupsVencidos,
     rodadasAbertas,
     requisicoesEsperando,
+    ortodontiaSemInstalacao,
   ] = await Promise.all([
     recepcao
       ? supabase
@@ -299,6 +329,13 @@ export async function montarPendencias(
           .from("purchase_requests")
           .select("id", { count: "exact", head: true })
           .eq("status", "enviada")
+      : null,
+    // ORTO8 (0334, R4): casos de ortodontia aguardando início SEM horário de
+    // instalação — para quem agenda e quem gere. A mesma régua da tela Atenção
+    // (`loadStartAppointments`): início/sessão de tratamento futuro, agendado
+    // ou confirmado. Leitura tolerante: sem a 0329, zero.
+    balcao || gestao
+      ? contarOrtodontiaSemInstalacao(supabase, clinica.id)
       : null,
   ]);
 
@@ -420,6 +457,15 @@ export async function montarPendencias(
     linha: "Cotações em andamento na mesa da Franqueadora.",
     href: "/compras/rodadas",
     tom: "normal",
+  });
+
+  juntar({
+    chave: "ortodontia-instalar",
+    numero: typeof ortodontiaSemInstalacao === "number" ? ortodontiaSemInstalacao : 0,
+    titulo: "Ortodontia: aguardando instalação sem horário",
+    linha: "Fecharam o tratamento ortodôntico e ainda não têm a instalação do aparelho agendada.",
+    href: "/ortodontia/atencao?motivo=aguardando_inicio",
+    tom: "atencao",
   });
 
   return lista;

@@ -158,6 +158,8 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
     procedureIds: conta.incluidos.map((i) => i.procedureId).filter((x): x is string => Boolean(x)),
     // ORTO7: as características definidas pelo Planner na opção (tipo, meses, contenção).
     optionId: (n.option_id as string | null) ?? null,
+    // ORTO8: o acordo fechado pelo Consultor nesta negociação (mensalidade, contenção…).
+    negotiationId: n.id as string,
   });
 
   const status = n.status as string;
@@ -298,7 +300,9 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
           <p className="mt-1 text-[10px] text-neutral-600">
             {orto.origem === "caso"
               ? "Valores do caso ortodôntico já aberto para este paciente."
-              : orto.origem === "proposta"
+              : orto.origem === "negociacao"
+                ? "Características definidas pelo Dentista Planner no plano; mensalidade, contenção e condições conforme o acordo desta negociação."
+                : orto.origem === "proposta"
                 ? "Características definidas pelo Dentista Planner no plano; valores da mensalidade e da contenção são o padrão da unidade, ajustados no acordo comercial."
                 : "Valores padrão da unidade para tratamento ortodôntico; podem ser ajustados ao abrir o caso."}
           </p>

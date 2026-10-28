@@ -161,7 +161,8 @@ linha deixam ler só quem é da unidade (ou da rede).
 | **ORTO2** | Avisos no sino: manutenção vencida sem agendamento, faltou, reavaliação vencida, mensalidade atrasada (rotina por unidade, como `notify_treatment_alerts`) |
 | **ORTO3** | Indicadores de Metas: pacientes em tratamento, novos casos, finalizados no prazo, receita de ortodontia (recorte do `1.1.04`) — e o modelo pronto "Meta de Ortodontia" passa a usar o caso |
 | **ORTO4** | Cobrança recorrente da mensalidade pelo ASAAS (junto com o lote das integrações) e a mensalidade em aberto na projeção do fluxo de caixa |
-| **ORTO5** | Abertura automática do caso no fechamento da venda com procedimento de Ortodontia (hoje a tela Casos lista as vendas sem caso e abre com um clique) |
+| **ORTO5** ✅ | Absorvido pelo ORTO8 (0334): o caso nasce no fechamento da venda (`_ortho_open_from_sale`); a lista "vendas sem caso" do Painel fica para as vendas fechadas antes da 0.366.0 |
+| **ORTO8** ✅ | Do Comercial ao caso (28/10/2026, migração 0334, v0.366.0; §5.3): acordo ortodôntico na negociação (`plan_negotiation_ortho`) com limites (Q4) na regra comercial; o caso nasce no fechamento; "Novo caso" saiu, caso legado com porta do Admin (Q1); avisos e "aguardando início com/sem horário" no Painel, Atenção e Início |
 
 ---
 
@@ -309,7 +310,7 @@ em "aguardando início" → Agenda da instalação → Tratamento.
 |---|---|---|
 | **ORTO6** ✅ | **A tela do ortodontista** (R11, R12, R13): evolução espelhada no Desenvolvimento Clínico; alertas da anamnese e atalhos na ficha; valores fora do alcance do dentista (tabela irmã + RLS + selo/lista/termo). Migração 0332, v0.364.0 (28/10/2026). | Pequena — entregue |
 | **ORTO7** ✅ | **Do clínico ao plano** (R3, R5 parte clínica, R6, R10, Q3): indicação na avaliação/reavaliação; "Proposta ortodôntica" na opção do plano, aprovada com a opção; ortodontista "quem inicia" (assumido do agendamento de instalação; troca no histórico); cláusulas de prazo como referência e responsável no termo; o caso pela venda herda a proposta. Migração 0333, v0.365.0 (28/10/2026). | Média — entregue |
-| **ORTO8** | **Do Comercial ao caso** (R1 config, R2, R4, R5 parte comercial, R7 registro da forma): condições da ortodontia na negociação com limites e autorização; o caso nasce no fechamento; "Novo caso" sai (caso legado — Q1); avisos; Painel/Início "aguardando início com/sem horário". Migração 0334. **Absorve o ORTO5.** | Grande |
+| **ORTO8** ✅ | **Do Comercial ao caso** (R1 config, R2, R4, R5 parte comercial, R7 registro da forma, Q1, Q4): acordo ortodôntico na negociação (`plan_negotiation_ortho`) com limites na regra comercial e autorização do Gerente; o caso nasce no fechamento (`_ortho_open_from_sale`); "Novo caso" saiu, `ortho_create_case` exige venda fechada; caso legado com porta do Admin; avisos (categoria Ortodontia); Painel/Atenção/Início "aguardando início com/sem horário". Migração 0334, v0.366.0 (28/10/2026). **Absorveu o ORTO5.** | Grande — entregue |
 | **ORTO9** | **Mensalidades por lote** (R1 baixa, R7, R8, R9): lotes de N mensalidades, formas novas, quitação do lote, rotina 60/30/15, renovar/encerrar, reajuste anual, suspensão, cláusulas das mensalidades no termo. Migração 0335. **Absorve o ORTO2** (rotina diária da ortodontia). | Grande |
 | ORTO4 (mantido) | A **emissão real** (boleto/pix/recorrência) pelo ASAAS, no lote das integrações. Até lá a forma de emissão fica **registrada** e a cobrança é emitida fora do sistema. | — |
 

@@ -390,6 +390,33 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**28/10/2026 (17) — PC Administrador (core 0.365.0 → 0.366.0, migração 0334)**
+
+- **Ortodontia ORTO8 — do Comercial ao caso** (ESTADO §2). **R5/R7/Q4:**
+  `plan_negotiation_ortho` (acordo por negociação: mensalidade, lote de N,
+  forma de emissão, dia, pontualidade, contenção; `save_negotiation_ortho` =
+  Consultor/Gerente/Admin, reavalia a regra na hora);
+  `_negotiation_ortho_violations` entrou em `evaluate_negotiation_rules`
+  (mínimo/pontualidade máxima da `ortho_settings` → `aguardando_autorizacao`);
+  bloco "Acordo ortodôntico" (`ortho-agreement-block.tsx`) no painel da
+  negociação; orçamento usa o acordo. **R2/R4:** `commercial_close_step`
+  chama `_ortho_open_from_sale` (embrulhada: nunca derruba a venda) → caso
+  `aguardando_inicio`, origem `venda`, termos do acordo, avisos
+  "Ortodontia: caso fechado — agendar a instalação" (Gerente/Coordenador/
+  Recepção; categoria `ortodontia` no sino, pelo link). **R4/Q1:** "Novo
+  caso" saiu; `ortho_create_case` exige venda fechada (`SALE_REQUIRED`/
+  `SALE_NOT_CLOSED`); `ortho_create_legacy_case` + `legacy_entry_enabled`
+  (só o Admin mexe) + `ortho_cases.origin`; Painel/Atenção/Início com
+  "aguardando início com/sem horário" (`loadStartAppointments`).
+- ⚠️ `ortho_effective_settings` (+4 colunas) e `ortho_save_settings` (+4
+  args) **derrubadas e recriadas**; o app lê `plan_negotiation_ortho` e
+  `ortho_cases.origin`: **o push espera a 0334 na produção**.
+- ✅ 0334 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
+  conferência 4·1·4·1·1·1·0); ensaio em transação desfeita **24/24**
+  (`scratchpad/ensaio-orto-0334.mjs`). Achado ao ensaiar: `text[] || 'literal'`
+  sem `::text` vira "malformed array literal" — corrigido na própria 0334.
+  ⚠️ **PENDENTE NA PRODUÇÃO.** Não visto na tela.
+
 **28/10/2026 (16) — PC Administrador (core 0.364.0 → 0.365.0, migração 0333)**
 
 - **Ortodontia ORTO7 — do clínico ao plano** (ESTADO §2). **R3:** o

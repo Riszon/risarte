@@ -10,13 +10,14 @@ import { Label } from "@/components/ui/label";
 import { ORTHO_KIND_LABELS, ORTHO_KINDS } from "@/lib/ortodontia/constants";
 import { maintenanceSchedule, plannedEndDate } from "@/lib/ortodontia/regras";
 import type { ProcedureOption, StaffOption } from "@/lib/ortodontia/db";
-import { createOrthoCase } from "../../actions";
+import { createOrthoCase, createOrthoLegacyCase } from "../../actions";
 
 const selectClass = "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 
 export function NovoCasoForm({
   clientId,
   negotiationId,
+  legado = false,
   today,
   defaults,
   orthodontists,
@@ -24,6 +25,8 @@ export function NovoCasoForm({
 }: {
   clientId: string;
   negotiationId: string | null;
+  /** Q1 (0334): caso legado — paciente já em tratamento antes do sistema, sem venda. */
+  legado?: boolean;
   today: string;
   defaults: {
     /** ORTO7: o tipo definido pelo Planner na proposta da opção vendida. */
@@ -56,10 +59,10 @@ export function NovoCasoForm({
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      const r = await createOrthoCase(fd);
+      const r = legado ? await createOrthoLegacyCase(fd) : await createOrthoCase(fd);
       if (!r.ok) toast.error(r.error ?? "Não foi possível abrir o caso.");
       else {
-        toast.success("Caso ortodôntico aberto.");
+        toast.success(legado ? "Caso legado cadastrado." : "Caso ortodôntico aberto.");
         router.push(`/ortodontia/casos/${r.caseId}`);
       }
     });
@@ -69,6 +72,19 @@ export function NovoCasoForm({
     <form onSubmit={onSubmit} className="space-y-4">
       <input type="hidden" name="client_id" value={clientId} />
       {negotiationId && <input type="hidden" name="negotiation_id" value={negotiationId} />}
+
+      {legado && (
+        <Card className="border-amber-300">
+          <CardHeader className="gap-1"><CardTitle className="text-base">Por que é um caso legado?</CardTitle></CardHeader>
+          <CardContent className="space-y-1">
+            <Label htmlFor="legacy_note">Motivo (fica no histórico do caso)</Label>
+            <Input id="legacy_note" name="legacy_note" required minLength={5} placeholder="Ex.: em tratamento desde 03/2025, antes do sistema; acordo verbal de R$ 180/mês" />
+            <p className="text-[11px] text-muted-foreground">
+              O caso de ortodontia nasce no fechamento da venda do Comercial. Este cadastro existe só para quem já estava em tratamento antes — o Admin pode fechar esta porta na Configuração.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="gap-1"><CardTitle className="text-base">O tratamento</CardTitle></CardHeader>
@@ -182,7 +198,7 @@ export function NovoCasoForm({
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>Cancelar</Button>
-        <Button type="submit" disabled={isPending}>Abrir o caso</Button>
+        <Button type="submit" disabled={isPending}>{legado ? "Cadastrar o caso legado" : "Abrir o caso"}</Button>
       </div>
     </form>
   );

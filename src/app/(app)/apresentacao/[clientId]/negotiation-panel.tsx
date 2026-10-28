@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { GutBadge } from "@/components/gut-badge";
 import { PlanHistoryDialog } from "@/components/plan-history-dialog";
+import { OrthoAgreementBlock } from "./ortho-agreement-block";
+import type { NegotiationOrthoBlock } from "./negotiation-loader";
 import type { PlanEvent } from "@/lib/planning";
 import { sortByGutDesc } from "@/lib/gut";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,11 +162,14 @@ export function NegotiationPanel({
   custosDaMargem = null,
   minMarginPercent = null,
   odonto = null,
+  ortho = null,
 }: {
   clientId: string;
   planId: string;
   options: NegotiationOption[];
   negotiation: NegotiationData | null;
+  /** ORTO8 (0334): ortodontia na negociação (nulo = sem ortodontia no plano). */
+  ortho?: NegotiationOrthoBlock | null;
   /** OD4: o desenho do aceite (tocar no dente marca/desmarca os itens dele). */
   odonto?: OdontoDaApresentacao | null;
   rule: CommercialRule;
@@ -1170,6 +1175,18 @@ export function NegotiationPanel({
             </p>
           )}
         </FlowSection>
+
+        {/* ORTO8 (0334): o acordo ortodôntico — só quando a opção escolhida é de
+            ortodontia (proposta do Planner ou procedimento de Ortodontia). */}
+        {ortho && (ortho.proposalByOption[optionId] || ortho.orthoOptionIds.includes(optionId)) && (
+          <OrthoAgreementBlock
+            clientId={clientId}
+            negotiationId={negotiation?.id ?? null}
+            optionId={optionId}
+            ortho={ortho}
+            locked={locked}
+          />
+        )}
 
         {/* PASSO 3 — quem decide e o que ficou combinado. */}
         <FlowSection

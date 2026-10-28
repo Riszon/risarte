@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronRight, ListChecks, UserPlus } from "lucide-react";
+import { ChevronRight, ListChecks } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { canManageOrtho, canViewOrtho, canViewOrthoDashboard, canViewOrthoMoney, orthoRestrictedToOwn } from "@/lib/ortodontia/access";
+import { canViewOrtho, canViewOrthoDashboard, canViewOrthoMoney, orthoRestrictedToOwn } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
 import { groupByCase, loadCases, loadMaintenancesFor } from "@/lib/ortodontia/db";
 import { TIMELINESS_LABELS, attendance, caseTimeliness, nextMaintenance, progressPercent, type MaintenanceLike } from "@/lib/ortodontia/regras";
@@ -12,7 +12,6 @@ import { ORTHO_KIND_LABELS, ORTHO_STATUS_LABELS, ORTHO_STATUSES, type OrthoStatu
 import { ORTHO_STATUS_TONE } from "@/components/ortodontia/ortho-client-card";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { FilterForm } from "@/components/filter-form";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatBRL } from "@/lib/pricing";
@@ -67,11 +66,9 @@ export default async function OrtoCasosPage(props: PageProps<"/ortodontia/casos"
         descricao={`${cases.length} caso${cases.length === 1 ? "" : "s"} em ${scope.label}${status ? ` · ${ORTHO_STATUS_LABELS[status]}` : ""}.`}
         voltar={canViewOrthoDashboard(session) ? { href: "/ortodontia", rotulo: "Painel" } : { href: "/ortodontia/atencao", rotulo: "Atenção" }}
       >
-        {canManageOrtho(session, scope.clinicId) && (
-          <Button size="sm" nativeButton={false} render={<Link href="/ortodontia/casos/novo" />}>
-            <UserPlus className="mr-1 size-3.5" /> Novo caso
-          </Button>
-        )}
+        {/* R4 (0334): não existe mais "Novo caso" — o caso nasce no fechamento da
+            venda do Comercial. Quem já estava em tratamento entra como legado,
+            pelo Painel. */}
       </CabecalhoDeModulo>
 
       <FilterForm className="flex flex-wrap items-center gap-2 text-sm">

@@ -56,6 +56,13 @@ const uuidOrNull = (fd: FormData, k: string) => {
   const v = str(fd, k);
   return /^[0-9a-f-]{36}$/i.test(v) ? v : null;
 };
+/** Percentual digitado ("7,5" ou "7.5") → número entre 0 e 100. */
+const percent = (fd: FormData, k: string, fallback: number) => {
+  const v = str(fd, k).replace(",", ".");
+  if (v === "") return fallback;
+  const n = Number.parseFloat(v);
+  return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : fallback;
+};
 
 // ---------------------------------------------------------------------------
 // O caso
@@ -102,6 +109,57 @@ export async function createOrthoCase(formData: FormData): Promise<OrthoActionRe
 
   const caseId = data as string;
   await logAudit({ action: "create", entityType: "ortho_case", entityId: caseId, clinicId: client.clinic_id as string });
+  refresh(caseId, clientId);
+  return { ok: true, caseId };
+}
+
+/**
+ * Q1 (0334): o CASO LEGADO — paciente que já estava em tratamento antes do
+ * sistema, sem venda no Comercial. Gerente/Coordenador, enquanto a porta
+ * estiver aberta na unidade (o Admin fecha na Configuração). Motivo obrigatório.
+ */
+export async function createOrthoLegacyCase(formData: FormData): Promise<OrthoActionResult> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const clientId = uuidOrNull(formData, "client_id");
+  if (!clientId) return { ok: false, error: "Escolha o paciente." };
+  const legacyNote = str(formData, "legacy_note");
+  if (legacyNote.length < 5) return { ok: false, error: "Diga por que este caso entra como legado (ex.: em tratamento desde 03/2025, antes do sistema)." };
+
+  const { data: client } = await supabase.from("clients").select("id, clinic_id").eq("id", clientId).maybeSingle();
+  if (!client) return { ok: false, error: "Paciente não encontrado." };
+  if (!canManageOrtho(session, client.clinic_id as string)) {
+    return { ok: false, error: "Só o Gerente e o Coordenador da unidade cadastram um caso legado." };
+  }
+  const months = int(formData, "planned_months", 24) ?? 24;
+  if (months < 1 || months > 120) return { ok: false, error: "Meses previstos: entre 1 e 120." };
+  const interval = int(formData, "maintenance_interval_days", 30) ?? 30;
+  if (interval < 7 || interval > 180) return { ok: false, error: "Intervalo das manutenções: entre 7 e 180 dias." };
+  const billing = int(formData, "billing_day", 10) ?? 10;
+  if (billing < 1 || billing > 28) return { ok: false, error: "Dia de cobrança: entre 1 e 28." };
+
+  const { data, error } = await supabase.rpc("ortho_create_legacy_case", {
+    p_client_id: clientId,
+    p_orthodontist_id: uuidOrNull(formData, "orthodontist_id"),
+    p_treatment_kind: kind(formData),
+    p_start_date: dateOrNull(formData, "start_date"),
+    p_planned_months: months,
+    p_interval_days: interval,
+    p_monthly_fee_cents: cents(formData, "monthly_fee"),
+    p_billing_day: billing,
+    p_installation_fee_cents: cents(formData, "installation_fee"),
+    p_maintenance_procedure_id: uuidOrNull(formData, "maintenance_procedure_id"),
+    p_notes: str(formData, "notes") || null,
+    p_start_now: str(formData, "start_now") === "on",
+    p_retainer_charged: formData.has("retainer_charged_present") ? str(formData, "retainer_charged") === "on" : null,
+    p_retainer_fee_cents: formData.has("retainer_fee") ? cents(formData, "retainer_fee") : null,
+    p_retainer_terms: str(formData, "retainer_terms") || null,
+    p_legacy_note: legacyNote,
+  });
+  if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
+
+  const caseId = data as string;
+  await logAudit({ action: "create", entityType: "ortho_case", entityId: caseId, clinicId: client.clinic_id as string, details: { origin: "legado" } });
   refresh(caseId, clientId);
   return { ok: true, caseId };
 }
@@ -411,6 +469,12 @@ export async function saveOrthoSettings(clinicId: string | null, formData: FormD
     p_retainer_charge_enabled: str(formData, "retainer_charge_enabled") === "on",
     p_retainer_fee_cents: cents(formData, "retainer_fee"),
     p_retainer_terms: str(formData, "retainer_terms") || null,
+    // R1/Q4 (0334): pontualidade sugerida e máxima, mensalidade mínima.
+    p_punctuality_discount_percent: percent(formData, "punctuality_discount_percent", 0),
+    p_max_punctuality_discount_percent: percent(formData, "max_punctuality_discount_percent", 10),
+    p_min_monthly_fee_cents: cents(formData, "min_monthly_fee"),
+    // Q1: a porta do caso legado é do Admin — o Gerente nem a manda (nulo = fica).
+    p_legacy_entry_enabled: session.isAdminMaster && formData.has("legacy_entry_present") ? str(formData, "legacy_entry_enabled") === "on" : null,
   });
   if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
   await logAudit({ action: "update", entityType: "ortho_settings", entityId: clinicId ?? "rede", clinicId: clinicId ?? undefined });

@@ -6,7 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewOrtho, canViewOrthoDashboard, canViewOrthoMoney, orthoRestrictedToOwn } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
-import { groupByCase, loadCases, loadChargesFor, loadMaintenancesFor, loadOpenRequestsFor } from "@/lib/ortodontia/db";
+import { groupByCase, loadCases, loadChargesFor, loadMaintenancesFor, loadOpenRequestsFor, loadStartAppointments } from "@/lib/ortodontia/db";
 import {
   ATTENTION_LABELS,
   attentionReasons,
@@ -75,10 +75,12 @@ export default async function OrtoAtencaoPage(props: PageProps<"/ortodontia/aten
   });
   const cases = casesRead.ok ? casesRead.linhas : [];
   const caseIds = cases.map((c) => c.id);
-  const [maintRead, chargesRead, openRequests] = await Promise.all([
+  const [maintRead, chargesRead, openRequests, startByClient] = await Promise.all([
     loadMaintenancesFor(supabase, caseIds),
     canMoney ? loadChargesFor(supabase, caseIds) : Promise.resolve({ ok: true as const, linhas: [], paginas: 0 }),
     loadOpenRequestsFor(supabase, [...new Set(cases.map((c) => c.client_id))]),
+    // R4 (0334): horário de instalação de quem aguarda início.
+    loadStartAppointments(supabase, cases.filter((c) => c.status === "aguardando_inicio").map((c) => c.client_id)),
   ]);
   const maintByCase = groupByCase(maintRead.ok ? maintRead.linhas : []);
   const chargesByCase = groupByCase(chargesRead.ok ? chargesRead.linhas : []);
@@ -98,9 +100,10 @@ export default async function OrtoAtencaoPage(props: PageProps<"/ortodontia/aten
         openClinicalRequests: openRequests.get(c.client_id) ?? 0,
         today,
         includeMoney: canMoney,
+        startScheduled: startByClient.has(c.client_id),
       });
       const next = nextMaintenance(ms, today);
-      return { c, reasons, next };
+      return { c, reasons, next, instalacao: startByClient.get(c.client_id) ?? null };
     })
     .filter((x) => x.reasons.length > 0 && (!motivo || x.reasons.includes(motivo)))
     .sort((a, b) => ORDEM.indexOf(a.reasons[0]) - ORDEM.indexOf(b.reasons[0]));
@@ -161,7 +164,7 @@ export default async function OrtoAtencaoPage(props: PageProps<"/ortodontia/aten
       )}
 
       <ul className="space-y-2">
-        {linhas.map(({ c, reasons, next }) => (
+        {linhas.map(({ c, reasons, next, instalacao }) => (
           <li key={c.id}>
             <Card>
               <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4">
@@ -181,7 +184,13 @@ export default async function OrtoAtencaoPage(props: PageProps<"/ortodontia/aten
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground">
                     {c.orthodontist ? `Ortodontista: ${c.orthodontist.full_name}` : "Sem ortodontista definido"}
-                    {next ? ` · próxima manutenção ${formatIsoDateBr((next.appointment_date ?? next.planned_date ?? "").slice(0, 10))} (${next.status})` : " · sem próxima manutenção"}
+                    {c.status === "aguardando_inicio"
+                      ? instalacao
+                        ? ` · instalação marcada para ${formatIsoDateBr(instalacao.slice(0, 10))}`
+                        : " · sem horário de instalação (agendar início de tratamento)"
+                      : next
+                        ? ` · próxima manutenção ${formatIsoDateBr((next.appointment_date ?? next.planned_date ?? "").slice(0, 10))} (${next.status})`
+                        : " · sem próxima manutenção"}
                     {c.planned_end_date ? ` · término previsto ${formatIsoDateBr(c.planned_end_date)}` : ""}
                   </p>
                 </div>

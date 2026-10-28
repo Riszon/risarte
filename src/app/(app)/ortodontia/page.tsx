@@ -33,8 +33,10 @@ import {
   loadChargesFor,
   loadIndicaReferredSet,
   loadMaintenancesFor,
+  loadEffectiveSettings,
   loadOpenRequestsFor,
   loadSalesWithoutCase,
+  loadStartAppointments,
   type OrthoCaseRow,
 } from "@/lib/ortodontia/db";
 import {
@@ -177,6 +179,13 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
   const maintByCase = groupByCase(maintRead.ok ? maintRead.linhas : []);
   const chargesByCase = groupByCase(chargesRead.ok ? chargesRead.linhas : []);
   const leituraIncompleta = !maintRead.ok || !chargesRead.ok;
+  // R4 (0334): quem aguarda início tem horário de instalação marcado? E a
+  // porta do caso legado (Q1) está aberta nesta unidade?
+  const [startByClient, settingsDaUnidade] = await Promise.all([
+    loadStartAppointments(supabase, cases.filter((c) => c.status === "aguardando_inicio").map((c) => c.client_id)),
+    scope.clinicId ? loadEffectiveSettings(supabase, scope.clinicId) : Promise.resolve(null),
+  ]);
+  const legadoAberto = canManage && Boolean(scope.clinicId) && (settingsDaUnidade?.legacy_entry_enabled ?? true);
 
   const likeOf = (caseId: string): MaintenanceLike[] =>
     (maintByCase.get(caseId) ?? []).map((m) => ({
@@ -240,9 +249,19 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
         openClinicalRequests: openRequests.get(c.client_id) ?? 0,
         today,
         includeMoney: canMoney,
+        startScheduled: startByClient.has(c.client_id),
       }),
     }))
     .filter((x) => x.reasons.length > 0);
+  // R4: a lista de quem aguarda início, com ou sem horário de instalação.
+  const aguardandoItens = aguardando.map((c) => {
+    const quando = startByClient.get(c.client_id);
+    return item(c, {
+      badge: quando ? `instalação ${formatIsoDateBr(quando.slice(0, 10))}` : "sem horário",
+      badgeTone: quando ? "emerald" : "amber",
+    });
+  });
+  const aguardandoSemHorario = aguardando.filter((c) => !startByClient.has(c.client_id)).length;
   const semAgendamento = atencao.filter((x) =>
     x.reasons.some((r) => r === "sem_agendamento" || r === "manutencao_vencida" || r === "aguardando_inicio")
   );
@@ -313,9 +332,12 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
             <Wallet className="mr-1 size-3.5" /> Mensalidades
           </Button>
         )}
-        {canManage && (
-          <Button size="sm" nativeButton={false} render={<Link href="/ortodontia/casos/novo" />}>
-            <UserPlus className="mr-1 size-3.5" /> Novo caso
+        {/* R4 (0334): não existe "Novo caso" — o caso nasce no fechamento da venda.
+            Quem já estava em tratamento antes do sistema entra como LEGADO,
+            enquanto o Admin deixar a porta aberta (Q1). */}
+        {legadoAberto && (
+          <Button size="sm" variant="ghost" nativeButton={false} render={<Link href="/ortodontia/casos/novo?legado=1" />} title="Paciente que já estava em tratamento antes do sistema (sem venda no Comercial)">
+            <UserPlus className="mr-1 size-3.5" /> Caso legado
           </Button>
         )}
         {(session.isAdminMaster || canManage) && (
@@ -353,7 +375,22 @@ export default async function OrtodontiaPage(props: PageProps<"/ortodontia">) {
       {/* Estoque ------------------------------------------------------------ */}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <OrthoDrill items={emTratamento.map((c) => item(c))} dialogTitle="Em tratamento" scopeLabel={scope.label}>
-          <Kpi icon={Users} label="Em tratamento" value={emTratamento.length} hint={`${aguardando.length} aguardando início · ${contencao.length} em acompanhamento`} />
+          <Kpi icon={Users} label="Em tratamento" value={emTratamento.length} hint={`${contencao.length} em acompanhamento`} />
+        </OrthoDrill>
+        {/* R4 (0334): quem fechou a venda e ainda não instalou — com ou sem horário. */}
+        <OrthoDrill
+          items={aguardandoItens}
+          dialogTitle="Aguardando início"
+          scopeLabel={scope.label}
+          dialogHint="fecharam o tratamento no Comercial; a recepção agenda a instalação do aparelho (início de tratamento)"
+        >
+          <Kpi
+            icon={UserPlus}
+            label="Aguardando início"
+            value={aguardando.length}
+            hint={aguardandoSemHorario > 0 ? `${aguardandoSemHorario} sem horário de instalação` : aguardando.length > 0 ? "todos com instalação marcada" : "ninguém aguardando"}
+            tone={aguardandoSemHorario > 0 ? "border-amber-300" : undefined}
+          />
         </OrthoDrill>
         <OrthoDrill
           items={noPrazo.map((c) => {

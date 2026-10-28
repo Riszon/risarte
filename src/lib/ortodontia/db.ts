@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { lerPorLotes, lerTodasAsPaginas, type TudoLido } from "@/lib/paginar";
 import type {
+  OrthoBillingMethod,
   OrthoChargeKind,
   OrthoChargeStatus,
   OrthoKind,
@@ -61,6 +62,12 @@ export type OrthoCaseRow = {
    * ficam em zero — a tela nem os pede (`canViewOrthoMoney`); isto diz se vieram.
    */
   terms_visible: boolean;
+  /** R4/Q1 (0334): da venda do Comercial, ou legado (já em tratamento antes do sistema). */
+  origin: "venda" | "legado";
+  /** R7/R8 (0334): o acordo da negociação — o lote de N mensalidades e a forma de emissão (a ORTO9 usa). */
+  installments_count: number;
+  billing_method: OrthoBillingMethod | null;
+  punctuality_discount_percent: number;
   notes: string | null;
   created_at: string;
   client: OrthoClientLite | null;
@@ -113,7 +120,7 @@ const one = <T,>(v: T | T[] | null | undefined): T | null =>
 
 /** O dinheiro do caso (0332): a irmã `ortho_case_terms`, embutida pela ligação de nome fixo. */
 export const CASE_TERMS_EMBED =
-  "terms:ortho_case_terms!ortho_case_terms_case_id_fkey ( monthly_fee_cents, billing_day, installation_fee_cents, retainer_charged, retainer_fee_cents, retainer_terms )";
+  "terms:ortho_case_terms!ortho_case_terms_case_id_fkey ( monthly_fee_cents, billing_day, installation_fee_cents, retainer_charged, retainer_fee_cents, retainer_terms, installments_count, billing_method, punctuality_discount_percent )";
 
 type TermsEmbed = {
   monthly_fee_cents: number | null;
@@ -122,16 +129,23 @@ type TermsEmbed = {
   retainer_charged: boolean | null;
   retainer_fee_cents: number | null;
   retainer_terms: string | null;
+  installments_count: number | null;
+  billing_method: string | null;
+  punctuality_discount_percent: number | string | null;
 };
 
 const CASE_SELECT =
-  `id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_delivered_at, discharged_at, extension_days, notes, created_at, ${CASE_TERMS_EMBED}, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )`;
+  `id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, origin, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_delivered_at, discharged_at, extension_days, notes, created_at, ${CASE_TERMS_EMBED}, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )`;
 
 function toCase(r: Record<string, unknown>): OrthoCaseRow {
   const t = one(r.terms as TermsEmbed | TermsEmbed[] | null);
   return {
     ...(r as Omit<OrthoCaseRow, "client" | "clinic" | "orthodontist">),
+    origin: r.origin === "legado" ? "legado" : "venda",
     terms_visible: t !== null,
+    installments_count: Number(t?.installments_count ?? 12),
+    billing_method: (t?.billing_method as OrthoBillingMethod | null) ?? null,
+    punctuality_discount_percent: Number(t?.punctuality_discount_percent ?? 0),
     monthly_fee_cents: Number(t?.monthly_fee_cents ?? 0),
     installation_fee_cents: Number(t?.installation_fee_cents ?? 0),
     planned_months: Number(r.planned_months ?? 24),
@@ -361,13 +375,19 @@ export type OrthoSettingsRow = {
   retainer_charge_enabled: boolean;
   retainer_fee_cents: number;
   retainer_terms: string | null;
+  /** R1/Q4 (0334): pontualidade sugerida e máxima, mensalidade mínima, a porta do caso legado. */
+  punctuality_discount_percent: number;
+  max_punctuality_discount_percent: number;
+  min_monthly_fee_cents: number;
+  /** Nulo na unidade = herda da rede. */
+  legacy_entry_enabled: boolean | null;
 };
 
 export async function loadOrthoSettingsRows(supabase: SupabaseClient): Promise<OrthoSettingsRow[] | null> {
   const { data, error } = await supabase
     .from("ortho_settings")
     .select(
-      "id, clinic_id, monthly_fee_cents, planned_months, maintenance_interval_days, reevaluation_interval_months, finish_tolerance_days, maintenance_procedure_id, billing_day, retainer_charge_enabled, retainer_fee_cents, retainer_terms"
+      "id, clinic_id, monthly_fee_cents, planned_months, maintenance_interval_days, reevaluation_interval_months, finish_tolerance_days, maintenance_procedure_id, billing_day, retainer_charge_enabled, retainer_fee_cents, retainer_terms, punctuality_discount_percent, max_punctuality_discount_percent, min_monthly_fee_cents, legacy_entry_enabled"
     )
     .limit(500);
   if (error) return null;
@@ -376,6 +396,10 @@ export async function loadOrthoSettingsRows(supabase: SupabaseClient): Promise<O
     retainer_charge_enabled: r.retainer_charge_enabled === true,
     retainer_fee_cents: Number(r.retainer_fee_cents ?? 0),
     retainer_terms: (r.retainer_terms as string | null) ?? null,
+    punctuality_discount_percent: Number(r.punctuality_discount_percent ?? 0),
+    max_punctuality_discount_percent: Number(r.max_punctuality_discount_percent ?? 10),
+    min_monthly_fee_cents: Number(r.min_monthly_fee_cents ?? 0),
+    legacy_entry_enabled: typeof r.legacy_entry_enabled === "boolean" ? r.legacy_entry_enabled : null,
   }));
 }
 
@@ -390,6 +414,10 @@ export type EffectiveSettings = {
   retainer_charge_enabled: boolean;
   retainer_fee_cents: number;
   retainer_terms: string | null;
+  punctuality_discount_percent: number;
+  max_punctuality_discount_percent: number;
+  min_monthly_fee_cents: number;
+  legacy_entry_enabled: boolean;
 };
 
 export async function loadEffectiveSettings(
@@ -399,7 +427,46 @@ export async function loadEffectiveSettings(
   const { data, error } = await supabase.rpc("ortho_effective_settings", { p_clinic_id: clinicId });
   if (error) return null;
   const s = (Array.isArray(data) ? data[0] : data) as EffectiveSettings | null | undefined;
-  return s ?? null;
+  if (!s) return null;
+  // `numeric` chega como texto pela API: normaliza (0334).
+  return {
+    ...s,
+    punctuality_discount_percent: Number(s.punctuality_discount_percent ?? 0),
+    max_punctuality_discount_percent: Number(s.max_punctuality_discount_percent ?? 10),
+    min_monthly_fee_cents: Number(s.min_monthly_fee_cents ?? 0),
+    legacy_entry_enabled: s.legacy_entry_enabled !== false,
+  };
+}
+
+/**
+ * R4 (0334): para cada paciente, o PRÓXIMO agendamento de início/sessão de
+ * tratamento (qualquer profissional) — "instalação em dd/mm" ou "sem horário"
+ * para quem aguarda início. Só agendados/confirmados, de hoje em diante.
+ */
+export async function loadStartAppointments(
+  supabase: SupabaseClient,
+  clientIds: string[]
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const ids = [...new Set(clientIds)].filter(Boolean);
+  if (ids.length === 0) return out;
+  const nowIso = new Date().toISOString();
+  for (let i = 0; i < ids.length; i += 150) {
+    const { data } = await supabase
+      .from("appointments")
+      .select("client_id, starts_at")
+      .in("client_id", ids.slice(i, i + 150))
+      .in("type", ["treatment_start", "treatment_session"])
+      .in("status", ["scheduled", "confirmed"])
+      .gte("starts_at", nowIso)
+      .order("starts_at")
+      .limit(1000);
+    for (const a of data ?? []) {
+      const cid = a.client_id as string;
+      if (!out.has(cid)) out.set(cid, a.starts_at as string);
+    }
+  }
+  return out;
 }
 
 /** Agendamentos futuros do paciente ainda não ligados a manutenção (para "Vincular"). */

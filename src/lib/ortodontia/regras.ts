@@ -244,6 +244,13 @@ export function attentionReasons(input: {
   today: string;
   toleranceDays?: number;
   includeMoney?: boolean;
+  /**
+   * R4 (0334): há agendamento futuro de início/sessão de tratamento para o
+   * paciente (qualquer profissional)? Sem ortodontista escolhido o cronograma
+   * ainda não liga — mas o horário existe, e quem aguarda início com horário
+   * marcado não precisa de atenção.
+   */
+  startScheduled?: boolean;
 }): AttentionReason[] {
   const { caso, maintenances, today } = input;
   const reasons: AttentionReason[] = [];
@@ -253,9 +260,11 @@ export function attentionReasons(input: {
   const active = inTreatment || caso.status === "contencao";
 
   if (caso.status === "aguardando_inicio") {
-    const scheduled = maintenances.some(
-      (m) => m.status === "agendada" && m.appointment_date && daysBetween(today, m.appointment_date) >= 0
-    );
+    const scheduled =
+      input.startScheduled === true ||
+      maintenances.some(
+        (m) => m.status === "agendada" && m.appointment_date && daysBetween(today, m.appointment_date) >= 0
+      );
     if (!scheduled) reasons.push("aguardando_inicio");
   }
 

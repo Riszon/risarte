@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.366.0",
+    data: "2026-10-28",
+    migracao: "0334",
+    titulo: "Ortodontia: do Comercial ao caso — o acordo na negociação e o caso que nasce no fechamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na negociação, quando a opção é de ortodontia, o Consultor fecha o \"Acordo ortodôntico\": mensalidade, quantas mensalidades neste lote, como são emitidas (PIX, débito ou crédito recorrente, cartão parcelado, boleto ou à vista do período), dia de vencimento, desconto por pontualidade e se a contenção é cobrada. Fora dos limites da unidade (mensalidade mínima, pontualidade máxima), a negociação cai em autorização do Gerente, como qualquer outra regra.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Contrato assinado e pagamento confirmado numa venda com ortodontia: o caso ortodôntico nasce sozinho, em \"Aguardando início\", com as características do Planner e o acordo do Consultor. O Gerente, o Coordenador e a Recepção recebem o aviso \"Ortodontia: caso fechado — agendar a instalação\". O botão \"Novo caso\" deixou de existir.",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist", "commercial_consultant", "commercial_assistant"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Paciente que já estava em tratamento antes do sistema entra como \"Caso legado\" (link no Painel da Ortodontia, para o Gerente e o Coordenador), com o motivo registrado. O Admin abre ou fecha essa porta por unidade na Configuração da Ortodontia.",
+        papeis: ["unit_manager", "clinical_coordinator"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O Painel da Ortodontia ganhou o número \"Aguardando início\": quem fechou e ainda não instalou, com a data da instalação marcada ou \"sem horário\". A tela Atenção e o Início (cartão \"Ortodontia: aguardando instalação sem horário\") mostram o mesmo. Os avisos da Ortodontia ganharam categoria própria no sino.",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist", "franchisee"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A Configuração da Ortodontia ganhou o desconto por pontualidade sugerido, a pontualidade máxima e a mensalidade mínima (rede e unidade). O orçamento impresso passa a mostrar o acordo fechado na negociação.",
+        papeis: ["unit_manager", "franchisor_staff", "commercial_consultant"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.365.0",
     data: "2026-10-28",
     migracao: "0333",

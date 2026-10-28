@@ -30,10 +30,48 @@ export type SaleData = {
   closedAt: string | null;
 };
 
+/** ORTO8 (0334): o acordo ortodôntico fechado pelo Consultor nesta negociação. */
+export type NegotiationOrthoData = {
+  monthlyFeeCents: number;
+  installmentsCount: number;
+  billingMethod: string;
+  billingDay: number;
+  punctualityDiscountPercent: number;
+  retainerCharged: boolean;
+  retainerFeeCents: number;
+  retainerTerms: string | null;
+  notes: string | null;
+};
+
+/** ORTO8: o que a tela da negociação precisa saber sobre ortodontia. */
+export type NegotiationOrthoBlock = {
+  /** Opções com a proposta ortodôntica do Planner (ORTO7). */
+  proposalByOption: Record<
+    string,
+    { treatmentKind: string; plannedMonths: number; maintenanceIntervalDays: number; retainerKind: string }
+  >;
+  /** Opções com procedimento de Ortodontia (mesmo sem proposta). */
+  orthoOptionIds: string[];
+  agreement: NegotiationOrthoData | null;
+  /** Padrões e limites da unidade (rede → unidade). */
+  defaults: {
+    monthlyFeeCents: number;
+    billingDay: number;
+    punctualityDiscountPercent: number;
+    maxPunctualityDiscountPercent: number;
+    minMonthlyFeeCents: number;
+    retainerChargeEnabled: boolean;
+    retainerFeeCents: number;
+    retainerTerms: string | null;
+  };
+};
+
 export type NegotiationBlock = {
   planId: string;
   options: NegotiationOption[];
   negotiation: NegotiationData | null;
+  /** ORTO8 (0334): nulo quando nada de ortodontia (a tela nem mostra o bloco). */
+  ortho: NegotiationOrthoBlock | null;
   /** OD4: o desenho do aceite (nulo = não carregou; o painel segue sem ele). */
   odonto: OdontoDaApresentacao | null;
   rule: CommercialRule;
@@ -368,6 +406,106 @@ export async function loadNegotiationBlock(
       }
     : null;
 
+  // ORTO8 (0334): ortodontia na negociação — a proposta do Planner por opção,
+  // as opções com procedimento de Ortodontia, o acordo já fechado e os
+  // padrões/limites da unidade. Leitura tolerante: sem a 0334, nada sai.
+  let ortho: NegotiationOrthoBlock | null = null;
+  {
+    const optionIds = options.map((o) => o.id);
+    const [{ data: propRows }, { data: itemRows }, { data: cfgData }, agreementRes] = await Promise.all([
+      optionIds.length > 0
+        ? supabase
+            .from("treatment_plan_ortho")
+            .select("option_id, treatment_kind, planned_months, maintenance_interval_days, retainer_kind")
+            .in("option_id", optionIds)
+        : Promise.resolve({ data: null }),
+      optionIds.length > 0
+        ? supabase
+            .from("treatment_plan_option_items")
+            .select("option_id, procedure:procedures ( specialty )")
+            .in("option_id", optionIds)
+        : Promise.resolve({ data: null }),
+      supabase.rpc("ortho_effective_settings", { p_clinic_id: clinicId }),
+      n
+        ? supabase
+            .from("plan_negotiation_ortho")
+            .select(
+              "monthly_fee_cents, installments_count, billing_method, billing_day, punctuality_discount_percent, retainer_charged, retainer_fee_cents, retainer_terms, notes"
+            )
+            .eq("negotiation_id", n.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    const proposalByOption: NegotiationOrthoBlock["proposalByOption"] = {};
+    for (const p of (propRows ?? []) as {
+      option_id: string;
+      treatment_kind: string;
+      planned_months: number;
+      maintenance_interval_days: number;
+      retainer_kind: string;
+    }[]) {
+      proposalByOption[p.option_id] = {
+        treatmentKind: p.treatment_kind,
+        plannedMonths: Number(p.planned_months ?? 24),
+        maintenanceIntervalDays: Number(p.maintenance_interval_days ?? 30),
+        retainerKind: p.retainer_kind,
+      };
+    }
+    const orthoOptionIds = [
+      ...new Set(
+        ((itemRows ?? []) as { option_id: string; procedure: { specialty: string | null } | { specialty: string | null }[] | null }[])
+          .filter((i) => {
+            const p = Array.isArray(i.procedure) ? i.procedure[0] : i.procedure;
+            return /ortod/i.test(p?.specialty ?? "");
+          })
+          .map((i) => i.option_id)
+      ),
+    ];
+    const cfg = (Array.isArray(cfgData) ? cfgData[0] : cfgData) as
+      | {
+          monthly_fee_cents: number;
+          billing_day: number;
+          punctuality_discount_percent: number | string;
+          max_punctuality_discount_percent: number | string;
+          min_monthly_fee_cents: number;
+          retainer_charge_enabled: boolean;
+          retainer_fee_cents: number;
+          retainer_terms: string | null;
+        }
+      | null
+      | undefined;
+    const a = (agreementRes as { data: Record<string, unknown> | null }).data;
+    if (cfg && (Object.keys(proposalByOption).length > 0 || orthoOptionIds.length > 0 || a)) {
+      ortho = {
+        proposalByOption,
+        orthoOptionIds,
+        agreement: a
+          ? {
+              monthlyFeeCents: Number(a.monthly_fee_cents ?? 0),
+              installmentsCount: Number(a.installments_count ?? 12),
+              billingMethod: String(a.billing_method ?? "boleto"),
+              billingDay: Number(a.billing_day ?? 10),
+              punctualityDiscountPercent: Number(a.punctuality_discount_percent ?? 0),
+              retainerCharged: a.retainer_charged === true,
+              retainerFeeCents: Number(a.retainer_fee_cents ?? 0),
+              retainerTerms: (a.retainer_terms as string | null) ?? null,
+              notes: (a.notes as string | null) ?? null,
+            }
+          : null,
+        defaults: {
+          monthlyFeeCents: Number(cfg.monthly_fee_cents ?? 0),
+          billingDay: Number(cfg.billing_day ?? 10),
+          punctualityDiscountPercent: Number(cfg.punctuality_discount_percent ?? 0),
+          maxPunctualityDiscountPercent: Number(cfg.max_punctuality_discount_percent ?? 10),
+          minMonthlyFeeCents: Number(cfg.min_monthly_fee_cents ?? 0),
+          retainerChargeEnabled: cfg.retainer_charge_enabled === true,
+          retainerFeeCents: Number(cfg.retainer_fee_cents ?? 0),
+          retainerTerms: cfg.retainer_terms ?? null,
+        },
+      };
+    }
+  }
+
   // Fechamento (COM4): existe quando a negociação foi aceita.
   let sale: SaleData | null = null;
   if (n) {
@@ -508,5 +646,6 @@ export async function loadNegotiationBlock(
     excludedDescriptions,
     presentationSummary: (presRow?.summary as string | null) ?? null,
     programConditions,
+    ortho,
   };
 }

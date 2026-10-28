@@ -20,6 +20,7 @@ import {
   Target,
   TrendingDown,
   ShoppingCart,
+  SmilePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +51,7 @@ const CATEGORY_ICON: Record<NotificationCategory, React.ComponentType<{ classNam
   financeiro: TrendingDown,
   metas: Target,
   compras: ShoppingCart,
+  ortodontia: SmilePlus,
   outras: Bell,
 };
 

@@ -24,6 +24,7 @@ import {
   ORTHO_CHARGE_STATUSES,
   ORTHO_KINDS,
   ORTHO_MAINTENANCE_STATUSES,
+  ORTHO_BILLING_METHODS,
   ORTHO_MONEY_VIEW_ROLES,
   ORTHO_RETAINER_KINDS,
   ORTHO_SETTLE_ROLES,
@@ -384,6 +385,64 @@ describe("espelho do banco (migração 0333 — ORTO7, do clínico ao plano)", (
     expect(c).toMatch(/from public\.treatment_plan_ortho where option_id = v_option/);
     expect(c).toMatch(/coalesce\(p_treatment_kind, v_p\.treatment_kind, 'aparelho_fixo'\)/);
     expect(c).toMatch(/coalesce\(p_planned_months, v_p\.planned_months, 24\)/);
+  });
+});
+
+describe("espelho do banco (migração 0334 — ORTO8, do Comercial ao caso)", () => {
+  const sql = readFileSync(MIG("0334_ortodontia_acordo_comercial_caso_na_venda.sql"), "utf8");
+  const fn = (name: string) => {
+    const from = sql.slice(sql.indexOf(`function public.${name}(`));
+    return from.slice(0, from.indexOf("$$;"));
+  };
+  it("R5/R7: o acordo ortodôntico é por negociação, com as formas de emissão do código", () => {
+    expect(sql).toMatch(/create table if not exists public\.plan_negotiation_ortho/);
+    expect(sql).toContain("plan_negotiation_ortho_negotiation_id_fkey");
+    for (const m of ORTHO_BILLING_METHODS) expect(sql).toContain(`'${m}'`);
+    const s = fn("save_negotiation_ortho");
+    expect(s).toMatch(/'commercial_consultant'/);
+    expect(s).toMatch(/NEGOTIATION_CLOSED/);
+    expect(s).toMatch(/return public\.evaluate_negotiation_rules\(p_negotiation_id, true\)/);
+  });
+  it("Q4: os limites da ortodontia entram na regra comercial (mínimo, pontualidade) e pedem o Gerente", () => {
+    const v = fn("_negotiation_ortho_violations");
+    expect(v).toMatch(/min_monthly_fee_cents/);
+    expect(v).toMatch(/max_punctuality_discount_percent/);
+    expect(v).toMatch(/Contenção marcada como cobrada, sem valor/);
+    const e = fn("evaluate_negotiation_rules");
+    expect(e).toMatch(/_negotiation_ortho_violations\(p_negotiation_id\)/);
+    // A regra inteira continua (nada da 0327 se perdeu).
+    expect(e).toMatch(/_negotiation_package_floor/);
+    expect(e).toMatch(/_negotiation_procedure_floor/);
+    expect(e).toMatch(/'aguardando_autorizacao'/);
+    expect(sql).toMatch(/max_punctuality_discount_percent numeric\(5,2\) not null default 10/);
+  });
+  it("R2/R4: o fechamento abre o caso (sem derrubar a venda) e avisa quem agenda e quem gere", () => {
+    const c = fn("commercial_close_step");
+    expect(c).toMatch(/v_ortho := public\._ortho_open_from_sale\(p_negotiation_id\)/);
+    expect(c).toMatch(/exception when others then\s+raise warning '_ortho_open_from_sale/);
+    expect(c).toMatch(/'FECHAMENTO! Iniciar tratamento'/); // o pop-up da recepção continua
+    const o = fn("_ortho_open_from_sale");
+    expect(o).toMatch(/p\.specialty ilike '%ortod%'/);
+    expect(o).toMatch(/'aguardando_inicio'/);
+    expect(o).toMatch(/'Ortodontia: caso fechado — agendar a instalação'/);
+    expect(o).toMatch(/ucr\.role in \('unit_manager','clinical_coordinator','receptionist'\)/);
+    expect(o).toMatch(/'\/ortodontia\/casos\/' \|\| v_id/);
+    expect(sql).toMatch(/revoke execute on function public\._ortho_open_from_sale\(uuid\) from public, anon, authenticated;/);
+    expect(sql).not.toMatch(/grant execute on function public\._ortho_open_from_sale/);
+  });
+  it("R4/Q1: sem venda fechada não se abre caso; o legado tem porta própria, do Admin", () => {
+    const c = fn("ortho_create_case");
+    expect(c).toMatch(/SALE_REQUIRED/);
+    expect(c).toMatch(/SALE_NOT_CLOSED/);
+    expect(c).toMatch(/'venda', \(select auth\.uid\(\)\)/);
+    const l = fn("ortho_create_legacy_case");
+    expect(l).toMatch(/LEGACY_CLOSED/);
+    expect(l).toMatch(/LEGACY_NOTE_REQUIRED/);
+    expect(l).toMatch(/'legado'/);
+    expect(fn("ortho_save_settings")).toMatch(/p_legacy_entry_enabled is not null and not public\.is_admin_master\(\)/);
+    expect(sql).toMatch(/check \(origin in \('venda','legado'\)\)/);
+    expect(sql).toMatch(/update public\.ortho_cases set origin = 'legado'\s+where negotiation_id is null/);
+    expect(sql).toMatch(/select public\.audit_attach_all\(\);/);
   });
 });
 
