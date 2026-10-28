@@ -403,11 +403,12 @@ Syncthing se comportarem de forma estranha.**
   → Coordenador + ortodontista do caso (chave = a data); **mensalidade
   atrasada** → Gerente + Financeiro (chave = a cobrança). A rotina também
   marca `atrasada` sozinha. Sem tela nova (os avisos vão pelo link).
-- ✅ 0336 aplicada no treino (`migrar:teste` + reaplicada, idempotente;
-  conferência 1·2·1·1·1); ensaio em transação desfeita **14/14**
+- ✅ 0336 APLICADA nos dois bancos: treino (`migrar:teste` + reaplicada,
+  idempotente) e produção (o dono rodou em 28/10/2026; conferência
+  1·2·1·1·1); ensaio em transação desfeita **14/14**
   (`scratchpad/ensaio-orto-0336.mjs`). Assinatura de `ortho_daily_alerts`
-  **não mudou** e o app não lê nada novo: o push NÃO depende da migração
-  (mas sem ela os avisos simplesmente não saem). ⚠️ **PENDENTE NA PRODUÇÃO.**
+  **não mudou** e o app não lê nada novo, mas o push 78662ae só saiu depois
+  da migração, como combinado.
 
 **28/10/2026 (18) — PC Administrador (core 0.366.0 → 0.367.0, migração 0335)**
 

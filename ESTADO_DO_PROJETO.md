@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.368.0** · Última migração: **0336** (0318 a 0335 aplicadas na produção e no treino; **0336 aplicada no treino, pendente na produção**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 28/10/2026 · Versão do sistema: **0.368.0** · Última migração: **0336** (0318 a 0336 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## 🎯 0.368.0 / 0336 — ORTODONTIA (ORTO2): OS AVISOS DA ROTINA DIÁRIA (28/10/2026)
 >
@@ -10,10 +10,9 @@ _Atualizado em: 28/10/2026 · Versão do sistema: **0.368.0** · Última migraç
 > Gerente; reavaliação/controle vencido → Coordenador e o ortodontista do
 > caso; mensalidade atrasada → Gerente e Financeiro — e a rotina marca a
 > atrasada sozinha. Sem tela nova (link da ficha; categoria Ortodontia).
-> ⚠️ **0336 aplicada no treino** (reaplicada, idempotente); ensaio em
-> transação desfeita **14/14**; **pendente na produção** (conferência
-> esperada 1·2·1·1·1). O push **não depende** dela (assinatura igual; nada
-> novo lido pelo app) — mas sem ela os avisos não saem. EV-258. Com isto, o
+> ✅ **0336 aplicada nos dois bancos** (treino reaplicada, idempotente;
+> produção em 28/10/2026, conferência 1·2·1·1·1); ensaio em transação
+> desfeita **14/14**; push 78662ae feito depois da migração. EV-258. Com isto, o
 > módulo de Ortodontia do pedido de 27–28/10 está completo, salvo o ORTO4
 > (emissão pelo ASAAS, com as integrações).
 
@@ -4826,9 +4825,9 @@ certos, o dentista do caso recebe a reavaliação; a atrasada é marcada
 sozinha; rodar de novo = 0; falta → aviso único; com agendamento futuro a
 manutenção e a falta ficam quietas; data nova de reavaliação = fato novo;
 sem login nada executa). `npm run verificar`, `npm test`, `npm run lint`: ver
-a entrada da sessão no `CLAUDE.md`. **NÃO visto na tela.** ⚠️ **0336
-PENDENTE NA PRODUÇÃO.** O push não depende dela (assinatura igual, nada novo
-lido pelo app), mas sem ela os avisos não saem.
+a entrada da sessão no `CLAUDE.md`. **NÃO visto na tela.** ✅ **0336
+APLICADA nos dois bancos** (o dono rodou na produção em 28/10/2026;
+conferência 1·2·1·1·1) e só então o push 78662ae saiu.
 
 **Roteiro para o dono testar no treino:** com um caso em tratamento que
 tenha uma manutenção prevista vencida há mais de 7 dias e sem agendamento,
