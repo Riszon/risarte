@@ -657,25 +657,56 @@ caixas nem aparecem.
 Botão **Ver a proposta**. Abre em outra aba, pronta para imprimir ou salvar em
 PDF; os botões do topo somem na impressão.
 
-O que o documento traz: cabeçalho, razão social, CNPJ, data de emissão,
-validade, o quadro de valores, quem paga o quê, a *Condição especial para a sua
-empresa* (padrão × proposta, quando marcada e mais barata — ver 6.2), *O que
-está coberto*, *Quando o programa começa a valer*, *Onde o programa é
-atendido*, e a comparação com o convênio atual.
+O que o documento traz:
+
+- a **capa**, com a logo do Risarte Empresarial, a razão social, o CNPJ, a data
+  de emissão, a validade e o consultor;
+- a **barra de números** logo abaixo: mensalidade, quanto a empresa paga,
+  quanto o titular paga e a economia por ano (do padrão, quando marcada, ou do
+  convênio atual);
+- o quadro de valores e quem paga o quê, a *Condição especial para a sua
+  empresa* (padrão × proposta, quando marcada e mais barata — ver 6.2), *O que
+  está coberto*;
+- **Como o colaborador paga o tratamento**: ele contrata na unidade, o desconto
+  já vem no orçamento, paga pelos meios combinados na proposta e — **a parcela
+  paga com atraso perde o desconto do programa naquela parcela**;
+- **Mensalidade e relatório mensal**: todo mês a empresa recebe o relatório
+  dos titulares e dependentes vinculados a ela, junto com o boleto da
+  mensalidade (quando só o titular paga, "junto com a cobrança, conforme
+  combinado"); **havendo divergência, cabe à empresa pedir a correção**;
+- *Quando o programa começa a valer*, *Onde o programa é atendido*, o texto do
+  modelo e a comparação com o convênio atual.
+
+> ⚠️ **A regra do atraso está escrita no documento, mas o sistema ainda NÃO
+> tira o desconto da parcela atrasada sozinho.** Até isso existir, quem cobra o
+> tratamento aplica a regra à mão.
+
+**No papel:** o documento sai **sem a data e o endereço do navegador** no topo e
+no rodapé; no lugar, cada página tem o rodapé *"Risarte Empresarial · Proposta
+comercial para [empresa] · Válida até …"*. Títulos ficam sempre junto do texto
+que vem depois, e as seções longas continuam na página seguinte em vez de
+deixar meia página em branco.
+
+**O nome do arquivo.** Ao salvar em PDF (pelo botão **Salvar em PDF** ou pelo
+Ctrl+P), o navegador já sugere o nome *"Proposta Risarte Empresarial -
+Cooperativa Recicla Brasil - 28-10-2026"* — a razão social da proposta e a data
+de emissão. O contrato segue o mesmo formato (*"Contrato Risarte Empresarial -
+…"*). O navegador sugere; é só confirmar.
 
 **Os benefícios saem resumidos.** *O que está coberto* mostra só o resumo —
-por exemplo, *"12 procedimentos sem custo (R$ 0,00)"* e *"48 procedimentos com
-descontos de 10% a 40%"*. A relação completa vai no **Anexo — Procedimentos e
-descontos**, no fim do documento (na impressão, começa em página nova):
+por exemplo, *"21 procedimentos sem custo (R$ 0,00)"*, *"280 procedimentos com
+descontos de 20% a 50%"* e *"3 procedimentos com desconto em valor fixo"*. A
+relação completa vai no **Anexo — Procedimentos e descontos**, no fim do
+documento (na impressão, começa em página nova):
 
 - ordem do **maior desconto para o menor** — os sem custo primeiro; empate,
   pelo nome;
 - cada linha traz o desconto, para quem vale, o limite de uso, a carência e,
   quando houver, as unidades;
-- desconto em **reais** é convertido em % pelo preço de tabela do procedimento,
-  para entrar na faixa e na ordem — por exemplo *"R$ 50,00 (25%)"*. Sem preço
-  cadastrado, ele é contado à parte (*"3 procedimentos com desconto em reais"*)
-  e vai para o fim do anexo;
+- o desconto em **valor fixo (R$)** fica fora da faixa de % do resumo — um
+  desconto de R$ 370,00 num procedimento de R$ 380,00 viraria "97%" e
+  distorceria a faixa. No anexo ele mostra quanto a pessoa paga: *"R$ 370,00 de
+  desconto (paga R$ 10,00)"*;
 - os **não cobertos** não entram no resumo nem no anexo.
 
 > ⚠️ **O que NÃO pode estar lá:** interesse, chance de fechar e observações do

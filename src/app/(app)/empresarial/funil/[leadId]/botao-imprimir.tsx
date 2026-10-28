@@ -18,14 +18,23 @@ export function BotaoImprimir({
   tipo,
   companyName,
   rotulo = "Salvar em PDF",
+  nomeDoArquivo,
 }: {
   /** Entra no nome do arquivo: `risarte-empresarial_<tipo>_<empresa>_<data>`. */
   tipo: "apresentacao" | "proposta" | "contrato";
   companyName: string;
   rotulo?: string;
+  /**
+   * O nome legível do documento (0.91.0) — "Proposta Risarte Empresarial -
+   * <empresa> - <data>". Ausente, vale o padrão técnico dos relatórios.
+   */
+  nomeDoArquivo?: string;
 }) {
   return (
-    <Button size="sm" onClick={() => printAs(reportFileName(tipo, companyName))}>
+    <Button
+      size="sm"
+      onClick={() => printAs(nomeDoArquivo ?? reportFileName(tipo, companyName))}
+    >
       <Printer className="mr-1 size-4" />
       {rotulo}
     </Button>

@@ -97,3 +97,63 @@ export function comparacaoComOAtual(r: PropostaResult): string | null {
 
 /** O rótulo interno continua existindo para as telas de dentro. */
 export const ROTULO_INTERNO_DO_PAGAMENTO = PAYMENT_MODEL_LABELS;
+
+// -----------------------------------------------------------------------------
+// 0.91.0 (dono, 28/10/2026) — textos que a empresa precisa ler, e o nome do PDF
+// -----------------------------------------------------------------------------
+
+/**
+ * COMO O COLABORADOR PAGA O TRATAMENTO, em três frases.
+ *
+ * Pedido: *"O colaborador vai contratar o tratamento, vai receber o desconto e
+ * poder pagar pelo boleto, mas se ele não cumprir com o pagamento em dia vai
+ * perder o desconto daquela parcela"*. Os meios e as parcelas vêm do que a
+ * proposta combinou (`textoDoPagamento`).
+ */
+export function comoOColaboradorPaga(meiosEParcelas: string): string[] {
+  const meios = meiosEParcelas.charAt(0).toLowerCase() + meiosEParcelas.slice(1);
+  return [
+    "O colaborador contrata o tratamento diretamente na unidade Risarte, e o desconto do programa já vem aplicado no orçamento dele.",
+    `O pagamento pode ser feito por ${meios}, somado às condições da unidade.`,
+    "O desconto vale para as parcelas pagas em dia. A parcela paga com atraso perde o desconto do programa naquela parcela; as demais seguem com o desconto normalmente.",
+  ];
+}
+
+/**
+ * O RELATÓRIO MENSAL E QUEM CORRIGE A LISTA.
+ *
+ * Pedido: *"Todo mês será enviado um relatório dos titulares e dependentes que
+ * estão atrelados a empresa e juntamente o boleto de pagamento da mensalidade
+ * do programa, caso houver alguma divergência a responsabilidade de solicitar
+ * a alteração é da empresa."* Quando só o titular paga, o boleto não é da
+ * empresa — a frase diz "cobrança", e não promete um boleto que não chega.
+ */
+export function relatorioMensal(model: PaymentModel): string {
+  const cobranca =
+    model === "EMPLOYEE_PAYS"
+      ? ", junto com a cobrança da mensalidade, conforme combinado"
+      : ", junto com o boleto da mensalidade do programa";
+  return (
+    `Todo mês a empresa recebe o relatório dos titulares e dependentes vinculados a ela${cobranca}. ` +
+    "Se houver alguma divergência — alguém que entrou, saiu ou não deveria constar —, cabe à empresa solicitar a correção à Risarte."
+  );
+}
+
+/**
+ * O NOME DO ARQUIVO QUE O NAVEGADOR SUGERE AO SALVAR O PDF.
+ *
+ * Pedido: *"quando vai salvar o PDF o arquivo já salvar com nome de arquivo de
+ * acordo a proposta"*. Antes era o formato técnico dos relatórios
+ * (`risarte-empresarial_proposta_…`), e o dono renomeava à mão. Agora é legível
+ * e com acento: "Proposta Risarte Empresarial - Cooperativa Recicla Brasil -
+ * 28-10-2026". Só saem os caracteres que o Windows não aceita em nome de arquivo.
+ */
+export function nomeDoArquivo(
+  tipo: "Proposta" | "Contrato",
+  empresa: string,
+  dataIso: string
+): string {
+  const limpo = empresa.replace(/[\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() || "Empresa";
+  const [a, m, d] = dataIso.slice(0, 10).split("-");
+  return `${tipo} Risarte Empresarial - ${limpo} - ${d}-${m}-${a}`;
+}

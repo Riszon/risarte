@@ -42,9 +42,28 @@ import {
   lerModelosDoContrato,
 } from "@/lib/empresarial/contrato-dados";
 import { BotaoImprimir } from "../botao-imprimir";
+import { nomeDoArquivo } from "@/lib/empresarial/documento-da-proposta";
 import { DadosDoContrato } from "./dados-do-contrato";
 
-export const metadata: Metadata = { title: "Contrato · Risarte Empresarial" };
+/** O título é o nome do arquivo ao salvar em PDF, como na proposta (0.91.0). */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ leadId: string }>;
+}): Promise<Metadata> {
+  const { leadId } = await params;
+  const db = await empresarialDb();
+  const [{ data: lead }, { data: q }] = await Promise.all([
+    db.from("commercial_leads").select("company_name").eq("id", leadId).maybeSingle(),
+    db.from("lead_qualification").select("legal_name").eq("lead_id", leadId).maybeSingle(),
+  ]);
+  const empresa = q?.legal_name || lead?.company_name;
+  return {
+    title: empresa
+      ? { absolute: nomeDoArquivo("Contrato", empresa, todayInBrazil()) }
+      : "Contrato · Risarte Empresarial",
+  };
+}
 
 type LeadRow = { id: string; company_name: string; cnpj: string | null };
 
@@ -317,7 +336,15 @@ export default async function ContratoPage({
             >
               {modelos.daEmpresa ? "Editar o texto desta empresa" : "Personalizar o texto"}
             </Button>
-            <BotaoImprimir tipo="contrato" companyName={lead.company_name} />
+            <BotaoImprimir
+              tipo="contrato"
+              companyName={lead.company_name}
+              nomeDoArquivo={nomeDoArquivo(
+                "Contrato",
+                v.contratante_razao_social || lead.company_name,
+                todayInBrazil()
+              )}
+            />
           </div>
         </div>
 

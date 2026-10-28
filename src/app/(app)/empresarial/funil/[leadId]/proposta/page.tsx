@@ -35,9 +35,12 @@ import {
 import { comparacaoComOPadrao } from "@/lib/empresarial/padrao-da-proposta";
 import { loadPricing } from "../../../configuracoes/data";
 import {
+  comoOColaboradorPaga,
   comoSeraCobrado,
   comparacaoComOAtual,
+  nomeDoArquivo,
   quemPagaOQue,
+  relatorioMensal,
   validadeDaProposta,
 } from "@/lib/empresarial/documento-da-proposta";
 import type { BenefitType, PaymentModel } from "@/lib/empresarial/constants";
@@ -55,7 +58,31 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { BotaoImprimir } from "../botao-imprimir";
 
-export const metadata: Metadata = { title: "Proposta · Risarte Empresarial" };
+/**
+ * O TÍTULO DA PÁGINA É O NOME DO ARQUIVO (dono, 28/10/2026): o navegador
+ * sugere o título ao salvar em PDF — inclusive pelo Ctrl+P, sem o botão.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ leadId: string }>;
+}): Promise<Metadata> {
+  const { leadId } = await params;
+  const db = await empresarialDb();
+  const [{ data: lead }, { data: q }] = await Promise.all([
+    db.from("commercial_leads").select("company_name").eq("id", leadId).maybeSingle(),
+    db.from("lead_qualification").select("legal_name").eq("lead_id", leadId).maybeSingle(),
+  ]);
+  const empresa = q?.legal_name || lead?.company_name;
+  return {
+    title: empresa
+      ? { absolute: nomeDoArquivo("Proposta", empresa, todayInBrazil()) }
+      : "Proposta · Risarte Empresarial",
+  };
+}
+
+/** Título de seção: a cor da marca, e nunca sozinho no pé da página. */
+const H2 = "break-after-avoid border-l-4 border-gold pl-3 text-lg font-semibold text-primary";
 
 type LeadRow = {
   id: string;
@@ -367,9 +394,24 @@ export default async function PropostaPage({
   }
 
   const razao = q.legal_name || lead.company_name;
+  const arquivo = nomeDoArquivo("Proposta", razao, hoje);
+  const pagaEmpresa = (q.payment_model ?? "EMPLOYEE_PAYS") !== "EMPLOYEE_PAYS";
+  // A economia que vai para a barra de cima: a do padrão (quando marcada) ou a
+  // do convênio atual. Nenhuma das duas = a barra mostra a validade.
+  const economiaEmDestaque = mostrarPadrao && padrao
+    ? { rotulo: "Economia por ano", valor: formatBRL(padrao.economiaAnualCents) }
+    : conta.economiaAnualCents != null && conta.economiaAnualCents > 0
+      ? { rotulo: "Economia por ano", valor: formatBRL(conta.economiaAnualCents) }
+      : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto max-w-3xl px-6 py-10 print:max-w-none print:p-0">
+      {/* ⚠️ SEM MARGEM DE PÁGINA NO PAPEL. Com margem, o navegador escreve a
+          data, o título e o endereço da página no topo e no rodapé — o PDF da
+          Cooperativa saiu com "risarte.vercel.app/…" em toda folha. As
+          margens passam a ser do próprio documento: o cabeçalho e o rodapé da
+          tabela abaixo se repetem em cada página. */}
+      <style>{`@media print { @page { margin: 0; } }`}</style>
       {/* Some na impressão: o PDF que vai para a empresa não leva botões. */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <Button
@@ -384,31 +426,102 @@ export default async function PropostaPage({
           <span className="text-xs text-muted-foreground">
             Montada com o levantamento salvo
           </span>
-          <BotaoImprimir tipo="proposta" companyName={lead.company_name} />
+          <BotaoImprimir
+            tipo="proposta"
+            companyName={lead.company_name}
+            nomeDoArquivo={arquivo}
+          />
         </div>
       </div>
 
+      <table className="w-full border-collapse">
+        {/* Repetem em cada página impressa: o de cima é a margem; o de baixo, a
+            margem e o rodapé do documento. Na tela, não existem. */}
+        <thead className="hidden print:table-header-group">
+          <tr>
+            <td>
+              <div className="h-[12mm]" />
+            </td>
+          </tr>
+        </thead>
+        <tfoot className="hidden print:table-footer-group">
+          <tr>
+            <td>
+              <div className="flex h-[14mm] items-center justify-between border-t mx-[14mm] text-[10px] text-muted-foreground">
+                <span>Risarte Empresarial · Proposta comercial para {razao}</span>
+                <span>Válida até {validade.texto}</span>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+        <tbody>
+          <tr>
+            <td className="align-top print:px-[14mm]">
       <article className="space-y-8">
-        <header className="space-y-1 border-b pb-6">
-          <p className="text-xs tracking-wider text-muted-foreground uppercase">
-            Proposta comercial
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Risarte Empresarial
-          </h1>
-          <p className="pt-3 text-sm text-muted-foreground">
-            Preparada para <strong className="text-foreground">{razao}</strong>
-            {lead.cnpj ? <> · CNPJ {maskDocument("CNPJ", lead.cnpj)}</> : null}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Emitida em {formatBrDate(startOfDayInBrazil(hoje))} · válida até{" "}
-            <strong className="text-foreground">{validade.texto}</strong> ({dias}{" "}
-            dias)
-          </p>
+        <header className="break-inside-avoid overflow-hidden rounded-xl border bg-card [print-color-adjust:exact]">
+          <div className="flex items-center justify-between gap-4 bg-primary px-6 py-5 text-primary-foreground">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/marca/empresarial-horizontal-branco.svg"
+              alt="Risarte Empresarial"
+              className="h-8 w-auto"
+            />
+            <span className="text-[11px] tracking-[0.2em] uppercase opacity-90">
+              Proposta comercial
+            </span>
+          </div>
+          <div className="h-1 bg-gold" />
+          <div className="space-y-4 px-6 py-5">
+            <div>
+              <p className="text-xs tracking-wider text-muted-foreground uppercase">
+                Preparada para
+              </p>
+              <h1 className="text-2xl font-semibold tracking-tight text-primary">{razao}</h1>
+              {lead.cnpj && (
+                <p className="text-sm text-muted-foreground">
+                  CNPJ {maskDocument("CNPJ", lead.cnpj)}
+                </p>
+              )}
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">Emitida em</dt>
+                <dd>{formatBrDate(startOfDayInBrazil(hoje))}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Válida até</dt>
+                <dd className="font-medium">
+                  {validade.texto} ({dias} dias)
+                </dd>
+              </div>
+              {consultor && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Consultor</dt>
+                  <dd>{consultor}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
         </header>
 
-        <section className="space-y-2 break-inside-avoid">
-          <h2 className="text-lg font-medium">Quem o programa atende</h2>
+        {/* OS NÚMEROS QUE DECIDEM, antes de qualquer texto: quem lê a proposta
+            quer saber quanto custa e quem paga. O detalhe vem depois. */}
+        <div className="grid break-inside-avoid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border [print-color-adjust:exact] sm:grid-cols-4">
+          <Destaque rotulo="Mensalidade" valor={formatBRL(conta.mensalidadeCents)} />
+          <Destaque
+            rotulo="A empresa paga"
+            valor={pagaEmpresa ? formatBRL(conta.empresaPagaCents) : "—"}
+          />
+          <Destaque rotulo="O titular paga" valor={formatBRL(conta.colaboradorPagaCents)} />
+          {economiaEmDestaque ? (
+            <Destaque rotulo={economiaEmDestaque.rotulo} valor={economiaEmDestaque.valor} ouro />
+          ) : (
+            <Destaque rotulo="Titulares" valor={String(titulares)} />
+          )}
+        </div>
+
+        <section className="space-y-2">
+          <h2 className={H2}>Quem o programa atende</h2>
           <p className="leading-relaxed text-muted-foreground">
             {titulares} titular{titulares === 1 ? "" : "es"}
             {q.includes_dependents
@@ -418,14 +531,14 @@ export default async function PropostaPage({
           </p>
         </section>
 
-        <section className="space-y-3 break-inside-avoid">
-          <h2 className="text-lg font-medium">Investimento mensal</h2>
+        <section className="space-y-3">
+          <h2 className={H2}>Investimento mensal</h2>
           {/* 1032 (dono, 26/10/2026): com os dependentes calculados, o papel
               mostra titulares + dependentes estimados = o total. Separados, e
               com a palavra "estimado", porque o valor real dos dependentes sai
               dos cadastros. */}
           {estimativa && (
-            <div className="grid grid-cols-3 gap-4 rounded-lg border p-4">
+            <div className="grid grid-cols-3 gap-4 break-inside-avoid rounded-lg border p-4">
               <Numero rotulo="Titulares" valor={formatBRL(conta.titularesCents)} />
               <Numero
                 rotulo="Dependentes (estimado)"
@@ -438,7 +551,7 @@ export default async function PropostaPage({
               />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4 rounded-lg border p-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 break-inside-avoid rounded-lg border p-4 sm:grid-cols-4">
             <Numero
               rotulo={estimativa ? "Mensalidade (com dependentes)" : "Mensalidade"}
               valor={formatBRL(conta.mensalidadeCents)}
@@ -495,7 +608,7 @@ export default async function PropostaPage({
               quadro, com a mesma régua do boleto, ou como individual. Sem a
               escolha, vale a decisão de 24/09: o papel não inventa total. */}
           {q.includes_dependents && basis === "PER_EMPLOYEE" && (
-            <div className="space-y-2 rounded-lg border p-4">
+            <div className="space-y-2 break-inside-avoid rounded-lg border p-4">
               <p className="font-medium">Dependentes</p>
               <ul className="space-y-0.5 text-muted-foreground">
                 {tabelaDeps.dependentMode === "PER_DEPENDENT" ? (
@@ -584,7 +697,7 @@ export default async function PropostaPage({
           )}
 
           {faixas.length > 0 && (
-            <div className="space-y-1 rounded-lg border p-4">
+            <div className="space-y-1 break-inside-avoid rounded-lg border p-4">
               <p className="font-medium">Preço por quantidade</p>
               <ul className="space-y-0.5 text-muted-foreground">
                 {faixas.map((f) => (
@@ -620,12 +733,14 @@ export default async function PropostaPage({
         </section>
 
         {mostrarPadrao && padrao && (
+          // Seção curta: vai inteira para a página. Partida, a frase ficava
+          // sozinha no pé da folha e os números na seguinte.
           <section className="space-y-2 break-inside-avoid">
-            <h2 className="text-lg font-medium">Condição especial para a sua empresa</h2>
+            <h2 className={H2}>Condição especial para a sua empresa</h2>
             <p className="leading-relaxed text-muted-foreground">
               Esta proposta sai abaixo do preço padrão do programa.
             </p>
-            <div className="grid grid-cols-2 gap-4 rounded-lg border p-4 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 break-inside-avoid rounded-lg border p-4 sm:grid-cols-4">
               <Numero rotulo="Preço padrão" valor={`${formatBRL(padrao.padraoMensalCents)}/mês`} />
               <Numero
                 rotulo="Nossa proposta"
@@ -660,14 +775,14 @@ export default async function PropostaPage({
         )}
 
         {comparacao && (
-          <section className="space-y-2 break-inside-avoid">
-            <h2 className="text-lg font-medium">
+          <section className="space-y-2">
+            <h2 className={H2}>
               Comparado ao que a empresa tem hoje
             </h2>
             <p className="leading-relaxed text-muted-foreground">{comparacao}</p>
             {conta.economiaMensalCents !== null &&
               conta.economiaMensalCents !== 0 && (
-                <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
+                <div className="grid grid-cols-2 gap-4 break-inside-avoid rounded-lg border p-4">
                   <Numero
                     rotulo={
                       conta.economiaMensalCents > 0 ? "Por mês" : "A mais por mês"
@@ -693,9 +808,9 @@ export default async function PropostaPage({
             comprido demais. Aqui vai o resumo; a relação completa, com para
             quem vale, uso e carência, fica no anexo do fim. */}
         {resumo.length > 0 && (
-          <section className="space-y-2 break-inside-avoid">
-            <h2 className="text-lg font-medium">O que está coberto</h2>
-            <ul className="space-y-1 rounded-lg border p-4">
+          <section className="space-y-2">
+            <h2 className={H2}>O que está coberto</h2>
+            <ul className="space-y-1 break-inside-avoid rounded-lg border p-4">
               {resumo.map((frase) => (
                 <li key={frase} className="font-medium">
                   {frase}
@@ -711,16 +826,28 @@ export default async function PropostaPage({
         )}
 
         {/* 1034: como o colaborador paga o tratamento, e o Riso+ Social. */}
-        <section className="space-y-2 break-inside-avoid">
-          <h2 className="text-lg font-medium">Pagamento do tratamento</h2>
+        <section className="space-y-2">
+          <h2 className={H2}>Como o colaborador paga o tratamento</h2>
+          {/* 0.91.0 (dono, 28/10/2026): contrata, recebe o desconto, paga
+              pelo meio combinado — e a parcela atrasada perde o desconto. */}
+          {comoOColaboradorPaga(
+            textoDoPagamento(q.treatment_payment_methods, q.treatment_max_installments)
+          ).map((frase) => (
+            <p key={frase} className="leading-relaxed text-muted-foreground">
+              {frase}
+            </p>
+          ))}
+        </section>
+
+        <section className="space-y-2">
+          <h2 className={H2}>Mensalidade e relatório mensal</h2>
           <p className="leading-relaxed text-muted-foreground">
-            {textoDoPagamento(q.treatment_payment_methods, q.treatment_max_installments)}
-            , somado às condições da unidade.
+            {relatorioMensal(q.payment_model ?? "EMPLOYEE_PAYS")}
           </p>
         </section>
         {participaDoSocial(q.payment_model) && q.social_participates !== false && (
-          <section className="space-y-2 break-inside-avoid">
-            <h2 className="text-lg font-medium">Riso+ Social</h2>
+          <section className="space-y-2">
+            <h2 className={H2}>Riso+ Social</h2>
             <p className="leading-relaxed text-muted-foreground">
               A empresa indica pessoas carentes para tratamento na rede Risarte,
               enquanto pagar, integral ou parcialmente, a mensalidade dos
@@ -741,9 +868,9 @@ export default async function PropostaPage({
 
         {/* 1033: o que o programa oferece além dos procedimentos. */}
         {vantagens.length > 0 && (
-          <section className="space-y-2 break-inside-avoid">
-            <h2 className="text-lg font-medium">Outras vantagens</h2>
-            <ul className="divide-y rounded-lg border">
+          <section className="space-y-2">
+            <h2 className={H2}>Outras vantagens</h2>
+            <ul className="divide-y rounded-lg border [&>li]:break-inside-avoid">
               {vantagens.map((v) => (
                 <li key={v.perkId} className="p-3">
                   <span className="font-medium">{v.nome}</span>
@@ -759,8 +886,8 @@ export default async function PropostaPage({
         )}
 
         {(q.company_grace_days != null || q.employee_grace_days != null) && (
-          <section className="space-y-2 break-inside-avoid">
-            <h2 className="text-lg font-medium">Quando o programa começa a valer</h2>
+          <section className="space-y-2">
+            <h2 className={H2}>Quando o programa começa a valer</h2>
             <p className="leading-relaxed text-muted-foreground">
               {q.company_grace_days != null && (
                 <>
@@ -791,8 +918,8 @@ export default async function PropostaPage({
             valores e carência são impressos acima, a partir do que foi
             negociado. */}
         {blocos.map((b, i) => (
-          <section key={i} className="space-y-1.5 break-inside-avoid">
-            {b.titulo && <h2 className="text-lg font-medium">{b.titulo}</h2>}
+          <section key={i} className="space-y-1.5">
+            {b.titulo && <h2 className={H2}>{b.titulo}</h2>}
             {b.corpo && (
               <p className="leading-relaxed whitespace-pre-wrap text-muted-foreground">
                 {b.corpo}
@@ -804,8 +931,8 @@ export default async function PropostaPage({
         {/* ⚠️ ONDE O PROGRAMA É ATENDIDO. A empresa precisa saber para onde
             mandar a equipe, e é este o compromisso que ela vai cobrar. */}
         {idsDaParceria.length > 0 && (
-          <section className="space-y-2 break-inside-avoid">
-            <h2 className="text-lg font-medium">Onde o programa é atendido</h2>
+          <section className="space-y-2">
+            <h2 className={H2}>Onde o programa é atendido</h2>
             <p className="leading-relaxed text-muted-foreground">
               {q.main_clinic_id && nomeDaUnidade.get(q.main_clinic_id) && (
                 <>
@@ -832,8 +959,8 @@ export default async function PropostaPage({
           </section>
         )}
 
-        <section className="space-y-2 break-inside-avoid">
-          <h2 className="text-lg font-medium">Como seguir</h2>
+        <section className="space-y-2">
+          <h2 className={H2}>Como seguir</h2>
           <p className="leading-relaxed text-muted-foreground">
             Aceita a proposta, seguimos para o contrato e a implantação. A equipe
             do Risarte Empresarial cuida do cadastro dos titulares, do
@@ -851,7 +978,6 @@ export default async function PropostaPage({
               {q.responsible_role ? <> · {q.responsible_role}</> : null}
             </p>
           )}
-          {consultor && <p>Consultor responsável: {consultor}</p>}
           <p className="pt-2">Risarte Odontologia · Risarte Empresarial</p>
         </footer>
 
@@ -861,13 +987,13 @@ export default async function PropostaPage({
             consequência nenhuma para quem decide. */}
         {anexo.length > 0 && (
           <section className="space-y-2 print:break-before-page">
-            <h2 className="text-lg font-medium">Anexo — Procedimentos e descontos</h2>
+            <h2 className={H2}>Anexo — Procedimentos e descontos</h2>
             <p className="text-sm text-muted-foreground">Do maior desconto para o menor.</p>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5 pr-3 font-medium">Procedimento</th>
-                  <th className="py-1.5 pr-3 font-medium whitespace-nowrap">Desconto</th>
+                  <th className="w-[44%] py-1.5 pr-3 font-medium">Procedimento</th>
+                  <th className="w-[24%] py-1.5 pr-3 font-medium">Desconto</th>
                   <th className="py-1.5 font-medium">Condições</th>
                 </tr>
               </thead>
@@ -878,7 +1004,7 @@ export default async function PropostaPage({
                   return (
                     <tr key={b.procedureId} className="break-inside-avoid border-b align-top">
                       <td className="py-1.5 pr-3 break-words">{b.nome}</td>
-                      <td className="py-1.5 pr-3 font-medium whitespace-nowrap">
+                      <td className="py-1.5 pr-3 font-medium">
                         {descontoNoAnexo(b)}
                       </td>
                       <td className="py-1.5 text-muted-foreground">
@@ -900,6 +1026,28 @@ export default async function PropostaPage({
           </section>
         )}
       </article>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Um número da barra de cima. */
+function Destaque({
+  rotulo,
+  valor,
+  ouro,
+}: {
+  rotulo: string;
+  valor: string;
+  ouro?: boolean;
+}) {
+  return (
+    <div className={ouro ? "bg-gold px-4 py-3 text-gold-foreground" : "bg-card px-4 py-3"}>
+      <p className={ouro ? "text-xs opacity-80" : "text-xs text-muted-foreground"}>{rotulo}</p>
+      <p className="text-lg font-semibold">{valor}</p>
     </div>
   );
 }

@@ -313,12 +313,17 @@ export function ordenarParaOAnexo<T extends BeneficioDoAnexo>(lista: readonly T[
 
 export type ResumoDosBeneficios = {
   semCusto: number;
-  /** Com desconto cujo % se conhece (inclui o em reais com preço). */
+  /** Com desconto em %. */
   comDesconto: number;
   menorPercent: number | null;
   maiorPercent: number | null;
-  /** Desconto em reais em procedimento sem preço: % desconhecido. */
-  emReaisSemPreco: number;
+  /**
+   * Com desconto em VALOR FIXO (R$). Ficam fora da faixa de %: convertido, um
+   * desconto de R$ 370,00 num procedimento de R$ 380,00 virava "97%" e a faixa
+   * do resumo passava a dizer "de 20% a 97%" (dono, 28/10/2026) — verdade
+   * para um procedimento, impressão errada para os outros 283.
+   */
+  emValorFixo: number;
 };
 
 export function resumoDosBeneficios(lista: readonly BeneficioDoAnexo[]): ResumoDosBeneficios {
@@ -327,7 +332,7 @@ export function resumoDosBeneficios(lista: readonly BeneficioDoAnexo[]): ResumoD
     comDesconto: 0,
     menorPercent: null,
     maiorPercent: null,
-    emReaisSemPreco: 0,
+    emValorFixo: 0,
   };
   for (const b of lista) {
     if (b.benefitType === "NOT_COVERED") continue;
@@ -335,11 +340,12 @@ export function resumoDosBeneficios(lista: readonly BeneficioDoAnexo[]): ResumoD
       r.semCusto += 1;
       continue;
     }
-    const pct = percentualDoDesconto(b);
-    if (pct == null) {
-      r.emReaisSemPreco += 1;
+    if (b.benefitType === "DISCOUNT_AMOUNT") {
+      r.emValorFixo += 1;
       continue;
     }
+    const pct = percentualDoDesconto(b);
+    if (pct == null) continue;
     r.comDesconto += 1;
     r.menorPercent = r.menorPercent == null ? pct : Math.min(r.menorPercent, pct);
     r.maiorPercent = r.maiorPercent == null ? pct : Math.max(r.maiorPercent, pct);
@@ -347,6 +353,8 @@ export function resumoDosBeneficios(lista: readonly BeneficioDoAnexo[]): ResumoD
   return r;
 }
 
+const reaisTexto = (c: number) =>
+  `R$ ${(c / 100).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 const pctTexto = (n: number) => `${String(n).replace(".", ",")}%`;
 const procedimentos = (n: number) => `${n} procedimento${n === 1 ? "" : "s"}`;
 
@@ -361,7 +369,7 @@ export function frasesDoResumo(r: ResumoDosBeneficios): string[] {
         : `${procedimentos(r.comDesconto)} com descontos de ${pctTexto(r.menorPercent)} a ${pctTexto(r.maiorPercent)}`
     );
   }
-  if (r.emReaisSemPreco > 0) f.push(`${procedimentos(r.emReaisSemPreco)} com desconto em reais`);
+  if (r.emValorFixo > 0) f.push(`${procedimentos(r.emValorFixo)} com desconto em valor fixo`);
   return f;
 }
 
@@ -370,9 +378,11 @@ export function descontoNoAnexo(b: BeneficioDoAnexo): string {
   if (b.benefitType === "FREE") return "Sem custo";
   if (b.benefitType === "DISCOUNT_PERCENT") return pctTexto(b.benefitValue ?? 0);
   if (b.benefitType === "DISCOUNT_AMOUNT") {
-    const reais = `R$ ${((b.benefitValue ?? 0) / 100).toFixed(2).replace(".", ",")}`;
-    const pct = percentualDoDesconto(b);
-    return pct == null ? reais : `${reais} (${pctTexto(pct)})`;
+    const desconto = b.benefitValue ?? 0;
+    const texto = `${reaisTexto(desconto)} de desconto`;
+    // Com o preço de tabela, o que a pessoa PAGA diz mais que o %.
+    if (!b.precoCents || b.precoCents <= 0) return texto;
+    return `${texto} (paga ${reaisTexto(Math.max(0, b.precoCents - desconto))})`;
   }
   return "Não coberto";
 }

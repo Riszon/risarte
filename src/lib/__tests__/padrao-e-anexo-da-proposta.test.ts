@@ -61,18 +61,31 @@ describe("o resumo do documento", () => {
     b("Clareamento", "NOT_COVERED", null),
   ];
 
-  it("conta sem custo e a faixa dos descontos, sem o não coberto", () => {
+  it("conta sem custo, a faixa dos descontos em % e o valor fixo à parte", () => {
     const r = resumoDosBeneficios(lista);
     expect(r).toEqual({
       semCusto: 2,
-      comDesconto: 3,
+      comDesconto: 2,
       menorPercent: 10,
       maiorPercent: 40,
-      emReaisSemPreco: 0,
+      emValorFixo: 1,
     });
     expect(frasesDoResumo(r)).toEqual([
       "2 procedimentos sem custo (R$ 0,00)",
-      "3 procedimentos com descontos de 10% a 40%",
+      "2 procedimentos com descontos de 10% a 40%",
+      "1 procedimento com desconto em valor fixo",
+    ]);
+  });
+
+  it("o desconto em valor fixo não estica a faixa de % (o caso dos 97%)", () => {
+    const r = resumoDosBeneficios([
+      b("Restauração", "DISCOUNT_PERCENT", 20),
+      b("Clareamento", "DISCOUNT_PERCENT", 50),
+      b("Controle pós-operatório", "DISCOUNT_AMOUNT", 37000, 38000),
+    ]);
+    expect(frasesDoResumo(r)).toEqual([
+      "2 procedimentos com descontos de 20% a 50%",
+      "1 procedimento com desconto em valor fixo",
     ]);
   });
 
@@ -84,9 +97,9 @@ describe("o resumo do documento", () => {
     ]);
   });
 
-  it("desconto em reais sem preço é contado à parte", () => {
+  it("desconto em valor fixo sem preço também entra na linha própria", () => {
     const r = resumoDosBeneficios([b("Coroa", "DISCOUNT_AMOUNT", 10000, null)]);
-    expect(frasesDoResumo(r)).toEqual(["1 procedimento com desconto em reais"]);
+    expect(frasesDoResumo(r)).toEqual(["1 procedimento com desconto em valor fixo"]);
   });
 
   it("lista vazia não escreve nada", () => {
@@ -118,8 +131,13 @@ describe("a ordem do anexo", () => {
   it("a coluna do desconto", () => {
     expect(descontoNoAnexo(b("x", "FREE", null))).toBe("Sem custo");
     expect(descontoNoAnexo(b("x", "DISCOUNT_PERCENT", 15))).toBe("15%");
-    expect(descontoNoAnexo(b("x", "DISCOUNT_AMOUNT", 5000, 20000))).toBe("R$ 50,00 (25%)");
-    expect(descontoNoAnexo(b("x", "DISCOUNT_AMOUNT", 5000, null))).toBe("R$ 50,00");
+    expect(descontoNoAnexo(b("x", "DISCOUNT_AMOUNT", 37000, 38000))).toBe(
+      "R$ 370,00 de desconto (paga R$ 10,00)"
+    );
+    expect(descontoNoAnexo(b("x", "DISCOUNT_AMOUNT", 5000, null))).toBe("R$ 50,00 de desconto");
+    expect(descontoNoAnexo(b("x", "DISCOUNT_AMOUNT", 150000, 250000))).toBe(
+      "R$ 1.500,00 de desconto (paga R$ 1.000,00)"
+    );
   });
 });
 
