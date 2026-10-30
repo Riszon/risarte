@@ -404,8 +404,9 @@ Syncthing se comportarem de forma estranha.**
   caiu no `.env.local`, ou seja, na PRODUÇÃO. Só o login abriu, e a sessão de teste
   foi recusada; nada foi lido nem gravado. Subir por um script que lê o
   `.env.test.local` e recusa a produção.
-- ⏳ **0338 aplicada no treino; falta a produção.** O código segue local até o dono
-  rodar. Sem a 0338, o Consultor vê a soma dos itens marcada como estimativa.
+- ✅ **0338 aplicada na produção** (conferência true·true·true·false; de fora: sem
+  login 42501, v2 do relato com as 19 posições). De fora não dá para provar a leitura
+  do Consultor real: exige a sessão dele.
   **Não visto:** arrastar com o mouse, envio ao Coordenador pela tela. E2E não rodado.
 
 **30/10/2026 — PC Administrador (core 0.369.0 → 0.370.0, migração 0337)**
