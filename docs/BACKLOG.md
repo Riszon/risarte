@@ -43,6 +43,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
 - [ ] **AP84** — a margem da negociação conta a hora de cadeira pela soma dos itens (9h15 no relato), não pela sequência montada (7h15)
 - [ ] **AP85** — plano de uma opção só nasce sem opção principal (2 de 2 na produção): as telas que procuram "a principal" não acham
+- [ ] **AP86** — as outras 16 janelas altas têm o desenho que cortava a de agendamento (OC-00008): botão ou texto que não quebra linha pode alargá-las
 - [ ] **AP83** — 0331 e 0332 (Ortodontia) apagam dado sem o `-- DESTRUTIVO`: `npm run check:destrutivo` acusa 7 comandos
 - [ ] **AP82** — a hora clínica é lida unidade por unidade (custo fixo + agenda + atendimentos); a aba do Painel da rede e cada negociação pagam essas leituras
 - [ ] **AP79** — o preço MÁXIMO do procedimento não é conferido em lugar nenhum (o mínimo trava desde a 0.356.0)
@@ -2669,6 +2670,15 @@ para a conta da margem. Com sessões juntas e tempos ajustados, a sequência tem
 menos tempo que os itens (7h15 contra 9h15 no OC-00007), e a margem sai menor do
 que a real. **Não mudei** na 0.371.0: a mesma conta vale para a Precificação, e
 trocar a base dela é decisão do dono. Visto ao entregar a 0338; não é dela.
+
+### AP86. Outras janelas podem alargar como a de agendamento (30/10/2026)
+
+**Risco, não defeito visto:** `DialogContent` (`components/ui/dialog.tsx`) é um grid
+sem coluna definida, e o `Button` não quebra linha. No OC-00008 isso cortou a janela
+de agendamento; ela foi corrigida com `grid-cols-1`. Outras 16 janelas usam a mesma
+combinação de altura máxima e rolagem. **Caminho provável:** `grid-cols-1` no próprio
+`DialogContent`, conferindo as janelas com tabela larga. Não mudei: alcança o sistema
+inteiro. Visto ao corrigir o OC-00008.
 
 ### AP85. Plano de uma opção só nasce sem opção principal (30/10/2026)
 

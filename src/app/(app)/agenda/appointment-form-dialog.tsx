@@ -834,7 +834,9 @@ export function AppointmentFormDialog({
   return (
     <Dialog open={actualOpen} onOpenChange={setActualOpen}>
       {trigger && <DialogTrigger render={trigger} />}
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      {/* OC-00008: `grid-cols-1` não deixa um rótulo longo alargar o conteúdo
+          para além da janela (ela rolava de lado e cortava a esquerda). */}
+      <DialogContent className="max-h-[90dvh] grid-cols-1 overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {isEdit
@@ -893,15 +895,17 @@ export function AppointmentFormDialog({
 
           {!isEdit && schedulingInfo && (
             <div className="space-y-1 rounded-md border bg-muted/40 p-2 text-xs">
-              <p className="flex items-center gap-1">
-                <Info className="size-3.5 shrink-0 text-primary" />
-                Fase atual:{" "}
-                <span className="font-medium">
-                  {PHASE_LABELS[schedulingInfo.phase]}
-                </span>
-                {" → "}será agendado:{" "}
-                <span className="font-medium">
-                  {APPOINTMENT_TYPE_LABELS[defaultTypeFor(schedulingInfo)]}
+              <p className="flex items-start gap-1">
+                <Info className="mt-px size-3.5 shrink-0 text-primary" />
+                <span>
+                  Fase atual:{" "}
+                  <span className="font-medium">
+                    {PHASE_LABELS[schedulingInfo.phase]}
+                  </span>
+                  {" → "}será agendado:{" "}
+                  <span className="font-medium">
+                    {APPOINTMENT_TYPE_LABELS[defaultTypeFor(schedulingInfo)]}
+                  </span>
                 </span>
               </p>
               {lastWasMissed && (
@@ -1093,6 +1097,7 @@ export function AppointmentFormDialog({
                           ? "default"
                           : "outline"
                       }
+                      className="h-auto min-h-7 max-w-full py-1 text-left whitespace-normal"
                       onClick={() => toggleParticipant(p.userId)}
                     >
                       {p.name}
@@ -1129,6 +1134,7 @@ export function AppointmentFormDialog({
                     type="button"
                     size="sm"
                     variant={sessionIds.includes(s.id) ? "default" : "outline"}
+                    className="h-auto min-h-7 max-w-full py-1 text-left whitespace-normal"
                     onClick={() => toggleSession(s)}
                   >
                     {s.label}

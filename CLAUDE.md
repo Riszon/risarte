@@ -390,6 +390,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**30/10/2026 (3) — PC Administrador (core 0.371.0 → 0.371.1, sem migração)**
+
+- **OC-00008** (bloco 0.371.1 no ESTADO): layout da janela de agendamento; as sessões
+  antes da venda já tinham saído com a 0337.
+- ⚠️ **`DialogContent` é grid sem coluna definida:** botão que não quebra linha alarga
+  a janela inteira. Corrigida só a de agendamento; as outras estão no AP86.
+- **Medido com nomes longos postos na tela do treino** (sem gravar), em 1440px e 375px.
+  Não testado em celular de verdade nem com uma sessão longa real gravada.
+
 **30/10/2026 (2) — PC Administrador (core 0.370.0 → 0.371.0, migração 0338)**
 
 - **OC-00006 + OC-00007** (bloco 0.371.0 no ESTADO). O resumo mostrava 9h15; a

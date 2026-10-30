@@ -1,6 +1,16 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 30/10/2026 · Versão do sistema: **0.371.0** · Última migração: **0338** (0318 a 0338 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 30/10/2026 · Versão do sistema: **0.371.1** · Última migração: **0338** (0318 a 0338 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.371.1 — A JANELA DE AGENDAMENTO NÃO CORTA MAIS A TELA (30/10/2026)
+>
+> OC-00008, duas queixas e duas causas. **A tela:** defeito de layout. Um botão de
+> sessão não quebrava a linha e alargava a coluna da janela, que passava a rolar de
+> lado, cortando a esquerda (reproduzido: conteúdo de 516px em janela de 438px). A
+> linha da fase também virava colunas soltas. **As sessões antes da venda:** era o
+> OC-00005, já corrigido pela 0337; o relato é da 0.369.0. Na produção, 0 sessões a
+> agendar. O caso segue valendo para sessões antigas com uma já usada, que a 0337
+> preservou: a produção não tem nenhuma. Outras 16 janelas têm o mesmo desenho: AP86.
 
 > ## 🎯 0.371.0 / 0338 — QUEM APROVA E QUEM VENDE VEEM A SEQUÊNCIA (30/10/2026)
 >

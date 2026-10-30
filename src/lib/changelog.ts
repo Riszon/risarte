@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.371.1",
+    data: "2026-10-30",
+    migracao: null,
+    titulo: "A janela de agendamento não corta mais a tela",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Nomes longos de procedimento alargavam a janela de agendamento, e ela passava a rolar de lado, cortando o que estava à esquerda. Agora o nome quebra a linha, no computador e no celular.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.371.0",
     data: "2026-10-30",
     migracao: "0338",
