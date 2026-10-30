@@ -1,3 +1,5 @@
+import { valoresDasPropostas } from "@/lib/empresarial/valor-da-proposta-servidor";
+import { valorNoFunil } from "@/lib/empresarial/valor-da-proposta";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -131,6 +133,8 @@ export default async function PainelDoFunilPage() {
     ]);
   }
 
+  // OC-00011: o mesmo valor do quadro do funil.
+  const valoresDeProposta = await valoresDasPropostas(db);
   const doPainel: LeadDoPainel[] = leads.map((l) => ({
     id: l.id,
     companyName: l.company_name,
@@ -140,7 +144,7 @@ export default async function PainelDoFunilPage() {
       ? nomePorId.get(l.consultant_id) ?? null
       : null,
     captureChannel: l.capture_channel,
-    estimatedValueCents: l.estimated_value_cents,
+    estimatedValueCents: valorNoFunil(valoresDeProposta.get(l.id), l.estimated_value_cents),
     history: historyByLead.get(l.id) ?? [],
   }));
 

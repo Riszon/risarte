@@ -82,10 +82,15 @@ export function ResumoDaEmpresa({
           <Dado rotulo="Origem" vazio="não informada">
             {origem.length ? origem.join(" · ") : null}
           </Dado>
-          <Dado rotulo="Valor estimado" vazio="não informado">
-            {lead.estimatedValueCents != null
-              ? formatBRL(lead.estimatedValueCents)
-              : null}
+          <Dado
+            rotulo={lead.valorDaPropostaCents != null ? "Valor da proposta (mês)" : "Valor estimado"}
+            vazio="não informado"
+          >
+            {lead.valorDaPropostaCents != null
+              ? formatBRL(lead.valorDaPropostaCents)
+              : lead.estimatedValueCents != null
+                ? formatBRL(lead.estimatedValueCents)
+                : null}
           </Dado>
           <Dado rotulo="Nesta fase" vazio="sem registro">
             {lead.tempoNaFase ? (

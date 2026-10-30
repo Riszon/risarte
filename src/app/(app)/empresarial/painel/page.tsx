@@ -1,3 +1,5 @@
+import { valoresDasPropostas } from "@/lib/empresarial/valor-da-proposta-servidor";
+import { valorNoFunil } from "@/lib/empresarial/valor-da-proposta";
 import { ehValorFixo, mensalidadeDoFixo } from "@/lib/empresarial/mensalidade";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -82,9 +84,13 @@ export default async function PainelPage() {
       >(),
     db
       .from("commercial_leads")
-      .select("stage, estimated_value_cents")
-      .returns<{ stage: LeadStage; estimated_value_cents: number | null }[]>(),
+      .select("id, stage, estimated_value_cents")
+      .returns<{ id: string; stage: LeadStage; estimated_value_cents: number | null }[]>(),
   ]);
+  // OC-00011: o mesmo valor do quadro do funil.
+  const valoresDeProposta = await valoresDasPropostas(db);
+  const valorDoLead = (l: { id: string; estimated_value_cents: number | null }) =>
+    valorNoFunil(valoresDeProposta.get(l.id), l.estimated_value_cents) ?? 0;
 
   const networkPricing =
     (pricingRows ?? [])
@@ -203,13 +209,13 @@ export default async function PainelPage() {
 
   const openLeadValue = (leads ?? [])
     .filter((l) => l.stage !== "CLOSED_WON" && l.stage !== "CLOSED_LOST")
-    .reduce((a, l) => a + (l.estimated_value_cents ?? 0), 0);
+    .reduce((a, l) => a + valorDoLead(l), 0);
   const funnelByStage = LEAD_STAGES.map((stage) => {
     const items = (leads ?? []).filter((l) => l.stage === stage);
     return {
       stage,
       count: items.length,
-      value: items.reduce((a, l) => a + (l.estimated_value_cents ?? 0), 0),
+      value: items.reduce((a, l) => a + valorDoLead(l), 0),
     };
   });
 

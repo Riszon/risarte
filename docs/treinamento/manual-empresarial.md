@@ -164,6 +164,14 @@ etapas. As etapas são:
 | **Fechamento (perda)** | Não fechou |
 | **Implantação** | Fechou e está entrando no ar |
 
+**O valor no card e a soma da etapa.** Assim que a proposta tem preço salvo, o
+card mostra a **mensalidade da proposta** (*"R$ 524,40/mês"*, a mesma do
+documento, com faixas e dependentes calculados) e a etapa soma esses valores.
+Antes disso, vale o **valor estimado** do cadastro (*"(estimado)"*). Mudou a
+proposta, o funil muda junto. Os painéis do funil usam a mesma conta.
+
+> **A soma é de valores por mês.** Ela não inclui a implantação.
+
 **★ Hoje do consultor**, no topo, junta o que tem próxima ação para hoje. É por
 onde o dia começa.
 

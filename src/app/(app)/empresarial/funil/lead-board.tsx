@@ -1,5 +1,6 @@
 "use client";
 
+import { valorNoFunil } from "@/lib/empresarial/valor-da-proposta";
 import { useId, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -77,7 +78,10 @@ export type LeadView = {
   consultantName: string | null;
   lostReason: string | null;
   companyId: string | null;
+  /** O digitado no cadastro. É o que o formulário edita. */
   estimatedValueCents: number | null;
+  /** OC-00011: a mensalidade da proposta gravada. Nula = ainda sem valor. */
+  valorDaPropostaCents: number | null;
   nextActionAt: string | null;
   nextActionNote: string | null;
   notes: string | null;
@@ -145,7 +149,7 @@ export function LeadBoard({
             ? naColuna.filter((l) => matchesClosingFilter(l.stage, closingFilter))
             : naColuna;
           const soma = cards.reduce(
-            (acc, c) => acc + (c.estimatedValueCents ?? 0),
+            (acc, c) => acc + (valorNoFunil(c.valorDaPropostaCents, c.estimatedValueCents) ?? 0),
             0
           );
           const ganhos = naColuna.filter((l) => l.stage === "CLOSED_WON").length;
@@ -261,9 +265,11 @@ function LeadCard({
             Perda
           </Badge>
         )}
-        {lead.estimatedValueCents != null && (
+        {/* A proposta manda; sem ela, vale o estimado. "/mês" diz qual é qual. */}
+        {valorNoFunil(lead.valorDaPropostaCents, lead.estimatedValueCents) != null && (
           <Badge variant="secondary" className="text-xs">
-            {formatBRL(lead.estimatedValueCents)}
+            {formatBRL(valorNoFunil(lead.valorDaPropostaCents, lead.estimatedValueCents) ?? 0)}
+            {lead.valorDaPropostaCents != null ? "/mês" : " (estimado)"}
           </Badge>
         )}
         {overdue && (
@@ -885,7 +891,9 @@ export function LeadFields({
           />
         </div>
         <div>
-          <Label htmlFor={id("estimated_value")}>Valor estimado (R$)</Label>
+          <Label htmlFor={id("estimated_value")}>
+            Valor estimado (R$) — vale até a proposta ter valor
+          </Label>
           <Input
             id={id("estimated_value")}
             name="estimated_value"

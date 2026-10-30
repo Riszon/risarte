@@ -11,6 +11,7 @@ import {
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { DEFAULT_ADHESION_PRICING } from "@/lib/empresarial/pricing";
 import { loadPricing } from "../../configuracoes/data";
+import { valorDaPropostaGravada } from "@/lib/empresarial/valor-da-proposta";
 import { createClient } from "@/lib/supabase/server";
 import type {
   DispatchChannel,
@@ -691,6 +692,11 @@ export default async function FichaDoLeadPage({
     lostReason: lead.lost_reason,
     companyId: lead.company_id,
     estimatedValueCents: lead.estimated_value_cents,
+    // OC-00011: a mesma conta do documento da proposta.
+    valorDaPropostaCents: valorDaPropostaGravada(
+      qual,
+      (faixasRows ?? []).map((f) => ({ minQuantity: f.min_quantity, priceCents: f.price_cents }))
+    ),
     nextActionAt: lead.next_action_at,
     nextActionNote: lead.next_action_note,
     notes: lead.notes,

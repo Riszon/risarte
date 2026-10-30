@@ -12,12 +12,8 @@ import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/pricing";
 import { formatBrDate, startOfDayInBrazil, todayInBrazil } from "@/lib/dates";
 import { maskDocument } from "@/lib/empresarial/documents";
-import { DEFAULT_ADHESION_PRICING } from "@/lib/empresarial/pricing";
-import {
-  faltaParaProposta,
-  simularProposta,
-  type BillingBasis,
-} from "@/lib/empresarial/proposta";
+import { faltaParaProposta, type BillingBasis } from "@/lib/empresarial/proposta";
+import { contaDaPropostaGravada } from "@/lib/empresarial/valor-da-proposta";
 import { rotuloDaFaixa } from "@/lib/empresarial/condicoes-da-proposta";
 import { carregarVantagensDaProposta } from "@/lib/empresarial/vantagens-servidor";
 import {
@@ -267,24 +263,8 @@ export default async function PropostaPage({
   const estimativa = estimativaDaProposta(q);
   const dependentes = estimativa?.dependentes ?? q.dependents_estimate ?? 0;
   const tabelaDeps = pricingDaProposta(q);
-  const conta = simularProposta({
-    basis,
-    dependentesEstimadosCents: estimativa?.totalCents ?? null,
-    implantacaoComDependentes: Boolean(q.implantation_includes_dependents) && estimativa != null,
-    employeeCount: titulares,
-    holderFeeCents: q.holder_fee_cents ?? DEFAULT_ADHESION_PRICING.holderFeeCents,
-    includeDependents: Boolean(q.includes_dependents),
-    dependentsCount: dependentes,
-    dependentFeeCents:
-      q.dependent_fee_cents ??
-      DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents,
-    fixedMonthlyCents: q.fixed_monthly_cents ?? 0,
-    paymentModel: q.payment_model ?? "EMPLOYEE_PAYS",
-    subsidyType: q.subsidy_type,
-    subsidyValue: q.subsidy_value ?? 0,
-    currentPlanMonthlyCents: q.dental_plan_monthly_cents,
-    faixas,
-  });
+  // OC-00011: a mesma peça que o funil lê — o cartão e o papel não divergem.
+  const conta = contaDaPropostaGravada(q, faixas);
 
   // 1036 (dono, 28/10/2026): a mesma empresa pelo preço padrão da rede. Só
   // vai para o papel quando a proposta sai mais barata e a caixa está marcada.

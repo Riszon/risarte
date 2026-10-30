@@ -1,3 +1,4 @@
+import { valoresDasPropostas } from "@/lib/empresarial/valor-da-proposta-servidor";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
@@ -100,6 +101,8 @@ export default async function FunilPage() {
     .order("updated_at", { ascending: false })
     .returns<LeadRow[]>();
   const leads = leadRows ?? [];
+  // OC-00011: o valor de cada proposta, para o cartão e a soma da etapa.
+  const valoresDeProposta = await valoresDasPropostas(db);
 
   const leadIds = leads.map((l) => l.id);
   const { data: actRows } = leadIds.length
@@ -234,6 +237,7 @@ export default async function FunilPage() {
     lostReason: l.lost_reason,
     companyId: l.company_id,
     estimatedValueCents: l.estimated_value_cents,
+    valorDaPropostaCents: valoresDeProposta.get(l.id) ?? null,
     nextActionAt: l.next_action_at,
     nextActionNote: l.next_action_note,
     notes: l.notes,
