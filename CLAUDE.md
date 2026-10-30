@@ -405,9 +405,9 @@ Syncthing se comportarem de forma estranha.**
   `topup_treatment_sessions`, levar isso junto.
 - ⚠️ **Tela que grava "por trás": estado fora da janela** (o `Dialog` desmonta ao
   fechar) e **sem `revalidatePath` a cada movimento**.
-- ⏳ **0337 aplicada no treino; falta a produção** (apaga as 19 sessões do relato,
-  autorizado). **Não visto:** arrastar com o mouse, a visão do Consultor, o envio
-  pela tela. E2E ajustado e não rodado. Resíduo no treino: "Teste do portão 2",
+- ✅ **0337 aplicada no treino e na produção (30/10/2026)**: a trilha mostra as 19
+  sessões autorizadas apagadas, e o v2 do relato segue com as 19 posições.
+  **Não visto:** arrastar com o mouse, a visão do Consultor, o envio pela tela. E2E ajustado e não rodado. Resíduo no treino: "Teste do portão 2",
   Opção A confirmada, 2 selantes juntos.
 
 **28/10/2026 (20) — PC Administrador (core 0.368.0 → 0.369.0, sem migração)**
