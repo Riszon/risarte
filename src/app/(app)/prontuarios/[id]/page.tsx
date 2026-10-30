@@ -138,6 +138,9 @@ import {
 } from "@/lib/clinical";
 import { PlanEditorSwitcher } from "./plan-editor-switcher";
 import { loadClientPlans } from "./plan-loader";
+import { carregarSequencias } from "./sequencias-loader";
+import { planoQueAbre } from "@/lib/sequencia-do-plano";
+import { SequenciaSomenteLeitura } from "../../planejamento/[clientId]/session-join-planner";
 import { EmpresarialPanel } from "./empresarial-panel";
 import { canIndicar } from "@/lib/indica/access";
 import { IndicaNaFicha } from "../../indica-mais-risos/na-ficha";
@@ -2454,6 +2457,20 @@ export default async function ClientDetailPage(
     }
   }
 
+  // SQ3: o Coordenador lê a sequência pelo plano; o Consultor, que não abre o
+  // editor, lê a do plano que vale. Quem não tem acesso recebe vazio do banco.
+  const sequencias = canViewPlanning ? await carregarSequencias(plans) : {};
+  const ehConsultorDaUnidade =
+    !canViewPlanning && hasRoleInClinic(session, client.clinic_id, ["commercial_consultant"]);
+  const planosDoConsultor = ehConsultorDaUnidade ? await loadClientPlans(id) : [];
+  const planoDoConsultor = planoQueAbre(planosDoConsultor);
+  const sequenciaDoConsultor =
+    planoDoConsultor?.status === "approved"
+      ? ((await carregarSequencias([planoDoConsultor]))[planoDoConsultor.id] ?? []).filter(
+          (o) => planoDoConsultor.options.find((p) => p.id === o.id)?.reviewStatus !== "rejected"
+        )
+      : [];
+
   // Catálogo de preços com o preço efetivo da unidade do cliente (para o Planner
   // montar o orçamento). Só carregado para quem edita o plano.
   let priceCatalog: PricedProcedure[] = [];
@@ -3403,6 +3420,11 @@ export default async function ClientDetailPage(
 
         {(planSummary || canViewPlanning) && (
           <TabPanel id="plano" label="Plano">
+            {sequenciaDoConsultor.length > 0 && (
+              <div className="mb-3">
+                <SequenciaSomenteLeitura opcoes={sequenciaDoConsultor} editavel={false} />
+              </div>
+            )}
             {planSummary && (
               <PlanSummarySection
                 diagnosis={planSummary.diagnosis}
@@ -3416,6 +3438,7 @@ export default async function ClientDetailPage(
                 clientId={client.id}
                 clientName={client.full_name}
                 plans={plans}
+                sequencias={sequencias}
                 odonto={odontoDoPlano}
                 grupos={gruposDoPlano}
                 podeVerPrecos={podeVerPrecosDoPlano}

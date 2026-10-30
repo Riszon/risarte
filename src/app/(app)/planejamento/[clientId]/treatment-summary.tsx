@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { PopupCard } from "@/components/popup-card";
+import { usePlanoSelecionado } from "../../prontuarios/[id]/plano-selecionado";
 import {
   CalendarClock,
   ChevronLeft,
+  ClipboardList,
   ChevronRight,
   Clock,
   Layers,
@@ -14,7 +17,23 @@ import {
 import { GutAverageBadge, GutBadge } from "@/components/gut-badge";
 import { sortByGutDesc } from "@/lib/gut";
 import { formatMinutes, formatSessions, type BudgetItem } from "@/lib/pricing";
-import type { PlanOption, PlanStage } from "@/lib/planning";
+import type { PlanOption, PlanStage, TreatmentPlan } from "@/lib/planning";
+
+/** O cartão do cockpit: o resumo do plano selecionado na tela (OC-00009). */
+export function CartaoDoResumo({ plans }: { plans: TreatmentPlan[] }) {
+  const planoId = usePlanoSelecionado()?.planoId ?? null;
+  const plano = plans.find((p) => p.id === planoId);
+  if (!plano || plano.options.length === 0) return null;
+  return (
+    <PopupCard
+      label="Resumo do tratamento"
+      icon={<ClipboardList className="size-4" />}
+      wide
+    >
+      <TreatmentSummary options={plano.options} />
+    </PopupCard>
+  );
+}
 
 /** Mini-cartão de número (procedimentos / sessões / cadeira / etapas) no topo. */
 function StatCard({

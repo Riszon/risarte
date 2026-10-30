@@ -280,6 +280,17 @@ export async function loadClientPlans(
     }
   }
 
+  // 0337: a confirmação da sequência — à parte, pelo mesmo motivo do lugar.
+  const confirmacaoPorOpcao = new Map<string, string | null>();
+  if (optionIds.length > 0) {
+    const { data: confRows, error: confErro } = await supabase
+      .from("treatment_plan_options")
+      .select("id, sequence_confirmed_at")
+      .in("id", optionIds)
+      .returns<{ id: string; sequence_confirmed_at: string | null }[]>();
+    if (!confErro) for (const c of confRows ?? []) confirmacaoPorOpcao.set(c.id, c.sequence_confirmed_at);
+  }
+
   // OD3 (0311): versão e substituição — à parte, pelo mesmo motivo do lugar.
   const versaoPorPlano = new Map<
     string,
@@ -319,6 +330,7 @@ export async function loadClientPlans(
       stages: stagesByOption.get(o.id) ?? [],
       reviewStatus: o.review_status,
       reviewNotes: o.review_notes,
+      sequenceConfirmedAt: confirmacaoPorOpcao.get(o.id) ?? null,
     });
     optionsByPlan.set(o.plan_id, list);
   }

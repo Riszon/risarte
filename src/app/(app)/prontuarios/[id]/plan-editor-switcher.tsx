@@ -24,6 +24,12 @@ import { PlanLifecycleBar, type LifecycleCaps } from "./plan-lifecycle-bar";
 import { createTreatmentPlan } from "./planning-actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import type { GrupoDeProcedimentos } from "@/lib/procedimentos/grupos";
+import { planoEditavel, planoQueAbre } from "@/lib/sequencia-do-plano";
+import { usePlanoSelecionado } from "./plano-selecionado";
+import {
+  SequenciaSomenteLeitura,
+  type SequenciasPorPlano,
+} from "../../planejamento/[clientId]/session-join-planner";
 
 /**
  * Dono da seleção de plano: mostra a lista de TODOS os planos do cliente (nenhum
@@ -52,7 +58,10 @@ export function PlanEditorSwitcher({
   odonto,
   podeVerPrecos = false,
   grupos = [],
+  sequencias,
 }: {
+  /** SQ3: a sequência para LER, sob o seletor. No cockpit, o cartão cuida dela. */
+  sequencias?: SequenciasPorPlano;
   /** 0324: os grupos de procedimentos ativos (atalho de lançamento). */
   grupos?: GrupoDeProcedimentos[];
   /** OD3: o plano por dente (o odontograma e as regras). */
@@ -83,14 +92,14 @@ export function PlanEditorSwitcher({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(() => {
-    const editable = plans.find(
-      (p) => (p.status === "draft" || p.status === "returned") && !p.supersededAt
-    );
-    // OD3 (D4): a versão substituída não abre sozinha — abre a que vale.
-    const vigente = plans.find((p) => !p.supersededAt);
-    return (editable ?? vigente ?? plans[0])?.id ?? null;
-  });
+  // OD3 (D4): a versão substituída não abre sozinha — abre a que vale. No cockpit
+  // a escolha é compartilhada com os cartões de cima (OC-00009).
+  const compartilhado = usePlanoSelecionado();
+  const [escolhaLocal, setEscolhaLocal] = useState<string | null>(
+    () => planoQueAbre(plans)?.id ?? null
+  );
+  const selectedPlanId = compartilhado ? compartilhado.planoId : escolhaLocal;
+  const setSelectedPlanId = compartilhado ? compartilhado.setPlanoId : setEscolhaLocal;
   const versaoDe = (id: string | null | undefined) => plans.find((p) => p.id === id)?.versionNo ?? null;
 
   const selected =
@@ -227,6 +236,16 @@ export function PlanEditorSwitcher({
           planId={selected.id}
           stage={planStage(selected)}
           caps={lifecycleCaps}
+        />
+      )}
+
+      {selected && sequencias?.[selected.id] && (
+        <SequenciaSomenteLeitura
+          key={`sequencia-${selected.id}`}
+          opcoes={sequencias[selected.id]}
+          editavel={planoEditavel(selected)}
+          providerOptions={providerOptions}
+          regioes={odonto?.dados.regioes ?? []}
         />
       )}
 

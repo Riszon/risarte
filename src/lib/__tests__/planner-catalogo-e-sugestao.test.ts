@@ -117,7 +117,7 @@ describe("as telas", () => {
     expect(plano).toContain("<BotaoSugerirProcedimento");
     const acoes = ler("src/app/(app)/prontuarios/[id]/planning-actions.ts");
     expect(acoes).toContain("if (!input.procedureId) {");
-    expect(acoes).toContain(".filter((r) => r.procedure_id != null);");
+    expect(acoes).toContain(".filter((r) => r.row.procedure_id != null);");
     const editar = acoes.slice(acoes.indexOf("export async function editBudgetItem("), acoes.indexOf("export async function removeBudgetItem("));
     expect(editar).not.toContain("unit_price_cents");
   });

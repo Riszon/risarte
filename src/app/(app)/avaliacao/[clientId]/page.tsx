@@ -27,6 +27,7 @@ import { AnamnesisFill } from "../../prontuarios/[id]/anamnesis-fill";
 import { loadEvaluationWorkspace } from "../../prontuarios/[id]/evaluation-loader";
 import { loadAnamnesisWorkspace } from "../../prontuarios/[id]/anamnesis-loader";
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
+import { carregarSequencias } from "../../prontuarios/[id]/sequencias-loader";
 import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
 import { StepGuide } from "./step-guide";
 import { OrthoIndicationBlock, type OrthoIndicationState } from "./ortho-indication-block";
@@ -130,6 +131,9 @@ export default async function EvaluationCockpitPage(
     loadClientPlans(clientId),
     carregarOdontograma(clientId, (client.birth_date as string | null) ?? null),
   ]);
+
+  // SQ3: o Coordenador vê a sequência que o Planner sugere.
+  const sequencias = await carregarSequencias(plans);
 
   // -- Bloco A: painel de status do cliente (topo do cockpit). ----------------
   const nowIso = new Date().toISOString();
@@ -697,6 +701,7 @@ export default async function EvaluationCockpitPage(
             clientId={client.id}
             clientName={client.full_name}
             plans={plans}
+            sequencias={sequencias}
             canEdit={false}
             canReview
             inPlanningPhase={phase === "planning_center"}

@@ -242,6 +242,8 @@ export type PlanOption = {
   /** Coordenador's per-option decision (F4). */
   reviewStatus: OptionReviewStatus;
   reviewNotes: string | null;
+  /** 0337: quando o Planner confirmou os atendimentos e a sequência; null = pendente. */
+  sequenceConfirmedAt?: string | null;
 };
 
 /** Um evento do HISTÓRICO próprio do plano (COM: cada plano tem sua linha do

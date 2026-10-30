@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 28/10/2026 · Versão do sistema: **0.369.0** · Última migração: **0336** (0318 a 0336 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 30/10/2026 · Versão do sistema: **0.370.0** · Última migração: **0337** (0318 a 0336 aplicadas na produção e no treino; 0337 aplicada no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.370.0 / 0337 — ATENDIMENTOS E SEQUÊNCIA VIRAM PARTE DO PLANO (30/10/2026)
+>
+> OC-00005, OC-00009 e OC-00010, um caso, **três causas**: abrir a ficha gerava
+> as sessões sem conferir a fase (19 na produção, cliente sem venda, e sem a
+> sequência); a janela abria o plano substituído (a configuração do v2 estava
+> intacta: 19 linhas); e nada exigia a sequência no envio, nem o Coordenador a
+> via. Decisões SQ1–SQ4 do dono: **Confirmar** por opção (item muda = pendente);
+> lista que muda na hora + juntar marcando + ordenar por prioridade; Coordenador
+> e Consultor só veem; apagar só as sessões sem uso.
+>
+> ⚠️ **O plano que abre é `planoQueAbre`**: não escolher plano à parte.
+> ⚠️ **A tela grava a lista inteira** (`gravarSequencia`), sem revalidar: era o
+> recarregamento que dava a lentidão. O estado fica FORA da janela (ela desmonta
+> ao fechar). ⚠️ **`submit_treatment_plan` e `topup_treatment_sessions` recriadas
+> (0337):** ao recriar, levar a trava `SEQUENCE_REQUIRED` e a guarda da fase.
+>
+> **Conferido:** ensaio no treino 22/22 (transação desfeita) + quebras; visto na
+> tela como Planner de teste (mover, juntar, recarregar, confirmar) e Coordenador
+> de teste. **Não visto:** arrastar com o mouse, a visão do Consultor na ficha
+> (banco provado no ensaio) e o envio pela tela (a Unidade Teste tem Coordenador
+> real). E2E ajustado e **não rodado** (limpa o treino). Resíduo no treino:
+> "Teste do portão 2", Opção A com sequência confirmada e 2 selantes juntos.
 
 > ## 🎯 0.369.0 — O PRONTUÁRIO REORGANIZADO (28/10/2026, sem migração)
 >

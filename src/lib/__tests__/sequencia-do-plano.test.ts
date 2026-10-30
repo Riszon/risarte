@@ -72,12 +72,12 @@ describe("régua: o cockpit configura a sequência de TODAS as opções", () => 
   const pagina = ler("src/app/(app)/planejamento/[clientId]/page.tsx");
 
   it("projeta as sessões de cada opção do plano, não só da principal", () => {
-    expect(pagina).toMatch(/sessions: await projectOptionSessions\(o\.id\)/);
-    expect(pagina).not.toMatch(/projectOptionSessions\(summaryOption\.id\)/);
+    expect(ler("src/app/(app)/prontuarios/[id]/sequencias-loader.ts")).toMatch(/sessions: await projectOptionSessions\(o\.id\)/);
+    expect(pagina).toMatch(/await carregarSequencias\(plans\)/);
   });
 
   it("entrega todas à tela, com o seletor de opção", () => {
-    expect(pagina).toMatch(/<SequenciaPorOpcao\s+opcoes=\{sequencias\}/);
+    expect(pagina).toMatch(/<CartaoDaSequencia[\s\S]*?sequencias=\{sequencias\}/);
   });
 });
 

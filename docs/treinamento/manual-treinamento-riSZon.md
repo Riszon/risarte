@@ -2600,8 +2600,11 @@ Por qualquer um deles, o prontuário do cliente abre **direto na aba Plano**.
 1. Na aba **Plano**, as opções de tratamento já aparecem **abertas** enquanto
    o plano aguarda a sua aprovação (se alguma estiver recolhida, clique na
    setinha ao lado do nome).
-2. Leia os procedimentos de cada opção. No fim de cada uma ficam o campo
-   **Considerações** e os botões **Aprovar opção** e **Reprovar opção**.
+2. Leia os procedimentos de cada opção e abra **Atendimentos e sequência
+   sugeridos pelo Planner**, logo acima: é a ordem dos atendimentos, só para ler.
+   Para pedir mudança, escreva nas **Considerações** e reprove a opção. No fim de
+   cada opção ficam o campo **Considerações** e os botões **Aprovar opção** e
+   **Reprovar opção**.
 3. Decida **todas** as opções — cada uma precisa da sua decisão.
 4. Com todas decididas e **pelo menos uma aprovada**, o plano fica aprovado e
    o Planner envia ao Comercial. Se **todas** forem reprovadas, volta ao
@@ -2740,18 +2743,19 @@ Planejamento**.
    - Procedimento do grupo que não está no catálogo da unidade (ou foi
      desativado) **fica de fora**, e a tela diz qual.
 6. Classifique o **pilar** (1 dos 6) → **Salvar pilar**.
-7. Monte os **Atendimentos e sequência** (botão no alto do cockpit) — veja
-   abaixo.
+7. Monte e **confirme** os **Atendimentos e sequência** de cada opção (botão no
+   alto do cockpit) — veja abaixo.
 8. **Enviar para aprovação do Coordenador**. O banco confere: diagnóstico por
-   dente **finalizado** e sem sugestão pendente, e o **dente ou região** de
-   cada procedimento que se marca na boca. ⚠️ **O preço de cada item congela
+   dente **finalizado** e sem sugestão pendente, o **dente ou região** de cada
+   procedimento que se marca na boca e a **sequência confirmada** de todas as
+   opções. ⚠️ **O preço de cada item congela
    no envio**, pelo preço do catálogo daquele dia (se houve reajuste durante
    o planejamento, vale o do dia do envio).
 9. Aprovado, **Enviar ao Comercial**.
 
 **Plano enviado ou aprovado não se edita** (desde a 0.336.0 o banco recusa
 por qualquer caminho; o antigo "Reabrir para edição" saiu). Para mudar:
-**Criar nova versão** — ela copia tudo, inclusive os dentes, e nasce como
+**Criar nova versão** — ela copia tudo, inclusive os dentes e os atendimentos, e nasce como
 "Plano v2" em rascunho. Enquanto a v2 não for aprovada, a v1 **continua
 valendo** (é ela que o Comercial apresenta); quando a v2 é aprovada, a v1
 fica **substituída**, guardada para consulta. Procedimento que não combina
@@ -2759,29 +2763,39 @@ mais com o diagnóstico de hoje não é copiado — a tela avisa quantos ficaram
 de fora.
 
 **Atendimentos e sequência** — é onde você diz **como o tratamento vai ser
-executado**: o que é feito no mesmo horário, em que ordem e por quem.
+executado**: o que é feito no mesmo horário, em que ordem e por quem. O botão
+fica no alto do cockpit, mostra **Configurado** ou **Pendente** e vale para o
+**plano selecionado** na tela.
 
-- **Uma aba por opção do plano** (a principal primeiro). **Configure também as
-  alternativas:** vale a configuração da opção que o cliente **comprar**. Se
-  ele comprar a alternativa e ela não tiver sido configurada, o tratamento
-  começa sem atendimento conjunto, sem tempo ajustado e sem sequência.
-- Cada cartão é um **atendimento**. Para juntar sessões no mesmo horário,
-  troque **Separado** por **+ Novo atendimento** numa sessão e escolha o mesmo
-  atendimento nas outras.
-- **Tempo do atendimento:** quando o cartão tem mais de uma sessão, aparece um
-  campo com o **total**. Digite quanto o atendimento leva de verdade — dez
-  sessões de 60 minutos no mesmo horário não levam 600 — e o sistema **reparte
-  entre as sessões**, na proporção de cada uma. Dá para acertar uma sessão
-  isolada depois, no campo dela.
-- **Profissional** de cada sessão e a **ordem** dos atendimentos (arraste o
-  cartão ou use as setas), do **Início** ao **Fim**.
+- **Uma aba por opção do plano** (a principal primeiro). Cada opção tem a sua
+  configuração, e **todas** precisam estar confirmadas para enviar.
+- Cada linha mostra o **dente e as faces, ou a região**, e a **prioridade**.
+- **Ordem:** arraste o cartão, use as setas ou digite a **posição** no número
+  do cartão. Com as notas de prioridade preenchidas, **Ordenar por prioridade**
+  sugere a ordem; depois é só ajustar.
+- **No mesmo horário:** marque as sessões e clique em **Juntar no mesmo
+  atendimento**. **Separar** tira a sessão do atendimento.
+- **Tempo do atendimento:** quando o cartão tem mais de uma sessão, digite o
+  **total** que ele leva de verdade — dez sessões de 60 minutos no mesmo horário
+  não levam 600 — e o sistema **reparte entre as sessões**. Dá para acertar uma
+  sessão isolada depois, no campo dela.
+- **Profissional** de cada sessão, na lista ao lado dela.
+- **Salva sozinho:** a tela muda na hora e o rodapé diz **Salvando…** e **Tudo
+  salvo**. Se aparecer **Não salvou**, clique para tentar de novo.
+- **Confirmar sequência:** revise e clique, opção por opção, mesmo que a ordem
+  sugerida esteja boa. **Sem isso o plano não vai para o Coordenador.** Se entrar
+  ou sair um procedimento, ou mudar a quantidade ou o número de sessões, a opção
+  volta a ficar **Pendente**.
+- **Depois de enviar, a sequência tranca**, como o resto do plano. Para mudar,
+  crie uma nova versão: ela leva os atendimentos e a sequência junto, e você
+  confirma de novo.
 
 > **As sessões do tratamento saem do que o cliente comprou.** Quando o
 > tratamento começa, o sistema cria as sessões da **opção comprada** (principal
-> ou alternativa) e só dos **procedimentos que ele levou** — numa compra
-> parcial, o que ficou de fora não vira sessão. (Até a versão 0.303.0 as
-> sessões saíam sempre da opção principal, mesmo quando a alternativa era a
-> comprada.)
+> ou alternativa), só dos **procedimentos que ele levou** e **na sequência que
+> você confirmou**. Numa compra parcial, o que ficou de fora não vira sessão.
+> **Plano só aprovado não tem sessão:** a aba Sessões & Procedimentos fica sem
+> os procedimentos dele até a venda.
 
 **Cuidados:** o sistema exige procedimentos lançados em cada opção para enviar;
 plano de tratamento **não tem acréscimo** (o preço vem do orçamento aprovado);
@@ -3062,6 +3076,10 @@ Quando a Recepção marcar, **o cartão mostra sozinho** e o histórico ganha a
 linha *"Apresentação remarcada para …"*.
 
 **Tarefa 2 — Negociar e fechar**
+
+> Na ficha do cliente, aba **Plano**, **Atendimentos e sequência sugeridos pelo
+> Planner** mostra em quantos atendimentos e em que ordem o tratamento foi
+> pensado, sem preço. Só leitura.
 
 1. Menu **Comercial** → seu funil.
 2. Abra o caso (`/comercial/[clientId]`) → escolha a **forma de pagamento** →

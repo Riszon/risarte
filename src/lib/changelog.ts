@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.370.0",
+    data: "2026-10-30",
+    migracao: "0337",
+    titulo: "Atendimentos e sequência: mais rápido, com mais informação e parte do plano",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A janela Atendimentos e sequência podia abrir num plano antigo, já substituído, e parecer que a configuração tinha sumido. Agora ela sempre mostra o plano selecionado na tela, e a nova versão do plano leva a configuração junto.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "As sessões só aparecem em Sessões & Procedimentos depois da venda. Antes, um plano apenas aprovado pelo Coordenador já aparecia como se tivesse sido vendido. Na venda, as sessões já nascem na sequência que o Planner montou.",
+        papeis: "todos",
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Organizar os atendimentos ficou mais rápido: a lista muda na hora e salva sozinha. Cada linha mostra dente, faces, região e prioridade. Dá para digitar a posição, marcar sessões e juntar no mesmo atendimento, e ordenar por prioridade.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O plano só vai para o Coordenador com a sequência confirmada em todas as opções. O botão mostra se está Configurado ou Pendente. Se entrar ou sair um procedimento, volta a ficar pendente.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Coordenador Clínico e o Consultor Comercial passam a ver os atendimentos e a sequência sugeridos pelo Planner. Só leitura: para pedir mudança, o Coordenador devolve o plano com a observação.",
+        papeis: ["clinical_coordinator", "commercial_consultant"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.369.0",
     data: "2026-10-28",
     migracao: null,

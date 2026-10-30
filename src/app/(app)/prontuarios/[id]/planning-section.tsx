@@ -1213,6 +1213,14 @@ export function PlanningSection({
               <Send className="mr-1 size-4" />
               Enviar para aprovação do Coordenador
             </Button>
+            {/* OC-00010: o banco recusa o envio; a tela avisa antes do clique. */}
+            {options.some((o) => !o.sequenceConfirmedAt) && inPlanningPhase && (
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                Falta confirmar os atendimentos e a sequência de:{" "}
+                {options.filter((o) => !o.sequenceConfirmedAt).map((o) => o.title).join(", ")}. Abra{" "}
+                <strong>Atendimentos e sequência</strong> no Cockpit de Planejamento.
+              </p>
+            )}
             {(!canSubmit || !pillarChoice) && inPlanningPhase && (
               <p className="text-xs text-muted-foreground">
                 Para enviar: preencha o diagnóstico, tenha ao menos uma opção,

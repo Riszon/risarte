@@ -390,6 +390,26 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**30/10/2026 — PC Administrador (core 0.369.0 → 0.370.0, migração 0337)**
+
+- **OC-00005 + OC-00009 + OC-00010: um caso, três causas** (bloco 0.370.0 no
+  ESTADO). Decisões SQ1–SQ4 como recomendado.
+- ⚠️ **Sessão do PLANO só nasce na Fase 5 em diante** (a guarda faltava na
+  `topup_treatment_sessions`); a venda direta segue à parte. Plano aprovado sem
+  venda não tem sessão.
+- ⚠️ **Uma regra só para o plano que abre: `planoQueAbre`.** No cockpit a escolha
+  é compartilhada (`PlanoSelecionadoProvider`).
+- ⚠️ **A sequência é parte do plano:** tranca com ele (`plan_session_joins_lock`),
+  vai junto na nova versão (a confirmação não) e é exigida no envio
+  (`SEQUENCE_REQUIRED`). Ao recriar `submit_treatment_plan` ou
+  `topup_treatment_sessions`, levar isso junto.
+- ⚠️ **Tela que grava "por trás": estado fora da janela** (o `Dialog` desmonta ao
+  fechar) e **sem `revalidatePath` a cada movimento**.
+- ⏳ **0337 aplicada no treino; falta a produção** (apaga as 19 sessões do relato,
+  autorizado). **Não visto:** arrastar com o mouse, a visão do Consultor, o envio
+  pela tela. E2E ajustado e não rodado. Resíduo no treino: "Teste do portão 2",
+  Opção A confirmada, 2 selantes juntos.
+
 **28/10/2026 (20) — PC Administrador (core 0.368.0 → 0.369.0, sem migração)**
 
 - **Prontuário reorganizado** (ESTADO §2): painel **Precisa de atenção**

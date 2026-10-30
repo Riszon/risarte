@@ -9,7 +9,6 @@ import {
   ClipboardList,
   CornerUpLeft,
   FileImage,
-  Link2,
   MessageSquareText,
   SmilePlus,
   TriangleAlert,
@@ -54,10 +53,12 @@ import { loadClientPrograms } from "@/lib/programs";
 import { getUnitSchedulingData } from "../../agenda/actions";
 import { MediaGallery } from "../../prontuarios/[id]/media-gallery";
 import { PlanEditorSwitcher } from "../../prontuarios/[id]/plan-editor-switcher";
-import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
+import { carregarSequencias } from "../../prontuarios/[id]/sequencias-loader";
+import { PlanoSelecionadoProvider } from "../../prontuarios/[id]/plano-selecionado";
+import { planoQueAbre } from "@/lib/sequencia-do-plano";
 import { loadClientPlans } from "../../prontuarios/[id]/plan-loader";
-import { TreatmentSummary } from "./treatment-summary";
-import { SequenciaPorOpcao } from "./session-join-planner";
+import { CartaoDaSequencia } from "./session-join-planner";
+import { CartaoDoResumo } from "./treatment-summary";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { carregarOdontograma, carregarRegrasDoPlano } from "@/lib/odontograma/carregar";
 import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
@@ -307,12 +308,10 @@ export default async function PlanningCockpitPage(
 
   // -- Planos de tratamento (editor) --
   // Carrega TODOS os planos do cliente (nenhum é escondido). O cockpit trabalha
-  // no plano "ativo" (o editável mais recente; senão o mais novo).
+  // no plano "ativo": a MESMA regra do seletor de planos (OC-00009). Antes o
+  // servidor abria o plano devolvido mesmo depois de substituído.
   const plans = await loadClientPlans(clientId);
-  const treatmentPlan =
-    plans.find((p) => p.status === "draft" || p.status === "returned") ??
-    plans[0] ??
-    null;
+  const treatmentPlan = planoQueAbre(plans);
 
   // COM: devoluções do Comercial (todas, mais recente primeiro) — pop-up próprio.
   const commercialReturns = plans
@@ -500,11 +499,6 @@ export default async function PlanningCockpitPage(
     client.methodology_pillar as MethodologyPillar | null
   );
   // H4.5 Lote 2: projeção do tratamento — opção principal (ou a 1ª).
-  const summaryOption =
-    treatmentPlan && treatmentPlan.options.length > 0
-      ? (treatmentPlan.options.find((o) => o.isPrimary) ??
-        treatmentPlan.options[0])
-      : null;
 
   // Fase 2 — quem pode mover a situação do plano (aqui é o Planner, mas o
   // usuário pode acumular papéis na unidade).
@@ -529,27 +523,9 @@ export default async function PlanningCockpitPage(
     .filter((s) => s.roles.includes("dentist"))
     .map((s) => ({ id: s.userId, name: s.name }));
 
-  // H4.5 Pedido 2: sessões projetadas, para o Planner agrupar em atendimentos
-  // (juntar sessões já no planejamento).
-  //
-  // OC-00087: de TODAS as opções, não só da principal. Antes, quem comprava a
-  // alternativa começava o tratamento sem atendimento conjunto, sem tempo
-  // ajustado e sem sequência — não havia onde configurar. A principal vem
-  // primeiro; opção sem procedimento não tem o que sequenciar.
-  const sequencias = (
-    await Promise.all(
-      (treatmentPlan?.options ?? [])
-        .filter((o) => o.items.length > 0)
-        .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
-        .map(async (o) => ({
-          id: o.id,
-          title: o.title,
-          isPrimary: o.isPrimary,
-          items: o.items,
-          sessions: await projectOptionSessions(o.id),
-        }))
-    )
-  ).filter((o) => o.sessions.length > 0);
+  // H4.5 / OC-00087: os atendimentos de TODAS as opções de TODOS os planos — o
+  // cartão segue o plano selecionado na tela (OC-00009).
+  const sequencias = await carregarSequencias(plans);
 
   // Risarte Empresarial: mostrar ao Planner o selo do programa + economia por
   // opção também no cockpit (igual à ficha).
@@ -585,6 +561,7 @@ export default async function PlanningCockpitPage(
       : null;
 
   return (
+    <PlanoSelecionadoProvider plans={plans}>
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
       {/* Cartão de identidade — faixa fina na cor da Fase, igual ao resto do app. */}
       <div className="relative overflow-hidden rounded-xl border bg-card">
@@ -792,28 +769,14 @@ export default async function PlanningCockpitPage(
             </div>
           </PopupCard>
         )}
-        {summaryOption && (
-          <PopupCard
-            label="Resumo do tratamento"
-            icon={<ClipboardList className="size-4" />}
-            wide
-          >
-            <TreatmentSummary options={treatmentPlan?.options ?? []} />
-          </PopupCard>
-        )}
-        {sequencias.length > 0 && (
-          <PopupCard
-            label="Atendimentos e sequência"
-            icon={<Link2 className="size-4" />}
-            wide
-          >
-            <SequenciaPorOpcao
-              opcoes={sequencias}
-              providerOptions={providerOptions}
-              canEdit={podeDefinir}
-            />
-          </PopupCard>
-        )}
+        <CartaoDoResumo plans={plans} />
+        <CartaoDaSequencia
+          plans={plans}
+          sequencias={sequencias}
+          podeDefinir={podeDefinir}
+          providerOptions={providerOptions}
+          regioes={odontograma?.regioes ?? []}
+        />
         <PopupCard
           label="Evidências"
           icon={<FileImage className="size-4" />}
@@ -986,5 +949,6 @@ export default async function PlanningCockpitPage(
         lifecycleCaps={lifecycleCaps}
       />
     </div>
+    </PlanoSelecionadoProvider>
   );
 }

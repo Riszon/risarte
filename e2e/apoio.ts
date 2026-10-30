@@ -431,6 +431,7 @@ export async function levarAoComercial(
   await page.getByText(/Atual: Saúde/).waitFor().catch(() => {});
 
   await page.reload();
+  await confirmarSequencia(page);
   const enviarAprovacao = page.getByRole("button", {
     name: "Enviar para aprovação do Coordenador",
   });
@@ -743,3 +744,11 @@ export function nomeDeTeste(prefixo = "Paciente"): string {
 
 export const mascaraCpf = (cpf: string) =>
   cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+
+/** 0337: o envio exige a sequência confirmada. Abre o cartão do cockpit e confirma. */
+export async function confirmarSequencia(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: /Atendimentos e sequência/ }).click();
+  await page.getByRole("button", { name: "Confirmar sequência" }).click();
+  await page.getByText("Sequência confirmada", { exact: false }).first().waitFor();
+  await page.keyboard.press("Escape");
+}
