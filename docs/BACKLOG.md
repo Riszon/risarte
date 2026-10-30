@@ -41,6 +41,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
 - [x] **AP80** — o alerta de margem da negociação não contava cadeira nem imposto — resolvido na 0.359.0 (igual à Precificação)
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
+- [ ] **AP83** — 0331 e 0332 (Ortodontia) apagam dado sem o `-- DESTRUTIVO`: `npm run check:destrutivo` acusa 7 comandos
 - [ ] **AP82** — a hora clínica é lida unidade por unidade (custo fixo + agenda + atendimentos); a aba do Painel da rede e cada negociação pagam essas leituras
 - [ ] **AP79** — o preço MÁXIMO do procedimento não é conferido em lugar nenhum (o mínimo trava desde a 0.356.0)
 - [ ] **AP78** — campo de busca dos Procedimentos solta aviso do Base UI no console (`defaultValue` que muda)
@@ -2658,6 +2659,16 @@ o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produç�
 se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
+
+### AP83. 0331 e 0332 apagam dado sem declarar (30/10/2026)
+
+**Confirmado:** `npm run check:destrutivo` lista 7 comandos sem `-- DESTRUTIVO`:
+um `delete from public.permission_matrix` (0331, linha 167) e seis `drop column`
+em `ortho_cases` (0332, linhas 108 a 113). Visto ao entregar a 0337; não é dela.
+**Não conferido:** se algum apagou dado de verdade na produção (a Ortodontia tinha
+0 casos em 28/10) nem se a régua roda em algum portão, já que ela passou com isso.
+As migrações já foram aplicadas e não se editam: o conserto é decidir se a régua
+aceita uma lista de exceções ou se entra no portão daqui para frente.
 
 ### AP82. A hora clínica é calculada a cada leitura, unidade por unidade (27/10/2026)
 
