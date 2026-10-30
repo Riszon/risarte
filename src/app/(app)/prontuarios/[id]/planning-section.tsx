@@ -122,6 +122,15 @@ import {
   rotuloDoLocal,
   type RegraDoPlano,
 } from "@/lib/odontograma/plano";
+import {
+  itensPelaSequencia,
+  planoEditavel,
+  totaisDoTratamento,
+} from "@/lib/sequencia-do-plano";
+import {
+  SequenciaDaOpcao,
+  type OpcaoDaSequencia,
+} from "../../planejamento/[clientId]/session-join-planner";
 
 /** OD3: o que o plano por dente precisa (o odontograma e as regras). */
 export type OdontoDoPlano = {
@@ -372,7 +381,13 @@ export function PlanningSection({
   odonto,
   podeVerPrecos = false,
   grupos = [],
+  sequencia,
+  sequenciaNoCartao = false,
 }: {
+  /** OC-00006: a sequência de cada opção deste plano (vazia = sem acesso). */
+  sequencia?: OpcaoDaSequencia[];
+  /** No cockpit do Planner, a lista fica no cartão; aqui, só os totais. */
+  sequenciaNoCartao?: boolean;
   /** 0324: os grupos de procedimentos ATIVOS (atalho de lançamento). */
   grupos?: GrupoDeProcedimentos[];
   clientId: string;
@@ -970,6 +985,8 @@ export function PlanningSection({
                         {!optOpen && (
                           <OptionSummaryChips
                             option={o}
+                            sequencia={sequencia?.find((s) => s.id === o.id)}
+                            editavel={planoEditavel(plan)}
                             programActive={programActive}
                             programBenefits={programBenefits}
                           />
@@ -1036,7 +1053,15 @@ export function PlanningSection({
                     <>
                       <OptionBudget
                         optionId={o.id}
-                        items={o.items}
+                        // Quem edita mexe no planejado do item; quem lê vê o da sequência.
+                        items={
+                          canEditContent
+                            ? o.items
+                            : itensPelaSequencia(
+                                o.items,
+                                sequencia?.find((s) => s.id === o.id)?.sessions ?? []
+                              )
+                        }
                         stages={o.stages}
                         catalog={catalog}
                         protocols={protocols}
@@ -1050,6 +1075,16 @@ export function PlanningSection({
                           programActive ? programBenefits : undefined
                         }
                       />
+                      {/* OC-00006: para aprovar, a sequência já vem aberta. */}
+                      {!sequenciaNoCartao && sequencia?.find((s) => s.id === o.id) && (
+                        <SequenciaDaOpcao
+                          opcao={sequencia.find((s) => s.id === o.id)!}
+                          editavel={planoEditavel(plan)}
+                          aberta={canReview && plan.status === "submitted"}
+                          providerOptions={providerOptions}
+                          regioes={odonto?.dados.regioes ?? []}
+                        />
+                      )}
                       {/* ORTO7 (R3/R5): as características do caso ortodôntico,
                           definidas pelo Planner e aprovadas com a opção. */}
                       <OrthoProposalBlock
@@ -1403,16 +1438,20 @@ function BenefitBlockNote({ benefit }: { benefit?: ProgramBenefit }) {
  * etapas, sessões, tempo, valor total e economia do programa). */
 function OptionSummaryChips({
   option,
+  sequencia,
+  editavel,
   programActive,
   programBenefits,
 }: {
   option: PlanOption;
+  sequencia?: OpcaoDaSequencia;
+  editavel: boolean;
   programActive: boolean;
   programBenefits?: Record<string, ProgramBenefit>;
 }) {
   const items = option.items;
-  const sessions = items.reduce((s, i) => s + (i.plannedSessions ?? 0), 0);
-  const minutes = items.reduce((s, i) => s + (i.plannedMinutes ?? 0), 0);
+  // OC-00006: o tamanho do tratamento é o da sequência, não a soma dos itens.
+  const totais = totaisDoTratamento(items, sequencia, editavel);
   const total = budgetTotalCents(items);
   const program = programActive
     ? computeProgramTotal(items, programBenefits)
@@ -1449,15 +1488,29 @@ function OptionSummaryChips({
           </>,
           "stages"
         )}
-      {sessions > 0 &&
-        chip(<b className="text-foreground">{formatSessions(sessions)}</b>, "sess")}
-      {minutes > 0 &&
+      {totais.atendimentos != null &&
+        totais.atendimentos > 0 &&
         chip(
           <>
-            <b className="text-foreground">{formatMinutes(minutes)}</b> de cadeira
+            <b className="text-foreground">{totais.atendimentos}</b>{" "}
+            {totais.atendimentos === 1 ? "atendimento" : "atendimentos"}
+          </>,
+          "atend"
+        )}
+      {totais.sessoes > 0 &&
+        chip(<b className="text-foreground">{formatSessions(totais.sessoes)}</b>, "sess")}
+      {totais.minutos > 0 &&
+        chip(
+          <>
+            <b className="text-foreground">{formatMinutes(totais.minutos)}</b> de cadeira
           </>,
           "min"
         )}
+      {totais.estimativa && totais.minutos > 0 && (
+        <span className="rounded-md bg-amber-100 px-2 py-0.5 font-medium text-amber-700">
+          estimativa
+        </span>
+      )}
       <span className="rounded-md bg-muted px-2 py-0.5 font-medium text-foreground">
         {formatBRL(total)}
       </span>
@@ -1615,6 +1668,42 @@ function OptionBudget({
 
   if (!canEdit && items.length === 0) return null;
 
+  // OD3: o odontograma DESTA opção — o diagnóstico definido (azul / cinza) e, em
+  // vermelho, o que ela planeja. OC-00006: o Coordenador aprova vendo o desenho.
+  const odontogramaDaOpcao = odonto && (canEdit || items.some((it) => it.toothCode)) && (
+    <details open className="mt-2 rounded-md border bg-card p-2">
+      <summary className="cursor-pointer text-xs font-medium">
+        Odontograma desta opção (vermelho = a realizar)
+      </summary>
+      <div className="mt-2">
+        <Odontograma
+          modo="leitura"
+          denticaoInicial={odonto.dados.denticao}
+          nomes={odonto.dados.nomes}
+          faces={odonto.dados.faces}
+          // O que a opção planeja vem PRIMEIRO: na mesma face, o vermelho
+          // (a realizar) aparece por cima do diagnóstico.
+          // OD5: o item já FEITO sai do vermelho e entra como o efeito.
+          marcas={[
+            ...marcasDoPlano(
+              items
+                .filter((it) => !odonto.dados.feitos.some((f) => f.itemId === it.id))
+                .map((it) => ({
+                  toothCode: it.toothCode ?? null,
+                  faceCodes: it.faceCodes ?? [],
+                  procedureId: it.procedureId,
+                  description: it.description,
+                })),
+              odonto.regras,
+              odonto.dados.situacoes
+            ),
+            ...marcasDoDesenho(odonto.dados.achados ?? [], odonto.dados.situacoes, "definidos", odonto.dados.feitos),
+          ]}
+        />
+      </div>
+    </details>
+  );
+
   // Coordenador (and other non-editors): only the procedures + the option TOTAL,
   // never the per-item prices (owner rule, F4).
   if (summaryOnly) {
@@ -1627,6 +1716,7 @@ function OptionBudget({
           <span className="text-sm font-semibold">{formatBRL(total)}</span>
         </div>
         <ProgramSavings program={program} />
+        {odontogramaDaOpcao}
         {items.length > 0 && (
           <div className="mt-1 space-y-1.5">
             {itemGroups.map(
@@ -1691,41 +1781,7 @@ function OptionBudget({
       <ProgramSavings program={program} />
       <LinhasDoPacote linhas={pacotesDaOpcao(items.map(paraPacote))} className="mt-1" />
 
-      {/* OD3: o odontograma DESTA opção — o diagnóstico definido (azul /
-          cinza) e, em vermelho, o que ela planeja. */}
-      {odonto && (canEdit || items.some((it) => it.toothCode)) && (
-        <details open className="mt-2 rounded-md border bg-card p-2">
-          <summary className="cursor-pointer text-xs font-medium">
-            Odontograma desta opção (vermelho = a realizar)
-          </summary>
-          <div className="mt-2">
-            <Odontograma
-              modo="leitura"
-              denticaoInicial={odonto.dados.denticao}
-              nomes={odonto.dados.nomes}
-              faces={odonto.dados.faces}
-              // O que a opção planeja vem PRIMEIRO: na mesma face, o vermelho
-              // (a realizar) aparece por cima do diagnóstico.
-              // OD5: o item já FEITO sai do vermelho e entra como o efeito.
-              marcas={[
-                ...marcasDoPlano(
-                  items
-                    .filter((it) => !odonto.dados.feitos.some((f) => f.itemId === it.id))
-                    .map((it) => ({
-                      toothCode: it.toothCode ?? null,
-                      faceCodes: it.faceCodes ?? [],
-                      procedureId: it.procedureId,
-                      description: it.description,
-                    })),
-                  odonto.regras,
-                  odonto.dados.situacoes
-                ),
-                ...marcasDoDesenho(odonto.dados.achados ?? [], odonto.dados.situacoes, "definidos", odonto.dados.feitos),
-              ]}
-            />
-          </div>
-        </details>
-      )}
+      {odontogramaDaOpcao}
 
       {canEdit && (
         <div className="mt-2">

@@ -454,7 +454,8 @@ export default async function CommercialCockpitPage(
                         </span>{" "}
                         <span className="text-xs text-muted-foreground">
                           · {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })} ·{" "}
-                          {p.options.find((o) => o.isPrimary)?.items.length ?? 0}{" "}
+                          {/* OC-00007: plano sem opção "principal" contava 0. */}
+                          {(p.options.find((o) => o.isPrimary) ?? p.options[0])?.items.length ?? 0}{" "}
                           procedimento(s)
                         </span>
                       </span>
@@ -462,10 +463,12 @@ export default async function CommercialCockpitPage(
                         <span
                           className={cn(
                             "rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                            PLAN_STAGE_STYLES[planStage(p)]
+                            p.supersededAt
+                              ? "border-border bg-muted text-muted-foreground"
+                              : PLAN_STAGE_STYLES[planStage(p)]
                           )}
                         >
-                          {PLAN_STAGE_LABELS[planStage(p)]}
+                          {p.supersededAt ? "Substituído" : PLAN_STAGE_LABELS[planStage(p)]}
                         </span>
                         {/* O Consultor vê a linha do tempo completa do plano
                             que vai apresentar (quem criou/aprovou/devolveu). */}

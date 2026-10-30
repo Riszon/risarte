@@ -769,7 +769,7 @@ export default async function PlanningCockpitPage(
             </div>
           </PopupCard>
         )}
-        <CartaoDoResumo plans={plans} />
+        <CartaoDoResumo plans={plans} sequencias={sequencias} />
         <CartaoDaSequencia
           plans={plans}
           sequencias={sequencias}
@@ -931,6 +931,8 @@ export default async function PlanningCockpitPage(
         clientId={client.id}
         clientName={client.full_name}
         plans={plans}
+        sequencias={sequencias}
+        sequenciaNoCartao
         odonto={odontoDoPlano}
         grupos={gruposDoPlano}
         // D6 (0312): montar o plano é do Planner e do titular; o Admin vê (com preço).

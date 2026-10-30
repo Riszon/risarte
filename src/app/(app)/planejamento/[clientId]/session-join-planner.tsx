@@ -32,6 +32,8 @@ import {
   planoEditavel,
   repartirTempoDoAtendimento,
   separarSessao,
+  textoDosTotais,
+  totaisDoTratamento,
 } from "@/lib/sequencia-do-plano";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import {
@@ -673,6 +675,45 @@ function ListaDeAtendimentos({
  * O que o Coordenador e o Consultor veem (SQ3): a sequência que o Planner sugere,
  * sem editar. Para pedir mudança, o Coordenador devolve o plano com a observação.
  */
+/** OC-00006/OC-00007: a sequência de UMA opção, para ler, junto de quem decide. */
+export function SequenciaDaOpcao({
+  opcao,
+  editavel,
+  aberta = false,
+  providerOptions = [],
+  regioes = [],
+}: {
+  opcao: Pick<OpcaoDaSequencia, "id" | "items" | "sessions" | "confirmadaEm">;
+  editavel: boolean;
+  aberta?: boolean;
+  providerOptions?: Profissional[];
+  regioes?: Regiao[];
+}) {
+  if (opcao.sessions.length === 0) return null;
+  const totais = totaisDoTratamento(opcao.items, opcao, editavel);
+  return (
+    <details open={aberta} className="mt-2 rounded-md border bg-card p-2">
+      <summary className="flex cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium">
+        <Link2 className="size-3.5 text-gold-tinta" aria-hidden />
+        Atendimentos e sequência
+        <span className="font-normal text-muted-foreground">{textoDosTotais(totais)}</span>
+        <SeloDaSituacao configurada={!totais.estimativa} />
+      </summary>
+      <div className="mt-2">
+        <ListaDeAtendimentos
+          key={opcao.id}
+          sessions={opcao.sessions}
+          items={opcao.items}
+          canEdit={false}
+          providerOptions={providerOptions}
+          regioes={regioes}
+          onChange={() => {}}
+        />
+      </div>
+    </details>
+  );
+}
+
 export function SequenciaSomenteLeitura({
   opcoes,
   editavel,

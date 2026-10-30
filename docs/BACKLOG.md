@@ -41,6 +41,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
 - [x] **AP80** — o alerta de margem da negociação não contava cadeira nem imposto — resolvido na 0.359.0 (igual à Precificação)
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
+- [ ] **AP84** — a margem da negociação conta a hora de cadeira pela soma dos itens (9h15 no relato), não pela sequência montada (7h15)
+- [ ] **AP85** — plano de uma opção só nasce sem opção principal (2 de 2 na produção): as telas que procuram "a principal" não acham
 - [ ] **AP83** — 0331 e 0332 (Ortodontia) apagam dado sem o `-- DESTRUTIVO`: `npm run check:destrutivo` acusa 7 comandos
 - [ ] **AP82** — a hora clínica é lida unidade por unidade (custo fixo + agenda + atendimentos); a aba do Painel da rede e cada negociação pagam essas leituras
 - [ ] **AP79** — o preço MÁXIMO do procedimento não é conferido em lugar nenhum (o mínimo trava desde a 0.356.0)
@@ -2659,6 +2661,22 @@ o código é seguro; **a tabela NÃO se apaga sem perguntar ao banco da produç�
 se há linha lá (só leitura) e sem o dono pedir. De carona: o
 `check:indicadores` lista hoje 16 indicadores nunca preenchidos no treino —
 todos com tela que grava (conferido um a um), só ninguém fez ainda.
+
+### AP84. A margem da negociação não usa o tempo da sequência (30/10/2026)
+
+**Confirmado:** `negotiation-loader.ts` passa `planned_total_minutes` dos itens
+para a conta da margem. Com sessões juntas e tempos ajustados, a sequência tem
+menos tempo que os itens (7h15 contra 9h15 no OC-00007), e a margem sai menor do
+que a real. **Não mudei** na 0.371.0: a mesma conta vale para a Precificação, e
+trocar a base dela é decisão do dono. Visto ao entregar a 0338; não é dela.
+
+### AP85. Plano de uma opção só nasce sem opção principal (30/10/2026)
+
+**Confirmado:** na produção, 2 de 2 planos com opções não têm `is_primary`. O
+cockpit comercial já não mostra mais "0 procedimento(s)" (0.371.0), mas outras
+telas ainda procuram "a principal": a sugestão de pilar soma todas as opções, e a
+estrela e o selo somem. **Caminho provável:** a primeira opção do plano nascer
+principal. Visto ao entregar a 0338; não é dela.
 
 ### AP83. 0331 e 0332 apagam dado sem declarar (30/10/2026)
 

@@ -55,7 +55,7 @@ import {
   type AppointmentType,
 } from "@/lib/appointments";
 import { PLAN_STAGE_LABELS, planStage } from "@/lib/planning";
-import { carregarOdontograma } from "@/lib/odontograma/carregar";
+import { carregarOdontograma, carregarRegrasDoPlano } from "@/lib/odontograma/carregar";
 import { podeSugerirOdontograma } from "@/lib/odontograma/diagnostico";
 import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
 
@@ -134,6 +134,10 @@ export default async function EvaluationCockpitPage(
 
   // SQ3: o Coordenador vê a sequência que o Planner sugere.
   const sequencias = await carregarSequencias(plans);
+  // OC-00006: e aprova vendo o odontograma de cada opção.
+  const regrasDoPlano = odontograma ? await carregarRegrasDoPlano() : null;
+  const odontoDoPlano =
+    odontograma && regrasDoPlano ? { dados: odontograma, regras: regrasDoPlano } : undefined;
 
   // -- Bloco A: painel de status do cliente (topo do cockpit). ----------------
   const nowIso = new Date().toISOString();
@@ -702,6 +706,7 @@ export default async function EvaluationCockpitPage(
             clientName={client.full_name}
             plans={plans}
             sequencias={sequencias}
+            odonto={odontoDoPlano}
             canEdit={false}
             canReview
             inPlanningPhase={phase === "planning_center"}

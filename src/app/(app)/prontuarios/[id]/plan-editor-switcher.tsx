@@ -24,12 +24,9 @@ import { PlanLifecycleBar, type LifecycleCaps } from "./plan-lifecycle-bar";
 import { createTreatmentPlan } from "./planning-actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import type { GrupoDeProcedimentos } from "@/lib/procedimentos/grupos";
-import { planoEditavel, planoQueAbre } from "@/lib/sequencia-do-plano";
+import { planoQueAbre } from "@/lib/sequencia-do-plano";
 import { usePlanoSelecionado } from "./plano-selecionado";
-import {
-  SequenciaSomenteLeitura,
-  type SequenciasPorPlano,
-} from "../../planejamento/[clientId]/session-join-planner";
+import type { SequenciasPorPlano } from "../../planejamento/[clientId]/session-join-planner";
 
 /**
  * Dono da seleção de plano: mostra a lista de TODOS os planos do cliente (nenhum
@@ -59,9 +56,12 @@ export function PlanEditorSwitcher({
   podeVerPrecos = false,
   grupos = [],
   sequencias,
+  sequenciaNoCartao = false,
 }: {
-  /** SQ3: a sequência para LER, sob o seletor. No cockpit, o cartão cuida dela. */
+  /** OC-00006: os totais e a sequência para LER, dentro de cada opção. */
   sequencias?: SequenciasPorPlano;
+  /** No cockpit do Planner, a lista fica no cartão; aqui, só os totais. */
+  sequenciaNoCartao?: boolean;
   /** 0324: os grupos de procedimentos ativos (atalho de lançamento). */
   grupos?: GrupoDeProcedimentos[];
   /** OD3: o plano por dente (o odontograma e as regras). */
@@ -239,17 +239,9 @@ export function PlanEditorSwitcher({
         />
       )}
 
-      {selected && sequencias?.[selected.id] && (
-        <SequenciaSomenteLeitura
-          key={`sequencia-${selected.id}`}
-          opcoes={sequencias[selected.id]}
-          editavel={planoEditavel(selected)}
-          providerOptions={providerOptions}
-          regioes={odonto?.dados.regioes ?? []}
-        />
-      )}
-
       <PlanningSection
+        sequencia={selected ? sequencias?.[selected.id] : undefined}
+        sequenciaNoCartao={sequenciaNoCartao}
         commercialByPlan={commercialByPlan}
         key={selected?.id ?? "none"}
         clientId={clientId}

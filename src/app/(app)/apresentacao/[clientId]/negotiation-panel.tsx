@@ -67,12 +67,20 @@ import {
   type OdontoDaApresentacao,
 } from "@/lib/odontograma/aceite";
 
+import type { ProjectedSession } from "@/lib/planning";
+import { textoDosTotais, totaisDoTratamento } from "@/lib/sequencia-do-plano";
+import { SequenciaDaOpcao } from "../../planejamento/[clientId]/session-join-planner";
+
 export type NegotiationOption = {
   id: string;
   title: string;
   isPrimary: boolean;
+  /** OC-00007: a sequência do Planner (vazia = sem acesso; contam os itens). */
+  sessions: ProjectedSession[];
   items: {
     id: string;
+    plannedSessions?: number | null;
+    plannedMinutes?: number | null;
     description: string;
     quantity: number;
     unitPriceCents: number;
@@ -221,6 +229,10 @@ export function NegotiationPanel({
   const excluded = useMemo(
     () => new Set(excludedByOption[optionId] ?? []),
     [excludedByOption, optionId]
+  );
+  // OC-00007: plano aprovado não recebe confirmação; vale a ordem gravada.
+  const tamanhoDoTratamento = textoDosTotais(
+    totaisDoTratamento(option.items, { confirmadaEm: null, sessions: option.sessions }, false, excluded)
   );
   const initialMode: AdjustMode = !negotiation
     ? "none"
@@ -839,6 +851,31 @@ export function NegotiationPanel({
               </select>
             </label>
           )}
+
+          {/* OC-00007: o tamanho do tratamento — recalcula ao desmarcar. */}
+          {tamanhoDoTratamento && (
+            <p className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm font-medium">
+              {tamanhoDoTratamento}
+            </p>
+          )}
+          <SequenciaDaOpcao
+            opcao={{
+              id: option.id,
+              confirmadaEm: null,
+              sessions: option.sessions.filter((s) => !excluded.has(s.itemId)),
+              items: option.items.map((i) => ({
+                ...i,
+                procedureId: i.procedureId ?? null,
+                plannedSessions: i.plannedSessions ?? null,
+                plannedMinutes: i.plannedMinutes ?? null,
+                faceCodes: i.faceCodes ?? [],
+                stageId: null,
+                suggestedProviderId: null,
+              })),
+            }}
+            editavel={false}
+            regioes={odonto?.regioes ?? []}
+          />
 
           <ul className="space-y-1">
             {sortByGutDesc(option.items).map((i) => {

@@ -390,6 +390,24 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**30/10/2026 (2) — PC Administrador (core 0.370.0 → 0.371.0, migração 0338)**
+
+- **OC-00006 + OC-00007** (bloco 0.371.0 no ESTADO). O resumo mostrava 9h15; a
+  sequência montada dava 7h15.
+- ⚠️ **O tamanho do tratamento é `totaisDoTratamento`** (`sequencia-do-plano.ts`).
+  Margem e Precificação ainda usam a soma dos itens (AP84).
+- ⚠️ **Papel comercial mora na Franqueadora.** `has_role_in_clinic` sozinho devolve
+  vazio para o Consultor, sem erro: a 0337 errou assim. Conferir com a conta de
+  teste `consultor@example.com`, que tem o mesmo desenho da produção.
+- ⚠️ **Servidor de teste: confira o banco ANTES de abrir tela.** O `. <(grep …)` no
+  Git Bash, em segundo plano, falhou calado: `banco:` saiu vazio e o `next dev`
+  caiu no `.env.local`, ou seja, na PRODUÇÃO. Só o login abriu, e a sessão de teste
+  foi recusada; nada foi lido nem gravado. Subir por um script que lê o
+  `.env.test.local` e recusa a produção.
+- ⏳ **0338 aplicada no treino; falta a produção.** O código segue local até o dono
+  rodar. Sem a 0338, o Consultor vê a soma dos itens marcada como estimativa.
+  **Não visto:** arrastar com o mouse, envio ao Coordenador pela tela. E2E não rodado.
+
 **30/10/2026 — PC Administrador (core 0.369.0 → 0.370.0, migração 0337)**
 
 - **OC-00005 + OC-00009 + OC-00010: um caso, três causas** (bloco 0.370.0 no

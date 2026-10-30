@@ -2600,11 +2600,12 @@ Por qualquer um deles, o prontuário do cliente abre **direto na aba Plano**.
 1. Na aba **Plano**, as opções de tratamento já aparecem **abertas** enquanto
    o plano aguarda a sua aprovação (se alguma estiver recolhida, clique na
    setinha ao lado do nome).
-2. Leia os procedimentos de cada opção e abra **Atendimentos e sequência
-   sugeridos pelo Planner**, logo acima: é a ordem dos atendimentos, só para ler.
-   Para pedir mudança, escreva nas **Considerações** e reprove a opção. No fim de
-   cada opção ficam o campo **Considerações** e os botões **Aprovar opção** e
-   **Reprovar opção**.
+2. Em cada opção, confira os procedimentos, o **odontograma da opção** (quando há
+   procedimento por dente) e **Atendimentos e sequência**, que já vem aberto: a
+   ordem dos atendimentos, as sessões de cada um e o tempo de cadeira, só para
+   ler. Para pedir mudança, escreva nas **Considerações** e reprove a opção. No
+   fim de cada opção ficam o campo **Considerações** e os botões **Aprovar opção**
+   e **Reprovar opção**.
 3. Decida **todas** as opções — cada uma precisa da sua decisão.
 4. Com todas decididas e **pelo menos uma aprovada**, o plano fica aprovado e
    o Planner envia ao Comercial. Se **todas** forem reprovadas, volta ao
@@ -2789,6 +2790,10 @@ fica no alto do cockpit, mostra **Configurado** ou **Pendente** e vale para o
 - **Depois de enviar, a sequência tranca**, como o resto do plano. Para mudar,
   crie uma nova versão: ela leva os atendimentos e a sequência junto, e você
   confirma de novo.
+- **O tempo que você monta aqui vale em todas as telas:** o resumo do plano, a
+  aprovação, a negociação e a apresentação ao cliente mostram os atendimentos, as
+  sessões e o tempo desta sequência. Até você confirmar, o número aparece como
+  **estimativa**.
 
 > **As sessões do tratamento saem do que o cliente comprou.** Quando o
 > tratamento começa, o sistema cria as sessões da **opção comprada** (principal
@@ -3077,9 +3082,12 @@ linha *"Apresentação remarcada para …"*.
 
 **Tarefa 2 — Negociar e fechar**
 
-> Na ficha do cliente, aba **Plano**, **Atendimentos e sequência sugeridos pelo
-> Planner** mostra em quantos atendimentos e em que ordem o tratamento foi
-> pensado, sem preço. Só leitura.
+> No alto de **O que o cliente aprovou** aparece o tamanho do tratamento, como
+> *"6 atendimentos · 19 sessões · 7h15 de cadeira"*. O número muda na hora quando
+> você desmarca um procedimento. **Atendimentos e sequência**, logo abaixo, mostra
+> o que acontece em cada atendimento, só para ler. A ficha do cliente, aba
+> **Plano**, mostra a mesma sequência. Se aparecer a palavra **estimativa**, o
+> Planner ainda não definiu a ordem: o número pode mudar.
 
 1. Menu **Comercial** → seu funil.
 2. Abra o caso (`/comercial/[clientId]`) → escolha a **forma de pagamento** →

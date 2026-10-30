@@ -1,6 +1,7 @@
 import { gutScore, type GutInput } from "@/lib/gut";
 import type { ProjectedSession, TreatmentPlan } from "@/lib/planning";
 import { repartirTempo } from "@/lib/planning";
+import { formatMinutes, formatSessions } from "@/lib/pricing";
 
 /**
  * ATENDIMENTOS E SEQUÊNCIA (OC-00005, OC-00009, OC-00010; 0337).
@@ -175,6 +176,80 @@ export function opcaoConfigurada(
 ): boolean {
   if (opcao.confirmadaEm) return true;
   return !editavel && opcao.sessions.length > 0 && opcao.sessions.every((s) => s.blockOrder != null);
+}
+
+export type TotaisDoTratamento = {
+  /** Null = sem sequência para ler: só os itens dizem o tamanho do tratamento. */
+  atendimentos: number | null;
+  sessoes: number;
+  minutos: number;
+  estimativa: boolean;
+};
+
+type ItemPlanejado = {
+  id: string;
+  plannedSessions?: number | null;
+  plannedMinutes?: number | null;
+};
+
+const somaDeMinutos = (sessions: readonly ProjectedSession[]) =>
+  sessions.reduce((t, s) => t + (s.plannedMinutes ?? 0), 0);
+
+/**
+ * OC-00006/OC-00007: o tamanho do tratamento sai da SEQUÊNCIA, não da soma dos
+ * itens: quem junta sessões e ajusta o tempo muda o total (no relato, os itens
+ * somavam 9h15 e a sequência dava 7h15). O que o cliente deixou de fora não conta.
+ */
+export function totaisDoTratamento(
+  itens: readonly ItemPlanejado[],
+  opcao: { confirmadaEm: string | null; sessions: readonly ProjectedSession[] } | undefined,
+  editavel: boolean,
+  foraDaCompra: ReadonlySet<string> = new Set()
+): TotaisDoTratamento {
+  if (opcao && opcao.sessions.length > 0) {
+    const incluidas = opcao.sessions.filter((s) => !foraDaCompra.has(s.itemId));
+    return {
+      atendimentos: montarAtendimentos(incluidas).length,
+      sessoes: incluidas.length,
+      minutos: somaDeMinutos(incluidas),
+      estimativa: !opcaoConfigurada(opcao, editavel),
+    };
+  }
+  const incluidos = itens.filter((i) => !foraDaCompra.has(i.id));
+  return {
+    atendimentos: null,
+    sessoes: incluidos.reduce((t, i) => t + (i.plannedSessions ?? 0), 0),
+    minutos: incluidos.reduce((t, i) => t + (i.plannedMinutes ?? 0), 0),
+    estimativa: true,
+  };
+}
+
+/** "6 atendimentos · 19 sessões · 7h15 de cadeira"; null = nada planejado. */
+export function textoDosTotais(t: TotaisDoTratamento): string | null {
+  const partes = [
+    t.atendimentos ? `${t.atendimentos} ${t.atendimentos === 1 ? "atendimento" : "atendimentos"}` : null,
+    t.sessoes > 0 ? formatSessions(t.sessoes) : null,
+    t.minutos > 0 ? `${formatMinutes(t.minutos)} de cadeira` : null,
+  ].filter(Boolean);
+  if (partes.length === 0) return null;
+  return [...partes, ...(t.estimativa ? ["estimativa"] : [])].join(" · ");
+}
+
+/** Cada item com as sessões e o tempo que tem na sequência; sem sessão, como está. */
+export function itensPelaSequencia<T extends ItemPlanejado>(
+  itens: readonly T[],
+  sessions: readonly ProjectedSession[]
+): T[] {
+  return itens.map((item) => {
+    const dele = sessions.filter((s) => s.itemId === item.id);
+    if (dele.length === 0) return item;
+    const minutos = somaDeMinutos(dele);
+    return {
+      ...item,
+      plannedSessions: dele.length,
+      plannedMinutes: minutos > 0 ? minutos : item.plannedMinutes,
+    };
+  });
 }
 
 /** O plano que a tela abre: o editável que vale; senão o que vale; senão o mais novo. */

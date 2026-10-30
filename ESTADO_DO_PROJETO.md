@@ -1,6 +1,27 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 30/10/2026 · Versão do sistema: **0.370.0** · Última migração: **0337** (0318 a 0337 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 30/10/2026 · Versão do sistema: **0.371.0** · Última migração: **0338** (0318 a 0337 aplicadas na produção e no treino; 0338 aplicada no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.371.0 / 0338 — QUEM APROVA E QUEM VENDE VEEM A SEQUÊNCIA (30/10/2026)
+>
+> OC-00006 e OC-00007. **O defeito maior não estava nos relatos:** o resumo dizia
+> 19 sessões e 9h15, e a sequência do Planner dava 6 atendimentos e 7h15. Além
+> disso, a 0.370.0 tinha dois furos meus: o Consultor real (papel na Franqueadora)
+> recebia a sequência vazia, e a aba Plano da ficha nem aparecia para ele.
+> Decisões do dono: atendimentos e horas, sem prazo em semanas; Consultor com
+> totais + sequência; Coordenador com sequência aberta + odontograma; o número da
+> sequência em todas as telas, inclusive na apresentação.
+>
+> ⚠️ **O tamanho do tratamento é `totaisDoTratamento`**: não somar
+> `planned_total_minutes` para mostrar total. ⚠️ **Papel comercial mora na
+> Franqueadora:** `has_role_in_clinic` sozinho não enxerga o Consultor.
+>
+> **Conferido:** ensaio 9/9 + 13 quebras; visto na tela do treino como Consultor
+> (cockpit, desmarcar sem salvar, apresentação, aba Plano) e Coordenador (sequência
+> aberta). **Não visto:** plano por dente aguardando aprovação (o odontograma foi
+> visto num rascunho de teste) e um plano de sequência confirmada na negociação
+> (o de teste estava Pendente). Margem da negociação segue pela soma dos itens
+> (AP84). Plano sem opção principal: AP85.
 
 > ## 🎯 0.370.0 / 0337 — ATENDIMENTOS E SEQUÊNCIA VIRAM PARTE DO PLANO (30/10/2026)
 >

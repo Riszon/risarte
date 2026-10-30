@@ -2460,8 +2460,10 @@ export default async function ClientDetailPage(
   // SQ3: o Coordenador lê a sequência pelo plano; o Consultor, que não abre o
   // editor, lê a do plano que vale. Quem não tem acesso recebe vazio do banco.
   const sequencias = canViewPlanning ? await carregarSequencias(plans) : {};
+  // O Consultor tem o papel na Franqueadora, com escopo de unidades (OC-00007).
   const ehConsultorDaUnidade =
-    !canViewPlanning && hasRoleInClinic(session, client.clinic_id, ["commercial_consultant"]);
+    !canViewPlanning &&
+    (await hasRoleWithScopeForClinic(session, client.clinic_id, ["commercial_consultant"]));
   const planosDoConsultor = ehConsultorDaUnidade ? await loadClientPlans(id) : [];
   const planoDoConsultor = planoQueAbre(planosDoConsultor);
   const sequenciaDoConsultor =
@@ -3418,7 +3420,7 @@ export default async function ClientDetailPage(
           </TabPanel>
         )}
 
-        {(planSummary || canViewPlanning) && (
+        {(planSummary || canViewPlanning || sequenciaDoConsultor.length > 0) && (
           <TabPanel id="plano" label="Plano">
             {sequenciaDoConsultor.length > 0 && (
               <div className="mb-3">

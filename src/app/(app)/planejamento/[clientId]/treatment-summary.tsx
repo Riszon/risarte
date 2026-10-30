@@ -18,9 +18,21 @@ import { GutAverageBadge, GutBadge } from "@/components/gut-badge";
 import { sortByGutDesc } from "@/lib/gut";
 import { formatMinutes, formatSessions, type BudgetItem } from "@/lib/pricing";
 import type { PlanOption, PlanStage, TreatmentPlan } from "@/lib/planning";
+import {
+  itensPelaSequencia,
+  planoEditavel,
+  totaisDoTratamento,
+} from "@/lib/sequencia-do-plano";
+import type { OpcaoDaSequencia, SequenciasPorPlano } from "./session-join-planner";
 
 /** O cartão do cockpit: o resumo do plano selecionado na tela (OC-00009). */
-export function CartaoDoResumo({ plans }: { plans: TreatmentPlan[] }) {
+export function CartaoDoResumo({
+  plans,
+  sequencias,
+}: {
+  plans: TreatmentPlan[];
+  sequencias: SequenciasPorPlano;
+}) {
   const planoId = usePlanoSelecionado()?.planoId ?? null;
   const plano = plans.find((p) => p.id === planoId);
   if (!plano || plano.options.length === 0) return null;
@@ -30,7 +42,11 @@ export function CartaoDoResumo({ plans }: { plans: TreatmentPlan[] }) {
       icon={<ClipboardList className="size-4" />}
       wide
     >
-      <TreatmentSummary options={plano.options} />
+      <TreatmentSummary
+        options={plano.options}
+        sequencia={sequencias[plano.id]}
+        editavel={planoEditavel(plano)}
+      />
     </PopupCard>
   );
 }
@@ -78,30 +94,40 @@ function sumMinutes(items: BudgetItem[]): number {
  * as opções do plano (setas), e por opção agrupa por etapa mostrando esforço
  * planejado + prioridade média. As DATAS só existem ao agendar (Fase 5).
  */
-export function TreatmentSummary({ options }: { options: PlanOption[] }) {
+export function TreatmentSummary({
+  options,
+  sequencia,
+  editavel,
+}: {
+  options: PlanOption[];
+  sequencia?: OpcaoDaSequencia[];
+  editavel: boolean;
+}) {
   const usable = options.filter((o) => o.items.length > 0);
   const [idx, setIdx] = useState(0);
   if (usable.length === 0) return null;
 
   const i = Math.min(idx, usable.length - 1);
   const option = usable[i];
+  // OC-00006: o resumo conta a sequência montada, não a soma dos itens.
+  const daOpcao = sequencia?.find((s) => s.id === option.id);
+  const totais = totaisDoTratamento(option.items, daOpcao, editavel);
+  const itens = itensPelaSequencia(option.items, daOpcao?.sessions ?? []);
 
   const stages = [...option.stages].sort((a, b) => a.sortOrder - b.sortOrder);
   const stageIds = new Set(stages.map((s) => s.id));
   const groups: { stage: PlanStage | null; items: BudgetItem[] }[] = [
     ...stages.map((stage) => ({
       stage: stage as PlanStage | null,
-      items: sortByGutDesc(option.items.filter((it) => it.stageId === stage.id)),
+      items: sortByGutDesc(itens.filter((it) => it.stageId === stage.id)),
     })),
     {
       stage: null,
       items: sortByGutDesc(
-        option.items.filter((it) => !it.stageId || !stageIds.has(it.stageId))
+        itens.filter((it) => !it.stageId || !stageIds.has(it.stageId))
       ),
     },
   ];
-  const totalSessions = sumSessions(option.items);
-  const totalMinutes = sumMinutes(option.items);
 
   return (
     <div className="space-y-3">
@@ -145,24 +171,31 @@ export function TreatmentSummary({ options }: { options: PlanOption[] }) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <StatCard
           icon={<Stethoscope className="size-4" />}
           value={String(option.items.length)}
           label={option.items.length === 1 ? "procedimento" : "procedimentos"}
         />
-        {totalSessions > 0 && (
+        {totais.atendimentos != null && totais.atendimentos > 0 && (
+          <StatCard
+            icon={<ListChecks className="size-4" />}
+            value={String(totais.atendimentos)}
+            label={totais.atendimentos === 1 ? "atendimento" : "atendimentos"}
+          />
+        )}
+        {totais.sessoes > 0 && (
           <StatCard
             icon={<CalendarClock className="size-4" />}
-            value={formatSessions(totalSessions)}
+            value={formatSessions(totais.sessoes)}
             label="no total"
           />
         )}
-        {totalMinutes > 0 && (
+        {totais.minutos > 0 && (
           <StatCard
             icon={<Clock className="size-4" />}
-            value={formatMinutes(totalMinutes)}
-            label="de cadeira"
+            value={formatMinutes(totais.minutos)}
+            label={totais.estimativa ? "de cadeira · estimativa" : "de cadeira"}
           />
         )}
         {stages.length > 0 && (

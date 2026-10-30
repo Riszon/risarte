@@ -9,6 +9,7 @@ import {
 import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { loadEmpresarialConditions } from "@/lib/empresarial/conditions";
 import type { PlanEvent } from "@/lib/planning";
+import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
 import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import type { ScheduleEntry } from "@/lib/payments";
@@ -160,7 +161,7 @@ export async function loadNegotiationBlock(
       supabase
         .from("treatment_plan_options")
         .select(
-          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency, tooth_code, face_codes, region_code, planned_total_minutes )"
+          "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency, tooth_code, face_codes, region_code, planned_sessions, planned_total_minutes )"
         )
         .eq("plan_id", planId)
         .eq("review_status", "approved")
@@ -185,6 +186,7 @@ export async function loadNegotiationBlock(
               tooth_code: string | null;
               face_codes: string[] | null;
               region_code: string | null;
+              planned_sessions: number | null;
               planned_total_minutes: number | null;
             }[];
           }[]
@@ -242,10 +244,19 @@ export async function loadNegotiationBlock(
     ).savedCents;
   };
 
+  // OC-00007: o Consultor vende com o tamanho real do tratamento. O plano aprovado
+  // não recebe mais confirmação: vale a ordem gravada (`opcaoConfigurada`).
+  const sessoesPorOpcao = new Map(
+    await Promise.all(
+      (optRows ?? []).map(async (o) => [o.id, await projectOptionSessions(o.id)] as const)
+    )
+  );
+
   const options: NegotiationOption[] = (optRows ?? []).map((o) => ({
     id: o.id,
     title: o.title,
     isPrimary: o.is_primary,
+    sessions: sessoesPorOpcao.get(o.id) ?? [],
     items: [...(o.treatment_plan_option_items ?? [])]
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((i) => ({
@@ -264,6 +275,8 @@ export async function loadNegotiationBlock(
         toothCode: i.tooth_code ?? null,
         faceCodes: i.face_codes ?? [],
         regionCode: i.region_code ?? null,
+        plannedSessions: i.planned_sessions,
+        plannedMinutes: i.planned_total_minutes,
       })),
   }));
   if (options.length === 0) return null;

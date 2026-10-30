@@ -229,10 +229,18 @@ describe("régua: OC-00010, o envio e quem vê", () => {
     expect(plano).toMatch(/"SEQUENCE_REQUIRED"/);
     expect(plano).toMatch(/"SEQUENCE_INCOMPLETE"/);
   });
-  it("o Coordenador e o Consultor leem; o assistente comercial não (D8)", () => {
+  it("o Coordenador, o Consultor e o Gerente leem; o assistente comercial não (D8)", () => {
     const corpo = vigente("project_option_sessions");
-    expect(corpo).toMatch(/'clinical_coordinator', 'commercial_consultant'/);
+    expect(corpo).toMatch(/'clinical_coordinator', 'commercial_consultant', 'unit_manager'/);
     expect(corpo).not.toMatch(/commercial_assistant|receptionist/);
+  });
+  it("o papel na Franqueadora conta nas unidades do escopo (o Consultor real está lá)", () => {
+    const corpo = vigente("project_option_sessions");
+    expect(corpo).toMatch(/v_clinic in \(select public\.user_full_access_clinic_ids\(\)\)/);
+    expect(corpo).toMatch(/fc\.type = 'franchisor'/);
+    expect(corpo).toMatch(/ucr\.role = any \(v_papeis\)/);
+    const ficha = ler("src/app/(app)/prontuarios/[id]/page.tsx");
+    expect(ficha).toMatch(/await hasRoleWithScopeForClinic\(session, client\.clinic_id, \["commercial_consultant"\]\)/);
   });
   it("a tela de aprovação e a ficha mostram a sequência para ler", () => {
     expect(ler("src/app/(app)/avaliacao/[clientId]/page.tsx")).toMatch(/sequencias=\{sequencias\}/);

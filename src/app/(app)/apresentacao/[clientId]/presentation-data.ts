@@ -16,6 +16,9 @@ import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
 import { pacotesDaOpcao } from "@/lib/procedimentos/grupos";
 import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
 import { localDoItem, marcasDoAceite, porDente } from "@/lib/odontograma/aceite";
+import type { ProjectedSession } from "@/lib/planning";
+import { itensPelaSequencia, textoDosTotais, totaisDoTratamento } from "@/lib/sequencia-do-plano";
+import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
 
 export type LoadResult =
   | { ok: true; data: PresentationData; clinicId: string; hasApprovedPlan: boolean }
@@ -153,9 +156,13 @@ export async function loadPresentationData(
     const pacoteDe = await pacoteDosItens(supabase, (itemRows ?? []).map((it) => it.id));
 
     let principal: BudgetItem[] = [];
+    let sessoesDaPrincipal: ProjectedSession[] = [];
     for (const opt of optRows ?? []) {
       const linhas = (itemRows ?? []).filter((it) => it.option_id === opt.id);
-      const items: BudgetItem[] = linhas.map((it) => ({
+      // OC-00006/OC-00007: o cliente vê o tamanho da sequência montada. O plano
+      // aprovado não recebe mais confirmação: vale a ordem gravada.
+      const sessoes = await projectOptionSessions(opt.id);
+      const planejados: BudgetItem[] = linhas.map((it) => ({
         id: it.id,
         procedureId: it.procedure_id,
         description: it.description,
@@ -170,18 +177,14 @@ export async function loadPresentationData(
         faceCodes: it.face_codes ?? [],
         regionCode: it.region_code,
       }));
-      if (options.length === 0) principal = items;
-      const totalSessions = items.reduce((s, it) => s + (it.plannedSessions ?? 0), 0);
-      const totalMinutes = items.reduce((s, it) => s + (it.plannedMinutes ?? 0), 0);
-      const summaryLabel =
-        totalSessions > 0 || totalMinutes > 0
-          ? [
-              totalSessions > 0 ? formatSessions(totalSessions) : null,
-              totalMinutes > 0 ? formatMinutes(totalMinutes) : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")
-          : null;
+      const items = itensPelaSequencia(planejados, sessoes);
+      if (options.length === 0) {
+        principal = items;
+        sessoesDaPrincipal = sessoes;
+      }
+      const summaryLabel = textoDosTotais(
+        totaisDoTratamento(planejados, { confirmadaEm: null, sessions: sessoes }, false)
+      );
       const comLocal = items.map((it) => ({ ...it, faceCodes: it.faceCodes ?? [] }));
       options.push({
         id: opt.id,
@@ -262,8 +265,16 @@ export async function loadPresentationData(
           : undefined;
         const base =
           proto && proto.unit.length > 0 ? proto.unit : (proto?.net ?? []);
+        const daSequencia = sessoesDaPrincipal
+          .filter((s) => s.itemId === it.id)
+          .sort((a, b) => a.sessionIndex - b.sessionIndex);
         let sessions: { label: string; minutesLabel: string | null }[];
-        if (base.length > 0) {
+        if (daSequencia.length > 0) {
+          sessions = daSequencia.map((s) => ({
+            label: s.name?.trim() || `Sessão ${s.sessionIndex}`,
+            minutesLabel: s.plannedMinutes ? formatMinutes(s.plannedMinutes) : null,
+          }));
+        } else if (base.length > 0) {
           sessions = base.map((s, i) => ({
             label: s.name?.trim() || `Sessão ${i + 1}`,
             minutesLabel: s.minutes ? formatMinutes(s.minutes) : null,
@@ -282,7 +293,7 @@ export async function loadPresentationData(
           procedure: onde ? `${it.description} — ${onde}` : it.description,
           quantity: it.quantity,
           repeatNote:
-            it.quantity > 1 && base.length > 0
+            it.quantity > 1 && base.length > 0 && daSequencia.length === 0
               ? `Este procedimento se repete ${it.quantity}×.`
               : null,
           sessions,

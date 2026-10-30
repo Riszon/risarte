@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.371.0",
+    data: "2026-10-30",
+    migracao: "0338",
+    titulo: "Quem aprova e quem vende enxergam o tratamento como ele foi montado",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A negociação agora mostra quantos atendimentos e sessões o tratamento tem e o tempo de cadeira. Os números mudam na hora quando um procedimento é desmarcado, e a lista de atendimentos abre logo abaixo.",
+        papeis: ["commercial_consultant"],
+        manual: "6.5",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao aprovar um plano, cada opção já mostra a sequência de atendimentos aberta, junto do odontograma daquela opção.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O tempo do tratamento passou a ser o da sequência montada pelo Planner, em todas as telas, inclusive na apresentação ao cliente. Antes, sessões juntas e tempos ajustados não entravam na conta. Enquanto a sequência não está pronta, o número aparece como estimativa.",
+        papeis: ["planner_dentist", "clinical_coordinator", "commercial_consultant", "unit_manager"],
+        manual: "6.3",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O Consultor da Franqueadora não conseguia ver a sequência do Planner, e a aba Plano da ficha não aparecia para ele. Agora as duas funcionam.",
+        papeis: ["commercial_consultant"],
+        manual: "6.5",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Em Planos do cliente, plano sem opção principal mostrava 0 procedimentos, e plano substituído aparecia como Em revisão. Agora mostram a quantidade certa e a situação Substituído.",
+        papeis: ["commercial_consultant"],
+        manual: "6.5",
+      },
+    ],
+  },
+  {
     versao: "0.370.0",
     data: "2026-10-30",
     migracao: "0337",
