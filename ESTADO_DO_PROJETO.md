@@ -2,6 +2,37 @@
 
 _Atualizado em: 30/10/2026 · Versão do sistema: **0.371.1** · Última migração: **0338** (0318 a 0338 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
+> ## ✍️ ZS0 — PLANO DA ASSINATURA DIGITAL (ZapSign) APROVADO (31/10/2026, sem código)
+>
+> O dono aprovou o plano completo da integração com a ZapSign:
+> `docs/assinaturas/PLANO-ZS0.md`. Vale para pacientes (contrato, TCLE,
+> orçamento aprovado, autorização de imagem) e para o Risarte Empresarial
+> (contrato de adesão). Decisões confirmadas por ele: o representante da
+> Risarte **não** assina automaticamente (fica a tela "Minhas assinaturas
+> pendentes"); o contrato de adesão sai do **funil e da ficha da empresa**;
+> a RLS deste módulo **lê a `permission_matrix`** (`signature_can`, exceção à
+> 0246 restrita ao módulo); as assinaturas entram na **aba Documentos** que a
+> ficha do paciente já tem.
+>
+> **O que o plano encontrou no código e decidiu:** o esboço antigo de ZapSign
+> do Empresarial (`src/lib/empresarial/zapsign.ts`, Edge Function
+> `zapsign-webhook`, `empresarial.contracts`) nunca enviou nada e será
+> substituído por um módulo único em `public` (`signature_*`), webhook em
+> Route Handler na Vercel, PDFs gerados no servidor (`@react-pdf/renderer` +
+> `pdf-lib`), cron horário/mensal na Vercel (`vercel.json`) + pg_cron diário,
+> e-mail pela Resend (proposta — ainda sem chave). ⚠️ **Achado para o
+> BACKLOG (AP87):** hoje todo Consultor RisLife vê todas as empresas
+> (`empresarial.is_program_manager()`); o módulo de assinaturas vai travar por
+> empresa/lead, o resto do Empresarial fica como está até o dono decidir.
+>
+> **Próximas fases, uma por sessão:** ZS1 (banco, RLS, permissões,
+> configurações, cliente ZapSign em sandbox) → ZS2 (modelos, PDF, envio ao
+> paciente) → ZS3 (webhook, ordem, Minhas assinaturas) → ZS4 (aba Documentos,
+> visualizador, cancelar/reenviar) → ZS5 (Empresarial) → ZS6 (cron, lembretes,
+> consumo) → ZS7 (painel e relatórios) → ZS8 (sandbox ponta a ponta e
+> produção). ⚠️ A ZS1 começa conferindo o próximo número livre de migração: a
+> **0339 já está tomada** por trabalho do core não commitado em 31/10.
+
 > ## 🎯 0.371.1 — A JANELA DE AGENDAMENTO NÃO CORTA MAIS A TELA (30/10/2026)
 >
 > OC-00008, duas queixas e duas causas. **A tela:** defeito de layout. Um botão de

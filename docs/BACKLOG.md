@@ -27,6 +27,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 **Segurança e banco (por etapas)**
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
 - [ ] **AP67** — o banco ignora o escopo "Específicas" do Financeiro da Franqueadora
+- [ ] **AP87** — Empresarial: todo Consultor RisLife vê TODAS as empresas e leads (`empresarial.is_program_manager()` inclui o papel; `assigned_consultant_id`/`consultant_id` não restringem nada para ele). Achado no plano ZS0 (`docs/assinaturas/PLANO-ZS0.md`); o módulo de assinaturas trava por empresa/lead, o resto espera decisão do dono
 
 **Dependem do Risarte Academy**
 - [ ] **AP17 + "ACADEMY — PARA RETOMAR"** — o dono roda a consulta só-leitura das 5 funções do Academy
