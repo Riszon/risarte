@@ -22,6 +22,7 @@ import {
   type PaymentMethod,
 } from "@/lib/commercial";
 import { markClosingStep } from "./closing-actions";
+import { EnviarParaAssinaturaDialog } from "@/app/(app)/assinaturas/enviar-dialog";
 
 export type ClosingSummary = {
   finalCents: number;
@@ -40,6 +41,7 @@ export function ClosingPanel({
   summary,
   canClose,
   negotiationCancelled = false,
+  assinatura = null,
 }: {
   clientId: string;
   negotiationId: string;
@@ -53,6 +55,8 @@ export function ClosingPanel({
   summary: ClosingSummary;
   canClose: boolean;
   negotiationCancelled?: boolean;
+  /** ZS2: quem pode enviar para assinatura digital traz a unidade; nulo esconde o botão. */
+  assinatura?: { clinicId: string } | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -182,20 +186,31 @@ export function ClosingPanel({
                 Só contrato + pagamento CONFIRMADO concluem a venda; "cobrança
                 emitida" registra que o documento foi gerado. */}
             {/* OD4 (G3): o papel que se assina hoje é o orçamento impresso. */}
-            <a
-              href={`/orcamentos/${negotiationId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted"
-            >
-              <Printer className="size-3.5" />
-              Imprimir orçamento para assinar
-            </a>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* ZS2: o contrato e o orçamento vão para assinatura digital. */}
+              {assinatura && (
+                <EnviarParaAssinaturaDialog
+                  clientId={clientId}
+                  clinicId={assinatura.clinicId}
+                  origin={{ type: "plan_negotiation", id: negotiationId }}
+                  variant="default"
+                />
+              )}
+              <a
+                href={`/orcamentos/${negotiationId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted"
+              >
+                <Printer className="size-3.5" />
+                Imprimir orçamento para assinar
+              </a>
+            </div>
             <div className="grid gap-2 sm:grid-cols-3">
               <StepToggle
                 icon={<FileSignature className="size-4" />}
                 label="Contrato assinado"
-                hint="Por enquanto, o orçamento impresso assinado (botão abaixo). Marcação manual até o ZapSign."
+                hint="Marque quando o contrato estiver assinado (no papel ou pela assinatura digital — a marcação automática chega com o retorno da ZapSign)."
                 done={signed}
                 disabled={!canClose || isPending}
                 onToggle={(v) => toggle("contract", v)}

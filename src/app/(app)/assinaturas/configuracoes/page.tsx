@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Settings } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
@@ -6,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canConfigureSignatures } from "@/lib/signatures/access";
 import { loadSignatureSettings } from "@/lib/signatures/settings";
 import { isZapsignConfigured, zapsignEnv } from "@/lib/zapsign/env";
+import { Button } from "@/components/ui/button";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { SignatureSettingsForm } from "./settings-form";
 
@@ -34,6 +36,17 @@ export default async function AssinaturasConfiguracoesPage() {
       />
 
       <ZapsignStatus configured={isZapsignConfigured()} env={zapsignEnv()} />
+
+      {/* ZS2: os modelos de documento têm tela própria. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-4">
+        <div>
+          <p className="text-sm font-medium">Modelos de documento</p>
+          <p className="text-xs text-muted-foreground">Contrato, consentimento, orçamento, autorização de imagem e adesão empresarial: o texto, as testemunhas e quem assina pela Risarte.</p>
+        </div>
+        <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/assinaturas/configuracoes/modelos" />}>
+          Abrir os modelos
+        </Button>
+      </div>
 
       {settings === null ? (
         <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">

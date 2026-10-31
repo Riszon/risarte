@@ -62,6 +62,48 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.374.0",
+    data: "2026-10-31",
+    migracao: "0342",
+    titulo: "Assinatura digital (ZapSign) — segunda etapa: enviar documentos ao paciente",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Botão Enviar para assinatura na ficha do paciente (cabeçalho e aba Documentos), no painel de fechamento da apresentação e na aba Plano do plano aprovado. A janela tem três passos: o que vai no pacote (kit, modelos e PDFs avulsos), quem assina (o paciente ou o responsável legal, as testemunhas e quem assina pela Risarte) e a pré-visualização do PDF antes de enviar. Depois, para cada pessoa, o link pelo WhatsApp, para copiar ou para assinar ali mesmo.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager",
+        ],
+        manual: "13d",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A aba Documentos da ficha ganhou o bloco Assinaturas digitais: cada pacote enviado, a situação, até quando o link vale e quem já assinou. Por enquanto a situação só muda quando a próxima etapa trouxer o retorno da ZapSign.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Assinaturas → Configurações → Modelos (só o Admin Master): cinco modelos prontos — contrato de prestação, consentimento (TCLE), orçamento aprovado, autorização de imagem e adesão empresarial — com texto provisório que sai com a marca d'água TEXTO PROVISÓRIO até ser trocado pelo texto do jurídico. A tela edita o texto, os campos preenchidos sozinhos, as testemunhas e quem assina pela Risarte.",
+        papeis: [],
+        manual: "13d",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O cadastro do responsável legal ganhou o campo E-mail: quando o paciente é menor, é o responsável que assina, e o link precisa de telefone ou e-mail dele.",
+        papeis: ["receptionist", "unit_manager", "clinical_coordinator"],
+        manual: "13d",
+      },
+    ],
+  },
+  {
     versao: "0.373.0",
     data: "2026-10-31",
     migracao: "0341",

@@ -1,6 +1,119 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/10/2026 · Versão do sistema: **0.373.0** · Última migração: **0341** (0318 a 0341 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 31/10/2026 · Versão do sistema: **0.374.0** · Última migração: **0342** (0318 a 0341 aplicadas na produção e no treino; 0342 só no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## ✍️ ZS2 — ASSINATURA DIGITAL: O ENVIO AO PACIENTE (31/10/2026, v0.374.0, migração 0342)
+>
+> Segunda fase do plano `docs/assinaturas/PLANO-ZS0.md` (§5.2, 5.3, 5.4, 7, fase
+> ZS2). Agora o sistema **envia de verdade** um pacote de documentos ao paciente
+> pela ZapSign (sandbox no treino). O retorno (webhook) é a ZS3.
+>
+> **Banco (0342):** as PORTAS de escrita — `signature_create_package` (quem
+> tem `acao.assinaturas.enviar` na unidade; cria o rascunho com itens e
+> signatários, devolve `{id, number}`; `CLIENT_NOT_FOUND`, `ITEMS_REQUIRED`,
+> `SIGNERS_REQUIRED`) e `signature_save_template` (quem configura; texto só
+> em modelo sem `source`; `BODY_INVALID` com `coalesce` — lição da 0308).
+> Os **5 modelos** com texto provisório (`is_provisional_text`) e os campos
+> `{{…}}` declarados em `variables`; **2 kits**. Nenhuma policy fora de
+> SELECT continua valendo; depois da porta, o servidor grava pela chave de
+> serviço (o pacote é conferido por `created_by` e `status` a cada passo).
+> ⚠️ **"Titular" como representante** = `risarte_signer_mode = 'role'` com
+> `risarte_signer_role` NULO (o enum `user_role` não tem "owner").
+>
+> **Regras puras (`src/lib/signatures/`):** `signers.ts` (ordem 1/2/3, menor
+> → responsável, dedupe por CPF, cliente não é testemunha), `auth-level.ts`
+> (reforçada pelo modelo ou pelo valor; modo WhatsApp/e-mail só no grupo 1),
+> `validate.ts` (CPF válido + telefone com DDD ou e-mail; anexo PDF ≤ 8 MB),
+> `variables.ts` (`CAMPOS_DO_PACIENTE`, o contrato entre texto e sistema —
+> `assinaturas-modelos.test.ts` lê a 0342 e confere cada `{{campo}}`),
+> `valores.ts` (o dicionário a partir de cliente/responsável/unidade/
+> tratamento), `status.ts`. `isValidCpf` em `masks.ts`.
+>
+> **PDF (`src/lib/signatures/pdf/`):** **pdf-lib + fontkit** com a Inter da
+> marca e o logotipo em PNG (`assets/`, incluídos no pacote da Vercel por
+> `outputFileTracingIncludes`). Decisão desta sessão, diferente do plano
+> (§5.2 previa `@react-pdf/renderer`): uma biblioteca só, sem JSX no servidor
+> nem empacotamento especial; o texto corrido com quebra por largura
+> (`text.ts`) basta para contratos. `render-template.ts` (título, preâmbulo,
+> cláusulas, fecho, marca d'água TEXTO PROVISÓRIO, bloco "Assinaturas" com
+> uma caixa por signatário — as coordenadas voltam), `cover.ts` (capa com
+> índice e quem assina), `merge.ts` (capa + documentos + anexos; faixas de
+> página; recusa PDF com senha), `signature-block.ts` (`montarRubricas`:
+> assinatura na caixa + visto no rodapé de toda página menos a capa, em
+> percentual da página). Teste `assinaturas-pdf.test.ts` gera de verdade.
+>
+> **Envio (`envio-dados.ts` + `send.ts`):** `loadSendContext` lê cliente,
+> responsáveis, unidade, modelos, kits, configuração, o tratamento (negociação
+> aceita/em negociação → procedimentos, `final_cents`, condições, validade;
+> senão a opção principal do plano aprovado) e, pela chave de serviço depois
+> da guarda, a equipe que pode assinar (por papel na unidade e na
+> Franqueadora, o titular, quem envia). `prepararPacote`: porta → PDF →
+> `signature-documents/{unidade}/patient/{pacote}/merged.pdf` → páginas dos
+> itens → `cover_data.placement` (as caixas) → URL assinada de 10 min.
+> `enviarPacote`: `createDocumentFromPdf` (base64, `external_id` = pacote,
+> ordem ligada, e-mails da ZapSign conforme configuração, `sandbox` no
+> sandbox) → tokens e `sign_url` por signatário → `placeSignatures` →
+> `sent`, `plan_month`, evento, `logAudit`. Falha depois de criar: `refuse`
+> na ZapSign e o pacote volta a rascunho com `send_failed`.
+> `descartarRascunho`: fechou a janela antes de enviar → `cancelled`.
+> **`ZAPSIGN_ENV=fake`** (`zapsign/fake.ts`): tokens e links inventados, só
+> fora da produção — é como o servidor local e o E2E provam o fluxo sem token.
+>
+> **Canais (`src/lib/notify/`):** `templates.ts` (a mensagem padrão com
+> `{{nome}}`, `{{unidade}}`, `{{link}}`, `{{prazo}}`; nunca sai sem o link),
+> `channels.ts` (WhatsApp `wa.me` só com DDD; copiar; assinar agora). E-mail
+> e API do WhatsApp são arquivos futuros atrás da mesma forma.
+>
+> **Telas:** `enviar-dialog.tsx` (3 passos + a tela dos links; estado fora do
+> `Dialog`; fechar com rascunho preparado descarta) na ficha (cabeçalho e
+> aba Documentos), no `closing-panel.tsx` (prop `assinatura`, pelas duas
+> páginas que o montam) e na aba Plano (só com plano aprovado);
+> `assinaturas-do-cliente.tsx` (bloco da aba Documentos; a aba agora abre
+> também para quem só vê pacotes); `/assinaturas/configuracoes/modelos` e
+> `/modelos/[id]` (`template-form.tsx`, `saveSignatureTemplate`). O cadastro
+> do responsável ganhou **E-mail** (`GuardianInput.email`; `saveGuardians`
+> apagava a coluna da 0341 a cada salvamento — corrigido).
+>
+> **Portão:** `check-migrations` OK; `migrar:teste` (389 → 389); ensaio em
+> transação desfeita **30/30**; `verificar` OK; `npm test` **3.160**; lint
+> zero; `check:telas` pelo servidor local de teste: **1.224 aberturas** (153
+> telas × 8 perfis), 5 falhas de fora da ZS2 — AP31 (`/indica-mais-risos/
+> equipe/apuracao/[id]` 404 ao Admin, 2×) e 3 telas que não responderam
+> enquanto o `npm test` rodava junto (`/avaliacao/[clientId]`,
+> `/atendimento`, `/chat`; reabertas depois, respondem). O editor de modelo
+> (`/modelos/[id]`) não entrou nessa rodada por falta de registro na regra;
+> entrou agora (`signatureTemplate` em `screen-rules.mjs`/`check-screens.mjs`)
+> e vale da próxima varredura em diante. **Visto na tela** no servidor local de
+> teste (porta 3100, banco de treino, `ZAPSIGN_ENV=fake`, Admin de teste,
+> cliente fictício "Teste do portão 2"): kit, modelos, tratamento ligado;
+> passo 2 com a autenticação, as testemunhas e o representante resolvido
+> ("Gerente de Teste — Gerente de Unidade"); "O que falta" apontou CPF
+> inválido de uma pessoa da equipe de teste (a régua funciona — a equipe de
+> teste tem CPFs inventados); pré-visualização (capa com logo, índice, 5
+> páginas); envio; links por canal; o pacote **ASS-000013** "Enviado ·
+> aguardando o cliente · vale até 07/11/2026" na aba Documentos com os 4
+> signatários pendentes; lista e editor de modelos; botão da aba Plano só
+> aparece com plano aprovado. **Não visto:** o painel de fechamento (não há
+> negociação aceita no cliente fictício; o botão está preso por tipo), o
+> celular, e o **envio real no sandbox** (fica para o treino publicado, que
+> tem o token).
+>
+> **Resíduo no treino (meu):** o pacote ASS-000013 (fake; pacote não se
+> apaga), o PDF dele no bucket, os pacotes de ensaio desfeitos que gastaram
+> a sequência (ASS-000001 a 000012 não existem), o cliente fictício "Teste
+> do portão 2" com CPF/telefone/e-mail/nascimento de teste, um cadastro de
+> equipe **"Gerente de Teste" (RIS-000015, pode ignorar)** ligado a
+> `gerente@example.com` na Unidade Teste, e o CPF de teste válido em
+> "Cleibinhas Mosca Morta".
+>
+> **O que o dono precisa fazer:** (1) rodar **0342** na produção (SQL Editor;
+> a conferência no fim deve dar 5 modelos, 5 provisórios, 2 kits, 3 itens, 2
+> portas, 0 policies fora de SELECT); (2) ler os cinco modelos em
+> Assinaturas → Configurações → Modelos e, quando o jurídico aprovar o texto,
+> trocar e desmarcar "Texto provisório"; (3) só enviar a paciente de verdade
+> depois da ZS3 (retorno) — até lá a situação não muda sozinha. **Próxima
+> fase: ZS3** (webhook, idempotência, "Minhas assinaturas pendentes",
+> download do assinado, e-mail).
 
 > ## ✍️ ZS1 — ASSINATURA DIGITAL: O ALICERCE (31/10/2026, v0.373.0, migrações 0340 e 0341)
 >

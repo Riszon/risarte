@@ -24,6 +24,17 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/manual": ["docs/treinamento/manual-treinamento-riSZon.md"],
     "/empresarial/manual": ["docs/treinamento/manual-empresarial.md"],
+    // ASSINATURA DIGITAL (ZS2): o PDF é montado no servidor com as fontes da
+    // marca e o logotipo, lidos do disco em tempo de execução
+    // (`src/lib/signatures/pdf/assets`). Toda rota que envia para assinatura
+    // precisa deles no pacote publicado.
+    // A Server Action roda na função da ROTA que a chamou: toda tela com o
+    // botão "Enviar para assinatura" entra aqui (ficha, apresentação, o
+    // cockpit do Consultor e o próprio módulo).
+    "/assinaturas/**": ["src/lib/signatures/pdf/assets/**"],
+    "/prontuarios/**": ["src/lib/signatures/pdf/assets/**"],
+    "/apresentacao/**": ["src/lib/signatures/pdf/assets/**"],
+    "/comercial/**": ["src/lib/signatures/pdf/assets/**"],
   },
 
   // "Clientes" virou "Prontuários" (rota /clientes → /prontuarios). Mantém

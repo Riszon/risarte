@@ -44,6 +44,9 @@ import {
   isSdrRestricted,
   sdrAccessibleClientIds,
 } from "@/lib/auth";
+import { canSendSignatures, canViewSignaturePackages } from "@/lib/signatures/access";
+import { EnviarParaAssinaturaDialog } from "@/app/(app)/assinaturas/enviar-dialog";
+import { AssinaturasDoCliente } from "@/app/(app)/assinaturas/assinaturas-do-cliente";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { missingClientFields } from "@/lib/clients";
@@ -216,6 +219,7 @@ type GuardianRow = {
   birth_date: string | null;
   relationship: string;
   phone: string | null;
+  email: string | null;
 };
 
 type DependentRow = {
@@ -453,7 +457,7 @@ export default async function ClientDetailPage(
     supabase
       .from("client_guardians")
       .select(
-        "id, guardian_client_id, full_name, cpf, birth_date, relationship, phone"
+        "id, guardian_client_id, full_name, cpf, birth_date, relationship, phone, email"
       )
       .eq("client_id", id)
       .returns<GuardianRow[]>(),
@@ -2002,6 +2006,9 @@ export default async function ClientDetailPage(
       "clinical_coordinator",
     ]);
   const canViewDocuments = canEmitDocuments || canViewClinical;
+  // ZS2: assinatura digital — enviar e ver os pacotes do paciente (matriz).
+  const canSendSignature = client.status === "active" && canSendSignatures(session, scheduleClinicId);
+  const canSeeSignatures = canViewSignaturePackages(session, scheduleClinicId);
   let documentItems: ClinicalDocumentItem[] = [];
   let documentTemplates: DocumentTemplate[] = [];
   if (canViewDocuments) {
@@ -2725,7 +2732,8 @@ export default async function ClientDetailPage(
               (hasApprovedPlan && canPresent) ||
               directSale.canLaunch ||
               (pprOffer.canSell && !pprOffer.membership) ||
-              podeIndicarNaFicha) && (
+              podeIndicarNaFicha ||
+              canSendSignature) && (
               <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {podeIndicarNaFicha && (
                   <IndicaNaFicha
@@ -2781,6 +2789,14 @@ export default async function ClientDetailPage(
                   >
                     Apresentação
                   </Button>
+                )}
+                {/* ZS2: enviar documentos para assinatura digital (ZapSign). */}
+                {canSendSignature && (
+                  <EnviarParaAssinaturaDialog
+                    clientId={client.id}
+                    clinicId={scheduleClinicId}
+                    origin={{ type: "client", id: client.id }}
+                  />
                 )}
               </div>
             )}
@@ -2990,6 +3006,7 @@ export default async function ClientDetailPage(
               birthDate: g.birth_date,
               relationship: g.relationship,
               phone: g.phone,
+              email: g.email,
               guardianClientId: g.guardian_client_id,
             }))}
           />
@@ -3422,6 +3439,17 @@ export default async function ClientDetailPage(
 
         {(planSummary || canViewPlanning || sequenciaDoConsultor.length > 0) && (
           <TabPanel id="plano" label="Plano">
+            {/* ZS2: o plano aprovado vai para assinatura (contrato + TCLE). */}
+            {canSendSignature && hasApprovedPlan && (
+              <div className="mb-3 flex justify-end">
+                <EnviarParaAssinaturaDialog
+                  clientId={client.id}
+                  clinicId={scheduleClinicId}
+                  origin={{ type: "treatment_plan", id: plans.find((p) => p.status === "approved")?.id ?? null }}
+                  label="Enviar plano para assinatura"
+                />
+              </div>
+            )}
             {sequenciaDoConsultor.length > 0 && (
               <div className="mb-3">
                 <SequenciaSomenteLeitura opcoes={sequenciaDoConsultor} editavel={false} />
@@ -3535,15 +3563,27 @@ export default async function ClientDetailPage(
           </TabPanel>
         )}
 
-        {canViewDocuments && (
+        {(canViewDocuments || canSeeSignatures) && (
           <TabPanel id="documentos" label="Documentos">
-            <DocumentsSection
-              clientId={client.id}
-              clinicId={scheduleClinicId}
-              canEmit={canEmitDocuments}
-              documents={documentItems}
-              templates={documentTemplates}
-            />
+            <div className="space-y-4">
+              {/* ZS2 (plano §4.7): as assinaturas digitais no topo da aba. */}
+              {canSeeSignatures && (
+                <AssinaturasDoCliente
+                  clientId={client.id}
+                  clinicId={scheduleClinicId}
+                  canSend={canSendSignature}
+                />
+              )}
+              {canViewDocuments && (
+                <DocumentsSection
+                  clientId={client.id}
+                  clinicId={scheduleClinicId}
+                  canEmit={canEmitDocuments}
+                  documents={documentItems}
+                  templates={documentTemplates}
+                />
+              )}
+            </div>
           </TabPanel>
         )}
 

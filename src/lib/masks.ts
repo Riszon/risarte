@@ -41,3 +41,19 @@ export function formatCep(value: string): string {
   const d = digits(value, 8);
   return d.replace(/^(\d{5})(\d)/, "$1-$2");
 }
+
+/**
+ * CPF válido pelos dígitos verificadores (ZS2). Aceita com ou sem máscara.
+ * Sequências repetidas ("111.111.111-11") são inválidas, como na Receita.
+ */
+export function isValidCpf(value: string | null | undefined): boolean {
+  const d = (value ?? "").replace(/\D/g, "");
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  const dv = (len: number) => {
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += Number(d[i]) * (len + 1 - i);
+    const r = (sum * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  return dv(9) === Number(d[9]) && dv(10) === Number(d[10]);
+}

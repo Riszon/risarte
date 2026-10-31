@@ -8,7 +8,8 @@ import "server-only";
  * `webhook.ts` é regra pura (sem server-only) e pode ser importado direto.
  */
 
-export { isZapsignConfigured, zapsignBaseUrl, zapsignEnv, zapsignWebhookSecret, type ZapsignEnv } from "./env";
+export { isZapsignConfigured, isZapsignFake, zapsignBaseUrl, zapsignEnv, zapsignWebhookSecret, type ZapsignEnv } from "./env";
+export { createDocumentFromPdfFake, placeSignaturesFake, refuseDocumentFake } from "./fake";
 export { ZapsignError, mensagemDaZapsign, zapsignRequest, type ZapsignErrorCode, type ZapsignRequestOptions } from "./client";
 export {
   ZAPSIGN_MAX_PDF_BYTES,

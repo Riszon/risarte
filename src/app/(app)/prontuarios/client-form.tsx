@@ -52,6 +52,7 @@ const EMPTY_GUARDIAN: GuardianInput = {
   birthDate: null,
   relationship: "",
   phone: null,
+  email: null,
   guardianClientId: null,
 };
 
@@ -579,6 +580,18 @@ export function ClientForm({
                         })
                       }
                       placeholder="(11) 99999-9999"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>E-mail do responsável</Label>
+                    <Input
+                      type="email"
+                      inputMode="email"
+                      value={guardian.email ?? ""}
+                      onChange={(e) =>
+                        updateGuardian(index, { email: e.target.value })
+                      }
+                      placeholder="para a assinatura digital, quando o paciente é menor"
                     />
                   </div>
                 </div>

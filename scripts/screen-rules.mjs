@@ -74,6 +74,8 @@ export const ROUTE_FIXTURES = {
   "/ortodontia/casos/[id]": "orthoCase",
   "/ortodontia/casos/[id]/contrato": "orthoCase",
   "/ppr/configuracao/[planId]": "pprPlan",
+  // ZS2 (0342): o editor de um modelo de documento para assinatura.
+  "/assinaturas/configuracoes/modelos/[id]": "signatureTemplate",
   "/ppr/cartao/[beneficiaryId]": "pprBeneficiary",
   "/cancelamentos/[id]/termo": "cancellation",
   "/documentos/[id]/imprimir": "clinicalDocument",
@@ -239,6 +241,13 @@ export const PERMISSION_RULES = [
     route: "/assinaturas/configuracoes",
     expect: "bloqueado",
     why: "configurar as assinaturas nasce só com o Admin Master (acao.assinaturas.configurar sem papel)",
+  },
+  // ZS2 (0342) — os modelos de documento são parte da configuração.
+  {
+    role: "unit_manager",
+    route: "/assinaturas/configuracoes/modelos",
+    expect: "bloqueado",
+    why: "os modelos de documento são configuração (acao.assinaturas.configurar sem papel)",
   },
   {
     role: "purchaser",

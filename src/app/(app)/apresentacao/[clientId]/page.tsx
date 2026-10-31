@@ -7,6 +7,7 @@ import {
   hasRoleInClinic,
   hasRoleWithScopeForClinic,
 } from "@/lib/auth";
+import { canSendSignatures } from "@/lib/signatures/access";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { PresentationView } from "./presentation-view";
@@ -100,6 +101,7 @@ export default async function PresentationPage(
           clientId={clientId}
           negotiationId={negotiationBlock.negotiation.id}
           sale={negotiationBlock.sale}
+                  assinatura={canSendSignatures(session, clinicId) ? { clinicId } : null}
           canClose={isCommercialTeam}
           negotiationCancelled={
             negotiationBlock.negotiation.status === "cancelada"

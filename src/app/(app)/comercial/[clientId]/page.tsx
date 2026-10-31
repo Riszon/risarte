@@ -15,6 +15,7 @@ import {
   hasRoleInClinic,
   hasRoleWithScopeForClinic,
 } from "@/lib/auth";
+import { canSendSignatures } from "@/lib/signatures/access";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -547,6 +548,7 @@ export default async function CommercialCockpitPage(
                   clientId={clientId}
                   negotiationId={negotiationBlock.negotiation.id}
                   sale={negotiationBlock.sale}
+                  assinatura={canSendSignatures(session, clinicId) ? { clinicId } : null}
                   canClose={canClose}
                   negotiationCancelled={negotiationBlock.negotiation?.status === "cancelada"}
                   summary={{

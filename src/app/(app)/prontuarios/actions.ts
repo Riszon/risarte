@@ -92,6 +92,8 @@ export type GuardianInput = {
   birthDate: string | null;
   relationship: string;
   phone: string | null;
+  /** ZS2 (0341): para a assinatura digital quando o paciente é menor. */
+  email: string | null;
   guardianClientId: string | null;
 };
 
@@ -206,6 +208,9 @@ async function saveGuardians(
         birth_date: g.birthDate || null,
         relationship: g.relationship.trim(),
         phone: g.phone ? formatPhone(g.phone) : null,
+        // ZS2 (0341): sem esta linha, salvar o cadastro apagava o e-mail do
+        // responsável (a gravação é apagar + reinserir).
+        email: g.email?.trim().toLowerCase() || null,
       }))
     );
     if (error) console.error("saveGuardians failed:", error.message);

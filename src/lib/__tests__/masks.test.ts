@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCep, formatCnpj, formatCpf, formatPhone } from "@/lib/masks";
+import { formatCep, formatCnpj, formatCpf, formatPhone, isValidCpf } from "@/lib/masks";
 
 // As máscaras normalizam qualquer entrada (colada, sem formato) no formato
 // canônico — a MESMA função roda no navegador e no servidor antes de salvar.
@@ -41,5 +41,20 @@ describe("formatPhone", () => {
 describe("formatCep", () => {
   it("formata 8 dígitos", () => {
     expect(formatCep("86181000")).toBe("86181-000");
+  });
+});
+
+describe("isValidCpf (ZS2)", () => {
+  it("aceita CPF válido com ou sem máscara", () => {
+    expect(isValidCpf("529.982.247-25")).toBe(true);
+    expect(isValidCpf("52998224725")).toBe(true);
+    expect(isValidCpf("111.444.777-35")).toBe(true);
+  });
+  it("recusa dígito verificador errado, sequência repetida, tamanho errado e vazio", () => {
+    expect(isValidCpf("529.982.247-26")).toBe(false);
+    expect(isValidCpf("111.111.111-11")).toBe(false);
+    expect(isValidCpf("1234567890")).toBe(false);
+    expect(isValidCpf("")).toBe(false);
+    expect(isValidCpf(null)).toBe(false);
   });
 });

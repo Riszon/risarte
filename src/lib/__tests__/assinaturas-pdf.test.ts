@@ -1,0 +1,114 @@
+import { PDFDocument } from "pdf-lib";
+import { describe, expect, it } from "vitest";
+import { renderCoverPdf } from "@/lib/signatures/pdf/cover";
+import { inspectAttachment, mergePdfs } from "@/lib/signatures/pdf/merge";
+import { renderTemplatePdf } from "@/lib/signatures/pdf/render-template";
+import { montarRubricas } from "@/lib/signatures/pdf/signature-block";
+import { wrapText } from "@/lib/signatures/pdf/text";
+import { embedFonts } from "@/lib/signatures/pdf/fonts";
+
+// O PDF do pacote (ZS2): o modelo vira páginas, a capa indexa, a mesclagem
+// soma as páginas e as caixas de assinatura viram as marcas da ZapSign. Tudo
+// com as fontes da marca, lidas do disco — se faltarem, aqui quebra primeiro.
+
+const corpo = {
+  preamble: "Pelo presente instrumento, {{paciente_nome}} contrata a unidade.",
+  sections: Array.from({ length: 12 }, (_, i) => ({
+    title: `Cláusula ${i + 1}ª — Objeto`,
+    body: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ".repeat(18),
+  })),
+  closing: "E, por estarem assim justas e contratadas, assinam o presente.",
+};
+
+const signers = [
+  { key: "c", name: "Maria da Silva Teste", qualification: "Paciente" },
+  { key: "t1", name: "Testemunha Um", qualification: "Testemunha" },
+  { key: "r", name: "Gerente da Unidade", qualification: "Representante da Risarte" },
+];
+
+// Gera PDFs de verdade (fontes embutidas): com a máquina ocupada passa dos 5 s
+// padrão do Vitest, e tempo não é defeito.
+describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
+  it("quebra o texto por largura e respeita quebras explícitas", async () => {
+    const doc = await PDFDocument.create();
+    const fonts = await embedFonts(doc);
+    const lines = wrapText("uma frase curta\n\n" + "palavra ".repeat(60), fonts.regular, 10.5, 200);
+    expect(lines[0]).toBe("uma frase curta");
+    expect(lines[1]).toBe("");
+    expect(lines.length).toBeGreaterThan(5);
+    expect(lines.every((l) => fonts.regular.widthOfTextAtSize(l, 10.5) <= 200)).toBe(true);
+  });
+
+  it("o modelo vira várias páginas, com uma caixa por signatário no fim", async () => {
+    const r = await renderTemplatePdf({ title: "Contrato de teste", body: corpo, provisional: true, footer: "ASS-000001 · Risarte", signers });
+    expect(r.pageCount).toBeGreaterThanOrEqual(3);
+    expect(r.boxes.map((b) => b.signerKey)).toEqual(["c", "t1", "r"]);
+    // Todas as caixas ficam na última página (ou nas duas últimas) e dentro da folha.
+    for (const b of r.boxes) {
+      expect(b.page).toBeGreaterThanOrEqual(r.pageCount - 2);
+      expect(b.left).toBeGreaterThan(0);
+      expect(b.bottom).toBeGreaterThan(0);
+      expect(b.left + b.width).toBeLessThan(596);
+    }
+    const reaberto = await PDFDocument.load(r.bytes);
+    expect(reaberto.getPageCount()).toBe(r.pageCount);
+  });
+
+  it("a capa, os documentos e um anexo mesclam com as faixas certas; a capa não leva rubrica", async () => {
+    const d1 = await renderTemplatePdf({ title: "Doc 1", body: corpo, provisional: false, footer: "x", signers });
+    const d2 = await renderTemplatePdf({ title: "Doc 2", body: { ...corpo, sections: corpo.sections.slice(0, 2) }, provisional: false, footer: "x", signers });
+    const anexo = await PDFDocument.create();
+    anexo.addPage();
+    anexo.addPage();
+    const anexoBytes = await anexo.save();
+    expect(await inspectAttachment(anexoBytes)).toEqual({ ok: true, pageCount: 2 });
+    expect((await inspectAttachment(new Uint8Array([1, 2, 3]))).ok).toBe(false);
+
+    const capa = await renderCoverPdf({
+      packageNumber: "ASS-000001",
+      clientName: "Maria da Silva Teste",
+      clinicName: "Risarte Unidade Teste",
+      dateLabel: "31/10/2026",
+      items: [
+        { title: "Doc 1", firstPage: 2, lastPage: 1 + d1.pageCount },
+        { title: "Doc 2", firstPage: 2 + d1.pageCount, lastPage: 1 + d1.pageCount + d2.pageCount },
+        { title: "Anexo", firstPage: 2 + d1.pageCount + d2.pageCount, lastPage: 3 + d1.pageCount + d2.pageCount },
+      ],
+      signers: signers.map((s) => ({ name: s.name, qualification: s.qualification })),
+    });
+    const m = await mergePdfs([{ bytes: capa }, { bytes: d1.bytes }, { bytes: d2.bytes }, { bytes: anexoBytes }]);
+    expect(m.ranges[0]).toEqual({ first_page: 1, last_page: 1 });
+    expect(m.ranges[1]).toEqual({ first_page: 2, last_page: 1 + d1.pageCount });
+    expect(m.ranges[3].last_page).toBe(m.pageCount);
+    expect(m.pageCount).toBe(1 + d1.pageCount + d2.pageCount + 2);
+
+    const rubricas = montarRubricas({
+      pageCount: m.pageCount,
+      skipPages: [0],
+      documents: [
+        { firstPage: m.ranges[1].first_page, boxes: d1.boxes },
+        { firstPage: m.ranges[2].first_page, boxes: d2.boxes },
+      ],
+      signerTokens: [
+        { key: "c", token: "tc" },
+        { key: "t1", token: "tt" },
+        { key: "r", token: "tr" },
+      ],
+    });
+    const assinaturas = rubricas.filter((r) => r.type === "signature");
+    const vistos = rubricas.filter((r) => r.type === "visto");
+    expect(assinaturas).toHaveLength(6);
+    expect(vistos).toHaveLength((m.pageCount - 1) * 3);
+    expect(rubricas.some((r) => r.page === 0)).toBe(false);
+    // A assinatura do cliente no Doc 1 cai na última página do Doc 1 (índice 0-based).
+    const ultimaDoDoc1 = m.ranges[1].last_page - 1;
+    expect(assinaturas.find((r) => r.signer_token === "tc")?.page).toBeGreaterThanOrEqual(ultimaDoDoc1 - 1);
+    for (const r of rubricas) {
+      for (const v of [r.relative_position_left, r.relative_position_bottom, r.relative_size_x, r.relative_size_y]) {
+        expect(v).toBeGreaterThanOrEqual(0);
+        expect(v).toBeLessThanOrEqual(100);
+      }
+      expect(r.relative_position_left + r.relative_size_x).toBeLessThanOrEqual(100);
+    }
+  });
+});

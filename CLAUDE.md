@@ -391,6 +391,31 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**31/10/2026 (ZS2) — PC Administrador (core 0.373.0 → 0.374.0, migração 0342)**
+
+- **Assinatura digital — fase ZS2, o envio ao paciente** (bloco ZS2 no
+  ESTADO). Portas `signature_create_package` e `signature_save_template`, 5
+  modelos provisórios + 2 kits, regras puras, PDF, janela de envio em 3
+  telas, bloco na aba Documentos, telas de modelos, e-mail do responsável.
+- ⚠️ **PDF com `pdf-lib` + fontkit, NÃO `@react-pdf/renderer`** (decisão
+  desta sessão contra o §5.2 do plano: uma biblioteca, sem JSX no servidor).
+  As fontes e o logo estão em `src/lib/signatures/pdf/assets` e entram no
+  pacote da Vercel por `outputFileTracingIncludes` — rota nova que gere PDF
+  precisa entrar na lista do `next.config.ts`.
+- ⚠️ **Escrita nas `signature_*` só pela porta OU pela chave de serviço
+  depois dela**, conferindo `created_by` e `status`. Rascunho abandonado vira
+  `cancelled` (`descartarRascunho`); pacote nunca se apaga.
+- ⚠️ **`ZAPSIGN_ENV=fake`** liga a ZapSign de mentira (só fora da produção);
+  o `servidor-treino.mjs` da pasta temporária sobe assim. **`hasCpf` na
+  janela = CPF VÁLIDO** (`isValidCpf`): a equipe de teste do treino tem CPFs
+  inventados, e a régua barra antes de gastar crédito.
+- ⚠️ **"Titular" como representante = papel NULO** no modelo (`user_role`
+  não tem "owner"); `byRole.owner` na janela.
+- Ensaio no treino em transação desfeita 30/30; visto na tela pelo servidor
+  local de teste com a ZapSign falsa (pacote ASS-000013 no treino). **Não
+  visto:** o painel de fechamento, o envio real no sandbox.
+- ⏳ **0342 não aplicada na produção.** O dono roda. Próxima sessão: **ZS3**.
+
 **31/10/2026 (ZS1) — PC Administrador (core 0.372.0 → 0.373.0, migrações 0340 e 0341)**
 
 - **Assinatura digital (ZapSign) — fase ZS1, o alicerce** (bloco ZS1 no

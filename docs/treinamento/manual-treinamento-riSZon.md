@@ -4475,9 +4475,11 @@ Responde "quem usou o sistema, quanto e para quê" num período.
 (pela ZapSign) para contratos, TCLE, orçamentos aprovados, autorizações de
 imagem e contratos de adesão do Empresarial. O módulo entra **em etapas**
 (desde a versão 0.373.0): a primeira trouxe o menu **Assinaturas**, as
-permissões e a tela de configurações da rede. **Ainda não envia documento
-nenhum** — o botão de enviar, o acompanhamento e o painel chegam nas etapas
-seguintes, e as Novidades avisam quando cada uma entrar.
+permissões e a tela de configurações da rede; a segunda (0.374.0) trouxe o
+**envio ao paciente** e os **modelos de documento**. O retorno da ZapSign
+(a situação mudando sozinha quando alguém assina), o detalhe do pacote, o
+painel e o Empresarial chegam nas etapas seguintes, e as Novidades avisam
+quando cada uma entrar.
 
 **Quem vê o menu "Assinaturas".** Quem tem a permissão **Assinaturas** no grupo
 **Assinaturas digitais** de Administração → Permissões (13b). Por padrão:
@@ -4518,6 +4520,88 @@ cadastrado na Vercel, nunca nesta tela.
 
 > ⚠️ **Treino e produção têm configurações separadas** (regra geral da seção
 > 0b do guia técnico): o que você ajustar no treino não vale no sistema real.
+
+### 13d.1. Enviar um documento para o paciente assinar (0.374.0)
+
+**Quem pode:** quem tem **Enviar para assinatura** no grupo Assinaturas digitais
+(por padrão Consultor Comercial, Consultor Empresarial, Assistente Comercial,
+Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
+
+**Onde está o botão:**
+
+| Tela | Botão | O que já vem preenchido |
+|---|---|---|
+| Ficha do paciente, cabeçalho e aba **Documentos** | **Enviar para assinatura** | Os dados do paciente e, se houver, o último orçamento em negociação ou aceito |
+| Apresentação → painel de **fechamento** (cliente aceitou) | **Enviar para assinatura**, ao lado de "Imprimir orçamento para assinar" | Os procedimentos, o valor final e as condições da negociação aceita |
+| Ficha → aba **Plano** (plano aprovado) | **Enviar plano para assinatura** | Os procedimentos e o total do plano aprovado |
+
+**A janela tem três passos:**
+
+1. **O que vai no pacote.** Escolha um **kit** (Início de tratamento = contrato +
+   consentimento; Orçamento aprovado) ou marque os modelos um a um. Dá para
+   juntar **PDFs avulsos** (exames, termos de fora), até 8 MB cada e 10 MB no
+   pacote inteiro. Tudo vira **um PDF só**, com capa e índice.
+2. **Quem assina.** O sistema monta a ordem: **1º o paciente** (ou o
+   **responsável legal**, se for menor de idade — sem responsável cadastrado o
+   envio é barrado); **2º as testemunhas** que o modelo pede (escolhidas na
+   lista da equipe); **3º quem assina pela Risarte** (o gerente da unidade, quem
+   envia, ou uma pessoa fixa — conforme o modelo). Cada pessoa só recebe a vez
+   depois que a anterior assinou. A janela mostra a **autenticação** que o
+   paciente vai enfrentar: simples (assinatura na tela) ou **reforçada** (selfie +
+   código pelo WhatsApp ou e-mail) quando o modelo exige ou o valor passa do
+   corte da rede. O quadro **"O que falta para enviar"** lista o que impede:
+   CPF ausente ou inválido, pessoa sem telefone com DDD nem e-mail, testemunha
+   a menos, representante sem cadastro na equipe.
+3. **Conferir e enviar.** O PDF aparece inteiro na tela, com o número do pacote
+   (`ASS-000001`), as páginas e até quando o link vale. **Enviar para
+   assinatura** cria o documento na ZapSign. Fechar a janela antes disso
+   descarta o rascunho.
+
+**Depois do envio:** para cada pessoa, três botões — **Abrir no WhatsApp**
+(abre a conversa com a mensagem padrão e o link, você só aperta enviar),
+**Copiar o link** (a mensagem inteira vai para a área de transferência) e
+**Assinar agora** (abre o link ali mesmo, para quem está no balcão). As
+pessoas da 2ª e 3ª posição só conseguem assinar quando chegar a vez delas.
+
+**Acompanhar:** o bloco **Assinaturas digitais** na aba Documentos da ficha
+lista cada pacote com a situação (Enviado, Parcialmente assinado, Assinado,
+Recusado, Expirado, Cancelado), até quando vale e quem já assinou.
+
+> ⚠️ **Nesta etapa a situação ainda não muda sozinha.** O retorno da ZapSign
+> (quem assinou, quando, o PDF assinado) entra na etapa seguinte. Até lá, o
+> pacote fica "Enviado · aguardando o cliente" mesmo depois de assinado.
+
+> ⚠️ **Texto provisório.** Os cinco modelos nasceram com texto escrito pelo
+> sistema, não pelo jurídico. Enquanto o Admin Master não trocar o texto e
+> desmarcar "Texto provisório" em cada modelo, o PDF sai com a marca d'água
+> **TEXTO PROVISÓRIO**. Não envie a um paciente de verdade antes disso.
+
+**Responsável legal com e-mail.** No cadastro do paciente, o responsável ganhou
+o campo **E-mail do responsável**: quando o paciente é menor, é ele quem assina,
+e a ZapSign precisa de telefone com DDD ou e-mail para entregar o link.
+
+### 13d.2. Os modelos de documento (Admin Master)
+
+Em **Assinaturas → Configurações → Abrir os modelos**. Cinco modelos vêm
+prontos: contrato de prestação de serviços (2 testemunhas, assina o gerente da
+unidade), termo de consentimento (TCLE), orçamento aprovado (assina quem
+envia), autorização de uso de imagem e o contrato de adesão empresarial (que
+lê o texto do Empresarial, Configurações → Contrato). Em cada um dá para
+editar:
+
+- **o texto** — preâmbulo, cláusulas (com título, em ordem) e fecho. Os
+  **campos entre chaves duplas** (`{{paciente_nome}}`, `{{unidade_cnpj}}`,
+  `{{tratamento_procedimentos}}`, `{{documento_data_extenso}}`…) são
+  preenchidos pelo sistema na hora do envio; a lista completa aparece embaixo do
+  texto, e campo que o sistema não conhece **não deixa salvar** — sairia
+  impresso cru num documento que vai para assinatura;
+- **a autenticação do cliente** — simples, reforçada sempre, ou pelo valor;
+- **as testemunhas** — nenhuma, uma ou duas;
+- **quem assina pela Risarte** — alguém com um papel na unidade (ou o
+  Titular), quem envia, ou ninguém;
+- **os selos** — ativo (aparece na janela de envio) e texto provisório.
+
+Cada salvamento fica na Auditoria ("Modelo de documento para assinatura").
 
 ## 14. Checklists
 

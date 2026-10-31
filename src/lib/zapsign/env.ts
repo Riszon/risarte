@@ -26,6 +26,17 @@ export function zapsignEnv(): ZapsignEnv {
   return process.env.ZAPSIGN_ENV === "production" ? "production" : "sandbox";
 }
 
+/**
+ * ZAPSIGN DE MENTIRA (`ZAPSIGN_ENV=fake`, ZS2): o fluxo de envio inteiro roda
+ * sem rede — tokens e links inventados — para o servidor local de teste e o
+ * E2E. NUNCA vale num site publicado como produção: ali `fake` é ignorado e
+ * cai no sandbox (e sem token o envio recusa, como sempre).
+ */
+export function isZapsignFake(): boolean {
+  if (process.env.ZAPSIGN_ENV !== "fake") return false;
+  return process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_AMBIENTE === "treino";
+}
+
 export function zapsignBaseUrl(): string {
   return BASE_URL[zapsignEnv()];
 }
