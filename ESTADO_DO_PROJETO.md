@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/10/2026 · Versão do sistema: **0.373.0** · Última migração: **0341** (0318 a 0339 aplicadas na produção e no treino; 0340 e 0341 só no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 31/10/2026 · Versão do sistema: **0.373.0** · Última migração: **0341** (0318 a 0341 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## ✍️ ZS1 — ASSINATURA DIGITAL: O ALICERCE (31/10/2026, v0.373.0, migrações 0340 e 0341)
 >
@@ -44,8 +44,16 @@ _Atualizado em: 31/10/2026 · Versão do sistema: **0.373.0** · Última migraç
 > superusuário, assinado não cancela/expira/volta e não muda outra coluna,
 > aceita PDF+conclusão, evento imutável e chave única, zero policies fora de
 > SELECT, bucket, caminho→pacote, auditoria nas 7 tabelas e 4 fora. Ambas as
-> migrações rodam duas vezes (idempotentes). ✅ **Aplicadas no treino**
-> (`migrar:teste`). ⏳ **0340/0341 NÃO aplicadas na produção** — o dono roda.
+> migrações rodam duas vezes (idempotentes). ✅ **Aplicadas nos dois bancos:**
+> treino por `migrar:teste`; produção pelo dono em 31/10/2026, conferida de
+> fora, só leitura, **13/13** — sem login `signature_can`,
+> `signature_save_settings` e a interna `signature_default_roles` recusam com
+> "permission denied" (uma função inexistente, de controle, responde "não
+> encontrada"); `signature_settings` e `signature_packages` não entregam nada;
+> com a chave de serviço, só contagens: 1 configuração, 34 permissões
+> semeadas, 8 padrões fixados, 0 pacotes, 4 tabelas técnicas fora da
+> auditoria, bucket `signature-documents` privado (10 MB, só PDF) e a coluna
+> `client_guardians.email` respondendo (0341).
 >
 > **Código:** grupo "Assinaturas digitais" em `permissions.ts` (8 chaves, §8;
 > `dependeDoBanco: false` porque aqui o banco lê a matriz);
@@ -84,14 +92,13 @@ _Atualizado em: 31/10/2026 · Versão do sistema: **0.373.0** · Última migraç
 > `/financeiro/recebiveis/*` que não responderam ao Gerente (ambiente, "terminated").
 > Resíduo no treino: 2 linhas de `audit_logs` (update de `signature_settings`).
 >
-> **O que o dono precisa fazer:** (1) rodar 0340 e 0341 na produção (SQL
-> Editor; a conferência no fim da 0340 deve dar 11 tabelas, 5 funções, 3
-> gatilhos, 0 policies de DELETE, 1 bucket, 34 permissões semeadas, 1
-> configuração); (2) na Vercel do **treino**, cadastrar `ZAPSIGN_API_TOKEN` da
-> conta **sandbox** (Secret), `ZAPSIGN_ENV=sandbox` e um `CRON_SECRET`; na
-> produção, `CRON_SECRET` (o token de produção só na ZS8); (3) conferir em
-> `/admin/permissoes` o grupo "Assinaturas digitais". **Próxima fase: ZS2**
-> (modelos, PDF, envio ao paciente).
+> **O que o dono precisa fazer:** ✅ (1) 0340 e 0341 rodadas na produção em
+> 31/10/2026 (conferência acima); ⏳ (2) na Vercel do **treino**, cadastrar
+> `ZAPSIGN_API_TOKEN` da conta **sandbox** (Secret), `ZAPSIGN_ENV=sandbox` e
+> um `CRON_SECRET`; na produção, `CRON_SECRET` (o token de produção só na
+> ZS8); republicar depois; ⏳ (3) conferir em `/admin/permissoes` o grupo
+> "Assinaturas digitais" e o item **Assinaturas** no menu. **Próxima fase:
+> ZS2** (modelos, PDF, envio ao paciente).
 
 > ## ✍️ ZS0 — PLANO DA ASSINATURA DIGITAL (ZapSign) APROVADO (31/10/2026, sem código)
 >

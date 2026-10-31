@@ -414,9 +414,17 @@ Syncthing se comportarem de forma estranha.**
 - Ensaio no treino em transação desfeita 57/57; `check:telas` pelo servidor
   local de teste (ver ESTADO). **Não visto:** a tela salvando com o token real
   (não há token de sandbox cadastrado ainda).
-- ⏳ **0340 e 0341 não aplicadas na produção.** O dono roda; cadastrar
-  `ZAPSIGN_API_TOKEN` (sandbox) na Vercel de treino e `CRON_SECRET` nos dois.
-  Próxima sessão: **ZS2**.
+- ✅ **0340 e 0341 APLICADAS nos dois bancos** (o dono rodou na produção em
+  31/10/2026; conferido de fora, só leitura, 13/13: sem login `signature_can`,
+  `signature_save_settings` e a interna `signature_default_roles` recusam com
+  "permission denied" (uma função inexistente, de controle, responde "não
+  encontrada") e `signature_settings`/`signature_packages` não entregam nada;
+  a produção tem 1 configuração, 34 permissões semeadas, 8 padrões fixados, 0
+  pacotes, 4 tabelas técnicas fora da auditoria, o bucket privado de 10 MB só
+  PDF e a coluna `client_guardians.email`).
+- ⏳ **Com o dono:** cadastrar `ZAPSIGN_API_TOKEN` (sandbox) + `ZAPSIGN_ENV`
+  + `CRON_SECRET` na Vercel de treino e `CRON_SECRET` na de produção, e
+  republicar. Próxima sessão: **ZS2**.
 
 **31/10/2026 — PC Administrador (core 0.371.1 → 0.372.0, migração 0339)**
 
