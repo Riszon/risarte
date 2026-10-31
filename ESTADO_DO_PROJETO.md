@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/10/2026 · Versão do sistema: **0.372.0** · Última migração: **0339** (0318 a 0338 aplicadas na produção e no treino; 0339 só no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 31/10/2026 · Versão do sistema: **0.372.0** · Última migração: **0339** (0318 a 0339 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## ✍️ ZS0 — PLANO DA ASSINATURA DIGITAL (ZapSign) APROVADO (31/10/2026, sem código)
 >
@@ -46,8 +46,8 @@ _Atualizado em: 31/10/2026 · Versão do sistema: **0.372.0** · Última migraç
 > gatilho; `plan_item_lock` passa a trancar a prioridade com o plano;
 > `submit_treatment_plan` recusa com `GUT_REQUIRED`, em todas as opções.
 > A regra da repetição existe em `aplicarPrioridade` (gut.ts) e na 0339: mudou uma,
-> muda a outra. ⏳ Depende da 0339 na produção. Lá, o plano devolvido tem 18
-> procedimentos sem nota, que serão exigidos no reenvio.
+> muda a outra. ✅ 0339 aplicada na produção em 31/10/2026 (conferência
+> 1·1·1·true·true·false·true). De fora: sem login, a porta e o envio recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é pessoa, para em NOT_ALLOWED antes de gravar; o plano aprovado segue com as 19 notas e o devolvido com 18 procedimentos sem nota, exigidos no reenvio.
 
 > ## 🎯 0.371.1 — A JANELA DE AGENDAMENTO NÃO CORTA MAIS A TELA (30/10/2026)
 >

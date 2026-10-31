@@ -403,7 +403,7 @@ Syncthing se comportarem de forma estranha.**
   desfeita. **Não visto:** envio pela tela (avisaria uma pessoa real) e celular de
   verdade. E2E ajustado e não rodado. Resíduo: as 11 notas no plano em rascunho do
   "Teste do portão 2".
-- ⏳ **0339 ainda não aplicada na produção:** o push espera o dono rodar.
+- ✅ **0339 aplicada nos dois bancos** (o dono rodou na produção em 31/10/2026; conferência 1·1·1·true·true·false·true; de fora: sem login, a porta e o envio recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço, que não é pessoa, para em NOT_ALLOWED antes de gravar; o plano aprovado segue com as 19 notas e o devolvido com 18 procedimentos sem nota). Push depois da migração.
 
 **30/10/2026 (3) — PC Administrador (core 0.371.0 → 0.371.1, sem migração)**
 
