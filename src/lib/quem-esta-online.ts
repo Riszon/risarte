@@ -190,6 +190,7 @@ export const NOME_DA_TELA: Record<string, string> = {
   agenda: "Agenda",
   alertas: "Alertas do sistema",
   apresentacao: "Apresentação comercial",
+  assinaturas: "Assinaturas digitais",
   atendimento: "Atendimento",
   avaliacao: "Avaliação",
   chat: "Chat Hub",

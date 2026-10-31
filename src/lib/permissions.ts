@@ -443,6 +443,98 @@ export const CAPACIDADES: Capability[] = [
     dependeDoBanco: true,
     padrao: ["unit_manager", "franchisee"],
   },
+
+  // ---- assinaturas digitais (ZapSign, 0340) -----------------------------------
+  // ⚠️ AQUI O BANCO LÊ A MATRIZ (exceção à 0246, restrita ao módulo — decisão
+  // do dono em 31/10/2026). As regras de linha das tabelas `signature_*`
+  // chamam `public.signature_can(capacidade, unidade)`, que consulta a
+  // `permission_matrix`. Ligar um papel na tela liga no banco também — por
+  // isso `dependeDoBanco: false`. Com a matriz vazia o banco cai nestes
+  // mesmos padrões (`signature_default_roles`; há teste que compara).
+  // O que NÃO passa pela matriz: Admin Master/Admin Principal (sempre podem) e
+  // a trava do Consultor RisLife (só as empresas/leads em que é o responsável).
+  ...(() => {
+    const ENVIAM: UserRole[] = [
+      "commercial_consultant", "rislife_consultant", "commercial_assistant",
+      "finance_franchisor", "unit_manager",
+    ];
+    const VEEM: UserRole[] = [...ENVIAM, "clinical_coordinator"];
+    const GRUPO = "Assinaturas digitais";
+    const caps: Capability[] = [
+      {
+        id: "modulo.assinaturas",
+        rotulo: "Assinaturas",
+        grupo: GRUPO,
+        descricao:
+          "O menu Assinaturas: documentos enviados para assinatura digital (ZapSign) e o painel do módulo.",
+        dependeDoBanco: false,
+        padrao: VEEM,
+      },
+      {
+        id: "acao.assinaturas.enviar",
+        rotulo: "Enviar para assinatura",
+        grupo: GRUPO,
+        descricao:
+          "Montar o pacote (contrato, TCLE, orçamento, autorização, adesão) e enviar aos signatários.",
+        dependeDoBanco: false,
+        padrao: ENVIAM,
+      },
+      {
+        id: "acao.assinaturas.cancelar",
+        rotulo: "Cancelar envio",
+        grupo: GRUPO,
+        descricao:
+          "Cancelar um pacote ainda não assinado, com o motivo. Pacote assinado nunca cancela.",
+        dependeDoBanco: false,
+        padrao: ENVIAM,
+      },
+      {
+        id: "acao.assinaturas.visualizar",
+        rotulo: "Ver pacotes e documentos",
+        grupo: GRUPO,
+        descricao:
+          "Abrir o pacote da unidade, ver quem já assinou e ler o PDF no visualizador (sem baixar).",
+        dependeDoBanco: false,
+        padrao: VEEM,
+      },
+      {
+        id: "acao.assinaturas.baixar",
+        rotulo: "Baixar o PDF assinado",
+        grupo: GRUPO,
+        descricao: "Baixar o documento assinado e as cópias. Fica registrado na auditoria.",
+        dependeDoBanco: false,
+        padrao: VEEM,
+      },
+      {
+        id: "acao.assinaturas.painel_unidade",
+        rotulo: "Painel da unidade",
+        grupo: GRUPO,
+        descricao:
+          "Os indicadores de assinatura das próprias unidades: enviados, assinados, aguardando, tempo de resposta.",
+        dependeDoBanco: false,
+        padrao: ENVIAM,
+      },
+      {
+        id: "acao.assinaturas.painel_rede",
+        rotulo: "Painel da rede",
+        grupo: GRUPO,
+        descricao:
+          "Os indicadores de TODAS as unidades, o comparativo e o consumo do plano ZapSign. Libera a leitura dos pacotes de toda a rede.",
+        dependeDoBanco: false,
+        padrao: ["finance_franchisor"],
+      },
+      {
+        id: "acao.assinaturas.configurar",
+        rotulo: "Configurar as assinaturas",
+        grupo: GRUPO,
+        descricao:
+          "Parâmetros da rede, modelos, kits, plano ZapSign e destinatários do relatório mensal. Nasce só com o Admin Master; liberável aqui.",
+        dependeDoBanco: false,
+        padrao: [],
+      },
+    ];
+    return caps;
+  })(),
 ];
 
 export const CAPACIDADES_POR_ID = new Map(CAPACIDADES.map((c) => [c.id, c]));

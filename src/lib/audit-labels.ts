@@ -45,6 +45,12 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   clinical_evaluation_ortho_indication: "Indicação de ortodontia na avaliação",
   treatment_plan_ortho: "Proposta ortodôntica da opção do plano",
   ortho_batch: "Lote de mensalidades ortodônticas",
+  // ------------------------------------------------ assinaturas digitais (0340)
+  signature_settings: "Configuração das assinaturas digitais",
+  signature_template: "Modelo de documento para assinatura",
+  signature_kit: "Kit de documentos para assinatura",
+  signature_package: "Pacote de assinatura digital",
+  signature_signer: "Signatário do pacote de assinatura",
   // ------------------------------------------------ cliente e prontuário
   client: "Cliente",
   client_consent: "Consentimento do cliente",

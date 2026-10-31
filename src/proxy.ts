@@ -5,7 +5,13 @@ import { NextResponse, type NextRequest } from "next/server";
 // Embaixador (/e/) abrem SEM login — com a barra no fim, para "/i/" não
 // liberar "/indica-mais-risos". Quem protege o conteúdo é o banco: essas
 // páginas só chamam funções que exigem o código/link e devolvem o mínimo.
-const PUBLIC_PATHS = ["/login", "/auth", "/i/", "/c/", "/e/"];
+//
+// ZS1 (assinatura digital, plano ZS0 §4.5): `/api/webhooks/` (a ZapSign avisa o
+// que foi assinado — ZS3) e `/api/cron/` (as rotinas que a Vercel chama na hora
+// marcada) abrem sem login — ninguém está logado do lado de lá. Cada rota
+// valida o PRÓPRIO segredo (`ZAPSIGN_WEBHOOK_SECRET`; `CRON_SECRET`, que a
+// Vercel manda como `Authorization: Bearer`) e responde 401 sem ele.
+const PUBLIC_PATHS = ["/login", "/auth", "/i/", "/c/", "/e/", "/api/webhooks/", "/api/cron/"];
 
 export async function proxy(request: NextRequest) {
   // Before Supabase is configured (.env.local), let everything through so

@@ -214,6 +214,32 @@ export const PERMISSION_RULES = [
     expect: "ok",
     why: "o gerente vê o financeiro da PRÓPRIA unidade",
   },
+  // ZS1 (0340) — assinaturas digitais: o menu é da matriz (PLANO-ZS0 §8); a
+  // configuração nasce só com o Admin Master.
+  {
+    role: "receptionist",
+    route: "/assinaturas",
+    expect: "bloqueado",
+    why: "a recepção não está em modulo.assinaturas por padrão (PLANO-ZS0 §8)",
+  },
+  {
+    role: "dentist",
+    route: "/assinaturas",
+    expect: "bloqueado",
+    why: "o dentista não está em modulo.assinaturas por padrão (PLANO-ZS0 §8)",
+  },
+  {
+    role: "unit_manager",
+    route: "/assinaturas",
+    expect: "ok",
+    why: "o gerente envia e acompanha as assinaturas da unidade (PLANO-ZS0 §8)",
+  },
+  {
+    role: "unit_manager",
+    route: "/assinaturas/configuracoes",
+    expect: "bloqueado",
+    why: "configurar as assinaturas nasce só com o Admin Master (acao.assinaturas.configurar sem papel)",
+  },
   {
     role: "purchaser",
     route: "/compras/rodadas",

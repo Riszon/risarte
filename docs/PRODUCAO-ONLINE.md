@@ -31,6 +31,10 @@ nos `.env*.local` (fora do Git).
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Config | Vai ao navegador por natureza; quem protege o dado é a RLS |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Secret** | Só servidor; a única marcada como Secret |
 | `NEXT_PUBLIC_AMBIENTE` | Config | Só no treino, valor `treino` |
+| `ZAPSIGN_API_TOKEN` | **Secret** | Assinatura digital (ZS1). **Treino e previews: token da conta SANDBOX** (`sandbox.app.zapsign.com.br`); **produção: token da conta real**, só no projeto de produção. Sem ele nada é enviado e as telas avisam |
+| `ZAPSIGN_ENV` | Config | `sandbox` (treino) ou `production` (produção). **Vazio = sandbox**, de propósito: esquecer nunca cria documento com validade jurídica |
+| `ZAPSIGN_WEBHOOK_SECRET` | **Secret** | O mesmo texto cadastrado como cabeçalho `x-riszon-webhook-secret` no webhook da conta ZapSign (entra em uso na ZS3) |
+| `CRON_SECRET` | **Secret** | As rotinas de `/api/cron/*` (`vercel.json`) só rodam com ele; a Vercel manda sozinha em `Authorization: Bearer`. Um por projeto (treino e produção) |
 
 ## Armadilhas da Vercel
 
@@ -44,8 +48,14 @@ nos `.env*.local` (fora do Git).
   tela de login dizia "e-mail ou senha incorretos" para qualquer falha;
   corrigido na v0.224.0 — hoje ela mostra a causa real.
 - **Região da função = São Paulo (`gru1`)**, em *Settings → Functions →
-  Function Regions*. É configuração de painel (não há `vercel.json`), exige
-  deploy novo depois de salvar e tem de ser conferida **nos dois projetos**.
+  Function Regions*. É configuração de painel (o `vercel.json` que existe desde
+  a ZS1 só tem as rotinas `crons` — não mexe em região), exige deploy novo
+  depois de salvar e tem de ser conferida **nos dois projetos**.
+- **Rotinas da Vercel (`vercel.json` → `crons`, desde a ZS1):** horária
+  (`/api/cron/signatures-hourly`) e mensal (`/api/cron/signatures-monthly`, dia
+  1º). Exigem `CRON_SECRET` nos dois projetos e **plano Pro** para a horária
+  (no gratuito a Vercel só aceita diária). Até a ZS6/ZS7 as rotas só respondem
+  ao segredo e não fazem nada.
   Em `iad1` o sistema ficava 6,5× mais lento. Como medir: `CLAUDE.md` §0d.
 - **Fluid Compute ligado.** Ao criar estado no nível do módulo em código de
   servidor, conferir que não guarda dado de pessoa (`CLAUDE.md` §0d).

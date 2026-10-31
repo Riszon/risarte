@@ -1905,7 +1905,7 @@ Confirmado no código como **previsto mas não conectado**:
 |---|---|---|
 | `CLAUDE.md` | §3 Jornada | As 7 fases e quem move cada uma [EV-001] |
 | `src/app/(app)/**/page.tsx` | 87 rotas | Lista completa de telas [EV-002] |
-| `src/components/app-sidebar.tsx` | 28 itens | Menu e condições [EV-003] |
+| `src/components/app-sidebar.tsx` | 29 itens | Menu e condições [EV-003], [EV-267] |
 | `.env.example`, código | `ZAPSIGN_*`, `ASAAS_*` | Variáveis existem, integração não [EV-011] |
 
 ---
@@ -3396,7 +3396,9 @@ defeito e não é queda do sistema.
 
 ### 7.2. Barra lateral (o menu)
 
-28 itens, agrupados. O bloco **Administração** só aparece para o Admin Master e
+29 itens, agrupados (o item **Assinaturas** entrou na versão 0.373.0, para quem
+tem a permissão do grupo "Assinaturas digitais" — seção 13d). O bloco
+**Administração** só aparece para o Admin Master e
 vem **fechado**: clique no título "Administração" para abrir ou fechar (a seta
 mostra como está), e o sistema lembra a sua escolha. Numa tela de administração
 ele abre sozinho. Há também um botão para **minimizar** a barra (a preferência
@@ -4466,6 +4468,56 @@ Responde "quem usou o sistema, quanto e para quê" num período.
 > ⚠️ **Baixar a planilha fica registrado** na aba Ações ("Exportou · Relatório
 > de atividade"), com o período. A planilha traz só nomes e números — nenhum
 > dado de paciente.
+
+## 13d. Para o Admin Master: assinaturas digitais (ZapSign)
+
+**O que é.** O riSZon está ganhando assinatura digital com validade jurídica
+(pela ZapSign) para contratos, TCLE, orçamentos aprovados, autorizações de
+imagem e contratos de adesão do Empresarial. O módulo entra **em etapas**
+(desde a versão 0.373.0): a primeira trouxe o menu **Assinaturas**, as
+permissões e a tela de configurações da rede. **Ainda não envia documento
+nenhum** — o botão de enviar, o acompanhamento e o painel chegam nas etapas
+seguintes, e as Novidades avisam quando cada uma entrar.
+
+**Quem vê o menu "Assinaturas".** Quem tem a permissão **Assinaturas** no grupo
+**Assinaturas digitais** de Administração → Permissões (13b). Por padrão:
+Consultor Comercial, Consultor Empresarial (RisLife), Assistente Comercial,
+Financeiro da Franqueadora, Gerente de Unidade e Coordenador Clínico. Recepção,
+dentistas, TSB e ASB não veem — e podem ganhar pela tela, sem mudança de
+programa.
+
+> ⚠️ **Aqui a permissão vale também no banco.** Nos outros módulos, ligar uma
+> permissão abre a tela e o banco pode continuar barrando. No módulo de
+> assinaturas o banco **lê a mesma matriz**: ligar na tela libera de verdade, e
+> desligar fecha de verdade. Duas regras não passam pela matriz: o Admin Master
+> sempre pode, e o Consultor RisLife só enxerga os pacotes das empresas e dos
+> leads em que ele é o responsável.
+
+**As oito permissões do grupo:** Assinaturas (o menu), Enviar para assinatura,
+Cancelar envio, Ver pacotes e documentos, Baixar o PDF assinado, Painel da
+unidade, Painel da rede (libera a leitura de todas as unidades; nasce com o
+Financeiro da Franqueadora) e Configurar as assinaturas (nasce **sem nenhuma
+função** — só o Admin Master; liberável na tela).
+
+**A tela de configurações** (`/assinaturas/configuracoes`, botão
+**Configurações** no alto de Assinaturas; só quem tem "Configurar as
+assinaturas"):
+
+| Bloco | O que decide |
+|---|---|
+| **Prazos e autenticação** | O **corte da autenticação reforçada** (padrão R$ 5.000,00: acima disso o cliente assina com selfie + código; abaixo, só a assinatura na tela); a **validade do link** para paciente (7 dias) e empresa (15 dias); os **dias de lembrete** a quem enviou (2 e 5); as **faixas de espera** do painel (2, 5, 7 dias); e após quantas horas sem notícia o sistema confere na ZapSign (6) |
+| **Plano ZapSign** | **Nome do plano**, **Documentos por mês no plano** e **Avisar ao atingir (%)** (padrão 80%). Cada pacote enviado conta como um documento no mês, mesmo que seja cancelado depois. A caixa "A ZapSign manda e-mail aos signatários" fica **desligada** por padrão: o link vai pelo WhatsApp ou copiado |
+| **Mensagem padrão do link** | O texto que acompanha o link no WhatsApp. Campos permitidos: `{{nome}}`, `{{unidade}}`, `{{link}}`, `{{prazo}}`. Campo que não existe é apontado na hora |
+| **Relatório mensal** | Quem recebe o relatório do mês anterior por e-mail, no dia 1º. Uma pessoa por linha: `Nome <email>` ou só o e-mail. O envio depende do serviço de e-mail, que entra em outra etapa; até lá a lista fica guardada |
+
+Clique em **Salvar configurações**: tudo é gravado de uma vez e fica registrado
+na Auditoria ("Configuração das assinaturas digitais"). A tela mostra ainda, no
+alto, se a **conta ZapSign** deste ambiente tem o token configurado e se é
+**sandbox** (teste, sem validade jurídica — o treino) ou **produção**. O token é
+cadastrado na Vercel, nunca nesta tela.
+
+> ⚠️ **Treino e produção têm configurações separadas** (regra geral da seção
+> 0b do guia técnico): o que você ajustar no treino não vale no sistema real.
 
 ## 14. Checklists
 

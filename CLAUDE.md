@@ -195,8 +195,9 @@ com quatro consultas em sequência pagava ~760 ms só em viagem.
 | Sem as duas idas à rede da autenticação | 1043 ms |
 | **Com a função em São Paulo** | **220 ms** |
 
-**A REGIÃO DA FUNÇÃO É CONFIGURAÇÃO DE PAINEL, NÃO ESTÁ NO REPOSITÓRIO** (não
-há `vercel.json`). Vercel → *Settings → Functions → Function Regions* → só
+**A REGIÃO DA FUNÇÃO É CONFIGURAÇÃO DE PAINEL, NÃO ESTÁ NO REPOSITÓRIO** (o
+`vercel.json` que existe desde a ZS1 só tem as rotinas `crons` — não mexe em
+região). Vercel → *Settings → Functions → Function Regions* → só
 **São Paulo (gru1)**, e **exige deploy novo depois de salvar**. Conferir nos
 DOIS projetos: mudar num não muda no outro (o treino ficou para trás e só foi
 notado ao medir separadamente).
@@ -389,6 +390,33 @@ Syncthing se comportarem de forma estranha.**
 
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
+
+**31/10/2026 (ZS1) — PC Administrador (core 0.372.0 → 0.373.0, migrações 0340 e 0341)**
+
+- **Assinatura digital (ZapSign) — fase ZS1, o alicerce** (bloco ZS1 no
+  ESTADO; plano `docs/assinaturas/PLANO-ZS0.md`). Tabelas `signature_*`,
+  `signature_can` lendo a matriz, blindagens, bucket, permissões, tela de
+  configurações, cliente `src/lib/zapsign/`, `vercel.json` (crons), rotas
+  mínimas de cron, `PUBLIC_PATHS` com `/api/webhooks/` e `/api/cron/`.
+- ⚠️ **NESTE MÓDULO A RLS LÊ A `permission_matrix`** (`public.signature_can`,
+  exceção à 0246 restrita a `signature_*`; §4). Policy nova do módulo usa
+  `signature_can('acao.assinaturas.…', clinic_id)` — nunca lista de papéis no
+  texto. Admin Master/Admin Principal passam; o RisLife-só tem trava fixa
+  (`signature_consultant_scope_ok`). Padrões de fábrica do banco
+  (`signature_default_roles`) = `permissions.ts`; o teste `zapsign.test.ts`
+  compara os dois — mudou um, muda o outro.
+- ⚠️ **Nenhuma policy de escrita nem de DELETE em `signature_*`**: a escrita
+  é por RPC `security definer` (ZS2+) ou pela chave de serviço. Pacote nunca é
+  apagado (gatilho vale até para o superusuário); assinado só aceita
+  `signed_pdf_path`/`completed_at`.
+- ⚠️ **`ZAPSIGN_ENV` vazio = sandbox**, de propósito. `company_id`/`lead_id`
+  em `signature_packages` são colunas sem FK (ordem das migrações; ZS5 liga).
+- Ensaio no treino em transação desfeita 57/57; `check:telas` pelo servidor
+  local de teste (ver ESTADO). **Não visto:** a tela salvando com o token real
+  (não há token de sandbox cadastrado ainda).
+- ⏳ **0340 e 0341 não aplicadas na produção.** O dono roda; cadastrar
+  `ZAPSIGN_API_TOKEN` (sandbox) na Vercel de treino e `CRON_SECRET` nos dois.
+  Próxima sessão: **ZS2**.
 
 **31/10/2026 — PC Administrador (core 0.371.1 → 0.372.0, migração 0339)**
 
@@ -2544,6 +2572,11 @@ imposta na função `move_client_phase`).
 
 - **Assinatura digital = ZapSign.** Integração nacional, simples e com custo
   previsível; entra na Fase 2 (módulo comercial).
+  **Plano aprovado em 31/10/2026:** `docs/assinaturas/PLANO-ZS0.md` (fases
+  ZS1–ZS8). ⚠️ **Exceção à regra da 0246, restrita ao módulo `signature_*`:**
+  a RLS das assinaturas LÊ a `permission_matrix` por `public.signature_can`
+  (0340) — mudar um papel em Administração → Permissões muda o banco também.
+  Fora do módulo a 0246 segue valendo (a matriz só governa a tela).
 - **WhatsApp começa manual.** Mensagens pré-prontas que o usuário envia à mão
   antes de automatizar — valida o conteúdo e evita o custo/risco da Business API
   cedo. Automação fica para a Fase 3.

@@ -19,6 +19,7 @@ import {
   ClipboardList,
   Clock,
   DoorOpen,
+  FileSignature,
   FileText,
   Globe,
   GraduationCap,
@@ -106,6 +107,8 @@ type Props = {
   canViewMetas?: boolean;
   /** 0329: módulo de Ortodontia. Opcional: só o layout informa. */
   canViewOrtho?: boolean;
+  /** 0340: Assinaturas digitais (ZapSign). Opcional: só o layout informa. */
+  canViewAssinaturas?: boolean;
   /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
   canViewFinance: boolean;
   /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
@@ -206,6 +209,15 @@ const ORTHO_ITEM = {
   icon: SmilePlus,
 };
 
+// 0340: Assinaturas digitais (ZapSign) — contrato, TCLE, orçamento aprovado,
+// autorização de imagem e adesão empresarial assinados pelo celular. Fica ao
+// lado dos programas; quem vê é a matriz (`modulo.assinaturas`).
+const ASSINATURAS_ITEM = {
+  href: "/assinaturas",
+  label: "Assinaturas",
+  icon: FileSignature,
+};
+
 // 0318: Metas SMART (rede e unidades). Fica perto do Início de propósito:
 // a meta só estimula se a equipe a vê todo dia.
 const METAS_ITEM = {
@@ -292,6 +304,7 @@ export function AppSidebar({
   canViewIndica = false,
   canViewMetas = false,
   canViewOrtho = false,
+  canViewAssinaturas = false,
   canViewFinance,
   canViewStock,
   canViewPurchases,
@@ -408,6 +421,9 @@ export function AppSidebar({
   }
   if (canViewOrtho) {
     navItems = [...navItems, ORTHO_ITEM];
+  }
+  if (canViewAssinaturas) {
+    navItems = [...navItems, ASSINATURAS_ITEM];
   }
   if (canViewIndica) {
     navItems = [...navItems, INDICA_ITEM];

@@ -226,6 +226,28 @@ export const AJUDAS: AjudaDaTela[] = [
     manual: { secao: "6. Scripts de treinamento por função", trecho: "6.1. Recepcionista" },
     naoVale: ["/prontuarios/novo"],
   },
+  {
+    // ZS1 (0340): a configuração da assinatura digital. Só o Admin Master (ou
+    // quem ganhou "Configurar as assinaturas" em Permissões).
+    rota: "/assinaturas/configuracoes",
+    titulo: "Assinaturas digitais — Configurações",
+    paraQue:
+      "Definir, para toda a rede, os prazos do link, o corte da autenticação reforçada, o plano da ZapSign, a mensagem que vai com o link e quem recebe o relatório mensal.",
+    quem: "O Admin Master. Outra função só entra se ganhar \"Configurar as assinaturas\" em Administração → Permissões.",
+    passos: [
+      "Em **Prazos e autenticação**, confira o corte (acima dele o cliente assina com selfie e código), a validade do link e os dias de lembrete.",
+      "Em **Plano ZapSign**, preencha o **Nome do plano**, **Documentos por mês no plano** e **Avisar ao atingir (%)**: o sistema avisa os Admins quando o consumo do mês chegar lá.",
+      "Em **Mensagem padrão do link**, ajuste o texto do WhatsApp. Só os campos listados são trocados pelo valor real.",
+      "Em **Relatório mensal**, escreva uma pessoa por linha (Nome <email> ou só o e-mail).",
+      "Clique em **Salvar configurações**. Tudo grava de uma vez e fica na Auditoria.",
+    ],
+    atencao: [
+      "O token da ZapSign não se digita aqui: é configuração da Vercel. A faixa no alto só diz se ele existe e se o ambiente é sandbox ou produção.",
+      "Treino e produção têm configurações separadas: ajuste nos dois.",
+      "Nesta etapa nenhum documento é enviado ainda — o envio chega nas etapas seguintes.",
+    ],
+    manual: { secao: "13d. Para o Admin Master: assinaturas digitais (ZapSign)" },
+  },
 ];
 
 function casa(rota: string, caminho: string): boolean {

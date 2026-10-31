@@ -62,6 +62,38 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.373.0",
+    data: "2026-10-31",
+    migracao: "0341",
+    titulo: "Assinatura digital (ZapSign) — primeira etapa: menu, permissões e configurações",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Entrou o menu Assinaturas, por enquanto só com o aviso de módulo em construção: contratos, TCLE, orçamentos aprovados e autorizações de imagem vão poder ser assinados pelo celular, com validade jurídica. Nenhum documento é enviado ainda — o botão de enviar, o acompanhamento e o painel chegam nas próximas etapas.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Administração → Permissões ganhou o grupo Assinaturas digitais, com oito permissões. Neste módulo, ligar uma função na tela libera de verdade também no banco (e desligar fecha): não precisa de mudança de programa para dar o módulo a uma função nova.",
+        papeis: [],
+        manual: "13b",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A tela Assinaturas → Configurações (só o Admin Master) define os prazos do link, o valor de corte da autenticação com selfie e código, os dias de lembrete, o plano da ZapSign com o percentual de alerta, a mensagem que vai com o link e quem recebe o relatório mensal.",
+        papeis: [],
+        manual: "13d",
+      },
+    ],
+  },
+  {
     versao: "0.372.0",
     data: "2026-10-31",
     migracao: "0339",

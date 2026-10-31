@@ -26,6 +26,10 @@ export const NOTIFICATION_CATEGORIES = [
   // ORTO8 (0334): "Ortodontia: caso fechado — agendar a instalação" e os
   // avisos que virão (ORTO9). Pelo LINK (`/ortodontia/...`), como Metas e Compras.
   { key: "ortodontia", label: "Ortodontia" },
+  // ZS1 (0340): os avisos da assinatura digital que virão (ZS3: "é a sua vez
+  // de assinar", recusa, expiração; ZS6: consumo do plano). Pelo LINK
+  // (`/assinaturas/...`), como Metas, Compras e Ortodontia.
+  { key: "assinaturas", label: "Assinaturas" },
   { key: "outras", label: "Outras" },
 ] as const;
 
@@ -51,6 +55,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   metas: "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300",
   compras: "bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300",
   ortodontia: "bg-gold/20 text-gold-tinta",
+  assinaturas: "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-300",
   outras: "bg-muted text-muted-foreground",
 };
 
@@ -69,6 +74,7 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   metas: "bg-sky-500",
   compras: "bg-orange-500",
   ortodontia: "bg-gold",
+  assinaturas: "bg-indigo-500",
   outras: "bg-muted-foreground",
 };
 
@@ -175,6 +181,7 @@ export function categorizeNotification(title: string, link?: string | null): Not
   if ((link ?? "").startsWith("/metas")) return "metas";
   if ((link ?? "").startsWith("/compras")) return "compras";
   if ((link ?? "").startsWith("/ortodontia")) return "ortodontia";
+  if ((link ?? "").startsWith("/assinaturas")) return "assinaturas";
   const t = (title ?? "").toLowerCase();
   if (t.includes("aniversari")) return "aniversario";
   // Programa de Prevenção Riso+ — antes do "comercial" genérico.

@@ -1,6 +1,97 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/10/2026 · Versão do sistema: **0.372.0** · Última migração: **0339** (0318 a 0339 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 31/10/2026 · Versão do sistema: **0.373.0** · Última migração: **0341** (0318 a 0339 aplicadas na produção e no treino; 0340 e 0341 só no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## ✍️ ZS1 — ASSINATURA DIGITAL: O ALICERCE (31/10/2026, v0.373.0, migrações 0340 e 0341)
+>
+> Primeira fase do plano `docs/assinaturas/PLANO-ZS0.md` (§4.3, 5.1, 6, 8, 11, 12).
+> Nada é enviado à ZapSign ainda; esta fase deixa o chão pronto.
+>
+> **Banco (0340):** `signature_settings` (1 linha: corte R$ 5.000,00, 7/15 dias,
+> lembretes {2,5}, faixas {2,5,7}, alerta 80%, mensagem padrão),
+> `signature_templates`, `signature_kits`, `signature_kit_items`,
+> `signature_packages` (número legível `ASS-000001` por sequência),
+> `signature_package_items`, `signature_signers`, `signature_events` (imutável:
+> gatilho recusa UPDATE/DELETE; fora da auditoria), `signature_reminders`,
+> `signature_plan_alerts`, `signature_outbox` (técnicas, fora da auditoria).
+> **`public.signature_can(capacidade, unidade)`** (security definer) lê a
+> `permission_matrix`: Admin Master/Admin Principal sempre; papéis na unidade +
+> papéis da Franqueadora com escopo sobre ela; matriz vazia → padrões de
+> fábrica (`signature_default_roles`, iguais a `matrizPadrao()` — teste
+> compara). **Exceção à 0246, restrita ao módulo (decisão do dono).**
+> `signature_consultant_scope_ok(company_id, lead_id)`: quem SÓ é Consultor
+> RisLife vê apenas empresa/lead em que é o responsável (trava fixa; pacote de
+> paciente não é dele). Policies SÓ de SELECT (`visualizar` na unidade OU
+> `painel_rede`; em `signature_signers` também `user_id = auth.uid()`);
+> **nenhuma policy de DELETE nem de escrita** para `authenticated` (a escrita
+> entra por RPCs nas fases seguintes). Gatilhos `signature_packages_no_delete`
+> (nem a chave de serviço apaga) e `signature_packages_guard_signed` (assinado
+> só aceita `signed_pdf_path`/`completed_at`/`updated_at`; nunca sai de
+> `signed`). Bucket privado `signature-documents` (10 MB, só PDF; leitura por
+> `signature_can_view_package(signature_package_of_path(name))`; sem
+> INSERT/UPDATE/DELETE para `authenticated`). Porta `signature_save_settings`
+> (guarda `configurar`). Semente das 8 capacidades na `permission_matrix`
+> (guardada por `if exists`, `on conflict do nothing`) e em
+> `permission_defaults`. `company_id`/`lead_id` são colunas SEM chave
+> estrangeira (o core não depende do schema `empresarial` na ordem das
+> migrações; a ZS5 liga do lado de lá). **0341:** `client_guardians.email`.
+>
+> **Ensaio no treino (transação desfeita, 57/57):** RLS por papel (Admin,
+> Recepção, Gerente na própria e em outra unidade, Coordenador, Consultor,
+> Financeiro, Franqueado, Dentista, RisLife 1 de 4), **a RLS segue a matriz**
+> (tirar a linha esconde; ligar a Recepção libera, sem código), anon recusado,
+> configuração salva/lida pela porta, Gerente recusado, não-exclusão como
+> superusuário, assinado não cancela/expira/volta e não muda outra coluna,
+> aceita PDF+conclusão, evento imutável e chave única, zero policies fora de
+> SELECT, bucket, caminho→pacote, auditoria nas 7 tabelas e 4 fora. Ambas as
+> migrações rodam duas vezes (idempotentes). ✅ **Aplicadas no treino**
+> (`migrar:teste`). ⏳ **0340/0341 NÃO aplicadas na produção** — o dono roda.
+>
+> **Código:** grupo "Assinaturas digitais" em `permissions.ts` (8 chaves, §8;
+> `dependeDoBanco: false` porque aqui o banco lê a matriz);
+> `src/lib/signatures/access.ts`; nomes em `auditoria-catalogo.ts` e
+> `audit-labels.ts`; item **Assinaturas** no menu (`ASSINATURAS_ITEM`,
+> `canViewAssinaturas`); `NOME_DA_TELA`, ajuda da tela, categoria de aviso
+> `assinaturas` (por prefixo `/assinaturas`). **Cliente ZapSign**
+> `src/lib/zapsign/` (`env.ts` — sandbox é o padrão; `client.ts` — Bearer,
+> `User-Agent: riSZon`, timeout 20 s, 1 repetição em 5xx/429/rede, `ZapsignError`
+> com `messagePt` e `logMessage` sem dado pessoal; `api.ts` — 12 funções
+> tipadas, `signInBatch` só tipado; `webhook.ts` — `parseWebhook`,
+> `webhookEventKey`, `webhookMatchesEnvironment`); `empresarial/zapsign.ts`
+> virou reexport (`isZapsignConfigured`/`createZapDocument` mantidos).
+> **Telas:** `/assinaturas` (provisória, "módulo em construção") e
+> `/assinaturas/configuracoes` (parâmetros, plano, mensagem, destinatários;
+> faixa dizendo se o token existe e se é sandbox/produção; Server Action com
+> guarda + `logAudit` + `revalidatePath`). **Infra:** `/api/webhooks/` e
+> `/api/cron/` em `PUBLIC_PATHS`; `vercel.json` só com `crons` (horária
+> `15 * * * *` e mensal `0 9 1 * *`, UTC); rotas mínimas
+> `/api/cron/signatures-hourly|monthly` (validam `CRON_SECRET`, respondem 204; o
+> trabalho é ZS6/ZS7); `src/lib/cron-auth.ts`; `.env.example` e
+> `docs/PRODUCAO-ONLINE.md` com `ZAPSIGN_API_TOKEN`, `ZAPSIGN_ENV`,
+> `ZAPSIGN_WEBHOOK_SECRET`, `CRON_SECRET`. Testes: `zapsign.test.ts` (36),
+> `assinaturas-configuracoes.test.ts` (11). Manual 13d + 7.2; novidades 0.373.0;
+> regras da varredura em `screen-rules.mjs`.
+>
+> **Visto na tela (31/10/2026):** servidor local de teste (porta 3100, banco de
+> treino) como `admin@example.com`: `/assinaturas` (1440px e 375px, sem rolagem
+> lateral) e `/assinaturas/configuracoes` abrindo, **salvando** (plano, limite e
+> destinatário gravados com `updated_by` do Admin e 1 linha em `audit_logs`) e
+> relendo após recarregar; valores devolvidos ao vazio pela própria tela.
+> `check:telas` (1.216 aberturas, 8 perfis): as duas telas abrem para o Admin;
+> Recepção e Dentista barrados em `/assinaturas`; Gerente abre `/assinaturas` e
+> é barrado em `/configuracoes`. As 5 falhas da varredura são de fora da ZS1:
+> AP31 (`/indica-mais-risos/equipe/apuracao/[id]` 404) e 3 telas de
+> `/financeiro/recebiveis/*` que não responderam ao Gerente (ambiente, "terminated").
+> Resíduo no treino: 2 linhas de `audit_logs` (update de `signature_settings`).
+>
+> **O que o dono precisa fazer:** (1) rodar 0340 e 0341 na produção (SQL
+> Editor; a conferência no fim da 0340 deve dar 11 tabelas, 5 funções, 3
+> gatilhos, 0 policies de DELETE, 1 bucket, 34 permissões semeadas, 1
+> configuração); (2) na Vercel do **treino**, cadastrar `ZAPSIGN_API_TOKEN` da
+> conta **sandbox** (Secret), `ZAPSIGN_ENV=sandbox` e um `CRON_SECRET`; na
+> produção, `CRON_SECRET` (o token de produção só na ZS8); (3) conferir em
+> `/admin/permissoes` o grupo "Assinaturas digitais". **Próxima fase: ZS2**
+> (modelos, PDF, envio ao paciente).
 
 > ## ✍️ ZS0 — PLANO DA ASSINATURA DIGITAL (ZapSign) APROVADO (31/10/2026, sem código)
 >

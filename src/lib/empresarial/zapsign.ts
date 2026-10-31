@@ -1,21 +1,18 @@
 import "server-only";
+import { createDocumentFromPdf, isZapsignConfigured, mensagemDaZapsign, ZapsignError } from "@/lib/zapsign";
 
 /**
- * Cliente ZapSign (Fase 5) — PONTO DE PLUGAR A CHAVE.
- * Ambiente (Vercel / .env.local, fora do git):
- *   ZAPSIGN_API_TOKEN   — token da conta
- *   ZAPSIGN_BASE_URL    — opcional; padrão produção https://api.zapsign.com.br/api/v1
+ * ⚠️ ESTE ARQUIVO VIROU UM REEXPORT (ZS1, 31/10/2026 — plano ZS0 §4.5).
  *
- * Sem o token, `isZapsignConfigured()` devolve false e as telas seguem
- * funcionando (contrato local + marcação manual de assinado para testes).
+ * O cliente da ZapSign mora em `src/lib/zapsign/` (um caminho só para o core e
+ * o Empresarial). O esboço antigo daqui nunca enviou nada (a aba Contratos
+ * chamava `sendContract` sem PDF); as duas funções que as telas do Empresarial
+ * ainda importam continuam respondendo com a MESMA forma de resultado, agora
+ * pelo cliente novo (token, ambiente sandbox/produção e erros tipados).
+ *
+ * Na ZS5 a aba Contratos passa a usar o módulo de assinaturas e este arquivo sai.
  */
-export function isZapsignConfigured(): boolean {
-  return Boolean(process.env.ZAPSIGN_API_TOKEN);
-}
-
-function baseUrl(): string {
-  return process.env.ZAPSIGN_BASE_URL || "https://api.zapsign.com.br/api/v1";
-}
+export { isZapsignConfigured };
 
 type ZapResult<T> =
   | { ok: true; data: T }
@@ -32,44 +29,28 @@ export type ZapDocInput = {
 export type ZapDoc = { token: string; sign_url?: string; status?: string };
 
 /** Cria o documento para assinatura na ZapSign. Só chamada quando há token. */
-export async function createZapDocument(
-  input: ZapDocInput
-): Promise<ZapResult<ZapDoc>> {
-  const token = process.env.ZAPSIGN_API_TOKEN;
-  if (!token) {
+export async function createZapDocument(input: ZapDocInput): Promise<ZapResult<ZapDoc>> {
+  if (!isZapsignConfigured()) {
     return { ok: false, error: "ZapSign não configurado.", notConfigured: true };
   }
   try {
-    const res = await fetch(`${baseUrl()}/docs/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: input.name,
-        url_pdf: input.url_pdf,
-        signers: [{ name: input.signer_name, email: input.signer_email }],
-      }),
+    const doc = await createDocumentFromPdf({
+      name: input.name,
+      url_pdf: input.url_pdf,
+      signers: [{ name: input.signer_name, email: input.signer_email }],
     });
-    const body = (await res.json()) as {
-      token?: string;
-      signers?: { sign_url?: string }[];
-      status?: string;
-    };
-    if (!res.ok || !body.token) {
-      return { ok: false, error: `ZapSign respondeu ${res.status}.` };
-    }
     return {
       ok: true,
       data: {
-        token: body.token,
-        sign_url: body.signers?.[0]?.sign_url,
-        status: body.status,
+        token: doc.token,
+        sign_url: doc.signers?.[0]?.sign_url,
+        status: doc.status,
       },
     };
   } catch (e) {
-    console.error("createZapDocument failed:", e);
-    return { ok: false, error: "Falha ao falar com a ZapSign." };
+    if (e instanceof ZapsignError && e.code === "not_configured") {
+      return { ok: false, error: e.messagePt, notConfigured: true };
+    }
+    return { ok: false, error: mensagemDaZapsign(e) };
   }
 }
