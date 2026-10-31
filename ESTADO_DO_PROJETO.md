@@ -92,13 +92,18 @@ _Atualizado em: 31/10/2026 · Versão do sistema: **0.373.0** · Última migraç
 > `/financeiro/recebiveis/*` que não responderam ao Gerente (ambiente, "terminated").
 > Resíduo no treino: 2 linhas de `audit_logs` (update de `signature_settings`).
 >
-> **O que o dono precisa fazer:** ✅ (1) 0340 e 0341 rodadas na produção em
-> 31/10/2026 (conferência acima); ⏳ (2) na Vercel do **treino**, cadastrar
+> **O que o dono precisava fazer — feito em 31/10/2026:** ✅ (1) 0340 e 0341
+> rodadas na produção (conferência acima); ✅ (2) Vercel do **treino** com
 > `ZAPSIGN_API_TOKEN` da conta **sandbox** (Secret), `ZAPSIGN_ENV=sandbox` e
-> um `CRON_SECRET`; na produção, `CRON_SECRET` (o token de produção só na
-> ZS8); republicar depois; ⏳ (3) conferir em `/admin/permissoes` o grupo
+> `CRON_SECRET`; produção só com `CRON_SECRET` (valor diferente; o token de
+> produção só na ZS8); os dois republicados. Conferido de fora: nos dois
+> sites as rotas `/api/cron/signatures-hourly` e `-monthly` respondem **401**
+> sem o segredo e **204** com o seu (o do treino é recusado na produção); no
+> treino, `/assinaturas/configuracoes` aberta como o Admin de teste mostra
+> "token configurado" e "sandbox (teste, sem validade jurídica)", versão
+> 0.373.0 na barra. ⏳ (3) o dono conferir em `/admin/permissoes` o grupo
 > "Assinaturas digitais" e o item **Assinaturas** no menu. **Próxima fase:
-> ZS2** (modelos, PDF, envio ao paciente).
+> ZS2** (modelos, PDF, envio ao paciente — já com sandbox para provar o envio).
 
 > ## ✍️ ZS0 — PLANO DA ASSINATURA DIGITAL (ZapSign) APROVADO (31/10/2026, sem código)
 >

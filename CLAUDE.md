@@ -422,9 +422,14 @@ Syncthing se comportarem de forma estranha.**
   a produção tem 1 configuração, 34 permissões semeadas, 8 padrões fixados, 0
   pacotes, 4 tabelas técnicas fora da auditoria, o bucket privado de 10 MB só
   PDF e a coluna `client_guardians.email`).
-- ⏳ **Com o dono:** cadastrar `ZAPSIGN_API_TOKEN` (sandbox) + `ZAPSIGN_ENV`
-  + `CRON_SECRET` na Vercel de treino e `CRON_SECRET` na de produção, e
-  republicar. Próxima sessão: **ZS2**.
+- ✅ **Variáveis cadastradas na Vercel pelo dono em 31/10/2026** e os dois
+  projetos republicados. Treino: `ZAPSIGN_API_TOKEN` (sandbox, Secret),
+  `ZAPSIGN_ENV=sandbox`, `CRON_SECRET`; produção: só `CRON_SECRET` (outro
+  valor). Conferido de fora: nos dois sites `/api/cron/signatures-hourly` e
+  `-monthly` respondem 401 sem o segredo e 204 com o seu (o do treino é
+  recusado na produção); no treino, a tela de Configurações aberta como o
+  Admin de teste mostra "token configurado" e "sandbox". **A ZS2 já pode
+  provar o envio real no sandbox.** Próxima sessão: **ZS2**.
 
 **31/10/2026 — PC Administrador (core 0.371.1 → 0.372.0, migração 0339)**
 
