@@ -44,6 +44,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
 - [ ] **AP84** — a margem da negociação conta a hora de cadeira pela soma dos itens (9h15 no relato), não pela sequência montada (7h15)
 - [ ] **AP85** — plano de uma opção só nasce sem opção principal (2 de 2 na produção): as telas que procuram "a principal" não acham
+- [ ] **AP88** — `npm run check:destrutivo` acusa 7 comandos sem a declaração `-- DESTRUTIVO`, nas migrações 0331 e 0332, já aplicadas
 - [ ] **AP86** — as outras 16 janelas altas têm o desenho que cortava a de agendamento (OC-00008): botão ou texto que não quebra linha pode alargá-las
 - [ ] **AP83** — 0331 e 0332 (Ortodontia) apagam dado sem o `-- DESTRUTIVO`: `npm run check:destrutivo` acusa 7 comandos
 - [ ] **AP82** — a hora clínica é lida unidade por unidade (custo fixo + agenda + atendimentos); a aba do Painel da rede e cada negociação pagam essas leituras
@@ -2671,6 +2672,16 @@ para a conta da margem. Com sessões juntas e tempos ajustados, a sequência tem
 menos tempo que os itens (7h15 contra 9h15 no OC-00007), e a margem sai menor do
 que a real. **Não mudei** na 0.371.0: a mesma conta vale para a Precificação, e
 trocar a base dela é decisão do dono. Visto ao entregar a 0338; não é dela.
+
+### AP88. check:destrutivo acusa as migrações 0331 e 0332 (31/10/2026)
+
+**Confirmado:** a régua lista 7 comandos sem `-- DESTRUTIVO`: um `delete from
+public.permission_matrix` na 0331 (linha 167) e seis `drop column` em `ortho_cases` na
+0332 (linhas 108 a 113). As duas já rodaram nos dois bancos, e a mensagem "o dono não
+pode rodar esta migração" não vale mais para elas. Migração aplicada não se edita.
+**Suspeita, não conferida:** pelo registro da 0332, as colunas foram para
+`ortho_case_terms` antes de cair, sem perda de dado. A régua não está no `verificar`.
+**A decidir:** registrar as 7 como conhecidas na régua, depois de conferir cada uma.
 
 ### AP86. Outras janelas podem alargar como a de agendamento (30/10/2026)
 
