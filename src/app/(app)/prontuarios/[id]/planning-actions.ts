@@ -233,7 +233,7 @@ export async function createTreatmentPlan(
         const { data: srcItems } = await supabase
           .from("treatment_plan_option_items")
           .select(
-            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
+            "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, gut_repeated, sort_order"
           )
           .in("option_id", srcOptionIds)
           .order("sort_order");
@@ -281,6 +281,7 @@ export async function createTreatmentPlan(
               gut_gravity: it.gut_gravity,
               gut_urgency: it.gut_urgency,
               gut_tendency: it.gut_tendency,
+              gut_repeated: it.gut_repeated,
               sort_order: it.sort_order,
             } };
           })
@@ -1533,43 +1534,29 @@ export async function setItemProvider(
 }
 
 /**
- * Prioridade GUT do item: três notas de 1 a 5 (gravidade, urgência, tendência).
- * Qualquer nota fora da faixa vira null (item "sem prioridade" naquela dimensão).
+ * Prioridade GUT do item: as três notas de 1 a 5. O banco repete para os
+ * procedimentos iguais do plano (0339). Grava por trás: sem `revalidatePath`, a
+ * tela só recarrega quando a lista de prioridades fecha.
  */
-export async function setItemGut(
+export async function definirPrioridadeDoItem(
   itemId: string,
-  gut: {
-    gravity: number | null;
-    urgency: number | null;
-    tendency: number | null;
-  }
+  notas: { gravity: number; urgency: number; tendency: number }
 ): Promise<PlanResult> {
   const guard = await requirePlanner();
   if ("error" in guard) return { ok: false, error: guard.error };
 
   const supabase = await createClient();
-  const { data: item } = await supabase
-    .from("treatment_plan_option_items")
-    .select("option_id")
-    .eq("id", itemId)
-    .single();
-  if (!item) return { ok: false, error: "Item não encontrado." };
-  const ctx = await loadOptionContext(item.option_id);
-  if ("error" in ctx) return { ok: false, error: ctx.error };
-
-  const { error } = await supabase
-    .from("treatment_plan_option_items")
-    .update({
-      gut_gravity: gutNote(gut.gravity),
-      gut_urgency: gutNote(gut.urgency),
-      gut_tendency: gutNote(gut.tendency),
-    })
-    .eq("id", itemId);
+  const { error } = await supabase.rpc("set_plan_item_priority", {
+    p_item: itemId,
+    p_gravity: notas.gravity,
+    p_urgency: notas.urgency,
+    p_tendency: notas.tendency,
+  });
   if (error) {
-    console.error("setItemGut failed:", error.message);
+    const doPlano = mensagemDoPlano(error.message);
+    if (doPlano) return { ok: false, error: doPlano };
+    console.error("set_plan_item_priority failed:", error.message);
     return { ok: false, error: "Não foi possível definir a prioridade." };
   }
-  await touchPlan(ctx.planId);
-  revalidatePath(`/prontuarios/${ctx.clientId}`);
   return { ok: true };
 }

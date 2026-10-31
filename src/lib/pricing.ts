@@ -122,6 +122,8 @@ export type BudgetItem = {
   gutGravity?: number | null;
   gutUrgency?: number | null;
   gutTendency?: number | null;
+  /** 0339: a nota veio de um procedimento igual do plano e não foi confirmada. */
+  gutRepeated?: boolean;
   /** COM: o cliente NÃO aprovou este procedimento na negociação comercial. */
   clientRejected?: boolean;
   /** OD3 (0311): onde o procedimento acontece — dente (+ faces) ou região. */

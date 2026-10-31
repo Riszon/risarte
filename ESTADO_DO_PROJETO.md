@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 30/10/2026 · Versão do sistema: **0.371.1** · Última migração: **0338** (0318 a 0338 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 31/10/2026 · Versão do sistema: **0.372.0** · Última migração: **0339** (0318 a 0338 aplicadas na produção e no treino; 0339 só no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## ✍️ ZS0 — PLANO DA ASSINATURA DIGITAL (ZapSign) APROVADO (31/10/2026, sem código)
 >
@@ -32,6 +32,22 @@ _Atualizado em: 30/10/2026 · Versão do sistema: **0.371.1** · Última migraç
 > consumo) → ZS7 (painel e relatórios) → ZS8 (sandbox ponta a ponta e
 > produção). ⚠️ A ZS1 começa conferindo o próximo número livre de migração: a
 > **0339 já está tomada** por trabalho do core não commitado em 31/10.
+
+> ## 🎯 0.372.0 / 0339 — A PRIORIDADE EM UM CLIQUE, E OBRIGATÓRIA NO ENVIO (31/10/2026)
+>
+> Pedido do dono. Cada uma das 3 listas gravava, recarregava a ficha e travava as
+> outras, e o cartão podia mudar de lugar ao receber a terceira nota; um plano de
+> 18 procedimentos pedia cerca de 55 escolhas. **Decisões do dono:** um clique em
+> Alta (4·4·4), Média (3·3·3) ou Baixa (2·2·2), com "Ajustar notas"; repetir dentro
+> do plano; lista única. **Lista:** `prioridades-do-plano.tsx`, grava por trás, sem
+> recarregar nem reordenar até Concluir. **Banco (0339):** `set_plan_item_priority`
+> exige as três notas e o plano editável; `gut_repeated` marca a nota repetida, que
+> acompanha a origem, e nota do Planner nunca é sobrescrita; item novo herda por
+> gatilho; `plan_item_lock` passa a trancar a prioridade com o plano;
+> `submit_treatment_plan` recusa com `GUT_REQUIRED`, em todas as opções.
+> A regra da repetição existe em `aplicarPrioridade` (gut.ts) e na 0339: mudou uma,
+> muda a outra. ⏳ Depende da 0339 na produção. Lá, o plano devolvido tem 18
+> procedimentos sem nota, que serão exigidos no reenvio.
 
 > ## 🎯 0.371.1 — A JANELA DE AGENDAMENTO NÃO CORTA MAIS A TELA (30/10/2026)
 >

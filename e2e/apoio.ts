@@ -431,6 +431,7 @@ export async function levarAoComercial(
   await page.getByText(/Atual: Saúde/).waitFor().catch(() => {});
 
   await page.reload();
+  await definirPrioridades(page);
   await confirmarSequencia(page);
   const enviarAprovacao = page.getByRole("button", {
     name: "Enviar para aprovação do Coordenador",
@@ -744,6 +745,21 @@ export function nomeDeTeste(prefixo = "Paciente"): string {
 
 export const mascaraCpf = (cpf: string) =>
   cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+
+/** 0339: o envio exige a prioridade de todos os procedimentos. Define pela lista. */
+export async function definirPrioridades(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Definir agora" }).click();
+  const janela = page.getByRole("dialog");
+  const linhas = janela.getByRole("listitem");
+  await linhas.first().waitFor();
+  for (const linha of await linhas.all()) {
+    await linha.getByRole("button", { name: "Média", exact: true }).click();
+  }
+  await janela.getByText(/Todos os \d+ definidos/).waitFor();
+  await janela.getByText("Tudo salvo").waitFor();
+  await janela.getByRole("button", { name: "Concluir" }).click();
+  await janela.waitFor({ state: "hidden" });
+}
 
 /** 0337: o envio exige a sequência confirmada. Abre o cartão do cockpit e confirma. */
 export async function confirmarSequencia(page: import("@playwright/test").Page) {

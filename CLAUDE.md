@@ -390,6 +390,21 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**31/10/2026 — PC Administrador (core 0.371.1 → 0.372.0, migração 0339)**
+
+- **Prioridade dos procedimentos (pedido do dono;** bloco 0.372.0 no ESTADO). Lista
+  única, um clique, repetição no plano e exigida no envio (`GUT_REQUIRED`).
+- ⚠️ **A repetição mora em dois lugares:** `aplicarPrioridade` e
+  `set_plan_item_priority`. Nota do Planner nunca é sobrescrita; a repetida
+  acompanha a origem.
+- ⚠️ **Ao recriar `submit_treatment_plan` ou `plan_item_lock`, levar a prioridade
+  junto.** Depois de enviado, a nota não muda mais, nem pela API.
+- Visto na tela no treino (`planner@example.com`, 1440px e 375px); ensaio em transação
+  desfeita. **Não visto:** envio pela tela (avisaria uma pessoa real) e celular de
+  verdade. E2E ajustado e não rodado. Resíduo: as 11 notas no plano em rascunho do
+  "Teste do portão 2".
+- ⏳ **0339 ainda não aplicada na produção:** o push espera o dono rodar.
+
 **30/10/2026 (3) — PC Administrador (core 0.371.0 → 0.371.1, sem migração)**
 
 - **OC-00008** (bloco 0.371.1 no ESTADO): layout da janela de agendamento; as sessões

@@ -2744,15 +2744,27 @@ Planejamento**.
    - Procedimento do grupo que não está no catálogo da unidade (ou foi
      desativado) **fica de fora**, e a tela diz qual.
 6. Classifique o **pilar** (1 dos 6) → **Salvar pilar**.
-7. Monte e **confirme** os **Atendimentos e sequência** de cada opção (botão no
+7. Clique em **Prioridades** e defina a de cada procedimento:
+   - **Um clique** em **Alta**, **Média** ou **Baixa** preenche as três notas
+     (Alta = 4·4·4; Média = 3·3·3; Baixa = 2·2·2). Para outra combinação, abra
+     **Ajustar notas** e dê Gravidade, Urgência e Tendência de 1 a 5.
+   - **A lista salva sozinha** e nada muda de lugar enquanto você trabalha. Ao
+     clicar em **Concluir**, os cartões voltam ordenados pela prioridade.
+   - **O mesmo procedimento** ainda sem nota, em outro dente ou em outra opção,
+     recebe a mesma nota com a marca **Repetida**. Se você corrigir a origem, a
+     repetida acompanha. Clicar nela confirma a nota e tira a marca. Uma nota que
+     você deu nunca é trocada pela repetição.
+   - O procedimento lançado depois já entra com a nota de um igual do plano.
+8. Monte e **confirme** os **Atendimentos e sequência** de cada opção (botão no
    alto do cockpit) — veja abaixo.
-8. **Enviar para aprovação do Coordenador**. O banco confere: diagnóstico por
+9. **Enviar para aprovação do Coordenador**. O banco confere: diagnóstico por
    dente **finalizado** e sem sugestão pendente, o **dente ou região** de cada
-   procedimento que se marca na boca e a **sequência confirmada** de todas as
-   opções. ⚠️ **O preço de cada item congela
+   procedimento que se marca na boca, a **prioridade de todos os procedimentos de
+   todas as opções** (a tela diz quantos faltam) e a **sequência confirmada** de
+   todas as opções. ⚠️ **O preço de cada item congela
    no envio**, pelo preço do catálogo daquele dia (se houve reajuste durante
    o planejamento, vale o do dia do envio).
-9. Aprovado, **Enviar ao Comercial**.
+10. Aprovado, **Enviar ao Comercial**.
 
 **Plano enviado ou aprovado não se edita** (desde a 0.336.0 o banco recusa
 por qualquer caminho; o antigo "Reabrir para edição" saiu). Para mudar:

@@ -138,7 +138,7 @@ export async function loadClientPlans(
     const { data: itemRows } = await supabase
       .from("treatment_plan_option_items")
       .select(
-        "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, sort_order"
+        "id, option_id, procedure_id, description, quantity, unit_price_cents, planned_sessions, planned_total_minutes, stage_id, suggested_provider_id, gut_gravity, gut_urgency, gut_tendency, gut_repeated, sort_order"
       )
       .in("option_id", optionIds)
       .order("sort_order")
@@ -157,6 +157,7 @@ export async function loadClientPlans(
           gut_gravity: number | null;
           gut_urgency: number | null;
           gut_tendency: number | null;
+          gut_repeated: boolean;
           sort_order: number;
         }[]
       >();
@@ -254,6 +255,7 @@ export async function loadClientPlans(
         gutGravity: it.gut_gravity,
         gutUrgency: it.gut_urgency,
         gutTendency: it.gut_tendency,
+        gutRepeated: it.gut_repeated,
         clientRejected: rejectedItemIds.has(it.id),
         toothCode: loc?.tooth_code ?? null,
         faceCodes: loc?.face_codes ?? [],

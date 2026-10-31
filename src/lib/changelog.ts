@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.372.0",
+    data: "2026-10-31",
+    migracao: "0339",
+    titulo: "A prioridade dos procedimentos em um clique, e obrigatória no envio",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A nova lista Prioridades reúne os procedimentos do plano: um clique em Alta, Média ou Baixa preenche as três notas, sem esperar a tela recarregar. Quem quiser ajusta Gravidade, Urgência e Tendência. O mesmo procedimento ainda sem nota recebe a mesma, com a marca Repetida.",
+        papeis: ["planner_dentist"],
+        manual: "6.3",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O plano só vai para o Coordenador com a prioridade de todos os procedimentos de todas as opções. A tela diz quantos faltam, e o botão Definir agora abre a lista.",
+        papeis: ["planner_dentist"],
+        manual: "6.3",
+      },
+    ],
+  },
+  {
     versao: "0.371.1",
     data: "2026-10-30",
     migracao: null,

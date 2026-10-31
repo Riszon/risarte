@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
-  Flag,
   Hourglass,
   Layers,
   LayoutDashboard,
@@ -33,10 +32,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { GutBadge, GutAverageBadge } from "@/components/gut-badge";
+import { PrioridadeRapida, PrioridadesDoPlano } from "./prioridades-do-plano";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { GUT_DIMENSION_LABELS, gutTierOf, sortByGutDesc } from "@/lib/gut";
+import { gutScore, gutTierOf, sortByGutDesc } from "@/lib/gut";
 import {
   OPTION_REVIEW_LABELS,
   PLAN_STATUS_LABELS,
@@ -79,7 +79,6 @@ import {
   reviewPlanOption,
   saveDiagnosis,
   savePlanNarrative,
-  setItemGut,
   setItemProvider,
   setItemStage,
   setPrimaryOption,
@@ -217,65 +216,6 @@ function ReadBlock({
       </p>
       <div className="text-sm whitespace-pre-wrap">{children}</div>
     </div>
-  );
-}
-
-/** Seletor inline da prioridade GUT (3 notas 1..5) + prévia do selo. */
-function GutPicker({
-  gravity,
-  urgency,
-  tendency,
-  disabled,
-  onChange,
-}: {
-  gravity: number | null;
-  urgency: number | null;
-  tendency: number | null;
-  disabled?: boolean;
-  onChange: (g: number | null, u: number | null, t: number | null) => void;
-}) {
-  const one = (
-    label: string,
-    short: string,
-    cur: number | null,
-    set: (n: number | null) => void
-  ) => (
-    <label className="flex items-center gap-0.5" title={label}>
-      <span className="text-[10px] text-muted-foreground">{short}</span>
-      <select
-        value={cur ?? ""}
-        disabled={disabled}
-        onChange={(e) => set(e.target.value ? Number(e.target.value) : null)}
-        className="h-6 rounded border border-input bg-transparent px-0.5 text-[11px]"
-        aria-label={label}
-      >
-        <option value="">–</option>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-  return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
-      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-        <Flag className="size-3" /> Prioridade
-      </span>
-      {one(GUT_DIMENSION_LABELS.gravity, "G", gravity, (n) =>
-        onChange(n, urgency, tendency)
-      )}
-      {one(GUT_DIMENSION_LABELS.urgency, "U", urgency, (n) =>
-        onChange(gravity, n, tendency)
-      )}
-      {one(GUT_DIMENSION_LABELS.tendency, "T", tendency, (n) =>
-        onChange(gravity, urgency, n)
-      )}
-      <GutBadge
-        item={{ gutGravity: gravity, gutUrgency: urgency, gutTendency: tendency }}
-      />
-    </span>
   );
 }
 
@@ -423,6 +363,8 @@ export function PlanningSection({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // 0339: a opção à mostra na lista de prioridades; null = fechada.
+  const [prioridadesEm, setPrioridadesEm] = useState<string | null>(null);
 
   const [diagnosis, setDiagnosis] = useState(plan?.diagnosis ?? "");
   const [objectives, setObjectives] = useState(plan?.objectives ?? "");
@@ -604,6 +546,7 @@ export function PlanningSection({
     diagnosis.trim().length > 0 &&
     options.length > 0 &&
     allOptionsHaveItems;
+  const semPrioridade = options.flatMap((o) => o.items).filter((i) => gutScore(i) == null).length;
 
   // H2.3: envio direto — sem etapa de confirmação; só exige o pilar definido.
   function submitPlan() {
@@ -1068,6 +1011,7 @@ export function PlanningSection({
                         realStats={realStats}
                         providerOptions={providerOptions}
                         canEdit={canEditContent}
+                        onDefinirPrioridades={() => setPrioridadesEm(o.id)}
                         summaryOnly={!canSeePrices}
                         odonto={odonto}
                         grupos={grupos}
@@ -1242,12 +1186,30 @@ export function PlanningSection({
             </div>
 
             <Button
-              disabled={!canSubmit || !pillarChoice || isPending}
+              disabled={!canSubmit || !pillarChoice || semPrioridade > 0 || isPending}
               onClick={submitPlan}
             >
               <Send className="mr-1 size-4" />
               Enviar para aprovação do Coordenador
             </Button>
+            {/* 0339: o banco recusa o envio; a tela avisa antes do clique. */}
+            {semPrioridade > 0 && inPlanningPhase && (
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                Falta definir a prioridade de {semPrioridade}{" "}
+                {semPrioridade === 1 ? "procedimento" : "procedimentos"}.{" "}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() =>
+                    setPrioridadesEm(
+                      options.find((o) => o.items.some((i) => gutScore(i) == null))?.id ?? null
+                    )
+                  }
+                >
+                  Definir agora
+                </button>
+              </p>
+            )}
             {/* OC-00010: o banco recusa o envio; a tela avisa antes do clique. */}
             {options.some((o) => !o.sequenceConfirmedAt) && inPlanningPhase && (
               <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
@@ -1268,6 +1230,24 @@ export function PlanningSection({
               </p>
             )}
           </div>
+        )}
+
+        {canEditContent && (
+          <PrioridadesDoPlano
+            // Voltou do banco com outras notas ou outros itens: refaz o estado.
+            key={options
+              .flatMap((o) => o.items.map((i) => `${i.id}:${i.gutGravity}${i.gutUrgency}${i.gutTendency}${i.gutRepeated}`))
+              .join()}
+            opcoes={options.map((o) => ({ id: o.id, title: o.title, items: o.items }))}
+            opcaoAberta={prioridadesEm}
+            onTrocarOpcao={setPrioridadesEm}
+            localDoItem={(it) =>
+              rotuloDoLocal(
+                { toothCode: it.toothCode ?? null, faceCodes: it.faceCodes ?? [], regionCode: it.regionCode ?? null },
+                (c) => odonto?.dados.regioes.find((r) => r.code === c)?.name
+              )
+            }
+          />
         )}
 
         {/* Plano travado (enviado/aprovado): para alterar, cria-se uma NOVA
@@ -1537,11 +1517,14 @@ function OptionBudget({
   realStats,
   providerOptions,
   canEdit,
+  onDefinirPrioridades,
   summaryOnly,
   programBenefits,
   odonto,
   grupos = [],
 }: {
+  /** 0339: abre a lista de prioridades nesta opção. */
+  onDefinirPrioridades?: () => void;
   /** 0324: os grupos ativos — o botão "+ Grupo". */
   grupos?: GrupoDeProcedimentos[];
   optionId: string;
@@ -1930,6 +1913,21 @@ function OptionBudget({
         </div>
       )}
 
+      {canEdit && items.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={onDefinirPrioridades}>
+            Prioridades
+          </Button>
+          {items.some((i) => gutScore(i) == null) ? (
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+              Faltam {items.filter((i) => gutScore(i) == null).length} de {items.length}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Todas definidas</span>
+          )}
+        </div>
+      )}
+
       {items.length > 0 && (
         <div className="mt-1 space-y-2">
           {itemGroups.map(
@@ -2159,24 +2157,14 @@ function OptionBudget({
 
                             {/* Linha 2: prioridade GUT em destaque. */}
                             <div className="mt-1.5">
-                              {canEdit ? (
-                                <GutPicker
-                                  gravity={it.gutGravity ?? null}
-                                  urgency={it.gutUrgency ?? null}
-                                  tendency={it.gutTendency ?? null}
-                                  disabled={isPending}
-                                  onChange={(g, u, t) =>
-                                    run(
-                                      () =>
-                                        setItemGut(it.id, {
-                                          gravity: g,
-                                          urgency: u,
-                                          tendency: t,
-                                        }),
-                                      "Prioridade atualizada."
-                                    )
-                                  }
-                                />
+                              {canEdit && gutScore(it) == null ? (
+                                <button
+                                  type="button"
+                                  onClick={onDefinirPrioridades}
+                                  className="text-xs font-medium text-amber-700 underline dark:text-amber-300"
+                                >
+                                  Sem prioridade: definir
+                                </button>
                               ) : (
                                 <GutBadge item={it} />
                               )}
@@ -2417,15 +2405,13 @@ function OptionBudget({
                 </select>
               </>
             )}
-            <div className="flex w-full items-center">
-              <GutPicker
-                gravity={nG}
-                urgency={nU}
-                tendency={nT}
-                onChange={(g, u, t) => {
-                  setNG(g);
-                  setNU(u);
-                  setNT(t);
+            <div className="w-full">
+              <PrioridadeRapida
+                notas={{ gutGravity: nG, gutUrgency: nU, gutTendency: nT }}
+                onChange={(n) => {
+                  setNG(n.gutGravity);
+                  setNU(n.gutUrgency);
+                  setNT(n.gutTendency);
                 }}
               />
             </div>

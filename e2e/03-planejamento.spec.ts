@@ -12,6 +12,7 @@ import {
   levarAoPlanejamento,
   trocarPara,
   confirmarSequencia,
+  definirPrioridades,
 } from "./apoio";
 
 // A jornada inteira passa por quatro papéis e três fases. Ela cresceu quando
@@ -122,6 +123,7 @@ test("o Planner monta o plano, o Coordenador aprova e o caso segue ao Comercial"
 
   // ---- envio para aprovação -------------------------------------------------
   await page.reload();
+  await definirPrioridades(page);
   await confirmarSequencia(page);
   const enviarAprovacao = page.getByRole("button", {
     name: "Enviar para aprovação do Coordenador",

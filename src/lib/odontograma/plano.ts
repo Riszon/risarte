@@ -248,6 +248,8 @@ export function mensagemDoPlano(erro: string): string | null {
     ["PLAN_STATUS_BY_FUNCTION", "A situação do plano só muda pelos botões do fluxo (enviar, aprovar)."],
     ["PLAN_SUPERSEDED", "Este plano foi substituído por uma versão mais nova."],
     ["PREVIOUS_PLAN_INVALID", "A versão anterior não é deste cliente."],
+    ["GUT_REQUIRED", "Falta definir a prioridade de todos os procedimentos do plano. Abra \"Prioridades\" em cada opção."],
+    ["INVALID_PRIORITY", "Prioridade inválida: dê as três notas, de 1 a 5."],
     ["SEQUENCE_REQUIRED", "Falta confirmar os atendimentos e a sequência de todas as opções do plano. Abra \"Atendimentos e sequência\" e clique em Confirmar em cada opção."],
     ["SEQUENCE_INCOMPLETE", "Há sessão sem posição na sequência. Recarregue a página e confirme de novo."],
   ];

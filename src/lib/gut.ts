@@ -26,6 +26,13 @@ export const GUT_TIER_LABELS: Record<GutTier, string> = {
   low: "Baixa",
 };
 
+/** Um clique na faixa preenche as três notas (cada uma cai na própria faixa). */
+export const GUT_PRESETS: Record<GutTier, { gravity: number; urgency: number; tendency: number }> = {
+  high: { gravity: 4, urgency: 4, tendency: 4 },
+  medium: { gravity: 3, urgency: 3, tendency: 3 },
+  low: { gravity: 2, urgency: 2, tendency: 2 },
+};
+
 /**
  * Prioridade = G × U × T. Só existe quando as três notas estão definidas (1..5);
  * se qualquer uma faltar, devolve null (item "sem prioridade").
@@ -52,6 +59,54 @@ export function gutTier(score: number | null): GutTier | null {
 /** Atalho: faixa direto do item. */
 export function gutTierOf(item: GutInput): GutTier | null {
   return gutTier(gutScore(item));
+}
+
+/**
+ * As notas depois de um clique na faixa. Quem já está nela guarda as notas
+ * ajustadas: clicar em "Alta" num 3·4·4 confirma, não troca por 4·4·4.
+ */
+export function notasDaFaixa(
+  atual: GutInput,
+  faixa: GutTier
+): { gutGravity: number; gutUrgency: number; gutTendency: number } {
+  if (gutTierOf(atual) === faixa) {
+    return {
+      gutGravity: atual.gutGravity!,
+      gutUrgency: atual.gutUrgency!,
+      gutTendency: atual.gutTendency!,
+    };
+  }
+  const p = GUT_PRESETS[faixa];
+  return { gutGravity: p.gravity, gutUrgency: p.urgency, gutTendency: p.tendency };
+}
+
+/** Item do plano, para repetir a prioridade entre os procedimentos iguais. */
+export type ItemComPrioridade = GutInput & {
+  id: string;
+  procedureId: string | null;
+  gutRepeated?: boolean;
+};
+
+/**
+ * O que o clique faz no plano: o item recebe as notas e os iguais sem nota, ou com
+ * nota ainda repetida, acompanham. Nota dada pelo Planner nunca é sobrescrita. É a
+ * mesma regra de `set_plan_item_priority` (0339): mudou uma, muda a outra.
+ */
+export function aplicarPrioridade<T extends ItemComPrioridade>(
+  itens: readonly T[],
+  itemId: string,
+  notas: { gutGravity: number; gutUrgency: number; gutTendency: number }
+): T[] {
+  const origem = itens.find((i) => i.id === itemId);
+  if (!origem) return [...itens];
+  return itens.map((i) => {
+    if (i.id === itemId) return { ...i, ...notas, gutRepeated: false };
+    const igual = origem.procedureId != null && i.procedureId === origem.procedureId;
+    if (igual && (i.gutRepeated || gutScore(i) == null)) {
+      return { ...i, ...notas, gutRepeated: true };
+    }
+    return i;
+  });
 }
 
 /**

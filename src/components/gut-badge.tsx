@@ -7,7 +7,7 @@ import {
 } from "@/lib/gut";
 import { cn } from "@/lib/utils";
 
-const TIER_CLASS = {
+export const TIER_CLASS = {
   high: "border-red-200 bg-red-100 text-red-700",
   medium: "border-amber-200 bg-amber-100 text-amber-700",
   low: "border-emerald-200 bg-emerald-100 text-emerald-700",
