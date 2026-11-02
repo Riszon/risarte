@@ -23,6 +23,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP56** — pedido montado à mão põe qualquer função como profissional do horário
 - [ ] **AP11 (sobra)** — telas que mostram "0 esperando" se a contagem falhar (Início, Compras, relatos)
 - [ ] **AP38** — Empresarial: sugestão de "Quem assina" na aba Proposta não se atualiza
+- [ ] **AP90** — o cadastro aceita CPF com dígito verificador errado (cliente e Risartano; o do responsável nem a quantidade de dígitos confere): o erro só aparece ao enviar para assinatura
 
 **Segurança e banco (por etapas)**
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
@@ -2673,6 +2674,24 @@ para a conta da margem. Com sessões juntas e tempos ajustados, a sequência tem
 menos tempo que os itens (7h15 contra 9h15 no OC-00007), e a margem sai menor do
 que a real. **Não mudei** na 0.371.0: a mesma conta vale para a Precificação, e
 trocar a base dela é decisão do dono. Visto ao entregar a 0338; não é dela.
+
+### AP90. O cadastro aceita CPF inválido; a assinatura recusa depois (02/11/2026)
+
+**Confirmado, lendo o código:** o cadastro do cliente
+(`src/app/(app)/prontuarios/actions.ts`, ~linha 126) e o do Risartano
+(`src/app/(app)/risartanos/actions.ts`, ~linha 194) só conferem se há 11
+dígitos; o CPF do responsável (`prontuarios/actions.ts`, ~linha 207) só é
+formatado, sem conferir nem a quantidade. Nenhum confere o dígito verificador,
+e não há regra no banco. Um CPF como 123.456.789-00 é gravado sem aviso. O
+defeito só aparece no envio para assinatura: `src/lib/signatures/validate.ts`
+usa `isValidCpf` (`src/lib/masks.ts`) e o quadro "O que falta para enviar"
+diz "o CPF cadastrado não é válido". Na produção há 2 Risartanos ativos com CPF
+inválido (RIS-000009, RIS-000016).
+
+**A decidir (dono):** conferir o dígito no cadastro (recusar, ou só avisar).
+Cuidado: recusar no salvar barraria a EDIÇÃO dos cadastros antigos com CPF
+inválido (no treino, os clientes de teste com CPF inventado). **Suspeita, não
+medida:** quantos clientes da produção têm CPF inválido.
 
 ### AP89. A fonte do PDF das assinaturas é recusada pelo navegador (02/11/2026)
 
