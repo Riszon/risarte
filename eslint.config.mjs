@@ -21,6 +21,9 @@ const eslintConfig = defineConfig([
     ".next-test/**",
     "test-results/**",
     "playwright-report/**",
+    // O trabalhador do pdf.js (ZS4) é a cópia minificada do pacote, servida
+    // pelo próprio site — não é nosso código (`pdf-worker.test.ts`).
+    "public/pdfjs/**",
   ]),
 ]);
 

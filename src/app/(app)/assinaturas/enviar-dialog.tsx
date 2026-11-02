@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Copy, ExternalLink, FileSignature, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
+import { Check, FileSignature, Loader2, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { formatBrDate } from "@/lib/dates";
-import { canaisDoSignatario } from "@/lib/notify/channels";
 import { formatBRL } from "@/lib/pricing";
 import {
   carregarContextoDeEnvio,
@@ -28,6 +27,8 @@ import {
   type DialogOrigin,
 } from "./envio-actions";
 import type { PrepareResult, SendResult } from "@/lib/signatures/send";
+import { PdfViewer } from "@/components/pdf-viewer";
+import { LinksDeAssinatura } from "./links-de-assinatura";
 
 /**
  * A JANELA "ENVIAR PARA ASSINATURA" (plano ZS0 §10), em três passos:
@@ -395,7 +396,9 @@ export function EnviarParaAssinaturaDialog({
                 Pacote <span className="font-mono font-medium">{prepared.number}</span> · {prepared.pageCount} página{prepared.pageCount === 1 ? "" : "s"} · válido até{" "}
                 {formatBrDate(prepared.expiresAt)} · autenticação {prepared.authReason}.
               </p>
-              <iframe title="Pré-visualização do pacote" src={prepared.previewUrl} className="h-[52vh] w-full rounded-md border bg-muted" />
+              <div className="h-[52vh]">
+                <PdfViewer url={prepared.previewUrl} />
+              </div>
               <ul className="text-xs text-muted-foreground">
                 {prepared.signers.map((s, i) => (
                   <li key={i}>
@@ -407,55 +410,18 @@ export function EnviarParaAssinaturaDialog({
           )}
 
           {step === 4 && sent && (
-            <div className="space-y-3">
-              {sent.links.map((l, i) => {
-                const canais = canaisDoSignatario({ phone: l.phone, signUrl: l.signUrl, message: l.message });
-                const vezAgora = l.order_group === 1;
-                return (
-                  <div key={i} className="rounded-md border p-3 text-sm">
-                    <p className="font-medium">
-                      {l.order_group}º — {l.name} <span className="font-normal text-muted-foreground">({l.qualification})</span>
-                      {!vezAgora && (
-                        <Badge variant="outline" className="ml-2 text-[10px]">
-                          só depois do anterior
-                        </Badge>
-                      )}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {canais.map((c) =>
-                        c.unavailable ? (
-                          <Button key={c.id} size="sm" variant="outline" disabled title={c.unavailable}>
-                            {c.label}
-                          </Button>
-                        ) : c.id === "copy_link" ? (
-                          <Button
-                            key={c.id}
-                            size="sm"
-                            variant="outline"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(l.message);
-                                toast.success("Mensagem com o link copiada.");
-                              } catch {
-                                toast.error("Não foi possível copiar. Selecione o link e copie à mão.");
-                              }
-                            }}
-                          >
-                            <Copy className="mr-1 size-3.5" /> {c.label}
-                          </Button>
-                        ) : (
-                          <Button key={c.id} size="sm" variant={c.id === "whatsapp_link" ? "default" : "outline"} nativeButton={false} render={<a href={c.href} target="_blank" rel="noopener noreferrer" />}>
-                            {c.id === "whatsapp_link" ? <MessageCircle className="mr-1 size-3.5" /> : <ExternalLink className="mr-1 size-3.5" />}
-                            {c.label}
-                          </Button>
-                        )
-                      )}
-                    </div>
-                    <p className="mt-2 break-all font-mono text-[11px] text-muted-foreground">{l.signUrl}</p>
-                  </div>
-                );
-              })}
-            </div>
+            <LinksDeAssinatura
+              links={sent.links.map((l, i) => ({
+                key: String(i),
+                name: l.name,
+                qualification: l.qualification,
+                orderGroup: l.order_group,
+                notYet: l.order_group !== 1,
+                signUrl: l.signUrl,
+                phone: l.phone,
+                message: l.message,
+              }))}
+            />
           )}
         </div>
 

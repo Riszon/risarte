@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileSignature, Settings } from "lucide-react";
+import { FileSignature, FileStack, PenLine, Settings } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { canConfigureSignatures, canViewSignatures } from "@/lib/signatures/access";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
@@ -10,9 +10,8 @@ import { Button } from "@/components/ui/button";
 export const metadata: Metadata = { title: "Assinaturas digitais" };
 
 /**
- * ZS1: a porta do módulo existe para o menu não levar a 404. O painel de
- * verdade (cartões, pendências, consumo do plano) chega na ZS7; o envio, na
- * ZS2. Até lá a tela diz isso com todas as letras.
+ * A PORTA DO MÓDULO. Até o painel com indicadores (ZS7), ela aponta para a
+ * lista de pacotes (ZS4) e para "Minhas assinaturas pendentes" (ZS3).
  */
 export default async function AssinaturasPage() {
   const session = await getSessionContext();
@@ -34,19 +33,26 @@ export default async function AssinaturasPage() {
         )}
       </CabecalhoDeModulo>
 
-      <section className="rounded-xl border border-dashed bg-muted/30 p-6 text-sm">
-        <h2 className="text-base font-semibold">Módulo em construção</h2>
-        <p className="mt-2 text-muted-foreground">
-          A assinatura digital está sendo montada em etapas. Nesta primeira etapa entraram o cadastro
-          das permissões (Administração → Permissões, grupo <b>Assinaturas digitais</b>) e a tela de
-          configurações da rede. O botão <b>Enviar para assinatura</b> na ficha do paciente, o acompanhamento
-          dos documentos e o painel com os indicadores chegam nas próximas etapas, e as novidades avisam
-          quando cada uma entrar.
-        </p>
-        <p className="mt-2 text-muted-foreground">
-          Nenhum documento é enviado por aqui ainda.
-        </p>
-      </section>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link href="/assinaturas/pacotes" className="rounded-xl border p-5 transition-colors hover:bg-muted/50">
+          <p className="flex items-center gap-2 font-semibold">
+            <FileStack className="size-4 text-gold-tinta" /> Pacotes enviados
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tudo o que foi enviado para assinatura: situação, quem já assinou, o PDF, baixar, reenviar e cancelar.
+          </p>
+        </Link>
+        <Link href="/assinaturas/minhas" className="rounded-xl border p-5 transition-colors hover:bg-muted/50">
+          <p className="flex items-center gap-2 font-semibold">
+            <PenLine className="size-4 text-gold-tinta" /> Minhas assinaturas pendentes
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Os documentos que esperam a sua assinatura como testemunha ou representante.</p>
+        </Link>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        O envio de documentos ao paciente sai pela ficha dele (botão <b>Enviar para assinatura</b>). O painel com os indicadores
+        da rede e das unidades chega numa próxima etapa.
+      </p>
     </div>
   );
 }

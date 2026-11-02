@@ -62,6 +62,58 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.376.0",
+    data: "2026-11-02",
+    migracao: "0344",
+    titulo: "Assinatura digital (ZapSign) — quarta etapa: abrir, baixar, reenviar e cancelar cada pacote",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cada pacote enviado para assinatura tem uma página própria (Assinaturas → Pacotes enviados, ou Detalhe na aba Documentos da ficha): a etapa em que está (cliente → testemunhas → Risarte), quem assinou e quando, os documentos com a página de cada um e o que aconteceu com ele.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d.4",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Visualizar abre o PDF dentro do sistema, também no celular: páginas, zoom, o índice que pula para cada documento e quem já assinou ao lado. Enquanto falta alguém, mostra o PDF enviado; depois que todos assinam, o assinado.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d.4",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Baixar assinado (o PDF com as assinaturas) e Baixar cópia de um documento só — a cópia sai do PDF original com a faixa \"CÓPIA — não assinada digitalmente\" em todas as páginas. Cada visualização e cada download ficam registrados na Auditoria.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d.4",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Reenviar mostra quem ainda falta assinar, com o link e a mensagem padrão para mandar de novo pelo WhatsApp ou copiar; o sistema anota quando cada pessoa foi lembrada. Cancelar pede o motivo e cancela também na ZapSign (o link para de funcionar). Pacote assinado não pode ser cancelado.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.4",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Pacote recusado, vencido ou cancelado ganhou Reenviar como novo pacote: os mesmos documentos e as mesmas pessoas, com prazo novo, sem preencher tudo de novo.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.4",
+      },
+    ],
+  },
+  {
     versao: "0.375.1",
     data: "2026-11-02",
     migracao: null,

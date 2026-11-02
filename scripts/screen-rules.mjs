@@ -76,6 +76,8 @@ export const ROUTE_FIXTURES = {
   "/ppr/configuracao/[planId]": "pprPlan",
   // ZS2 (0342): o editor de um modelo de documento para assinatura.
   "/assinaturas/configuracoes/modelos/[id]": "signatureTemplate",
+  // ZS4 (0344): o detalhe de um pacote de assinatura.
+  "/assinaturas/pacotes/[id]": "signaturePackage",
   "/ppr/cartao/[beneficiaryId]": "pprBeneficiary",
   "/cancelamentos/[id]/termo": "cancellation",
   "/documentos/[id]/imprimir": "clinicalDocument",
@@ -249,6 +251,19 @@ export const PERMISSION_RULES = [
     route: "/assinaturas/minhas",
     expect: "ok",
     why: "a recepção pode ser testemunha; a fila dela abre sem o módulo (PLANO-ZS0 §4.2)",
+  },
+  // ZS4 (0344) — a lista de pacotes segue o módulo (recepção fora por padrão).
+  {
+    role: "receptionist",
+    route: "/assinaturas/pacotes",
+    expect: "bloqueado",
+    why: "a recepção não está em modulo.assinaturas por padrão (PLANO-ZS0 §8)",
+  },
+  {
+    role: "unit_manager",
+    route: "/assinaturas/pacotes",
+    expect: "ok",
+    why: "o gerente acompanha, reenvia e cancela os pacotes da unidade (PLANO-ZS0 §8)",
   },
   // ZS2 (0342) — os modelos de documento são parte da configuração.
   {

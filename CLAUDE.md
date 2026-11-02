@@ -391,6 +391,30 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 (ZS4) — PC Administrador (core 0.375.1 → 0.376.0, migração 0344)**
+
+- **Assinatura digital — fase ZS4, o detalhe do pacote** (bloco ZS4 no
+  ESTADO): `/assinaturas/pacotes` e `/assinaturas/pacotes/[id]`, o
+  visualizador `src/components/pdf-viewer.tsx`, baixar assinado, cópia com a
+  faixa, reenviar, cancelar, reenviar como novo; as mesmas ações na aba
+  Documentos da ficha.
+- ⚠️ **Quais botões aparecem = `acoesPermitidas`** (situação × permissão), uma
+  regra para o detalhe e a ficha. Botão novo de pacote entra lá, com teste.
+- ⚠️ **Cancelar = ZapSign `refuse` ANTES da porta `signature_cancel_package`**:
+  falhou lá, nada muda aqui. A régua `tela-segue-o-banco.test.ts` prende a
+  ordem.
+- ⚠️ **Cópia sai do `merged.pdf`, nunca do assinado** (`pdf/copy.ts`).
+- ⚠️ **O trabalhador do pdf.js é cópia em `public/pdfjs/`** (sem CDN):
+  atualizou o react-pdf → copiar de novo (`pdf-worker.test.ts` reprova).
+- ⚠️ **AP89:** a Inter em subconjunto do pdf-lib é recusada pelo navegador;
+  o visualizador usa `disableFontFace`. Decisão do dono pendente.
+- `gerarPdfDoPacote` saiu de `prepararPacote` (send.ts) para o reenvio usar
+  o mesmo caminho; `qualificacao` virou `qualificacao.ts`.
+- Ensaio 20/20 em transação desfeita; visto na tela pelo servidor local
+  (ASS-000026/27 de ensaio, cancelados). **Não visto:** download no
+  navegador, PDF assinado real, e-mail da ZapSign.
+- ⏳ **0344 só no treino.** O dono roda na produção. Próxima: **ZS5**.
+
 **02/11/2026 — PC Administrador (core 0.375.0 → 0.375.1, sem migração)**
 
 - **CPF de teste no treino (pedido do dono;** bloco 0.375.1 no ESTADO). A regra da

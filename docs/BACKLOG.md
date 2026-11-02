@@ -44,6 +44,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
 - [ ] **AP84** — a margem da negociação conta a hora de cadeira pela soma dos itens (9h15 no relato), não pela sequência montada (7h15)
 - [ ] **AP85** — plano de uma opção só nasce sem opção principal (2 de 2 na produção): as telas que procuram "a principal" não acham
+- [ ] **AP89** — o PDF das assinaturas embute a Inter em subconjunto que o navegador recusa ("Bad offSize"): o visualizador contorna; outros leitores podem mostrar quadradinhos
 - [ ] **AP88** — `npm run check:destrutivo` acusa 7 comandos sem a declaração `-- DESTRUTIVO`, nas migrações 0331 e 0332, já aplicadas
 - [ ] **AP86** — as outras 16 janelas altas têm o desenho que cortava a de agendamento (OC-00008): botão ou texto que não quebra linha pode alargá-las
 - [ ] **AP83** — 0331 e 0332 (Ortodontia) apagam dado sem o `-- DESTRUTIVO`: `npm run check:destrutivo` acusa 7 comandos
@@ -2672,6 +2673,22 @@ para a conta da margem. Com sessões juntas e tempos ajustados, a sequência tem
 menos tempo que os itens (7h15 contra 9h15 no OC-00007), e a margem sai menor do
 que a real. **Não mudei** na 0.371.0: a mesma conta vale para a Precificação, e
 trocar a base dela é decisão do dono. Visto ao entregar a 0338; não é dela.
+
+### AP89. A fonte do PDF das assinaturas é recusada pelo navegador (02/11/2026)
+
+**Confirmado (ZS4, na tela do treino):** o visualizador do pdf.js abriu o
+pacote ASS-000013 com **quadradinhos** no lugar das letras. O console disse
+`OTS parsing error: CFF : Bad offSize: 5` e `Failed to load font … Invalid
+font data` para as 6 fontes. A causa é o subconjunto da Inter (OTF/CFF) que o
+`pdf-lib` + `@pdf-lib/fontkit` grava (`embedFont(…, { subset: true })` em
+`src/lib/signatures/pdf/fonts.ts`, ZS2). O visualizador da ZS4 contorna com
+`disableFontFace: true` (o pdf.js desenha as letras ele mesmo) e mostra certo.
+**Suspeita, não conferida:** outros leitores (o visualizador da ZapSign, leitores
+de celular) podem mostrar o mesmo defeito — o leitor do Chrome não usa o mesmo
+filtro e abre normal. **A decidir:** embutir a fonte inteira (`subset: false`,
+~450 KB a mais por pacote) ou trocar para a Inter em TTF; e conferir no envio
+real do sandbox (ZS8) como a ZapSign mostra o PDF. Os pacotes já enviados não
+mudam.
 
 ### AP88. check:destrutivo acusa as migrações 0331 e 0332 (31/10/2026)
 

@@ -1,6 +1,134 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.375.1** · Última migração: **0343** (0318 a 0343 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.376.0** · Última migração: **0344** (0318 a 0343 aplicadas na produção e no treino; **0344 só no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## ✍️ ZS4 — ASSINATURA DIGITAL: O DETALHE DO PACOTE (02/11/2026, v0.376.0, migração 0344)
+>
+> Quarta fase do plano `docs/assinaturas/PLANO-ZS0.md` (§5.2 `copy.ts`, §10,
+> fase ZS4). Cada pacote enviado passa a ter página própria e as ações:
+> visualizar, baixar o assinado, baixar a cópia de um documento, reenviar,
+> cancelar e reenviar como pacote novo.
+>
+> **Banco (0344):** três portas `security definer`, fechadas para anon.
+> `signature_cancel_package(p_id, p_reason)` — `signature_can('acao.assinaturas.cancelar', clinic_id)`
+> + trava do RisLife; motivo obrigatório (`REASON_REQUIRED`); recusa assinado
+> (`PACKAGE_SIGNED`), cancelado (`ALREADY_CANCELLED`) e recusado/expirado
+> (`NOT_CANCELLABLE`); grava `cancel_reason`, `cancelled_by`, `cancelled_at` e o
+> evento `action:cancel`. `signature_mark_notified(p_package_id, p_signer_ids, p_channel)`
+> — `acao.assinaturas.enviar`; `last_notified_at` dos pendentes + `action:resend`
+> (canal `whatsapp_link|copy_link|sign_now|zapsign_email`).
+> `signature_log_action(p_package_id, p_action, p_payload)` — quem vê o pacote;
+> `action:view|download|download_copy`. Índices `resent_from_package_id` e
+> `sent_at desc`. Storage sem mudança: a leitura do bucket já era por
+> `signature_can_view_package` (0340) — é ela que deixa o servidor gerar a URL
+> assinada de 60 s com a sessão de quem pediu.
+>
+> **Regras e servidor (`src/lib/signatures/`):** `actions-permitidas.ts`
+> (situação × permissão → quais botões; uma regra para o detalhe e a ficha;
+> só o assinado mostra o Cancelar apagado com o porquê), `pacote.ts`
+> (visualizar → `merged.pdf` pendente / `signed.pdf` assinado; baixar assinado;
+> cópia; carregar e registrar reenvio; e-mail da ZapSign por
+> `resendNotifications`; **cancelar chama a ZapSign `refuse` ANTES da porta** —
+> falhou lá, nada muda aqui, erro em pt-BR), `reenvio.ts` (novo pacote pela
+> porta `signature_create_package` com os mesmos itens — texto ATUAL do modelo
+> e os valores RETRATADOS em `rendered_data`; anexo avulso recortado do
+> `merged.pdf` original —, os mesmos signatários e a mesma autenticação, prazo
+> novo, `resent_from_package_id`), `pdf/copy.ts` (páginas `first..last` do
+> `merged.pdf` + faixa "CÓPIA — não assinada digitalmente — pacote …" e marca
+> d'água em toda página; nunca do assinado), `eventos.ts` (rótulos da história),
+> `qualificacao.ts` (saiu de `send.ts`). `send.ts` ganhou `gerarPdfDoPacote`
+> (o miolo do `prepararPacote`, agora compartilhado com o reenvio — mesma
+> sequência, sem mudança de comportamento). Auditoria: `logAudit` (`view` /
+> `export` / `update`, só ids) + `signature_events`.
+>
+> **Telas:** `/assinaturas/pacotes` (situação, público, unidade só com
+> `painel_rede`, busca por número ou nome; 100 mais recentes),
+> `/assinaturas/pacotes/[id]` (etapa cliente → testemunhas → Risarte,
+> signatários com hora e último reenvio, documentos com a página, "O que
+> aconteceu", "Reenvio de / Reenviado como", `AtualizaAoVivo` enquanto espera),
+> `acoes-do-pacote.tsx` (os botões e as janelas; `compacto` na ficha, com o
+> link Detalhe), `links-de-assinatura.tsx` (os canais por pessoa, agora um
+> desenho só para o envio, o reenvio e o reenvio como novo). A porta
+> `/assinaturas` aponta para a lista e para "Minhas assinaturas pendentes" até
+> o painel da ZS7. **Visualizador** `src/components/pdf-viewer.tsx` (react-pdf
+> 10.5.0 carregado só no navegador; `pdf-viewer-core.tsx`): rolagem contínua,
+> zoom, ir para a página, índice para o `first_page` de cada documento,
+> signatários ao lado (embaixo no celular), sem botão de baixar, arquivo pedido
+> inteiro (`disableRange`, a URL vence em 60 s). O trabalhador do pdf.js mora em
+> `public/pdfjs/pdf.worker.min.mjs` — **sem CDN**; `pdf-worker.test.ts` exige que
+> seja o da versão instalada (atualizou o react-pdf → copiar de novo) e o
+> `eslint.config.mjs` ignora a pasta. A pré-visualização da janela de envio
+> (ZS2) também passou para o visualizador (o `<iframe>` não mostrava PDF em
+> todo navegador).
+>
+> ⚠️ **AP89 (achado ao ver na tela):** o subconjunto da Inter que o
+> pdf-lib/fontkit embute é recusado pelo filtro de fontes do navegador
+> ("Bad offSize") — o pdf.js mostrava quadradinhos. O visualizador contorna com
+> `disableFontFace: true`; a fonte do PDF continua como estava (decisão no
+> BACKLOG; conferir no sandbox como a ZapSign mostra).
+>
+> **Portão:** `check-migrations` OK; `migrar:teste` (0344 aplicada no treino);
+> ensaio em transação desfeita **20/20** (`ensaio-zs4.mjs` na pasta temporária:
+> assinado recusa cancelar, cancelado recusa, sem motivo recusa, recepção
+> recusada nas três portas, gerente da unidade cancela com evento, sem login
+> recusa, o gatilho tranca o assinado até como dono); `verificar` OK (rotas
+> novas montadas, tipos do projeto inteiro); `npm test` (ver commit); lint
+> zero; `check:telas` pelo servidor local de teste **PARCIAL**: o 1º perfil (Admin Master na Franqueadora) completou 157 telas, com 143 abertas e 4 bloqueadas; nenhuma falha em `/assinaturas*`. As 11 falhas são a AP31 (`/indica-mais-risos/equipe/apuracao/[id]` com 404) e 10 telas sem resposta em 60 s (ortodontia, perfil, planejamento, planos, ppr). Elas aconteceram porque o `next dev` chegou a **13 GB de memória** e travou no 2º perfil (126/157). Parei a varredura; os outros 7 perfis **não foram conferidos**. As regras novas (recepção fora de `/assinaturas/pacotes`, gerente dentro) estão presas em `screen-rules.mjs` e valem na próxima varredura. ⚠️ **Antes de rodar de novo, reiniciar o servidor local** Testes novos: `assinaturas-acoes`
+> (15), `assinaturas-copia` (7, a da faixa provada quebrando), `pdf-worker` (2),
+> `tela-segue-o-banco` (+7: cada ação usa a capacidade que a porta confere,
+> a ZapSign antes da porta no cancelar, as portas fechadas sem login).
+>
+> **Visto na tela** (servidor local 3100, banco de treino, ZapSign falsa, Admin
+> de teste): a lista e o filtro "Cancelado"; o detalhe do **ASS-000013**
+> (assinado: sem Reenviar, Cancelar apagado "Documento assinado não pode ser
+> cancelado", aviso de que o assinado ainda não chegou); o visualizador com o
+> índice (pulou para a pág. 4) e quem assinou ao lado, também em 375 px; o
+> **ASS-000023** recusando o reenvio como novo com a frase do anexo que não dá
+> para recuperar; o fluxo inteiro num pacote novo: enviado **ASS-000026** →
+> Reenviar ("Último reenvio" gravado) → Cancelar com motivo → Reenviar como
+> novo **ASS-000027** ("Reenvio de ASS-000026") → Cancelar. `audit_logs` com
+> view/update; `signature_events` com `action:view`, `action:resend`,
+> `action:cancel`, `resent_from`. Storage (script): logado baixa pela regra e
+> não grava; a recepção não consegue URL; a URL de download vem com o nome do
+> arquivo. **Não visto:** o download do arquivo no navegador (o navegador de
+> teste não baixa; provado o caminho até a URL), o PDF assinado de verdade (o
+> ASS-000013 é da ZapSign falsa, sem `signed.pdf`), o e-mail da ZapSign, a tela
+> com outro papel (coberto por teste).
+>
+> **Resíduo no treino (meu):** os pacotes de ensaio **ASS-000026** e
+> **ASS-000027**, os dois cancelados ("Ensaio ZS4 (pode ignorar)"), com os PDFs
+> no bucket; registros de visualização no ASS-000013. A sequência gastou
+> ASS-000024/25 em ensaios desfeitos.
+>
+> **Como testar (treino, depois da publicação):**
+> 1. Entrar como alguém com o módulo (ex.: Gerente da unidade) → menu
+>    **Assinaturas → Pacotes enviados**. Filtrar por "Aguardando assinatura".
+> 2. Abrir um pacote pelo número. Conferir a etapa, os signatários e "O que
+>    aconteceu".
+> 3. **Visualizar**: o PDF abre dentro do sistema; usar "Ir para o documento…"
+>    e o zoom; no celular, rolar.
+> 4. **Baixar cópia** → escolher um documento: o arquivo traz só aquelas páginas
+>    com a faixa vermelha "CÓPIA" no alto de cada uma.
+> 5. **Reenviar**: os pendentes aparecem com WhatsApp/copiar/assinar agora;
+>    depois de usar um, a linha diz "Último reenvio".
+> 6. **Cancelar** um pacote de teste: o motivo é obrigatório; ele fica
+>    "Cancelado" com o motivo e o link da ZapSign para de funcionar (no sandbox,
+>    o documento aparece recusado lá).
+> 7. No cancelado, **Reenviar como novo pacote**: confere o PDF e envia; o novo
+>    diz "Reenvio de ASS-…".
+> 8. Num pacote **Assinado**: Baixar assinado e Visualizar mostram o PDF da
+>    ZapSign; o Cancelar fica apagado.
+> 9. Entrar como Coordenador Clínico: vê e baixa, sem Reenviar nem Cancelar.
+>    Como Recepção: a lista não abre.
+>
+> **O que o dono precisa fazer:** (1) rodar a **0344** na produção (SQL Editor;
+> a conferência no fim deve dar `3 · 2 · false · true · 0` — 3 funções, 2
+> índices, cancelar sem login fechado, logado aberto, nenhuma policy fora de
+> SELECT) — **antes** de a equipe usar Cancelar/Reenviar na produção (o código
+> vai no push; sem a 0344 as ações respondem "Falta a migração 0344 neste
+> banco" e o Visualizar funciona sem registrar o evento); (2) decidir o AP89
+> (fonte do PDF) — sugestão: embutir a fonte inteira; (3) seguir testando no
+> treino pelo roteiro acima. **Próxima fase: ZS5** (Empresarial).
 
 > ## 🎯 0.375.1 — NO TREINO, UM CPF DE TESTE QUE A ASSINATURA ACEITA (02/11/2026)
 >

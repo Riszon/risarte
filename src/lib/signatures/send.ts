@@ -27,10 +27,13 @@ import { MAX_PACKAGE_BYTES, bytesToBase64, inspectAttachment, mergePdfs } from "
 import { renderTemplatePdf } from "./pdf/render-template";
 import { montarRubricas, type DocumentPlacement } from "./pdf/signature-block";
 import { candidatosDoRepresentante, montarSignatarios } from "./signers";
-import type { SignatureTemplate, SignerDraft, StaffSignerOption } from "./types";
+import type { SignatureTemplate, StaffSignerOption, TemplateBody } from "./types";
 import { telefoneParaZapsign, validarAnexo, validarSignatarios } from "./validate";
 import { montarValores } from "./valores";
 import { preencherModelo } from "./variables";
+import { qualificacaoDoTipo as qualificacao } from "./qualificacao";
+
+export { qualificacao };
 
 /**
  * O FLUXO DE ENVIO (plano ZS0 §5.3), em duas gravações:
@@ -205,14 +208,63 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   const number = String((created as { number: string }).number);
 
   // 2) O PDF: cada modelo, a capa, os anexos, tudo num arquivo.
+  const pdf = await gerarPdfDoPacote({
+    packageId,
+    number,
+    clinicId: input.clinicId,
+    clinicName: ctx.clinic.name,
+    clientName: ctx.client.full_name,
+    docs: templates.map((t) => ({ title: t.name, body: t.body!, provisional: t.is_provisional_text })),
+    valores: valoresSemNumero,
+    signers: montado.signers,
+    attachments: input.attachments.map((a) => ({ title: a.name.replace(/\.pdf$/i, ""), bytes: a.bytes })),
+    coverData: { client_name: ctx.client.full_name, clinic_name: ctx.clinic.name, negotiation_id: ctx.negotiationId },
+    actorUserId: input.session.userId,
+  });
+  if (!pdf.ok) return pdf;
+  return {
+    ok: true,
+    packageId,
+    number,
+    previewUrl: pdf.previewUrl,
+    pageCount: pdf.pageCount,
+    expiresAt: expiresAt.toISOString(),
+    authReason: auth.reason,
+    signers: montado.signers.map((s) => ({ name: s.name, qualification: s.qualification, order_group: s.order_group })),
+  };
+}
+
+export type PdfDoc = { title: string; body: TemplateBody; provisional: boolean };
+
+/**
+ * Monta o PDF do pacote (cada modelo preenchido, a capa com o índice, os
+ * anexos), grava `merged.pdf` no bucket, acerta as páginas dos itens e
+ * devolve a pré-visualização. Serve ao envio (`prepararPacote`) e ao
+ * "Reenviar como novo pacote" (ZS4, `reenvio.ts`). Falhou? O rascunho vira
+ * `cancelled` com `pdf_failed` (pacote nunca é apagado).
+ */
+export async function gerarPdfDoPacote(input: {
+  packageId: string;
+  number: string;
+  clinicId: string;
+  clinicName: string;
+  clientName: string;
+  docs: PdfDoc[];
+  valores: Record<string, string | null | undefined>;
+  signers: { sort_order: number; name: string; qualification: string }[];
+  attachments: { title: string; bytes: Uint8Array }[];
+  coverData: Record<string, unknown>;
+  actorUserId: string;
+}): Promise<{ ok: true; previewUrl: string; pageCount: number } | { ok: false; error: string }> {
+  const { packageId, number } = input;
   const admin = createAdminClient();
   try {
-    const valores = { ...valoresSemNumero, documento_numero: number };
-    const footer = `${number}  ·  ${ctx.clinic.name}`;
-    const boxSpecs = montado.signers.map((s) => ({ key: signerKey(s), name: s.name, qualification: s.qualification }));
+    const valores = { ...input.valores, documento_numero: number };
+    const footer = `${number}  ·  ${input.clinicName}`;
+    const boxSpecs = input.signers.map((s) => ({ key: `s${s.sort_order}`, name: s.name, qualification: s.qualification }));
     const docs = [];
-    for (const t of templates) {
-      docs.push(await renderTemplatePdf({ title: t.name, body: preencherModelo(t.body!, valores), provisional: t.is_provisional_text, footer, signers: boxSpecs }));
+    for (const t of input.docs) {
+      docs.push(await renderTemplatePdf({ title: t.title, body: preencherModelo(t.body, valores), provisional: t.provisional, footer, signers: boxSpecs }));
     }
     const attachmentsPages: number[] = [];
     for (const a of input.attachments) {
@@ -227,20 +279,20 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
       let cursor = coverPages + 1;
       ranges = [];
       docs.forEach((d, i) => {
-        ranges.push({ title: templates[i].name, firstPage: cursor, lastPage: cursor + d.pageCount - 1 });
+        ranges.push({ title: input.docs[i].title, firstPage: cursor, lastPage: cursor + d.pageCount - 1 });
         cursor += d.pageCount;
       });
       input.attachments.forEach((a, i) => {
-        ranges.push({ title: a.name.replace(/\.pdf$/i, ""), firstPage: cursor, lastPage: cursor + attachmentsPages[i] - 1 });
+        ranges.push({ title: a.title, firstPage: cursor, lastPage: cursor + attachmentsPages[i] - 1 });
         cursor += attachmentsPages[i];
       });
       cover = await renderCoverPdf({
         packageNumber: number,
-        clientName: ctx.client.full_name,
-        clinicName: ctx.clinic.name,
+        clientName: input.clientName,
+        clinicName: input.clinicName,
         dateLabel: formatBrDate(new Date()),
         items: ranges,
-        signers: montado.signers.map((s) => ({ name: s.name, qualification: s.qualification })),
+        signers: input.signers.map((s) => ({ name: s.name, qualification: s.qualification })),
       });
       const { PDFDocument } = await import("pdf-lib");
       const n = (await PDFDocument.load(cover)).getPageCount();
@@ -265,7 +317,7 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
       .update({
         merged_pdf_path: path,
         merged_page_count: merged.pageCount,
-        cover_data: { client_name: ctx.client.full_name, clinic_name: ctx.clinic.name, negotiation_id: ctx.negotiationId, placement },
+        cover_data: { ...input.coverData, placement },
       })
       .eq("id", packageId)
       .eq("status", "draft");
@@ -276,25 +328,16 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
       const r = merged.ranges[it.sort_order + 1];
       if (r) await admin.from("signature_package_items").update({ first_page: r.first_page, last_page: r.last_page }).eq("id", it.id);
     }
-    await admin.from("signature_events").insert({ package_id: packageId, event_type: "pdf_generated", actor_user_id: input.session.userId, payload: { pages: merged.pageCount, bytes: merged.bytes.byteLength } });
+    await admin.from("signature_events").insert({ package_id: packageId, event_type: "pdf_generated", actor_user_id: input.actorUserId, payload: { pages: merged.pageCount, bytes: merged.bytes.byteLength } });
 
     const signed = await admin.storage.from(BUCKET).createSignedUrl(path, 600);
     if (signed.error || !signed.data) throw new Error(`STORAGE_URL: ${signed.error?.message}`);
 
-    return {
-      ok: true,
-      packageId,
-      number,
-      previewUrl: signed.data.signedUrl,
-      pageCount: merged.pageCount,
-      expiresAt: expiresAt.toISOString(),
-      authReason: auth.reason,
-      signers: montado.signers.map((s) => ({ name: s.name, qualification: s.qualification, order_group: s.order_group })),
-    };
+    return { ok: true, previewUrl: signed.data.signedUrl, pageCount: merged.pageCount };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("signature prepare failed:", msg);
-    await admin.from("signature_events").insert({ package_id: packageId, event_type: "pdf_failed", actor_user_id: input.session.userId, error: msg.slice(0, 500) });
+    await admin.from("signature_events").insert({ package_id: packageId, event_type: "pdf_failed", actor_user_id: input.actorUserId, error: msg.slice(0, 500) });
     await admin.from("signature_packages").update({ status: "cancelled", cancel_reason: "pdf_failed", cancelled_at: new Date().toISOString() }).eq("id", packageId).eq("status", "draft");
     if (msg === "PACKAGE_TOO_LARGE") return { ok: false, error: "O pacote passou de 10 MB (limite da ZapSign). Tire algum anexo ou divida em dois envios." };
     return { ok: false, error: "Não foi possível montar o PDF do pacote. Tente de novo; se repetir, avise o suporte." };
@@ -464,28 +507,8 @@ export async function descartarRascunho(input: { session: SessionContext; packag
   return { ok: true };
 }
 
-function signerKey(s: SignerDraft): string {
-  return `s${s.sort_order}`;
-}
 
-function qualificacao(signerType: string): string {
-  switch (signerType) {
-    case "client":
-      return "Paciente";
-    case "legal_guardian":
-      return "Responsável legal";
-    case "witness":
-      return "Testemunha";
-    case "risarte_representative":
-      return "Representante da Risarte";
-    case "company_representative":
-      return "Representante da empresa";
-    default:
-      return "Signatário";
-  }
-}
-
-function mensagemDaPorta(msg: string | undefined): string {
+export function mensagemDaPorta(msg: string | undefined): string {
   const m = msg ?? "";
   if (m.includes("NOT_ALLOWED")) return "Você não tem permissão para enviar documentos nesta unidade.";
   if (m.includes("CLIENT_NOT_FOUND")) return "O paciente não pertence a esta unidade.";

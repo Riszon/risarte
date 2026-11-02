@@ -1,0 +1,3 @@
+# O trabalhador do pdf.js (ZS4) é cópia exata do pacote: sem conversão de
+# fim de linha, senão o hash muda no outro PC e pdf-worker.test.ts reprova.
+public/pdfjs/** -text

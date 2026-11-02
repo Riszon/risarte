@@ -111,6 +111,7 @@ const FIXTURE_SOURCES = {
   apuracaoMeta: () => admin.schema("indica").from("apuracoes").select("id").limit(1),
   pprPlan: () => admin.from("ppr_plans").select("id").limit(1),
   signatureTemplate: () => admin.from("signature_templates").select("id").limit(1),
+  signaturePackage: () => admin.from("signature_packages").select("id").not("sent_at", "is", null).limit(1),
   goal: () => admin.from("goals").select("id").limit(1),
   pprBeneficiary: () => admin.from("ppr_beneficiaries").select("id").limit(1),
   cancellation: () => admin.from("plan_cancellations").select("id").limit(1),

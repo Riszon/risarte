@@ -4483,9 +4483,10 @@ imagem e contratos de adesão do Empresarial. O módulo entra **em etapas**
 permissões e a tela de configurações da rede; a segunda (0.374.0) trouxe o
 **envio ao paciente** e os **modelos de documento**; a terceira (0.375.0), o
 **retorno da ZapSign** — a situação muda sozinha quando alguém assina — e a
-fila **Minhas assinaturas pendentes**. O detalhe do pacote, o painel e o
-Empresarial chegam nas etapas seguintes, e as Novidades avisam quando cada
-uma entrar.
+fila **Minhas assinaturas pendentes**; a quarta (0.376.0), o **detalhe de
+cada pacote** — visualizar o PDF, baixar, reenviar, cancelar e reenviar como
+pacote novo (13d.4). O painel com os indicadores e o Empresarial chegam nas
+etapas seguintes, e as Novidades avisam quando cada uma entrar.
 
 **Quem vê o menu "Assinaturas".** Quem tem a permissão **Assinaturas** no grupo
 **Assinaturas digitais** de Administração → Permissões (13b). Por padrão:
@@ -4572,7 +4573,9 @@ pessoas da 2ª e 3ª posição só conseguem assinar quando chegar a vez delas.
 
 **Acompanhar:** o bloco **Assinaturas digitais** na aba Documentos da ficha
 lista cada pacote com a situação (Enviado, Parcialmente assinado, Assinado,
-Recusado, Expirado, Cancelado), até quando vale e quem já assinou.
+Recusado, Expirado, Cancelado), até quando vale e quem já assinou — e, desde
+a 0.376.0, os botões de cada pacote (Visualizar, Baixar, Reenviar, Cancelar)
+e o link **Detalhe** (13d.4).
 
 **A situação muda sozinha** (0.375.0): a cada assinatura, recusa ou
 vencimento a ZapSign avisa o sistema, e o bloco passa a Parcialmente
@@ -4643,8 +4646,8 @@ caminho continua sendo o WhatsApp.
 
 **Recusa e vencimento:** se o cliente recusar na ZapSign, o pacote fica
 Recusado com o motivo e quem enviou é avisado; se o link vencer, fica Expirado
-e quem enviou é avisado. Reenviar como um pacote novo chega na etapa
-seguinte; por enquanto, envie de novo pela ficha.
+e quem enviou é avisado. Para tentar de novo, use **Reenviar como novo
+pacote** no detalhe (13d.4).
 
 > ⚠️ **Para o retorno chegar, o webhook tem de estar cadastrado na conta
 > ZapSign** (URL `/api/webhooks/zapsign` do ambiente e o segredo
@@ -4652,6 +4655,48 @@ seguinte; por enquanto, envie de novo pela ficha.
 > fica "Enviado" para sempre, mesmo depois de assinado. É tarefa do Admin
 > Master, uma vez por ambiente (treino com a conta sandbox; produção com a
 > conta real).
+
+### 13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)
+
+**Onde fica.** Menu **Assinaturas → Pacotes enviados** (a lista, com filtros
+de situação, público e — para quem vê a rede — unidade, e busca pelo número
+`ASS-…` ou pelo nome do cliente; Enter para buscar). Clique no número para
+abrir o pacote. Na ficha do paciente, aba **Documentos**, cada pacote tem os
+mesmos botões e o link **Detalhe**.
+
+**O que a página mostra:** a situação (com a cor de sempre), a **etapa**
+(Cliente → Testemunhas → Risarte, a de agora em azul e as concluídas em
+verde), quando foi enviado e por quem, até quando vale, quando o cliente
+assinou e quando concluiu; os **signatários** com a situação e a hora de cada
+assinatura (e quando cada um foi lembrado); os **documentos** com a página em
+que cada um começa; e **O que aconteceu** — envio, cada assinatura, recusa,
+vencimento, quem visualizou, baixou, reenviou ou cancelou.
+
+**Os botões — cada um só aparece para quem tem a permissão:**
+
+| Botão | Quando aparece | O que faz |
+|---|---|---|
+| **Visualizar** | Para quem tem *Ver pacotes e documentos* | Abre o PDF dentro do sistema (também no celular): páginas, zoom, **Ir para o documento…** (pula para o início de cada um) e, ao lado, quem já assinou. Enquanto falta alguém, é o PDF **enviado**; depois que todos assinam, o **assinado**. Não tem botão de baixar: quem só visualiza não baixa |
+| **Baixar assinado** | Pacote **Assinado**, para quem tem *Baixar o PDF assinado* | Baixa o PDF com as assinaturas e o registro da ZapSign. Logo depois da última assinatura, o sistema leva alguns instantes para buscar o PDF na ZapSign; até lá o botão não aparece e a página avisa |
+| **Baixar cópia** | Para quem tem *Baixar o PDF assinado* | Escolha um documento do pacote: sai **só aquele documento**, tirado do PDF original, com a faixa **"CÓPIA — não assinada digitalmente — pacote ASS-…"** em todas as páginas. Serve para consulta; a prova é o PDF assinado |
+| **Reenviar** | Pacote aguardando assinatura, para quem tem *Enviar para assinatura* | Mostra quem ainda falta assinar com **Abrir no WhatsApp**, **Copiar o link** e **Assinar agora** (a mensagem padrão das configurações). O sistema anota quando cada pessoa foi lembrada. Com os e-mails da ZapSign ligados nas configurações, aparece também **Reenviar pelo e-mail da ZapSign** (vai a todos os pendentes; a ZapSign pede alguns minutos entre um reenvio e outro) |
+| **Cancelar** | Pacote aguardando assinatura, para quem tem *Cancelar envio* | Pede o **motivo** (obrigatório) e cancela também **na ZapSign**: o link para de funcionar. Se a ZapSign não responder, **nada é cancelado** e a tela diz o motivo — tente de novo. O pacote não some: fica na lista como Cancelado, com o motivo e quem cancelou |
+| **Reenviar como novo pacote** | Pacote **Recusado, Expirado ou Cancelado**, para quem envia | Monta um pacote novo com os **mesmos documentos e as mesmas pessoas**, prazo novo contado de hoje, e mostra o PDF para conferir antes de **Enviar para assinatura**. Os dados preenchidos são os do envio original; o texto do modelo é o atual. Os dois pacotes apontam um para o outro ("Reenvio de…" / "Reenviado como…") |
+
+> ⚠️ **Pacote assinado não pode ser cancelado** — nem pelo sistema, nem pela
+> ZapSign. Para quem cancela, o botão aparece apagado com esse aviso. E
+> nenhum pacote é apagado, assinado ou não.
+
+**Auditoria.** Cada visualização, download, reenvio e cancelamento fica na
+Auditoria ("Pacote de assinatura digital") e em **O que aconteceu**, com quem
+fez e quando.
+
+**Quem pode, por padrão** (muda em Administração → Permissões, grupo
+Assinaturas digitais): visualizar e baixar — os mesmos do menu, inclusive o
+Coordenador Clínico; reenviar, cancelar e reenviar como novo — Consultor
+Comercial, Consultor Empresarial, Assistente Comercial, Financeiro da
+Franqueadora e Gerente de Unidade. O Coordenador vê e baixa, mas não reenvia
+nem cancela.
 
 ## 14. Checklists
 
