@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import { AvisoCpfInvalido } from "@/components/aviso-cpf-invalido";
 import { enderecoDaFicha, pedeEspecialidades } from "@/lib/risartanos";
 import { ROLE_LABELS, rolesForClinicType, type ClinicType } from "@/lib/roles";
 import {
@@ -25,6 +26,25 @@ import { createStaffMember, setStaffPhoto, updateStaffMember } from "./actions";
 
 const selectClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
+
+/** CPF do Risartano: inválido só avisa, não barra (AP90). */
+function CpfComAviso({ inicial }: { inicial: string }) {
+  const [cpf, setCpf] = useState(inicial);
+  return (
+    <>
+      <Input
+        id="cpf"
+        name="cpf"
+        required
+        inputMode="numeric"
+        placeholder="000.000.000-00"
+        value={cpf}
+        onChange={(e) => setCpf(formatCpf(e.target.value))}
+      />
+      <AvisoCpfInvalido cpf={cpf} />
+    </>
+  );
+}
 
 /**
  * O CADASTRO DO RISARTANO — o mesmo formulário para cadastrar e para editar.
@@ -301,15 +321,7 @@ export function FormularioDoRisartano({
             <Campo id="cpf" rotulo="CPF *">
               {/* A máscara aparece ENQUANTO se digita: com os pontos na tela,
                   falta ou sobra de número salta aos olhos antes de salvar. */}
-              <Input
-                id="cpf"
-                name="cpf"
-                required
-                inputMode="numeric"
-                placeholder="000.000.000-00"
-                defaultValue={staff?.cpf ?? ""}
-                onChange={(e) => (e.target.value = formatCpf(e.target.value))}
-              />
+              <CpfComAviso inicial={staff?.cpf ?? ""} />
             </Campo>
             <Campo id="birth_date" rotulo="Nascimento *">
               <Input

@@ -650,7 +650,10 @@ ficha tem **duas abas**:
 unidade**. Três coisas ajudam a errar menos:
 
 - **CPF, CEP e WhatsApp mostram a máscara enquanto você digita.** Os pontos e
-  traços aparecem sozinhos; dígito a mais ou a menos fica visível na hora.
+  traços aparecem sozinhos; dígito a mais ou a menos fica visível na hora. Se
+  o CPF não confere, aparece um aviso em âmbar embaixo do campo: dá para
+  salvar, mas confira com o documento (com CPF inválido a pessoa não pode ser
+  testemunha nem assinar pela Risarte na assinatura digital).
 - **A função é obrigatória** e é ela que vai preencher o acesso depois.
 - **As especialidades só aparecem para Dentista.** Para recepção, TSB ou
   gerente a lista nem é mostrada — e quem deixa de ser dentista perde as
@@ -2418,6 +2421,17 @@ trabalha. **Duração estimada:** 60 minutos.
 
 > **Cuidado:** o CPF é a trava contra paciente repetido. Digitar com pontuação
 > ou sem dá no mesmo — o sistema compara só os números (migração 0244).
+
+> **CPF inválido: o sistema avisa, mas deixa salvar** (desde a versão 0.377.0).
+> Se os 11 dígitos não conferem (erro de digitação, número inventado), aparece
+> embaixo do campo, em âmbar: *"Este CPF não é válido (os dígitos não
+> conferem)…"*. O mesmo aviso vale para o CPF do **responsável** e do
+> **Risartano**. Dá para salvar, mas **confira com o documento**: com CPF
+> inválido, o envio para assinatura digital fica bloqueado. Enquanto não for
+> corrigido, a ficha do cliente mostra no painel **Precisa de atenção** a linha
+> **"CPF inválido no cadastro"**, dizendo de quem é (do cliente ou de qual
+> responsável), com o botão **Corrigir**. O aviso some sozinho quando o CPF
+> certo é salvo.
 
 **Tarefa 2 — Agendar**
 
@@ -4558,8 +4572,10 @@ Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
    código pelo WhatsApp ou e-mail) quando o modelo exige ou o valor passa do
    corte da rede. O quadro **"O que falta para enviar"** lista o que impede:
    CPF ausente ou inválido, pessoa sem telefone com DDD nem e-mail, testemunha
-   a menos, representante sem cadastro na equipe. No treino, o cliente com CPF
-   inventado se resolve com **Gerar CPF de teste** no cadastro dele.
+   a menos, representante sem cadastro na equipe. O CPF inválido já aparece
+   antes, na ficha do cliente (**"CPF inválido no cadastro"**, no painel
+   Precisa de atenção). No treino, o cliente com CPF inventado se resolve com
+   **Gerar CPF de teste** no cadastro dele.
 3. **Conferir e enviar.** O PDF aparece inteiro na tela, com o número do pacote
    (`ASS-000001`), as páginas e até quando o link vale. **Enviar para
    assinatura** cria o documento na ZapSign. Fechar a janela antes disso

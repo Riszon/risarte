@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   HeartPulse,
+  IdCard,
   Route,
   Sparkles,
   UserPen,
@@ -18,6 +19,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { RisarteMark } from "@/components/risarte-logo";
+import { cpfsInvalidosDaFicha } from "@/lib/cpf-invalido";
 import { Odontograma } from "@/components/odontograma/odontograma";
 import { PainelDoDiagnostico } from "@/components/odontograma/painel-do-diagnostico";
 import { rodadasFinalizadas } from "@/lib/odontograma/rodadas-trancadas";
@@ -536,6 +538,12 @@ export default async function ClientDetailPage(
     city: client.city,
     state: client.state,
     guardianCount: (guardians ?? []).length,
+  });
+  // AP90: CPF gravado com dígito errado só avisa — e o aviso fica até corrigir.
+  const cpfsInvalidos = cpfsInvalidosDaFicha({
+    cpf: client.cpf,
+    noCpf: client.no_cpf,
+    responsaveis: (guardians ?? []).map((g) => ({ nome: g.full_name, cpf: g.cpf })),
   });
 
   // FIN1: quem vê e quem mexe no financeiro do cliente. A recepção dá baixa
@@ -2660,7 +2668,8 @@ export default async function ClientDetailPage(
     (anamnesisNudge ? 1 : 0) +
     (qcRedoPending ? 1 : 0) +
     (lateInstallmentCount > 0 ? 1 : 0) +
-    (registrationGaps.length > 0 ? 1 : 0);
+    (registrationGaps.length > 0 ? 1 : 0) +
+    (cpfsInvalidos.length > 0 ? 1 : 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
@@ -2970,6 +2979,18 @@ export default async function ClientDetailPage(
             acao={{ href: `/prontuarios/${client.id}?aba=cadastro&editar=1`, rotulo: "Completar" }}
           >
             Falta preencher: <strong>{registrationGaps.join(", ")}</strong>.
+          </AtencaoItem>
+        )}
+        {cpfsInvalidos.length > 0 && (
+          <AtencaoItem
+            icone={IdCard}
+            tom="ambar"
+            titulo="CPF inválido no cadastro"
+            acao={{ href: `/prontuarios/${client.id}?aba=cadastro&editar=1`, rotulo: "Corrigir" }}
+          >
+            O CPF <strong>{cpfsInvalidos.join(", ")}</strong> não confere.
+            Confira com o documento: enquanto estiver assim, não dá para enviar
+            documento para assinatura digital.
           </AtencaoItem>
         )}
       </AtencaoPainel>

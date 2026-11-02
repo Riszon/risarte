@@ -23,7 +23,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP56** — pedido montado à mão põe qualquer função como profissional do horário
 - [ ] **AP11 (sobra)** — telas que mostram "0 esperando" se a contagem falhar (Início, Compras, relatos)
 - [ ] **AP38** — Empresarial: sugestão de "Quem assina" na aba Proposta não se atualiza
-- [ ] **AP90** — o cadastro aceita CPF com dígito verificador errado (cliente e Risartano; o do responsável nem a quantidade de dígitos confere): o erro só aparece ao enviar para assinatura
+- [x] **AP90** — o cadastro aceita CPF com dígito verificador errado: o erro só aparecia ao enviar para assinatura — **0.377.0: avisa no cadastro e lembra na ficha (decisão do dono: só avisar, por enquanto)**
 
 **Segurança e banco (por etapas)**
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
@@ -2692,6 +2692,13 @@ inválido (RIS-000009, RIS-000016).
 Cuidado: recusar no salvar barraria a EDIÇÃO dos cadastros antigos com CPF
 inválido (no treino, os clientes de teste com CPF inventado). **Suspeita, não
 medida:** quantos clientes da produção têm CPF inválido.
+
+**✅ Resolvido em 0.377.0 (02/11/2026, decisão do dono: só avisar, por
+enquanto).** O CPF do cliente, do responsável e do Risartano mostra aviso em
+âmbar quando não confere, e o salvar continua aceitando; a ficha do cliente
+mostra "CPF inválido no cadastro" no painel Precisa de atenção até corrigir
+(`src/lib/cpf-invalido.ts`). Segue em aberto, se um dia for pedido: recusar no
+salvar, e a ficha do Risartano lembrar como a do cliente.
 
 ### AP89. A fonte do PDF das assinaturas é recusada pelo navegador (02/11/2026)
 

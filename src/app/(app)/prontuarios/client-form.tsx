@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
 import { BotaoCpfDeTeste } from "@/components/cpf-de-teste";
+import { AvisoCpfInvalido } from "@/components/aviso-cpf-invalido";
 import { GENDERS, GENDER_LABELS } from "@/lib/gender";
 import {
   createClientRecord,
@@ -78,6 +79,9 @@ export function ClientForm({
   // I4: ao editar, mantém a marcação "cliente sem CPF" que já estava salva
   // (senão o cadastro voltaria a contar como incompleto).
   const [noCpf, setNoCpf] = useState(client?.no_cpf ?? false);
+  // AP90: o campo continua solto (o autopreenchimento escreve nele); isto só
+  // acompanha o que foi digitado, para o aviso de CPF inválido.
+  const [cpfDigitado, setCpfDigitado] = useState(client?.cpf ?? "");
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
   const [consent, setConsent] = useState(false);
   const [fullName, setFullName] = useState(client?.full_name ?? "");
@@ -165,14 +169,6 @@ export function ClientForm({
         setDuplicate(null);
       }
     });
-  }
-
-  function applyMask(
-    formatter: (v: string) => string
-  ): React.ChangeEventHandler<HTMLInputElement> {
-    return (e) => {
-      e.target.value = formatter(e.target.value);
-    };
   }
 
   function updateGuardian(index: number, patch: Partial<GuardianInput>) {
@@ -423,15 +419,20 @@ export function ClientForm({
               required={!noCpf}
               disabled={noCpf}
               defaultValue={client?.cpf ?? ""}
-              onChange={applyMask(formatCpf)}
+              onChange={(e) => {
+                e.target.value = formatCpf(e.target.value);
+                setCpfDigitado(e.target.value);
+              }}
               onBlur={(e) => handleClientCpfBlur(e.target.value)}
               placeholder="000.000.000-00"
             />
+            {!noCpf && <AvisoCpfInvalido cpf={cpfDigitado} />}
             {!noCpf && (
               <BotaoCpfDeTeste
                 onGerar={(cpf) => {
                   const campo = document.getElementById("cpf") as HTMLInputElement | null;
                   if (campo) campo.value = cpf;
+                  setCpfDigitado(cpf);
                   handleClientCpfBlur(cpf);
                 }}
               />
@@ -547,6 +548,7 @@ export function ClientForm({
                       onBlur={(e) => handleGuardianCpfBlur(index, e.target.value)}
                       placeholder="000.000.000-00"
                     />
+                    <AvisoCpfInvalido cpf={guardian.cpf} />
                     <BotaoCpfDeTeste
                       onGerar={(cpf) => updateGuardian(index, { cpf })}
                     />

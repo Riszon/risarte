@@ -391,6 +391,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 (AP90) — PC Administrador (core 0.376.1 → 0.377.0, sem migração)**
+
+- **CPF inválido SÓ AVISA** (decisão do dono, "por enquanto"): aviso âmbar no
+  CPF do cliente, do responsável e do Risartano; lembrete "CPF inválido no
+  cadastro" no painel Precisa de atenção da ficha do cliente.
+- ⚠️ **As ações de salvar NÃO conferem o dígito** — de propósito; a régua
+  `cpf-invalido.test.ts` reprova `isValidCpf` em `prontuarios/actions.ts` e
+  `risartanos/actions.ts`. Se o dono pedir para recusar, mudar a régua junto.
+- Visto na tela no treino (Admin de teste; nada salvo). **Não visto:** o aviso
+  no Risartano e no responsável (só por teste).
+
 **02/11/2026 (AP89) — PC Administrador (core 0.376.0 → 0.376.1, sem migração)**
 
 - **A fonte do PDF da assinatura vai INTEIRA** (decisão do dono). ⚠️ E com a

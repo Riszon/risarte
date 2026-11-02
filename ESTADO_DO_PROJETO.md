@@ -1,6 +1,17 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.376.1** · Última migração: **0344** (0318 a 0344 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.377.0** · Última migração: **0344** (0318 a 0344 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🪪 0.377.0 — CPF INVÁLIDO: AVISA NO CADASTRO, LEMBRA NA FICHA (02/11/2026, sem migração)
+>
+> Decisão do dono (AP90): por enquanto **só avisar**. O CPF do cliente, do
+> responsável e do Risartano mostra um aviso em âmbar quando os 11 dígitos não
+> conferem; o salvar continua aceitando (recusar barraria editar os cadastros
+> antigos). A ficha do cliente ganha a linha **"CPF inválido no cadastro"** no
+> painel Precisa de atenção, dizendo de quem é, até alguém corrigir. A regra é
+> uma só: `src/lib/cpf-invalido.ts` (sobre `isValidCpf`, a mesma da
+> assinatura). Teste `cpf-invalido.test.ts`, provado quebrando. Visto na tela
+> no treino (EV-272). **Não visto:** o aviso no Risartano e no responsável.
 
 > ## 🔤 AP89 — AS LETRAS DO PDF DA ASSINATURA (02/11/2026, v0.376.1, sem migração)
 >

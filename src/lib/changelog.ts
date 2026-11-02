@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.377.0",
+    data: "2026-11-02",
+    migracao: null,
+    titulo: "CPF inválido: o cadastro avisa na hora e a ficha lembra até corrigir",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao digitar um CPF cujos dígitos não conferem (no cliente, no responsável ou no Risartano), aparece um aviso em âmbar embaixo do campo. Dá para salvar mesmo assim, mas vale conferir com o documento: com CPF inválido, o envio para assinatura digital fica bloqueado.",
+        papeis: "todos",
+        manual: "6.1",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha do cliente com CPF inválido (dele ou de um responsável) mostra a linha \"CPF inválido no cadastro\" no painel Precisa de atenção, com o botão Corrigir. O aviso sai sozinho quando o CPF certo é salvo.",
+        papeis: "todos",
+        manual: "6.1",
+      },
+    ],
+  },
+  {
     versao: "0.376.1",
     data: "2026-11-02",
     migracao: null,
