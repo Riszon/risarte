@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import { BotaoCpfDeTeste } from "@/components/cpf-de-teste";
 import { GENDERS, GENDER_LABELS } from "@/lib/gender";
 import {
   createClientRecord,
@@ -426,6 +427,15 @@ export function ClientForm({
               onBlur={(e) => handleClientCpfBlur(e.target.value)}
               placeholder="000.000.000-00"
             />
+            {!noCpf && (
+              <BotaoCpfDeTeste
+                onGerar={(cpf) => {
+                  const campo = document.getElementById("cpf") as HTMLInputElement | null;
+                  if (campo) campo.value = cpf;
+                  handleClientCpfBlur(cpf);
+                }}
+              />
+            )}
             {!isEdit && (
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
@@ -536,6 +546,9 @@ export function ClientForm({
                       }
                       onBlur={(e) => handleGuardianCpfBlur(index, e.target.value)}
                       placeholder="000.000.000-00"
+                    />
+                    <BotaoCpfDeTeste
+                      onGerar={(cpf) => updateGuardian(index, { cpf })}
                     />
                   </div>
                   <div className="space-y-1">

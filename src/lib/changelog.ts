@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.375.1",
+    data: "2026-11-02",
+    migracao: null,
+    titulo: "No treino, um CPF de teste que a assinatura aceita",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No ambiente de treino, o cadastro do cliente e o do responsável ganharam o link Gerar CPF de teste, que preenche um CPF válido para testar a assinatura digital com pacientes fictícios. No sistema real nada muda: o CPF continua sendo conferido.",
+        papeis: "todos",
+        manual: "2.6",
+      },
+    ],
+  },
+  {
     versao: "0.375.0",
     data: "2026-10-31",
     migracao: "0343",

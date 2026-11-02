@@ -860,6 +860,11 @@ aqui é para testar"** (dá para recolher com um clique). O recado dele:
   ou antes de fazer algo novo no real, faça primeiro no treino.
 - ⚠️ **Nunca use dados de pacientes reais no treino** (nome, CPF, telefone,
   fotos, exames): são dados de saúde protegidos pela LGPD. Invente tudo.
+- **CPF inventado não passa na assinatura digital**, que confere os dígitos
+  como no sistema real. No cadastro do cliente e no do responsável, o treino tem
+  o link **Gerar CPF de teste**, que preenche um número válido. Em cliente já
+  cadastrado, abra **Editar**, gere o CPF e salve. O link não existe no sistema
+  real.
 
 #### No treino, a equipe é cópia do sistema real
 
@@ -4552,7 +4557,8 @@ Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
    código pelo WhatsApp ou e-mail) quando o modelo exige ou o valor passa do
    corte da rede. O quadro **"O que falta para enviar"** lista o que impede:
    CPF ausente ou inválido, pessoa sem telefone com DDD nem e-mail, testemunha
-   a menos, representante sem cadastro na equipe.
+   a menos, representante sem cadastro na equipe. No treino, o cliente com CPF
+   inventado se resolve com **Gerar CPF de teste** no cadastro dele.
 3. **Conferir e enviar.** O PDF aparece inteiro na tela, com o número do pacote
    (`ASS-000001`), as páginas e até quando o link vale. **Enviar para
    assinatura** cria o documento na ZapSign. Fechar a janela antes disso
