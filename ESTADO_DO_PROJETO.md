@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.378.0** · Última migração: **0345** (0318 a 0344 aplicadas na produção e no treino; **0345 só no treino**) · Empresarial **0.93.0** / migração **1038** (**1038 só no treino**)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.378.0** · Última migração: **0345** (0318 a 0345 aplicadas na produção e no treino) · Empresarial **0.93.0** / migração **1038** (aplicada na produção e no treino)_
 
 > ## ✍️ ZS5 — ASSINATURA DIGITAL NO EMPRESARIAL (02/11/2026, v0.378.0 / Empresarial 0.93.0, migrações 0345 e 1038)
 >
@@ -78,9 +78,13 @@ _Atualizado em: 02/11/2026 · Versão do sistema: **0.378.0** · Última migraç
 > 6. Abra a empresa → aba **Contratos** e aba **Documentos**: o pacote aparece.
 > 7. Entre como Consultor RisLife de outra empresa: o pacote não aparece.
 >
-> **O que o dono precisa fazer:** rodar a **0345** e a **1038** na produção,
-> nessa ordem (conferências: `1 · true · true · false` e `1 · 1 · false · 0`);
-> conferir se algum pacote saiu na produção entre a 0.376.1 e a 0.378.0 (o
+> ✅ **0345 e 1038 APLICADAS nos dois bancos** (o dono rodou na produção em
+> 02/11/2026, nessa ordem; conferências `1 · true · true · false` e
+> `1 · 1 · false · 0`; conferido de fora: sem login `signature_create_package`
+> recusa com "permission denied" (uma função inexistente, de controle,
+> responde "não encontrada")).
+>
+> **O que o dono ainda precisa fazer:** conferir se algum pacote saiu na produção entre a 0.376.1 e a 0.378.0 (o
 > defeito do hífen, AP89). **Próxima fase: ZS6** (rotinas e alertas).
 
 > ## 🪪 0.377.0 — CPF INVÁLIDO: AVISA NO CADASTRO, LEMBRA NA FICHA (02/11/2026, sem migração)

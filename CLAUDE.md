@@ -411,7 +411,11 @@ Syncthing se comportarem de forma estranha.**
 - Ensaio 24/24 no treino; visto na tela (ASS-000035 de ensaio, cancelado).
   **Não visto:** pacote com 2 testemunhas + titular (AP91), selo pelo webhook
   na tela, o RisLife na tela.
-- ⏳ **0345 e 1038 só no treino.** O dono roda na produção. Próxima: **ZS6**.
+- ✅ **0345 e 1038 APLICADAS nos dois bancos** (o dono rodou na produção em
+  02/11/2026; conferências 1·true·true·false e 1·1·false·0; de fora: sem login
+  a porta recusa com "permission denied"; a de controle, "não encontrada").
+  Pendente com o dono: conferir pacotes na produção entre a 0.376.1 e a
+  0.378.0 (AP89). Próxima: **ZS6**.
 
 **02/11/2026 (AP90) — PC Administrador (core 0.376.1 → 0.377.0, sem migração)**
 
