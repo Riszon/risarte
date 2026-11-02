@@ -62,6 +62,23 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.376.1",
+    data: "2026-11-02",
+    migracao: null,
+    titulo: "Assinatura digital: as letras do PDF aparecem certas em qualquer leitor",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O PDF enviado para assinatura podia aparecer com quadradinhos no lugar das letras em alguns leitores de PDF (possivelmente na própria tela da ZapSign). Os pacotes novos levam a fonte completa e abrem certos; o arquivo fica um pouco maior (cerca de 2 MB num pacote com capa e cinco documentos). Os pacotes já enviados não mudam.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+      },
+    ],
+  },
+  {
     versao: "0.376.0",
     data: "2026-11-02",
     migracao: "0344",

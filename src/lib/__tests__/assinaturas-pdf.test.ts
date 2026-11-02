@@ -39,6 +39,31 @@ describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
     expect(lines.every((l) => fonts.regular.widthOfTextAtSize(l, 10.5) <= 200)).toBe(true);
   });
 
+  it("a fonte vai INTEIRA no PDF, nunca em subconjunto (AP89)", async () => {
+    // O subconjunto da Inter que o fontkit grava é recusado pelo navegador
+    // ("Bad offSize") e o leitor mostra quadradinhos. Duas palavras com a
+    // fonte inteira passam de 200 KB; em subconjunto, ficam perto de 10 KB.
+    const doc = await PDFDocument.create();
+    const fonts = await embedFonts(doc);
+    const page = doc.addPage();
+    page.drawText("Ação", { x: 40, y: 700, size: 12, font: fonts.regular });
+    page.drawText("Cláusula", { x: 40, y: 680, size: 12, font: fonts.bold });
+    const bytes = await doc.save();
+    expect(bytes.length).toBeGreaterThan(200_000);
+  });
+
+  it("o r não vira a variante de largura errada (ligadura desligada, AP89)", async () => {
+    // Com a ligadura ligada, "rm" usa o "r.1", mais estreito, e o PDF da fonte
+    // inteira abria com um buraco depois do r. Desligada, "rm" = "r" + "m".
+    const doc = await PDFDocument.create();
+    const { regular, bold } = await embedFonts(doc);
+    for (const f of [regular, bold]) {
+      const junto = f.widthOfTextAtSize("rm", 10);
+      const separado = f.widthOfTextAtSize("r", 10) + f.widthOfTextAtSize("m", 10);
+      expect(junto).toBeCloseTo(separado, 5);
+    }
+  });
+
   it("o modelo vira várias páginas, com uma caixa por signatário no fim", async () => {
     const r = await renderTemplatePdf({ title: "Contrato de teste", body: corpo, provisional: true, footer: "ASS-000001 · Risarte", signers });
     expect(r.pageCount).toBeGreaterThanOrEqual(3);

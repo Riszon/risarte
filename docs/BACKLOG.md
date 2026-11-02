@@ -44,7 +44,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
 - [ ] **AP84** — a margem da negociação conta a hora de cadeira pela soma dos itens (9h15 no relato), não pela sequência montada (7h15)
 - [ ] **AP85** — plano de uma opção só nasce sem opção principal (2 de 2 na produção): as telas que procuram "a principal" não acham
-- [ ] **AP89** — o PDF das assinaturas embute a Inter em subconjunto que o navegador recusa ("Bad offSize"): o visualizador contorna; outros leitores podem mostrar quadradinhos
+- [x] **AP89** — o PDF das assinaturas embute a Inter em subconjunto que o navegador recusa ("Bad offSize"): o visualizador contorna; outros leitores podem mostrar quadradinhos — **corrigido em 0.376.1 (fonte inteira, ligadura desligada)**
 - [ ] **AP88** — `npm run check:destrutivo` acusa 7 comandos sem a declaração `-- DESTRUTIVO`, nas migrações 0331 e 0332, já aplicadas
 - [ ] **AP86** — as outras 16 janelas altas têm o desenho que cortava a de agendamento (OC-00008): botão ou texto que não quebra linha pode alargá-las
 - [ ] **AP83** — 0331 e 0332 (Ortodontia) apagam dado sem o `-- DESTRUTIVO`: `npm run check:destrutivo` acusa 7 comandos
@@ -2689,6 +2689,20 @@ filtro e abre normal. **A decidir:** embutir a fonte inteira (`subset: false`,
 ~450 KB a mais por pacote) ou trocar para a Inter em TTF; e conferir no envio
 real do sandbox (ZS8) como a ZapSign mostra o PDF. Os pacotes já enviados não
 mudam.
+
+**✅ Corrigido em 0.376.1 (02/11/2026, decisão do dono: fonte inteira).**
+`embedFonts` grava a Inter com `subset: false`. Achado ao conferir na tela:
+com a fonte inteira, a ligadura `liga` da Inter troca o "r" antes de m, i, t…
+pela variante `r.1`, cuja largura sai errada no PDF ("platafor ma", "Risar
+te"); a ligadura ficou desligada (`features: { liga: false }`). Conferido no
+pdf.js do navegador, com as fontes do arquivo ligadas: o subconjunto antigo
+reproduz o "Bad offSize" e os quadradinhos; o pacote novo (capa + 5 documentos,
+26 páginas, ~1,9 MB) carrega as 6 fontes sem erro e com o espaçamento certo.
+Duas réguas em `assinaturas-pdf.test.ts` (provadas quebrando). O visualizador
+mantém `disableFontFace` por causa dos pacotes antigos. **Não conferido:** o
+PDF na tela da ZapSign (fica para o envio real no sandbox, ZS8). **Custo:**
+cada parte do pacote leva a sua cópia da fonte (~280 KB por parte); juntar as
+cópias exigiria montar o pacote num documento só.
 
 ### AP88. check:destrutivo acusa as migrações 0331 e 0332 (31/10/2026)
 

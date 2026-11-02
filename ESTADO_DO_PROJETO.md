@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.376.0** · Última migração: **0344** (0318 a 0344 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.376.1** · Última migração: **0344** (0318 a 0344 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🔤 AP89 — AS LETRAS DO PDF DA ASSINATURA (02/11/2026, v0.376.1, sem migração)
+>
+> Decisão do dono: embutir a fonte inteira. `src/lib/signatures/pdf/fonts.ts`
+> grava a Inter com `subset: false` e `features: { liga: false }` (com a fonte
+> inteira, a ligadura trocava o "r" por uma variante de largura errada e abria
+> um buraco no texto — achado na tela). Conferido no pdf.js do navegador com as
+> fontes do arquivo: o subconjunto antigo dá "Bad offSize" e quadradinhos; o
+> pacote novo (capa + 5 documentos, 26 páginas, ~1,9 MB) abre limpo. Duas
+> réguas novas em `assinaturas-pdf.test.ts`, provadas quebrando. Pacotes já
+> enviados não mudam. **Não conferido:** como a ZapSign mostra o PDF (ZS8).
+> Detalhe no BACKLOG (AP89).
 
 > ## ✍️ ZS4 — ASSINATURA DIGITAL: O DETALHE DO PACOTE (02/11/2026, v0.376.0, migração 0344)
 >

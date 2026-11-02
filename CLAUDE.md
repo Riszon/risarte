@@ -391,6 +391,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 (AP89) — PC Administrador (core 0.376.0 → 0.376.1, sem migração)**
+
+- **A fonte do PDF da assinatura vai INTEIRA** (decisão do dono). ⚠️ E com a
+  ligadura `liga` DESLIGADA: com a fonte inteira, a Inter troca o "r" pela
+  variante `r.1` e a largura sai errada ("platafor ma"). As duas coisas estão
+  em `embedFonts` e presas por teste. Visto no pdf.js do navegador com as
+  fontes do arquivo; **não visto** na tela da ZapSign.
+
 **02/11/2026 (ZS4) — PC Administrador (core 0.375.1 → 0.376.0, migração 0344)**
 
 - **Assinatura digital — fase ZS4, o detalhe do pacote** (bloco ZS4 no

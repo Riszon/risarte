@@ -25,10 +25,25 @@ function asset(name: string): Uint8Array {
 
 export type Fonts = { regular: PDFFont; bold: PDFFont };
 
+/**
+ * A FONTE VAI INTEIRA, NUNCA EM SUBCONJUNTO (AP89, 02/11/2026). O subconjunto
+ * que o fontkit grava a partir da Inter (OTF/CFF) sai com a tabela CFF
+ * estragada: o navegador recusa ("OTS parsing error: CFF : Bad offSize") e o
+ * pdf.js com as fontes do arquivo mostra QUADRADINHOS no lugar das letras.
+ * Inteira, ela abre limpa. Custa cerca de 280 KB por parte do pacote (a capa e
+ * cada documento levam a sua cópia). A régua assinaturas-pdf.test.ts reprova
+ * a volta do subconjunto.
+ *
+ * E A LIGADURA "liga" FICA DESLIGADA. Com a fonte inteira, a Inter troca o "r"
+ * antes de m, i, t… pela variante "r.1", e a largura dela sai errada no PDF:
+ * aparecia um buraco ("platafor ma", "Risar te"). Visto na tela; com a
+ * ligadura desligada o texto fica certo nos dois caminhos do pdf.js.
+ */
+const FEATURES = { liga: false };
 export async function embedFonts(doc: PDFDocument): Promise<Fonts> {
   doc.registerFontkit(fontkit);
-  const regular = await doc.embedFont(asset("Inter-Regular.otf"), { subset: true });
-  const bold = await doc.embedFont(asset("Inter-Bold.otf"), { subset: true });
+  const regular = await doc.embedFont(asset("Inter-Regular.otf"), { subset: false, features: FEATURES });
+  const bold = await doc.embedFont(asset("Inter-Bold.otf"), { subset: false, features: FEATURES });
   return { regular, bold };
 }
 
