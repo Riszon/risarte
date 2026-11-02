@@ -1,6 +1,18 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.375.0** · Última migração: **0343** (0318 a 0343 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.375.1** · Última migração: **0343** (0318 a 0343 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## 🎯 0.375.1 — NO TREINO, UM CPF DE TESTE QUE A ASSINATURA ACEITA (02/11/2026)
+>
+> Pedido do dono, que não conseguia testar a assinatura no treino: 59 dos 77
+> clientes de lá têm CPF inventado (o cadastro não confere dígitos), e o envio
+> confere, como na produção (`validate.ts` e `validate_cpf` da ZapSign). **Decisão
+> do dono:** gerar CPF válido no treino, sem afrouxar a regra. Só no treino, o
+> cadastro do cliente e o do responsável ganham "Gerar CPF de teste"
+> (`src/lib/cpf-de-teste.ts`, `components/cpf-de-teste.tsx`). O Risartano fica de
+> fora: no treino a equipe é cópia da produção. Na produção, 2 Risartanos ativos
+> têm CPF inválido (RIS-000009 e RIS-000016) e não servem de testemunha até
+> alguém corrigir o cadastro deles lá.
 
 > ## ✍️ ZS3 — ASSINATURA DIGITAL: O RETORNO DA ZAPSIGN (31/10/2026, v0.375.0, migração 0343)
 >

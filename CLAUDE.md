@@ -391,6 +391,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 — PC Administrador (core 0.375.0 → 0.375.1, sem migração)**
+
+- **CPF de teste no treino (pedido do dono;** bloco 0.375.1 no ESTADO). A regra da
+  assinatura não mudou em nenhum ambiente; o treino ganhou só o gerador.
+- ⚠️ **Risartano no treino é cópia da produção** (`MIRROR_READ_ONLY`): CPF de
+  testemunha se corrige na produção. Lá há 2 inválidos (RIS-000009, RIS-000016).
+- A sessão da assinatura trabalhava ao mesmo tempo: commitei só os meus arquivos.
+  Visto no treino publicado (`admin@example.com`): o link aparece e o CPF gerado
+  passa. **Não visto:** o CPF do responsável na tela (só por teste) e uma
+  assinatura de ponta a ponta com ele.
+
 **31/10/2026 (ZS3) — PC Administrador (core 0.374.0 → 0.375.0, migração 0343)**
 
 - **Assinatura digital — fase ZS3, o retorno da ZapSign** (bloco ZS3 no
