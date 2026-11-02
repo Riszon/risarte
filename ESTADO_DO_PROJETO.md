@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.376.0** · Última migração: **0344** (0318 a 0343 aplicadas na produção e no treino; **0344 só no treino**) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.376.0** · Última migração: **0344** (0318 a 0344 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
 
 > ## ✍️ ZS4 — ASSINATURA DIGITAL: O DETALHE DO PACOTE (02/11/2026, v0.376.0, migração 0344)
 >
@@ -121,7 +121,13 @@ _Atualizado em: 02/11/2026 · Versão do sistema: **0.376.0** · Última migraç
 > 9. Entrar como Coordenador Clínico: vê e baixa, sem Reenviar nem Cancelar.
 >    Como Recepção: a lista não abre.
 >
-> **O que o dono precisa fazer:** (1) rodar a **0344** na produção (SQL Editor;
+> ✅ **0344 APLICADA nos dois bancos** (o dono rodou na produção em 02/11/2026 e a
+> conferência deu `3 · 2 · false · true · 0`; conferido de fora: sem login
+> `signature_cancel_package`, `signature_mark_notified` e `signature_log_action`
+> recusam com "permission denied" (uma função inexistente, de controle,
+> responde "não encontrada")).
+>
+> **O que o dono precisava fazer:** (1) ~~rodar a **0344** na produção~~ (feito) (SQL Editor;
 > a conferência no fim deve dar `3 · 2 · false · true · 0` — 3 funções, 2
 > índices, cancelar sem login fechado, logado aberto, nenhuma policy fora de
 > SELECT) — **antes** de a equipe usar Cancelar/Reenviar na produção (o código

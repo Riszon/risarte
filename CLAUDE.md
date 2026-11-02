@@ -413,7 +413,10 @@ Syncthing se comportarem de forma estranha.**
 - Ensaio 20/20 em transação desfeita; visto na tela pelo servidor local
   (ASS-000026/27 de ensaio, cancelados). **Não visto:** download no
   navegador, PDF assinado real, e-mail da ZapSign.
-- ⏳ **0344 só no treino.** O dono roda na produção. Próxima: **ZS5**.
+- ✅ **0344 APLICADA nos dois bancos** (o dono rodou na produção em 02/11/2026;
+  conferência 3·2·false·true·0; conferido de fora: sem login as três portas
+  recusam com "permission denied"; a de controle responde "não encontrada").
+  Pendente: decisão do AP89. Próxima: **ZS5**.
 
 **02/11/2026 — PC Administrador (core 0.375.0 → 0.375.1, sem migração)**
 
