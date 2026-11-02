@@ -72,10 +72,15 @@ _Atualizado em: 02/11/2026 · Versão do sistema: **0.375.0** · Última migraç
 >
 > **O que o dono precisa fazer:** (1) ✅ **0342** e **0343** rodadas na produção em 02/11/2026, conferência batendo
 > (a conferência da 0343: 4 funções, 2 colunas, 2 no realtime, false, true,
-> 0); (2) na conta **sandbox** da ZapSign, cadastrar o webhook
-> `https://risarte-treino.vercel.app/api/webhooks/zapsign` com o cabeçalho
-> `x-riszon-webhook-secret` e cadastrar o mesmo valor como
-> `ZAPSIGN_WEBHOOK_SECRET` (Secret) na Vercel do treino; (3) quando quiser
+> 0); (2) ✅ **feito em 02/11/2026:** `ZAPSIGN_WEBHOOK_SECRET` (Secret) na
+> Vercel do treino, republicada; webhooks cadastrados na conta **sandbox**
+> pela API da ZapSign (o painel não tem campo de cabeçalho): id **73894**
+> (todos os eventos de documento) e **73895** (`doc_expired`), ambos com o
+> cabeçalho `x-riszon-webhook-secret`. Conferido de fora em
+> `https://risarte-treino.vercel.app/api/webhooks/zapsign`: sem segredo
+> **401**, segredo errado **401**, segredo certo com evento de mentira
+> **200** (`matched: false`). Falta só a prova com assinatura real no
+> sandbox (ZS8). (3) quando quiser
 > a cópia por e-mail: conta Resend, domínio verificado, `RESEND_API_KEY` e
 > `EMAIL_FROM` na Vercel. **Próxima fase: ZS4** (detalhe do pacote,
 > visualizador, baixar, reenviar, cancelar).

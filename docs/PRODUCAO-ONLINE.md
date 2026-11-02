@@ -62,7 +62,12 @@ nos `.env*.local` (fora do Git).
   treino, real para a produção) cadastrar a URL `https://<site>/api/webhooks/zapsign`
   com o cabeçalho `x-riszon-webhook-secret` = o valor de `ZAPSIGN_WEBHOOK_SECRET`
   do projeto, para os eventos `doc_signed`, `doc_refused`, `doc_expired`,
-  `doc_deleted`. Sem isso o pacote nunca sai de "Enviado". Para provar sem a
+  `doc_deleted`. **O painel web da ZapSign não tem campo de cabeçalho:** o
+  cadastro com o segredo é pela API (`POST /user/company/webhook/` com
+  `headers[]`, e `POST /user/company/webhook/header/`), feito em 02/11/2026
+  para o treino (sandbox, ids 73894 e 73895) pelo fluxo da área de
+  transferência — repetir na conta real para a produção (ZS8).
+  Sem isso o pacote nunca sai de "Enviado". Para provar sem a
   ZapSign: `node scripts/zapsign-simular-webhook.mjs ASS-000001 signed 1`
   (treino; `RISARTE_URL` e `ZAPSIGN_WEBHOOK_SECRET` no ambiente).
   Em `iad1` o sistema ficava 6,5× mais lento. Como medir: `CLAUDE.md` §0d.
