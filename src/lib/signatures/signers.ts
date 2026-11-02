@@ -32,6 +32,7 @@ export const QUALIFICACAO = {
   legal_guardian: "Responsável legal",
   witness: "Testemunha",
   risarte_representative: "Representante da Risarte",
+  company_representative: "Representante da empresa",
 } as const;
 
 export type SignersResult = {
@@ -100,6 +101,60 @@ export function montarSignatarios(input: {
     });
   }
 
+  const resto = testemunhasERisarte({ signers, order, templates: input.templates, witnesses: input.witnesses, representatives: input.representatives });
+  blockers.push(...resto.blockers);
+  return { signers, blockers, clientSide, witnessesNeeded: resto.witnessesNeeded };
+}
+
+/**
+ * QUEM ASSINA PELA EMPRESA (ZS5, plano ZS0 §4.6). Grupo 1 = o representante
+ * legal da empresa (o responsável da proposta, ou o que quem envia corrigir na
+ * janela); grupos 2 e 3 = as mesmas regras do paciente (testemunhas e
+ * Risarte). Não há menor de idade nem responsável legal aqui.
+ */
+export function montarSignatariosDaEmpresa(input: {
+  representante: { name: string | null; cpf: string | null; email: string | null; phone: string | null };
+  templates: Pick<
+    SignatureTemplate,
+    "name" | "witness_count" | "risarte_signer_mode" | "risarte_signer_role" | "risarte_signer_user_id"
+  >[];
+  witnesses: StaffSignerOption[];
+  representatives: (StaffSignerOption | null)[];
+}): Omit<SignersResult, "clientSide"> {
+  const blockers: string[] = [];
+  const signers: SignerDraft[] = [];
+  const nome = (input.representante.name ?? "").trim();
+  if (!nome) {
+    blockers.push("Falta o nome de quem assina pela empresa.");
+  } else {
+    signers.push({
+      sort_order: 0,
+      order_group: 1,
+      signer_type: "company_representative",
+      name: nome,
+      cpf: limparCpf(input.representante.cpf),
+      email: limparEmail(input.representante.email),
+      phone: input.representante.phone,
+      user_id: null,
+      staff_member_id: null,
+      qualification: QUALIFICACAO.company_representative,
+    });
+  }
+  const resto = testemunhasERisarte({ signers, order: signers.length, templates: input.templates, witnesses: input.witnesses, representatives: input.representatives });
+  blockers.push(...resto.blockers);
+  return { signers, blockers, witnessesNeeded: resto.witnessesNeeded };
+}
+
+function testemunhasERisarte(input: {
+  signers: SignerDraft[];
+  order: number;
+  templates: Pick<SignatureTemplate, "name" | "witness_count" | "risarte_signer_mode">[];
+  witnesses: StaffSignerOption[];
+  representatives: (StaffSignerOption | null)[];
+}): { blockers: string[]; witnessesNeeded: number } {
+  const { signers } = input;
+  let order = input.order;
+  const blockers: string[] = [];
   const witnessesNeeded = Math.max(0, ...input.templates.map((t) => t.witness_count));
   const vistas = new Set<string>();
   for (const w of input.witnesses) {
@@ -145,7 +200,7 @@ export function montarSignatarios(input: {
     if (repetido) blockers.push(`${repetido.name} tem o mesmo CPF de quem assina pelo cliente.`);
   }
 
-  return { signers, blockers, clientSide, witnessesNeeded };
+  return { blockers, witnessesNeeded };
 }
 
 function pessoaDoSistema(

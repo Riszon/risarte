@@ -391,6 +391,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 (ZS5) — PC Administrador (core 0.377.0 → 0.378.0, migração 0345; Empresarial 0.92.1 → 0.93.0, migração 1038)**
+
+- **Assinatura digital — fase ZS5, o Empresarial** (bloco ZS5 no ESTADO):
+  envio do contrato de adesão pelo funil e pela ficha da empresa, selo
+  automático, trava do RisLife na criação, pacotes nas abas Contratos e
+  Documentos.
+- ⚠️ **O contrato da tela e o do PDF vêm da MESMA leitura**
+  (`carregarContratoDoLead`). Mudou a tela do contrato? Mude o carregador, não
+  a página (régua em `assinaturas-empresa.test.ts`).
+- ⚠️ **O selo `contract_signed_at` é marcado por GATILHO** em
+  `public.signature_packages` (1038, função no schema `empresarial`). Ao
+  recriar `signature_apply_webhook`, não precisa levar nada: o efeito mora no
+  gatilho.
+- ⚠️ **Pacote da empresa nascido no lead não ganha `company_id` depois**
+  (assinado não muda); a empresa acha pelo `origin_lead_id`.
+- ⚠️ **Fonte do PDF: `liga` E `calt` desligadas** (a 0.376.1 só tinha a
+  `liga`; o hífen perto de número abria buraco). Régua confere todos os pares.
+- Ensaio 24/24 no treino; visto na tela (ASS-000035 de ensaio, cancelado).
+  **Não visto:** pacote com 2 testemunhas + titular (AP91), selo pelo webhook
+  na tela, o RisLife na tela.
+- ⏳ **0345 e 1038 só no treino.** O dono roda na produção. Próxima: **ZS6**.
+
 **02/11/2026 (AP90) — PC Administrador (core 0.376.1 → 0.377.0, sem migração)**
 
 - **CPF inválido SÓ AVISA** (decisão do dono, "por enquanto"): aviso âmbar no

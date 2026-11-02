@@ -4499,8 +4499,9 @@ permissões e a tela de configurações da rede; a segunda (0.374.0) trouxe o
 **retorno da ZapSign** — a situação muda sozinha quando alguém assina — e a
 fila **Minhas assinaturas pendentes**; a quarta (0.376.0), o **detalhe de
 cada pacote** — visualizar o PDF, baixar, reenviar, cancelar e reenviar como
-pacote novo (13d.4). O painel com os indicadores e o Empresarial chegam nas
-etapas seguintes, e as Novidades avisam quando cada uma entrar.
+pacote novo (13d.4); a quinta (0.378.0), o **contrato de adesão do
+Empresarial** (13d.5). O painel com os indicadores chega nas etapas seguintes,
+e as Novidades avisam quando cada uma entrar.
 
 **Quem vê o menu "Assinaturas".** Quem tem a permissão **Assinaturas** no grupo
 **Assinaturas digitais** de Administração → Permissões (13b). Por padrão:
@@ -4713,6 +4714,31 @@ Coordenador Clínico; reenviar, cancelar e reenviar como novo — Consultor
 Comercial, Consultor Empresarial, Assistente Comercial, Financeiro da
 Franqueadora e Gerente de Unidade. O Coordenador vê e baixa, mas não reenvia
 nem cancela.
+
+### 13d.5. O contrato de adesão do Empresarial (0.378.0)
+
+**Onde fica.** Na tela do contrato do funil (*Empresarial → Funil → a empresa
+→ Ver o contrato*) e na ficha da empresa (aba **Contratos**, e os pacotes também
+na aba **Documentos**). O passo a passo completo está no manual do Empresarial,
+seção 6.10.1.
+
+**O que muda em relação ao paciente:**
+
+- O PDF é **o contrato da tela**, montado com a proposta salva, com o **Anexo
+  I**. Campo em branco no contrato **bloqueia** o envio; os avisos em âmbar não
+  bloqueiam, mas quem envia confirma que leu.
+- Quem assina pela empresa é o **responsável da proposta** (corrigível na
+  janela, só para aquele envio). Depois as **duas testemunhas** da equipe da
+  Franqueadora e, por último, quem o modelo define pela Risarte (hoje, o
+  **titular**). Se o nome for diferente do representante citado no texto do
+  contrato, a janela avisa.
+- A **autenticação** é a do modelo, sem o corte de R$ 5.000; o **prazo** é o
+  de empresas (15 dias). O pacote sai pela **Franqueadora**.
+- Quando todos assinam, o selo **Contrato assinado** do funil **se marca
+  sozinho**.
+- **Reenviar como novo pacote** ainda não vale para empresas.
+- O **Consultor RisLife** só envia e só vê os pacotes das empresas e dos leads
+  em que é o responsável — o banco recusa os outros.
 
 ## 14. Checklists
 

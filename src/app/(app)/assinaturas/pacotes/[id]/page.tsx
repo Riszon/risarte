@@ -35,6 +35,8 @@ type Pkg = {
   clinic_id: string;
   audience: "patient" | "company";
   client_id: string | null;
+  company_id: string | null;
+  lead_id: string | null;
   status: PackageStatus;
   current_stage: PackageStage;
   sent_at: string | null;
@@ -74,7 +76,7 @@ export default async function PacotePage({ params }: { params: Promise<{ id: str
   const { data: pkg } = await supabase
     .from("signature_packages")
     .select(
-      "id, number, clinic_id, audience, client_id, status, current_stage, sent_at, expires_at, completed_at, client_signed_at, created_at, merged_pdf_path, signed_pdf_path, merged_page_count, linked_amount_cents, auth_level_applied, auth_reason, sent_by, cancel_reason, cancelled_by, cancelled_at, refused_reason, resent_from_package_id, cover_data, clinics ( name )"
+      "id, number, clinic_id, audience, client_id, company_id, lead_id, status, current_stage, sent_at, expires_at, completed_at, client_signed_at, created_at, merged_pdf_path, signed_pdf_path, merged_page_count, linked_amount_cents, auth_level_applied, auth_reason, sent_by, cancel_reason, cancelled_by, cancelled_at, refused_reason, resent_from_package_id, cover_data, clinics ( name )"
     )
     .eq("id", id)
     .maybeSingle<Pkg>();
@@ -164,6 +166,14 @@ export default async function PacotePage({ params }: { params: Promise<{ id: str
             {pkg.client_id && (
               <Link href={`/prontuarios/${pkg.client_id}?aba=documentos`} className="ml-auto text-sm text-primary underline-offset-4 hover:underline">
                 Abrir a ficha do paciente
+              </Link>
+            )}
+            {!pkg.client_id && (pkg.company_id || pkg.lead_id) && (
+              <Link
+                href={pkg.company_id ? `/empresarial/${pkg.company_id}?aba=contratos` : `/empresarial/funil/${pkg.lead_id}/contrato`}
+                className="ml-auto text-sm text-primary underline-offset-4 hover:underline"
+              >
+                {pkg.company_id ? "Abrir a ficha da empresa" : "Abrir o contrato no funil"}
               </Link>
             )}
           </div>

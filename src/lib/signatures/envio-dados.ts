@@ -175,7 +175,7 @@ type StaffRow = {
 type RoleRow = { user_id: string; clinic_id: string; role: UserRole };
 type ProfileRow = { id: string; full_name: string | null; email: string | null; phone: string | null; is_owner: boolean | null; is_active: boolean | null };
 
-async function loadStaffOptions(
+export async function loadStaffOptions(
   admin: SupabaseClient,
   session: SessionContext,
   clinicId: string

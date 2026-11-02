@@ -1,6 +1,87 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.377.0** · Última migração: **0344** (0318 a 0344 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.378.0** · Última migração: **0345** (0318 a 0344 aplicadas na produção e no treino; **0345 só no treino**) · Empresarial **0.93.0** / migração **1038** (**1038 só no treino**)_
+
+> ## ✍️ ZS5 — ASSINATURA DIGITAL NO EMPRESARIAL (02/11/2026, v0.378.0 / Empresarial 0.93.0, migrações 0345 e 1038)
+>
+> Quinta fase do plano `docs/assinaturas/PLANO-ZS0.md` (§4.6, §11). O contrato
+> de adesão vai para a ZapSign a partir do funil e da ficha da empresa.
+> Decisões do dono (02/11/2026), todas como recomendado: (1) campo em branco
+> no contrato **bloqueia**; aviso não bloqueia, mas pede confirmação; (2) assina
+> pela empresa o responsável da proposta, corrigível na janela; (3) pela Risarte,
+> o do modelo (titular), com aviso se o nome diferir do texto; (4) autenticação
+> do modelo, **sem** o corte de R$; (5) prazo de empresas (15 dias).
+>
+> **Banco:**
+> - **0345 (core):** `signature_create_package` (mesma assinatura) confere a
+>   origem da empresa (`LEAD_NOT_FOUND`, `COMPANY_NOT_FOUND`, `ORIGIN_INVALID`,
+>   `ORIGIN_REQUIRED`, `CLIENT_NOT_ALLOWED`); lead que já é empresa nasce com as
+>   duas ligações; a trava do RisLife (`signature_consultant_scope_ok`) passa a
+>   valer **na criação**, para os dois públicos.
+> - **1038 (Empresarial):** `empresarial.contracts.package_id` + gatilho
+>   `signature_packages_empresarial_effects` em `public.signature_packages`
+>   (`empresarial.signature_package_effects`, só pacote de empresa que mudou de
+>   situação): assinado com item de modelo `adhesion` e `lead_id` → marca
+>   `contract_signed_at` (só se vazio) + anotação no lead + evento
+>   `lead_sealed`; a linha de `contracts` com o `package_id` acompanha a
+>   situação. Erro vira `warning` + evento `lead_seal_failed`, nunca derruba o
+>   pacote.
+> - O pacote nascido no lead NÃO é alterado quando a empresa nasce (assinado
+>   não muda, 0340): a ficha da empresa procura também pelo
+>   `companies.origin_lead_id`.
+>
+> **Código:**
+> - `src/lib/empresarial/contrato-do-lead.ts` — a leitura do contrato saiu da
+>   tela `/empresarial/funil/[leadId]/contrato`; a tela e o PDF usam a mesma
+>   (`carregarContratoDoLead`; régua em `assinaturas-empresa.test.ts`).
+> - `src/lib/empresarial/contrato-para-assinatura.ts` — modelo + valores +
+>   Anexo I → `TemplateBody` (sem `**`, fecho com cidade e data).
+> - `src/lib/signatures/send-empresa.ts` — contexto e preparo do pacote da
+>   empresa; unidade emissora = a Franqueadora (`clinicaEmissoraDaEmpresa`);
+>   `gerarPdfDoPacote` ganhou `audience` (pasta `company/` no bucket; o
+>   webhook guarda o assinado na pasta do público).
+> - `signers.ts` — `montarSignatariosDaEmpresa`; a parte de testemunhas e
+>   Risarte é comum com o paciente (`testemunhasERisarte`).
+> - Telas: `enviar-empresa-dialog.tsx` (3 passos, no formato do paciente);
+>   `assinaturas-da-empresa.tsx` na tela do contrato, na aba Contratos (com
+>   envio) e na aba Documentos (sem envio); `lista-de-pacotes.tsx` (a lista
+>   comum, usada também pela ficha do paciente); detalhe com "Abrir a ficha da
+>   empresa". Aba Contratos sem o esboço antigo; `src/lib/empresarial/zapsign.ts`
+>   apagado.
+> - **Fonte do PDF:** `calt` também desligada (`FEATURES = { liga: false, calt:
+>   false }`) — o hífen perto de número saía "0003- 28". Ver AP89 no BACKLOG.
+>
+> **Conferido:** `check-migrations` OK nas duas; `migrar:teste`; ensaio no
+> treino em transação desfeita **24/24** (ver EV-273); portão (build do zero e
+> tipos, todos os testes, lint). Na tela (servidor local, banco de treino,
+> ZapSign falsa, Admin de teste, lead "ZZZ Fechamento do agente"): avisos com
+> confirmação, CPF inválido barrando, aviso de nome diferente, pré-visualização
+> com contrato e Anexo I, envio do **ASS-000035** com os links, o pacote nas três
+> telas, cancelamento pela tela ("Ensaio da ZS5 (pode ignorar)"), detalhe com o
+> link da empresa, ficha do paciente igual. ASS-000034 ficou cancelado (rascunho
+> descartado). O modelo de adesão do treino ficou alguns minutos com 1
+> testemunha e sem Risarte (AP91) e voltou ao original.
+>
+> **Não visto:** o pacote completo (2 testemunhas + titular) — o treino não tem
+> CPFs para isso (AP91); o selo marcado pelo webhook na tela (só no ensaio do
+> banco); o Consultor RisLife na tela; a ZapSign de verdade.
+>
+> **Roteiro de teste no treino (para o dono):**
+> 1. Empresarial → Funil → uma empresa com a proposta completa → **Ver o
+>    contrato**. O bloco **Assinaturas digitais** aparece abaixo dos avisos.
+> 2. **Enviar para assinatura**: o contrato vem marcado; com campo em branco a
+>    lista vermelha impede seguir; com avisos, marque "Li os avisos".
+> 3. Confira quem assina pela empresa; CPF inválido barra.
+> 4. Passo 2: escolha 2 testemunhas; veja o aviso se o nome da Risarte for
+>    diferente do texto.
+> 5. Passo 3: confira o PDF (capa, contrato, Anexo I) e envie.
+> 6. Abra a empresa → aba **Contratos** e aba **Documentos**: o pacote aparece.
+> 7. Entre como Consultor RisLife de outra empresa: o pacote não aparece.
+>
+> **O que o dono precisa fazer:** rodar a **0345** e a **1038** na produção,
+> nessa ordem (conferências: `1 · true · true · false` e `1 · 1 · false · 0`);
+> conferir se algum pacote saiu na produção entre a 0.376.1 e a 0.378.0 (o
+> defeito do hífen, AP89). **Próxima fase: ZS6** (rotinas e alertas).
 
 > ## 🪪 0.377.0 — CPF INVÁLIDO: AVISA NO CADASTRO, LEMBRA NA FICHA (02/11/2026, sem migração)
 >

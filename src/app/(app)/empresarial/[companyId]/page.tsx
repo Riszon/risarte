@@ -40,7 +40,7 @@ import type { PaymentModel } from "@/lib/empresarial/constants";
 import { BillingTab, type BillingView } from "./billing-tab";
 import { isAsaasConfigured } from "@/lib/empresarial/asaas";
 import { ContratosTab, type ContractView } from "./contratos-tab";
-import { isZapsignConfigured } from "@/lib/empresarial/zapsign";
+import { AssinaturasDaEmpresa } from "@/app/(app)/assinaturas/assinaturas-da-empresa";
 import {
   DocumentosTab,
   type CompanyDocumentView,
@@ -962,7 +962,7 @@ export default async function CompanyDetailPage(props: {
     const { data } = await db
       .from("contracts")
       .select(
-        "id, title, status, signer_name, signer_email, sent_at, signed_at, zapsign_url"
+        "id, title, status, signer_name, signer_email, sent_at, signed_at, zapsign_url, package_id"
       )
       .eq("company_id", companyId)
       .order("created_at", { ascending: false })
@@ -976,6 +976,7 @@ export default async function CompanyDetailPage(props: {
           sent_at: string | null;
           signed_at: string | null;
           zapsign_url: string | null;
+          package_id: string | null;
         }[]
       >();
     contracts = (data ?? []).map((c) => ({
@@ -987,7 +988,20 @@ export default async function CompanyDetailPage(props: {
       sentAt: c.sent_at,
       signedAt: c.signed_at,
       zapsignUrl: c.zapsign_url,
+      packageId: c.package_id ?? null,
     }));
+  }
+
+  // ZS5: o lead de origem — a empresa acha por ele os pacotes de assinatura
+  // nascidos no funil (o pacote assinado não muda depois de criado).
+  let leadDeOrigem: string | null = null;
+  if (aba === "contratos" || aba === "documentos") {
+    const { data } = await db
+      .from("companies")
+      .select("origin_lead_id")
+      .eq("id", companyId)
+      .maybeSingle<{ origin_lead_id: string | null }>();
+    leadDeOrigem = data?.origin_lead_id ?? null;
   }
 
   // Aba Financeiro: economia gerada + cobranças (ASAAS).
@@ -1329,13 +1343,21 @@ export default async function CompanyDetailPage(props: {
       )}
 
       {aba === "documentos" && docsTab && (
-        <DocumentosTab
-          companyId={company.id}
-          documents={docsTab.documents}
-          files={docsTab.files}
-          billingModel={company.billingModel}
-          canManage={canManage}
-        />
+        <div className="space-y-4">
+          <AssinaturasDaEmpresa
+            companyId={company.id}
+            leadId={leadDeOrigem}
+            origin={{ type: "company", id: company.id }}
+            mostrarEnvio={false}
+          />
+          <DocumentosTab
+            companyId={company.id}
+            documents={docsTab.documents}
+            files={docsTab.files}
+            billingModel={company.billingModel}
+            canManage={canManage}
+          />
+        </div>
       )}
 
       {/* I4: a trava não pode ser surpresa — o número aparece ANTES de
@@ -1523,8 +1545,14 @@ export default async function CompanyDetailPage(props: {
         <ContratosTab
           companyId={company.id}
           contracts={contracts}
-          zapsignConfigured={isZapsignConfigured()}
           gammaConfigured={Boolean(process.env.GAMMA_API_KEY)}
+          assinaturas={
+            <AssinaturasDaEmpresa
+              companyId={company.id}
+              leadId={leadDeOrigem}
+              origin={{ type: "company", id: company.id }}
+            />
+          }
         />
       )}
     </div>

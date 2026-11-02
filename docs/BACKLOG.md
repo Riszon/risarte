@@ -24,6 +24,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP11 (sobra)** — telas que mostram "0 esperando" se a contagem falhar (Início, Compras, relatos)
 - [ ] **AP38** — Empresarial: sugestão de "Quem assina" na aba Proposta não se atualiza
 - [x] **AP90** — o cadastro aceita CPF com dígito verificador errado: o erro só aparecia ao enviar para assinatura — **0.377.0: avisa no cadastro e lembra na ficha (decisão do dono: só avisar, por enquanto)**
+- [ ] **AP91** — treino: só 2 pessoas da equipe da Franqueadora têm CPF válido; o envio completo do contrato de adesão (2 testemunhas + titular) não dá para ensaiar lá
+- [ ] **AP92** — "Reenviar como novo pacote" ainda não vale para pacotes de empresa
 
 **Segurança e banco (por etapas)**
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
@@ -45,7 +47,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP81** — o repasse estimado da opção conta os itens que o cliente TIROU (compra parcial) — a margem aparece menor
 - [ ] **AP84** — a margem da negociação conta a hora de cadeira pela soma dos itens (9h15 no relato), não pela sequência montada (7h15)
 - [ ] **AP85** — plano de uma opção só nasce sem opção principal (2 de 2 na produção): as telas que procuram "a principal" não acham
-- [x] **AP89** — o PDF das assinaturas embute a Inter em subconjunto que o navegador recusa ("Bad offSize"): o visualizador contorna; outros leitores podem mostrar quadradinhos — **corrigido em 0.376.1 (fonte inteira, ligadura desligada)**
+- [x] **AP89** — o PDF das assinaturas embute a Inter em subconjunto que o navegador recusa ("Bad offSize"): o visualizador contorna; outros leitores podem mostrar quadradinhos — **corrigido em 0.376.1 (fonte inteira, ligadura desligada) e completado em 0.378.0 (`calt` também: hífen e dois-pontos perto de número)**
 - [ ] **AP88** — `npm run check:destrutivo` acusa 7 comandos sem a declaração `-- DESTRUTIVO`, nas migrações 0331 e 0332, já aplicadas
 - [ ] **AP86** — as outras 16 janelas altas têm o desenho que cortava a de agendamento (OC-00008): botão ou texto que não quebra linha pode alargá-las
 - [ ] **AP83** — 0331 e 0332 (Ortodontia) apagam dado sem o `-- DESTRUTIVO`: `npm run check:destrutivo` acusa 7 comandos
@@ -2729,6 +2731,37 @@ mantém `disableFontFace` por causa dos pacotes antigos. **Não conferido:** o
 PDF na tela da ZapSign (fica para o envio real no sandbox, ZS8). **Custo:**
 cada parte do pacote leva a sua cópia da fonte (~280 KB por parte); juntar as
 cópias exigiria montar o pacote num documento só.
+
+**⚠️ A 0.376.1 corrigiu pela metade — completado na 0.378.0 (ZS5, 02/11/2026).**
+Achado ao conferir o contrato do Empresarial na tela: a troca contextual
+`calt` da Inter também troca o hífen, os dois-pontos e os parênteses vizinhos
+de número ou de maiúscula pela variante `.case`, com o mesmo defeito de
+largura: "0003- 28", "86180- 000em" no CPF e no CEP. A 0.376.1 só tinha
+desligado a `liga`; numa busca de todos os pares de caracteres, eram **4.232**
+combinações trocadas. Agora `FEATURES = { liga: false, calt: false }` e nenhum
+par é trocado (Regular e Bold). A régua nova confere todos os pares e trios em
+volta de número, e reprovou a versão da 0.376.1. **Não conferido:** se algum
+pacote foi enviado na produção entre a 0.376.1 e a 0.378.0 (sem permissão para
+ler a produção nesta sessão; o dono confere).
+
+### AP91. Treino: a equipe da Franqueadora só tem 2 CPFs válidos (02/11/2026)
+
+**Confirmado (ZS5, na janela de envio do Empresarial no treino):** das 13
+pessoas que a janela oferece como testemunha ou representante, só duas têm CPF
+válido, e são pessoas reais copiadas da produção. As contas de teste
+(`*@example.com`) e o titular não têm CPF válido no cadastro da equipe. O
+contrato de adesão pede 2 testemunhas e o titular, então **o envio completo
+não dá para ensaiar no treino**. Na ZS5 o modelo foi ajustado por alguns
+minutos (1 testemunha, sem Risarte) e voltou ao original. **A decidir:** dar
+CPF de teste às contas `@example.com` no treino (o cadastro da equipe lá é
+cópia da produção, `MIRROR_READ_ONLY`) ou ensaiar só pelo sandbox (ZS8).
+
+### AP92. Reenviar como novo pacote não vale para empresas (02/11/2026)
+
+**Confirmado (ZS5):** `reenvio.ts` recusa pacote de empresa ("vale só para
+pacientes por enquanto") e `acoesPermitidas` esconde o botão. Para a empresa,
+o caminho é um envio novo pela janela. Ligar exige refazer o contrato de adesão
+com a proposta do dia (o texto do pacote antigo é o daquele dia).
 
 ### AP88. check:destrutivo acusa as migrações 0331 e 0332 (31/10/2026)
 

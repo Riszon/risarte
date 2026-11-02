@@ -5,7 +5,10 @@ import { inspectAttachment, mergePdfs } from "@/lib/signatures/pdf/merge";
 import { renderTemplatePdf } from "@/lib/signatures/pdf/render-template";
 import { montarRubricas } from "@/lib/signatures/pdf/signature-block";
 import { wrapText } from "@/lib/signatures/pdf/text";
-import { embedFonts } from "@/lib/signatures/pdf/fonts";
+import { embedFonts, FEATURES } from "@/lib/signatures/pdf/fonts";
+import fontkit from "@pdf-lib/fontkit";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 // O PDF do pacote (ZS2): o modelo vira páginas, a capa indexa, a mesclagem
 // soma as páginas e as caixas de assinatura viram as marcas da ZapSign. Tudo
@@ -62,6 +65,34 @@ describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
       const separado = f.widthOfTextAtSize("r", 10) + f.widthOfTextAtSize("m", 10);
       expect(junto).toBeCloseTo(separado, 5);
     }
+  });
+
+  it("a fonte não troca NENHUMA letra do nosso texto (liga e calt desligadas, AP89/ZS5)", () => {
+    // Letra trocada pela Inter sai com largura errada no PDF da fonte inteira
+    // ("platafor ma", "0003- 28"). A régua confere todos os pares de caracteres
+    // que um contrato usa, e trios em volta de número: o desenho tem de ser
+    // exatamente o glifo de cada caractere.
+    const chars: string[] = [];
+    for (let c = 0x20; c <= 0x7e; c++) chars.push(String.fromCharCode(c));
+    for (const c of "ÀÁÂÃÇÉÊÍÓÔÕÚÜàáâãçéêíóôõúüºª°§–—“”‘’•…") chars.push(c);
+    const contexto = "0123456789-:x/.,()".split("");
+    for (const arquivo of ["Inter-Regular.otf", "Inter-Bold.otf"]) {
+      const f = fontkit.create(readFileSync(path.join(process.cwd(), "src/lib/signatures/pdf/assets", arquivo)));
+      const trocados: string[] = [];
+      const confere = (t: string) => {
+        const ids = f.layout(t, FEATURES).glyphs.map((g) => g.id);
+        const esperado = [...t].map((ch) => f.glyphForCodePoint(ch.codePointAt(0)!).id);
+        if (ids.length !== esperado.length || ids.some((id, i) => id !== esperado[i])) trocados.push(t);
+      };
+      for (const a of chars) for (const b of chars) confere(a + b);
+      for (const a of contexto) for (const b of contexto) for (const c of contexto) confere(a + b + c);
+      expect(trocados.slice(0, 10), arquivo).toEqual([]);
+    }
+  });
+
+  it("as duas fontes embutem com as MESMAS trocas desligadas", () => {
+    const src = readFileSync(path.join(process.cwd(), "src/lib/signatures/pdf/fonts.ts"), "utf8");
+    expect(src.match(/features: FEATURES/g)?.length).toBe(2);
   });
 
   it("o modelo vira várias páginas, com uma caixa por signatário no fim", async () => {

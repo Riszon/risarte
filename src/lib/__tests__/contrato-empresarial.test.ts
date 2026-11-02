@@ -560,7 +560,9 @@ describe("réguas do contrato", () => {
   const FICHA = "src/app/(app)/empresarial/funil/[leadId]";
 
   it("contrato NÃO se monta com leitura pela metade: a tela recusa e diz o que não leu", () => {
-    const pagina = ler(`${FICHA}/contrato/page.tsx`);
+    // Desde a ZS5 a leitura mora no carregador (a MESMA para a tela e para o
+    // PDF de assinatura); a tela só mostra o motivo que ele devolve.
+    const leitura = ler("src/lib/empresarial/contrato-do-lead.ts");
     for (const erro of [
       "erroDoLevantamento",
       "erroDasFaixas",
@@ -569,11 +571,15 @@ describe("réguas do contrato", () => {
       "erroDaContratada",
       "erroDasUnidades",
     ]) {
-      expect(pagina.split(erro).length - 1, erro).toBeGreaterThanOrEqual(2);
+      expect(leitura.split(erro).length - 1, erro).toBeGreaterThanOrEqual(2);
     }
-    expect(pagina).toContain("if (naoLido.length > 0) {");
+    expect(leitura).toContain('if (naoLido.length > 0) return { ok: false, motivo: "leitura", naoLido };');
     // Sem modelo (migração por rodar), diz por quê — não desenha documento vazio.
-    expect(pagina).toContain("if (modelos.erro || !modelo) {");
+    expect(leitura).toContain('if (modelos.erro || !modelo) return { ok: false, motivo: "modelo"');
+    const pagina = ler(`${FICHA}/contrato/page.tsx`);
+    expect(pagina).toContain("carregarContratoDoLead(leadId)");
+    expect(pagina).toContain('carregado.motivo === "modelo"');
+    expect(pagina).toContain("carregado.naoLido.join");
   });
 
   it("os campos novos do contrato NÃO entram no salvar da proposta (a proposta não pode parar de salvar)", () => {

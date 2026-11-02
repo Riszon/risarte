@@ -81,7 +81,10 @@ async function guardarAssinado(
     if (!res.ok) return pendente(`download HTTP ${res.status}`);
     const bytes = new Uint8Array(await res.arrayBuffer());
     if (bytes.byteLength < 100 || String.fromCharCode(...bytes.slice(0, 4)) !== "%PDF") return pendente("download não é um PDF");
-    const path = `${r.clinic_id}/patient/${packageId}/signed.pdf`;
+    // A pasta segue o público do pacote (plano §6): paciente ou empresa (ZS5).
+    const { data: dono } = await admin.from("signature_packages").select("audience").eq("id", packageId).maybeSingle();
+    const publico = dono?.audience === "company" ? "company" : "patient";
+    const path = `${r.clinic_id}/${publico}/${packageId}/signed.pdf`;
     const up = await admin.storage.from(BUCKET).upload(path, new Blob([Buffer.from(bytes)], { type: "application/pdf" }), { upsert: true, contentType: "application/pdf" });
     if (up.error) return pendente(`storage: ${up.error.message}`);
     const u = await admin.from("signature_packages").update({ signed_pdf_path: path }).eq("id", packageId);

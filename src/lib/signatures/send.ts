@@ -255,6 +255,8 @@ export async function gerarPdfDoPacote(input: {
   attachments: { title: string; bytes: Uint8Array }[];
   coverData: Record<string, unknown>;
   actorUserId: string;
+  /** A pasta no bucket: `{unidade}/{público}/{pacote}/` (plano §6). Padrão: paciente. */
+  audience?: "patient" | "company";
 }): Promise<{ ok: true; previewUrl: string; pageCount: number } | { ok: false; error: string }> {
   const { packageId, number } = input;
   const admin = createAdminClient();
@@ -304,7 +306,7 @@ export async function gerarPdfDoPacote(input: {
       throw new Error("PACKAGE_TOO_LARGE");
     }
 
-    const path = `${input.clinicId}/patient/${packageId}/merged.pdf`;
+    const path = `${input.clinicId}/${input.audience ?? "patient"}/${packageId}/merged.pdf`;
     const up = await admin.storage.from(BUCKET).upload(path, new Blob([Buffer.from(merged.bytes)], { type: "application/pdf" }), { upsert: true, contentType: "application/pdf" });
     if (up.error) throw new Error(`STORAGE: ${up.error.message}`);
 
@@ -512,6 +514,9 @@ export function mensagemDaPorta(msg: string | undefined): string {
   const m = msg ?? "";
   if (m.includes("NOT_ALLOWED")) return "Você não tem permissão para enviar documentos nesta unidade.";
   if (m.includes("CLIENT_NOT_FOUND")) return "O paciente não pertence a esta unidade.";
+  if (m.includes("LEAD_NOT_FOUND")) return "Este lead não foi encontrado no funil.";
+  if (m.includes("COMPANY_NOT_FOUND")) return "Esta empresa não foi encontrada.";
+  if (m.includes("ORIGIN_REQUIRED") || m.includes("ORIGIN_INVALID") || m.includes("CLIENT_NOT_ALLOWED")) return "A origem do envio é inválida para uma empresa.";
   if (m.includes("ITEMS_REQUIRED")) return "Escolha ao menos um documento.";
   if (m.includes("SIGNERS_REQUIRED")) return "O pacote precisa de ao menos um signatário.";
   if (/does not exist|Could not find the function/i.test(m)) return "A assinatura digital ainda não está instalada neste banco (falta a migração 0342).";

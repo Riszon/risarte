@@ -271,7 +271,9 @@ Onde se registra a apresentação do programa para aquela empresa.
 Registra o envio da proposta e acompanha **dois selos**: o documento assinado e
 o pagamento. **Quando os dois ficam verdes, a empresa vai para Fechamento
 (ganho).** É a regra de ouro do riSZon aplicada aqui: só é venda com documento
-assinado **e** pagamento confirmado.
+assinado **e** pagamento confirmado. O selo do contrato **se marca sozinho**
+quando o contrato enviado pela assinatura digital fica assinado por todos
+(6.10.1); o botão manual continua para o contrato assinado fora do sistema.
 
 ### Fechamento
 
@@ -810,8 +812,54 @@ empresa para outra o sistema preenche sozinho:
 > 10.
 
 > **O sistema não guarda cópia do contrato impresso.** Ele é montado na hora,
-> com a proposta SALVA e a data do dia. O que vale é o PDF assinado — guarde-o
-> nos documentos da empresa (tipo *Contrato do programa*).
+> com a proposta SALVA e a data do dia. O que vale é o PDF assinado. Pela
+> **assinatura digital** (abaixo), o PDF enviado e o assinado ficam guardados
+> no sistema; o contrato assinado em papel, guarde nos documentos da empresa
+> (tipo *Contrato do programa*).
+
+#### 6.10.1. Enviar o contrato para assinatura digital (ZapSign)
+
+Na tela do contrato, logo abaixo dos avisos, fica o bloco **Assinaturas
+digitais**: o botão **Enviar para assinatura** e os pacotes já enviados deste
+lead. O PDF que vai para a ZapSign é **o mesmo contrato da tela**, com o
+**Anexo I**, montado na mesma hora.
+
+A janela tem três passos:
+
+1. **O que vai e quem assina pela empresa.** O contrato de adesão vem marcado;
+   dá para juntar **PDFs avulsos** (até 8 MB cada, 10 MB no pacote). Quem assina
+   pela empresa vem do **responsável da proposta** (nome, CPF, celular e
+   e-mail); corrigir ali vale só para este envio.
+   - **Campo em branco no contrato bloqueia o envio** (decisão do dono): a
+     lista vermelha diz o que falta completar na proposta. Contrato assinado com
+     linha em branco não tem conserto.
+   - **Os avisos em âmbar não bloqueiam**, mas é preciso marcar *"Li os avisos
+     e o texto está certo para esta empresa"*.
+   - Quem assina pela empresa precisa de **CPF válido** e de **celular com DDD
+     ou e-mail**.
+2. **Testemunhas e quem assina pela Risarte.** As testemunhas saem da equipe
+   da Franqueadora (o modelo pede duas). Pela Risarte assina quem o modelo
+   define — hoje, o **titular**. Se o nome for diferente do representante
+   digitado em *Configurações → Contrato* (o nome que o texto do contrato
+   cita), a janela avisa antes de enviar.
+3. **A pré-visualização.** O PDF inteiro, com a capa, antes de sair. **Enviar
+   para assinatura** manda para a ZapSign e mostra o link de cada pessoa
+   (WhatsApp, copiar o link, assinar agora).
+
+Regras da assinatura da empresa:
+
+- **Ordem:** 1º quem assina pela empresa, 2º as testemunhas, 3º a Risarte.
+  Cada um só recebe a vez depois do anterior.
+- **Autenticação:** a do modelo (hoje, **simples**: assinatura na tela). Não há
+  o corte de R$ 5.000 dos pacientes — a mensalidade não é um valor único.
+- **Prazo:** 15 dias (o configurado para empresas em *Assinaturas →
+  Configurações*).
+- **Quando todos assinam, o selo "Contrato assinado" se marca sozinho** na
+  aba *Envio e selos*, com uma anotação no histórico do lead. Com o boleto da
+  implantação já pago, o cartão vai para Fechamento (ganho), como sempre. O
+  selo que já estava marcado à mão não muda.
+- **O Consultor RisLife** só envia e só vê os pacotes das empresas e dos leads
+  em que é o responsável. Isso vale no banco, não só na tela.
 
 **Personalizar o texto** (botão no alto da tela do contrato) abre o texto
 inteiro para **esta empresa**: título, qualificação das partes, cada cláusula
@@ -887,12 +935,23 @@ Menu **Empresarial**, clique na empresa. Sete abas:
 | Aba | O que tem |
 |---|---|
 | **Dados Gerais** | CNPJ, razão social, categoria, modelo de pagamento, vencimento, meios de pagamento, carência, **acordo de cobrança** |
-| **Documentos** | os documentos da empresa |
+| **Documentos** | os pacotes de **assinatura digital** da empresa (no alto) e os documentos da empresa |
 | **Titulares** | as pessoas do programa |
 | **Plano & Benefícios** | **outras vantagens combinadas**, mensalidade atual, simulador, preços de adesão, benefícios |
 | **Financeiro** | cobranças, economia gerada, benefícios utilizados |
 | **Riso+ Social** | metas, o que elas conquistaram, indicações e fichas (seção 14) |
-| **Contratos** | contratos e assinatura |
+| **Contratos** | proposta no Gamma, **Enviar para assinatura** (contrato de adesão e aditivos) e os contratos registrados |
+
+**Assinatura digital pela ficha da empresa** (aba **Contratos**) — o mesmo
+botão **Enviar para assinatura** da tela do contrato (6.10.1), para
+**aditivos e outros documentos** em PDF. Se a empresa veio do funil, o
+**contrato de adesão** também pode ser enviado por aqui (ele é montado com a
+proposta do lead de origem); empresa cadastrada direto manda o contrato como
+PDF. Os pacotes aparecem nas abas **Contratos** e **Documentos**, incluindo os
+enviados quando ela ainda era lead, com **Visualizar**, **Baixar**,
+**Reenviar**, **Cancelar** e **Detalhe**. O que foi enviado pela aba Contratos
+aparece também na lista *Contratos registrados*, e a situação acompanha o
+pacote sozinha.
 
 **Outras vantagens combinadas** (cartão no alto de Plano & Benefícios) — o que
 a empresa ganhou **além dos procedimentos** e se já foi entregue. Vêm da
@@ -1472,8 +1531,10 @@ momento, na frente do cliente.
   **Combinado para a integração:** o boleto será emitido num passo próprio
   (**Emitir boleto**), depois de a cobrança ser conferida e, se preciso,
   editada — gerar a cobrança não vai emitir o boleto sozinho.
-- **Assinatura pela ZapSign** funciona por **Enviar** → **Marcar assinado**
-  (simulação) enquanto as chaves não estiverem cadastradas.
+- **Assinatura pela ZapSign** está ligada desde a ZS5 (seção 6.10.1). Os
+  botões antigos **Enviar** e **Marcar assinado** (simulação) da aba Contratos
+  saíram. **Reenviar como novo pacote** ainda vale só para pacientes; para a
+  empresa, mande um envio novo.
 - **Proposta no Gamma** depende de chave configurada; sem ela, o cartão explica
   que está desativado.
 - **A implantação não tem trava no banco** (a mensalidade tem, desde a

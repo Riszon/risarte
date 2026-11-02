@@ -289,6 +289,9 @@ describe("assinaturas digitais: a ação do pacote segue a porta do banco (ZS4)"
 
   it("o detalhe e a ficha usam a MESMA regra de ações", () => {
     expect(ler("src/app/(app)/assinaturas/pacotes/[id]/page.tsx")).toMatch(/acoesPermitidas\([\s\S]{0,400}permissoesDoPacote\(session, pkg\.clinic_id\)/);
-    expect(ler("src/app/(app)/assinaturas/assinaturas-do-cliente.tsx")).toMatch(/acoesPermitidas\([\s\S]{0,400}permissoesDoPacote\(session, p\.clinic_id\)/);
+    // A ficha do paciente e a da empresa (ZS5) desenham pela lista comum.
+    expect(ler("src/app/(app)/assinaturas/lista-de-pacotes.tsx")).toMatch(/acoesPermitidas\([\s\S]{0,400}permissoesDoPacote\(session, p\.clinic_id\)/);
+    expect(ler("src/app/(app)/assinaturas/assinaturas-do-cliente.tsx")).toContain("<ListaDePacotes");
+    expect(ler("src/app/(app)/assinaturas/assinaturas-da-empresa.tsx")).toContain("<ListaDePacotes");
   });
 });

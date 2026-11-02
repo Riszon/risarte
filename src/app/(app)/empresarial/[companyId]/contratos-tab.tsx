@@ -1,30 +1,27 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { FileSignature, Plus, Presentation } from "lucide-react";
+import { FileSignature, Presentation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  cancelContract,
-  createContract,
-  generateCompanyProposal,
-  getProposalStatus,
-  markContractSigned,
-  sendContract,
-} from "./contract-actions";
+import { cancelContract, generateCompanyProposal, getProposalStatus } from "./contract-actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+
+/**
+ * A ABA CONTRATOS DA EMPRESA.
+ *
+ * ⚠️ ZS5 (02/11/2026): o envio para assinatura passou para o módulo de
+ * assinaturas digitais — o bloco `assinaturas` (montado no servidor) tem o
+ * botão "Enviar para assinatura" e os pacotes. O esboço antigo (criar
+ * contrato, "Enviar" sem PDF, "Marcar assinado" à mão) saiu: era um segundo
+ * caminho que nunca enviou nada. A lista abaixo mostra as linhas de
+ * `empresarial.contracts`; as que nasceram de um pacote (1038) acompanham a
+ * situação dele sozinhas.
+ */
 
 export type ContractView = {
   id: string;
@@ -35,6 +32,8 @@ export type ContractView = {
   sentAt: string | null;
   signedAt: string | null;
   zapsignUrl: string | null;
+  /** O pacote de assinatura digital que esta linha espelha (1038). */
+  packageId: string | null;
 };
 
 const STATUS_LABEL: Record<ContractView["status"], string> = {
@@ -56,13 +55,14 @@ const STATUS_VARIANT: Record<
 export function ContratosTab({
   companyId,
   contracts,
-  zapsignConfigured,
   gammaConfigured,
+  assinaturas,
 }: {
   companyId: string;
   contracts: ContractView[];
-  zapsignConfigured: boolean;
   gammaConfigured: boolean;
+  /** O bloco da assinatura digital (envio + pacotes), montado no servidor. */
+  assinaturas: ReactNode;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -81,21 +81,11 @@ export function ContratosTab({
     <div className="space-y-4">
       <ProposalGenerator companyId={companyId} gammaConfigured={gammaConfigured} />
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {zapsignConfigured
-            ? "ZapSign conectada."
-            : "ZapSign não conectada — use a marcação manual para testar."}
-        </p>
-        <ContractFormDialog companyId={companyId} />
-      </div>
+      {assinaturas}
 
-      {contracts.length === 0 ? (
-        <p className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
-          Nenhum contrato ainda.
-        </p>
-      ) : (
+      {contracts.length > 0 && (
         <div className="space-y-2">
+          <p className="text-sm font-medium">Contratos registrados</p>
           {contracts.map((c) => (
             <div
               key={c.id}
@@ -114,7 +104,14 @@ export function ContratosTab({
                   {c.signedAt &&
                     ` · assinado em ${new Date(c.signedAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`}
                 </p>
-                {c.zapsignUrl && (
+                {c.packageId ? (
+                  <Link
+                    href={`/assinaturas/pacotes/${c.packageId}`}
+                    className="text-xs text-gold-tinta hover:underline"
+                  >
+                    Ver o pacote de assinatura digital
+                  </Link>
+                ) : c.zapsignUrl ? (
                   <a
                     href={c.zapsignUrl}
                     target="_blank"
@@ -123,123 +120,31 @@ export function ContratosTab({
                   >
                     Link de assinatura
                   </a>
-                )}
+                ) : null}
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {c.status === "DRAFT" && (
-                  <Button
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    disabled={isPending}
-                    onClick={() =>
-                      run(
-                        async () => sendContract(companyId, c.id),
-                        "Contrato enviado."
-                      )
-                    }
-                  >
-                    Enviar
-                  </Button>
-                )}
-                {(c.status === "DRAFT" || c.status === "SENT") && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    disabled={isPending}
-                    onClick={() =>
-                      run(
-                        async () => markContractSigned(companyId, c.id),
-                        "Marcado como assinado."
-                      )
-                    }
-                  >
-                    Marcar assinado
-                  </Button>
-                )}
-                {c.status !== "SIGNED" && c.status !== "CANCELLED" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-destructive"
-                    disabled={isPending}
-                    onClick={() =>
-                      run(
-                        async () => cancelContract(companyId, c.id),
-                        "Contrato cancelado."
-                      )
-                    }
-                  >
-                    Cancelar
-                  </Button>
-                )}
-              </div>
+              {/* Linha antiga, sem pacote: dá para encerrar. A do pacote se
+                  cancela pelo pacote (cancela também na ZapSign). */}
+              {!c.packageId && c.status !== "SIGNED" && c.status !== "CANCELLED" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-destructive"
+                  disabled={isPending}
+                  onClick={() =>
+                    run(
+                      async () => cancelContract(companyId, c.id),
+                      "Contrato cancelado."
+                    )
+                  }
+                >
+                  Cancelar
+                </Button>
+              )}
             </div>
           ))}
         </div>
       )}
     </div>
-  );
-}
-
-function ContractFormDialog({ companyId }: { companyId: string }) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
-      const r = await createContract(companyId, formData);
-      if (r.ok) {
-        toast.success("Contrato criado.");
-        setOpen(false);
-        router.refresh();
-      } else toast.error(r.error ?? "Erro.");
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button size="sm">
-            <Plus className="mr-1 size-4" />
-            Novo contrato
-          </Button>
-        }
-      />
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Novo contrato</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-3">
-          <div>
-            <Label htmlFor="title">Título</Label>
-            <Input id="title" name="title" defaultValue="Contrato Risarte Empresarial" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="signer_name">Assinante</Label>
-              <Input id="signer_name" name="signer_name" />
-            </div>
-            <div>
-              <Label htmlFor="signer_email">E-mail</Label>
-              <Input id="signer_email" name="signer_email" type="email" />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={isPending}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              Criar
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 

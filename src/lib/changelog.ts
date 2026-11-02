@@ -62,6 +62,45 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.378.0",
+    data: "2026-11-02",
+    migracao: "0345",
+    titulo: "Assinatura digital — quinta etapa: o contrato de adesão do Empresarial",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na tela do contrato do funil do Empresarial, o botão Enviar para assinatura manda o contrato de adesão (com o Anexo I) para a ZapSign, montado com a proposta salva. Campo em branco no contrato impede o envio; os avisos em âmbar pedem a confirmação de que foram lidos. Assina primeiro o responsável da empresa, depois as testemunhas e por último a Risarte.",
+        papeis: ["rislife_consultant", "finance_franchisor", "franchisor_staff"],
+        manual: "13d.5",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha da empresa, a aba Contratos tem o mesmo botão, para aditivos e outros PDFs (e para o contrato de adesão, se a empresa veio do funil). Os pacotes da empresa aparecem nas abas Contratos e Documentos, com Visualizar, Baixar, Reenviar, Cancelar e Detalhe. Os botões antigos Enviar e Marcar assinado da aba Contratos saíram.",
+        papeis: ["rislife_consultant", "finance_franchisor", "franchisor_staff"],
+        manual: "13d.5",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quando todos assinam o contrato de adesão, o selo Contrato assinado do funil se marca sozinho, com uma anotação no histórico do lead. O botão manual continua para o contrato assinado fora do sistema.",
+        papeis: ["rislife_consultant", "finance_franchisor", "franchisor_staff"],
+        manual: "13d.5",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "No PDF para assinatura, números com hífen ou dois-pontos (CPF, CEP, horários) podiam sair com um espaço a mais, como \"0003- 28\". Os pacotes novos saem certos; os já enviados não mudam.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d.5",
+      },
+    ],
+  },
+  {
     versao: "0.377.0",
     data: "2026-11-02",
     migracao: null,

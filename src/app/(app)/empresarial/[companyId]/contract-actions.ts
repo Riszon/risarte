@@ -7,7 +7,6 @@ import { logAudit } from "@/lib/audit";
 import { formatBRL } from "@/lib/pricing";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
-import { createZapDocument, isZapsignConfigured } from "@/lib/empresarial/zapsign";
 import { carregarFaixasParaCobrar } from "@/lib/empresarial/faixas-da-empresa";
 import { contagemConfirmada } from "@/lib/contagem";
 import {
@@ -27,104 +26,6 @@ const GAMMA_BASE = "https://public-api.gamma.app/v1.0";
 
 function canUse(session: Awaited<ReturnType<typeof getSessionContext>>): boolean {
   return isProgramManager(session) || isRislifeConsultant(session);
-}
-
-function field(formData: FormData, key: string): string | null {
-  const v = String(formData.get(key) ?? "").trim();
-  return v || null;
-}
-
-export async function createContract(
-  companyId: string,
-  formData: FormData
-): Promise<ActionResult> {
-  const session = await getSessionContext();
-  if (!canUse(session)) return { ok: false, error: "Sem permissão." };
-  const db = await empresarialDb();
-  const { error } = await db.from("contracts").insert({
-    company_id: companyId,
-    title: field(formData, "title") ?? "Contrato Risarte Empresarial",
-    signer_name: field(formData, "signer_name"),
-    signer_email: field(formData, "signer_email"),
-    status: "DRAFT",
-  });
-  if (error) {
-    console.error("createContract failed:", error.message);
-    return { ok: false, error: "Não foi possível criar o contrato." };
-  }
-  revalidatePath(`/empresarial/${companyId}`);
-  return { ok: true };
-}
-
-export async function sendContract(
-  companyId: string,
-  contractId: string,
-  pdfUrl?: string
-): Promise<ActionResult> {
-  const session = await getSessionContext();
-  if (!canUse(session)) return { ok: false, error: "Sem permissão." };
-  const db = await empresarialDb();
-  const { data: c } = await db
-    .from("contracts")
-    .select("title, signer_name, signer_email")
-    .eq("id", contractId)
-    .maybeSingle();
-  if (!c) return { ok: false, error: "Contrato não encontrado." };
-
-  const patch: Record<string, unknown> = {
-    status: "SENT",
-    sent_at: new Date().toISOString(),
-  };
-
-  // Se a ZapSign estiver configurada E houver um PDF, emite de verdade.
-  if (isZapsignConfigured() && pdfUrl && c.signer_name && c.signer_email) {
-    const r = await createZapDocument({
-      name: c.title,
-      url_pdf: pdfUrl,
-      signer_name: c.signer_name,
-      signer_email: c.signer_email,
-    });
-    if (r.ok) {
-      patch.zapsign_doc_id = r.data.token;
-      patch.zapsign_url = r.data.sign_url ?? null;
-    } else if (!r.notConfigured) {
-      return { ok: false, error: r.error };
-    }
-  }
-
-  const { error } = await db.from("contracts").update(patch).eq("id", contractId);
-  if (error) {
-    console.error("sendContract failed:", error.message);
-    return { ok: false, error: "Não foi possível enviar o contrato." };
-  }
-  await logAudit({
-    action: "update",
-    entityType: "empresarial_contract",
-    entityId: contractId,
-    details: { sent: true, zapsign: Boolean(patch.zapsign_doc_id) },
-  });
-  revalidatePath(`/empresarial/${companyId}`);
-  return { ok: true };
-}
-
-/** Baixa manual: marca assinado (simula o webhook da ZapSign, para testes). */
-export async function markContractSigned(
-  companyId: string,
-  contractId: string
-): Promise<ActionResult> {
-  const session = await getSessionContext();
-  if (!canUse(session)) return { ok: false, error: "Sem permissão." };
-  const db = await empresarialDb();
-  const { error } = await db
-    .from("contracts")
-    .update({ status: "SIGNED", signed_at: new Date().toISOString() })
-    .eq("id", contractId);
-  if (error) {
-    console.error("markContractSigned failed:", error.message);
-    return { ok: false, error: "Não foi possível atualizar." };
-  }
-  revalidatePath(`/empresarial/${companyId}`);
-  return { ok: true };
 }
 
 export async function cancelContract(

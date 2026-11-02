@@ -34,12 +34,18 @@ export type Fonts = { regular: PDFFont; bold: PDFFont };
  * cada documento levam a sua cópia). A régua assinaturas-pdf.test.ts reprova
  * a volta do subconjunto.
  *
- * E A LIGADURA "liga" FICA DESLIGADA. Com a fonte inteira, a Inter troca o "r"
- * antes de m, i, t… pela variante "r.1", e a largura dela sai errada no PDF:
- * aparecia um buraco ("platafor ma", "Risar te"). Visto na tela; com a
- * ligadura desligada o texto fica certo nos dois caminhos do pdf.js.
+ * E AS TROCAS DE LETRA FICAM DESLIGADAS ("liga" e "calt"). Com a fonte
+ * inteira, a largura de uma letra TROCADA pela Inter sai errada no PDF:
+ *   * "liga" trocava o "r" antes de m, i, t… pela variante "r.1" — buraco em
+ *     "platafor ma", "Risar te" (visto na 0.376.1, corrigido lá);
+ *   * "calt" troca hífen, dois-pontos, parênteses… vizinhos de número ou
+ *     maiúscula pela variante ".case" — "0003- 28", "86180- 000em" no CPF e no
+ *     CEP (visto na ZS5; a 0.376.1 só desligou a "liga").
+ * Com as duas desligadas a fonte não troca NENHUM caractere do nosso texto
+ * (a régua de assinaturas-pdf.test.ts confere todos os pares). Se trocar a
+ * fonte, a régua diz se outra troca precisa sair.
  */
-const FEATURES = { liga: false };
+export const FEATURES = { liga: false, calt: false };
 export async function embedFonts(doc: PDFDocument): Promise<Fonts> {
   doc.registerFontkit(fontkit);
   const regular = await doc.embedFont(asset("Inter-Regular.otf"), { subset: false, features: FEATURES });
