@@ -25,6 +25,9 @@ import type {
 
 export type SaleData = {
   contractSigned: boolean;
+  /** ZS3 (0343): 'manual' | 'assinatura_digital' | null, e quando. */
+  contractSignedSource: string | null;
+  contractSignedAt: string | null;
   /** 0202: cobrança gerada — informativo; quem conclui é o pagamento. */
   paymentIssued: boolean;
   paymentConfirmed: boolean;
@@ -524,12 +527,14 @@ export async function loadNegotiationBlock(
   if (n) {
     const { data: saleRow } = await supabase
       .from("commercial_sales")
-      .select("contract_signed, payment_issued, payment_confirmed, closed_at")
+      .select("contract_signed, contract_signed_source, contract_signed_at, payment_issued, payment_confirmed, closed_at")
       .eq("negotiation_id", n.id)
       .maybeSingle();
     if (saleRow) {
       sale = {
         contractSigned: saleRow.contract_signed as boolean,
+        contractSignedSource: (saleRow.contract_signed_source as string | null) ?? null,
+        contractSignedAt: (saleRow.contract_signed_at as string | null) ?? null,
         paymentIssued: Boolean(saleRow.payment_issued),
         paymentConfirmed: saleRow.payment_confirmed as boolean,
         closedAt: (saleRow.closed_at as string | null) ?? null,

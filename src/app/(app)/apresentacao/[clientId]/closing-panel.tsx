@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
+import { formatBrDate } from "@/lib/dates";
 import {
   PAYMENT_METHOD_LABELS,
   type PaymentMethod,
@@ -47,6 +48,9 @@ export function ClosingPanel({
   negotiationId: string;
   sale: {
     contractSigned: boolean;
+    /** ZS3 (0343): 'manual' | 'assinatura_digital' | null, e quando. */
+    contractSignedSource?: string | null;
+    contractSignedAt?: string | null;
     /** 0202: cobrança gerada — informativo, não conclui a venda. */
     paymentIssued?: boolean;
     paymentConfirmed: boolean;
@@ -210,7 +214,11 @@ export function ClosingPanel({
               <StepToggle
                 icon={<FileSignature className="size-4" />}
                 label="Contrato assinado"
-                hint="Marque quando o contrato estiver assinado (no papel ou pela assinatura digital — a marcação automática chega com o retorno da ZapSign)."
+                hint={
+                  sale?.contractSigned && sale.contractSignedSource === "assinatura_digital"
+                    ? `Marcado pela assinatura digital${sale.contractSignedAt ? ` em ${formatBrDate(sale.contractSignedAt)}` : ""}.`
+                    : "Marque quando o contrato estiver assinado no papel. Pela assinatura digital, marca sozinho quando todos assinam."
+                }
                 done={signed}
                 disabled={!canClose || isPending}
                 onToggle={(v) => toggle("contract", v)}

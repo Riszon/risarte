@@ -6,6 +6,7 @@ import { PACKAGE_STATUS_CLASS, PACKAGE_STATUS_LABEL, SIGNER_STATUS_LABEL, STAGE_
 import type { PackageStage, PackageStatus, SignerStatus } from "@/lib/signatures/types";
 import { createClient } from "@/lib/supabase/server";
 import { EnviarParaAssinaturaDialog } from "./enviar-dialog";
+import { AtualizaAoVivo } from "@/components/assinaturas/atualiza-ao-vivo";
 
 /**
  * O BLOCO "ASSINATURAS DIGITAIS" DA ABA DOCUMENTOS DA FICHA (plano ZS0 §4.7):
@@ -52,6 +53,7 @@ export async function AssinaturasDoCliente({
 
   return (
     <Card>
+      {pacotes.some((p) => isWaiting(p.status)) && <AtualizaAoVivo clientId={clientId} />}
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">

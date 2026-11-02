@@ -4476,10 +4476,11 @@ Responde "quem usou o sistema, quanto e para quê" num período.
 imagem e contratos de adesão do Empresarial. O módulo entra **em etapas**
 (desde a versão 0.373.0): a primeira trouxe o menu **Assinaturas**, as
 permissões e a tela de configurações da rede; a segunda (0.374.0) trouxe o
-**envio ao paciente** e os **modelos de documento**. O retorno da ZapSign
-(a situação mudando sozinha quando alguém assina), o detalhe do pacote, o
-painel e o Empresarial chegam nas etapas seguintes, e as Novidades avisam
-quando cada uma entrar.
+**envio ao paciente** e os **modelos de documento**; a terceira (0.375.0), o
+**retorno da ZapSign** — a situação muda sozinha quando alguém assina — e a
+fila **Minhas assinaturas pendentes**. O detalhe do pacote, o painel e o
+Empresarial chegam nas etapas seguintes, e as Novidades avisam quando cada
+uma entrar.
 
 **Quem vê o menu "Assinaturas".** Quem tem a permissão **Assinaturas** no grupo
 **Assinaturas digitais** de Administração → Permissões (13b). Por padrão:
@@ -4567,9 +4568,11 @@ pessoas da 2ª e 3ª posição só conseguem assinar quando chegar a vez delas.
 lista cada pacote com a situação (Enviado, Parcialmente assinado, Assinado,
 Recusado, Expirado, Cancelado), até quando vale e quem já assinou.
 
-> ⚠️ **Nesta etapa a situação ainda não muda sozinha.** O retorno da ZapSign
-> (quem assinou, quando, o PDF assinado) entra na etapa seguinte. Até lá, o
-> pacote fica "Enviado · aguardando o cliente" mesmo depois de assinado.
+**A situação muda sozinha** (0.375.0): a cada assinatura, recusa ou
+vencimento a ZapSign avisa o sistema, e o bloco passa a Parcialmente
+assinado, Assinado (com "concluído em"), Recusado (com o motivo) ou Expirado,
+dizendo quem já assinou — sem recarregar a tela. Se a página estiver
+aberta, ela se atualiza em segundos; de qualquer jeito, a cada minuto.
 
 > ⚠️ **Texto provisório.** Os cinco modelos nasceram com texto escrito pelo
 > sistema, não pelo jurídico. Enquanto o Admin Master não trocar o texto e
@@ -4602,6 +4605,47 @@ editar:
 - **os selos** — ativo (aparece na janela de envio) e texto provisório.
 
 Cada salvamento fica na Auditoria ("Modelo de documento para assinatura").
+
+### 13d.3. Quem assina pela Risarte: Minhas assinaturas pendentes (0.375.0)
+
+Quem foi escolhido num envio como **testemunha** ou **representante da
+Risarte** assina pelo próprio sistema, na vez certa:
+
+1. Quando chega a sua vez (o cliente já assinou; depois, as testemunhas; por
+   último, a Risarte), o **sino** avisa "É a sua vez de assinar" e o **Início**
+   mostra o cartão "1 documento espera a sua assinatura".
+2. Em **Minhas assinaturas pendentes** (menu Assinaturas → ou pelo cartão, ou
+   pelo aviso) está a lista: o número do pacote, o paciente, os documentos e o
+   papel em que você assina. O botão **Assinar agora** só aparece na sua vez;
+   antes disso a linha diz "ainda não é a sua vez".
+3. **Assinar agora** abre o link da ZapSign: a assinatura é feita lá, na tela.
+   Assim que ela registra, a linha some da sua fila e o pacote avança.
+
+A fila é de **qualquer pessoa logada** — ser chamado a assinar não depende de
+ter o módulo Assinaturas no menu. Quem nunca foi chamado nunca vê nem o cartão
+nem o aviso.
+
+**Quando todos assinam:** quem enviou recebe o aviso "Pacote assinado por
+todos"; o PDF assinado é guardado no cofre do sistema (quem pode baixar e o
+detalhe do pacote chegam na etapa seguinte); e, se o pacote tinha o contrato
+ou o orçamento aprovado de uma negociação aceita, o passo **Contrato
+assinado** do fechamento (Apresentação) é marcado sozinho — o painel diz
+"marcado pela assinatura digital em dd/mm". A cópia ao paciente **por
+e-mail** depende de o serviço de e-mail estar cadastrado (variáveis
+`RESEND_API_KEY` e `EMAIL_FROM` na Vercel); sem ele a cópia fica na fila e o
+caminho continua sendo o WhatsApp.
+
+**Recusa e vencimento:** se o cliente recusar na ZapSign, o pacote fica
+Recusado com o motivo e quem enviou é avisado; se o link vencer, fica Expirado
+e quem enviou é avisado. Reenviar como um pacote novo chega na etapa
+seguinte; por enquanto, envie de novo pela ficha.
+
+> ⚠️ **Para o retorno chegar, o webhook tem de estar cadastrado na conta
+> ZapSign** (URL `/api/webhooks/zapsign` do ambiente e o segredo
+> `ZAPSIGN_WEBHOOK_SECRET`, o mesmo cadastrado na Vercel). Sem isso o pacote
+> fica "Enviado" para sempre, mesmo depois de assinado. É tarefa do Admin
+> Master, uma vez por ambiente (treino com a conta sandbox; produção com a
+> conta real).
 
 ## 14. Checklists
 

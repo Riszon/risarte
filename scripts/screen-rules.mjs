@@ -242,6 +242,14 @@ export const PERMISSION_RULES = [
     expect: "bloqueado",
     why: "configurar as assinaturas nasce só com o Admin Master (acao.assinaturas.configurar sem papel)",
   },
+  // ZS3 (0343) — "Minhas assinaturas pendentes" é de qualquer pessoa logada:
+  // ser chamado a assinar não depende do módulo no menu.
+  {
+    role: "receptionist",
+    route: "/assinaturas/minhas",
+    expect: "ok",
+    why: "a recepção pode ser testemunha; a fila dela abre sem o módulo (PLANO-ZS0 §4.2)",
+  },
   // ZS2 (0342) — os modelos de documento são parte da configuração.
   {
     role: "unit_manager",

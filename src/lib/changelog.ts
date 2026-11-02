@@ -62,6 +62,45 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.375.0",
+    data: "2026-10-31",
+    migracao: "0343",
+    titulo: "Assinatura digital (ZapSign) — terceira etapa: o sistema fica sabendo quem assinou",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando alguém assina, recusa ou o link vence, a situação do pacote muda sozinha na ficha (Enviado → Parcialmente assinado → Assinado; Recusado; Expirado), com quem assinou e quando. A tela atualiza sem recarregar.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Minhas assinaturas pendentes (menu Assinaturas, ou o cartão no Início): quem foi escolhido como testemunha ou representante da Risarte vê o que espera a sua assinatura e assina ali mesmo — só quando chega a vez. O sino avisa na hora em que a vez chega, e quem enviou é avisado quando o pacote conclui, é recusado ou vence.",
+        papeis: "todos",
+        manual: "13d",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Pacote com contrato ou orçamento aprovado, ligado a uma negociação aceita: quando todos assinam, o passo Contrato assinado do fechamento é marcado sozinho, com o aviso \"marcado pela assinatura digital\". A marcação manual continua existindo.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "13d",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O PDF assinado é guardado no cofre do sistema assim que o pacote conclui; a cópia por e-mail ao paciente só sai quando o serviço de e-mail estiver cadastrado (até lá fica na fila, e o WhatsApp continua sendo o caminho).",
+        papeis: [],
+        manual: "13d",
+      },
+    ],
+  },
+  {
     versao: "0.374.0",
     data: "2026-10-31",
     migracao: "0342",

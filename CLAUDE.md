@@ -391,6 +391,26 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**31/10/2026 (ZS3) — PC Administrador (core 0.374.0 → 0.375.0, migração 0343)**
+
+- **Assinatura digital — fase ZS3, o retorno da ZapSign** (bloco ZS3 no
+  ESTADO): porta `signature_apply_webhook`, rota `/api/webhooks/zapsign`,
+  PDF assinado no bucket, cópia na `signature_outbox` (Resend quando houver),
+  "Minhas assinaturas pendentes" + cartão no Início, tempo real, venda
+  fechando sozinha, simulador `scripts/zapsign-simular-webhook.mjs`.
+- ⚠️ **`commercial_close_step` virou PORTA sobre `_commercial_close_step_raw`**
+  (0343): a conta do fechamento mora na crua — mudar lá. A guarda de quem
+  clica vale só na origem `manual`; o webhook marca em nome de `sent_by`
+  com `contract_signed_source = 'assinatura_digital'`.
+- ⚠️ **A porta do webhook é só da chave de serviço** e é idempotente pela
+  `event_key`. O payload gravado é o mínimo (`webhook-event.ts`): sem nome,
+  e-mail ou telefone. Resposta 200 sempre que o corpo foi aceito.
+- ⚠️ **Sem o webhook cadastrado na ZapSign, o pacote nunca sai de
+  "Enviado"** — tarefa do dono por ambiente (`docs/PRODUCAO-ONLINE.md`).
+- Ensaio 29/29 em transação desfeita; tempo real provado na tela (~6 s).
+  **Não visto:** webhook real, e-mail real, painel de fechamento marcado.
+- ⏳ **0342 e 0343 não aplicadas na produção.** O dono roda. Próxima: **ZS4**.
+
 **31/10/2026 (ZS2) — PC Administrador (core 0.373.0 → 0.374.0, migração 0342)**
 
 - **Assinatura digital — fase ZS2, o envio ao paciente** (bloco ZS2 no

@@ -1,6 +1,84 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 31/10/2026 · Versão do sistema: **0.374.0** · Última migração: **0342** (0318 a 0341 aplicadas na produção e no treino; 0342 só no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.375.0** · Última migração: **0343** (0318 a 0343 aplicadas na produção e no treino) · Empresarial **0.73.0** / migração **1023** (aplicada na produção e no treino)_
+
+> ## ✍️ ZS3 — ASSINATURA DIGITAL: O RETORNO DA ZAPSIGN (31/10/2026, v0.375.0, migração 0343)
+>
+> Terceira fase do plano `docs/assinaturas/PLANO-ZS0.md` (§4.8, 5.5, 5.6, fase
+> ZS3). O sistema passa a **saber** o que aconteceu com cada pacote.
+>
+> **Banco (0343):** `signature_apply_webhook(p_event)` — a porta do webhook,
+> só pela chave de serviço (revogada de anon/authenticated); idempotente pela
+> `event_key` única em `signature_events`; atualiza signatários (nunca volta
+> de assinado), recalcula etapa e situação (sent → partially_signed →
+> signed/done com `completed_at`; refused com motivo; expired; cancelled
+> `zapsign_deleted`), avisa a próxima turma ("É a sua vez de assinar", link
+> `/assinaturas/minhas`) e quem enviou (assinado/recusado/vencido/cancelado), e
+> **fecha a venda** (plano §4.8): pacote de `plan_negotiation` com modelo
+> `contract`/`budget` assinado por todos → `_commercial_close_step_raw(…,
+> sent_by, 'assinatura_digital', package_id)`, embrulhado (nunca derruba o
+> pacote; falha vira `closing_failed`). `signature_my_pending()` — a fila de
+> quem está logado, com `is_my_turn`. `commercial_close_step` virou **porta**
+> sobre `_commercial_close_step_raw` (mesma assinatura e retorno; a guarda
+> `commercial_can_close` vale só na origem `manual`); `commercial_sales`
+> ganhou `contract_signed_source` e `contract_signature_package_id`.
+> `signature_packages`/`signature_signers` na publicação Realtime.
+> ⚠️ **Ao mexer no fechamento, mexer em `_commercial_close_step_raw`** — a
+> porta de cima não muda.
+>
+> **Rota `/api/webhooks/zapsign`** (pública no `proxy.ts`; cabeçalho
+> `x-riszon-webhook-secret` = `ZAPSIGN_WEBHOOK_SECRET`): 401 sem/with segredo
+> errado (sem registrar o corpo), 400 se não é evento, ambiente conferido
+> (`webhookMatchesEnvironment`), 200 sempre que o corpo foi aceito.
+> `webhook-apply.ts`: porta → PDF assinado baixado NA HORA (`signed_file`
+> expira em 60 min) para `{unidade}/patient/{pacote}/signed.pdf`, senão
+> evento `pending_download` (o cron da ZS6 tenta por `getDocument`) → cópia
+> ao cliente na `signature_outbox` (`signed_copy`); com a Resend configurada
+> (`RESEND_API_KEY` + `EMAIL_FROM`, `src/lib/notify/email.ts`) tenta mandar
+> já, senão fica `pending`. `webhook-event.ts` (puro): o evento vira o
+> mínimo para a porta — **sem nome, e-mail ou telefone no payload**.
+>
+> **Telas:** `/assinaturas/minhas` (qualquer pessoa logada; "Assinar agora"
+> só na vez), cartão **"N documentos esperam a sua assinatura"** no Início
+> (`MinhasAssinaturasNoInicio`, some quando não há nada), `AtualizaAoVivo`
+> (Realtime `postgres_changes` em UPDATE das duas tabelas + conferência de
+> 60 s com a aba visível) na aba Documentos da ficha e na fila; o painel de
+> fechamento diz "Marcado pela assinatura digital em dd/mm" quando foi o
+> webhook (`SaleData.contractSignedSource/At`). A Edge Function
+> `supabase/functions/zapsign-webhook` (nunca publicada) foi retirada.
+>
+> **Simulador:** `scripts/zapsign-simular-webhook.mjs ASS-000013 signed 2`
+> (ou `refused 1 "motivo"`, `expired`, `deleted`, `viewed 1`) monta o corpo
+> que a ZapSign mandaria para um pacote do treino e faz o POST com o segredo —
+> só treino (recusa a produção). O `servidor-treino.mjs` da pasta temporária
+> sobe com `ZAPSIGN_WEBHOOK_SECRET=ensaio-local`.
+>
+> **Portão:** `check-migrations` OK; `migrar:teste`; ensaio em transação
+> desfeita **29/29** (inclusive a venda de ensaio fechando sozinha com
+> `assinatura_digital` e auditoria); `verificar` OK; testes e lint (ver
+> commit); `check:telas` (ver commit). **Visto na tela** no servidor local
+> (banco de treino, ZapSign falsa, simulador): ASS-000013 foi de "aguardando
+> o cliente" a "Assinado · concluído em 20:54" passando por testemunhas e
+> Risarte; o Gerente de teste viu "Assinar agora" na vez dele e o cartão do
+> Início; **tempo real provado** (a fila mudou em ~6 s sem recarregar, pacote
+> de ensaio ASS-000023 depois cancelado). **Não visto:** o painel de
+> fechamento marcado pela assinatura (não há negociação aceita no cliente
+> fictício; provado no ensaio), e-mail de verdade (Resend não configurada),
+> o webhook real da ZapSign (não cadastrado na conta sandbox).
+>
+> **Resíduo no treino (meu):** ASS-000013 assinado pelo simulador (com
+> `pending_download` e uma linha pendente na `signature_outbox`), ASS-000023
+> cancelado (ensaio do tempo real), avisos no sino do Gerente de teste.
+>
+> **O que o dono precisa fazer:** (1) ✅ **0342** e **0343** rodadas na produção em 02/11/2026, conferência batendo
+> (a conferência da 0343: 4 funções, 2 colunas, 2 no realtime, false, true,
+> 0); (2) na conta **sandbox** da ZapSign, cadastrar o webhook
+> `https://risarte-treino.vercel.app/api/webhooks/zapsign` com o cabeçalho
+> `x-riszon-webhook-secret` e cadastrar o mesmo valor como
+> `ZAPSIGN_WEBHOOK_SECRET` (Secret) na Vercel do treino; (3) quando quiser
+> a cópia por e-mail: conta Resend, domínio verificado, `RESEND_API_KEY` e
+> `EMAIL_FROM` na Vercel. **Próxima fase: ZS4** (detalhe do pacote,
+> visualizador, baixar, reenviar, cancelar).
 
 > ## ✍️ ZS2 — ASSINATURA DIGITAL: O ENVIO AO PACIENTE (31/10/2026, v0.374.0, migração 0342)
 >
@@ -106,7 +184,7 @@ _Atualizado em: 31/10/2026 · Versão do sistema: **0.374.0** · Última migraç
 > `gerente@example.com` na Unidade Teste, e o CPF de teste válido em
 > "Cleibinhas Mosca Morta".
 >
-> **O que o dono precisa fazer:** (1) rodar **0342** na produção (SQL Editor;
+> **O que o dono precisa fazer:** (1) ✅ **0342** rodada na produção em 02/11/2026 (SQL Editor;
 > a conferência no fim deve dar 5 modelos, 5 provisórios, 2 kits, 3 itens, 2
 > portas, 0 policies fora de SELECT); (2) ler os cinco modelos em
 > Assinaturas → Configurações → Modelos e, quando o jurídico aprovar o texto,

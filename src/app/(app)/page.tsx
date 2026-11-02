@@ -37,6 +37,7 @@ import { ROLE_LABELS } from "@/lib/roles";
 import { ROTULO_DO_MOTIVO } from "@/lib/acesso-por-unidade";
 import { canViewMetas } from "@/lib/metas/access";
 import { MinhasMetasNoInicio } from "@/components/metas/minhas-metas";
+import { MinhasAssinaturasNoInicio } from "@/components/assinaturas/minhas-no-inicio";
 
 /**
  * A TELA DE INÍCIO — "o que espera por mim agora?".
@@ -250,6 +251,8 @@ export default async function HomePage() {
 
       {/* 0318: as metas em que a pessoa participa, com a barra dela. */}
       {!portal && canViewMetas(session) && <MinhasMetasNoInicio userId={session.userId} clinicId={session.activeClinic?.id ?? null} />}
+      {/* ZS3: quem foi chamado a assinar (testemunha, representante) vê aqui. */}
+      {!portal && <MinhasAssinaturasNoInicio />}
 
       {/* 0276: AS UNIDADES AINDA FECHADAS, e por quê. Sem isto a unidade
           simplesmente some da lista, e a pessoa conclui que perdeu o acesso

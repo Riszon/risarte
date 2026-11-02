@@ -35,6 +35,8 @@ nos `.env*.local` (fora do Git).
 | `ZAPSIGN_ENV` | Config | `sandbox` (treino) ou `production` (produção). **Vazio = sandbox**, de propósito: esquecer nunca cria documento com validade jurídica |
 | `ZAPSIGN_WEBHOOK_SECRET` | **Secret** | O mesmo texto cadastrado como cabeçalho `x-riszon-webhook-secret` no webhook da conta ZapSign (entra em uso na ZS3) |
 | `CRON_SECRET` | **Secret** | As rotinas de `/api/cron/*` (`vercel.json`) só rodam com ele; a Vercel manda sozinha em `Authorization: Bearer`. Um por projeto (treino e produção) |
+| `RESEND_API_KEY` | **Secret** | E-mail (ZS3): a cópia assinada ao paciente, o alerta de consumo e o relatório mensal. Sem ela o sistema diz que o e-mail não está configurado e deixa na fila |
+| `EMAIL_FROM` | Config | O remetente, `Risarte Odontologia <assinaturas@dominio-verificado>` — o domínio precisa estar verificado na Resend |
 
 ## Armadilhas da Vercel
 
@@ -56,6 +58,13 @@ nos `.env*.local` (fora do Git).
   1º). Exigem `CRON_SECRET` nos dois projetos e **plano Pro** para a horária
   (no gratuito a Vercel só aceita diária). Até a ZS6/ZS7 as rotas só respondem
   ao segredo e não fazem nada.
+- **Webhook da ZapSign (desde a ZS3):** na conta ZapSign (sandbox para o
+  treino, real para a produção) cadastrar a URL `https://<site>/api/webhooks/zapsign`
+  com o cabeçalho `x-riszon-webhook-secret` = o valor de `ZAPSIGN_WEBHOOK_SECRET`
+  do projeto, para os eventos `doc_signed`, `doc_refused`, `doc_expired`,
+  `doc_deleted`. Sem isso o pacote nunca sai de "Enviado". Para provar sem a
+  ZapSign: `node scripts/zapsign-simular-webhook.mjs ASS-000001 signed 1`
+  (treino; `RISARTE_URL` e `ZAPSIGN_WEBHOOK_SECRET` no ambiente).
   Em `iad1` o sistema ficava 6,5× mais lento. Como medir: `CLAUDE.md` §0d.
 - **Fluid Compute ligado.** Ao criar estado no nível do módulo em código de
   servidor, conferir que não guarda dado de pessoa (`CLAUDE.md` §0d).
