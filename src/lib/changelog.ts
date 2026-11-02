@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.379.0",
+    data: "2026-11-02",
+    migracao: null,
+    titulo: "Empresarial: contrato para assinatura pela aba Envio e selos, e vários documentos num pacote só",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No funil do Empresarial, a aba Envio e selos ganhou o cartão Contrato por assinatura digital, com o botão Enviar para assinatura e os pacotes enviados. O envio pela ZapSign entra sozinho na lista de envios da aba, sem mudar a fase.",
+        papeis: ["rislife_consultant", "finance_franchisor", "franchisor_staff"],
+        manual: "13d.5",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na janela de assinatura da empresa, o passo Documentos do pacote junta o contrato de adesão com PDFs do computador e com os PDFs já guardados na aba Documentos da empresa, na ordem que você escolher (setas para subir e descer). Tudo vira um documento só na ZapSign, com capa e índice, e cada pessoa assina uma vez.",
+        papeis: ["rislife_consultant", "finance_franchisor", "franchisor_staff"],
+        manual: "13d.5",
+      },
+    ],
+  },
+  {
     versao: "0.378.0",
     data: "2026-11-02",
     migracao: "0345",

@@ -275,6 +275,14 @@ assinado **e** pagamento confirmado. O selo do contrato **se marca sozinho**
 quando o contrato enviado pela assinatura digital fica assinado por todos
 (6.10.1); o botão manual continua para o contrato assinado fora do sistema.
 
+**Contrato por assinatura digital** — cartão entre o envio e os selos, com o
+botão **Enviar para assinatura** (a mesma janela da tela do contrato, 6.10.1)
+e os pacotes deste lead, com quem já assinou. O envio pela assinatura digital
+**entra sozinho** na lista de envios desta aba (*Outro — Contrato, Documentos
+adicionais · Assinatura digital (ZapSign) — pacote ASS-…*), sem precisar
+clicar em **Registrar envio**. Ele não muda a fase: só o envio da proposta
+leva a empresa para Follow-up.
+
 ### Fechamento
 
 O que a aba mostra depende de onde a empresa está:
@@ -819,17 +827,27 @@ empresa para outra o sistema preenche sozinho:
 
 #### 6.10.1. Enviar o contrato para assinatura digital (ZapSign)
 
-Na tela do contrato, logo abaixo dos avisos, fica o bloco **Assinaturas
-digitais**: o botão **Enviar para assinatura** e os pacotes já enviados deste
-lead. O PDF que vai para a ZapSign é **o mesmo contrato da tela**, com o
-**Anexo I**, montado na mesma hora.
+O botão **Enviar para assinatura** fica em dois lugares do funil: na tela do
+contrato (bloco **Assinaturas digitais**, logo abaixo dos avisos) e na aba
+**Envio e selos** da ficha (cartão **Contrato por assinatura digital**). Os
+dois abrem a mesma janela e mostram os pacotes já enviados deste lead. O PDF
+que vai para a ZapSign é **o mesmo contrato da tela**, com o **Anexo I**,
+montado na mesma hora.
 
 A janela tem três passos:
 
-1. **O que vai e quem assina pela empresa.** O contrato de adesão vem marcado;
-   dá para juntar **PDFs avulsos** (até 8 MB cada, 10 MB no pacote). Quem assina
-   pela empresa vem do **responsável da proposta** (nome, CPF, celular e
-   e-mail); corrigir ali vale só para este envio.
+1. **Os documentos do pacote e quem assina pela empresa.**
+   - **Tudo vira um documento só na ZapSign:** capa com o índice, rubrica em
+     todas as páginas e cada pessoa assina **uma vez**, no fim.
+   - O **contrato de adesão** vem marcado e vai sempre **primeiro**.
+   - **Incluir do computador:** PDFs avulsos (até 8 MB cada, 10 MB no pacote).
+   - **Incluir da aba Documentos da empresa:** os PDFs já guardados lá (contrato
+     social, cartão CNPJ, procuração…). Só aparece depois que a empresa é
+     cadastrada; antes do fechamento, a janela diz isso.
+   - A lista mostra a **ordem** em que cada documento entra, com as setas para
+     subir ou descer e o **X** para tirar do pacote. No máximo 10 anexos.
+   - Quem assina pela empresa vem do **responsável da proposta** (nome, CPF,
+     celular e e-mail); corrigir ali vale só para este envio.
    - **Campo em branco no contrato bloqueia o envio** (decisão do dono): a
      lista vermelha diz o que falta completar na proposta. Contrato assinado com
      linha em branco não tem conserto.
@@ -944,7 +962,8 @@ Menu **Empresarial**, clique na empresa. Sete abas:
 
 **Assinatura digital pela ficha da empresa** (aba **Contratos**) — o mesmo
 botão **Enviar para assinatura** da tela do contrato (6.10.1), para
-**aditivos e outros documentos** em PDF. Se a empresa veio do funil, o
+**aditivos e outros documentos** em PDF — do computador ou já guardados na aba
+**Documentos**, na ordem que você escolher. Se a empresa veio do funil, o
 **contrato de adesão** também pode ser enviado por aqui (ele é montado com a
 proposta do lead de origem); empresa cadastrada direto manda o contrato como
 PDF. Os pacotes aparecem nas abas **Contratos** e **Documentos**, incluindo os

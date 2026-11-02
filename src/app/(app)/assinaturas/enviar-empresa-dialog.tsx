@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { FileSignature, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowDown, ArrowUp, FileSignature, FileText, Loader2, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,8 +33,11 @@ import { LinksDeAssinatura } from "./links-de-assinatura";
 /**
  * A JANELA "ENVIAR PARA ASSINATURA" DA EMPRESA (ZS5, plano ZS0 §4.6), no
  * formato da do paciente:
- *   1. o que vai — o contrato de adesão (montado com a proposta salva) e/ou
- *      PDFs avulsos — e quem assina pela empresa;
+ *   1. o que vai — o contrato de adesão (montado com a proposta salva, sempre
+ *      o primeiro) e os anexos NA ORDEM escolhida: PDFs do computador e
+ *      arquivos já guardados na aba Documentos da empresa. Tudo vira UM
+ *      documento na ZapSign (capa com índice, rubrica em toda página, uma
+ *      assinatura de cada pessoa no fim) — e quem assina pela empresa;
  *   2. testemunhas e quem assina pela Risarte;
  *   3. a pré-visualização e o envio; depois, os links por canal.
  *
@@ -48,6 +51,11 @@ import { LinksDeAssinatura } from "./links-de-assinatura";
 
 type Step = 1 | 2 | 3 | 4;
 type Origin = { type: "commercial_lead" | "company"; id: string };
+
+/** Um anexo na lista do pacote, na ordem em que vai entrar. */
+type Anexo =
+  | { key: string; origem: "computador"; nome: string; file: File }
+  | { key: string; origem: "guardado"; nome: string; tipo: string; arquivoId: string };
 
 const comoNome = (s: string) => normalizar(s).replace(/\s+/g, " ").trim();
 
@@ -73,7 +81,7 @@ export function EnviarEmpresaParaAssinaturaDialog({
   const [rep, setRep] = useState({ name: "", cpf: "", email: "", phone: "" });
   const [witnessKeys, setWitnessKeys] = useState<string[]>([]);
   const [repKey, setRepKey] = useState<string>("");
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [prepared, setPrepared] = useState<Extract<PrepareResult, { ok: true }> | null>(null);
   const [sent, setSent] = useState<Extract<SendResult, { ok: true }> | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -102,7 +110,7 @@ export function EnviarEmpresaParaAssinaturaDialog({
     setStep(1);
     setPrepared(null);
     setSent(null);
-    setAttachments([]);
+    setAnexos([]);
     setWitnessKeys([]);
     setAvisosLidos(false);
   }
@@ -127,7 +135,8 @@ export function EnviarEmpresaParaAssinaturaDialog({
   const faltandoPasso1: string[] = [];
   const faltandoPasso2: string[] = [];
   if (ctx) {
-    if (!incluirContrato && attachments.length === 0) faltandoPasso1.push("Escolha o contrato de adesão ou anexe ao menos um PDF.");
+    if (!incluirContrato && anexos.length === 0) faltandoPasso1.push("Escolha o contrato de adesão ou inclua ao menos um documento.");
+    if (anexos.length > 10) faltandoPasso1.push("No máximo 10 anexos por pacote.");
     if (incluirContrato && contrato?.disponivel && contrato.faltando.length > 0) {
       faltandoPasso1.push("O contrato tem campos em branco (lista abaixo): complete a proposta antes de enviar.");
     }
@@ -156,6 +165,16 @@ export function EnviarEmpresaParaAssinaturaDialog({
     incluirContrato &&
     comoNome(ctx.contratadaRepName) !== comoNome(escolhidoRisarte.name);
 
+  function mover(i: number, delta: -1 | 1) {
+    setAnexos((prev) => {
+      const j = i + delta;
+      if (j < 0 || j >= prev.length) return prev;
+      const lista = [...prev];
+      [lista[i], lista[j]] = [lista[j], lista[i]];
+      return lista;
+    });
+  }
+
   function preparar() {
     const fd = new FormData();
     fd.set("origin_type", origin.type);
@@ -168,7 +187,17 @@ export function EnviarEmpresaParaAssinaturaDialog({
     fd.set("rep_phone", rep.phone);
     fd.set("witness_keys", JSON.stringify(witnessKeys));
     fd.set("representative_key", repKey);
-    for (const f of attachments) fd.append("attachments", f);
+    // Os arquivos do computador vão em "attachments"; a ordem de TODOS os
+    // anexos (computador e guardados) vai em "anexos_ordem".
+    const ordem: ({ origem: "computador"; indice: number } | { origem: "guardado"; id: string })[] = [];
+    let indice = 0;
+    for (const a of anexos) {
+      if (a.origem === "computador") {
+        fd.append("attachments", a.file);
+        ordem.push({ origem: "computador", indice: indice++ });
+      } else ordem.push({ origem: "guardado", id: a.arquivoId });
+    }
+    fd.set("anexos_ordem", JSON.stringify(ordem));
     startTransition(async () => {
       const r = await prepararEnvioDaEmpresa(fd);
       if (r.ok) {
@@ -181,7 +210,7 @@ export function EnviarEmpresaParaAssinaturaDialog({
   function enviar() {
     if (!prepared) return;
     startTransition(async () => {
-      const r = await concluirEnvioDaEmpresa({ packageId: prepared.packageId, origin });
+      const r = await concluirEnvioDaEmpresa({ packageId: prepared.packageId, origin, incluiuContrato: incluirContrato, temAnexos: anexos.length > 0 });
       if (r.ok) {
         setSent(r);
         setStep(4);
@@ -277,20 +306,89 @@ export function EnviarEmpresaParaAssinaturaDialog({
               </div>
 
               <div className="space-y-2">
-                <Label>PDFs avulsos (opcional — aditivos e outros documentos)</Label>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="application/pdf"
-                  multiple
-                  className="block w-full text-sm"
-                  onChange={(e) => setAttachments(Array.from(e.target.files ?? []))}
-                />
-                {attachments.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {attachments.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`).join(", ")} — até 8 MB cada, 10 MB no pacote inteiro.
-                  </p>
+                <Label>Documentos do pacote</Label>
+                <p className="text-xs text-muted-foreground">
+                  Tudo vira <strong>um documento só</strong> na ZapSign: capa com o índice, rubrica em todas as páginas
+                  e cada pessoa assina uma vez, no fim. O contrato de adesão vai primeiro; os outros, na ordem abaixo.
+                </p>
+                {anexos.length > 0 && (
+                  <ol className="space-y-1">
+                    {anexos.map((a, i) => (
+                      <li key={a.key} className="flex items-center gap-2 rounded-md border p-2 text-sm">
+                        <span className="w-5 text-right text-xs text-muted-foreground">{(incluirContrato ? 2 : 1) + i}º</span>
+                        <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1 truncate">
+                          {a.nome}
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            {a.origem === "computador" ? `· do computador (${(a.file.size / 1024 / 1024).toFixed(1)} MB)` : `· ${a.tipo}, da aba Documentos`}
+                          </span>
+                        </span>
+                        <Button type="button" size="icon" variant="ghost" className="size-7" aria-label="Subir" disabled={i === 0} onClick={() => mover(i, -1)}>
+                          <ArrowUp className="size-3.5" />
+                        </Button>
+                        <Button type="button" size="icon" variant="ghost" className="size-7" aria-label="Descer" disabled={i === anexos.length - 1} onClick={() => mover(i, 1)}>
+                          <ArrowDown className="size-3.5" />
+                        </Button>
+                        <Button type="button" size="icon" variant="ghost" className="size-7" aria-label="Tirar do pacote" onClick={() => setAnexos((prev) => prev.filter((x) => x.key !== a.key))}>
+                          <X className="size-3.5" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ol>
                 )}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium">Incluir do computador (PDF, até 8 MB cada, 10 MB no pacote)</p>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    className="block w-full text-sm"
+                    onChange={(e) => {
+                      const novos = Array.from(e.target.files ?? []).map((file, j) => ({
+                        key: `pc:${Date.now()}:${j}:${file.name}`,
+                        origem: "computador" as const,
+                        nome: file.name.replace(/\.pdf$/i, ""),
+                        file,
+                      }));
+                      setAnexos((prev) => [...prev, ...novos]);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium">Incluir da aba Documentos da empresa</p>
+                  {!ctx.temEmpresa ? (
+                    <p className="text-xs text-muted-foreground">A empresa ainda não foi cadastrada: os documentos guardados aparecem aqui depois do fechamento.</p>
+                  ) : ctx.arquivosGuardados.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhum PDF guardado na aba Documentos desta empresa.</p>
+                  ) : (
+                    <ul className="max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
+                      {ctx.arquivosGuardados.map((g) => {
+                        const ja = anexos.some((a) => a.origem === "guardado" && a.arquivoId === g.id);
+                        return (
+                          <li key={g.id}>
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={ja}
+                                onChange={() =>
+                                  setAnexos((prev) =>
+                                    ja
+                                      ? prev.filter((a) => !(a.origem === "guardado" && a.arquivoId === g.id))
+                                      : [...prev, { key: `doc:${g.id}`, origem: "guardado", nome: g.nome.replace(/\.pdf$/i, ""), tipo: g.tipo, arquivoId: g.id }]
+                                  )
+                                }
+                              />
+                              <span className="min-w-0 flex-1 truncate">{g.nome}</span>
+                              <span className="text-xs text-muted-foreground">{g.tipo}</span>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2 rounded-md border p-3">

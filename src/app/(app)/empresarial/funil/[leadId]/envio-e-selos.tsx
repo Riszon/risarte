@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, MessageCircle, Send } from "lucide-react";
@@ -44,6 +44,7 @@ export function EnvioESelos({
   envios,
   contractSignedAt,
   implantationPaidAt,
+  assinatura,
 }: {
   leadId: string;
   empresa: string;
@@ -53,6 +54,8 @@ export function EnvioESelos({
   envios: EnvioView[];
   contractSignedAt: string | null;
   implantationPaidAt: string | null;
+  /** ZS5: o bloco da assinatura digital do contrato (envio + pacotes), montado no servidor. */
+  assinatura?: ReactNode;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -110,6 +113,8 @@ export function EnvioESelos({
             <p className="text-xs text-muted-foreground">
               O sistema <strong>não envia</strong> — quem envia é você. Aqui fica
               o registro do que foi enviado, e a mensagem sai pronta para colar.
+              O contrato para <strong>assinatura digital</strong> sai pelo cartão
+              logo abaixo, e o envio entra sozinho nesta lista.
             </p>
           </div>
 
@@ -244,6 +249,8 @@ export function EnvioESelos({
           )}
         </CardContent>
       </Card>
+
+      {assinatura}
 
       {/* ------------------------------------------------------------------ */}
       <Card className={falta.length === 0 ? "border-emerald-600/40" : undefined}>

@@ -391,6 +391,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 (0.379.0) — PC Administrador (core 0.378.0 → 0.379.0, sem migração; Empresarial 0.93.0 → 0.94.0)**
+
+- **Envio e selos com a assinatura + documentos mesclados** (bloco 0.379.0 no
+  ESTADO; pedido do dono, opção C). ⚠️ **O envio digital pelo funil grava em
+  `lead_dispatches` sem `PROPOSAL`** (régua): com a proposta, o gatilho da 1010
+  mudaria a fase.
+- ⚠️ **Arquivo da aba Documentos só entra no pacote se apareceu na lista lida
+  pela RLS** (`ctx.arquivosGuardados`); o id sozinho não baixa nada.
+- O contrato vai sempre primeiro; só os anexos se reordenam (o PDF comum do
+  pacote não mudou). **Próximo (B):** a proposta comercial em PDF.
+
 **02/11/2026 (ZS5) — PC Administrador (core 0.377.0 → 0.378.0, migração 0345; Empresarial 0.92.1 → 0.93.0, migração 1038)**
 
 - **Assinatura digital — fase ZS5, o Empresarial** (bloco ZS5 no ESTADO):

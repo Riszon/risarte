@@ -1,6 +1,39 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.378.0** · Última migração: **0345** (0318 a 0345 aplicadas na produção e no treino) · Empresarial **0.93.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.379.0** · Última migração: **0345** (0318 a 0345 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## ✍️ 0.379.0 — ENVIO E SELOS COM ASSINATURA E DOCUMENTOS MESCLADOS (02/11/2026, sem migração; Empresarial 0.94.0)
+>
+> Pedido do dono depois da ZS5, opção C (A agora, B depois): (1) o envio do
+> contrato para assinatura também na aba **Envio e selos** do funil (cartão
+> "Contrato por assinatura digital", o mesmo `AssinaturasDaEmpresa` como
+> `assinatura` de `EnvioESelos`); (2) o envio digital pelo funil **entra sozinho**
+> em `lead_dispatches` (canal `OTHER`, itens `CONTRACT`/`EXTRA`, nota com o
+> número do pacote) — sem `PROPOSAL`, então o gatilho da 1010 não muda a fase;
+> (3) a janela ganhou **Documentos do pacote**: o contrato sempre primeiro e os
+> anexos na ordem escolhida (setas, X), do computador ou da aba Documentos da
+> empresa (`company_files`, lidos pela RLS em `loadEmpresaSendContext`; o
+> servidor só baixa do bucket `empresarial-empresa-docs` o arquivo que estava
+> nessa lista). A ordem viaja em `anexos_ordem`; `prepararPacoteDaEmpresa`
+> recebe `anexos: AnexoDoPacote[]`.
+>
+> **Conferido:** portão (build do zero e tipos, todos os testes, lint); 3 réguas
+> novas em `assinaturas-empresa.test.ts`. Na tela (servidor local, treino,
+> ZapSign falsa, Admin de teste, lead "ZZZ Fechamento do agente"): o cartão na
+> aba Envio e selos, os 2 PDFs guardados de ensaio escolhidos e reordenados,
+> pré-visualização com 8 páginas, envio do **ASS-000036** — itens no banco na
+> ordem escolhida (contrato pág. 2–6, procuração 7, cartão CNPJ 8), o registro
+> "Outro — Contrato, Documentos adicionais · Assinatura digital (ZapSign) —
+> pacote ASS-000036" na aba e a fase sem mudar —, e o cancelamento pela tela.
+> Resíduo no treino: 2 PDFs "Ensaio ZS5 (pode ignorar)" na aba Documentos da
+> "ZZZ Fechamento LTDA"; ASS-000036 cancelado. O modelo de adesão do treino
+> ficou alguns minutos com 1 testemunha e sem Risarte (AP91) e voltou.
+>
+> **Não visto:** incluir PDF do computador pela tela (o navegador de teste não
+> escolhe arquivo; o caminho é o mesmo de antes, por teste).
+>
+> **Próximo (B, combinado com o dono):** a **proposta comercial em PDF** para
+> entrar no pacote — hoje ela é só a página "Ver a proposta", para imprimir.
 
 > ## ✍️ ZS5 — ASSINATURA DIGITAL NO EMPRESARIAL (02/11/2026, v0.378.0 / Empresarial 0.93.0, migrações 0345 e 1038)
 >

@@ -4717,10 +4717,15 @@ nem cancela.
 
 ### 13d.5. O contrato de adesão do Empresarial (0.378.0)
 
-**Onde fica.** Na tela do contrato do funil (*Empresarial → Funil → a empresa
-→ Ver o contrato*) e na ficha da empresa (aba **Contratos**, e os pacotes também
-na aba **Documentos**). O passo a passo completo está no manual do Empresarial,
-seção 6.10.1.
+**Onde fica.** No funil, na tela do contrato (*Empresarial → Funil → a empresa
+→ Ver o contrato*) e na aba **Envio e selos** da ficha (desde a 0.379.0); e na
+ficha da empresa (aba **Contratos**, e os pacotes também na aba **Documentos**).
+O passo a passo completo está no manual do Empresarial, seção 6.10.1.
+
+**Vários documentos num pacote só.** O contrato de adesão vai primeiro; depois,
+na ordem escolhida, PDFs do computador e PDFs já guardados na aba Documentos da
+empresa. Tudo vira um documento na ZapSign, com capa e índice, e cada pessoa
+assina uma vez. O envio pelo funil entra sozinho na lista da aba Envio e selos.
 
 **O que muda em relação ao paciente:**
 

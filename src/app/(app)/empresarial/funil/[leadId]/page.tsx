@@ -67,6 +67,7 @@ import type { Vantagem, VantagemEscolhida } from "@/lib/empresarial/vantagens";
 import { lerMetas } from "@/lib/empresarial/riso-social";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/empresarial/constants";
 import { EnvioESelos, type EnvioView } from "./envio-e-selos";
+import { AssinaturasDaEmpresa } from "@/app/(app)/assinaturas/assinaturas-da-empresa";
 import { FechamentoEImplantacao } from "./fechamento-e-implantacao";
 
 // A tela deixou de ser só o levantamento quando virou abas (OC-00083).
@@ -894,6 +895,14 @@ export default async function FichaDoLeadPage({
           envios={envios}
           contractSignedAt={lead.contract_signed_at}
           implantationPaidAt={lead.implantation_paid_at}
+          assinatura={
+            <AssinaturasDaEmpresa
+              companyId={lead.company_id}
+              leadId={lead.id}
+              origin={{ type: "commercial_lead", id: lead.id }}
+              titulo="Contrato por assinatura digital"
+            />
+          }
         />
         </div>
       ),

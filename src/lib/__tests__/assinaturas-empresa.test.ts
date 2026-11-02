@@ -153,6 +153,21 @@ describe("a tela e o PDF leem o contrato do MESMO jeito (ZS5)", () => {
     expect(ler("src/app/(app)/empresarial/funil/[leadId]/contrato/page.tsx")).toContain("carregarContratoDoLead(leadId)");
     expect(ler("src/lib/signatures/send-empresa.ts")).toContain("carregarContratoDoLead(leadId)");
   });
+  it("a aba Envio e selos do funil tem o envio digital do contrato", () => {
+    expect(ler("src/app/(app)/empresarial/funil/[leadId]/page.tsx")).toMatch(/<EnvioESelos[\s\S]{0,800}assinatura=\{\s*<AssinaturasDaEmpresa/);
+  });
+  it("o envio digital entra no registro do funil SEM a proposta (a fase não muda)", () => {
+    const acoes = ler("src/app/(app)/assinaturas/envio-empresa-actions.ts");
+    const itens = acoes.match(/const itens = \[[^\n]*\];/)?.[0] ?? "";
+    expect(itens).toContain('"CONTRACT"');
+    expect(itens).not.toContain("PROPOSAL");
+    expect(acoes).toContain('channel: "OTHER"');
+  });
+  it("arquivo guardado só entra no pacote se a pessoa o enxerga (pela RLS)", () => {
+    const envio = ler("src/lib/signatures/send-empresa.ts");
+    expect(envio).toContain("ctx.arquivosGuardados.find((g) => g.id === a.arquivoId)");
+    expect(envio).toMatch(/from\("company_files"\)[\s\S]{0,200}\.eq\("company_id", companyId\)/);
+  });
   it("o esboço antigo da ZapSign no Empresarial saiu (um caminho só)", () => {
     const acoes = ler("src/app/(app)/empresarial/[companyId]/contract-actions.ts");
     expect(acoes).not.toMatch(/export async function (sendContract|markContractSigned|createContract)\b/);

@@ -6,6 +6,7 @@ import { corpoDoContratoParaAssinatura } from "@/lib/empresarial/contrato-para-a
 import { lerContratada } from "@/lib/empresarial/contrato-dados";
 import { isProgramManager, isRislifeConsultant } from "@/lib/empresarial/access";
 import { empresarialAdminDb, empresarialDb } from "@/lib/empresarial/db";
+import { COMPANY_DOCS_BUCKET, COMPANY_FILE_TYPE_LABELS, type CompanyFileType } from "@/lib/empresarial/documents";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isZapsignConfigured, isZapsignFake, zapsignEnv } from "@/lib/zapsign/env";
@@ -61,6 +62,8 @@ export type EmpresaSendContext = {
     | { disponivel: true; titulo: string; faltando: string[]; avisos: string[]; dados: ContratoDoLead }
     | { disponivel: false; motivo: string };
   representante: RepresentanteDaEmpresa;
+  /** Os PDFs já guardados na aba Documentos da empresa (lidos pela RLS). */
+  arquivosGuardados: ArquivoGuardado[];
   contratada: { cnpj: string | null; repName: string | null };
   settings: { companyExpiryDays: number; defaultMessage: string };
   sender: StaffSignerOption;
@@ -70,6 +73,17 @@ export type EmpresaSendContext = {
 };
 
 type LoadResult = { ok: true; ctx: EmpresaSendContext } | { ok: false; error: string };
+
+export type ArquivoGuardado = { id: string; nome: string; tipo: string; storagePath: string };
+
+/**
+ * Um anexo do pacote, NA ORDEM em que entra (depois do contrato de adesão,
+ * que vai sempre primeiro): um PDF que veio do computador ou um arquivo já
+ * guardado na aba Documentos da empresa.
+ */
+export type AnexoDoPacote =
+  | { origem: "computador"; name: string; bytes: Uint8Array }
+  | { origem: "guardado"; arquivoId: string };
 
 /**
  * A unidade emissora do pacote da empresa: a Franqueadora (é a Risarte
@@ -192,6 +206,21 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
     }
   }
 
+  // Os PDFs guardados na aba Documentos da empresa — pela RLS: quem não vê a
+  // empresa não vê os arquivos (e o servidor só baixa o que apareceu aqui).
+  let arquivosGuardados: ArquivoGuardado[] = [];
+  if (companyId) {
+    const { data: arquivos } = await db
+      .from("company_files")
+      .select("id, file_type, file_name, storage_path")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .returns<{ id: string; file_type: CompanyFileType; file_name: string; storage_path: string }[]>();
+    arquivosGuardados = (arquivos ?? [])
+      .filter((a) => /\.pdf$/i.test(a.file_name) || /\.pdf$/i.test(a.storage_path))
+      .map((a) => ({ id: a.id, nome: a.file_name, tipo: COMPANY_FILE_TYPE_LABELS[a.file_type] ?? "Outro", storagePath: a.storage_path }));
+  }
+
   const admin = createAdminClient();
   const { sender, staff, byRole } = await loadStaffOptions(admin, session, clinic.id);
 
@@ -206,6 +235,7 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
       template,
       contrato,
       representante,
+      arquivosGuardados,
       contratada: { cnpj: contratadaLida.contratada?.cnpj ?? null, repName: contratadaLida.contratada?.repName ?? null },
       settings: { companyExpiryDays: settings.company_expiry_days, defaultMessage: settings.default_message },
       sender,
@@ -231,7 +261,8 @@ export async function prepararPacoteDaEmpresa(input: {
   representante: { name: string; cpf: string; email: string; phone: string };
   witnessKeys: string[];
   representativeKey: string | null;
-  attachments: { name: string; bytes: Uint8Array }[];
+  /** Os anexos na ordem escolhida (o contrato de adesão vai antes de todos). */
+  anexos: AnexoDoPacote[];
 }): Promise<PrepareResult> {
   const loaded = await loadEmpresaSendContext({ session: input.session, origin: input.origin });
   if (!loaded.ok) return loaded;
@@ -256,10 +287,25 @@ export async function prepararPacoteDaEmpresa(input: {
     docs.push({ title: corpo.titulo, body: corpo.body });
     valores = d.contrato.valores;
   }
-  if (docs.length === 0 && input.attachments.length === 0) {
+  if (docs.length === 0 && input.anexos.length === 0) {
     return { ok: false, error: "Escolha o contrato de adesão ou anexe ao menos um PDF." };
   }
-  for (const a of input.attachments) {
+  // Os anexos na ordem escolhida. O arquivo guardado só é baixado se estava na
+  // lista que a pessoa enxerga (pela RLS) — o id sozinho não abre nada.
+  const attachments: { name: string; bytes: Uint8Array }[] = [];
+  const adminStorage = createAdminClient().storage;
+  for (const a of input.anexos) {
+    if (a.origem === "computador") {
+      attachments.push({ name: a.name, bytes: a.bytes });
+      continue;
+    }
+    const guardado = ctx.arquivosGuardados.find((g) => g.id === a.arquivoId);
+    if (!guardado) return { ok: false, error: "Um dos documentos escolhidos não está mais na aba Documentos da empresa." };
+    const baixado = await adminStorage.from(COMPANY_DOCS_BUCKET).download(guardado.storagePath);
+    if (baixado.error || !baixado.data) return { ok: false, error: `Não foi possível ler "${guardado.nome}" dos documentos da empresa.` };
+    attachments.push({ name: guardado.nome, bytes: new Uint8Array(await baixado.data.arrayBuffer()) });
+  }
+  for (const a of attachments) {
     const erro = validarAnexo({ name: a.name, size: a.bytes.byteLength, type: "application/pdf" });
     if (erro) return { ok: false, error: `Anexo: ${erro}` };
     const insp = await inspectAttachment(a.bytes);
@@ -304,7 +350,7 @@ export async function prepararPacoteDaEmpresa(input: {
       origin_type: input.origin.type,
       origin_id: input.origin.id,
     })),
-    ...input.attachments.map((a, i) => ({
+    ...attachments.map((a, i) => ({
       template_id: null,
       title: a.name.replace(/\.pdf$/i, ""),
       sort_order: docs.length + i,
@@ -362,7 +408,7 @@ export async function prepararPacoteDaEmpresa(input: {
     docs: docs.map((d) => ({ title: d.title, body: d.body, provisional: false })),
     valores: {},
     signers: montado.signers,
-    attachments: input.attachments.map((a) => ({ title: a.name.replace(/\.pdf$/i, ""), bytes: a.bytes })),
+    attachments: attachments.map((a) => ({ title: a.name.replace(/\.pdf$/i, ""), bytes: a.bytes })),
     coverData,
     actorUserId: input.session.userId,
     audience: "company",
