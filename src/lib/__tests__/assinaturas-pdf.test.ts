@@ -1,4 +1,4 @@
-import { PDFDocument } from "pdf-lib";
+import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { renderCoverPdf } from "@/lib/signatures/pdf/cover";
 import { inspectAttachment, mergePdfs } from "@/lib/signatures/pdf/merge";
@@ -158,7 +158,8 @@ describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
     const capa = await renderCoverPdf({
       packageNumber: "ASS-000001",
       clientName: "Maria da Silva Teste",
-      clinicName: "Risarte Unidade Teste",
+      issuerName: "Risarte Unidade Teste Ltda",
+      issuerCnpj: "11222333000181",
       dateLabel: "31/10/2026",
       items: [
         { title: "Doc 1", firstPage: 2, lastPage: 1 + d1.pageCount },
@@ -167,6 +168,10 @@ describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
       ],
       signers: signers.map((s) => ({ name: s.name, qualification: s.qualification })),
     });
+    // 0350: a capa não leva imagem nenhuma (o logotipo da Risarte saiu).
+    const capaDoc = await PDFDocument.load(capa);
+    const xobjetos = capaDoc.getPage(0).node.Resources()?.lookup(PDFName.of("XObject"), PDFDict);
+    expect(xobjetos ? xobjetos.keys().length : 0).toBe(0);
     const m = await mergePdfs([{ bytes: capa }, { bytes: d1.bytes }, { bytes: d2.bytes }, { bytes: anexoBytes }]);
     expect(m.ranges[0]).toEqual({ first_page: 1, last_page: 1 });
     expect(m.ranges[1]).toEqual({ first_page: 2, last_page: 1 + d1.pageCount });
@@ -201,5 +206,38 @@ describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
       }
       expect(r.relative_position_left + r.relative_size_x).toBeLessThanOrEqual(100);
     }
+  });
+});
+
+// 0350 (decisão do dono, 03/11/2026): documento que o cliente assina não leva
+// o logotipo da Risarte, e o nome de quem emite é a RAZÃO SOCIAL.
+describe("documentos assinados: sem logotipo, com a razão social (0350)", () => {
+  const ler = (...p: string[]) => readFileSync(path.join(process.cwd(), ...p), "utf8");
+
+  it("a capa e o texto dos documentos não desenham imagem", () => {
+    for (const f of ["cover.ts", "render-template.ts", "text.ts", "signature-block.ts"]) {
+      const src = ler("src", "lib", "signatures", "pdf", f);
+      expect(src, f).not.toMatch(/logoPng|embedPng|drawImage/);
+    }
+  });
+
+  it("capa e rodapé usam a razão social; o envio recusa sem ela", () => {
+    const send = ler("src", "lib", "signatures", "send.ts");
+    expect(send).toMatch(/const footer = `\$\{number\}  ·  \$\{input\.issuerName\}`/);
+    expect(send).toMatch(/lerRazaoSocial\(createAdminClient\(\), input\.clinicId\)/);
+    expect(send.indexOf("lerRazaoSocial(")).toBeLessThan(send.indexOf('rpc("signature_create_package"'));
+    expect(ler("src", "lib", "signatures", "reenvio.ts")).toMatch(/lerRazaoSocial\(admin, old\.clinic_id\)/);
+    expect(ler("src", "lib", "signatures", "send-empresa.ts")).toMatch(/Falta a razão social da contratada/);
+    expect(ler("src", "lib", "signatures", "valores.ts")).toMatch(/unidade_razao_social: clinic\.legal_name\?\.trim\(\) \|\| null/);
+  });
+});
+
+describe("razaoSocialDoDocumento (0350)", () => {
+  it("vazia ou só espaço recusa com a mensagem do cadastro; preenchida passa aparada", async () => {
+    const { razaoSocialDoDocumento, SEM_RAZAO_SOCIAL } = await import("@/lib/signatures/razao-social");
+    expect(razaoSocialDoDocumento(null)).toEqual({ ok: false, error: SEM_RAZAO_SOCIAL });
+    expect(razaoSocialDoDocumento("   ")).toEqual({ ok: false, error: SEM_RAZAO_SOCIAL });
+    expect(razaoSocialDoDocumento(" Risarte Odontologia Centro Ltda ")).toEqual({ ok: true, nome: "Risarte Odontologia Centro Ltda" });
+    expect(SEM_RAZAO_SOCIAL).toMatch(/Administração → Clínicas/);
   });
 });

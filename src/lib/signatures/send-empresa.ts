@@ -64,7 +64,7 @@ export type EmpresaSendContext = {
   representante: RepresentanteDaEmpresa;
   /** Os PDFs já guardados na aba Documentos da empresa (lidos pela RLS). */
   arquivosGuardados: ArquivoGuardado[];
-  contratada: { cnpj: string | null; repName: string | null };
+  contratada: { legalName: string | null; cnpj: string | null; repName: string | null };
   settings: { companyExpiryDays: number; defaultMessage: string };
   sender: StaffSignerOption;
   staff: StaffSignerOption[];
@@ -236,7 +236,11 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
       contrato,
       representante,
       arquivosGuardados,
-      contratada: { cnpj: contratadaLida.contratada?.cnpj ?? null, repName: contratadaLida.contratada?.repName ?? null },
+      contratada: {
+        legalName: contratadaLida.contratada?.legalName ?? null,
+        cnpj: contratadaLida.contratada?.cnpj ?? null,
+        repName: contratadaLida.contratada?.repName ?? null,
+      },
       settings: { companyExpiryDays: settings.company_expiry_days, defaultMessage: settings.default_message },
       sender,
       staff,
@@ -340,7 +344,12 @@ export async function prepararPacoteDaEmpresa(input: {
 
   // 4) A porta do banco (0345 confere a empresa/lead e a trava do RisLife).
   const supabase = await createClient();
-  const coverData = { client_name: ctx.companyName, clinic_name: "Risarte Empresarial", lead_id: ctx.leadId, company_id: ctx.companyId };
+  // 0350: capa e rodapé com a RAZÃO SOCIAL da contratada, nunca o nome de fantasia.
+  const issuerName = ctx.contratada.legalName?.trim() || "";
+  if (!issuerName) {
+    return { ok: false, error: "Falta a razão social da contratada. Preencha em Empresarial → Configurações → Contrato e envie de novo." };
+  }
+  const coverData = { client_name: ctx.companyName, clinic_name: "Risarte Empresarial", issuer_name: issuerName, lead_id: ctx.leadId, company_id: ctx.companyId };
   const itemsPayload = [
     ...docs.map((d, i) => ({
       template_id: ctx.template.id,
@@ -403,7 +412,8 @@ export async function prepararPacoteDaEmpresa(input: {
     packageId,
     number,
     clinicId: ctx.clinic.id,
-    clinicName: "Risarte Empresarial",
+    issuerName,
+    issuerCnpj: ctx.contratada.cnpj,
     clientName: ctx.companyName,
     docs: docs.map((d) => ({ title: d.title, body: d.body, provisional: false })),
     valores: {},

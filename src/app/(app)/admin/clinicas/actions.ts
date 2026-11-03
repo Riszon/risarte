@@ -47,6 +47,8 @@ function parseClinicForm(formData: FormData) {
       state: field(formData, "state")?.toUpperCase() ?? null,
       zip_code: zipCode ? formatCep(zipCode) : null,
       is_active: formData.get("is_active") !== "false",
+      // 0350: só vai quando o campo foi desenhado (o banco já tem a coluna).
+      ...(formData.has("legal_name") ? { legal_name: field(formData, "legal_name") } : {}),
     },
   };
 }

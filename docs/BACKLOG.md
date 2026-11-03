@@ -27,11 +27,18 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP91** — treino: só 2 pessoas da equipe da Franqueadora têm CPF válido; o envio completo do contrato de adesão (2 testemunhas + titular) não dá para ensaiar lá
 - [ ] **AP92** — "Reenviar como novo pacote" ainda não vale para pacotes de empresa
 - [x] **AP93** — o cartão do funil fica em "A apresentar" depois do aceite e até depois do contrato assinado (cockpit mostra "Sem apresentação marcada") — **0.382.1: era defeito do cockpit, não do funil; o cockpit segue a coluna do quadro**
+- [ ] **AP97** — Empresarial: a importação de titulares por planilha (`importEmployees`) não aplica a trava de quantidade contratada que o comentário dela diz aplicar; telefone ausente vira `""`
+- [ ] **AP98** — a configuração da agenda cai da unidade para a rede por LINHA INTEIRA, não campo a campo: unidade com horário próprio não herda o almoço da rede, ao contrário do que a tela do almoço da rede diz
 
 **Segurança e banco (por etapas)**
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
 - [ ] **AP67** — o banco ignora o escopo "Específicas" do Financeiro da Franqueadora
-- [ ] **AP87** — Empresarial: todo Consultor RisLife vê TODAS as empresas e leads (`empresarial.is_program_manager()` inclui o papel; `assigned_consultant_id`/`consultant_id` não restringem nada para ele). Achado no plano ZS0 (`docs/assinaturas/PLANO-ZS0.md`); o módulo de assinaturas trava por empresa/lead, o resto espera decisão do dono
+- [ ] **AP87** — Empresarial: todo Consultor RisLife vê TODAS as empresas e leads (`empresarial.is_program_manager()` inclui o papel; `assigned_consultant_id`/`consultant_id` não restringem nada para ele). Achado no plano ZS0 (`docs/assinaturas/PLANO-ZS0.md`); o módulo de assinaturas trava por empresa/lead, o resto espera decisão do dono — **reconfirmado em 03/11/2026 no levantamento da Rita (`docs/sdr/LEVANTAMENTO_DADOS_RITA_RESULTADO.md`, F5)**
+- [ ] **AP99** — Edge Function `asaas-webhook`: sem a variável `ASAAS_WEBHOOK_TOKEN` no painel, aceita QUALQUER chamada (a conferência do token é condicional)
+- [ ] **AP100** — Indica: o token do convite (`/c/<token>`) fica EM CLARO em `indica.mensagens.link_caminho`, legível por qualquer Risartano da unidade; a tabela só guarda o hash
+- [ ] **AP101** — Indica: a anonimização (7 dias sem aceite e 12 meses encerrada) só descarta as mensagens; nome, telefone e texto do indicado continuam em `indica.mensagens`
+- [ ] **AP102** — Indica: com a chave de serviço (`auth.uid()` nulo) TODAS as funções de escrita pulam a guarda — inclusive as de gestor (`cancelada`, `ajustar_pontos`, `mudar_resgate`, `usar_voucher`, `aprovar_apuracao`); `embaixadores`, `mensagens`, `consentimentos` e `config` não têm trava
+- [ ] **AP103** — agendamento sem lock: a trava de conflito (`check_appointment_conflict`) é um `exists` sem exclusion constraint nem advisory lock; sala, fechamento, feriado e horário só são conferidos na action — dois inserts simultâneos podem passar
 
 **Dependem do Risarte Academy**
 - [ ] **AP17 + "ACADEMY — PARA RETOMAR"** — o dono roda a consulta só-leitura das 5 funções do Academy
@@ -43,7 +50,9 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 **Futuro / sem causa encontrada**
 - [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): **D1–D9 decididas em 03/11/2026** (Gemini 3.1 Pro no Vertex AI em São Paulo; conta central da Risarte organiza o Meet; apresentar dentro do Meet fica para depois). Próximo: fase IA1**
 - [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)**
-- [ ] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA
+- [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
+- [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
+- [ ] **AP105** — `docs/PRODUCAO-ONLINE.md` não lista 5 variáveis que o código lê: `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`, `ASAAS_API_KEY`, `ASAAS_BASE_URL`
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
@@ -2842,7 +2851,7 @@ do dono, B12 do contrato padrão). O risco mudou de forma: para quem não lê
 *"(não registrado até a data da assinatura deste documento)"*, mesmo com o
 resumo escrito. Continua suspeita, não medida.
 
-### AP96. A unidade não tem razão social; o contrato usa o nome (03/11/2026)
+### AP96. A unidade não tem razão social; o contrato usa o nome (03/11/2026) — ✅ Resolvido em 0.384.0
 
 **Confirmado, lendo o código:** `montarValores` (`src/lib/signatures/valores.ts`)
 preenche `{{unidade_razao_social}}` com `clinic.name`, e nenhuma migração do
@@ -2851,6 +2860,104 @@ nome, se não houver"). No contrato padrão (0349) a CONTRATADA aparece com o
 nome da unidade, onde o contrato em papel trazia a razão social ("… LTDA").
 Precisa de coluna nova em `clinics` + campo no cadastro da unidade +
 `montarValores` preferindo ela. Pedir o OK do dono (mexe no cadastro).
+
+### AP97. A importação de titulares não aplica a trava de quantidade (03/11/2026)
+
+**Confirmado, lendo o código:** em `src/app/(app)/empresarial/[companyId]/employee-actions.ts`,
+o comentário das linhas ~74-76 diz que a trava de `limite_de_titulares` vale
+também para a planilha, mas só `createEmployee` (~84-138) e `addDependent` a
+aplicam; `importEmployees` (~583-698) faz o upsert por `(company_id, cpf)` sem
+conferir contratado nem teto. Telefone ausente na planilha vira `""` (~613),
+embora a coluna seja `not null`. A importação é justamente o caminho da lista
+recebida da empresa. Visto no levantamento da Rita (F2); não mexi.
+
+### AP98. O almoço da rede não chega à unidade com horário próprio (03/11/2026)
+
+**Confirmado, lendo o código:** `resolveAgendaSettings`
+(`src/lib/agenda-settings.ts`, ~64) faz `row = override ?? network` — a cascata
+de `clinic_agenda_settings` é por linha inteira, não campo a campo. Uma unidade
+que tem a própria linha (horário) não herda `lunch_*` da rede; só
+`waiting_alert_minutes` cai para a rede. A tela do almoço da rede
+(`network-lunch-editor.tsx`, ~80) diz que "cada unidade herda automaticamente".
+**A decidir com o dono:** se a cascata deve ser campo a campo (muda a conta) ou
+se a frase da tela é que está errada. Visto no levantamento da Rita (A6).
+
+### AP99. O webhook do ASAAS aceita qualquer chamada sem o token (03/11/2026)
+
+**Confirmado, lendo o código:** `supabase/functions/asaas-webhook/index.ts`
+(~29) só confere o cabeçalho `asaas-access-token` quando
+`ASAAS_WEBHOOK_TOKEN` está definida (`if (expected)`); sem a variável no
+painel do Supabase, qualquer POST com corpo válido chega a `settle_billing`.
+**Não conferido:** se a variável está cadastrada nos dois projetos. Caminho:
+recusar quando a variável faltar (como o cron da Vercel faz com `CRON_SECRET`).
+Visto no levantamento da Rita (K2).
+
+### AP100. O token do convite do Indica fica em claro na fila (03/11/2026)
+
+**Confirmado, lendo o código:** `indicacoes.convite_token_hash` guarda só o
+sha256 (2006:67-71), mas `_gerar_convite` grava `/c/<token>` em
+`indica.mensagens.link_caminho`, e `mensagens_ler` libera a leitura a qualquer
+Risartano da unidade. Quem lê a fila consegue aceitar o convite em nome do
+indicado. **Caminho provável:** montar o link na hora de enviar, a partir do
+token guardado cifrado ou gerado por função só da chave de serviço. Visto no
+levantamento da Rita (E4/E13).
+
+### AP101. A anonimização do Indica não limpa a fila de mensagens (03/11/2026)
+
+**Confirmado, lendo o código:** a rotina diária (2006:790-797, sem aceite em 7
+dias) e a anonimização de 12 meses (2006:857-865) apagam nome, telefone e CPF
+de `indicacoes`, mas em `indica.mensagens` só mudam o `status` para
+`descartada`; `nome`, `telefone` e `texto` continuam. A tabela está fora da
+auditoria (0288:182) e a chave de serviço tem `grant all` nela. **Caminho:**
+anonimizar `mensagens` no mesmo passo. Visto no levantamento da Rita (E13).
+
+### AP102. Com a chave de serviço, o Indica não tem guarda nenhuma (03/11/2026)
+
+**Confirmado, lendo as migrações 2002–2008:** toda função de escrita do schema
+`indica` é `security definer` com guarda `if v_uid is not null and not
+indica.eh_risartano(...)`. Com `auth.uid()` nulo (chave de serviço) a guarda é
+pulada inteira, inclusive nas ações de gestor (`avancar_status` para
+`cancelada`, `ajustar_pontos`, `definir_status_embaixador`, `mudar_resgate`,
+`usar_voucher`, `mudar_campanha`, `aprovar_apuracao`, `tratar_alerta`), e o
+autor fica NULL. `embaixadores`, `mensagens`, `consentimentos`, `config`,
+`alertas_fraude`, `pedidos_indicacao` e `metas_equipe` não têm trava de escrita
+direta. Hoje só o servidor tem a chave, então não é brecha aberta; vira risco
+quando um processo (a Rita) passar a usá-la. **Caminho:** funções `rita_*`
+estreitas com autor, ou um papel próprio do Postgres. Visto no levantamento da
+Rita (E5, seção 5).
+
+### AP103. O agendamento não tem lock de verdade (03/11/2026)
+
+**Confirmado, lendo o código:** o gatilho `appointments_conflict_check`
+(`check_appointment_conflict`, 0171:26-95) decide por um `exists` sem
+`exclusion constraint`, sem `pg_advisory_lock` e sem `for update`: dois inserts
+simultâneos para o mesmo profissional podem passar juntos. Conflito de sala,
+fechamento, feriado, horário de funcionamento e almoço são conferidos só em
+`checkAgendaRules` (`agenda/actions.ts:364-636`), fora do banco. Com uma
+recepção por unidade o risco é baixo; com um processo agendando ao mesmo tempo
+(a Rita) deixa de ser. **Caminho:** `exclude using gist` (btree_gist +
+tstzrange) por profissional e sala, ou advisory lock na RPC de agendar. Visto
+no levantamento da Rita (C2).
+
+### AP104. Suspeita de fuso nos horários livres da agenda (03/11/2026)
+
+**Suspeita, não provada em execução:** em `getNextAvailableSlots`
+(`src/app/(app)/agenda/actions.ts`), a janela começa em `new Date(now.getFullYear(),
+now.getMonth(), now.getDate())` (~2331) e o dia da semana vem de `day.getDay()`
+(~2438), os dois no relógio da máquina; já `dateOnly` sai de `toIsoDate` em
+Brasília. Num servidor em UTC, entre 21h e 0h de Brasília, o dia da semana
+conferido pode ser o do dia seguinte ao da data oferecida. É a mesma raiz do
+defeito de 05/09/2026 (`dates.test.ts` varre `new Date` com texto, não este
+formato). **Como provar:** rodar a função com `TZ=UTC` e uma unidade fechada
+no sábado, pedindo horários numa sexta à noite. Visto no levantamento da Rita (C1).
+
+### AP105. A tabela de variáveis da produção está incompleta (03/11/2026)
+
+**Confirmado:** `docs/PRODUCAO-ONLINE.md` (~26-39) não lista
+`TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY` (espelho do treino,
+`src/lib/espelho-treino.ts`), `GAMMA_API_KEY`, `ASAAS_API_KEY` e
+`ASAAS_BASE_URL`, que o código lê por `process.env`. Só documentação. Visto no
+levantamento da Rita (K4).
 
 ### AP92. Reenviar como novo pacote não vale para empresas (02/11/2026)
 

@@ -47,6 +47,8 @@ export type GuardianValues = {
 
 export type ClinicValues = {
   name: string;
+  /** 0350: a razão social — o nome da CONTRATADA nos documentos. */
+  legal_name?: string | null;
   cnpj: string | null;
   phone: string | null;
   address: string | null;
@@ -147,7 +149,7 @@ export function montarValores(input: {
         ? formatCpf(client.cpf)
         : null,
     unidade_nome: clinic.name,
-    unidade_razao_social: clinic.name,
+    unidade_razao_social: clinic.legal_name?.trim() || null,
     unidade_cnpj: clinic.cnpj ? formatCnpj(clinic.cnpj) : null,
     unidade_endereco: enderecoEmLinha(clinic),
     unidade_cidade: cidade,

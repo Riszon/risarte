@@ -29,6 +29,7 @@ import { montarRubricas, type DocumentPlacement } from "./pdf/signature-block";
 import { candidatosDoRepresentante, montarSignatarios } from "./signers";
 import type { SignatureTemplate, StaffSignerOption, TemplateBody } from "./types";
 import { telefoneParaZapsign, validarAnexo, validarSignatarios } from "./validate";
+import { lerRazaoSocial } from "./razao-social";
 import { montarValores } from "./valores";
 import { preencherModelo } from "./variables";
 import { qualificacaoDoTipo as qualificacao } from "./qualificacao";
@@ -109,6 +110,10 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   if (templates.some((t) => !t.body)) {
     return { ok: false, error: "Um dos modelos escolhidos não tem texto cadastrado. Veja em Assinaturas → Configurações → Modelos." };
   }
+  // 0350: o documento leva a RAZÃO SOCIAL da unidade; sem ela, não sai.
+  const razao = await lerRazaoSocial(createAdminClient(), input.clinicId);
+  if (!razao.ok) return razao;
+  const issuerName = razao.nome;
   for (const a of input.attachments) {
     const erro = validarAnexo({ name: a.name, size: a.bytes.byteLength, type: "application/pdf" });
     if (erro) return { ok: false, error: `Anexo: ${erro}` };
@@ -156,7 +161,7 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
     client: ctx.client,
     guardian,
     isMinor: ctx.isMinor,
-    clinic: ctx.clinic,
+    clinic: { ...ctx.clinic, legal_name: issuerName },
     treatment: ctx.treatment,
     packageNumber: "",
     todayIso,
@@ -198,7 +203,7 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
     p_expires_at: expiresAt.toISOString(),
     p_items: itemsPayload,
     p_signers: signersPayload,
-    p_cover_data: { client_name: ctx.client.full_name, clinic_name: ctx.clinic.name, negotiation_id: ctx.negotiationId },
+    p_cover_data: { client_name: ctx.client.full_name, clinic_name: ctx.clinic.name, issuer_name: issuerName, negotiation_id: ctx.negotiationId },
     p_issuer_cnpj: ctx.clinic.cnpj,
   });
   if (rpcError || !created) {
@@ -212,13 +217,14 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
     packageId,
     number,
     clinicId: input.clinicId,
-    clinicName: ctx.clinic.name,
+    issuerName,
+    issuerCnpj: ctx.clinic.cnpj,
     clientName: ctx.client.full_name,
     docs: templates.map((t) => ({ title: t.name, body: t.body!, provisional: t.is_provisional_text })),
     valores: valoresSemNumero,
     signers: montado.signers,
     attachments: input.attachments.map((a) => ({ title: a.name.replace(/\.pdf$/i, ""), bytes: a.bytes })),
-    coverData: { client_name: ctx.client.full_name, clinic_name: ctx.clinic.name, negotiation_id: ctx.negotiationId },
+    coverData: { client_name: ctx.client.full_name, clinic_name: ctx.clinic.name, issuer_name: issuerName, negotiation_id: ctx.negotiationId },
     actorUserId: input.session.userId,
   });
   if (!pdf.ok) return pdf;
@@ -247,7 +253,9 @@ export async function gerarPdfDoPacote(input: {
   packageId: string;
   number: string;
   clinicId: string;
-  clinicName: string;
+  /** A RAZÃO SOCIAL de quem emite (0350): capa e rodapé. Nunca o nome de fantasia. */
+  issuerName: string;
+  issuerCnpj: string | null;
   clientName: string;
   docs: PdfDoc[];
   valores: Record<string, string | null | undefined>;
@@ -262,7 +270,7 @@ export async function gerarPdfDoPacote(input: {
   const admin = createAdminClient();
   try {
     const valores = { ...input.valores, documento_numero: number };
-    const footer = `${number}  ·  ${input.clinicName}`;
+    const footer = `${number}  ·  ${input.issuerName}`;
     const boxSpecs = input.signers.map((s) => ({ key: `s${s.sort_order}`, name: s.name, qualification: s.qualification }));
     const docs = [];
     for (const t of input.docs) {
@@ -291,7 +299,8 @@ export async function gerarPdfDoPacote(input: {
       cover = await renderCoverPdf({
         packageNumber: number,
         clientName: input.clientName,
-        clinicName: input.clinicName,
+        issuerName: input.issuerName,
+        issuerCnpj: input.issuerCnpj,
         dateLabel: formatBrDate(new Date()),
         items: ranges,
         signers: input.signers.map((s) => ({ name: s.name, qualification: s.qualification })),

@@ -307,5 +307,5 @@ E, por estarem assim justas e contratadas, as partes assinam este instrumento po
    B1–B12 no texto.
 4. **Ensaio:** aplicada no treino em 03/11/2026; PDF gerado com dados de
    ensaio (com e sem resumo), 9 páginas, sem marca d'água.
-5. **Pendente:** a razão social da unidade (AP96) e o termo específico de uso
-   de imagem (B2).
+5. **Pendente:** o termo específico de uso de imagem (B2). A razão social da
+   unidade entrou na 0.384.0 (0350): sem ela o envio é recusado.

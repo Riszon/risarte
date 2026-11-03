@@ -32,6 +32,8 @@ export type ClinicFormData = {
   type?: ClinicType;
   max_rooms?: number | null;
   cnpj?: string | null;
+  /** 0350: razão social — o nome que vai nos documentos assinados pelo cliente. */
+  legal_name?: string | null;
   phone?: string | null;
   email?: string | null;
   address?: string | null;
@@ -53,8 +55,11 @@ export function ClinicFormDialog({
   clinic,
   clinicType,
   trigger,
+  legalNameReady = false,
 }: {
   clinic?: ClinicFormData;
+  /** A coluna `legal_name` (0350) existe neste banco? Sem ela, o campo não aparece. */
+  legalNameReady?: boolean;
   /** Required when creating: which type of clinic this dialog registers. */
   clinicType?: ClinicType;
   trigger: React.ReactElement<Record<string, unknown>>;
@@ -145,6 +150,26 @@ export function ClinicFormDialog({
               As <strong>cadeiras</strong> desta unidade (quantidade, nomes e
               limite) são geridas em <strong>“Configurar agenda”</strong>,
               escolhendo a unidade no menu lateral.
+            </p>
+          )}
+          {legalNameReady ? (
+            <div className="space-y-2">
+              <Label htmlFor="legal_name">Razão social</Label>
+              <Input
+                id="legal_name"
+                name="legal_name"
+                defaultValue={clinic?.legal_name ?? ""}
+                placeholder="Risarte Odontologia Centro Ltda"
+              />
+              <p className="text-xs text-muted-foreground">
+                É o nome da empresa que vai nos contratos e termos assinados pelos
+                clientes. Sem ela, o envio para assinatura é recusado.
+              </p>
+            </div>
+          ) : (
+            <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+              O campo <strong>Razão social</strong> aparece aqui depois que a
+              atualização do banco (0350) for aplicada.
             </p>
           )}
           <div className="grid grid-cols-2 gap-4">

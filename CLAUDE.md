@@ -391,6 +391,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (razão social) — PC Administrador (core 0.383.0 → 0.384.0, migração 0350)**
+
+- **Documento assinado pelo cliente: razão social da unidade, sem logotipo**
+  (bloco 0.384.0 no ESTADO). ⚠️ **Sem `clinics.legal_name` o envio é recusado**
+  (`lerRazaoSocial`); capa e rodapé usam `issuerName`. Não pôr imagem em
+  `pdf/cover.ts` nem nos documentos (régua).
+- ⚠️ **No treino nenhuma unidade tem razão social:** envio travado até o dono
+  cadastrar (nos dois ambientes).
+- ⏳ **0349 e 0350 aplicadas só no treino.** O dono roda na produção, nessa ordem.
+
 **03/11/2026 (contrato padrão) — PC Administrador (core 0.382.1 → 0.383.0, migração 0349)**
 
 - **O contrato de prestação com o texto padrão da rede** (bloco 0.383.0 no
@@ -401,7 +411,7 @@ Syncthing se comportarem de forma estranha.**
   (`linhasDoParagrafo`); antes só a última do texto inteiro.
 - AP96 (razão social da unidade) no BACKLOG. **Não visto:** envio real pela
   tela com o texto novo.
-- ⏳ **0349 aplicada só no treino.** O dono roda na produção.
+- ⏳ 0349: ver o bloco de cima (razão social).
 
 **03/11/2026 (AP93) — PC Administrador (core 0.382.0 → 0.382.1, sem migração)**
 

@@ -33,12 +33,13 @@ type ClinicRow = {
   state: string | null;
   zip_code: string | null;
   is_active: boolean;
+  legal_name?: string | null;
 };
 
 export default async function ClinicsPage() {
   await requireAdminMaster();
   const supabase = await createClient();
-  const { data: clinics } = await supabase
+  const { data: clinicsBase } = await supabase
     .from("clinics")
     .select(
       "id, name, code, type, max_rooms, cnpj, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, is_active"
@@ -46,6 +47,15 @@ export default async function ClinicsPage() {
     .order("type")
     .order("name")
     .returns<ClinicRow[]>();
+  // 0350: a razão social é lida À PARTE — sem a migração, a lista abre igual e
+  // o formulário avisa em vez de mandar uma coluna que o banco não conhece.
+  const { data: razoes, error: razoesErro } = await supabase
+    .from("clinics")
+    .select("id, legal_name")
+    .returns<{ id: string; legal_name: string | null }[]>();
+  const legalNameReady = !razoesErro;
+  const razaoPorId = new Map((razoes ?? []).map((r) => [r.id, r.legal_name]));
+  const clinics = (clinicsBase ?? []).map((c) => ({ ...c, legal_name: razaoPorId.get(c.id) ?? null }));
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
@@ -59,10 +69,12 @@ export default async function ClinicsPage() {
         <div className="flex gap-2">
           <ClinicFormDialog
             clinicType="franchisor"
+            legalNameReady={legalNameReady}
             trigger={<Button variant="outline">Cadastrar Franqueadora</Button>}
           />
           <ClinicFormDialog
             clinicType="franchise_unit"
+            legalNameReady={legalNameReady}
             trigger={<Button>Nova Clínica</Button>}
           />
         </div>
@@ -106,6 +118,7 @@ export default async function ClinicsPage() {
                 <TableCell>
                   <ClinicFormDialog
                     clinic={clinic}
+                    legalNameReady={legalNameReady}
                     trigger={
                       <Button variant="ghost" size="sm">
                         Editar

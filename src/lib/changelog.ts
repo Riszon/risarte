@@ -62,6 +62,34 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.384.0",
+    data: "2026-11-03",
+    migracao: "0350",
+    titulo: "Documentos assinados pelo cliente saem com a razão social da unidade e sem o logotipo",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O cadastro da unidade (Administração → Clínicas → Editar) ganhou o campo Razão social. É ela que vai como empresa contratada no contrato, no termo de consentimento, no orçamento aprovado e na autorização de imagem, e na capa e no rodapé de cada página.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "13d.2",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Unidade sem razão social cadastrada não envia documento para assinatura: o sistema diz o que falta e onde cadastrar. O orçamento impresso mostra um aviso amarelo na tela.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "13d.1",
+      },
+      {
+        tipo: "melhoria",
+        texto: "A capa do pacote de assinatura não leva mais o logotipo da Risarte; traz a razão social e o CNPJ de quem emite.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "13d.1",
+      },
+    ],
+  },
+  {
     versao: "0.383.0",
     data: "2026-11-03",
     migracao: "0349",

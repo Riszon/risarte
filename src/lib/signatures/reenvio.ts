@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isZapsignConfigured, isZapsignFake } from "@/lib/zapsign";
 import { canSendSignatures } from "./access";
 import { extrairPaginas } from "./pdf/copy";
+import { lerRazaoSocial } from "./razao-social";
 import { BUCKET, gerarPdfDoPacote, mensagemDaPorta, qualificacao, type PdfDoc, type PrepareResult } from "./send";
 import type { TemplateBody } from "./types";
 
@@ -96,6 +97,10 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
     admin.from("signature_settings").select("patient_expiry_days").eq("id", true).maybeSingle(),
     admin.from("clinics").select("name").eq("id", old.clinic_id).maybeSingle(),
   ]);
+  // 0350: o pacote novo sai com a razão social de HOJE (e não sai sem ela).
+  const razao = await lerRazaoSocial(admin, old.clinic_id);
+  if (!razao.ok) return razao;
+  const issuerName = razao.nome;
   const items = (itemsRaw ?? []) as OldItem[];
   const signers = (signersRaw ?? []) as OldSigner[];
   if (items.length === 0 || signers.length === 0) return { ok: false, error: "O pacote original está incompleto (sem documentos ou signatários)." };
@@ -136,8 +141,8 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
   const oldCover = (old.cover_data ?? {}) as { client_name?: string; clinic_name?: string; negotiation_id?: string | null };
   const clientName = oldCover.client_name ?? "Paciente";
   const clinicName = clinic?.name ?? oldCover.clinic_name ?? "";
-  const coverData = { client_name: clientName, clinic_name: clinicName, negotiation_id: oldCover.negotiation_id ?? null, resent_from: old.number };
-  const valores = orderedItems.find((i) => i.rendered_data)?.rendered_data ?? {};
+  const coverData = { client_name: clientName, clinic_name: clinicName, issuer_name: issuerName, negotiation_id: oldCover.negotiation_id ?? null, resent_from: old.number };
+  const valores = { ...(orderedItems.find((i) => i.rendered_data)?.rendered_data ?? {}), unidade_razao_social: issuerName };
 
   const { data: created, error: rpcError } = await supabase.rpc("signature_create_package", {
     p_clinic_id: old.clinic_id,
@@ -173,7 +178,8 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
     packageId: newId,
     number,
     clinicId: old.clinic_id,
-    clinicName,
+    issuerName,
+    issuerCnpj: old.issuer_cnpj ?? null,
     clientName,
     docs,
     valores,

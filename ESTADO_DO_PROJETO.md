@@ -1,6 +1,30 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.383.0** · Última migração: **0349** (0318 a 0348 aplicadas na produção e no treino; 0349 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.384.0** · Última migração: **0350** (0318 a 0348 aplicadas na produção e no treino; 0349 e 0350 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 🏢 0.384.0 — RAZÃO SOCIAL DA UNIDADE E SEM LOGOTIPO NOS DOCUMENTOS ASSINADOS (03/11/2026, migração 0350)
+>
+> Decisão do dono: nenhum documento assinado pelo cliente (B2B ou B2C) leva o
+> logotipo da Risarte; a empresa que vai nele é a **razão social da unidade**.
+>
+> - **0350:** `clinics.legal_name` + os modelos de paciente ainda provisórios
+>   trocam `{{unidade_nome}}` por `{{unidade_razao_social}}` (TCLE, orçamento
+>   aprovado). Campo **Razão social** em Administração → Clínicas (lido À
+>   PARTE: sem a 0350 o formulário avisa e não manda a coluna).
+> - ⚠️ **Sem razão social, o envio é RECUSADO** (decisão do dono):
+>   `lerRazaoSocial` (`src/lib/signatures/razao-social.ts`) em `prepararPacote`
+>   e no reenvio; no Empresarial, a razão social de `contract_settings`.
+>   `{{unidade_razao_social}}` não cai mais no nome.
+> - **Capa sem logotipo**, com razão social e CNPJ; rodapé com a razão social
+>   (`gerarPdfDoPacote` recebe `issuerName`/`issuerCnpj`). Régua em
+>   `assinaturas-pdf.test.ts` (provada quebrando: com o logo de volta, 2
+>   reprovam). O relatório interno de assinaturas segue com o logo (não é
+>   documento do cliente).
+> - Orçamento impresso (`/orcamentos/[id]`): razão social no cabeçalho e na
+>   assinatura; sem ela, aviso âmbar só na tela.
+> - Ensaio: aplicada no treino; segunda rodada em transação desfeita, 0 linhas.
+>   ⚠️ **No treino nenhuma unidade tem razão social: o envio fica travado até
+>   cadastrar.** Não visto na tela: o formulário e o envio recusado.
 
 > ## 📄 0.383.0 — O CONTRATO DE PRESTAÇÃO COM O TEXTO PADRÃO DA REDE (03/11/2026, migração 0349)
 >

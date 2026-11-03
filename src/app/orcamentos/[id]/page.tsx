@@ -70,6 +70,15 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
   if (!podeVer) notFound();
 
   const clinic = one(n.clinic as { name: string } | { name: string }[] | null);
+  // 0350: o papel que o cliente assina leva a RAZÃO SOCIAL da unidade. Lida à
+  // parte: sem a migração (ou sem o cadastro), cai no nome e a tela avisa.
+  const { data: razaoRow } = await supabase
+    .from("clinics")
+    .select("legal_name")
+    .eq("id", n.clinic_id as string)
+    .maybeSingle<{ legal_name: string | null }>();
+  const razaoSocial = razaoRow?.legal_name?.trim() || null;
+  const emissor = razaoSocial ?? clinic?.name ?? "Risarte Odontologia";
   const client = one(
     n.client as
       | { full_name: string; cpf: string | null; code: string | null; birth_date: string | null }
@@ -181,13 +190,19 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
         </a>
         <PrintButton />
       </div>
+      {!razaoSocial && (
+        <p className="mb-4 rounded border border-amber-400 bg-amber-50 p-2 text-xs text-amber-900 print:hidden">
+          A unidade não tem razão social cadastrada: este papel sai com o nome da unidade. Cadastre em
+          Administração → Clínicas antes de colher a assinatura.
+        </p>
+      )}
 
       <header className="mb-5 border-b pb-4">
         <h1 className="text-xl font-bold">
           {aceita ? "Orçamento do plano de tratamento" : "Proposta de plano de tratamento"}
         </h1>
         <p className="mt-1 text-xs">
-          {clinic?.name ?? "Risarte Odontologia"} ·{" "}
+          {emissor} ·{" "}
           {aceita && n.code ? (
             <>
               Documento <strong>{n.code as string}</strong> ·{" "}
@@ -367,7 +382,7 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
         <div className="border-t border-black pt-1 text-center">
           {consultor?.full_name ?? "Consultor(a) comercial"}
           <br />
-          Consultor(a) comercial · {clinic?.name ?? "Risarte Odontologia"}
+          Consultor(a) comercial · {emissor}
         </div>
       </section>
     </div>

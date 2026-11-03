@@ -4607,7 +4607,11 @@ Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
 1. **O que vai no pacote.** Escolha um **kit** (Início de tratamento = contrato +
    consentimento; Orçamento aprovado) ou marque os modelos um a um. Dá para
    juntar **PDFs avulsos** (exames, termos de fora), até 8 MB cada e 10 MB no
-   pacote inteiro. Tudo vira **um PDF só**, com capa e índice.
+   pacote inteiro. Tudo vira **um PDF só**, com capa e índice. A capa e o
+   rodapé de cada página trazem a **razão social da unidade** e o CNPJ, **sem
+   o logotipo da Risarte** (0.384.0). **Unidade sem razão social cadastrada não
+   envia:** o sistema diz *"A unidade não tem razão social cadastrada"* e
+   onde cadastrar (Administração → Clínicas).
 2. **Quem assina.** O sistema monta a ordem: **1º o paciente** (ou o
    **responsável legal**, se for menor de idade — sem responsável cadastrado o
    envio é barrado); **2º as testemunhas** que o modelo pede (escolhidas na
@@ -4702,8 +4706,14 @@ regras que a equipe mais encontra:
 | Exames e documentação | Cl. 13ª §3 | entregues ao final, depois de pagos os custos e as multas |
 | Foro | Cl. 14ª | a cidade da unidade, ou a do cliente, se ele preferir |
 
-⚠️ A razão social da unidade no contrato é, por enquanto, o **nome da unidade**
-cadastrado no sistema: ainda não existe um campo próprio para a razão social.
+**A razão social da unidade** (0.384.0). O nome da CONTRATADA em todo documento
+que o cliente assina — contrato, termo de consentimento, orçamento aprovado,
+autorização de imagem, a capa e o rodapé — é a **razão social**, nunca o nome
+de fantasia ("Risarte Cambé"), e nenhum deles leva o logotipo da Risarte.
+O Admin Master cadastra em **Administração → Clínicas → Editar**, campo
+**Razão social**. Sem ela, o envio para assinatura é recusado, e o orçamento
+impresso mostra um aviso amarelo (só na tela) antes de colher a assinatura. No
+Empresarial, a contratada é a razão social de Configurações → Contrato.
 
 ### 13d.3. Quem assina pela Risarte: Minhas assinaturas pendentes (0.375.0)
 
