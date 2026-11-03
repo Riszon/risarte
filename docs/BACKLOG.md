@@ -26,6 +26,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP90** — o cadastro aceita CPF com dígito verificador errado: o erro só aparecia ao enviar para assinatura — **0.377.0: avisa no cadastro e lembra na ficha (decisão do dono: só avisar, por enquanto)**
 - [ ] **AP91** — treino: só 2 pessoas da equipe da Franqueadora têm CPF válido; o envio completo do contrato de adesão (2 testemunhas + titular) não dá para ensaiar lá
 - [ ] **AP92** — "Reenviar como novo pacote" ainda não vale para pacotes de empresa
+- [ ] **AP93** — o cartão do funil fica em "A apresentar" depois do aceite e até depois do contrato assinado (cockpit mostra "Sem apresentação marcada")
 
 **Segurança e banco (por etapas)**
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
@@ -40,6 +41,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP32** — 3 conferências do `test:indica` falham no treino
 
 **Futuro / sem causa encontrada**
+- [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158)
+- [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida)
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
@@ -2755,6 +2758,45 @@ não dá para ensaiar no treino**. Na ZS5 o modelo foi ajustado por alguns
 minutos (1 testemunha, sem Risarte) e voltou ao original. **A decidir:** dar
 CPF de teste às contas `@example.com` no treino (o cadastro da equipe lá é
 cópia da produção, `MIRROR_READ_ONLY`) ou ensaiar só pelo sandbox (ZS8).
+
+### AP93. O cartão do funil fica em "A apresentar" depois do aceite (03/11/2026)
+
+**Confirmado no treino (só leitura), achado no OC-00158:** o cliente CBE-00016
+tem a negociação **aceita**, o contrato ASS-000046 **assinado** pelos quatro e
+`commercial_sales.contract_signed` marcado pela assinatura digital — e o
+`commercial_cards.stage` dele continua `a_apresentar`. Por isso a aba
+Apresentação do cockpit mostra *"Sem apresentação marcada"* com **Registrar
+acontecimento** e **Pedir agendamento**, para um cliente que já comprou.
+**Suspeita, não conferida:** o cartão só sai de "A apresentar" pelos botões do
+quadro ou pelo atendimento da apresentação; a negociação aceita direto, sem a
+apresentação marcada e concluída, não move o cartão. **A decidir:** o aceite
+move o cartão (para qual coluna?), ou o cockpit esconde o registro de
+apresentação quando a negociação já foi aceita.
+
+### AP94. Resumo da apresentação pela gravação (03/11/2026)
+
+**Decisão do dono (OC-00158):** etapa separada, com plano próprio. Hoje a
+gravação é um link do Meet/Drive colado pelo Consultor, e o sistema não tem
+nenhuma IA ligada. O plano precisa responder: quem grava (o Meet, como hoje, ou
+o gravador do próprio sistema, como na consulta clínica — `src/lib/gravacao.ts`);
+qual serviço transcreve o áudio; quanto custa por apresentação; e a LGPD (dado
+de saúde indo para um serviço de fora, com contrato de tratamento de dados). A
+IA escreve o **rascunho**; o Consultor revisa e salva — o resumo vai no
+contrato, e o texto que o cliente assina não pode sair de uma máquina sem
+alguém ler. Depende de uma chave de IA contratada pelo dono e cadastrada na
+Vercel.
+
+### AP95. Contrato barrado por "resumo não escrito" para quem não lê a apresentação (03/11/2026)
+
+**Suspeita, não medida.** A 0.382.0 recusa enviar modelo com
+`{{apresentacao_resumo}}` quando o resumo está vazio. O resumo é lido pela
+RLS de `commercial_presentations` (0151): Admin, unidades de acesso total,
+quem vê a rede, Gerente, Coordenador, Consultor e Assistente Comercial. Quem
+**envia** assinatura tem mais funções (`ENVIAM` em `permissions.ts`: também o
+Consultor RisLife e o Financeiro da Franqueadora). Se uma delas enviar o
+contrato de um paciente pela ficha sem enxergar a apresentação, o resumo viria
+vazio e o envio seria recusado com a mensagem de resumo faltando. Conferir quem
+envia contrato de paciente na prática antes de mexer.
 
 ### AP92. Reenviar como novo pacote não vale para empresas (02/11/2026)
 
