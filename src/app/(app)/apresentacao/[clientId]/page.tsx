@@ -102,6 +102,8 @@ export default async function PresentationPage(
           negotiationId={negotiationBlock.negotiation.id}
           sale={negotiationBlock.sale}
                   assinatura={canSendSignatures(session, clinicId) ? { clinicId } : null}
+          // OC-00158 (0348): sem o resumo, o contrato não é enviado.
+          resumoFaltando={!negotiationBlock.presentationSummary?.trim()}
           canClose={isCommercialTeam}
           negotiationCancelled={
             negotiationBlock.negotiation.status === "cancelada"

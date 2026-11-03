@@ -37,6 +37,24 @@ export async function saveCommercialPresentation(
   }
 
   const clean = (s: string) => s.trim() || null;
+
+  // OC-00158 (0348): depois do aceite, o resumo é o registro do que o cliente
+  // aceitou e vai no contrato — pode ser corrigido, nunca apagado.
+  if (!clean(input.summary)) {
+    const { data: aceita } = await supabase
+      .from("plan_negotiations")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("status", "aceita")
+      .limit(1)
+      .maybeSingle();
+    if (aceita) {
+      return {
+        ok: false,
+        error: "O cliente já aceitou: o resumo da apresentação não pode ficar vazio. Corrija o texto em vez de apagar.",
+      };
+    }
+  }
   const { error } = await supabase.from("commercial_presentations").upsert(
     {
       client_id: clientId,

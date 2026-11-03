@@ -66,6 +66,8 @@ export type TreatmentValues = {
   /** 'aaaa-mm-dd'. */
   validityIso: string | null;
   dentistName: string | null;
+  /** OC-00158: o resumo da apresentação (cockpit do Consultor), quando existe. */
+  presentationSummary?: string | null;
 };
 
 export function enderecoEmLinha(a: {
@@ -148,6 +150,7 @@ export function montarValores(input: {
     tratamento_valor_extenso: treatment ? valorPorExtenso(treatment.totalCents) : null,
     tratamento_condicoes: treatment?.conditions ?? null,
     tratamento_validade: treatment?.validityIso ? diaBr(treatment.validityIso) : null,
+    apresentacao_resumo: treatment?.presentationSummary?.trim() || null,
     documento_numero: input.packageNumber,
     documento_data: diaBr(input.todayIso),
     documento_data_extenso: dataExtenso ? (cidade ? `${cidade}, ${dataExtenso}` : dataExtenso) : null,

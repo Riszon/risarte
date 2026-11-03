@@ -391,6 +391,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (OC-00158) — PC Administrador (core 0.381.0 → 0.382.0, migração 0348)**
+
+- **Cockpit do Consultor em abas + faixa de etapas** (bloco 0.382.0 no
+  ESTADO). Regra única em `src/lib/cockpit-comercial.ts`; as abas ficam
+  todas montadas (`cockpit-abas.tsx`).
+- ⚠️ **Resumo da apresentação obrigatório no aceite** (`accept_negotiation`,
+  0348, `SUMMARY_REQUIRED`) e **no envio** de modelo com
+  `{{apresentacao_resumo}}` (`faltaResumoDaApresentacao` em `prepararPacote`).
+  Ao recriar `accept_negotiation`, levar a trava.
+- Visto na tela no treino (Admin de teste, cliente do relato, nada salvo).
+  **Não visto:** o quadro com alguém faltando assinar (só por teste).
+- ⏳ **0348 só no treino.** O dono roda na produção; push depois.
+
 **02/11/2026 (ZS7) — PC Administrador (core 0.380.0 → 0.381.0, migração 0347)**
 
 - **Assinatura digital — fase ZS7, o painel e os relatórios** (bloco ZS7 no

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import {
   CheckCircle2,
   CircleDot,
+  Clock,
+  ExternalLink,
   FileSignature,
   Lock,
   PartyPopper,
@@ -35,6 +37,21 @@ export type ClosingSummary = {
   presentationSummary: string | null;
 };
 
+/**
+ * OC-00158: o envio digital do contrato, já traduzido para a tela (o servidor
+ * calcula com `situacaoDoContrato`). Nulo = nada enviado pela assinatura digital.
+ */
+export type ContratoDoFechamento = {
+  numero: string;
+  href: string | null;
+  situacao: string;
+  situacaoClasse: string;
+  esperando: boolean;
+  frase: string;
+  assinaram: { papel: string; nome: string; quando: string | null }[];
+  faltam: { papel: string; nome: string; situacao: string }[];
+};
+
 export function ClosingPanel({
   clientId,
   negotiationId,
@@ -43,6 +60,8 @@ export function ClosingPanel({
   canClose,
   negotiationCancelled = false,
   assinatura = null,
+  contrato = null,
+  resumoFaltando = false,
 }: {
   clientId: string;
   negotiationId: string;
@@ -61,6 +80,10 @@ export function ClosingPanel({
   negotiationCancelled?: boolean;
   /** ZS2: quem pode enviar para assinatura digital traz a unidade; nulo esconde o botão. */
   assinatura?: { clinicId: string } | null;
+  /** OC-00158: a situação do envio digital (quem assinou e quem falta). */
+  contrato?: ContratoDoFechamento | null;
+  /** OC-00158 (0348): sem o resumo da apresentação, o contrato não é enviado. */
+  resumoFaltando?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -159,6 +182,8 @@ export function ClosingPanel({
           )}
         </div>
 
+        {contrato && <AssinaturasDoContrato contrato={contrato} />}
+
         {negotiationCancelled ? (
           <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm">
             <p className="font-semibold">Venda cancelada.</p>
@@ -192,7 +217,11 @@ export function ClosingPanel({
             {/* OD4 (G3): o papel que se assina hoje é o orçamento impresso. */}
             <div className="flex flex-wrap items-center gap-2">
               {/* ZS2: o contrato e o orçamento vão para assinatura digital. */}
-              {assinatura && (
+              {resumoFaltando ? (
+                <p className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
+                  Escreva o resumo da apresentação (aba Apresentação) para enviar o contrato: ele vai no texto que o cliente assina.
+                </p>
+              ) : assinatura && (
                 <EnviarParaAssinaturaDialog
                   clientId={clientId}
                   clinicId={assinatura.clinicId}
@@ -217,7 +246,9 @@ export function ClosingPanel({
                 hint={
                   sale?.contractSigned && sale.contractSignedSource === "assinatura_digital"
                     ? `Marcado pela assinatura digital${sale.contractSignedAt ? ` em ${formatBrDate(sale.contractSignedAt)}` : ""}.`
-                    : "Marque quando o contrato estiver assinado no papel. Pela assinatura digital, marca sozinho quando todos assinam."
+                    : contrato?.esperando && !signed
+                      ? `Envio digital ${contrato.numero} em andamento: marca sozinho quando todos assinarem. Marque à mão só se o contrato foi assinado no papel.`
+                      : "Marque quando o contrato estiver assinado no papel. Pela assinatura digital, marca sozinho quando todos assinam."
                 }
                 done={signed}
                 disabled={!canClose || isPending}
@@ -304,6 +335,75 @@ function StepToggle({
       >
         {done ? "Desmarcar" : "Marcar como concluído"}
       </Button>
+    </div>
+  );
+}
+
+/** Quem já assinou (com a hora) e quem falta, na ordem em que a ZapSign chama. */
+function AssinaturasDoContrato({ contrato }: { contrato: ContratoDoFechamento }) {
+  return (
+    <div className="space-y-2 rounded-lg border p-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 font-medium">
+          <FileSignature className="size-4" />
+          Assinatura digital · <span className="font-mono text-xs">{contrato.numero}</span>
+        </p>
+        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", contrato.situacaoClasse)}>
+          {contrato.situacao}
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">{contrato.frase}</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div>
+          <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase dark:text-emerald-300">
+            Assinaram ({contrato.assinaram.length})
+          </p>
+          {contrato.assinaram.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Ninguém ainda.</p>
+          ) : (
+            <ul className="space-y-0.5 text-xs">
+              {contrato.assinaram.map((s, i) => (
+                <li key={i} className="flex items-start gap-1">
+                  <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-emerald-600" />
+                  <span>
+                    <strong>{s.papel}</strong> — {s.nome}
+                    {s.quando && <span className="text-muted-foreground"> · {s.quando}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-300">
+            Faltam ({contrato.faltam.length})
+          </p>
+          {contrato.faltam.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Ninguém.</p>
+          ) : (
+            <ul className="space-y-0.5 text-xs">
+              {contrato.faltam.map((s, i) => (
+                <li key={i} className="flex items-start gap-1">
+                  <Clock className="mt-0.5 size-3 shrink-0 text-amber-600" />
+                  <span>
+                    <strong>{s.papel}</strong> — {s.nome}
+                    <span className="text-muted-foreground"> · {s.situacao}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      {contrato.href && (
+        <a
+          href={contrato.href}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+        >
+          <ExternalLink className="size-3" />
+          Abrir o pacote (reenviar, ver o documento)
+        </a>
+      )}
     </div>
   );
 }

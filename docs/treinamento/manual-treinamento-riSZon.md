@@ -3111,6 +3111,44 @@ clicar de novo não gera um segundo aviso.
 Quando a Recepção marcar, **o cartão mostra sozinho** e o histórico ganha a
 linha *"Apresentação remarcada para …"*.
 
+**O cockpit do caso (`/comercial/[clientId]`), desde a 0.382.0.** No alto fica
+o **Próximo passo**, uma frase que diz o que fazer agora, e o **caminho da
+venda** em quatro etapas: **1. Apresentação**, **2. Negociação e aceite**,
+**3. Contrato** e **4. Pagamento**. Cada etapa mostra se já foi feita (✓ verde),
+se é a da vez (contorno dourado) ou se vem depois. Clicar numa etapa abre a aba
+dela. Abaixo, quatro abas:
+
+| Aba | O que tem |
+|---|---|
+| **Apresentação** | O registro da apresentação (quando ela ainda não aconteceu), o link do Meet, o link da gravação, o **resumo** e as suas considerações |
+| **Negociação** | O painel da negociação: o que o cliente aprovou, como vai pagar, o aceite |
+| **Fechamento** | O resumo do que vai no contrato, o envio para assinatura, **quem já assinou e quem falta**, e os três passos (contrato, cobrança, pagamento) |
+| **Cliente** | Os planos do cliente com a situação de cada um e as pendências |
+
+O cockpit **abre sozinho na aba da vez**: na Negociação enquanto você negocia,
+no Fechamento depois do aceite. O que você digitou numa aba **não se perde**
+ao trocar de aba, mas só fica gravado quando você salva.
+
+**O resumo da apresentação é obrigatório** (0.382.0). Sem ele:
+
+- o **aceite do cliente não é registrado** — o sistema responde *"Escreva o
+  resumo da apresentação antes de registrar o aceite"*;
+- o **contrato não é enviado** para assinatura, porque o resumo vai **dentro
+  do contrato** (no fim da Cláusula 1ª do modelo provisório). Isso vale também
+  para os casos aceitos antes dessa versão.
+
+Depois do aceite, o resumo pode ser **corrigido, mas não apagado**: ele é o
+registro do que o cliente ouviu e aceitou.
+
+**Quem assinou e quem falta.** Quando o contrato vai pela assinatura digital, a
+aba **Fechamento** mostra o número do pacote, a situação e duas listas:
+**Assinaram** (com dia e hora) e **Faltam** (com *Pendente* ou *Abriu o link*),
+na ordem em que a ZapSign chama: cliente, testemunhas, representante da Risarte.
+A tela se atualiza sozinha enquanto alguém ainda precisa assinar. Quando todos
+assinam, **"Contrato assinado" marca sozinho**: não precisa clicar. Marque à
+mão só se o contrato foi assinado no papel. Quem não tem a permissão *Ver
+pacotes e documentos* vê um aviso no lugar das listas.
+
 **Tarefa 2 — Negociar e fechar**
 
 > No alto de **O que o cliente aprovou** aparece o tamanho do tratamento, como
@@ -3120,12 +3158,14 @@ linha *"Apresentação remarcada para …"*.
 > **Plano**, mostra a mesma sequência. Se aparecer a palavra **estimativa**, o
 > Planner ainda não definiu a ordem: o número pode mudar.
 
-1. Menu **Comercial** → seu funil.
-2. Abra o caso (`/comercial/[clientId]`) → escolha a **forma de pagamento** →
-   **Salvar negociação**.
-3. **Cliente aceitou** (o botão só habilita depois de salvar).
-4. Tela de apresentação (`/apresentacao/[clientId]`) → marque **Contrato
-   assinado** e **Pagamento confirmado**.
+1. Menu **Comercial** → seu funil → abra o caso (`/comercial/[clientId]`).
+2. Aba **Apresentação**: escreva o **resumo** e clique em **Salvar
+   apresentação**.
+3. Aba **Negociação**: escolha a **forma de pagamento** → **Salvar
+   negociação** → **Cliente aceitou** (o botão só habilita depois de salvar).
+4. Aba **Fechamento**: **Enviar para assinatura** (ou **Imprimir orçamento
+   para assinar**). Acompanhe quem assinou ali mesmo. Depois, marque
+   **Pagamento confirmado**.
 
 > **A regra de ouro:** só é venda com os dois. O banco recusa receber dinheiro
 > de venda não fechada.
@@ -3197,8 +3237,9 @@ procedimentos continuam um a um, já com o preço do pacote.
 > **Validade:** 15 dias a partir do dia em que foi impresso, salvo se o Admin
 > configurou outro prazo para a rede ou para a unidade.
 >
-> Por enquanto o orçamento é o papel que o cliente assina; o contrato com
-> cláusulas virá quando o modelo da Risarte for cadastrado.
+> O orçamento impresso é o papel para assinar **no papel**. Pela assinatura
+> digital vai o **contrato** com as cláusulas e o resumo da apresentação (ver
+> [13d](#13d1-enviar-um-documento-para-o-paciente-assinar-0374)).
 
 **Versão nova do plano durante a negociação.** Se o Planner fizer uma versão
 nova do plano e ela for aprovada antes do aceite, a negociação da versão
@@ -4625,6 +4666,12 @@ editar:
   preenchidos pelo sistema na hora do envio; a lista completa aparece embaixo do
   texto, e campo que o sistema não conhece **não deixa salvar** — sairia
   impresso cru num documento que vai para assinatura;
+- **o resumo da apresentação** (0.382.0) — o campo
+  `{{apresentacao_resumo}}` traz o que o Consultor escreveu no cockpit. O
+  contrato provisório já o tem no fim da Cláusula 1ª. **Modelo que usa este
+  campo não é enviado enquanto o resumo estiver vazio** (o sistema diz qual
+  modelo e onde escrever). Se o contrato da unidade já tiver o texto aprovado
+  pelo jurídico, o campo não foi posto nele: acrescente-o aqui, se quiser;
 - **a autenticação do cliente** — simples, reforçada sempre, ou pelo valor;
 - **as testemunhas** — nenhuma, uma ou duas;
 - **quem assina pela Risarte** — alguém com um papel na unidade (ou o

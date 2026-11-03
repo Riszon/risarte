@@ -22,6 +22,10 @@ const inputClass =
  * COM2 — mesa de apresentação do Consultor: videochamada, gravação (início ao
  * fim, via gravação do Meet — manual-primeiro: colar o link), RESUMO (vai no
  * contrato do cliente no fechamento) e considerações.
+ *
+ * OC-00158 (0348): o resumo é OBRIGATÓRIO para registrar o aceite, e entra no
+ * contrato pelo campo `{{apresentacao_resumo}}`. Depois do aceite ele pode ser
+ * corrigido, não apagado (`saveCommercialPresentation`).
  */
 export function PresentationWorkspace({
   clientId,
@@ -65,8 +69,8 @@ export function PresentationWorkspace({
         </CardTitle>
         <p className="text-xs text-muted-foreground">
           Grave a apresentação <strong>do início ao fim</strong> pelo Meet e cole
-          o link da gravação aqui. O resumo entra no documento que o cliente
-          assina no fechamento.
+          o link da gravação aqui. O resumo é <strong>obrigatório</strong> para
+          registrar o aceite e entra no contrato que o cliente assina.
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -135,7 +139,7 @@ export function PresentationWorkspace({
 
         <label className="block text-sm">
           <span className="text-xs font-medium text-muted-foreground">
-            Resumo da apresentação (será inserido no contrato)
+            Resumo da apresentação <span className="text-amber-700 dark:text-amber-300">(obrigatório — vai no contrato)</span>
           </span>
           <textarea
             value={summary}
@@ -144,6 +148,12 @@ export function PresentationWorkspace({
             placeholder="O que foi apresentado, o que o cliente entendeu e aceitou, condições combinadas..."
             className="mt-1 min-h-24 w-full rounded-lg border border-input bg-transparent p-2 text-sm"
           />
+          {!(data?.summary ?? "").trim() && (
+            <span className="mt-1 block text-xs text-amber-700 dark:text-amber-300">
+              Ainda não salvo. Sem ele, o aceite do cliente não é registrado e o
+              contrato não é enviado.
+            </span>
+          )}
         </label>
 
         <label className="block text-sm">

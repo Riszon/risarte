@@ -1,6 +1,38 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.381.0** · Última migração: **0347** (0318 a 0347 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.382.0** · Última migração: **0348** (0318 a 0347 aplicadas na produção e no treino; **0348 só no treino**) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 🧭 0.382.0 — COCKPIT DO CONSULTOR: O CAMINHO DA VENDA, AS ASSINATURAS E O RESUMO OBRIGATÓRIO (03/11/2026, migração 0348)
+>
+> **OC-00158** (sugestão do Admin Master, treino): cockpit "bagunçado", sem dizer
+> se o cliente assinou, e o resumo da apresentação deveria ser obrigatório.
+> **Diagnóstico, só lendo o treino:** a assinatura era DEFEITO de tela — o
+> pacote ASS-000046 do cliente estava parcialmente assinado e o cockpit só
+> mostrava "Marcar como concluído"; a confirmação automática já existia (ZS3) e
+> a tela não contava; o resumo não era exigido em lugar nenhum (4 aceitas sem
+> ele) e a tela prometia que ele ia no contrato, mas nenhum modelo tinha o campo.
+>
+> **Decisões do dono:** faixa de etapas + abas; resumo exigido no **aceite**;
+> resumo **no contrato** como campo do modelo; resumo pela gravação = etapa
+> separada (AP94).
+>
+> - **A regra da faixa é uma só:** `src/lib/cockpit-comercial.ts` (etapas,
+>   próximo passo, aba inicial, qual envio mostrar, quem falta). A página só lê.
+> - ⚠️ **`CockpitAbas` deixa as quatro abas montadas** (formulários com salvar
+>   próprio); a aba vai para `?aba=` sem navegar.
+> - ⚠️ **`accept_negotiation` (0348) exige o resumo** (`SUMMARY_REQUIRED`). Ao
+>   recriar a função, levar a trava. O resto é a 0152 igual; permissões da 0295.
+> - ⚠️ **`{{apresentacao_resumo}}` trava o envio** quando o resumo está vazio
+>   (`faltaResumoDaApresentacao`, em `prepararPacote`, antes da porta). A 0348
+>   pôs o campo só no contrato **provisório**; texto aprovado não foi tocado.
+>   Mudança aditiva nos arquivos da assinatura (`variables`, `valores`,
+>   `validate`, `send`, `envio-dados`).
+> - Depois do aceite, o resumo não pode ser apagado (`saveCommercialPresentation`).
+> - Achados: AP93 (cartão fica em "A apresentar" depois do aceite), AP95
+>   (suspeita: quem envia sem ler a apresentação seria barrado).
+> - ⏳ **0348 aplicada só no TREINO.** O dono roda na produção; o push vem
+>   depois (o app traduz `SUMMARY_REQUIRED`, e sem a 0348 o aceite passaria
+>   sem resumo enquanto o envio já exigiria).
 
 > ## 📊 ZS7 — ASSINATURA DIGITAL: O PAINEL E OS RELATÓRIOS (02/11/2026, v0.381.0, migração 0347)
 >

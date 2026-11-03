@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.382.0",
+    data: "2026-11-03",
+    migracao: "0348",
+    titulo: "Cockpit do Consultor: o caminho da venda, as assinaturas e o resumo obrigatório",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O cockpit do caso no Comercial ficou em abas (Apresentação, Negociação, Fechamento, Cliente) e abre na etapa da vez. No alto, o Próximo passo diz o que fazer agora, e o caminho da venda mostra as quatro etapas: apresentação, negociação e aceite, contrato e pagamento. O quadro \"Situação financeira — Em breve\" saiu.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A aba Fechamento mostra o contrato enviado pela assinatura digital: quem já assinou (com dia e hora) e quem falta, e se atualiza sozinha. Quando todos assinam, \"Contrato assinado\" continua marcando sozinho.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O resumo da apresentação passou a ser obrigatório: sem ele, o aceite do cliente não é registrado e o contrato não é enviado para assinatura. Ele agora vai de fato no contrato (campo {{apresentacao_resumo}}, já no fim da Cláusula 1ª do contrato provisório). Depois do aceite, pode ser corrigido, mas não apagado.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5",
+      },
+    ],
+  },
+  {
     versao: "0.381.0",
     data: "2026-11-02",
     migracao: "0347",

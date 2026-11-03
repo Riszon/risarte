@@ -1,6 +1,7 @@
 import { isValidCpf } from "@/lib/masks";
 import { isValidEmail } from "./settings";
-import type { SignerDraft } from "./types";
+import type { SignerDraft, TemplateBody } from "./types";
+import { camposDoModelo } from "./variables";
 
 /**
  * O QUE A ZAPSIGN EXIGE DE CADA SIGNATÁRIO, conferido antes de gastar crédito
@@ -48,4 +49,19 @@ export function validarAnexo(file: { name: string; size: number; type: string })
   if (file.size === 0) return `"${file.name}" está vazio.`;
   if (file.size > MAX_ATTACHMENT_BYTES) return `"${file.name}" passa de 8 MB.`;
   return null;
+}
+
+/**
+ * OC-00158 (0348): documento que usa `{{apresentacao_resumo}}` só sai com o
+ * resumo escrito — senão o cliente assinaria uma linha em branco no lugar do
+ * que ouviu. Devolve a mensagem para a tela, ou nulo quando pode seguir.
+ */
+export function faltaResumoDaApresentacao(
+  templates: { name: string; body: TemplateBody | null }[],
+  resumo: string | null | undefined
+): string | null {
+  if ((resumo ?? "").trim()) return null;
+  const usam = templates.filter((t) => camposDoModelo(t.body).includes("apresentacao_resumo"));
+  if (usam.length === 0) return null;
+  return `${usam.map((t) => `"${t.name}"`).join(" e ")} ${usam.length === 1 ? "usa" : "usam"} o resumo da apresentação, que ainda não foi escrito. Escreva no cockpit do Consultor (aba Apresentação) e envie de novo.`;
 }

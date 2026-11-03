@@ -8,14 +8,27 @@ import {
   MessageCircle,
   Presentation,
   TriangleAlert,
-  Wallet,
 } from "lucide-react";
 import {
   getSessionContext,
   hasRoleInClinic,
   hasRoleWithScopeForClinic,
 } from "@/lib/auth";
-import { canSendSignatures } from "@/lib/signatures/access";
+import { canSendSignatures, canViewSignaturePackages } from "@/lib/signatures/access";
+import { PACKAGE_STATUS_CLASS, PACKAGE_STATUS_LABEL, SIGNER_STATUS_LABEL, isWaiting } from "@/lib/signatures/status";
+import type { PackageStage, PackageStatus, SignerStatus, SignerType } from "@/lib/signatures/types";
+import {
+  abaInicial,
+  contratoDoAceite,
+  etapasDoCockpit,
+  papelDoSignatario,
+  proximoPasso,
+  situacaoDoContrato,
+  type EntradaDoCockpit,
+} from "@/lib/cockpit-comercial";
+import { AtualizaAoVivo } from "@/components/assinaturas/atualiza-ao-vivo";
+import { CockpitAbas } from "./cockpit-abas";
+import type { ContratoDoFechamento } from "../../apresentacao/[clientId]/closing-panel";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -53,7 +66,7 @@ import {
   PresentationWorkspace,
   type PresentationData,
 } from "./presentation-workspace";
-import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { BRAZIL_TIME_ZONE, formatBrDateTime } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cockpit do Consultor Comercial" };
 
@@ -69,6 +82,7 @@ export default async function CommercialCockpitPage(
 ) {
   const session = await getSessionContext();
   const { clientId } = await props.params;
+  const { aba: abaPedida } = await props.searchParams;
   const supabase = await createClient();
 
   const { data: client } = await supabase
@@ -280,6 +294,87 @@ export default async function CommercialCockpitPage(
     Boolean(client.empresarial_company_id) && client.empresarial_active !== false;
   // PPR3: "Oferecer PPR+" pelo fluxo comercial (ou o selo, se já participa).
   const pprOffer = await loadPprOffer(clientId, client.clinic_id, "comercial");
+  // OC-00158: o envio digital do contrato do aceite (quem assinou, quem falta).
+  // Lê pela RLS da assinatura — quem não tem "Ver pacotes" não vê, e a tela diz.
+  const negociacao = negotiationBlock?.negotiation ?? null;
+  const veAssinaturas = canViewSignaturePackages(session, clinicId);
+  let contratoPacote: EntradaDoCockpit["contrato"] = null;
+  if (negociacao && veAssinaturas) {
+    const { data: pacotesRows } = await supabase
+      .from("signature_packages")
+      .select(
+        "id, number, status, current_stage, sent_at, created_at, signature_signers ( name, signer_type, order_group, sort_order, status, signed_at )"
+      )
+      .eq("client_id", clientId)
+      .eq("origin_type", "plan_negotiation")
+      .eq("origin_id", negociacao.id)
+      .returns<{
+        id: string;
+        number: string;
+        status: PackageStatus;
+        current_stage: PackageStage;
+        sent_at: string | null;
+        created_at: string;
+        signature_signers: {
+          name: string;
+          signer_type: SignerType;
+          order_group: number;
+          sort_order: number;
+          status: SignerStatus;
+          signed_at: string | null;
+        }[];
+      }[]>();
+    contratoPacote = contratoDoAceite(
+      (pacotesRows ?? []).map((p) => ({
+        id: p.id,
+        numero: p.number,
+        status: p.status,
+        etapaAtual: p.current_stage,
+        enviadoEm: p.sent_at,
+        criadoEm: p.created_at,
+        signatarios: p.signature_signers.map((x) => ({
+          nome: x.name,
+          tipo: x.signer_type,
+          grupo: x.order_group,
+          ordem: x.sort_order,
+          status: x.status,
+          assinouEm: x.signed_at,
+        })),
+      }))
+    );
+  }
+  const temResumo = Boolean(presentation?.summary?.trim());
+  const entrada: EntradaDoCockpit = {
+    naFaseComercial: inCommercialPhase,
+    temResumo,
+    negociacao: negociacao ? { status: negociacao.status } : null,
+    venda: negotiationBlock?.sale ?? null,
+    contrato: contratoPacote,
+  };
+  const etapas = etapasDoCockpit(entrada);
+  let contratoDoFechamento: ContratoDoFechamento | null = null;
+  if (contratoPacote) {
+    const sit = situacaoDoContrato(contratoPacote);
+    contratoDoFechamento = {
+      numero: contratoPacote.numero,
+      href: `/assinaturas/pacotes/${contratoPacote.id}`,
+      situacao: PACKAGE_STATUS_LABEL[contratoPacote.status],
+      situacaoClasse: PACKAGE_STATUS_CLASS[contratoPacote.status],
+      esperando: isWaiting(contratoPacote.status),
+      frase: sit.frase,
+      assinaram: sit.assinaram.map((x) => ({
+        papel: papelDoSignatario(x.tipo),
+        nome: x.nome,
+        quando: x.assinouEm ? formatBrDateTime(x.assinouEm) : null,
+      })),
+      faltam: sit.faltam.map((x) => ({
+        papel: papelDoSignatario(x.tipo),
+        nome: x.nome,
+        situacao: SIGNER_STATUS_LABEL[x.status],
+      })),
+    };
+  }
+
   const waLink = whatsappLink(
     client.phone,
     "Olá, {nome}! Aqui é da Risarte Odontologia, sobre o seu plano de tratamento. 😁",
@@ -340,7 +435,7 @@ export default async function CommercialCockpitPage(
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
+          <div className="flex min-w-0 flex-wrap gap-2">
             {waLink && (
               <Button
                 size="sm"
@@ -383,148 +478,65 @@ export default async function CommercialCockpitPage(
         </div>
       </div>
 
-      {/* 0248 — enquanto a apresentação não aconteceu, é aqui que o consultor
-          registra o que houve e pede novo agendamento. O mesmo bloco do cartão
-          do quadro: obrigá-lo a voltar ao quadro para registrar seria garantir
-          que ele não registre. */}
-      {cardStage === "a_apresentar" && (
-        <div className="rounded-xl border px-4 py-3">
-          <PresentationTracker
-            info={{
-              clientId,
-              clientName: client.full_name as string,
-              presentationAt: nextPresentation?.at ?? null,
-              presentationConfirmed: nextPresentation?.confirmed ?? false,
-              presentationWith: nextPresentation?.withName ?? null,
-              attemptCount: tentativas.failed,
-              noShowCount: tentativas.noShow,
-              lastAttemptLabel: tentativas.lastLabel,
-              lastAttemptAt: tentativas.lastAt,
-              // O cockpit mostra um cliente só: aqui o estado da recepção
-            // não é carregado (quem precisa dele é o quadro do funil).
-            atendimento: null,
-            esperandoDesde: null,
-            chamadoAs: null,
-            schedulingRequestedAt: tentativas.requestedAt,
-              podeAgir: canClose,
-            }}
-          />
-        </div>
-      )}
-
-      {!inCommercialPhase && (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <TriangleAlert className="size-4 shrink-0" />
-          O cliente não está na Conversão Comercial (Fase 4) — a negociação fica
-          indisponível até o caso chegar ao Comercial.
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Coluna esquerda: mesa de apresentação + situação do cliente. */}
-        <div className="space-y-4">
-          <PresentationWorkspace
-            clientId={clientId}
-            data={presentation}
-            canEdit={canNegotiate}
-          />
-
-          {/* Planos do cliente com a situação de cada um. */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-1.5 text-base">
-                <Layers className="size-4" />
-                Planos do cliente
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {plans.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum plano de tratamento ainda.
-                </p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {plans.map((p, i) => (
-                    <li
-                      key={p.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-sm"
-                    >
-                      <span className="min-w-0">
-                        <span className="font-medium">
-                          Plano {plans.length - i}
-                        </span>{" "}
-                        <span className="text-xs text-muted-foreground">
-                          · {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })} ·{" "}
-                          {/* OC-00007: plano sem opção "principal" contava 0. */}
-                          {(p.options.find((o) => o.isPrimary) ?? p.options[0])?.items.length ?? 0}{" "}
-                          procedimento(s)
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                            p.supersededAt
-                              ? "border-border bg-muted text-muted-foreground"
-                              : PLAN_STAGE_STYLES[planStage(p)]
-                          )}
-                        >
-                          {p.supersededAt ? "Substituído" : PLAN_STAGE_LABELS[planStage(p)]}
-                        </span>
-                        {/* O Consultor vê a linha do tempo completa do plano
-                            que vai apresentar (quem criou/aprovou/devolveu). */}
-                        <PlanHistoryDialog
-                          events={p.events}
-                          triggerLabel="Histórico"
-                        />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pendências + financeiro. */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Pendências do cliente</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                <p>
-                  <strong>{procOpen}</strong> procedimento(s) em aberto
-                </p>
-                <p className={cn(qcRevisao > 0 && "text-amber-700")}>
-                  <strong>{qcRevisao}</strong> em revisão (qualidade)
-                </p>
-                <p className={cn(qcReprovado > 0 && "text-rose-700")}>
-                  <strong>{qcReprovado}</strong> reprovado(s) (qualidade)
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-1.5 text-sm">
-                  <Wallet className="size-4" />
-                  Situação financeira
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                <p className="font-medium">Em breve</p>
-                <p className="text-xs">
-                  Em aberto × pago chega com a integração ASAAS (módulo
-                  Financeiro).
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Coluna direita: negociação (só na Fase 4) + fechamento. */}
-        <div className="space-y-4">
-          {negotiationBlock ? (
+      {/* OC-00158: o caminho da venda no alto e uma aba por assunto, abrindo
+          na etapa da vez. Antes era tudo numa página só, com o Fechamento no
+          fim de duas colunas — o consultor rolava para achar o que fazer. */}
+      <CockpitAbas
+        etapas={etapas}
+        proximo={proximoPasso(entrada)}
+        inicial={abaInicial(entrada, typeof abaPedida === "string" ? abaPedida : null)}
+        paineis={{
+          apresentacao: (
             <>
+              {/* 0248 — enquanto a apresentação não aconteceu, é aqui que o
+                  consultor registra o que houve e pede novo agendamento. O
+                  mesmo bloco do cartão do quadro. */}
+              {cardStage === "a_apresentar" && (
+                <div className="rounded-xl border px-4 py-3">
+                  <PresentationTracker
+                    info={{
+                      clientId,
+                      clientName: client.full_name as string,
+                      presentationAt: nextPresentation?.at ?? null,
+                      presentationConfirmed: nextPresentation?.confirmed ?? false,
+                      presentationWith: nextPresentation?.withName ?? null,
+                      attemptCount: tentativas.failed,
+                      noShowCount: tentativas.noShow,
+                      lastAttemptLabel: tentativas.lastLabel,
+                      lastAttemptAt: tentativas.lastAt,
+                      // O cockpit mostra um cliente só: aqui o estado da recepção
+                      // não é carregado (quem precisa dele é o quadro do funil).
+                      atendimento: null,
+                      esperandoDesde: null,
+                      chamadoAs: null,
+                      schedulingRequestedAt: tentativas.requestedAt,
+                      podeAgir: canClose,
+                    }}
+                  />
+                </div>
+              )}
+              <PresentationWorkspace
+                clientId={clientId}
+                data={presentation}
+                canEdit={canNegotiate}
+              />
+            </>
+          ),
+          negociacao: !inCommercialPhase ? (
+            <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
+              <TriangleAlert className="size-4 shrink-0" />
+              O cliente não está na Conversão Comercial (Fase 4) — a negociação fica
+              indisponível até o caso chegar ao Comercial.
+            </div>
+          ) : negotiationBlock ? (
+            <>
+              {!temResumo && negociacao?.status !== "aceita" && (
+                <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
+                  <TriangleAlert className="size-4 shrink-0" />
+                  Sem o resumo da apresentação (aba Apresentação), o aceite do cliente
+                  não é registrado.
+                </div>
+              )}
               <NegotiationPanel
                 clientId={clientId}
                 planId={negotiationBlock.planId}
@@ -542,15 +554,30 @@ export default async function CommercialCockpitPage(
                 odonto={negotiationBlock.odonto}
                 ortho={negotiationBlock.ortho}
               />
-              {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}
-              {(negotiationBlock.negotiation?.status === "aceita" || negotiationBlock.negotiation?.status === "cancelada") && (
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                Nenhum plano aprovado com opções para negociar ainda.
+              </CardContent>
+            </Card>
+          ),
+          fechamento:
+            negotiationBlock?.negotiation &&
+            (negotiationBlock.negotiation.status === "aceita" ||
+              negotiationBlock.negotiation.status === "cancelada") ? (
+              <>
+                {contratoDoFechamento?.esperando && <AtualizaAoVivo clientId={clientId} />}
+                {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}
                 <ClosingPanel
                   clientId={clientId}
                   negotiationId={negotiationBlock.negotiation.id}
                   sale={negotiationBlock.sale}
                   assinatura={canSendSignatures(session, clinicId) ? { clinicId } : null}
+                  contrato={contratoDoFechamento}
+                  resumoFaltando={!temResumo}
                   canClose={canClose}
-                  negotiationCancelled={negotiationBlock.negotiation?.status === "cancelada"}
+                  negotiationCancelled={negotiationBlock.negotiation.status === "cancelada"}
                   summary={{
                     finalCents: negotiationBlock.negotiation.finalCents,
                     adjustmentCents: negotiationBlock.negotiation.adjustmentCents,
@@ -561,19 +588,102 @@ export default async function CommercialCockpitPage(
                     presentationSummary: negotiationBlock.presentationSummary,
                   }}
                 />
-              )}
-            </>
-          ) : (
-            inCommercialPhase && (
+                {!veAssinaturas && (
+                  <p className="text-xs text-muted-foreground">
+                    A situação da assinatura digital não aparece para a sua função
+                    (permissão &quot;Ver pacotes e documentos&quot;). O &quot;Contrato
+                    assinado&quot; acima continua marcando sozinho quando todos assinam.
+                  </p>
+                )}
+              </>
+            ) : (
               <Card>
                 <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  Nenhum plano aprovado com opções para negociar ainda.
+                  O fechamento abre quando o cliente aceitar a negociação: aí
+                  aparecem o envio do contrato, quem já assinou e o pagamento.
                 </CardContent>
               </Card>
-            )
-          )}
-        </div>
-      </div>
+            ),
+          cliente: (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Planos do cliente com a situação de cada um. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-1.5 text-base">
+                    <Layers className="size-4" />
+                    Planos do cliente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {plans.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum plano de tratamento ainda.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {plans.map((p, i) => (
+                        <li
+                          key={p.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-sm"
+                        >
+                          <span className="min-w-0">
+                            <span className="font-medium">
+                              Plano {plans.length - i}
+                            </span>{" "}
+                            <span className="text-xs text-muted-foreground">
+                              · {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })} ·{" "}
+                              {/* OC-00007: plano sem opção "principal" contava 0. */}
+                              {(p.options.find((o) => o.isPrimary) ?? p.options[0])?.items.length ?? 0}{" "}
+                              procedimento(s)
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                                p.supersededAt
+                                  ? "border-border bg-muted text-muted-foreground"
+                                  : PLAN_STAGE_STYLES[planStage(p)]
+                              )}
+                            >
+                              {p.supersededAt ? "Substituído" : PLAN_STAGE_LABELS[planStage(p)]}
+                            </span>
+                            {/* O Consultor vê a linha do tempo completa do plano
+                                que vai apresentar (quem criou/aprovou/devolveu). */}
+                            <PlanHistoryDialog
+                              events={p.events}
+                              triggerLabel="Histórico"
+                            />
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Pendências do cliente. O quadro "Situação financeira — Em
+                  breve" saiu (OC-00158): placeholder que não fazia nada. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Pendências do cliente</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm">
+                  <p>
+                    <strong>{procOpen}</strong> procedimento(s) em aberto
+                  </p>
+                  <p className={cn(qcRevisao > 0 && "text-amber-700 dark:text-amber-300")}>
+                    <strong>{qcRevisao}</strong> em revisão (qualidade)
+                  </p>
+                  <p className={cn(qcReprovado > 0 && "text-rose-700 dark:text-rose-300")}>
+                    <strong>{qcReprovado}</strong> reprovado(s) (qualidade)
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          ),
+        }}
+      />
     </div>
   );
 }

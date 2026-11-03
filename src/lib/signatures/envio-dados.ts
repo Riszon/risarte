@@ -358,12 +358,14 @@ async function loadTreatment(
     if (!opt) return { treatment: null, negotiationId: null };
     optionQuery = optionQuery.eq("option_id", opt.id);
   }
-  const [itemsRes, negItemsRes, rulesRes] = await Promise.all([
+  const [itemsRes, negItemsRes, rulesRes, presRes] = await Promise.all([
     optionQuery.returns<{ id: string; description: string; quantity: number; unit_price_cents: number; planned_sessions: number | null; tooth_code: string | null }[]>(),
     negotiation
       ? supabase.from("plan_negotiation_items").select("item_id, included, program_discount_cents").eq("negotiation_id", negotiation.id)
       : Promise.resolve({ data: [] as { item_id: string; included: boolean; program_discount_cents: number | null }[] }),
     supabase.from("commercial_rules").select("clinic_id, budget_validity_days").returns<LinhaDeValidade[]>(),
+    // OC-00158: o resumo que o Consultor escreveu no cockpit (`{{apresentacao_resumo}}`).
+    supabase.from("commercial_presentations").select("summary").eq("client_id", clientId).maybeSingle<{ summary: string | null }>(),
   ]);
   const items = itemsRes.data ?? [];
   const negItems = new Map((negItemsRes.data ?? []).map((n) => [n.item_id, n]));
@@ -405,6 +407,7 @@ async function loadTreatment(
       conditions,
       validityIso: somarDias(todayInBrazil(), validadeDias),
       dentistName: null,
+      presentationSummary: presRes.data?.summary ?? null,
     },
     negotiationId: negotiation?.id ?? null,
   };

@@ -264,6 +264,13 @@ export async function acceptNegotiation(
       return { ok: false, error: "Informe o motivo da aprovação parcial." };
     if (m.includes("PAYMENT_REQUIRED"))
       return { ok: false, error: "Defina o meio de pagamento antes de aceitar." };
+    // OC-00158 (0348): o resumo da apresentação é exigido para o aceite.
+    if (m.includes("SUMMARY_REQUIRED"))
+      return {
+        ok: false,
+        error:
+          "Escreva o resumo da apresentação antes de registrar o aceite (cockpit do Consultor, aba Apresentação). Ele vai no contrato.",
+      };
     if (m.includes("ROUND_CLOSED"))
       return {
         ok: false,
