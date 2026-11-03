@@ -402,7 +402,10 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Lembrete nunca vai ao cliente** (decisão do dono) e só enquanto
   `current_stage = 'client'` — régua em `assinaturas-rotinas.test.ts`.
 - Ensaio 19/19; rota conferida no servidor local. **Não visto:** conferência
-  contra a ZapSign real, e-mail real. ⏳ **0346 só no treino.** Próxima: **ZS7**.
+  contra a ZapSign real, e-mail real.
+- ✅ **0346 APLICADA nos dois bancos** (o dono rodou na produção em 02/11/2026;
+  conferência 2·1·false·1; de fora: sem login as duas portas recusam com
+  "permission denied" e o rastro não entrega nada). Próxima: **ZS7**.
 
 **02/11/2026 (0.379.0) — PC Administrador (core 0.378.0 → 0.379.0, sem migração; Empresarial 0.93.0 → 0.94.0)**
 

@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.380.0** · Última migração: **0346** (0318 a 0345 aplicadas na produção e no treino; **0346 só no treino**) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.380.0** · Última migração: **0346** (0318 a 0346 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
 
 > ## ⏰ ZS6 — ASSINATURA DIGITAL: AS ROTINAS (02/11/2026, v0.380.0, migração 0346)
 >
@@ -50,8 +50,13 @@ _Atualizado em: 02/11/2026 · Versão do sistema: **0.380.0** · Última migraç
 > para a ZS8 ou para o primeiro pacote parado no treino publicado; um e-mail
 > real saindo (sem Resend).
 >
-> **O que o dono precisa fazer:** rodar a **0346** na produção (conferência
-> `2 · 1 · false · 1`); cadastrar o **limite do mês** da ZapSign em
+> ✅ **0346 APLICADA nos dois bancos** (o dono rodou na produção em 02/11/2026;
+> conferência `2 · 1 · false · 1`; conferido de fora: sem login
+> `signature_daily_run` e `signature_log_job_run` recusam com "permission
+> denied" (uma função inexistente, de controle, responde "não encontrada") e
+> `signature_job_runs` não entrega nada).
+>
+> **O que o dono ainda precisa fazer:** cadastrar o **limite do mês** da ZapSign em
 > Assinaturas → Configurações (sem ele, não há alerta de consumo); o Resend,
 > quando quiser os e-mails. **Próxima fase: ZS7** (painel e relatórios).
 
