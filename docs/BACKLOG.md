@@ -41,7 +41,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP32** — 3 conferências do `test:indica` falham no treino
 
 **Futuro / sem causa encontrada**
-- [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158)
+- [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026): D1–D4 decididas; abertas D5 (qual IA) e D6 (qual transcrição), comparativos nas §9–§10**
 - [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida)
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
@@ -2795,6 +2795,17 @@ IA escreve o **rascunho**; o Consultor revisa e salva — o resumo vai no
 contrato, e o texto que o cliente assina não pode sair de uma máquina sem
 alguém ler. Depende de uma chave de IA contratada pelo dono e cadastrada na
 Vercel.
+
+**Plano escrito em 03/11/2026:** `docs/comercial/AP94-PLANO.md`. Achados do
+levantamento: o Claude não recebe áudio (transcrever é um passo à parte); o
+Meet já transcreve nos planos Workspace Business Standard+; o gravador do
+sistema grava só o microfone local (não serve para a apresentação online).
+Recomendação: fase IA1 = colar a transcrição do Meet e gerar o rascunho
+(≈ US$ 0,10 por apresentação); IA2 = gravador + serviço de transcrição para
+a presencial. **Decisões do dono (03/11/2026):** A e B na mesma entrega;
+rascunho em 5 partes (com o que o cliente recusou); IA só liga depois do DPA
+e do termo; transcrição guardada. **Abertas:** D5 (qual IA — comparativo
+Claude × GPT × Gemini na §9 do plano) e D6 (qual transcrição — §10).
 
 ### AP95. Contrato barrado por "resumo não escrito" para quem não lê a apresentação (03/11/2026)
 
