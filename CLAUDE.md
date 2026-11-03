@@ -402,7 +402,7 @@ Syncthing se comportarem de forma estranha.**
   Ao recriar `accept_negotiation`, levar a trava.
 - Visto na tela no treino (Admin de teste, cliente do relato, nada salvo).
   **Não visto:** o quadro com alguém faltando assinar (só por teste).
-- ⏳ **0348 só no treino.** O dono roda na produção; push depois.
+- ✅ **0348 APLICADA nos dois bancos** (o dono rodou na produção em 03/11/2026; conferência 1·false·true·1; de fora: sem login o aceite recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço com negociação inexistente para em NOT_FOUND antes de gravar; o contrato provisório da produção tem o campo uma vez, na lista de variáveis, com as 9 cláusulas; a produção tem 0 negociações e 0 apresentações — ninguém afetado).
 
 **02/11/2026 (ZS7) — PC Administrador (core 0.380.0 → 0.381.0, migração 0347)**
 

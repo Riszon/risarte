@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.382.0** · Última migração: **0348** (0318 a 0347 aplicadas na produção e no treino; **0348 só no treino**) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.382.0** · Última migração: **0348** (0318 a 0348 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
 
 > ## 🧭 0.382.0 — COCKPIT DO CONSULTOR: O CAMINHO DA VENDA, AS ASSINATURAS E O RESUMO OBRIGATÓRIO (03/11/2026, migração 0348)
 >
@@ -30,9 +30,7 @@ _Atualizado em: 03/11/2026 · Versão do sistema: **0.382.0** · Última migraç
 > - Depois do aceite, o resumo não pode ser apagado (`saveCommercialPresentation`).
 > - Achados: AP93 (cartão fica em "A apresentar" depois do aceite), AP95
 >   (suspeita: quem envia sem ler a apresentação seria barrado).
-> - ⏳ **0348 aplicada só no TREINO.** O dono roda na produção; o push vem
->   depois (o app traduz `SUMMARY_REQUIRED`, e sem a 0348 o aceite passaria
->   sem resumo enquanto o envio já exigiria).
+> - ✅ **0348 APLICADA nos dois bancos** (o dono rodou na produção em 03/11/2026; conferência 1·false·true·1; de fora: sem login o aceite recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a chave de serviço com negociação inexistente para em NOT_FOUND antes de gravar; o contrato provisório da produção tem o campo uma vez, na lista de variáveis, com as 9 cláusulas; a produção tem 0 negociações e 0 apresentações — ninguém afetado). Push depois da migração.
 
 > ## 📊 ZS7 — ASSINATURA DIGITAL: O PAINEL E OS RELATÓRIOS (02/11/2026, v0.381.0, migração 0347)
 >
