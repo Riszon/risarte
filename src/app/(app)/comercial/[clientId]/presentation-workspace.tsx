@@ -24,7 +24,8 @@ const inputClass =
  * contrato do cliente no fechamento) e considerações.
  *
  * OC-00158 (0348): o resumo é OBRIGATÓRIO para registrar o aceite, e entra no
- * contrato pelo campo `{{apresentacao_resumo}}`. Depois do aceite ele pode ser
+ * contrato pelo campo `{{apresentacao_resumo}}` quando já existe no envio
+ * (0349: o contrato pode sair antes dele). Depois do aceite ele pode ser
  * corrigido, não apagado (`saveCommercialPresentation`).
  */
 export function PresentationWorkspace({

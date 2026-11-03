@@ -44,8 +44,8 @@ export const CAMPOS_DO_PACIENTE: readonly CampoDoModelo[] = [
   { chave: "tratamento_valor_extenso", grupo: "Tratamento", rotulo: "Valor total, por extenso" },
   { chave: "tratamento_condicoes", grupo: "Tratamento", rotulo: "Forma de pagamento e parcelas, como negociado" },
   { chave: "tratamento_validade", grupo: "Tratamento", rotulo: "Validade do orçamento (dd/mm/aaaa)" },
-  // OC-00158 (0348): o que o Consultor escreveu no cockpit. O envio recusa o
-  // modelo que usa este campo enquanto o resumo estiver vazio (`prepararPacote`).
+  // OC-00158 (0348): o que o Consultor escreveu no cockpit. Vazio, sai a frase
+  // `RESUMO_NAO_REGISTRADO` (valores.ts) e o envio segue (0349, decisão B12).
   { chave: "apresentacao_resumo", grupo: "Tratamento", rotulo: "Resumo da apresentação comercial, como o Consultor registrou" },
   { chave: "documento_numero", grupo: "Documento", rotulo: "Número do pacote de assinatura (ASS-000001)" },
   { chave: "documento_data", grupo: "Documento", rotulo: "Data de hoje (dd/mm/aaaa)" },

@@ -64,6 +64,19 @@ export function wrapText(text: string, font: PDFFont, size: number, maxWidth: nu
   return lines;
 }
 
+/**
+ * As linhas de um texto, marcando a ÚLTIMA DE CADA PARÁGRAFO (até a quebra de
+ * linha): essa não se estica no justificado. Antes só a última do texto
+ * inteiro era marcada, e uma cláusula com vários parágrafos saía com a frase
+ * final de cada um espalhada pela largura (achado no ensaio da 0349).
+ */
+export function linhasDoParagrafo(text: string, font: PDFFont, size: number, maxWidth: number): { t: string; last: boolean }[] {
+  return text.split("\n").flatMap((segment) => {
+    const ls = wrapText(segment, font, size, maxWidth);
+    return ls.map((t, i) => ({ t, last: i === ls.length - 1 }));
+  });
+}
+
 export class PageWriter {
   readonly doc: PDFDocument;
   readonly fonts: Fonts;
@@ -112,10 +125,9 @@ export class PageWriter {
     const color = options.color ?? INK;
     const indent = options.indent ?? 0;
     const width = this.contentWidth - indent;
-    const lines = wrapText(text, font, size, width);
-    lines.forEach((line, i) => {
+    const lines = linhasDoParagrafo(text, font, size, width);
+    lines.forEach(({ t: line, last: isLast }) => {
       this.ensure(lineHeight);
-      const isLast = i === lines.length - 1;
       let x = this.margins.left + indent;
       if (options.align === "center") {
         x = this.margins.left + indent + (width - font.widthOfTextAtSize(line, size)) / 2;

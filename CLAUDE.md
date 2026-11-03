@@ -391,6 +391,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (contrato padrão) — PC Administrador (core 0.382.1 → 0.383.0, migração 0349)**
+
+- **O contrato de prestação com o texto padrão da rede** (bloco 0.383.0 no
+  ESTADO; decisões B1–B12 em `docs/assinaturas/CONTRATO-PRESTACAO-PADRAO.md`).
+- ⚠️ **O envio NÃO exige mais o resumo** (B12, desfaz parte da 0.382.0); o
+  aceite continua exigindo. Vazio = `RESUMO_NAO_REGISTRADO`.
+- ⚠️ **PDF:** a última linha de CADA parágrafo não se estica
+  (`linhasDoParagrafo`); antes só a última do texto inteiro.
+- AP96 (razão social da unidade) no BACKLOG. **Não visto:** envio real pela
+  tela com o texto novo.
+- ⏳ **0349 aplicada só no treino.** O dono roda na produção.
+
 **03/11/2026 (AP93) — PC Administrador (core 0.382.0 → 0.382.1, sem migração)**
 
 - **O cockpit segue a coluna do quadro** (`commercialColumnOf`). ⚠️ A etapa

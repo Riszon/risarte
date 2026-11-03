@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.383.0",
+    data: "2026-11-03",
+    migracao: "0349",
+    titulo: "O contrato de prestação de serviços ganhou o texto padrão da rede",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O contrato de prestação de serviços enviado para assinatura passou a ter o texto padrão da rede (14 cláusulas), revisado a partir do contrato que as unidades já usavam. Os dados do cliente e da unidade entram sozinhos. O PDF deixou de sair com a marca \"TEXTO PROVISÓRIO\".",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "13d.2",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O contrato tem uma cláusula sobre os registros da apresentação e da negociação (anotações, gravação, transcrição ou resumo), que a unidade pode usar quando for preciso.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "13d.2",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O contrato pode ser enviado sem o resumo da apresentação, para quando é assinado na hora da negociação. Se o resumo já estiver escrito, ele aparece no contrato. Se não estiver, o contrato diz que ele não estava registrado na data da assinatura. O aceite do cliente continua exigindo o resumo.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "No PDF dos documentos para assinatura, a última linha de cada parágrafo saía espalhada pela largura da página. Agora ela fica alinhada à esquerda.",
+        papeis: "todos",
+        manual: "13d.2",
+      },
+    ],
+  },
+  {
     versao: "0.382.1",
     data: "2026-11-03",
     migracao: "0348",

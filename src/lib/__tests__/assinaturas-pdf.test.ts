@@ -4,7 +4,7 @@ import { renderCoverPdf } from "@/lib/signatures/pdf/cover";
 import { inspectAttachment, mergePdfs } from "@/lib/signatures/pdf/merge";
 import { renderTemplatePdf } from "@/lib/signatures/pdf/render-template";
 import { montarRubricas } from "@/lib/signatures/pdf/signature-block";
-import { wrapText } from "@/lib/signatures/pdf/text";
+import { linhasDoParagrafo, wrapText } from "@/lib/signatures/pdf/text";
 import { embedFonts, FEATURES } from "@/lib/signatures/pdf/fonts";
 import fontkit from "@pdf-lib/fontkit";
 import { readFileSync, readdirSync } from "node:fs";
@@ -40,6 +40,19 @@ describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
     expect(lines[1]).toBe("");
     expect(lines.length).toBeGreaterThan(5);
     expect(lines.every((l) => fonts.regular.widthOfTextAtSize(l, 10.5) <= 200)).toBe(true);
+  });
+
+  it("a última linha de CADA parágrafo não se estica no justificado (0349)", async () => {
+    const doc = await PDFDocument.create();
+    const fonts = await embedFonts(doc);
+    const longo = "palavra ".repeat(40).trim();
+    const ls = linhasDoParagrafo(`${longo}\n\nfrase curta\n${longo}`, fonts.regular, 10.5, 200);
+    const fins = ls.flatMap((l, i) => (l.last ? [i] : []));
+    // Cada um dos quatro trechos tem a sua última linha marcada (o vazio também).
+    expect(fins.length).toBe(4);
+    expect(ls[fins[0]].t).toMatch(/palavra$/);
+    expect(ls.find((l) => l.t === "frase curta")?.last).toBe(true);
+    expect(ls.filter((l) => !l.last).length).toBeGreaterThan(5);
   });
 
   it("a fonte vai INTEIRA no PDF, nunca em subconjunto (AP89)", async () => {

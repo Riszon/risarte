@@ -10,6 +10,14 @@ function formatBRL(cents: number): string {
 }
 
 /**
+ * O contrato pode ser gerado e assinado no mesmo ato da negociação, antes de
+ * o Consultor escrever o resumo (decisão do dono, B12 de
+ * `docs/assinaturas/CONTRATO-PRESTACAO-PADRAO.md`). Sem resumo, o campo diz
+ * isso por escrito em vez de sair como linha em branco — e o envio segue.
+ */
+export const RESUMO_NAO_REGISTRADO = "(não registrado até a data da assinatura deste documento)";
+
+/**
  * OS VALORES QUE PREENCHEM OS `{{campos}}` DE UM MODELO DE PACIENTE
  * (`CAMPOS_DO_PACIENTE`, `variables.ts`). Regra pura, testada em
  * `assinaturas-valores.test.ts`: recebe o que o servidor leu e devolve o
@@ -150,7 +158,7 @@ export function montarValores(input: {
     tratamento_valor_extenso: treatment ? valorPorExtenso(treatment.totalCents) : null,
     tratamento_condicoes: treatment?.conditions ?? null,
     tratamento_validade: treatment?.validityIso ? diaBr(treatment.validityIso) : null,
-    apresentacao_resumo: treatment?.presentationSummary?.trim() || null,
+    apresentacao_resumo: treatment?.presentationSummary?.trim() || RESUMO_NAO_REGISTRADO,
     documento_numero: input.packageNumber,
     documento_data: diaBr(input.todayIso),
     documento_data_extenso: dataExtenso ? (cidade ? `${cidade}, ${dataExtenso}` : dataExtenso) : null,

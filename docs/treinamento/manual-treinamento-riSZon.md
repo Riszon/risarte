@@ -3129,13 +3129,16 @@ O cockpit **abre sozinho na aba da vez**: na Negociação enquanto você negocia
 no Fechamento depois do aceite. O que você digitou numa aba **não se perde**
 ao trocar de aba, mas só fica gravado quando você salva.
 
-**O resumo da apresentação é obrigatório** (0.382.0). Sem ele:
+**O resumo da apresentação é obrigatório para o aceite** (0.382.0): sem ele,
+o **aceite do cliente não é registrado** — o sistema responde *"Escreva o
+resumo da apresentação antes de registrar o aceite"*.
 
-- o **aceite do cliente não é registrado** — o sistema responde *"Escreva o
-  resumo da apresentação antes de registrar o aceite"*;
-- o **contrato não é enviado** para assinatura, porque o resumo vai **dentro
-  do contrato** (no fim da Cláusula 1ª do modelo provisório). Isso vale também
-  para os casos aceitos antes dessa versão.
+**O contrato pode ser enviado sem o resumo** (0.383.0), para quando ele é
+assinado na hora da negociação. O resumo vai na **Cláusula 12ª** do contrato:
+se já estiver escrito no envio, aparece lá; se não estiver, o contrato diz que
+ele *"não estava registrado até a data da assinatura"*. Nesse caso a aba
+Fechamento mostra um aviso amarelo antes do botão de envio — escreva o resumo
+antes de enviar, se der tempo.
 
 Depois do aceite, o resumo pode ser **corrigido, mas não apagado**: ele é o
 registro do que o cliente ouviu e aceitou.
@@ -4642,10 +4645,13 @@ assinado, Assinado (com "concluído em"), Recusado (com o motivo) ou Expirado,
 dizendo quem já assinou — sem recarregar a tela. Se a página estiver
 aberta, ela se atualiza em segundos; de qualquer jeito, a cada minuto.
 
-> ⚠️ **Texto provisório.** Os cinco modelos nasceram com texto escrito pelo
+> ⚠️ **Texto provisório.** Os modelos nasceram com texto escrito pelo
 > sistema, não pelo jurídico. Enquanto o Admin Master não trocar o texto e
 > desmarcar "Texto provisório" em cada modelo, o PDF sai com a marca d'água
 > **TEXTO PROVISÓRIO**. Não envie a um paciente de verdade antes disso.
+> **O contrato de prestação de serviços já tem o texto padrão da rede**
+> (0.383.0) e sai sem a marca; o TCLE, o orçamento aprovado e a autorização de
+> uso de imagem continuam provisórios.
 
 **Responsável legal com e-mail.** No cadastro do paciente, o responsável ganhou
 o campo **E-mail do responsável**: quando o paciente é menor, é ele quem assina,
@@ -4666,12 +4672,11 @@ editar:
   preenchidos pelo sistema na hora do envio; a lista completa aparece embaixo do
   texto, e campo que o sistema não conhece **não deixa salvar** — sairia
   impresso cru num documento que vai para assinatura;
-- **o resumo da apresentação** (0.382.0) — o campo
-  `{{apresentacao_resumo}}` traz o que o Consultor escreveu no cockpit. O
-  contrato provisório já o tem no fim da Cláusula 1ª. **Modelo que usa este
-  campo não é enviado enquanto o resumo estiver vazio** (o sistema diz qual
-  modelo e onde escrever). Se o contrato da unidade já tiver o texto aprovado
-  pelo jurídico, o campo não foi posto nele: acrescente-o aqui, se quiser;
+- **o resumo da apresentação** — o campo `{{apresentacao_resumo}}` traz o
+  que o Consultor escreveu no cockpit. O contrato padrão o tem no parágrafo
+  terceiro da Cláusula 12ª. Desde a 0.383.0 o envio **não** espera o resumo:
+  vazio, o campo sai como *"(não registrado até a data da assinatura deste
+  documento)"*;
 - **a autenticação do cliente** — simples, reforçada sempre, ou pelo valor;
 - **as testemunhas** — nenhuma, uma ou duas;
 - **quem assina pela Risarte** — alguém com um papel na unidade (ou o
@@ -4679,6 +4684,26 @@ editar:
 - **os selos** — ativo (aparece na janela de envio) e texto provisório.
 
 Cada salvamento fica na Auditoria ("Modelo de documento para assinatura").
+
+**O contrato de prestação de serviços padrão da rede** (0.383.0). O texto saiu
+do contrato que as unidades já usavam, sem os dados de cliente e de unidade
+(entram pelos campos), revisado e aprovado pelo dono. São 14 cláusulas. As
+regras que a equipe mais encontra:
+
+| Assunto | Onde | O que diz |
+|---|---|---|
+| Falta sem desmarcar com 24 h | Cl. 3ª §8 | multa de 50% do valor da consulta odontológica da tabela da unidade, por hora agendada; não cobra em caso fortuito ou força maior **comprovado por documento** (atestado, boletim de ocorrência) |
+| Gasto fora do orçamento | Cl. 3ª §2 | informado antes e cobrado com a concordância do cliente; na urgência durante o procedimento, comunicado logo depois |
+| Atraso de pagamento | Cl. 3ª §6 | suspende a prestação dos serviços até regularizar |
+| Uso de imagem | Cl. 6ª §6 | autorizado no próprio contrato |
+| Abandono | Cl. 9ª | 3 faltas seguidas, 30 dias sem voltar ou 30 dias de atraso; a unidade notifica e espera 30 dias |
+| Desistência | Cl. 10ª §1 | cobra o que foi feito (sem o desconto do tratamento completo) e os materiais; do que sobrar do valor pago, a unidade retém 50% de multa e devolve o resto |
+| Registros da apresentação | Cl. 12ª | o cliente declara saber que a apresentação e a negociação podem ter sido registradas (anotação, gravação, transcrição, resumo) e que a unidade pode usá-los; vale o que foi assinado |
+| Exames e documentação | Cl. 13ª §3 | entregues ao final, depois de pagos os custos e as multas |
+| Foro | Cl. 14ª | a cidade da unidade, ou a do cliente, se ele preferir |
+
+⚠️ A razão social da unidade no contrato é, por enquanto, o **nome da unidade**
+cadastrado no sistema: ainda não existe um campo próprio para a razão social.
 
 ### 13d.3. Quem assina pela Risarte: Minhas assinaturas pendentes (0.375.0)
 

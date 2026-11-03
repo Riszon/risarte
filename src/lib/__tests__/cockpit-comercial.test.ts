@@ -10,9 +10,8 @@ import {
   type EntradaDoCockpit,
   type PacoteDoContrato,
 } from "@/lib/cockpit-comercial";
-import { faltaResumoDaApresentacao } from "@/lib/signatures/validate";
-import { montarValores } from "@/lib/signatures/valores";
-import { CAMPOS_DO_PACIENTE } from "@/lib/signatures/variables";
+import { montarValores, RESUMO_NAO_REGISTRADO } from "@/lib/signatures/valores";
+import { CAMPOS_DO_PACIENTE, LINHA_EM_BRANCO, preencherTexto } from "@/lib/signatures/variables";
 import { commercialColumnOf } from "@/lib/commercial";
 
 // OC-00158 (03/11/2026), decisões do dono: faixa de etapas + abas no cockpit;
@@ -126,9 +125,7 @@ describe("o caminho da venda no cockpit", () => {
   });
 });
 
-describe("o resumo da apresentação vai no contrato e é exigido", () => {
-  const corpo = (texto: string) => ({ preamble: "", sections: [{ title: "1", body: texto }], closing: "" });
-
+describe("o resumo da apresentação vai no contrato quando existe", () => {
   it("o campo existe no catálogo e é preenchido com o resumo", () => {
     expect(CAMPOS_DO_PACIENTE.map((c) => c.chave)).toContain("apresentacao_resumo");
     const client = { full_name: "Maria", cpf: null, birth_date: null, phone: null, email: null, address: null, address_number: null, complement: null, neighborhood: null, city: null, state: null, zip_code: null };
@@ -138,12 +135,13 @@ describe("o resumo da apresentação vai no contrato e é exigido", () => {
     expect(v.apresentacao_resumo).toBe("Apresentado o plano.");
   });
 
-  it("modelo com o campo e resumo vazio: o envio recusa; com resumo, ou sem o campo, segue", () => {
-    const contrato = { name: "Contrato", body: corpo("Objeto.\n{{apresentacao_resumo}}") };
-    const tcle = { name: "TCLE", body: corpo("Sem o campo.") };
-    expect(faltaResumoDaApresentacao([contrato, tcle], "  ")).toMatch(/"Contrato" usa o resumo da apresentação/);
-    expect(faltaResumoDaApresentacao([contrato], "Escrito.")).toBeNull();
-    expect(faltaResumoDaApresentacao([tcle], null)).toBeNull();
+  it("sem resumo (0349, B12), o campo diz que não estava registrado — nunca a linha em branco", () => {
+    const client = { full_name: "Maria", cpf: null, birth_date: null, phone: null, email: null, address: null, address_number: null, complement: null, neighborhood: null, city: null, state: null, zip_code: null };
+    const clinic = { name: "U", cnpj: null, phone: null, address: null, address_number: null, complement: null, neighborhood: null, city: null, state: null, zip_code: null };
+    const treatment = { procedures: [], totalCents: 0, conditions: null, validityIso: null, dentistName: null, presentationSummary: "   " };
+    const v = montarValores({ client, guardian: null, isMinor: false, clinic, treatment, packageNumber: "ASS-1", todayIso: "2026-11-03" });
+    expect(v.apresentacao_resumo).toBe(RESUMO_NAO_REGISTRADO);
+    expect(preencherTexto("Resumo: {{apresentacao_resumo}}", v)).not.toContain(LINHA_EM_BRANCO);
   });
 });
 
@@ -163,11 +161,12 @@ describe("as réguas que prendem a decisão no código", () => {
     expect(actions).toMatch(/m\.includes\("SUMMARY_REQUIRED"\)/);
   });
 
-  it("o envio confere o resumo ANTES de criar o pacote", () => {
+  it("o envio NÃO exige o resumo (0349, B12: o contrato pode ser assinado na hora)", () => {
     const send = ler("src", "lib", "signatures", "send.ts");
-    const trava = send.indexOf("faltaResumoDaApresentacao(templates");
-    expect(trava).toBeGreaterThan(-1);
-    expect(trava).toBeLessThan(send.indexOf('rpc("signature_create_package"'));
+    expect(send).not.toMatch(/faltaResumo/);
+    const closing = ler("src", "app", "(app)", "apresentacao", "[clientId]", "closing-panel.tsx");
+    expect(closing).toMatch(/\{assinatura && \(/);
+    expect(closing).not.toMatch(/resumoFaltando \? \(/);
   });
 
   it("depois do aceite, o resumo não pode ser apagado", () => {

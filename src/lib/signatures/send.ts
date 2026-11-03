@@ -28,7 +28,7 @@ import { renderTemplatePdf } from "./pdf/render-template";
 import { montarRubricas, type DocumentPlacement } from "./pdf/signature-block";
 import { candidatosDoRepresentante, montarSignatarios } from "./signers";
 import type { SignatureTemplate, StaffSignerOption, TemplateBody } from "./types";
-import { faltaResumoDaApresentacao, telefoneParaZapsign, validarAnexo, validarSignatarios } from "./validate";
+import { telefoneParaZapsign, validarAnexo, validarSignatarios } from "./validate";
 import { montarValores } from "./valores";
 import { preencherModelo } from "./variables";
 import { qualificacaoDoTipo as qualificacao } from "./qualificacao";
@@ -109,8 +109,6 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   if (templates.some((t) => !t.body)) {
     return { ok: false, error: "Um dos modelos escolhidos não tem texto cadastrado. Veja em Assinaturas → Configurações → Modelos." };
   }
-  const semResumo = faltaResumoDaApresentacao(templates, ctx.treatment?.presentationSummary);
-  if (semResumo) return { ok: false, error: semResumo };
   for (const a of input.attachments) {
     const erro = validarAnexo({ name: a.name, size: a.bytes.byteLength, type: "application/pdf" });
     if (erro) return { ok: false, error: `Anexo: ${erro}` };

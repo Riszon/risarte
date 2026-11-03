@@ -1,9 +1,7 @@
-# Contrato de prestação de serviços odontológicos — texto padrão da rede (proposta)
+# Contrato de prestação de serviços odontológicos — texto padrão da rede
 
-**Situação:** proposta de 03/11/2026, aguardando o OK do dono. **Ainda não está no
-sistema.** Depois do OK, uma migração troca o texto do modelo
-`contrato_prestacao` (hoje é o texto provisório da 0342, mais o resumo
-acrescentado pela 0348).
+**Situação:** aprovado pelo dono em 03/11/2026, com as decisões da seção B.
+**No sistema desde a 0.383.0 (migração 0349).**
 
 **De onde veio:** o contrato que o dono enviou ("CONTRATO DE PRESTAÇÃO DE
 TRATAMENTO ODONTOLÓGICO", emitido pelo ControleODONTO em 03/11/2026). Mantive a
@@ -32,28 +30,38 @@ que um advogado provavelmente apontaria; cada mudança está listada abaixo.
 Todos os campos `{{…}}` acima já existem no sistema. Nenhum campo novo é
 necessário.
 
-## B. Pontos que mudam regra ou têm risco jurídico (decisão do dono)
+## B. Pontos que mudavam regra ou tinham risco jurídico — decisões do dono (03/11/2026)
 
-| # | Onde | Original | Proposta | Por quê |
-|---|---|---|---|---|
-| B1 | Cl. 9ª §2 (abandono) | Respondendo em 30 dias, devolve 50% do pago (menos o realizado); depois disso, perde tudo ("ou ficarão como crédito") | Devolve o saldo pago e não usado, menos o realizado, os materiais já feitos para o paciente e **multa de 20% sobre o saldo** (Cl. 10ª §1) | O texto se contradiz ("não restituirá… ou ficarão como crédito"). E a perda total do que foi pago é cláusula que o CDC (art. 51 e 53) costuma anular. **O percentual de 20% é sugestão; o dono escolhe** |
-| B2 | Cl. 6ª §7 (uso de imagem) | Autoriza uso de imagem, gratuito, no Brasil e no exterior, dentro do contrato | Sai do contrato; vai no termo próprio (o sistema já tem o modelo "Autorização de uso de imagem") | Imagem do tratamento é dado de saúde: a LGPD pede consentimento específico e que possa ser retirado. Dentro do contrato, o paciente não consegue recusar sem recusar o tratamento |
-| B3 | Cl. 11ª (LGPD) | Texto de contrato entre empresas: a clínica "segue as instruções do contratante", que "pode rescindir sem ônus"; os dados são "destruídos" ao fim | Reescrita: a clínica é a **controladora**; finalidades, compartilhamento, segurança, guarda do prontuário pelo prazo legal, direitos do paciente | O original troca os papéis e manda destruir dados que a clínica é **obrigada** a guardar (prontuário) |
-| B4 | Cl. 3ª §2 (gastos extras) | "Fica desde já autorizado" | Informados antes e cobrados com a concordância; em urgência durante o procedimento, comunicados logo depois | O CDC (art. 39, VI) proíbe executar serviço sem orçamento e autorização prévia |
-| B5 | Cl. 3ª §6 (atraso) | "Suspensão imediata" | Suspende os procedimentos eletivos até regularizar; urgência continua sendo atendida | O Código de Ética Odontológica não permite abandonar o paciente em urgência |
-| B6 | Cl. 5ª §4 e §6; Cl. 6ª §2 | Exime a clínica de "qualquer responsabilidade", "de qualquer monta" | A clínica não responde pelo que **decorrer** da falta do paciente | Cláusula que exonera de toda responsabilidade é nula no CDC (art. 51, I) e derruba a cláusula inteira |
-| B7 | Cl. 3ª §5 (honorários) | 20% de honorários na cobrança | Mantido, com o mesmo direito ao paciente se precisar cobrar da clínica | O CDC (art. 51, XII) exige reciprocidade |
-| B8 | Cl. 13ª §3 (documentação) | Só entrega exames e documentação depois de pagos os custos e as multas | Cópias sempre que pedidas; os originais produzidos à parte (modelos, radiografias) podem esperar o pagamento deles; o prontuário é sempre acessível | O paciente tem direito de acesso aos próprios dados de saúde (LGPD art. 18; Código de Ética) |
-| B9 | Foro | Londrina, fixo (até para Cambé) | Cidade da unidade, sem tirar do paciente o direito de processar na cidade dele | O CDC (art. 101, I) garante o foro do consumidor; foro fixo distante costuma ser anulado |
-| B10 | Cl. 12ª §5 | "Irrevogável e irretratável" | "Obriga as partes e seus sucessores" | Contradiz as cláusulas de rescisão do próprio contrato |
-| B11 | Cl. 3ª §8 (falta) | R$ 120,00 por hora agendada | Mantido, com "salvo caso fortuito ou força maior" | Valor fixo para a rede inteira. Se cada unidade precisar de um valor, vira campo novo |
-| B12 | **Nova Cl. 12ª** (pedido do dono) | Não existia | Registros da apresentação e da negociação: anotação, gravação, transcrição ou resumo, inclusive com ferramentas de tecnologia; uso quando necessário; o resumo do Consultor vai no contrato; o assinado prevalece | Pedido do dono. Ver a observação abaixo |
+| # | Onde (texto final) | Proposta da revisão | **Decisão do dono** |
+|---|---|---|---|
+| B1 | Cl. 10ª §1 (desistência/abandono) | Devolver o saldo pago e não usado, menos o realizado, os materiais e multa de 20% | **Segue o proposto, com multa de 50% sobre o saldo** |
+| B2 | Cl. 6ª §6 (uso de imagem) | Tirar do contrato e levar para o termo próprio | **Mantém o original** no contrato. O termo específico de uso de imagem também será criado |
+| B3 | Cl. 11ª (LGPD) | Reescrever: clínica controladora, prontuário guardado pelo prazo legal | **Segue o proposto** (com o uso de imagem acrescentado às finalidades, por causa da B2) |
+| B4 | Cl. 3ª §2 (gastos extras) | Informar antes e cobrar com concordância; urgência comunicada depois | **Segue o recomendado** |
+| B5 | Cl. 3ª §6 (atraso) | Suspender só o eletivo, mantendo a urgência | **Segue o original:** suspensão imediata da prestação dos serviços |
+| B6 | Cl. 5ª §4 e §6; Cl. 6ª §2 | Trocar "qualquer responsabilidade" por "o que decorrer da falta do paciente" | **Segue o original** (o texto já liga a isenção à falta do paciente) |
+| B7 | Cl. 3ª §5 (honorários) | Honorários de 20% valendo para os dois lados | **Segue o original:** 20% cobrados do contratante |
+| B8 | Cl. 13ª §3 (documentação) | Cópias sempre; originais podem esperar o pagamento | **Segue o original:** entregues ao final, pagos os custos e as multas |
+| B9 | Cl. 14ª (foro) | Cidade da unidade, ressalvado o foro do consumidor | **Segue o recomendado** |
+| B10 | Cl. 13ª §5 | Tirar "irrevogável e irretratável" | **Segue o recomendado** |
+| B11 | Cl. 3ª §8 (falta) | R$ 120,00 por hora, salvo caso fortuito ou força maior comprovados | **Segue o recomendado, com prova documental** do caso fortuito ou força maior, e o valor passa a **50% do procedimento "consulta odontológica" da tabela da unidade, por hora** |
+| B12 | Cl. 12ª (registros da apresentação) | O resumo do Consultor vai no contrato | **Não prometer o resumo:** o contrato pode ser gerado e assinado na hora, sem tempo de ter o resumo. Se for assinado depois da apresentação, o resumo estará presente |
 
-**Observação sobre a B12:** a cláusula declara que o paciente **sabe** que a
+**Consequência da B12 no sistema (0.383.0):** o envio deixou de recusar o
+contrato sem resumo (regra que a 0.382.0 tinha criado). Sem resumo, o campo
+`{{apresentacao_resumo}}` sai como *"(não registrado até a data da assinatura
+deste documento)"*, em vez da linha em branco. O **aceite** continua exigindo o
+resumo (0348).
+
+**Observação sobre a Cl. 12ª:** a cláusula declara que o paciente **sabe** que a
 apresentação pode ter sido registrada. Ela não substitui o aviso **na hora da
 gravação**, que o plano do AP94 já prevê (termo de consentimento antes de ligar
-a IA). Uma gravação feita sem aviso continua sendo problema, mesmo com a
-cláusula.
+a IA).
+
+> ⚠️ Pontos em que o dono manteve o original contra a recomendação (B2, B5, B6,
+> B7, B8): o texto é decisão do dono. Os riscos apontados na revisão (Código de
+> Defesa do Consumidor, LGPD para imagem de saúde, Código de Ética
+> Odontológica) continuam valendo como alerta para a leitura do advogado.
 
 ## C. Correções de redação (sem mudar regra)
 
@@ -81,10 +89,10 @@ cláusula.
 
 ---
 
-## D. O texto padrão
+## D. O texto padrão (como está no sistema desde a 0349)
 
-*(Os campos entre `{{ }}` são preenchidos pelo sistema no envio. Os
-parágrafos de cada cláusula ficam separados por linha em branco.)*
+*(Os campos entre `{{ }}` são preenchidos pelo sistema no envio. Gerado da
+mesma fonte que a migração 0349.)*
 
 **Título do modelo:** Contrato de prestação de serviços odontológicos
 
@@ -130,13 +138,13 @@ Parágrafo terceiro. Nos pagamentos em mensalidades (especialmente, mas não só
 
 Parágrafo quarto. O não pagamento de qualquer valor no vencimento acarretará multa moratória de 2% (dois por cento) sobre o valor em atraso, juros de mora de 1% (um por cento) ao mês e correção monetária pelo INPC, sem prejuízo das demais consequências previstas neste contrato, inclusive a rescisão, a critério da CONTRATADA.
 
-Parágrafo quinto. Se for necessária a cobrança judicial ou extrajudicial por meio de advogado, o(a) CONTRATANTE arcará com honorários advocatícios de 20% (vinte por cento) sobre o valor atualizado do débito. O mesmo direito fica assegurado ao(à) CONTRATANTE se precisar cobrar da CONTRATADA valor devido por força deste contrato.
+Parágrafo quinto. Se for necessária a cobrança judicial ou extrajudicial por meio de advogado, o(a) CONTRATANTE arcará com honorários advocatícios de 20% (vinte por cento) sobre o valor atualizado do débito.
 
-Parágrafo sexto. O atraso no pagamento permite à CONTRATADA suspender a realização de novos procedimentos eletivos até a regularização, mantido o atendimento de urgência.
+Parágrafo sexto. Qualquer atraso no pagamento dos valores estipulados no Orçamento/Planejamento acarretará a suspensão imediata da prestação dos serviços, até a regularização.
 
 Parágrafo sétimo. A CONTRATADA poderá emitir títulos de crédito e boletos bancários para a cobrança de quaisquer valores relacionados a este contrato, inclusive os previstos no Orçamento/Planejamento.
 
-Parágrafo oitavo. Se o(a) PACIENTE não comparecer a horário agendado sem desmarcar com antecedência mínima de 24 (vinte e quatro) horas, o(a) CONTRATANTE pagará multa de R$ 120,00 (cento e vinte reais) por hora agendada, salvo caso fortuito ou força maior comprovados, sem prejuízo das demais consequências previstas neste contrato. O novo agendamento dependerá da disponibilidade da CONTRATADA.
+Parágrafo oitavo. Se o(a) PACIENTE não comparecer a horário agendado sem desmarcar com antecedência mínima de 24 (vinte e quatro) horas, o(a) CONTRATANTE pagará multa equivalente a 50% (cinquenta por cento) do valor do procedimento "consulta odontológica" da tabela de preços vigente da CONTRATADA, por hora agendada, sem prejuízo das demais consequências previstas neste contrato. A multa não será devida em caso fortuito ou de força maior, desde que comprovado por documento apresentado à CONTRATADA (por exemplo, atestado médico ou boletim de ocorrência). O novo agendamento dependerá da disponibilidade da CONTRATADA.
 
 ### Cláusula 4ª — Das obrigações da CONTRATADA
 
@@ -162,11 +170,11 @@ Parágrafo segundo. Seguir fielmente as recomendações e prescrições da CONTR
 
 Parágrafo terceiro. Realizar todos os exames solicitados pela CONTRATADA, necessários à continuidade adequada do tratamento, arcando com os seus custos.
 
-Parágrafo quarto. Comunicar imediatamente à CONTRATADA qualquer fato ou intercorrência relacionada ao tratamento, durante ou após o procedimento. A CONTRATADA não responderá pelos agravamentos que decorrerem da falta dessa comunicação.
+Parágrafo quarto. Comunicar imediatamente à CONTRATADA qualquer fato ou intercorrência relacionada ao tratamento que surgir durante ou após o procedimento realizado. A falta dessa comunicação exime a CONTRATADA de qualquer responsabilidade.
 
 Parágrafo quinto. Comparecer, após o término do procedimento e quando necessário, para o controle periódico da evolução do tratamento, no período e na forma orientados pela CONTRATADA, arcando com os custos dessas consultas, sob pena de perder a garantia do procedimento ou do tratamento realizado.
 
-Parágrafo sexto. Seguir rigorosamente as orientações de cuidados pós-tratamento e as instruções do profissional responsável. O(A) CONTRATANTE declara conhecer os riscos do descumprimento dessas orientações e que a CONTRATADA não responderá pelos danos que dele decorrerem.
+Parágrafo sexto. Seguir rigorosamente as orientações de cuidados pós-tratamento e todas as instruções do profissional responsável pelo tratamento. O(A) CONTRATANTE declara conhecer os riscos do descumprimento dessas obrigações e orientações, e que o descumprimento, por inobservância, imprudência ou mera liberalidade, exonera a CONTRATADA de qualquer ônus ou responsabilidade pelos danos que o(a) PACIENTE vier a sofrer, de qualquer monta.
 
 ### Cláusula 6ª — Da prestação dos serviços
 
@@ -174,7 +182,7 @@ A CONTRATADA é responsável pela correta prestação dos serviços, nos termos 
 
 Parágrafo primeiro. A obrigação assumida pela CONTRATADA é de meio, e não de resultado ou garantia: cabe ao profissional agir com diligência, na técnica que entender mais indicada, empregando os esforços e meios necessários para alcançar o objetivo do tratamento, que depende também de fatores como a reação do organismo do(a) PACIENTE, a sua cooperação, o cumprimento das recomendações da CONTRATADA e o comparecimento para controle após o tratamento, previsto no parágrafo quinto da Cláusula 5ª.
 
-Parágrafo segundo. Se o(a) PACIENTE não cooperar durante ou após o tratamento, ou omitir informação relevante para o diagnóstico, a CONTRATADA não responderá pelas consequências, sequelas e prejuízos financeiros, estéticos ou morais que decorrerem dessa conduta.
+Parágrafo segundo. Se o(a) PACIENTE não cooperar durante ou após o tratamento, ou omitir informação relevante para o correto diagnóstico, a CONTRATADA fica isenta de responsabilidade pelas possíveis consequências e sequelas dos procedimentos adotados e pelos prejuízos financeiros, estéticos ou morais eventualmente causados ao(à) PACIENTE.
 
 Parágrafo terceiro. Considera-se não cooperação do(a) PACIENTE, entre outras situações: faltar às consultas agendadas, abandonar o tratamento, não observar as recomendações do cirurgião-dentista e não comparecer ao controle previsto no parágrafo quinto da Cláusula 5ª.
 
@@ -182,7 +190,7 @@ Parágrafo quarto. O(A) CONTRATANTE está ciente de que não existe garantia abs
 
 Parágrafo quinto. O(A) CONTRATANTE está ciente de que certos procedimentos causam desconforto inicial e de que isso não significa, por si só, falha do tratamento. Nesses casos, o(a) PACIENTE seguirá as recomendações da CONTRATADA.
 
-Parágrafo sexto. O uso de imagens do(a) PACIENTE para divulgação depende de autorização própria, em termo separado, que pode ser recusada sem qualquer prejuízo ao tratamento.
+Parágrafo sexto. O(A) CONTRATANTE e o(a) PACIENTE autorizam, desde já, o uso das imagens relacionadas ao tratamento ou ao procedimento em matérias e campanhas promocionais e institucionais destinadas à divulgação ao público em geral. A autorização é concedida a título gratuito e abrange o uso das imagens em todo o território nacional e no exterior, sem que nada seja devido a título de direitos conexos à imagem ou a qualquer outro.
 
 ### Cláusula 7ª — Do refazimento de procedimentos
 
@@ -222,7 +230,11 @@ Parágrafo segundo. Caracterizado o abandono ou a desistência, a CONTRATADA not
 
 Além das hipóteses legais, este contrato poderá ser rescindido por qualquer das partes em caso de descumprimento de qualquer cláusula ou condição, sem prejuízo da cobrança dos serviços realizados e dos materiais empregados pela CONTRATADA até a data da rescisão.
 
-Parágrafo primeiro. Se o contrato for rescindido pelo(a) CONTRATANTE sem motivo imputável à CONTRATADA, inclusive por abandono ou desistência, antes do término do tratamento, serão devidos: os serviços realizados, pelo valor individual de cada etapa e procedimento, sem o desconto do tratamento completo; os materiais já adquiridos ou confeccionados especificamente para o(a) PACIENTE; e multa compensatória de 20% (vinte por cento) sobre o valor dos serviços contratados e ainda não realizados. Apurado o saldo, a diferença a favor do(a) CONTRATANTE será devolvida, e a diferença a favor da CONTRATADA será cobrada.
+Parágrafo primeiro. Se o contrato for rescindido pelo(a) CONTRATANTE sem motivo imputável à CONTRATADA, inclusive por abandono ou desistência, antes do término do tratamento:
+• são devidos os serviços realizados, pelo valor individual de cada etapa e procedimento, sem o desconto do tratamento completo, e os materiais já adquiridos ou confeccionados especificamente para o(a) PACIENTE;
+• do valor pago pelo(a) CONTRATANTE abatem-se esses valores, e o que sobrar é o saldo;
+• sobre o saldo incide multa compensatória de 50% (cinquenta por cento), retida pela CONTRATADA, e o restante do saldo é devolvido ao(à) CONTRATANTE.
+Se o valor pago não cobrir os serviços realizados e os materiais, a diferença será cobrada do(a) CONTRATANTE.
 
 Parágrafo segundo. Se o contrato for rescindido pela CONTRATADA sem motivo, antes do término do tratamento, os valores pagos pelos serviços do Orçamento/Planejamento ainda não realizados serão integralmente devolvidos ao(à) CONTRATANTE.
 
@@ -230,7 +242,7 @@ Parágrafo segundo. Se o contrato for rescindido pela CONTRATADA sem motivo, ant
 
 A CONTRATADA trata os dados pessoais do(a) CONTRATANTE e do(a) PACIENTE, inclusive os dados de saúde, na condição de controladora, nos termos da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais — LGPD).
 
-Parágrafo primeiro. Os dados são tratados para a prestação do tratamento, o registro em prontuário, o agendamento e a comunicação com o(a) CONTRATANTE, o faturamento e a cobrança, o cumprimento de obrigações legais e regulatórias e o exercício regular de direitos, com fundamento no art. 7º, incisos II, V e VI, e no art. 11, inciso II, alíneas "a", "d" e "f", da LGPD.
+Parágrafo primeiro. Os dados são tratados para a prestação do tratamento, o registro em prontuário, o agendamento e a comunicação com o(a) CONTRATANTE, o faturamento e a cobrança, o cumprimento de obrigações legais e regulatórias e o exercício regular de direitos, com fundamento no art. 7º, incisos II, V e VI, e no art. 11, inciso II, alíneas "a", "d" e "f", da LGPD; e, quanto às imagens, para a divulgação autorizada no parágrafo sexto da Cláusula 6ª, com fundamento no consentimento (art. 7º, inciso I, e art. 11, inciso I, da LGPD).
 
 Parágrafo segundo. Os dados são compartilhados somente com quem for necessário a essas finalidades: os profissionais e a equipe da CONTRATADA; a administração da rede Risarte, que opera o sistema de gestão utilizado pela CONTRATADA; laboratórios de prótese e centros de imagem; os fornecedores de sistemas de prontuário, agenda, assinatura eletrônica, comunicação e meios de pagamento; contadores e assessores jurídicos; e as autoridades, quando exigido por lei. Todos ficam obrigados à confidencialidade.
 
@@ -248,10 +260,10 @@ Parágrafo primeiro. Esses registros integram a documentação desta contrataç�
 
 Parágrafo segundo. Os registros são confidenciais, tratados na forma da Cláusula 11ª e guardados pelo tempo necessário a essas finalidades, observados os prazos legais de prescrição. O(A) CONTRATANTE pode solicitar acesso a eles.
 
-Parágrafo terceiro. O resumo da apresentação registrado pelo Consultor Comercial integra este contrato e é reproduzido a seguir:
-{{apresentacao_resumo}}
+Parágrafo terceiro. Quando o resumo da apresentação já estiver registrado na data da assinatura deste contrato, ele é reproduzido abaixo. Quando o contrato for gerado e assinado no mesmo ato da negociação, o resumo pode não constar deste instrumento; nesse caso, ele integra a documentação da contratação assim que for registrado e fica à disposição do(a) CONTRATANTE.
+Resumo da apresentação: {{apresentacao_resumo}}
 
-Parágrafo quarto. Havendo divergência entre um registro da apresentação ou da negociação (inclusive o resumo acima) e este contrato ou o Orçamento/Planejamento assinados, prevalecem os documentos assinados.
+Parágrafo quarto. Havendo divergência entre um registro da apresentação ou da negociação (inclusive o resumo) e este contrato ou o Orçamento/Planejamento assinados, prevalecem os documentos assinados.
 
 ### Cláusula 13ª — Das disposições gerais
 
@@ -261,7 +273,7 @@ Parágrafo primeiro. O(A) CONTRATANTE manterá a CONTRATADA informada sobre o se
 
 Parágrafo segundo. O pedido de documentação odontológica prévia (exames, radiografias, modelos) não implica, necessariamente, o início do tratamento pretendido. A análise dessa documentação serve para verificar a possibilidade e a adequação do tratamento, e pode resultar na indicação de tratamento diferente do imaginado ou de nenhum tratamento.
 
-Parágrafo terceiro. Cópias dos exames e da documentação odontológica do(a) PACIENTE serão fornecidas mediante solicitação. A entrega de originais produzidos e cobrados à parte, como modelos e radiografias, pode ficar condicionada ao pagamento dos respectivos custos. O acesso ao prontuário é sempre garantido, na forma da lei.
+Parágrafo terceiro. A documentação e os exames radiográficos do(a) PACIENTE poderão ser disponibilizados, mediante solicitação, ao final dos procedimentos ou do tratamento, desde que os custos e as multas contratuais tenham sido integralmente pagos.
 
 Parágrafo quarto. O(A) CONTRATANTE declara que leu e entendeu este contrato, o Orçamento/Planejamento, o Termo de Consentimento e, quando entregue, o Termo de Cuidados Pós-tratamento, e que suas dúvidas foram esclarecidas antes da assinatura.
 
@@ -281,16 +293,19 @@ E, por estarem assim justas e contratadas, as partes assinam este instrumento po
 
 ---
 
-## E. Depois do OK (o que a entrega faz)
+## E. Como entrou no sistema
 
-1. **Migração do core** (próximo número livre): troca o corpo do modelo
-   `contrato_prestacao` por este texto, atualiza a lista de campos e marca o
-   texto como **aprovado** (`is_provisional_text = false`), que tira a marca
-   d'água "TEXTO PROVISÓRIO" do PDF. **Só troca se o modelo ainda for o
-   provisório**: se alguém já editou o texto pela tela, a migração não passa
-   por cima e avisa.
-2. Régua: o teste dos modelos confere que todo campo do texto existe no
-   sistema e que o texto não tem nome, CPF nem CNPJ de ninguém.
-3. Ensaio no treino: gerar o PDF de um pacote de teste com este texto e
-   conferir a paginação, as listas e o quadro de assinaturas.
-4. Manual (seção das assinaturas), novidades, versão e o registro de estado.
+1. **Migração 0349** (`supabase/migrations/0349_contrato_prestacao_texto_padrao.sql`):
+   troca o corpo e a lista de campos do modelo `contrato_prestacao` e desmarca
+   "Texto provisório" (o PDF sai sem a marca d'água). Só troca enquanto o
+   modelo estiver marcado como provisório; o texto anterior fica na auditoria.
+2. **App (0.383.0):** o envio não exige mais o resumo (B12); sem ele, o campo
+   diz que não estava registrado. O PDF passou a não esticar a última linha de
+   cada parágrafo (achado no ensaio).
+3. **Régua:** `assinaturas-modelos.test.ts` confere os campos, a ausência de
+   CPF/CNPJ/RG/nomes do documento de origem, as 14 cláusulas e as decisões
+   B1–B12 no texto.
+4. **Ensaio:** aplicada no treino em 03/11/2026; PDF gerado com dados de
+   ensaio (com e sem resumo), 9 páginas, sem marca d'água.
+5. **Pendente:** a razão social da unidade (AP96) e o termo específico de uso
+   de imagem (B2).

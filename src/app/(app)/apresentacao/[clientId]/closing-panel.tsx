@@ -82,7 +82,7 @@ export function ClosingPanel({
   assinatura?: { clinicId: string } | null;
   /** OC-00158: a situação do envio digital (quem assinou e quem falta). */
   contrato?: ContratoDoFechamento | null;
-  /** OC-00158 (0348): sem o resumo da apresentação, o contrato não é enviado. */
+  /** OC-00158: sem o resumo, o contrato sai dizendo "não registrado" (0349, B12) — só avisa. */
   resumoFaltando?: boolean;
 }) {
   const router = useRouter();
@@ -217,11 +217,12 @@ export function ClosingPanel({
             {/* OD4 (G3): o papel que se assina hoje é o orçamento impresso. */}
             <div className="flex flex-wrap items-center gap-2">
               {/* ZS2: o contrato e o orçamento vão para assinatura digital. */}
-              {resumoFaltando ? (
+              {resumoFaltando && (
                 <p className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
-                  Escreva o resumo da apresentação (aba Apresentação) para enviar o contrato: ele vai no texto que o cliente assina.
+                  O resumo da apresentação ainda não foi escrito: se enviar agora, o contrato sai dizendo que ele não estava registrado na assinatura.
                 </p>
-              ) : assinatura && (
+              )}
+              {assinatura && (
                 <EnviarParaAssinaturaDialog
                   clientId={clientId}
                   clinicId={assinatura.clinicId}

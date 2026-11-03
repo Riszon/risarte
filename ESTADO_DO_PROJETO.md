@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.382.1** · Última migração: **0348** (0318 a 0348 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.383.0** · Última migração: **0349** (0318 a 0348 aplicadas na produção e no treino; 0349 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 📄 0.383.0 — O CONTRATO DE PRESTAÇÃO COM O TEXTO PADRÃO DA REDE (03/11/2026, migração 0349)
+>
+> Pedido do dono: o contrato que as unidades usavam (do ControleODONTO) vira o
+> padrão da rede, sem dados de cliente e de clínica, com cláusula sobre os
+> registros da apresentação. Revisão e decisões B1–B12 em
+> `docs/assinaturas/CONTRATO-PRESTACAO-PADRAO.md`.
+>
+> - **0349:** troca o corpo do `contrato_prestacao` (14 cláusulas) e a lista de
+>   campos, e desmarca `is_provisional_text` — **só se ainda for provisório**
+>   (texto aprovado pela tela fica, com aviso). Gerada de uma fonte única do
+>   texto; a doc (seção D) sai da mesma fonte.
+> - ⚠️ **B12 desfaz parte da 0.382.0:** o ENVIO não recusa mais modelo com
+>   `{{apresentacao_resumo}}` e resumo vazio (`faltaResumoDaApresentacao`
+>   saiu); vazio, o campo vale `RESUMO_NAO_REGISTRADO` (`valores.ts`). O
+>   **aceite** continua exigindo o resumo (0348). O painel de fechamento só
+>   avisa em âmbar e mostra o botão.
+> - **Achado no ensaio, corrigido:** o PDF esticava a última linha de cada
+>   parágrafo interno de uma cláusula (`linhasDoParagrafo`, `pdf/text.ts`).
+> - **AP96:** a unidade não tem razão social; o contrato usa o nome.
+> - Ensaio: `migrar:teste` (aplicada no treino) + segunda rodada em transação
+>   desfeita (0 linhas, idempotente); PDF de ensaio com e sem resumo (9 págs.).
+>   **Não visto:** um envio real pela tela com o texto novo.
 
 > ## 🔧 0.382.1 — AP93: O COCKPIT SEGUE A COLUNA DO QUADRO (03/11/2026, sem migração)
 >

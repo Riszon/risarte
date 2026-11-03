@@ -42,7 +42,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 
 **Futuro / sem causa encontrada**
 - [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): **D1–D9 decididas em 03/11/2026** (Gemini 3.1 Pro no Vertex AI em São Paulo; conta central da Risarte organiza o Meet; apresentar dentro do Meet fica para depois). Próximo: fase IA1**
-- [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida)
+- [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)**
+- [ ] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
@@ -2834,6 +2835,22 @@ Consultor RisLife e o Financeiro da Franqueadora). Se uma delas enviar o
 contrato de um paciente pela ficha sem enxergar a apresentação, o resumo viria
 vazio e o envio seria recusado com a mensagem de resumo faltando. Conferir quem
 envia contrato de paciente na prática antes de mexer.
+
+**0.383.0 (03/11/2026):** o envio não recusa mais por falta de resumo (decisão
+do dono, B12 do contrato padrão). O risco mudou de forma: para quem não lê
+`commercial_presentations`, o resumo viria vazio e o contrato sairia dizendo
+*"(não registrado até a data da assinatura deste documento)"*, mesmo com o
+resumo escrito. Continua suspeita, não medida.
+
+### AP96. A unidade não tem razão social; o contrato usa o nome (03/11/2026)
+
+**Confirmado, lendo o código:** `montarValores` (`src/lib/signatures/valores.ts`)
+preenche `{{unidade_razao_social}}` com `clinic.name`, e nenhuma migração do
+core cria coluna de razão social em `clinics` (o rótulo do campo já diz "ou o
+nome, se não houver"). No contrato padrão (0349) a CONTRATADA aparece com o
+nome da unidade, onde o contrato em papel trazia a razão social ("… LTDA").
+Precisa de coluna nova em `clinics` + campo no cadastro da unidade +
+`montarValores` preferindo ela. Pedir o OK do dono (mexe no cadastro).
 
 ### AP92. Reenviar como novo pacote não vale para empresas (02/11/2026)
 
