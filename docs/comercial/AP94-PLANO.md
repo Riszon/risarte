@@ -1,298 +1,279 @@
-# AP94 — O resumo da apresentação escrito pela IA (PLANO)
+# AP94 — Resumo por IA das gravações + Google Meet/Gemini no riSZon (PLANO)
 
-*Plano apresentado ao dono em 03/11/2026. **D1–D4 decididas no mesmo dia**
-(§8): os caminhos A e B na mesma entrega; rascunho em 5 partes (com o que o
-cliente recusou); a IA só liga depois do DPA e do termo; a transcrição fica
-guardada. **Abertas: D5 (qual IA escreve o resumo) e D6 (qual serviço
-transcreve)** — comparativos nas §9 e §10, a pedido do dono.*
-*Origem: OC-00158 (03/11/2026), consideração do Admin Master: "considerar a
-gravação para gerar o resumo". Decisão do dono no mesmo dia: etapa separada,
-com plano próprio. Registrado como AP94 no `docs/BACKLOG.md`.*
+*Plano apresentado ao dono em 03/11/2026 (versão 1: só o resumo da
+apresentação comercial). **Versão 2, no mesmo dia, depois do pedido do dono
+ampliar o escopo:** dois momentos de gravação (avaliação clínica e
+apresentação comercial), envio de áudio/transcrição/resumo à mão, e a
+integração com o Google Meet e o Gemini (criar reunião, convidar, apresentar
+dentro do Meet, resumo automático, atualização do sistema, follow-up).*
+*Decisões já tomadas: D1–D4 (§8). **Abertas: D5–D9** (§8), com os comparativos
+nas §9–§11.*
 
 ---
 
 ## 1. A ideia em uma frase
 
-**A IA escreve o rascunho; o Consultor lê, corrige e salva.** O resumo da
-apresentação vai no contrato que o cliente assina (`{{apresentacao_resumo}}`,
-0348) — texto que uma pessoa assina não sai de uma máquina sem alguém ler. A
-IA tira o trabalho de digitar; não tira a responsabilidade de conferir.
+**A IA escreve o rascunho; uma pessoa lê, corrige e salva.** Vale para os
+dois momentos: o resumo clínico que o Coordenador manda ao Centro de
+Planejamento e o resumo comercial que o Consultor põe no contrato
+(`{{apresentacao_resumo}}`, 0348). Texto que decide um plano de tratamento ou
+que o cliente assina não sai de uma máquina sem alguém ler.
 
 Analogia: a IA é a **secretária que ouviu a reunião e redige a ata**; quem
-assina a ata é o Consultor.
+assina a ata é o Coordenador ou o Consultor.
 
 ---
 
-## 2. O que existe hoje (e o que falta)
+## 2. Os dois momentos (pedido do dono, 03/11/2026)
 
-| Hoje | Como está |
-|---|---|
-| A apresentação é online, pelo **Google Meet**; o Consultor cola o **link da chamada** e o **link da gravação** (Meet/Drive) na aba Apresentação do cockpit (`presentation-workspace.tsx`, tabela `commercial_presentations`: `meet_link`, `recording_url`, `summary`). | O sistema **não tem acesso** ao que está nesse link: é um endereço no Google Drive do Consultor. Nada é baixado, transcrito ou lido. |
-| O **resumo** é digitado à mão e, desde a 0348, é **obrigatório para o aceite** e vai no contrato. | É o que a IA vai rascunhar. |
-| O sistema tem um **gravador próprio** (`src/lib/gravacao.ts`, barra de cima): liga sozinho na avaliação e na reavaliação, salva o áudio no bucket privado `clinical-media`, com teto de 2 h. | Ele grava **só o microfone de quem está no computador**. Numa apresentação pelo Meet, a voz do cliente sai pela caixa de som e **não entra** na gravação — ficaria metade da conversa. Serve para apresentação **presencial**, não para a online. |
-| **Nenhuma IA ligada** ao sistema. Não há chave, conta nem contrato com fornecedor de IA. | Depende do dono contratar e cadastrar na Vercel. |
-| O consentimento LGPD (`client_consents`) é exigido para gravar; a **única dispensa** é o áudio da avaliação/reavaliação (`dispensaConsentimento`). A apresentação comercial **não** está na dispensa. | Gravar a apresentação pelo sistema exige o consentimento registrado — regra já existente, não muda. |
-
-**O que a documentação dos fornecedores diz** (lido em 03/11/2026, preços de
-tabela, conferir antes de contratar):
-
-- **O Claude (Anthropic) não recebe áudio.** Ele lê texto. Para resumir uma
-  gravação são **dois passos**: (1) alguém transforma o áudio em texto — a
-  **transcrição**; (2) a IA lê o texto e escreve o resumo.
-- **O Google Meet já transcreve sozinho** nos planos do Workspace a partir do
-  **Business Standard** (o Business Starter e as contas gratuitas não têm). A
-  transcrição vira um Google Docs no Drive de quem marcou a reunião. Em
-  português. Se a Risarte tem esse plano, **o passo 1 já está pago**.
-- Serviços de transcrição por API (preço por **hora de áudio**, dólar):
-  OpenAI `gpt-4o-transcribe` ≈ US$ 0,36/h (`gpt-4o-mini-transcribe` ≈
-  US$ 0,18/h; arquivo de até 25 MB por chamada — 1 h de áudio do nosso gravador
-  tem ≈ 15 MB); Deepgram Nova-3 multilíngue ≈ US$ 0,31/h; AssemblyAI ≈
-  US$ 0,15–0,21/h; Google Speech-to-Text ≈ US$ 0,96/h. Todos entendem
-  português do Brasil.
-- **O resumo pela IA**: 1 h de conversa ≈ 9 mil palavras ≈ 20–25 mil "tokens".
-  Com o Claude Opus 5.5 (US$ 4 por milhão de tokens lidos, US$ 20 por milhão
-  escritos): **≈ US$ 0,10 por apresentação**.
-
----
-
-## 3. Por onde entra o texto — três caminhos
-
-| Caminho | Como funciona | Custo por apresentação de 1 h | Quando serve |
-|---|---|---|---|
-| **A. Transcrição do Meet** (recomendado para começar) | O Consultor abre o Docs da transcrição que o Meet gerou, copia o texto e **cola** na aba Apresentação (ou envia o `.txt`). Clica em **"Gerar rascunho do resumo"**. A IA escreve; ele revisa e salva. | Só a IA: **≈ US$ 0,10** (≈ R$ 0,55 a R$ 5,50/US$) | Apresentação **online** (o caso de hoje). Exige Workspace Business Standard ou superior. Sem contratar serviço de transcrição. |
-| **B. Gravador do sistema + serviço de transcrição** | Ao **iniciar a apresentação** pelo funil (atendimento de apresentação comercial), a barra de cima grava — como já faz na avaliação. Ao concluir, o áudio vai ao bucket; o sistema manda ao serviço de transcrição, recebe o texto, e a IA rascunha. | Transcrição US$ 0,18–0,36 + IA US$ 0,10 ≈ **US$ 0,30–0,50** (≈ R$ 2–3) | Apresentação **presencial** (na unidade). Na online grava só o Consultor — **não serve**. Exige consentimento registrado antes (regra de hoje). |
-| **C. Baixar o vídeo do Meet e enviar ao sistema** | O Consultor baixa o `.mp4` do Drive e sobe no sistema; o sistema extrai o áudio e transcreve. | Igual ao B, mais o custo de guardar 300–700 MB por apresentação | **Não recomendado**: arquivo pesado, dois cliques a mais que o caminho A, e o Meet já entrega o texto de graça. |
-
-**Recomendação original:** A agora, B depois. **Decisão do dono (D1,
-03/11/2026): A e B na mesma entrega** — a online entra pela transcrição do
-Meet, a presencial pelo gravador do sistema; os dois caminhos desembocam no
-mesmo campo de transcrição e no mesmo botão da IA. C fica de fora.
-
-O que a decisão muda: a entrega passa a ter **dois fornecedores** (a IA do
-resumo e o serviço de transcrição) e, portanto, **dois contratos de
-tratamento de dados**; e o gravador passa a ligar também no atendimento de
-apresentação comercial — com consentimento registrado, como manda a regra.
-
----
-
-## 4. Como a tela fica (aba Apresentação do cockpit)
-
-Abaixo do link da gravação, um bloco novo **"Transcrição e rascunho"**:
-
-1. **Transcrição** — campo grande para colar o texto (ou botão *Enviar
-   arquivo .txt*). Salva na ficha, com a origem (*Meet*, *gravação do
-   sistema*) e a data.
-2. Botão **"Gerar rascunho do resumo com IA"** — só aparece com transcrição
-   salva e **só para quem pode negociar** (Consultor da unidade, Admin). Leva
-   de 10 a 30 segundos; a tela mostra "A IA está lendo a transcrição…".
-3. O **rascunho** aparece numa caixa âmbar, com o aviso: *"Rascunho escrito
-   pela IA a partir da transcrição. Leia, corrija e salve — este texto vai no
-   contrato."* Botão **"Usar este texto"** copia para o campo Resumo; o
-   **Salvar é o de sempre**. O rascunho **nunca** entra no campo sozinho.
-4. Sem chave de IA cadastrada: o botão fica desabilitado com *"IA não
-   configurada — peça ao Admin"* (o mesmo padrão do e-mail sem
-   `RESEND_API_KEY`).
-5. Quem só vê a apresentação (não negocia) vê a transcrição e o rascunho, sem
-   os botões.
-
-**O que o rascunho contém** (estrutura fixa, pedida à IA no mesmo texto
-sempre — decisão D2):
-
-- O que foi apresentado ao cliente (procedimentos, opções, prazos).
-- O que o cliente perguntou ou pediu para mudar.
-- Condições faladas (valores, forma de pagamento, descontos mencionados).
-- **O que o cliente disse que NÃO quer** (decisão D2 — serve à compra
-  parcial; ⚠️ é a parte em que a IA mais erra o "não", e o aviso da tela
-  pede atenção especial a ela).
-- Próximos passos combinados.
-- **Nunca inventar**: o que não está na transcrição não entra; se faltar,
-  escreve "não mencionado".
-
-Tamanho: até ~1.800 caracteres — cabe na Cláusula 1ª do contrato sem virar
-uma página inteira.
-
----
-
-## 5. LGPD — o que sai da Risarte e para onde
-
-- **O que sai:** o **texto** da transcrição (nome do cliente, o plano de
-  tratamento falado, condições de pagamento). É **dado de saúde** (LGPD
-  art. 11): o mesmo que já mora no prontuário, agora enviado a um operador
-  fora do Brasil (Anthropic, EUA).
-- **O que não sai (caminho A):** nenhum áudio. O Google já tinha a gravação e
-  a transcrição (o Workspace da Risarte é o controlador disso).
-- **O que a Anthropic diz** (conferir no contrato na hora de assinar): a API
-  não usa o conteúdo para treinar modelos; há **DPA** (acordo de tratamento
-  de dados) disponível; a retenção padrão é de até 30 dias para abuso, com
-  **retenção zero** sob pedido. ⚠️ O Claude Fable 5.1 **exige** retenção de
-  30 dias — por isso o plano usa o **Opus 5.5**, que aceita retenção zero.
-- **O que o sistema faz:** não grava a transcrição em log, não a põe em URL,
-  não a manda em aviso; a auditoria registra **que** o rascunho foi gerado
-  (quem, quando, qual cliente, qual modelo), **nunca o texto**. A transcrição
-  e o rascunho obedecem à mesma regra de leitura de `commercial_presentations`.
-- **O que depende do dono (D3):** assinar o DPA com a Anthropic, pedir
-  retenção zero, e ajustar o **termo de consentimento** do cliente para dizer
-  que a conversa é transcrita e resumida com apoio de IA por operador
-  contratado. O jurídico dele dá a palavra final; o sistema não liga o botão
-  antes.
-
----
-
-## 6. Custo total estimado
-
-| | Por apresentação (1 h) | 100 apresentações/mês |
+| | **Momento 1 — Avaliação / reavaliação** | **Momento 2 — Apresentação comercial** |
 |---|---|---|
-| Caminho A (só a IA, Opus 5.5) | ≈ US$ 0,10 | ≈ US$ 10 |
-| Caminho B (transcrição + IA) | ≈ US$ 0,30–0,50 | ≈ US$ 30–50 |
-| Google Workspace Business Standard | já pago pela rede (conferir) | — |
+| Quem | Coordenador Clínico | Consultor Comercial |
+| Onde | Presencial, na unidade | Online, pelo Google Meet |
+| Quem grava hoje | **O riSZon** (barra de cima; liga sozinho ao iniciar o atendimento; salva no bucket `clinical-media`; teto 2 h; dispensa de consentimento só nestas duas fases — `dispensaConsentimento`) | **O Meet** (o Consultor cola o link da gravação; o sistema não tem acesso ao arquivo) |
+| Para onde vai o resumo | Centro de Planejamento (o Planner lê). Hoje: as **considerações** (`clinical_notes`) escritas à mão; a coluna `clinical_evaluations.summary` **existe e nada grava nela** | Campo Resumo da apresentação (`commercial_presentations.summary`) → contrato |
+| O que o dono pediu | Ao enviar ao Planejamento, o Coordenador manda **o que já tem**; o resumo da IA é gerado **depois**, e **aparece em todo lugar** quando ficar pronto; enquanto gera, a tela diz "gerando"; se falhar, diz **por quê** | A gravação **termina ao encerrar a chamada**; o resumo rascunhado pela IA vai ao campo para o Consultor revisar |
+| Entrada manual (pedido do dono) | **Enviar um arquivo de áudio**, ou colar **a transcrição**, ou escrever **o resumo** direto | Idem |
 
-Em reais, a R$ 5,50 por dólar: **R$ 0,55** (A) ou **R$ 2–3** (B) por
-apresentação. Não há mensalidade: a API cobra pelo uso. O painel da Anthropic
-permite **teto de gasto mensal** — o dono define (sugestão: US$ 50).
+**Fato que simplifica o Momento 1:** o riSZon já grava o áudio e já tem o
+botão "Enviar ao Centro de Planejamento" que **para a gravação e espera o
+áudio subir** antes de enviar (OC-00086, `pararGravacaoDoCliente`). O resumo
+automático entra **logo depois desse ponto**: áudio salvo → fila → IA →
+resumo.
+
+**Fato que muda o Momento 2:** o gravador do riSZon grava **só o microfone do
+computador do Consultor** — numa chamada do Meet a voz do cliente não entra.
+Para a online, quem grava é o **Meet**, e é dele que o texto tem de vir
+(§4). O gravador do riSZon continua servindo se a apresentação for presencial.
+
+---
+
+## 3. O que a documentação diz (lido em 03/11/2026)
+
+**IA (texto → resumo; e, no Gemini, áudio → resumo direto):**
+
+- **O Claude (Anthropic) não recebe áudio**: lê texto. Para resumir uma
+  gravação são dois passos (transcrever, depois resumir).
+- **O Gemini (Google) recebe áudio direto** (32 tokens por segundo de áudio:
+  1 h ≈ 115 mil tokens) e devolve transcrição e resumo numa chamada só —
+  **um fornecedor só** para o Momento 1.
+- Preços (página oficial do Gemini, lida hoje): `gemini-3.1-pro-preview`
+  US$ 2 por milhão de tokens lidos / US$ 12 escritos (sem preço separado de
+  áudio); `gemini-3-flash-preview` US$ 0,50 texto e **US$ 1,00 áudio** /
+  US$ 3 escritos; `gemini-3.8-flash` US$ 0,75 / US$ 3,75 (sobe para 1,50 /
+  7,50 em 2027). **No nível pago o conteúdo não é usado para treinar**; no
+  nível gratuito é. Claude Opus 5.5: US$ 4 / US$ 20; Sonnet 5.5: US$ 2 /
+  US$ 10.
+
+**Google Meet pela API (o que o dono pediu dá para fazer):**
+
+| Pedido do dono | Como a API faz | Observação |
+|---|---|---|
+| Criar a reunião pelo riSZon e configurar os detalhes | **Calendar API** `events.insert` com `conferenceData.createRequest` (tipo `hangoutsMeet`) cria o evento com link do Meet; título, horário, descrição, convidados | Exige `conferenceDataVersion=1`; a criação do Meet pode voltar "pendente" e precisa ser reconferida. |
+| Mandar o link ao cliente | O Calendar **envia o convite por e-mail** sozinho (`sendUpdates`) para os convidados; e o riSZon mostra o link para mandar por WhatsApp (`linkDoWhatsApp`, já existe) | O e-mail do cliente está em `clients.email`. |
+| Gravação termina ao encerrar a chamada | **Meet REST API** `spaces` com `config.artifactConfig`: `recordingConfig.autoRecordingGeneration = ON`, `transcriptionConfig.autoTranscriptionGeneration = ON`, `smartNotesConfig.autoSmartNotesGeneration = ON` — grava, transcreve e faz as notas do Gemini **sozinho** quando o Consultor entra; para quando a chamada acaba | É exatamente o pedido. Os arquivos vão para o **Drive do organizador**. |
+| Resumo automático | **Workspace Events API**: assinatura nos eventos `google.workspace.meet.transcript.v2.fileGenerated` e `recording.v2.fileGenerated` (entregues por **Pub/Sub**); o riSZon recebe, lê a transcrição por `conferenceRecords.transcripts.entries` (texto, quem falou, hora) e manda à IA | Entradas da transcrição ficam disponíveis **30 dias**. O riSZon tem de buscar e guardar nesse prazo (D4: guarda). |
+| Apresentar o plano dentro do Meet | **Meet Add-ons SDK**: um complemento com painel lateral + palco principal, rodando a tela de apresentação do riSZon (`/apresentacao/[clientId]`) dentro do Meet | Precisa de publicação no Google Workspace Marketplace (privada, só para o domínio da Risarte) e de um projeto no Google Cloud. **Alternativa sem obra:** compartilhar a tela da apresentação, que já existe. |
+| Atualização do sistema | O mesmo evento que traz a transcrição marca a apresentação como **realizada** (`commercial_set_stage` → "Apresentado"), grava o link da gravação e dispara o resumo | Hoje o Consultor marca à mão. |
+| Follow-up | O resumo alimenta a **cadência de follow-up** que já existe (`commercial_start_followup`, tentativas, escalada à Gerente): a IA sugere a mensagem da próxima tentativa a partir do que o cliente disse e do que recusou; o envio continua pela pessoa (WhatsApp) | Mensagem automática ao cliente **não** — decisão do dono em outras frentes: aviso só a quem opera. |
+
+**Pré-requisitos do lado do Google (do dono):**
+
+1. **Google Workspace Business Standard ou superior** na conta que organiza as
+   reuniões (gravação e transcrição do Meet; as **notas do Gemini** podem
+   exigir o complemento Gemini conforme o plano — conferir no painel do
+   Workspace).
+2. **Projeto no Google Cloud** com as APIs Calendar, Meet, Workspace Events,
+   Pub/Sub (e Vertex AI, se o Gemini for a IA) ligadas; **conta de serviço com
+   delegação em todo o domínio** (DWD) para agir em nome dos Consultores —
+   sem isso o Calendar não aceita convidados nem cria o Meet. Cobrança do
+   Google Cloud separada do Workspace.
+3. **Contrato de tratamento de dados** com quem receber o texto (D3).
+
+---
+
+## 4. Por onde entra o texto — por momento
+
+| Caminho | Momento 1 (clínico) | Momento 2 (comercial) | Custo / h |
+|---|---|---|---|
+| **Automático** | Áudio do gravador do riSZon → IA | Transcrição do Meet (evento → API) → IA | Clínico: Gemini Flash ≈ US$ 0,12 (áudio) ou transcrição + IA ≈ US$ 0,30–0,50; comercial: só a IA ≈ US$ 0,06–0,12 |
+| **Arquivo de áudio enviado** (pedido do dono) | Sobe para `clinical-media` (até 2 h; mp3, m4a, webm, ogg) → mesma fila | Idem | Igual ao clínico automático |
+| **Transcrição colada** | Campo de texto (ou `.txt`) → IA | Idem (a transcrição do Meet também pode ser colada, enquanto a API não estiver ligada) | Só a IA |
+| **Resumo escrito direto** | O de sempre (considerações) | O de sempre (campo Resumo) | 0 |
+
+Baixar o vídeo do Meet e enviar ao sistema fica de fora (pesado; a API e a
+transcrição colada cobrem o caso).
+
+---
+
+## 5. Como a tela fica
+
+**Bloco "Transcrição e resumo por IA"** — o mesmo componente nos dois lugares
+(cockpit da Avaliação, passo final; aba Apresentação do cockpit do Consultor):
+
+1. **Situação** da geração, sempre visível quando há pedido: *Na fila* ·
+   *Gerando o resumo… (iniciado há 2 min)* · *Pronto — revise* · **Falhou:
+   motivo** (áudio sem fala reconhecível, arquivo grande demais, IA
+   indisponível, chave não configurada, fornecedor recusou o conteúdo), com o
+   botão *Tentar de novo*. Nada é apagado numa falha.
+2. **Entradas manuais:** *Enviar áudio* · *Colar transcrição* · (o campo de
+   resumo/considerações de sempre).
+3. **Rascunho** numa caixa âmbar: *"Rascunho escrito pela IA. Leia, corrija e
+   salve."* Botão **Usar este texto** copia para o campo; **Salvar é o de
+   sempre**. O rascunho **nunca** entra no campo sozinho.
+4. Sem chave da IA: botões desabilitados com *"IA não configurada — peça ao
+   Admin"* (padrão do e-mail sem `RESEND_API_KEY`).
+
+**Momento 1 — "aparece em todo lugar quando ficar pronto":** o Planner vê o
+cartão *Resumo da avaliação (IA)* no Centro de Planejamento e na ficha, com a
+mesma situação (gerando / pronto / falhou), **atualizando sozinho**
+(Realtime, padrão `AtualizaAoVivo`). Enquanto não há resumo, o Planner
+trabalha com as considerações e o áudio, como hoje. O rascunho clínico é
+**revisado pelo Coordenador** (ele é quem ouviu); até ele salvar, o Planner vê
+o rascunho marcado como *não revisado*. O resumo revisado grava em
+`clinical_evaluations.summary` (a coluna vazia de hoje) e aparece no
+prontuário completo.
+
+**Momento 2 — estrutura do rascunho (D2):** o que foi apresentado · perguntas
+e pedidos do cliente · condições faladas · **o que o cliente recusou** ·
+próximos passos; até ~1.800 caracteres; **"não mencionado"** quando a
+transcrição não tem. **Momento 1 — estrutura (proposta, D7):** queixa
+principal e expectativa do paciente · histórico relevante dito na consulta ·
+achados comentados em voz alta · o que o paciente quer / não quer · dúvidas
+abertas para o Planner; até ~2.500 caracteres.
+
+**Meet pelo riSZon (fase IA3):** no cockpit do Consultor, **"Marcar
+apresentação no Meet"** abre uma janelinha com data/hora, duração, título,
+descrição e o e-mail do cliente (preenchido de `clients.email`; se não tiver,
+pede e salva na ficha); cria o evento, mostra o link, oferece *Enviar por
+WhatsApp* e grava `meet_link`. Quando a chamada termina, a transcrição chega
+sozinha, a apresentação é marcada como realizada e o resumo é rascunhado.
+
+---
+
+## 6. LGPD — o que sai da Risarte e para onde
+
+- **O que sai:** texto da conversa (nome, queixa, plano de tratamento,
+  condições de pagamento) e, no Momento 1, **o áudio** (se a IA for o Gemini)
+  — dado de saúde (LGPD art. 11).
+- **Hoje já sai:** no Momento 2, a gravação e a transcrição já estão no
+  Google (Workspace da Risarte é o controlador). Pelo Gemini no **Vertex AI em
+  São Paulo**, o dado fica no Google e **pode ficar no Brasil** (o Google
+  garante o dado *guardado* na região; o processamento na região vale com o
+  endereço regional, não o "global" — confirmar para o modelo escolhido).
+- **Pela Anthropic:** EUA, com DPA nos termos comerciais e **retenção zero sob
+  pedido**; não treina com a API. (O Claude Fable 5.1 exige retenção de 30
+  dias — por isso Opus 5.5 ou Sonnet 5.5.)
+- **O que o sistema faz:** não grava texto em log, URL ou aviso; auditoria
+  registra **que** gerou (quem, quando, cliente, modelo, custo), nunca o
+  texto; transcrição e rascunho seguem a regra de leitura do lugar onde moram
+  (prontuário clínico / apresentação comercial).
+- **Consentimento:** o Momento 1 já tem a dispensa do áudio (decisão de
+  21/09/2026 com o jurídico) — mas a dispensa é **gravar**; **mandar a um
+  operador de IA** é tratamento novo e entra no termo. O Momento 2 pelo
+  gravador do riSZon exige consentimento registrado (regra de hoje).
+- **D3 (decidida):** nada liga na produção antes do DPA assinado e do termo
+  ajustado — o jurídico dá o OK.
 
 ---
 
 ## 7. As fases
 
-*Decisão D1: os dois caminhos saem juntos. Mantidos aqui como dois blocos
-porque o código é o mesmo em etapas — IA1 é a base, IA2 se encaixa nela — e
-porque a IA2 depende de um segundo contrato (D6) que pode atrasar sem travar
-a IA1. Se os dois contratos estiverem prontos, saem na mesma versão.*
+| Fase | O que entrega | Depende de |
+|---|---|---|
+| **IA1 — a fila e o rascunho** (migração 0349) | Tabela `ai_summary_jobs` (cliente, momento, origem: áudio/transcrição, situação: fila/gerando/pronto/falhou, motivo da falha, modelo, tokens, custo, quem pediu); colunas em `commercial_presentations` (`transcript`, `transcript_source`, `ai_draft`, `ai_draft_at`, `ai_model`, `summary_source`) e em `clinical_evaluations` (`transcript`, `ai_draft`, `ai_draft_at`, `ai_model`, `summary_reviewed_by/at`); porta única da IA (`src/lib/ia/modelo.ts`: um arquivo por fornecedor); rota de trabalho `/api/ia/resumos` (cron de 1 min + disparo ao enfileirar; `maxDuration` 300; lê o áudio do bucket pela chave de serviço com URL assinada curta; parte arquivos acima do limite); o bloco da §5 nos dois cockpits, com **enviar áudio**, **colar transcrição**, situação ao vivo e falha explicada; o Momento 1 enfileira sozinho ao enviar ao Planejamento (depois do áudio salvo); cartão do Planner em tempo real; `summary` da rodada passa a ser gravado | **D5** (IA), **D6** (transcrição, se a IA não ler áudio), chave(s) na Vercel |
+| **IA2 — réguas e manual** | Testes: o rascunho nunca grava o campo final; "não inventar" e estrutura no pedido; falha vira motivo legível e nunca apaga nada; sem chave → `configured: false`; auditoria sem texto; o Momento 1 enfileira **depois** de `pararGravacaoDoCliente` (régua em `fim-da-avaliacao.test.ts`). Manual §6.5 e §4 (avaliação), changelog, EV, ESTADO | IA1 |
+| **IA3 — o Meet pelo riSZon** | Janelinha "Marcar apresentação no Meet" (Calendar API, DWD), link + WhatsApp + e-mail do cliente, espaço com gravação/transcrição/notas automáticas, assinatura de eventos (Pub/Sub → rota `/api/webhooks/google-meet`), leitura da transcrição em até 30 dias, apresentação marcada como realizada, resumo enfileirado | Workspace Business Standard+, projeto Google Cloud com DWD, **D8** |
+| **IA4 — follow-up assistido** | No cartão de follow-up, *"Sugerir mensagem"* a partir do resumo (o que o cliente pediu/recusou) e da cadência; a pessoa edita e manda pelo WhatsApp; nada automático ao cliente | IA1 |
+| **IA5 — apresentar dentro do Meet** | Complemento do Meet (Add-ons SDK) com a tela de apresentação do riSZon no palco principal; publicação privada no Marketplace | IA3, **D9** |
 
-### IA1 — o rascunho a partir da transcrição colada (uma sessão, migração 0349)
-
-- **Banco (0349):** colunas em `commercial_presentations`: `transcript text`,
-  `transcript_source` (`meet` | `gravacao` | `arquivo`), `transcript_at`,
-  `ai_draft text`, `ai_draft_at`, `ai_model text`, `summary_source`
-  (`manual` | `ia_revisado`). Sem tabela nova (uma apresentação por cliente,
-  `unique (client_id)`). Gatilho da auditoria já cobre a tabela.
-- **Servidor:** `src/lib/ia/resumo-da-apresentacao.ts` — regra pura que monta
-  o pedido à IA (estrutura da §4) e **limpa** a resposta (sem markdown, teto
-  de caracteres); `src/lib/ia/modelo.ts` — **uma porta só para a IA do
-  resumo** (entra o pedido, sai o texto), com um arquivo por fornecedor atrás
-  dela (`anthropic.ts`, e `gemini.ts` se o D5 escolher o Google): trocar de IA
-  é trocar uma variável, não reescrever a tela. Com a Anthropic:
-  `@anthropic-ai/sdk`, modelo `claude-opus-5-5`, texto fixo do pedido com
-  *prompt caching*, `max_tokens` 2.000, sem streaming — resposta curta;
-  action `gerarRascunhoDoResumo(clientId)` em `comercial/[clientId]/actions.ts`
-  com a guarda de quem negocia, `logAudit` (ids e modelo, nunca o texto),
-  `revalidatePath`. `maxDuration` da action: 60 s.
-- **Variável na Vercel:** `ANTHROPIC_API_KEY` (Secret), nos dois projetos
-  (treino pode usar a mesma chave; o gasto do treino conta — ou só na
-  produção, e o treino mostra "IA não configurada"). Documentar em
-  `docs/PRODUCAO-ONLINE.md`.
-- **Tela:** o bloco da §4 em `presentation-workspace.tsx`.
-- **Réguas (teste):** (1) o rascunho **nunca** grava `summary` — só a action
-  de salvar de sempre; (2) o pedido à IA leva a instrução "não inventar" e a
-  estrutura fixa; (3) a resposta é cortada no teto; (4) sem chave, a action
-  responde `configured: false` e não chama nada; (5) `logAudit` da geração
-  não contém o texto (régua lê o arquivo). O cliente da Anthropic é
-  **simulado** no teste — nenhum teste gasta crédito.
-- **Manual §6.5** (Tarefa 2 do Consultor: "cole a transcrição, gere o
-  rascunho, leia e corrija"), changelog, EV, ESTADO, BACKLOG.
-- **Não visto na tela sem a chave:** a geração real. Com a chave do dono no
-  treino, uma apresentação de teste (cliente fictício, transcrição inventada).
-
-### IA2 — a gravação pelo sistema e a transcrição automática (junto com a IA1, decisão D1)
-
-- A barra grava ao **iniciar a apresentação** pelo funil (tipo de atendimento
-  `commercial_presentation`), **só com consentimento registrado** (a dispensa
-  continua estreita — régua de `gravacao.test.ts`).
-- Ao concluir, uma rotina lê o áudio do bucket (chave de serviço, URL
-  assinada curta) e chama o serviço de transcrição escolhido (D4) por um
-  módulo **isolado e trocável** (`src/lib/ia/transcricao.ts`, uma função por
-  fornecedor, mesma saída). Áudio acima do limite do fornecedor é partido.
-  Rota com `maxDuration = 300`. O texto cai em `transcript` com origem
-  `gravacao`; dali, o mesmo botão da IA1.
-- Segunda variável na Vercel (a chave do serviço de transcrição) e segundo
-  DPA.
-- Fica de fora por decisão: baixar a gravação do Meet pelo Drive (exigiria
-  login Google de cada Consultor no sistema — obra grande para um ganho que
-  o caminho A já dá).
+Cada fase é uma sessão (a IA1 provavelmente duas). A ordem IA1 → IA3 é a que
+dá resultado mais cedo: o resumo já funciona com a transcrição colada
+enquanto o Google Cloud é montado.
 
 ---
 
 ## 8. Decisões do dono
 
-| # | Pergunta | Recomendação | **Decisão (03/11/2026)** |
+| # | Pergunta | Recomendação | **Decisão** |
 |---|---|---|---|
-| **D1** | Por onde entra o texto na primeira fase? | Caminho A (transcrição do Meet colada); B depois. | **Os dois na mesma entrega** (A para a online, B para a presencial). O dono pediu aprofundar custo × benefício das IAs antes de escolher a do resumo → D5. |
-| **D2** | O que o rascunho contém? | Estrutura fixa em 4 partes, sem inventar. | **Estrutura fixa + o que o cliente recusou** (5 partes, §4). |
-| **D3** | Quando a IA pode ser ligada? | Só depois do DPA (retenção zero) e do termo de consentimento ajustado. | **Como recomendado.** Até lá a tela diz "IA não configurada". |
-| **D4** | Guardar a transcrição inteira no sistema? | Sim, na apresentação, com a regra de leitura dela. | **Como recomendado.** |
-| **D5** | **Qual IA escreve o resumo?** | §9: Claude Opus 5.5 pela API da Anthropic; alternativa Gemini 3 Pro no Vertex AI de São Paulo se o jurídico exigir dado no Brasil. | **Aberta.** |
-| **D6** | **Qual serviço transcreve o áudio (caminho B)?** | §10: Deepgram Nova-3; alternativa Google Speech-to-Text se exigir dado no Brasil. | **Aberta.** |
-
-Depois de D5 e D6, a entrega segue o fluxo de sempre: migração 0349
-conferida e ensaiada no treino, réguas, tela no treino com conta de teste,
-manual e Word, changelog e versão, commit; as chaves são cadastradas pelo
-dono na Vercel quando o D3 estiver cumprido para cada fornecedor.
+| **D1** | Por onde entra o texto na primeira fase? | A (transcrição do Meet) agora, B (gravador) depois | **Os dois na mesma entrega** (03/11). Ampliado no mesmo dia: os dois momentos, envio manual de áudio/transcrição/resumo, Meet + Gemini. |
+| **D2** | Conteúdo do rascunho comercial | 4 partes | **5 partes, com o que o cliente recusou** (03/11). |
+| **D3** | Quando a IA liga na produção | Depois do DPA e do termo | **Como recomendado** (03/11). |
+| **D4** | Guardar a transcrição | Sim | **Como recomendado** (03/11). |
+| **D5** | **Qual IA escreve o resumo?** | §9. Com o Meet e o Gemini no pedido, **Gemini no Vertex AI (São Paulo)** vira a escolha natural: um fornecedor, lê áudio, dado no Brasil, mesma conta Google Cloud das APIs do Meet. Alternativa: Claude Opus 5.5 (Anthropic) se o jurídico preferir o arranjo com DPA/retenção zero e o dono quiser a IA mais forte em texto. | Aberta |
+| **D6** | **Quem transcreve o áudio do Momento 1?** | §10. Se D5 = Gemini, **ninguém mais** (ele lê o áudio). Se D5 = Claude, Deepgram Nova-3 (ou Google Speech-to-Text para dado no Brasil). | Aberta |
+| **D7** | Estrutura do rascunho **clínico** | A da §5 (queixa · histórico · achados ditos · quer/não quer · dúvidas para o Planner), revisada pelo Coordenador antes de valer | Aberta |
+| **D8** | Em nome de quem o riSZon cria a reunião no Google? | **Em nome do Consultor** (DWD: a reunião nasce na agenda dele; a gravação vai para o Drive dele; ele é o organizador). Alternativa: uma conta "comercial@" da Risarte organiza tudo (Drive central, mas o Consultor entra como convidado e precisa de permissão para gravar). | Aberta |
+| **D9** | Apresentar o plano **dentro** do Meet | **Depois** (IA5): primeiro compartilhar a tela da apresentação que já existe; o complemento exige publicação no Marketplace e manutenção. | Aberta |
 
 ---
 
 ## 9. Comparativo — qual IA escreve o resumo (D5)
 
-*Preços de tabela em dólar, lidos em 03/11/2026 em páginas de terceiros e na
-documentação da Anthropic; **conferir na página oficial de cada um antes de
-contratar**. Conta feita para uma apresentação de 1 h: ≈ 25 mil tokens lidos
-(a transcrição) e ≈ 1 mil escritos (o rascunho).*
+*Conta para 1 h de conversa: ≈ 25 mil tokens de texto lidos (transcrição) e
+≈ 1 mil escritos; para áudio direto, ≈ 115 mil tokens lidos.*
 
-| IA | Preço (por milhão de tokens lidos / escritos) | **Por apresentação** | 100/mês | Onde o dado é processado | Retenção / contrato | Observações |
+| IA | Lê áudio? | Preço (milhão lidos / escritos) | **Por apresentação (texto)** | **Por avaliação (áudio direto)** | Onde processa | Contrato / retenção |
 |---|---|---|---|---|---|---|
-| **Claude Opus 5.5** (Anthropic) | US$ 4 / US$ 20 | **≈ US$ 0,12** | ≈ US$ 12 | EUA | DPA incluído nos termos comerciais; **retenção zero sob pedido** ao representante; não treina com o conteúdo da API | Modelo mais capaz da linha Opus; o padrão deste plano. Uma chave só, SDK pronto. |
-| Claude Sonnet 5.5 (Anthropic) | US$ 2 / US$ 10 | ≈ US$ 0,06 | ≈ US$ 6 | EUA | Idem | Mesma conta e mesmo contrato do Opus; trocar é mudar o nome do modelo. Suficiente para resumir; perde um pouco de cuidado no "não" do cliente. |
-| Claude Haiku 5.5 (Anthropic) | US$ 0,10 / US$ 0,50 | ≈ US$ 0,003 | ≈ US$ 0,30 | EUA | Idem | O mais barato; para um texto que vai no contrato, o ganho de US$ 11/mês não paga o risco de um resumo pior. |
-| GPT-5.5 (OpenAI) | US$ 5 / US$ 30 | ≈ US$ 0,16 | ≈ US$ 16 | EUA (residência de dados só na Europa e na Ásia; **Brasil não listado**) | Retenção zero **só com aprovação** da OpenAI, critérios não publicados | O mais caro da tabela; nenhum ganho para este uso. |
-| GPT-5 mini (OpenAI) | US$ 0,25 / US$ 2 (listagem incerta — pode ter saído da tabela oficial) | ≈ US$ 0,01 | ≈ US$ 1 | EUA | Idem | Barato, mas a disponibilidade do modelo não está clara em 2026. |
-| **Gemini 3 Pro** (Google, Vertex AI) | US$ 2 / US$ 12 | **≈ US$ 0,06** | ≈ US$ 6 | **Pode rodar em São Paulo** (`southamerica-east1`): o Google garante o dado **guardado** na região; o processamento na região vale só com o endereço regional (não o "global") — **confirmar para o Gemini 3 Pro** | Termos do Google Cloud (a Risarte já é cliente Google pelo Workspace) | O único que pode manter o dado **no Brasil**. Exige conta no Google Cloud, cobrança separada do Workspace. |
-| Gemini 3 Flash (Google) | US$ 0,50 / US$ 3 | ≈ US$ 0,02 | ≈ US$ 2 | Idem | Idem | Mais barato que o Pro; qualidade abaixo para texto que vai no contrato. |
+| **Gemini 3.1 Pro** (Google, Vertex AI) | **Sim** | US$ 2 / 12 | ≈ US$ 0,06 | ≈ US$ 0,24 | **Pode ser São Paulo** (confirmar o modelo na região) | Termos Google Cloud; nível pago não treina |
+| **Gemini 3 Flash / 3.8 Flash** (Google) | **Sim** | US$ 0,50–0,75 / 3–3,75; áudio US$ 1 | ≈ US$ 0,02 | ≈ US$ 0,12 | Idem | Idem |
+| **Claude Opus 5.5** (Anthropic) | Não | US$ 4 / 20 | ≈ US$ 0,12 | — (precisa de transcrição: + US$ 0,20–0,36) | EUA | DPA; retenção zero sob pedido |
+| Claude Sonnet 5.5 | Não | US$ 2 / 10 | ≈ US$ 0,06 | — (idem) | EUA | Idem |
+| GPT-5.5 (OpenAI) | Não (modelo de texto) | US$ 5 / 30 | ≈ US$ 0,16 | — | EUA; sem região Brasil | Retenção zero só com aprovação |
 
-**Leitura da tabela.** Para este uso — resumir 1 h de conversa em cinco
-partes, sem inventar — todos os modelos de primeira linha (Opus 5.5, GPT-5.5,
-Gemini 3 Pro) dão conta; a diferença de custo entre eles é de **centavos por
-apresentação** e de **dezenas de dólares por mês** na rede inteira. O que de
-fato separa as opções é **onde o dado de saúde é processado** e **que
-contrato cobre isso**:
-
-- **Anthropic (Claude):** processamento nos EUA, com DPA e retenção zero —
-  o mesmo arranjo que a maioria das empresas brasileiras aceita para
-  operador fora do país (LGPD art. 33, cláusulas contratuais). É o caminho
-  mais simples: uma chave, um SDK, um contrato.
-- **Google (Gemini no Vertex AI):** a única opção com região em **São Paulo**.
-  Se o jurídico do dono exigir que o dado de saúde **não saia do Brasil**, é
-  esta. Custa uma conta no Google Cloud e a conferência de que o Gemini 3 Pro
-  está na região de São Paulo com processamento regional (a documentação
-  lista o 2.5 Pro/Flash lá; o 3 Pro aparece numa versão da página e não em
-  outra).
-- **OpenAI:** não tem residência no Brasil, a retenção zero depende de
-  aprovação, e é a mais cara. Fica de fora.
-
-**Recomendação (D5):** **Claude Opus 5.5** pela API da Anthropic, com DPA e
-retenção zero, como padrão; **Gemini 3 Pro no Vertex AI de São Paulo** se o
-jurídico exigir dado no Brasil. Nos dois casos o módulo nasce com a porta
-única (`src/lib/ia/modelo.ts`): a troca depois custa um arquivo e uma
-variável, não a tela.
+**Leitura.** Todos os de primeira linha resumem bem 1 h de conversa em
+português; a diferença é de centavos por caso (100 casos/mês: US$ 6–25). O
+que separa: **(a)** o Gemini lê o áudio e dispensa um segundo fornecedor no
+Momento 1; **(b)** o Gemini pode rodar em **São Paulo**; **(c)** o pedido do
+dono já põe o Google (Meet, Calendar, Events) no projeto — a IA na mesma
+conta é um contrato, uma cobrança e um painel de gastos. A Anthropic ganha em
+qualidade de texto no topo (Opus 5.5) e em simplicidade de contrato (DPA +
+retenção zero prontos); perde por exigir transcrição à parte. **Recomendação:
+Gemini 3.1 Pro no Vertex AI, região São Paulo**, com a porta trocável para o
+Claude se a qualidade do rascunho decepcionar no treino (a troca é um arquivo
+e uma variável).
 
 ---
 
-## 10. Comparativo — qual serviço transcreve o áudio (D6, caminho B)
+## 10. Comparativo — transcrição à parte (D6, só se D5 ≠ Gemini)
 
-*Preço por **hora de áudio**, dólar, mesma ressalva da §9. O arquivo do nosso
-gravador (webm/opus) tem ≈ 15 MB por hora.*
+| Serviço | Preço / h | Português | Retenção do áudio | Região | Obs. |
+|---|---|---|---|---|---|
+| Deepgram Nova-3 | ≈ US$ 0,31 | Sim | Diz não guardar por padrão (confirmar no contrato) | EUA | Barato; +US$ 0,12/h para separar quem fala |
+| OpenAI gpt-4o-transcribe | ≈ US$ 0,36 (mini 0,18) | Sim | 30 dias; retenção zero com aprovação | EUA | Arquivo ≤ 25 MB por chamada (2 h precisam ser partidas) |
+| AssemblyAI | ≈ US$ 0,15–0,21 | Sim | Apaga áudio em 2 dias; transcrição apagada a pedido | EUA | Mais barato; um passo a mais do nosso lado |
+| Google Speech-to-Text (Chirp 3) | ≈ US$ 0,96 (lote 0,24) | Sim | Termos Google Cloud | Possível São Paulo (não confirmado) | Faz sentido só junto do Google |
 
-| Serviço | Preço / h | Por apresentação (1 h) | Português | Retenção do áudio | Região | Observações |
-|---|---|---|---|---|---|---|
-| **Deepgram Nova-3** | ≈ US$ 0,31 (multilíngue) | ≈ US$ 0,31 | Sim (pt-BR) | Diz **não guardar** áudio nem transcrição por padrão (fonte de terceiro — **confirmar no contrato**) | EUA | Preço e simplicidade; separar quem fala custa +US$ 0,12/h. |
-| OpenAI `gpt-4o-transcribe` | ≈ US$ 0,36 (`mini`: ≈ US$ 0,18) | ≈ US$ 0,36 | Sim | Padrão 30 dias; retenção zero só com aprovação | EUA | Arquivo de **até 25 MB por chamada**: 2 h de gravação precisam ser partidas. |
-| AssemblyAI | ≈ US$ 0,15–0,21 | ≈ US$ 0,20 | Sim | Áudio apagado em 2 dias; transcrição apagada **se pedirmos** depois de ler (não há retenção zero formal) | EUA | O mais barato; a retenção exige um passo a mais do nosso lado (o sistema pede para apagar). |
-| Google Speech-to-Text (Chirp 3) | ≈ US$ 0,96 (lote de 24 h: ≈ US$ 0,24) | ≈ US$ 0,96 | Sim | Termos do Google Cloud | **Possível em São Paulo — não confirmado** para o Chirp 3 | O caminho se o jurídico exigir dado no Brasil (e combina com o Gemini na mesma conta Google Cloud). |
+---
 
-**Recomendação (D6):** **Deepgram Nova-3** (barato, pt-BR, sem guardar áudio
-— confirmando isso no contrato); **Google Speech-to-Text** se a regra for
-"dado no Brasil" (aí Gemini + Speech-to-Text ficam na mesma conta Google
-Cloud, um contrato só). A porta `src/lib/ia/transcricao.ts` nasce trocável do
-mesmo jeito.
+## 11. Custo total estimado (Gemini 3.1 Pro, São Paulo)
 
-**Custo total do caminho B por apresentação de 1 h:** transcrição US$ 0,20–0,36
-+ resumo US$ 0,06–0,12 ≈ **US$ 0,30–0,50** (≈ R$ 2–3). Na rede, 100
-apresentações por mês ≈ US$ 30–50.
+| | Por caso | 100/mês |
+|---|---|---|
+| Avaliação clínica (1 h de áudio → resumo) | ≈ US$ 0,24 | ≈ US$ 24 |
+| Apresentação comercial (transcrição do Meet → resumo) | ≈ US$ 0,06 | ≈ US$ 6 |
+| Sugestão de follow-up | ≈ US$ 0,01 | ≈ US$ 1 |
+| Google Workspace Business Standard | já da rede (conferir) | — |
+| Google Cloud (APIs do Meet/Calendar/Events, Pub/Sub) | centavos | < US$ 5 |
+
+Em reais, a R$ 5,50/US$: ≈ R$ 1,30 por avaliação e R$ 0,35 por apresentação.
+Sem mensalidade; o painel do Google Cloud permite **alerta e teto de gasto**
+(sugestão: US$ 100/mês).
+
+---
+
+## 12. O que fica registrado como limite
+
+- A transcrição do Meet pela API vale **30 dias**: o riSZon tem de buscar
+  nesse prazo (a assinatura de eventos garante isso no dia; a rota de cron
+  recolhe o que escapou).
+- O gravador do riSZon **não grava a chamada do Meet** (só o microfone local).
+- As notas do Gemini do próprio Meet (*smart notes*) podem exigir o
+  complemento Gemini no Workspace; o riSZon **não depende delas** — gera o
+  próprio resumo a partir da transcrição, com a estrutura do contrato.
+- Apresentar **dentro** do Meet (IA5) exige complemento publicado no
+  Marketplace; até lá, compartilhar a tela.
+- Preços lidos em 03/11/2026 em páginas oficiais (Gemini, Meet, Anthropic) e
+  de terceiros (Deepgram, AssemblyAI, OpenAI por minuto): **conferir antes de
+  contratar**.

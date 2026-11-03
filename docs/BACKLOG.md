@@ -41,7 +41,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP32** — 3 conferências do `test:indica` falham no treino
 
 **Futuro / sem causa encontrada**
-- [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026): D1–D4 decididas; abertas D5 (qual IA) e D6 (qual transcrição), comparativos nas §9–§10**
+- [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): D1–D4 decididas; abertas D5–D9**
 - [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida)
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
@@ -2804,8 +2804,20 @@ Recomendação: fase IA1 = colar a transcrição do Meet e gerar o rascunho
 (≈ US$ 0,10 por apresentação); IA2 = gravador + serviço de transcrição para
 a presencial. **Decisões do dono (03/11/2026):** A e B na mesma entrega;
 rascunho em 5 partes (com o que o cliente recusou); IA só liga depois do DPA
-e do termo; transcrição guardada. **Abertas:** D5 (qual IA — comparativo
-Claude × GPT × Gemini na §9 do plano) e D6 (qual transcrição — §10).
+e do termo; transcrição guardada. **Escopo ampliado pelo dono no mesmo dia
+(v2 do plano):** o resumo vale também para a **avaliação clínica** (o
+Coordenador envia ao Planejamento o que tem; a IA gera depois, com situação
+"gerando / pronto / falhou e por quê" em todo lugar — Realtime); envio manual
+de **arquivo de áudio**, transcrição ou resumo nos dois momentos; **Google
+Meet pela API** (criar a reunião do riSZon, convidar pelo e-mail do cliente,
+gravação/transcrição automáticas que terminam com a chamada, eventos do
+Workspace → resumo e apresentação marcada como realizada), **follow-up
+assistido** e apresentar dentro do Meet (complemento, depois). A coluna
+`clinical_evaluations.summary` existe e nada grava nela — passa a receber o
+resumo revisado. **Abertas:** D5 (qual IA — com o Meet no pedido, a
+recomendação virou Gemini no Vertex AI em São Paulo, §9), D6 (transcrição, só
+se não for Gemini), D7 (estrutura do resumo clínico), D8 (reunião em nome do
+Consultor ou de uma conta central), D9 (apresentar dentro do Meet: depois).
 
 ### AP95. Contrato barrado por "resumo não escrito" para quem não lê a apresentação (03/11/2026)
 
