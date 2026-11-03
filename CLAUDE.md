@@ -391,6 +391,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 (ZS7) — PC Administrador (core 0.380.0 → 0.381.0, migração 0347)**
+
+- **Assinatura digital — fase ZS7, o painel e os relatórios** (bloco ZS7 no
+  ESTADO). Cada número abre a lista, com o link para a negociação (pedido do
+  dono).
+- ⚠️ **UMA conta: `indicadores.ts`** sobre `signature_report_rows` (0347,
+  `security invoker`). Tela, PDF, planilha e e-mail mensal usam a mesma — não
+  recontar em outro lugar.
+- ⚠️ **Tela nova com o envio para assinatura entra no
+  `outputFileTracingIncludes`** (a ZS5 esqueceu o Empresarial; régua em
+  `assinaturas-pdf.test.ts`).
+- ⏳ **0347 só no treino.** Próxima: **ZS8**.
+
 **02/11/2026 (ZS6) — PC Administrador (core 0.379.0 → 0.380.0, migração 0346)**
 
 - **Assinatura digital — fase ZS6, as rotinas** (bloco ZS6 no ESTADO): rotina

@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.381.0",
+    data: "2026-11-02",
+    migracao: "0347",
+    titulo: "Assinatura digital — sétima etapa: o painel e os relatórios",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O menu Assinaturas abre no painel: enviados, assinados, faltam assinar, recusados, vencidos e cancelados no período, o tempo de resposta do cliente e o consumo do plano. Cada número abre a lista dos pacotes, com o link para o pacote e para a negociação de origem.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.7",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Assinaturas → Relatórios baixa o mesmo que o painel mostra em PDF (com a identidade da Risarte) ou em planilha Excel, por pacote ou por documento. No dia 1º, o relatório do mês anterior vai por e-mail para quem estiver em Configurações → Relatório mensal.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.7",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O envio para assinatura pelo funil e pela ficha da empresa do Empresarial podia falhar no sistema publicado ao montar o PDF. Corrigido antes de alguém usar (a produção ainda não tinha a ZapSign ligada).",
+        papeis: ["rislife_consultant", "finance_franchisor", "franchisor_staff"],
+        manual: "13d.5",
+      },
+    ],
+  },
+  {
     versao: "0.380.0",
     data: "2026-11-02",
     migracao: "0346",

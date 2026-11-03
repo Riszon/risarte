@@ -4501,9 +4501,8 @@ fila **Minhas assinaturas pendentes**; a quarta (0.376.0), o **detalhe de
 cada pacote** — visualizar o PDF, baixar, reenviar, cancelar e reenviar como
 pacote novo (13d.4); a quinta (0.378.0), o **contrato de adesão do
 Empresarial** (13d.5); a sexta (0.380.0), **o que o sistema faz sozinho** —
-lembretes, vencimento, consumo do plano e a conferência com a ZapSign (13d.6).
-O painel com os indicadores chega na etapa seguinte, e as Novidades avisam
-quando entrar.
+lembretes, vencimento, consumo do plano e a conferência com a ZapSign (13d.6);
+a sétima (0.381.0), **o painel e os relatórios** (13d.7).
 
 **Quem vê o menu "Assinaturas".** Quem tem a permissão **Assinaturas** no grupo
 **Assinaturas digitais** de Administração → Permissões (13b). Por padrão:
@@ -4784,6 +4783,52 @@ assina uma vez. O envio pelo funil entra sozinho na lista da aba Envio e selos.
 automáticas** mostra quando cada rotina rodou pela última vez e o que fez
 (quantos venceram, foram lembrados ou conferidos), o consumo do mês e quantos
 e-mails estão na fila.
+
+### 13d.7. O painel e os relatórios (0.381.0)
+
+**Onde fica.** Menu **Assinaturas** — a página abre no painel. Aparece para
+quem tem **Painel da unidade** (vê as próprias unidades) ou **Painel da rede**
+(vê todas; por padrão Financeiro da Franqueadora e Admin). O Consultor RisLife
+vê só as empresas dele. Quem não tem nenhum dos dois vê os atalhos
+**Pacotes** e **Minhas pendentes**.
+
+**Filtros:** período (*Este mês*, *Últimos 30 dias*, *Mês passado*, *Este ano*
+ou *Escolher datas*), unidade, público (pacientes ou empresas), documento e
+quem enviou.
+
+**Os números — cada um abre a lista dos pacotes, logo abaixo:**
+
+| Número | O que conta | A lista mostra |
+|---|---|---|
+| **Enviados** | enviados no período | todos, do mais recente |
+| **Assinados** | concluídos no período (e a % dos enviados no período que já assinaram) | a data da conclusão |
+| **Faltam assinar** | aguardando **agora** (não depende do período): quantos esperam o cliente e quantos esperam a equipe | há quantos dias e quem está segurando (o cliente, as testemunhas ou a Risarte) |
+| **Recusados** | recusados no período | o motivo que o cliente deu na ZapSign |
+| **Vencidos** | vencidos no período | a data em que o prazo acabou |
+| **Cancelados** | cancelados no período | o motivo e quem cancelou |
+
+Em cada linha: **Abrir o pacote** e o link da origem — **Abrir a
+negociação** (o painel de negociação e fechamento do paciente, ou a ficha do
+lead no funil do Empresarial), **Abrir a ficha** (pacote enviado pela ficha do
+paciente) ou **Abrir a empresa** (aba Contratos).
+
+**Também no painel:** o tempo de resposta do cliente (mediana e média — do
+envio à assinatura do cliente), o tempo total até concluir, o consumo do plano
+da ZapSign, os pacotes que faltam assinar **por tempo de espera** (clique numa
+faixa para ver a lista), enviados × assinados por semana (por mês em períodos
+longos), os motivos de cancelamento e, para quem vê a rede, a tabela **Por
+unidade** (clique numa unidade para filtrar).
+
+**Relatórios** (botão no alto do painel): os mesmos filtros, **uma linha por
+pacote ou por documento**, e dois botões — **Baixar em PDF** (com a identidade
+da Risarte) e **Baixar planilha (Excel)**. O relatório traz os números do
+período e as listas de assinados, faltam assinar, recusados, vencidos e
+cancelados. Cada download fica na **Auditoria**.
+
+**Relatório mensal por e-mail.** No dia 1º, às 06:00, o relatório do mês
+anterior (a rede inteira, em PDF, com os números no corpo do e-mail) vai para
+quem está em *Assinaturas → Configurações → Relatório mensal*. Sem o serviço de
+e-mail configurado, ele espera na fila.
 
 ## 14. Checklists
 

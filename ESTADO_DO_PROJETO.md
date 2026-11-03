@@ -1,6 +1,60 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.380.0** · Última migração: **0346** (0318 a 0346 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.381.0** · Última migração: **0347** (0318 a 0346 aplicadas na produção e no treino; **0347 só no treino**) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 📊 ZS7 — ASSINATURA DIGITAL: O PAINEL E OS RELATÓRIOS (02/11/2026, v0.381.0, migração 0347)
+>
+> Sétima fase do plano `docs/assinaturas/PLANO-ZS0.md` (§9, §10, §11). Pedido do
+> dono no plano: **cada número do período abre a lista** dos pacotes
+> (assinados, faltam assinar, recusados, vencidos, cancelados), com **Abrir o
+> pacote** e **Abrir a negociação**. Decisões: relatório mensal da **rede
+> inteira** igual para todos; período padrão = **mês atual** (atalhos 30 dias,
+> mês passado, ano, datas).
+>
+> **Banco (0347):** `signature_report_rows(de, ate, unidades, público, modelo,
+> quem_enviou)` — `security invoker` (a RLS recorta: unidade, rede, RisLife);
+> pela chave de serviço vê a rede (o mensal). Traz os pacotes que dizem
+> respeito ao período (enviados, concluídos, encerrados nele, ou aguardando
+> agora), com tempos, documentos, unidade e nomes. `signature_job_runs` aceita
+> `monthly`.
+>
+> **Código:**
+> - `src/lib/signatures/indicadores.ts` — A CONTA (pura, testada): números,
+>   listas (`linhasDaLista`), faixas, série semanal/mensal, por unidade,
+>   `linkDaOrigem` (negociação → `/apresentacao/[cliente]`; ficha; empresa;
+>   lead). Tela, relatório e e-mail mensal usam ESTA conta.
+> - `painel-dados.ts` (filtros na URL, leitura em páginas de 1.000,
+>   `alcanceDoPainel`), `relatorio.ts` (PDF pdf-lib + planilha exceljs, por
+>   pacote ou por documento), `relatorio-pedido.ts` (guarda + Auditoria
+>   `signature_report`), `relatorio-mensal.ts` + `/api/cron/signatures-monthly`
+>   (PDF no bucket `_relatorios/AAAA-MM/`, um e-mail por destinatário na fila,
+>   uma vez por mês).
+> - Telas: `/assinaturas` (painel), `/assinaturas/relatorios` (+ rotas `pdf` e
+>   `planilha`), `lista-do-painel.tsx`, `filtros-do-painel.tsx`.
+> - ⚠️ **Achado e corrigido:** a ZS5 não pôs `/empresarial/**` no
+>   `outputFileTracingIncludes` — o envio pelo Empresarial falharia na Vercel
+>   ao montar o PDF. Corrigido (+ `/api/cron/**`) e régua nova em
+>   `assinaturas-pdf.test.ts` (toda tela com o envio precisa estar na lista;
+>   provada quebrando). Ninguém foi afetado: a produção não tem o token da
+>   ZapSign.
+>
+> **Conferido:** `check-migrations`; `migrar:teste`; ensaio no treino em
+> transação desfeita **12/12** (admin vê tudo, gerente só a unidade dele,
+> recepção nada, sem login recusa, filtros, aguardando aparece em período
+> antigo, rastro mensal). 15 testes novos (`assinaturas-painel.test.ts`; o PDF
+> e a planilha abertos de verdade). No servidor local (treino, Admin de teste):
+> painel do ano com os números, lista dos cancelados com motivo, quem cancelou e
+> os links de origem; PDF (308 KB, conferido no visualizador) e planilha por
+> documento baixados; sem login → login; rota mensal 401 sem segredo e
+> "sem destinatários" com ele.
+>
+> **Não visto:** o painel no celular; o relatório mensal com destinatário
+> (precisa de e-mail cadastrado; o PDF é o mesmo do download); o e-mail real.
+>
+> **O que o dono precisa fazer:** rodar a **0347** na produção (conferência
+> `1 · false · true · true`); cadastrar os destinatários em Assinaturas →
+> Configurações → Relatório mensal. **Próxima fase: ZS8** (teste de verdade e
+> checklist de produção).
 
 > ## ⏰ ZS6 — ASSINATURA DIGITAL: AS ROTINAS (02/11/2026, v0.380.0, migração 0346)
 >

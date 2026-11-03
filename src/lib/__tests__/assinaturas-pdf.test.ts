@@ -7,7 +7,7 @@ import { montarRubricas } from "@/lib/signatures/pdf/signature-block";
 import { wrapText } from "@/lib/signatures/pdf/text";
 import { embedFonts, FEATURES } from "@/lib/signatures/pdf/fonts";
 import fontkit from "@pdf-lib/fontkit";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 // O PDF do pacote (ZS2): o modelo vira páginas, a capa indexa, a mesclagem
@@ -87,6 +87,28 @@ describe("PDF do pacote (ZS2)", { timeout: 60_000 }, () => {
       for (const a of chars) for (const b of chars) confere(a + b);
       for (const a of contexto) for (const b of contexto) for (const c of contexto) confere(a + b + c);
       expect(trocados.slice(0, 10), arquivo).toEqual([]);
+    }
+  });
+
+  it("toda tela com o envio para assinatura leva as fontes do PDF para a Vercel (achado na ZS7)", () => {
+    // A Server Action roda na função da ROTA que a chamou: tela com o botão
+    // sem a pasta das fontes no pacote quebra na Vercel ("arquivo não
+    // encontrado") e passa em todo teste local. A ZS5 esqueceu o Empresarial.
+    const config = readFileSync(path.join(process.cwd(), "next.config.ts"), "utf8");
+    const raiz = path.join(process.cwd(), "src", "app", "(app)");
+    const usa = /EnviarParaAssinaturaDialog|EnviarEmpresaParaAssinaturaDialog|AssinaturasDaEmpresa|AssinaturasDoCliente/;
+    const segmentos = new Set<string>();
+    const varrer = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) varrer(p);
+        else if (/\.tsx?$/.test(e.name) && usa.test(readFileSync(p, "utf8"))) segmentos.add(path.relative(raiz, p).split(path.sep)[0]);
+      }
+    };
+    varrer(raiz);
+    expect(segmentos.size).toBeGreaterThan(3);
+    for (const s of segmentos) {
+      expect(config, `/${s}/** fora do outputFileTracingIncludes`).toContain(`"/${s}/**": ["src/lib/signatures/pdf/assets/**"]`);
     }
   });
 

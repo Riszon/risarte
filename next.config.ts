@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
     "/prontuarios/**": ["src/lib/signatures/pdf/assets/**"],
     "/apresentacao/**": ["src/lib/signatures/pdf/assets/**"],
     "/comercial/**": ["src/lib/signatures/pdf/assets/**"],
+    // ZS5: o contrato de adesão sai do funil e da ficha da empresa (a ZS5
+    // esqueceu esta linha — sem ela o envio pelo Empresarial falharia na
+    // Vercel com "arquivo não encontrado"; achado na ZS7).
+    "/empresarial/**": ["src/lib/signatures/pdf/assets/**"],
+    // ZS7: o relatório mensal (PDF) sai da rotina do dia 1º.
+    "/api/cron/**": ["src/lib/signatures/pdf/assets/**"],
   },
 
   // "Clientes" virou "Prontuários" (rota /clientes → /prontuarios). Mantém

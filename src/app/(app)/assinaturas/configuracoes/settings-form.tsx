@@ -158,8 +158,8 @@ export function SignatureSettingsForm({ settings }: { settings: SignatureSetting
             placeholder={"Jeferson <jeferson@risarte.com.br>"}
           />
           <p className="text-xs text-muted-foreground">
-            O envio por e-mail depende do serviço de e-mail estar configurado (etapa seguinte). Até lá a lista fica
-            guardada.
+            Todos recebem o mesmo relatório: a rede inteira, em PDF, com os números no corpo do e-mail. Ele entra na
+            fila no dia 1º e sai quando o serviço de e-mail (Resend) estiver configurado.
           </p>
         </CardContent>
       </Card>

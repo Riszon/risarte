@@ -51,6 +51,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   signature_kit: "Kit de documentos para assinatura",
   signature_package: "Pacote de assinatura digital",
   signature_signer: "Signatário do pacote de assinatura",
+  signature_report: "Relatório das assinaturas digitais",
   // ------------------------------------------------ cliente e prontuário
   client: "Cliente",
   client_consent: "Consentimento do cliente",
