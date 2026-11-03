@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.381.0** · Última migração: **0347** (0318 a 0346 aplicadas na produção e no treino; **0347 só no treino**) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.381.0** · Última migração: **0347** (0318 a 0347 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
 
 > ## 📊 ZS7 — ASSINATURA DIGITAL: O PAINEL E OS RELATÓRIOS (02/11/2026, v0.381.0, migração 0347)
 >
@@ -51,8 +51,12 @@ _Atualizado em: 02/11/2026 · Versão do sistema: **0.381.0** · Última migraç
 > **Não visto:** o painel no celular; o relatório mensal com destinatário
 > (precisa de e-mail cadastrado; o PDF é o mesmo do download); o e-mail real.
 >
-> **O que o dono precisa fazer:** rodar a **0347** na produção (conferência
-> `1 · false · true · true`); cadastrar os destinatários em Assinaturas →
+> ✅ **0347 APLICADA nos dois bancos** (o dono rodou na produção em 02/11/2026;
+> conferência `1 · false · true · true`; conferido de fora: sem login
+> `signature_report_rows` recusa com "permission denied" (uma função
+> inexistente, de controle, responde "não encontrada")).
+>
+> **O que o dono ainda precisa fazer:** cadastrar os destinatários em Assinaturas →
 > Configurações → Relatório mensal. **Próxima fase: ZS8** (teste de verdade e
 > checklist de produção).
 

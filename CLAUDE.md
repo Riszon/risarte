@@ -402,7 +402,9 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Tela nova com o envio para assinatura entra no
   `outputFileTracingIncludes`** (a ZS5 esqueceu o Empresarial; régua em
   `assinaturas-pdf.test.ts`).
-- ⏳ **0347 só no treino.** Próxima: **ZS8**.
+- ✅ **0347 APLICADA nos dois bancos** (o dono rodou na produção em 02/11/2026;
+  conferência 1·false·true·true; de fora: sem login a leitura recusa com
+  "permission denied"). Próxima: **ZS8**.
 
 **02/11/2026 (ZS6) — PC Administrador (core 0.379.0 → 0.380.0, migração 0346)**
 
