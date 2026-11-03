@@ -41,7 +41,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP32** — 3 conferências do `test:indica` falham no treino
 
 **Futuro / sem causa encontrada**
-- [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): D1–D4 decididas; abertas D5–D9**
+- [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): **D1–D9 decididas em 03/11/2026** (Gemini 3.1 Pro no Vertex AI em São Paulo; conta central da Risarte organiza o Meet; apresentar dentro do Meet fica para depois). Próximo: fase IA1**
 - [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida)
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
@@ -2814,10 +2814,14 @@ gravação/transcrição automáticas que terminam com a chamada, eventos do
 Workspace → resumo e apresentação marcada como realizada), **follow-up
 assistido** e apresentar dentro do Meet (complemento, depois). A coluna
 `clinical_evaluations.summary` existe e nada grava nela — passa a receber o
-resumo revisado. **Abertas:** D5 (qual IA — com o Meet no pedido, a
-recomendação virou Gemini no Vertex AI em São Paulo, §9), D6 (transcrição, só
-se não for Gemini), D7 (estrutura do resumo clínico), D8 (reunião em nome do
-Consultor ou de uma conta central), D9 (apresentar dentro do Meet: depois).
+resumo revisado. **Decididas em 03/11/2026:** D5 = **Gemini 3.1 Pro no
+Vertex AI, São Paulo** (lê o áudio: D6 = sem transcrição à parte); D7 =
+resumo clínico em 5 partes; D8 = a reunião do Meet nasce numa **conta central
+da Risarte** (contra a recomendação; o Consultor entra como co-anfitrião —
+provar no treino que a gravação automática liga sem o organizador); D9 =
+apresentar dentro do Meet fica para depois (compartilhar a tela). Fases
+IA1–IA5 no plano; **próximo passo: IA1** (fila + rascunho nos dois cockpits),
+depois que o dono montar o projeto no Google Cloud e o jurídico liberar (D3).
 
 ### AP95. Contrato barrado por "resumo não escrito" para quem não lê a apresentação (03/11/2026)
 

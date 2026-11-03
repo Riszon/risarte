@@ -6,8 +6,11 @@ ampliar o escopo:** dois momentos de gravação (avaliação clínica e
 apresentação comercial), envio de áudio/transcrição/resumo à mão, e a
 integração com o Google Meet e o Gemini (criar reunião, convidar, apresentar
 dentro do Meet, resumo automático, atualização do sistema, follow-up).*
-*Decisões já tomadas: D1–D4 (§8). **Abertas: D5–D9** (§8), com os comparativos
-nas §9–§11.*
+*✅ **Todas as decisões tomadas em 03/11/2026** (D1–D9, §8): IA = **Gemini 3.1
+Pro no Vertex AI, região São Paulo** (sem serviço de transcrição à parte);
+rascunho clínico em 5 partes; a reunião do Meet nasce numa **conta central da
+Risarte**; apresentar dentro do Meet fica para depois (compartilhar a tela).
+Próximo passo: IA1.*
 
 ---
 
@@ -183,13 +186,27 @@ sozinha, a apresentação é marcada como realizada e o resumo é rascunhado.
 |---|---|---|
 | **IA1 — a fila e o rascunho** (migração 0349) | Tabela `ai_summary_jobs` (cliente, momento, origem: áudio/transcrição, situação: fila/gerando/pronto/falhou, motivo da falha, modelo, tokens, custo, quem pediu); colunas em `commercial_presentations` (`transcript`, `transcript_source`, `ai_draft`, `ai_draft_at`, `ai_model`, `summary_source`) e em `clinical_evaluations` (`transcript`, `ai_draft`, `ai_draft_at`, `ai_model`, `summary_reviewed_by/at`); porta única da IA (`src/lib/ia/modelo.ts`: um arquivo por fornecedor); rota de trabalho `/api/ia/resumos` (cron de 1 min + disparo ao enfileirar; `maxDuration` 300; lê o áudio do bucket pela chave de serviço com URL assinada curta; parte arquivos acima do limite); o bloco da §5 nos dois cockpits, com **enviar áudio**, **colar transcrição**, situação ao vivo e falha explicada; o Momento 1 enfileira sozinho ao enviar ao Planejamento (depois do áudio salvo); cartão do Planner em tempo real; `summary` da rodada passa a ser gravado | **D5** (IA), **D6** (transcrição, se a IA não ler áudio), chave(s) na Vercel |
 | **IA2 — réguas e manual** | Testes: o rascunho nunca grava o campo final; "não inventar" e estrutura no pedido; falha vira motivo legível e nunca apaga nada; sem chave → `configured: false`; auditoria sem texto; o Momento 1 enfileira **depois** de `pararGravacaoDoCliente` (régua em `fim-da-avaliacao.test.ts`). Manual §6.5 e §4 (avaliação), changelog, EV, ESTADO | IA1 |
-| **IA3 — o Meet pelo riSZon** | Janelinha "Marcar apresentação no Meet" (Calendar API, DWD), link + WhatsApp + e-mail do cliente, espaço com gravação/transcrição/notas automáticas, assinatura de eventos (Pub/Sub → rota `/api/webhooks/google-meet`), leitura da transcrição em até 30 dias, apresentação marcada como realizada, resumo enfileirado | Workspace Business Standard+, projeto Google Cloud com DWD, **D8** |
+| **IA3 — o Meet pelo riSZon** | Janelinha "Marcar apresentação no Meet" (Calendar API **na agenda da conta central** — D8 — com o Consultor e o cliente como convidados e o Consultor como **co-anfitrião** do espaço, para a gravação automática ligar quando ele entrar), link + WhatsApp + e-mail do cliente, espaço com gravação/transcrição/notas automáticas, **uma** assinatura de eventos da conta central (Pub/Sub → rota `/api/webhooks/google-meet`), leitura da transcrição em até 30 dias, apresentação marcada como realizada, resumo enfileirado. ⚠️ Provar no treino, antes de valer: a gravação automática liga com o organizador **ausente** e só o co-anfitrião presente — se não ligar, o Consultor liga à mão e o fluxo segue igual | Workspace Business Standard+ **na conta central**, projeto Google Cloud (DWD só para a conta central), **D8 ✅** |
 | **IA4 — follow-up assistido** | No cartão de follow-up, *"Sugerir mensagem"* a partir do resumo (o que o cliente pediu/recusou) e da cadência; a pessoa edita e manda pelo WhatsApp; nada automático ao cliente | IA1 |
 | **IA5 — apresentar dentro do Meet** | Complemento do Meet (Add-ons SDK) com a tela de apresentação do riSZon no palco principal; publicação privada no Marketplace | IA3, **D9** |
 
 Cada fase é uma sessão (a IA1 provavelmente duas). A ordem IA1 → IA3 é a que
 dá resultado mais cedo: o resumo já funciona com a transcrição colada
 enquanto o Google Cloud é montado.
+
+**O que o dono prepara, em paralelo à IA1 (checklist):**
+
+1. Projeto no **Google Cloud** (cobrança ativa) com Vertex AI ligado; conta de
+   serviço; chave guardada **só na Vercel** (`GOOGLE_VERTEX_*`, Secret), nos
+   dois projetos. Região **southamerica-east1**. Alerta de gasto (US$ 100/mês).
+2. Para a IA3: a **conta central** (ex.: `comercial@risarte…`) no Workspace
+   **Business Standard ou superior**; APIs Calendar, Meet e Workspace Events
+   ligadas no mesmo projeto; DWD para a conta de serviço agir pela conta
+   central; um tópico Pub/Sub.
+3. **Jurídico (D3):** termos do Google Cloud revisados e o termo de
+   consentimento do paciente dizendo que a consulta é transcrita e resumida
+   com apoio de IA por operador contratado — também para a avaliação clínica
+   (a dispensa de 21/09 cobre gravar, não mandar à IA).
 
 ---
 
@@ -201,11 +218,11 @@ enquanto o Google Cloud é montado.
 | **D2** | Conteúdo do rascunho comercial | 4 partes | **5 partes, com o que o cliente recusou** (03/11). |
 | **D3** | Quando a IA liga na produção | Depois do DPA e do termo | **Como recomendado** (03/11). |
 | **D4** | Guardar a transcrição | Sim | **Como recomendado** (03/11). |
-| **D5** | **Qual IA escreve o resumo?** | §9. Com o Meet e o Gemini no pedido, **Gemini no Vertex AI (São Paulo)** vira a escolha natural: um fornecedor, lê áudio, dado no Brasil, mesma conta Google Cloud das APIs do Meet. Alternativa: Claude Opus 5.5 (Anthropic) se o jurídico preferir o arranjo com DPA/retenção zero e o dono quiser a IA mais forte em texto. | Aberta |
-| **D6** | **Quem transcreve o áudio do Momento 1?** | §10. Se D5 = Gemini, **ninguém mais** (ele lê o áudio). Se D5 = Claude, Deepgram Nova-3 (ou Google Speech-to-Text para dado no Brasil). | Aberta |
-| **D7** | Estrutura do rascunho **clínico** | A da §5 (queixa · histórico · achados ditos · quer/não quer · dúvidas para o Planner), revisada pelo Coordenador antes de valer | Aberta |
-| **D8** | Em nome de quem o riSZon cria a reunião no Google? | **Em nome do Consultor** (DWD: a reunião nasce na agenda dele; a gravação vai para o Drive dele; ele é o organizador). Alternativa: uma conta "comercial@" da Risarte organiza tudo (Drive central, mas o Consultor entra como convidado e precisa de permissão para gravar). | Aberta |
-| **D9** | Apresentar o plano **dentro** do Meet | **Depois** (IA5): primeiro compartilhar a tela da apresentação que já existe; o complemento exige publicação no Marketplace e manutenção. | Aberta |
+| **D5** | **Qual IA escreve o resumo?** | §9. Com o Meet e o Gemini no pedido, **Gemini no Vertex AI (São Paulo)** vira a escolha natural: um fornecedor, lê áudio, dado no Brasil, mesma conta Google Cloud das APIs do Meet. Alternativa: Claude Opus 5.5 (Anthropic) se o jurídico preferir o arranjo com DPA/retenção zero e o dono quiser a IA mais forte em texto. | **Gemini 3.1 Pro no Vertex AI, São Paulo** (03/11). A porta `src/lib/ia/modelo.ts` nasce trocável mesmo assim. |
+| **D6** | **Quem transcreve o áudio do Momento 1?** | §10. Se D5 = Gemini, **ninguém mais** (ele lê o áudio). Se D5 = Claude, Deepgram Nova-3 (ou Google Speech-to-Text para dado no Brasil). | **Ninguém mais** — decorre da D5: o Gemini lê o áudio. A §10 fica como referência se um dia a IA mudar. |
+| **D7** | Estrutura do rascunho **clínico** | A da §5 (queixa · histórico · achados ditos · quer/não quer · dúvidas para o Planner), revisada pelo Coordenador antes de valer | **Como recomendado** (03/11): 5 partes, até ~2.500 caracteres. |
+| **D8** | Em nome de quem o riSZon cria a reunião no Google? | **Em nome do Consultor** (DWD: a reunião nasce na agenda dele; a gravação vai para o Drive dele; ele é o organizador). Alternativa: uma conta "comercial@" da Risarte organiza tudo (Drive central, mas o Consultor entra como convidado e precisa de permissão para gravar). | **Conta central da Risarte** (03/11, contra a recomendação). Consequências anotadas na §7, fase IA3: a conta central é a organizadora e dona das gravações; o Consultor entra como **co-anfitrião** (membro do espaço pela API) para a gravação automática ligar quando ele entrar; uma assinatura de eventos só (a da conta central) cobre todas as apresentações; a conta precisa do plano que grava e transcreve. |
+| **D9** | Apresentar o plano **dentro** do Meet | **Depois** (IA5): primeiro compartilhar a tela da apresentação que já existe; o complemento exige publicação no Marketplace e manutenção. | **Como recomendado** (03/11): compartilhar a tela; IA5 fica para depois. |
 
 ---
 
