@@ -399,7 +399,11 @@ Syncthing se comportarem de forma estranha.**
   `pdf/cover.ts` nem nos documentos (régua).
 - ⚠️ **No treino nenhuma unidade tem razão social:** envio travado até o dono
   cadastrar (nos dois ambientes).
-- ⏳ **0349 e 0350 aplicadas só no treino.** O dono roda na produção, nessa ordem.
+- ✅ **0349 e 0350 APLICADAS nos dois bancos** (o dono rodou na produção em
+  03/11/2026; conferido de fora: `clinics.legal_name` existe, 3 unidades e
+  nenhuma com razão social ainda — envio travado até cadastrar; o contrato
+  não é mais provisório, com 14 cláusulas e a razão social; TCLE, orçamento e
+  imagem sem `{{unidade_nome}}`; sem login a leitura não entrega nada).
 
 **03/11/2026 (contrato padrão) — PC Administrador (core 0.382.1 → 0.383.0, migração 0349)**
 
@@ -411,7 +415,7 @@ Syncthing se comportarem de forma estranha.**
   (`linhasDoParagrafo`); antes só a última do texto inteiro.
 - AP96 (razão social da unidade) no BACKLOG. **Não visto:** envio real pela
   tela com o texto novo.
-- ⏳ 0349: ver o bloco de cima (razão social).
+- ✅ 0349 aplicada nos dois bancos (ver o bloco de cima).
 
 **03/11/2026 (AP93) — PC Administrador (core 0.382.0 → 0.382.1, sem migração)**
 
