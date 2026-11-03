@@ -62,6 +62,41 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.380.0",
+    data: "2026-11-02",
+    migracao: "0346",
+    titulo: "Assinatura digital — sexta etapa: lembretes, vencimento e consumo do plano, sozinhos",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quem enviou um documento para assinatura recebe no sino o aviso \"Cliente ainda não assinou\" nos dias configurados (padrão: 2 e 5 dias depois do envio), com o link do pacote. O sistema não manda nada ao cliente sozinho: você decide se reenvia.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager",
+        ],
+        manual: "13d.6",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O pacote que passou do prazo sem todas as assinaturas vira Expirado sozinho, e quem enviou recebe o aviso \"Link de assinatura venceu\". De hora em hora o sistema também confere na ZapSign o pacote sem notícia: uma assinatura cujo aviso se perdeu aparece mesmo assim.",
+        papeis: [
+          "commercial_consultant", "rislife_consultant", "commercial_assistant",
+          "finance_franchisor", "unit_manager", "clinical_coordinator",
+        ],
+        manual: "13d.6",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Com o limite do mês da ZapSign cadastrado em Assinaturas → Configurações, os Admin Master recebem aviso no sino e por e-mail ao passar de 80% e ao chegar a 100%. A mesma tela mostra quando cada rotina rodou, o consumo do mês e quantos e-mails esperam na fila.",
+        papeis: [],
+        manual: "13d.6",
+      },
+    ],
+  },
+  {
     versao: "0.379.0",
     data: "2026-11-02",
     migracao: null,

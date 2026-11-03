@@ -391,6 +391,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**02/11/2026 (ZS6) — PC Administrador (core 0.379.0 → 0.380.0, migração 0346)**
+
+- **Assinatura digital — fase ZS6, as rotinas** (bloco ZS6 no ESTADO): rotina
+  diária no banco (vencer, lembrar quem enviou, consumo do plano) e de hora em
+  hora na Vercel (conferência com a ZapSign, PDF que faltou, fila de e-mail).
+- ⚠️ **A conferência gera eventos NO FORMATO DO WEBHOOK** (`conferencia.ts`),
+  com a mesma chave: passa pela mesma porta e não dobra se o webhook chegar
+  depois. Não criar outro caminho de atualização de pacote.
+- ⚠️ **Lembrete nunca vai ao cliente** (decisão do dono) e só enquanto
+  `current_stage = 'client'` — régua em `assinaturas-rotinas.test.ts`.
+- Ensaio 19/19; rota conferida no servidor local. **Não visto:** conferência
+  contra a ZapSign real, e-mail real. ⏳ **0346 só no treino.** Próxima: **ZS7**.
+
 **02/11/2026 (0.379.0) — PC Administrador (core 0.378.0 → 0.379.0, sem migração; Empresarial 0.93.0 → 0.94.0)**
 
 - **Envio e selos com a assinatura + documentos mesclados** (bloco 0.379.0 no

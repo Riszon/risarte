@@ -4500,8 +4500,10 @@ permissões e a tela de configurações da rede; a segunda (0.374.0) trouxe o
 fila **Minhas assinaturas pendentes**; a quarta (0.376.0), o **detalhe de
 cada pacote** — visualizar o PDF, baixar, reenviar, cancelar e reenviar como
 pacote novo (13d.4); a quinta (0.378.0), o **contrato de adesão do
-Empresarial** (13d.5). O painel com os indicadores chega nas etapas seguintes,
-e as Novidades avisam quando cada uma entrar.
+Empresarial** (13d.5); a sexta (0.380.0), **o que o sistema faz sozinho** —
+lembretes, vencimento, consumo do plano e a conferência com a ZapSign (13d.6).
+O painel com os indicadores chega na etapa seguinte, e as Novidades avisam
+quando entrar.
 
 **Quem vê o menu "Assinaturas".** Quem tem a permissão **Assinaturas** no grupo
 **Assinaturas digitais** de Administração → Permissões (13b). Por padrão:
@@ -4744,6 +4746,44 @@ assina uma vez. O envio pelo funil entra sozinho na lista da aba Envio e selos.
 - **Reenviar como novo pacote** ainda não vale para empresas.
 - O **Consultor RisLife** só envia e só vê os pacotes das empresas e dos leads
   em que é o responsável — o banco recusa os outros.
+
+### 13d.6. O que o sistema faz sozinho: lembretes, vencimento e consumo (0.380.0)
+
+**Todo dia, às 05:10:**
+
+- **Pacote vencido.** O que ainda aguardava assinatura e passou do prazo vira
+  **Expirado**, e quem enviou recebe no sino *"Link de assinatura venceu"*. Se
+  ainda for preciso, use **Reenviar como novo pacote** (13d.4).
+- **Lembrete a quem enviou.** Nos dias marcados em *Assinaturas →
+  Configurações → Lembrar quem enviou nos dias* (padrão: 2 e 5 dias depois do envio), se o
+  **cliente** ainda não assinou, quem enviou recebe no sino *"Cliente ainda não
+  assinou"*, com o link do pacote. Um aviso por pacote e por dia. **O sistema
+  não manda nada ao cliente sozinho** (decisão do dono): quem enviou decide se
+  reenvia o link pelo WhatsApp ou pelo e-mail da ZapSign (13d.4). Pacote que já
+  passou do cliente (esperando as testemunhas ou a Risarte) não gera lembrete.
+- **Consumo do plano da ZapSign.** Com os **Documentos por mês no plano**
+  cadastrados nas Configurações, o sistema conta os documentos do mês (a ZapSign cobra ao
+  criar, então conta até o pacote cancelado). Ao passar do **Avisar ao atingir (%)**
+  (padrão 80%) e ao chegar a 100%, **os Admin Master** recebem aviso no
+  sino e por e-mail — uma vez por mês em cada faixa. Sem limite cadastrado,
+  não há alerta.
+
+**De hora em hora:**
+
+- **Conferência com a ZapSign.** Pacote aguardando assinatura e sem notícia há
+  mais de 6 horas (*Configurações → Conferir na ZapSign após (horas sem notícia)*) é
+  consultado na ZapSign: se alguém assinou ou recusou e o aviso da ZapSign não
+  chegou, a situação se acerta sozinha, do mesmo jeito que pelo aviso.
+- **PDF assinado que faltou.** Se o PDF não veio na hora da última assinatura,
+  o sistema busca de novo.
+- **E-mails.** A cópia assinada ao cliente e os alertas de consumo saem pela
+  fila, com até 3 tentativas. **Sem o serviço de e-mail configurado (Resend),
+  eles esperam na fila** — nada se perde, e saem quando for configurado.
+
+**Onde acompanhar.** Em *Assinaturas → Configurações*, o quadro **Rotinas
+automáticas** mostra quando cada rotina rodou pela última vez e o que fez
+(quantos venceram, foram lembrados ou conferidos), o consumo do mês e quantos
+e-mails estão na fila.
 
 ## 14. Checklists
 

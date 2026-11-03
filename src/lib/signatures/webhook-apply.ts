@@ -64,11 +64,12 @@ export async function aplicarWebhook(
   return out;
 }
 
-async function guardarAssinado(
+/** Também usada pela rotina de hora em hora (ZS6) para o PDF que faltou. */
+export async function guardarAssinado(
   admin: SupabaseClient,
   fetchImpl: typeof fetch,
   r: PortaResult,
-  event: ZapsignWebhookEvent
+  event: Pick<ZapsignWebhookEvent, "signedFileUrl">
 ): Promise<"saved" | "pending"> {
   const packageId = r.package_id!;
   const pendente = async (motivo: string) => {

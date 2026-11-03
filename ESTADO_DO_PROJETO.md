@@ -1,6 +1,59 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 02/11/2026 · Versão do sistema: **0.379.0** · Última migração: **0345** (0318 a 0345 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 02/11/2026 · Versão do sistema: **0.380.0** · Última migração: **0346** (0318 a 0345 aplicadas na produção e no treino; **0346 só no treino**) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## ⏰ ZS6 — ASSINATURA DIGITAL: AS ROTINAS (02/11/2026, v0.380.0, migração 0346)
+>
+> Sexta fase do plano `docs/assinaturas/PLANO-ZS0.md` (§5.7, §11). Decisões do
+> dono, todas como recomendado: (1) lembrete é **só aviso no sino para quem
+> enviou** — nada vai ao cliente sozinho; (2) alerta de consumo **só para os
+> Admin Master**; (3) sem o Resend, a fila de e-mail **espera**.
+>
+> **Banco (0346):**
+> - `signature_daily_run()` (pg_cron `risarte-signatures-daily`, 08:10 UTC =
+>   05:10): vence o pacote com prazo passado (+ aviso a `sent_by`, evento
+>   `expired_by_routine`); lembra `sent_by` nos `reminder_days` enquanto
+>   `current_stage = 'client'` (um aviso por pacote e rodada; dedupe em
+>   `signature_reminders`); consumo do mês (`plan_month`, todo status) ×
+>   `zapsign_monthly_limit` nas faixas `zapsign_alert_percent` e 100 → sino dos
+>   Admin Master + `signature_outbox` (`plan_alert`), dedupe em
+>   `signature_plan_alerts`. Erro vai para o rastro, nunca some.
+> - `signature_job_runs` (rastro das rotinas; fora da auditoria; lê quem tem
+>   `acao.assinaturas.configurar`) + `signature_log_job_run` (só a chave de
+>   serviço). Nenhuma das portas responde a usuário.
+>
+> **Código:**
+> - `src/lib/signatures/conferencia.ts` — a diferença entre a ZapSign
+>   (`getDocument`) e o banco vira eventos NO FORMATO DO WEBHOOK, com a mesma
+>   chave de idempotência; passam pela mesma porta (`aplicarWebhook`).
+> - `src/lib/signatures/rotina-horaria.ts` + `/api/cron/signatures-hourly`
+>   (401 sem o `CRON_SECRET`): conferência dos pacotes sem notícia há
+>   `reconcile_after_hours` (limite 40/rodada; ZapSign falsa não é consultada),
+>   PDF assinado que faltou (`guardarAssinado` exportada), fila de e-mail (até 3
+>   tentativas; 50/rodada).
+> - `assinaturas/configuracoes/page.tsx` — quadro **Rotinas automáticas**:
+>   última execução de cada rotina, consumo do mês, fila de e-mail.
+>
+> **Conferido:** `check-migrations` OK; `migrar:teste`; ensaio no treino em
+> transação desfeita **19/19** (vence, lembra no dia 2 e nos dias 2+5 com um
+> aviso só, não lembra quem já passou do cliente nem o recém-enviado, alerta
+> de 50% e 100% para cada Admin Master e na fila, segunda rodada não repete,
+> logado e sem login recusados, rastro só para quem configura, agendada no
+> pg_cron). 8 testes novos (`assinaturas-rotinas.test.ts`, a conferência
+> provada quebrando). Rota no servidor local (treino): 401 sem segredo e com
+> segredo errado; com o segredo, `{"zapsign":"falsa","email":"sem
+> configuração","emailsNaFila":1}`. Quadro na tela de Configurações conferido.
+> No treino a rotina diária real não vai encontrar nada (nenhum pacote
+> aguardando, sem limite cadastrado).
+>
+> **Não visto:** a conferência contra a ZapSign de verdade (sandbox) — fica
+> para a ZS8 ou para o primeiro pacote parado no treino publicado; um e-mail
+> real saindo (sem Resend).
+>
+> **O que o dono precisa fazer:** rodar a **0346** na produção (conferência
+> `2 · 1 · false · 1`); cadastrar o **limite do mês** da ZapSign em
+> Assinaturas → Configurações (sem ele, não há alerta de consumo); o Resend,
+> quando quiser os e-mails. **Próxima fase: ZS7** (painel e relatórios).
 
 > ## ✍️ 0.379.0 — ENVIO E SELOS COM ASSINATURA E DOCUMENTOS MESCLADOS (02/11/2026, sem migração; Empresarial 0.94.0)
 >
