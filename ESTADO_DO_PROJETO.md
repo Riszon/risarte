@@ -1,6 +1,15 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.382.0** · Última migração: **0348** (0318 a 0348 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.382.1** · Última migração: **0348** (0318 a 0348 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 🔧 0.382.1 — AP93: O COCKPIT SEGUE A COLUNA DO QUADRO (03/11/2026, sem migração)
+>
+> O cockpit mostrava "Sem apresentação marcada" e "Pedir agendamento" a quem
+> já tinha comprado. A etapa gravada no cartão (`commercial_cards.stage`) fica
+> `a_apresentar` depois do aceite **de propósito**: o quadro calcula a coluna
+> com `commercialColumnOf` (aceita → Fechamentos). ⚠️ **Tela nova que precise
+> saber "em que coluna o cliente está" usa `commercialColumnOf`, nunca a etapa
+> crua.** Régua em `cockpit-comercial.test.ts`.
 
 > ## 🧭 0.382.0 — COCKPIT DO CONSULTOR: O CAMINHO DA VENDA, AS ASSINATURAS E O RESUMO OBRIGATÓRIO (03/11/2026, migração 0348)
 >

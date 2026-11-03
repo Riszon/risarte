@@ -391,6 +391,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (AP93) — PC Administrador (core 0.382.0 → 0.382.1, sem migração)**
+
+- **O cockpit segue a coluna do quadro** (`commercialColumnOf`). ⚠️ A etapa
+  gravada no cartão fica `a_apresentar` depois do aceite de propósito — tela
+  que precise da coluna do funil usa a conta, nunca a etapa crua.
+- Visto na tela no treino (CBE-00016). **Não visto:** cliente ainda "a
+  apresentar" no cockpit (nenhum no treino; só por teste).
+
 **03/11/2026 (OC-00158) — PC Administrador (core 0.381.0 → 0.382.0, migração 0348)**
 
 - **Cockpit do Consultor em abas + faixa de etapas** (bloco 0.382.0 no

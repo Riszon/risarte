@@ -26,7 +26,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP90** — o cadastro aceita CPF com dígito verificador errado: o erro só aparecia ao enviar para assinatura — **0.377.0: avisa no cadastro e lembra na ficha (decisão do dono: só avisar, por enquanto)**
 - [ ] **AP91** — treino: só 2 pessoas da equipe da Franqueadora têm CPF válido; o envio completo do contrato de adesão (2 testemunhas + titular) não dá para ensaiar lá
 - [ ] **AP92** — "Reenviar como novo pacote" ainda não vale para pacotes de empresa
-- [ ] **AP93** — o cartão do funil fica em "A apresentar" depois do aceite e até depois do contrato assinado (cockpit mostra "Sem apresentação marcada")
+- [x] **AP93** — o cartão do funil fica em "A apresentar" depois do aceite e até depois do contrato assinado (cockpit mostra "Sem apresentação marcada") — **0.382.1: era defeito do cockpit, não do funil; o cockpit segue a coluna do quadro**
 
 **Segurança e banco (por etapas)**
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
@@ -2759,7 +2759,17 @@ minutos (1 testemunha, sem Risarte) e voltou ao original. **A decidir:** dar
 CPF de teste às contas `@example.com` no treino (o cadastro da equipe lá é
 cópia da produção, `MIRROR_READ_ONLY`) ou ensaiar só pelo sandbox (ZS8).
 
-### AP93. O cartão do funil fica em "A apresentar" depois do aceite (03/11/2026)
+### AP93. O cartão do funil fica em "A apresentar" depois do aceite (03/11/2026) — ✅ Resolvido em 0.382.1
+
+**Resolução (03/11/2026):** a suspeita estava errada no alvo. A etapa gravada
+no cartão fica em `a_apresentar` **de propósito**: o quadro calcula a coluna
+(`commercialColumnOf`, `src/lib/commercial.ts`) e a negociação aceita põe o
+cliente em **Fechamentos** — no quadro, o CBE-00016 aparecia certo. Quem lia a
+etapa crua era só o cockpit (`cardStage === "a_apresentar"`, desde a 0248).
+Nenhuma rotina do banco usa a etapa crua para avisar. Agora o cockpit usa a
+mesma conta do quadro (régua em `cockpit-comercial.test.ts`).
+
+**O registro original:**
 
 **Confirmado no treino (só leitura), achado no OC-00158:** o cliente CBE-00016
 tem a negociação **aceita**, o contrato ASS-000046 **assinado** pelos quatro e

@@ -13,6 +13,7 @@ import {
 import { faltaResumoDaApresentacao } from "@/lib/signatures/validate";
 import { montarValores } from "@/lib/signatures/valores";
 import { CAMPOS_DO_PACIENTE } from "@/lib/signatures/variables";
+import { commercialColumnOf } from "@/lib/commercial";
 
 // OC-00158 (03/11/2026), decisões do dono: faixa de etapas + abas no cockpit;
 // o resumo da apresentação é obrigatório para o aceite e vai no contrato; o
@@ -185,5 +186,20 @@ describe("as réguas que prendem a decisão no código", () => {
     expect(closing).toMatch(/\{contrato && <AssinaturasDoContrato contrato=\{contrato\} \/>\}/);
     expect(closing).toMatch(/Assinaram \(/);
     expect(closing).toMatch(/Faltam \(/);
+  });
+
+  it("AP93: o registro da apresentação segue a coluna do QUADRO, não a etapa crua do cartão", () => {
+    // O caso do relato: cartão gravado em a_apresentar, negociação aceita.
+    expect(
+      commercialColumnOf({ journeyPhase: "commercial_conversion", journeyStatus: null, cardStage: "a_apresentar", negotiationAccepted: true })
+    ).toBe("fechamento");
+    // E quem ainda não aceitou continua vendo o registro da apresentação.
+    expect(
+      commercialColumnOf({ journeyPhase: "commercial_conversion", journeyStatus: null, cardStage: "a_apresentar", negotiationAccepted: false })
+    ).toBe("a_apresentar");
+    const page = ler("src", "app", "(app)", "comercial", "[clientId]", "page.tsx");
+    expect(page).toMatch(/const colunaDoFunil = commercialColumnOf\(/);
+    expect(page).toMatch(/\{colunaDoFunil === "a_apresentar" && \(/);
+    expect(page).not.toMatch(/cardStage === "a_apresentar"/);
   });
 });

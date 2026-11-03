@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.382.1",
+    data: "2026-11-03",
+    migracao: "0348",
+    titulo: "Cockpit do Consultor: o registro da apresentação só aparece antes da venda",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Cliente que já aceitou a negociação continuava aparecendo no cockpit com \"Sem apresentação marcada\", \"Registrar acontecimento\" e \"Pedir agendamento\", mesmo com o contrato assinado. Agora o cockpit segue a coluna do quadro do funil: o registro da apresentação só aparece enquanto o cliente está em \"A apresentar\".",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5",
+      },
+    ],
+  },
+  {
     versao: "0.382.0",
     data: "2026-11-03",
     migracao: "0348",

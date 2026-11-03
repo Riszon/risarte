@@ -58,7 +58,7 @@ import { FunnelHistoryDialog, type FunnelEvent } from "./funnel-history";
 // ⚠️ De `@/lib/commercial`, NUNCA de `../actions`: aquele arquivo é
 // `"use server"` e só pode exportar função assíncrona. Uma constante lá derruba
 // a montagem — e derrubou (07/09/2026).
-import { FAILED_ATTEMPT_KINDS } from "@/lib/commercial";
+import { FAILED_ATTEMPT_KINDS, commercialColumnOf, type CardStage } from "@/lib/commercial";
 import { PresentationTracker } from "../presentation-tracker";
 import { loadPprOffer } from "@/lib/ppr/offer-loader";
 import { PprOfferButton } from "@/components/ppr-offer-dialog";
@@ -88,7 +88,7 @@ export default async function CommercialCockpitPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, full_name, code, phone, clinic_id, journey_phase, methodology_pillar, empresarial_company_id, empresarial_active, clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, full_name, code, phone, clinic_id, journey_phase, journey_status, methodology_pillar, empresarial_company_id, empresarial_active, clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", clientId)
     .single();
@@ -344,6 +344,16 @@ export default async function CommercialCockpitPage(
     );
   }
   const temResumo = Boolean(presentation?.summary?.trim());
+  // AP93: a coluna do funil é a MESMA conta do quadro (`commercialColumnOf`).
+  // A etapa gravada no cartão fica em "a_apresentar" depois do aceite — de
+  // propósito: o quadro deriva "Fechamentos" da negociação aceita. Ler a etapa
+  // crua fazia o cockpit pedir agendamento de apresentação a quem já comprou.
+  const colunaDoFunil = commercialColumnOf({
+    journeyPhase: client.journey_phase as string,
+    journeyStatus: (client.journey_status as string | null) ?? null,
+    cardStage: cardStage as CardStage | null,
+    negotiationAccepted: negociacao?.status === "aceita",
+  });
   const entrada: EntradaDoCockpit = {
     naFaseComercial: inCommercialPhase,
     temResumo,
@@ -491,7 +501,7 @@ export default async function CommercialCockpitPage(
               {/* 0248 — enquanto a apresentação não aconteceu, é aqui que o
                   consultor registra o que houve e pede novo agendamento. O
                   mesmo bloco do cartão do quadro. */}
-              {cardStage === "a_apresentar" && (
+              {colunaDoFunil === "a_apresentar" && (
                 <div className="rounded-xl border px-4 py-3">
                   <PresentationTracker
                     info={{
