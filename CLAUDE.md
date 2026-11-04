@@ -391,6 +391,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (AP55) — PC Administrador (core 0.384.0 → 0.385.0, migração 0351)**
+
+- **Decisões do dono nos 6 itens em espera** (AP61, AP63/64, AP55, AP53, AP24,
+  AP66) gravadas no BACKLOG; AP53 e AP66 fechados sem código.
+- **AP55 feito** (bloco 0.385.0 no ESTADO): TSB com as tarefas da ASB, no
+  banco (0351) e na missão; Recepção sem anamnese e sem chamar paciente.
+- ⚠️ **0351 só no treino.** Na produção: rodar a consulta do bloco 0.385.0
+  antes (metas nos itens que saíram) e depois a 0351.
+- Próximo da fila decidida: AP61, AP63/64, AP24. Achado: AP106.
+
 **03/11/2026 (razão social) — PC Administrador (core 0.383.0 → 0.384.0, migração 0350)**
 
 - **Documento assinado pelo cliente: razão social da unidade, sem logotipo**

@@ -1,6 +1,34 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.384.0** · Última migração: **0350** (0318 a 0350 aplicadas na produção e no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.385.0** · Última migração: **0351** (0318 a 0350 aplicadas na produção e no treino; 0351 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 🧰 0.385.0 — A TSB CUIDA DO MATERIAL COMO A ASB; MISSÃO DA RECEPÇÃO SEM ANAMNESE (03/11/2026, migração 0351, AP55)
+>
+> Decisão do dono (AP55): *"a TSB deve seguir com as mesmas da ASB. A Recepção
+> não vai preencher a anamnese e nem chama o paciente."*
+>
+> - **0351:** a TSB entra em `can_request_purchase` e `can_post_stock_entry`
+>   (o que a 0296 abriu para a ASB) e ganha na matriz as linhas de estoque e
+>   compras que faltarem (`on conflict do nothing`). Nota de compra e
+>   recebimento continuam com `can_manage_stock`.
+> - Catálogo da certificação: TSB = ASB; a Recepção perde anamnese e chamar
+>   paciente; **`anamneses` saiu** (duplicava `anamnese_clinica`, do
+>   Coordenador). São 87 indicadores.
+> - Régua `tarefas-da-tsb-e-recepcao.test.ts` (provada quebrando, 3 reprovam).
+>   Treino: aplicada; como a TSB de teste (transação desfeita), lista de
+>   compras e inventário aceitos.
+> - ⚠️ **Antes de rodar na produção, conferir** se alguma meta usa os itens que
+>   saíram (meta para indicador fora do catálogo deixa a missão sem medição):
+>   ```sql
+>   select role, indicator, minimum_count from public.training_requirements
+>   where (role = 'tsb' and indicator in ('check_ins','chamadas_paciente','anamneses',
+>          'midias_enviadas','atendimentos_como_profissional','desfechos_atendimento'))
+>      or (role = 'receptionist' and indicator in ('anamneses','chamadas_paciente'))
+>      or indicator = 'anamneses';
+>   ```
+>   Esperado: nenhuma linha. A 0351 termina com uma conferência (esperado: 4
+>   ligadas, 0 desligadas, as duas réguas com a TSB).
+> - Achado: AP106 (o original de fábrica da matriz não tem ASB/TSB no estoque).
 
 > ## 🏢 0.384.0 — RAZÃO SOCIAL DA UNIDADE E SEM LOGOTIPO NOS DOCUMENTOS ASSINADOS (03/11/2026, migração 0350)
 >

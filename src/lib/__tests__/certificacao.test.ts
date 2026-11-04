@@ -223,9 +223,9 @@ describe("a origem de cada indicador (o que a Etapa 2 vai contar)", () => {
     //
     // ⚠️ OC-00134 (26/10/2026): a régua olha POR FUNÇÃO. O Admin configura uma
     // função por vez e só vê os itens dela — a repetição engana quando os dois
-    // nomes aparecem para a MESMA função. "Anamneses clínicas" (Coordenador) e
-    // "Fichas de anamnese" (Recepção e TSB, AP55) contam as mesmas fichas para
-    // funções diferentes; quando o dono decidir o AP55, a segunda pode sair.
+    // nomes aparecem para a MESMA função. "Fichas de anamnese" (Recepção e TSB)
+    // contava as mesmas fichas que "Anamneses clínicas" (Coordenador); saiu do
+    // catálogo com a decisão do AP55 (03/11/2026).
     const repetidas: string[] = [];
     const vistas = new Map<string, string>();
     for (const i of INDICADORES) {

@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.385.0",
+    data: "2026-11-03",
+    migracao: "0351",
+    titulo: "A TSB cuida do material como a ASB, e a missão das duas é a mesma",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A TSB passou a poder montar e enviar a lista de compras, dar entrada no estoque, acertar o saldo e fazer o inventário da unidade, como a ASB. Nota de compra e recebimento de pedido continuam com o Gerente.",
+        papeis: ["tsb", "unit_manager"],
+        manual: "TSB e ASB",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A missão de certificação da TSB passou a ser a mesma da ASB: material, lista de compras e pedido de indicação. Saíram as seis ações de atendimento que o sistema nunca a deixou fazer.",
+        papeis: ["tsb"],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A missão da Recepção não oferece mais preencher anamnese nem chamar o paciente. A anamnese continua na missão do Coordenador, em Anamneses clínicas.",
+        papeis: ["receptionist", "clinical_coordinator"],
+        manual: "O portão: por que o sistema real começa fechado",
+      },
+    ],
+  },
+  {
     versao: "0.384.0",
     data: "2026-11-03",
     migracao: "0350",

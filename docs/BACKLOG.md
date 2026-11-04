@@ -9,14 +9,16 @@ Pedido do dono. É o ÍNDICE do que está aberto; o detalhe de cada item está n
 seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seção.
 
 **Esperando decisão do dono**
-- [ ] **AP61** — repasse por sessão paga o valor inteiro a cada sessão: a tabela é "por sessão" ou "por procedimento"?
-- [ ] **AP63 / AP64** — como mudar um plano já vendido (nova versão depois da venda; nova venda depois de cancelada)
-- [ ] **AP55** — lista certa de tarefas da TSB na certificação, e o que tirar da Recepção
-- [ ] **AP53** — tirar do Planner a gestão das especialidades?
-- [ ] **AP24** — Indica +Risos: implementar ou tirar da tela os 3 parâmetros que nada usa
-- [ ] **AP66** — como anonimizar um paciente no núcleo (LGPD)
+- [x] **AP53** — Planner e especialidades: decidido MANTER com o Planner (03/11/2026)
+- [x] **AP66** — anonimizar paciente no núcleo: decidido NÃO FAZER por enquanto (03/11/2026)
 - [x] **AP51** — em qual conta o dinheiro entrou (duas contas e o Caixa) — corrigido na 0317 (0.342.0); a maquininha casada sozinha ficou para depois (decisão do dono)
 - [x] **AP49** — Franqueadora/Rede gestora no Empresarial: decidido MANTER (16/10/2026)
+
+**Decididos pelo dono em 03/11/2026, a implementar**
+- [ ] **AP61** — repasse por PROCEDIMENTO CONCLUÍDO: entra uma vez, quando a última sessão do procedimento termina
+- [ ] **AP63 / AP64** — cancelada: compra de novo por nova versão + negociação nova, com a venda cancelada no histórico; vendido: versão nova é complemento, a venda anterior continua valendo
+- [x] **AP55** — TSB com a mesma lista da ASB; Recepção sem anamnese e sem chamar paciente — **0.385.0 (0351): a TSB ganhou no banco as réguas da ASB; "Fichas de anamnese" saiu do catálogo (fica "Anamneses clínicas", do Coordenador)**
+- [ ] **AP24** — Indica +Risos: implementar os 3 parâmetros (presente de boas-vindas, validade, divisão do prêmio)
 
 **Defeitos confirmados, a corrigir**
 - [x] **AP58** — aviso "Caso devolvido" (e o da adesão ao PPR+) recusado pelo banco — corrigido na 0316 (0.341.2)
@@ -52,6 +54,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)**
 - [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
 - [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
+- [ ] **AP106** — o original de fábrica da matriz (`permissions.ts`) não tem ASB nem TSB em entrada/inventário e compras: voltar a ele as desligaria
 - [ ] **AP105** — `docs/PRODUCAO-ONLINE.md` não lista 5 variáveis que o código lê: `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`, `ASAAS_API_KEY`, `ASAAS_BASE_URL`
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
@@ -949,6 +952,10 @@ existe quando o que importa é se ela existe **naquele papel**.
 ---
 
 ## ACHADOS DE PASSAGEM — encontrados fazendo outra coisa (fila viva)
+
+### AP106. O original de fábrica da matriz não tem a ASB nem a TSB no estoque e nas compras (03/11/2026)
+
+**Confirmado lendo o código; não executado.** Em `src/lib/permissions.ts`, o `padrao` de `acao.estoque.gerir` é Financeiro da Franqueadora e Gerente, e o de `acao.compras.requisitar` é só o Gerente. A 0296 (ASB) e a 0351 (TSB) gravaram as linhas no banco, mas o código não acompanhou. **Suspeita:** quem usar em `/admin/permissoes` a volta ao original de fábrica (o padrão do código) desliga as duas e o Coordenador nas compras, e a missão delas volta a ter itens impossíveis. Achado fazendo o AP55. Conserto provável: acrescentar os papéis ao `padrao`, conferindo antes se o "Tornar padrão" (0292) já gravou outro padrão no banco.
 
 ⚠️ **POR QUE ESTA SEÇÃO EXISTE** (ordem do dono, 25/09/2026): *"se encontrar e
 não registrar para lembrar depois do que precisamos corrigir, podemos esquecer
@@ -2177,7 +2184,9 @@ tem mais ícones) e desde quando.
 O arquivo é do núcleo (barra de cima do layout) — correção fica com a sessão
 do core.
 
-### AP24. Indica +Risos: três parâmetros configurados que NADA usa (28/09/2026) — CONFIRMADO
+### AP24. Indica +Risos: três parâmetros configurados que NADA usa (28/09/2026) — CONFIRMADO — DECIDIDO 03/11/2026: IMPLEMENTAR OS TRÊS
+
+**✅ Decisão do dono (03/11/2026):** **implementar os três parâmetros.** O presente de boas-vindas (`beneficio_indicado_percentual`) entra na negociação do primeiro plano do indicado, como o voucher, valendo pelo prazo de `beneficio_validade_dias`; a divisão do prêmio individual (`premio_individual_percentual_origem`) entre quem pediu e quem fechou entra nas metas. Falta o plano de implementação.
 
 Achado ao escrever o guia "Como funciona" do Indica +Risos.
 
@@ -2587,7 +2596,11 @@ propostas e nas configurações. O dono escolheu **manter como está** (16/10).
 **Se mudar:** tirar `is_network_viewer()` de `is_program_manager()` e da
 regra de gravação de `adhesion_billing`, e conferir quem perde o quê.
 
-### AP55. Certificação: TSB e Recepção também têm tarefas que o sistema não deixa fazer (19/10/2026)
+### AP55. Certificação: TSB e Recepção também têm tarefas que o sistema não deixa fazer (19/10/2026) — ✅ RESOLVIDO em 03/11/2026 (core 0.385.0, migração 0351)
+
+**✅ Feito (0.385.0, 0351).** Trocar só o catálogo repetiria o defeito: das oito tarefas da ASB, o banco só aceitava três da TSB. A 0351 põe a TSB em `can_request_purchase` e `can_post_stock_entry` (o que a 0296 abriu para a ASB) e grava na matriz as linhas da TSB que faltarem (`on conflict do nothing`); `purchases-access.ts` e `stock-access.ts` seguem. O catálogo dá à TSB a lista exata da ASB; a Recepção perdeu anamnese e chamar paciente. Sem as duas, "Fichas de anamnese" (`anamneses`) saiu: contava as mesmas fichas que "Anamneses clínicas" (`anamnese_clinica`), do Coordenador. Régua: `tarefas-da-tsb-e-recepcao.test.ts` (provada quebrando: 3 reprovam). Treino: 0351 aplicada; como a TSB de teste, numa transação desfeita, montar lista de compras e abrir inventário foram aceitos, e a gestão do estoque segue recusada. Treino sem meta da TSB e sem meta da Recepção nos dois itens que saíram. **Falta conferir a produção** (consulta no ESTADO, bloco 0.385.0).
+
+**✅ Decisão do dono (03/11/2026):** **a TSB segue a mesma lista da ASB** (material, pedidos, entradas, envio para uso, ajustes de saldo, indicações); saem dela check-in, chamar paciente, anamnese, fotos e exames, profissional responsável e desfecho. **A Recepção não preenche anamnese nem chama o paciente:** os dois saem do catálogo dela. A mudança é no catálogo (`certificacao.ts`), sem abrir permissão nova no banco.
 
 **Confirmado no código e nas regras do banco** (mapeado no OC-00004). O
 catálogo (`certificacao.ts`) oferece:
@@ -3131,7 +3144,9 @@ sem efeito prático. Fechar quando aparecer o primeiro com escopo restrito:
 `finance_visible_clinic_ids` e `can_post_finance` passariam a usar
 `user_full_access_clinic_ids`.
 
-### AP66. O núcleo não tem como anonimizar um paciente (21/10/2026)
+### AP66. O núcleo não tem como anonimizar um paciente (21/10/2026) — ✅ DECIDIDO 03/11/2026: NÃO FAZER POR ENQUANTO
+
+**✅ Decisão do dono (03/11/2026):** **por enquanto, sem regra de anonimizar paciente no núcleo.** Não se constrói função nem tela agora. Continua valendo que cliente nunca é apagado fisicamente (CLAUDE.md, guarda legal do prontuário). Volta quando houver o primeiro pedido de exclusão de titular (LGPD).
 
 **Lido no código (não executado).** O CLAUDE.md manda "apagar cliente =
 anonimizar, nunca apagar", e o banco tem o estado `anonymized` e a coluna
@@ -3152,7 +3167,9 @@ dentista que atendeu pode concluir" — a regra estava certa, a conta não.
 Corrigido com `coalesce(…, false)` na mesma guarda que a OD5 recriou (H4/D6).
 Produção: 0 atendimentos com sessão concluídos.
 
-### AP64. Versão nova do plano aprovada DEPOIS da venda — o painel passa para ela (20/10/2026)
+### AP64. Versão nova do plano aprovada DEPOIS da venda — o painel passa para ela (20/10/2026) — DECIDIDO 03/11/2026, A IMPLEMENTAR
+
+**✅ Decisão do dono (03/11/2026):** **plano vendido pode ganhar versão nova, e a venda anterior continua valendo.** A versão nova é proposta de complemento e deve ser consolidada como nova versão do plano. O painel de fechamento da venda anterior não pode sumir por causa dela.
 
 **Suspeita, lida no código (não executado).** Achado na OD4. "Criar nova
 versão" não confere se o plano já foi vendido. Se a versão nova for aprovada
@@ -3163,7 +3180,9 @@ painel já pegava "o aprovado mais novo". A venda e as sessões não mudam (a
 0313 não toca a aceita; as sessões seguem a venda). Mesma família da AP63:
 decidir com o dono como se muda um plano já vendido. Produção com 0 vendas.
 
-### AP63. Nova venda depois de uma negociação cancelada — suspeita (20/10/2026)
+### AP63. Nova venda depois de uma negociação cancelada — suspeita (20/10/2026) — DECIDIDO 03/11/2026, A IMPLEMENTAR
+
+**✅ Decisão do dono (03/11/2026):** **depois de cancelar, o cliente compra de novo por uma NOVA VERSÃO do plano, com negociação nova.** A negociação cancelada não reabre. O histórico do cliente tem de registrar que houve uma venda cancelada.
 
 **Suspeita, lida no código (não executado).** Achado no levantamento da OD4.
 `evaluate_negotiation_rules` (0182, ~:197-198) volta para "em negociação" as
@@ -3185,7 +3204,9 @@ não. O "só edita em rascunho ou devolvido" é do componente
 (`canEditContent`). Pela API, um Planner muda item de plano aprovado.
 **O plano da OD3 propõe a trava no banco** (versões, D4).
 
-### AP61. Repasse por SESSÃO paga o valor inteiro a cada sessão — suspeita (20/10/2026)
+### AP61. Repasse por SESSÃO paga o valor inteiro a cada sessão — suspeita (20/10/2026) — DECIDIDO 03/11/2026, A IMPLEMENTAR
+
+**✅ Decisão do dono (03/11/2026):** **o repasse é por PROCEDIMENTO CONCLUÍDO.** Um procedimento de 3 sessões só entra no repasse quando as 3 sessões daquele procedimento estiverem concluídas, e entra uma vez, com o valor da tabela. `accrue_session_payout` precisa mudar; a estimativa (`estimated_option_payout`, taxa × quantidade) já segue essa regra.
 
 **Suspeita, lida no código.** `accrue_session_payout` (último corpo 0218)
 lança o valor INTEIRO de `payout_rate_for` em cada sessão concluída; não
@@ -3263,7 +3284,9 @@ propósito. Se não for, o filtro de Procedimentos e os relatórios por
 especialidade dividem o mesmo assunto em dois. Decisão do dono; renomear pela
 tela de Especialidades leva os procedimentos junto.
 
-### AP53. O Planner ainda gerencia as ESPECIALIDADES (19/10/2026)
+### AP53. O Planner ainda gerencia as ESPECIALIDADES (19/10/2026) — ✅ DECIDIDO 03/11/2026: FICA COMO ESTÁ
+
+**✅ Decisão do dono (03/11/2026):** **o Planner continua cuidando das especialidades.** É exceção consciente à regra "o catálogo é do Admin". Nada a mudar.
 
 **Confirmado no código, não decidido.** Achado ao corrigir o OC-00067/68
 (0306): a regra do dono passou a ser "o catálogo é do Admin; o Planner

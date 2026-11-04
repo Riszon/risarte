@@ -20,6 +20,7 @@ export function isPurchaser(session: SessionContext): boolean {
  * Quem MONTA e envia a lista da unidade — o espelho de `can_request_purchase`
  * (0296). AP42 (decisão do dono, 15/10/2026): além de Admin, Financeiro da
  * Franqueadora e Gerente, o Coordenador Clínico e o ASB da unidade.
+ * AP55 (decisão do dono, 03/11/2026; 0351): a TSB faz o mesmo que a ASB.
  */
 export function canManagePurchaseRequests(
   session: SessionContext,
@@ -29,7 +30,7 @@ export function canManagePurchaseRequests(
     pode(session, "acao.compras.requisitar", clinicId) &&
     (bancoAceitaEstoqueDaUnidade(session, clinicId) ||
       (Boolean(clinicId) &&
-        hasRoleInClinic(session, clinicId as string, ["clinical_coordinator", "asb"])))
+        hasRoleInClinic(session, clinicId as string, ["clinical_coordinator", "asb", "tsb"])))
   );
 }
 

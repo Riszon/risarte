@@ -51,6 +51,7 @@ export function canManageStock(
  * "Entrada e inventário", passa a poder de verdade na unidade dele. Fica de
  * fora o resto da gestão (compra com nota, mínimo, kits — `canManageStock`):
  * a nota cria conta a pagar, e isso não foi liberado.
+ * AP55 (decisão do dono, 03/11/2026; 0351): a TSB faz o mesmo que a ASB.
  */
 export function canPostStockEntry(
   session: SessionContext,
@@ -60,7 +61,7 @@ export function canPostStockEntry(
   return (
     pode(session, "acao.estoque.gerir", clinicId) &&
     Boolean(clinicId) &&
-    hasRoleInClinic(session, clinicId as string, ["asb"])
+    hasRoleInClinic(session, clinicId as string, ["asb", "tsb"])
   );
 }
 

@@ -927,13 +927,14 @@ contar** — a recepção cadastra pessoas, faz primeiros agendamentos, registra
 check-ins e consentimentos; o coordenador conclui avaliações, avalia opções de
 plano e preenche as fichas de anamnese (em **Ficha do cliente → Anamnese →
 Preencher**, ou **Atualizar**); o dentista conclui sessões e escreve evoluções; o comercial faz
-apresentações e fecha contratos; a **ASB** cuida do material — envia a lista
-de compras (para a franqueadora ou local), dá entrada, manda material para
-uso, faz o inventário e acerta o saldo — e pede indicação. Três delas valem para **todas** as funções:
+apresentações e fecha contratos; a **ASB** e a **TSB** cuidam do material —
+enviam a lista de compras (para a franqueadora ou local), dão entrada, mandam
+material para uso, fazem o inventário e acertam o saldo — e pedem indicação
+(as duas têm a mesma lista desde a versão 0.385.0). Três delas valem para **todas** as funções:
 relatar um problema, enviar uma sugestão e usar o chat — e a tela recomenda
 meta **1** para as três (relato inventado para bater número dá trabalho a quem
 responde; mensagem de chat em quantidade mede conversa, não competência). São
-**88 ações ao todo, em 13 funções**, e
+**87 ações ao todo, em 13 funções**, e
 cada função só enxerga as suas. As metas valem para a **rede inteira**: não
 existe unidade com régua mais fácil.
 
@@ -2284,14 +2285,18 @@ de salvar.
 
 - **Pode:** consumo avulso de estoque ✅ (são papéis clínicos) e **pedir
   indicação** na ficha do cliente.
-- **ASB não faz:** registrar chegada, chamar paciente, preencher anamnese,
+- **Não fazem:** registrar chegada, chamar paciente, preencher anamnese,
   enviar foto ou exame, nem ser o profissional responsável ou registrar o
   desfecho do atendimento — o sistema não deixa, e por isso essas ações
-  também não estão na missão dela (desde a versão 0.331.1).
-- **ASB, quando a matriz liga** (desde a versão 0.320.0): **entrada e
-  inventário de estoque** da unidade, e **montar e enviar a lista de
-  compras**. Não registra nota de compra, não mexe em mínimo nem em kit, e não
-  recebe pedido — esses criam conta a pagar ou mudam a configuração.
+  também não estão na missão delas (ASB desde a versão 0.331.1, TSB desde a
+  0.385.0).
+- **Quando a matriz liga** (ASB desde a versão 0.320.0, TSB desde a 0.385.0):
+  **entrada e inventário de estoque** da unidade, e **montar e enviar a
+  lista de compras**. Não registram nota de compra, não mexem em mínimo nem em
+  kit, e não recebem pedido — esses criam conta a pagar ou mudam a
+  configuração.
+- **A missão de certificação das duas é a mesma** (desde a versão 0.385.0):
+  o material, a lista de compras e o pedido de indicação.
 - **Não vê:** Financeiro, Comercial, Relatórios, Planos (e Compras, por padrão).
 
 ### Evidências analisadas
@@ -2370,10 +2375,10 @@ diferença.
 | Ortodontia — mensalidades (gerar, dar baixa) | Admin, **Gerente**, Franqueadora/Rede, **Financeiro da Franqueadora** (desde a 0.363.0: a Recepção e o Franqueado só **veem** a situação; desde a 0.364.0 o **Coordenador** também vê, e o **Dentista não vê valor nenhum** — nem o banco lhe entrega) |
 | Lançar/editar dinheiro | Admin, Financeiro da Franqueadora, **Gerente** |
 | Configurar financeiro da REDE | Admin, Financeiro da Franqueadora |
-| Entrada e inventário de estoque | Admin, Financeiro da Franqueadora, **Gerente**, **ASB** (na unidade dele, desde a 0.320.0) |
+| Entrada e inventário de estoque | Admin, Financeiro da Franqueadora, **Gerente**, **ASB** (na unidade dela, desde a 0.320.0) e **TSB** (desde a 0.385.0) |
 | Consumo avulso de estoque | Os acima **+ Coordenador, TSB, ASB** |
 | Cadastrar item no catálogo | Admin, Financeiro da Franqueadora |
-| Criar requisição de compra | Admin, **Gerente**, **Coordenador Clínico** e **ASB** (na unidade deles, desde a 0.320.0) |
+| Criar requisição de compra | Admin, **Gerente**, **Coordenador Clínico** e **ASB** (na unidade deles, desde a 0.320.0) e **TSB** (desde a 0.385.0) |
 | Mesa de negociação de compras | Admin, **Comprador**, Financeiro da Franqueadora |
 | Aprovar compra e gerar o pedido | Admin, **Gerente** da unidade; na compra da **própria Franqueadora**, o **Financeiro da Franqueadora** |
 | Receber a entrega | Admin, Financeiro da Franqueadora, **Gerente** |
@@ -3764,10 +3769,10 @@ recebe a sua parte. Por isso **quem aprova é quem paga**.
 
 | Passo | Tela | Quem faz | O que fazer |
 |---|---|---|---|
-| 1. Pedir | Compras → **Pedir** | Gerente, Coordenador Clínico ou ASB da unidade (e o Admin) | **Gerar lista de compras** (o sistema sugere o que está abaixo do mínimo) → ajustar as quantidades, **Acrescentar item** se faltar algo → **Enviar à Franqueadora** |
+| 1. Pedir | Compras → **Pedir** | Gerente, Coordenador Clínico, ASB ou TSB da unidade (e o Admin) | **Gerar lista de compras** (o sistema sugere o que está abaixo do mínimo) → ajustar as quantidades, **Acrescentar item** se faltar algo → **Enviar à Franqueadora** |
 | 2. Negociar | **Mesa de negociação** | Comprador, Financeiro da Franqueadora, Admin | **Abrir rodada** com as listas recebidas → **Incluir na cotação** os fornecedores com o preço de cada um → escolher o fornecedor de cada item → **Fechar rodada** |
 | 3. Aprovar | Compras → **Aprovar** | Gerente da unidade (e o Admin). Na compra da **própria Franqueadora**: o **Financeiro da Franqueadora** | **Aprovar** ou **Recusar** cada item (recusar pede o motivo) → **Gerar pedidos** (um por fornecedor) |
-| 4. Receber | Compras → **Receber** | Gerente da unidade, Financeiro da Franqueadora, Admin — **não** o Coordenador nem o ASB: receber cria a conta a pagar | Quando a entrega chega, conferir pela nota → **Registrar entrega**: o material entra no estoque e a conta a pagar nasce sozinha |
+| 4. Receber | Compras → **Receber** | Gerente da unidade, Financeiro da Franqueadora, Admin — **não** o Coordenador, a ASB nem a TSB: receber cria a conta a pagar | Quando a entrega chega, conferir pela nota → **Registrar entrega**: o material entra no estoque e a conta a pagar nasce sozinha |
 
 **Cada lista diz quem pediu e em que pé está.** Em Compras → **Pedir**, logo
 abaixo do código, aparece *"Pedida por Fulana, Gerente de Unidade · Risarte

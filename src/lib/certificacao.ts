@@ -119,7 +119,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "appointments.checked_in_by",
     quando: "checked_in_at",
-    papeis: ["receptionist", "tsb"],
+    papeis: ["receptionist"],
   },
   {
     chave: "chamadas_paciente",
@@ -130,7 +130,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "appointments.called_by",
     quando: "called_at",
-    papeis: ["receptionist", "clinical_coordinator", "dentist", "tsb"],
+    papeis: ["clinical_coordinator", "dentist"],
   },
   {
     chave: "remarcacoes",
@@ -141,16 +141,6 @@ export const INDICADORES = [
     origem: "appointment_changes.changed_by",
     quando: "changed_at",
     papeis: ["receptionist"],
-  },
-  {
-    chave: "anamneses",
-    rotulo: "Fichas de anamnese preenchidas",
-    ajuda: "Questionários de saúde respondidos com a ajuda dela.",
-    onde: "Ficha do cliente → Anamnese",
-    nivel: "essencial",
-    origem: "anamnesis_fills.filled_by",
-    quando: "filled_at",
-    papeis: ["receptionist", "tsb"],
   },
   {
     chave: "consentimentos",
@@ -240,7 +230,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "clinical_media.uploaded_by",
     quando: "created_at",
-    papeis: ["clinical_coordinator", "tsb"],
+    papeis: ["clinical_coordinator"],
   },
   {
     chave: "consideracoes_clinicas",
@@ -302,7 +292,7 @@ export const INDICADORES = [
     dependeDeOutro: true,
     origem: "appointments.provider_user_id",
     quando: "done_at",
-    papeis: ["dentist", "clinical_coordinator", "tsb"],
+    papeis: ["dentist", "clinical_coordinator"],
   },
   {
     chave: "desfechos_atendimento",
@@ -312,7 +302,7 @@ export const INDICADORES = [
     nivel: "complementar",
     origem: "attendance_session_outcomes.recorded_by",
     quando: "recorded_at",
-    papeis: ["clinical_coordinator", "tsb"],
+    papeis: ["clinical_coordinator"],
   },
   {
     chave: "solicitacoes_clinicas",
@@ -436,6 +426,14 @@ export const INDICADORES = [
   // OC-00004 (decisão do dono, 19/10/2026): a ASB cuida do material — pede,
   // dá entrada, manda para a sala e acerta o saldo. Ela já podia fazer tudo
   // isto desde a 0296 (e a matriz liga as ações para ela); faltava contar.
+  // AP55 (decisão do dono, 03/11/2026): a TSB segue a MESMA lista da ASB. O
+  // banco passou a aceitar a TSB nas mesmas réguas na 0351. As seis tarefas
+  // clínicas que o catálogo oferecia à TSB (check-in, chamar paciente,
+  // anamnese, fotos e exames, profissional responsável e desfecho) saíram:
+  // o banco nunca a deixou fazer nenhuma delas. A Recepção também deixou de
+  // ter anamnese e chamar paciente. Sem a Recepção e a TSB, "Fichas de
+  // anamnese" (`anamneses`) saiu do catálogo: contava as mesmas fichas que
+  // "Anamneses clínicas" (`anamnese_clinica`), do Coordenador.
   {
     chave: "pedidos_franqueadora",
     rotulo: "Pedidos de material para a franqueadora",
@@ -445,7 +443,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "purchase_requests.sent_by + is_local=false",
     quando: "sent_at",
-    papeis: ["asb"],
+    papeis: ["asb", "tsb"],
   },
   {
     chave: "pedidos_locais",
@@ -456,7 +454,7 @@ export const INDICADORES = [
     nivel: "complementar",
     origem: "purchase_requests.sent_by + is_local=true",
     quando: "sent_at",
-    papeis: ["asb"],
+    papeis: ["asb", "tsb"],
   },
   {
     chave: "entradas_estoque",
@@ -467,7 +465,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "stock_movements.created_by + source_type=manual + kind=entrada",
     quando: "created_at",
-    papeis: ["asb"],
+    papeis: ["asb", "tsb"],
   },
   {
     chave: "envios_para_uso",
@@ -478,7 +476,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "stock_movements.created_by + source_type=abertura + kind=abertura",
     quando: "created_at",
-    papeis: ["asb"],
+    papeis: ["asb", "tsb"],
   },
   {
     chave: "ajustes_saldo",
@@ -489,7 +487,7 @@ export const INDICADORES = [
     nivel: "complementar",
     origem: "stock_movements.created_by + source_type=manual + kind=ajuste_entrada|ajuste_saida",
     quando: "created_at",
-    papeis: ["asb"],
+    papeis: ["asb", "tsb"],
   },
   {
     chave: "pedidos_indicacao",
@@ -500,7 +498,7 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "indica.pedidos_indicacao.risartano_id",
     quando: "criado_em",
-    papeis: ["asb"],
+    papeis: ["asb", "tsb"],
   },
 
   // ===========================================================================
@@ -661,7 +659,7 @@ export const INDICADORES = [
     dependeDeOutro: true,
     origem: "stock_counts.applied_by",
     quando: "applied_at",
-    papeis: ["unit_manager", "asb"],
+    papeis: ["unit_manager", "asb", "tsb"],
   },
   {
     chave: "contagens_iniciadas",
