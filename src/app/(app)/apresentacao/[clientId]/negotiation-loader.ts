@@ -19,6 +19,8 @@ import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
 import { carregarCustosDaMargem } from "@/lib/finance/custos-da-margem-db";
 import type { CustosDaMargem } from "@/lib/finance/custos-da-margem";
 import { planoDaNegociacao, type OdontoDaApresentacao } from "@/lib/odontograma/aceite";
+import { carregarPresente } from "@/lib/indica/presente-db";
+import type { PresenteDaNegociacao } from "@/lib/indica/presente";
 import type {
   NegotiationData,
   NegotiationOption,
@@ -77,6 +79,8 @@ export type NegotiationBlock = {
   negotiation: NegotiationData | null;
   /** ORTO8 (0334): nulo quando nada de ortodontia (a tela nem mostra o bloco). */
   ortho: NegotiationOrthoBlock | null;
+  /** AP24 (0363/2011): o presente de boas-vindas do Indica (nulo = não indicado). */
+  presente: PresenteDaNegociacao | null;
   /** OD4: o desenho do aceite (nulo = não carregou; o painel segue sem ele). */
   odonto: OdontoDaApresentacao | null;
   rule: CommercialRule;
@@ -669,5 +673,7 @@ export async function loadNegotiationBlock(
     presentationSummary: (presRow?.summary as string | null) ?? null,
     programConditions,
     ortho,
+    // AP24: só no PRIMEIRO tratamento — o complemento não leva presente.
+    presente: complementoId ? null : await carregarPresente(clientId, negotiation?.id ?? null),
   };
 }

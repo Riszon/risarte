@@ -93,6 +93,7 @@ export default async function PresentationPage(
           minMarginPercent={negotiationBlock.minMarginPercent}
           odonto={negotiationBlock.odonto}
           ortho={negotiationBlock.ortho}
+          presente={negotiationBlock.presente}
         />
       )}
       {/* COM4: fechamento (regra de ouro) quando o cliente aceitou. */}

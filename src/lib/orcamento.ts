@@ -34,24 +34,27 @@ export type ItemDoOrcamento = {
  * Os números do orçamento a partir do que está SALVO na negociação. O total é
  * o do banco (`final_cents`, recalculado pela regra comercial a cada
  * salvamento) — a tela não refaz a conta da regra; ela só mostra de onde ele
- * vem: subtotal do que entrou − benefício do programa + ajuste.
+ * vem: subtotal do que entrou − benefício do programa + ajuste − presente de
+ * boas-vindas do Indica (AP24, 0363).
  */
 export function numerosDoOrcamento<T extends ItemDoOrcamento>(
   itens: T[],
-  negociacao: { adjustmentCents: number; finalCents: number }
+  negociacao: { adjustmentCents: number; finalCents: number; presenteCents?: number }
 ) {
   const incluidos = itens.filter((i) => i.included);
   const excluidos = itens.filter((i) => !i.included);
   const subtotalCents = incluidos.reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
   const beneficioCents = incluidos.reduce((s, i) => s + i.programDiscountCents, 0);
-  // A mesma conta do banco (0182): final = máx(0, subtotal − benefício + ajuste).
-  const contaCents = Math.max(0, subtotalCents - beneficioCents + negociacao.adjustmentCents);
+  // A mesma conta do banco (0182; 0363): final = máx(0, subtotal − benefício + ajuste − presente).
+  const presenteCents = Math.max(0, negociacao.presenteCents ?? 0);
+  const contaCents = Math.max(0, subtotalCents - beneficioCents + negociacao.adjustmentCents - presenteCents);
   return {
     incluidos,
     excluidos,
     subtotalCents,
     beneficioCents,
     descontoCents: negociacao.adjustmentCents,
+    presenteCents,
     totalCents: negociacao.finalCents,
     /** A conta da tela fecha com o total salvo? Se não, a negociação mudou
      *  depois do último salvamento (ou um item saiu do plano): o orçamento

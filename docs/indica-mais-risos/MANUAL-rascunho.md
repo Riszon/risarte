@@ -100,6 +100,14 @@ franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só o botão
   **Apurar agora** e, depois do período, faça a **Apuração final** e
   **Aprove**. O **Relatório para a folha** lista quem recebe o quê. O prêmio em
   dinheiro vai para a folha: o sistema **não** lança no Financeiro.
+- **Prêmio individual em Riso Coins** (desde a 0.9.0 do Indica): quando a rede
+  liga, cada indicação **convertida** credita Riso Coins a quem pediu e a quem
+  fechou, na divisão da rede (padrão 50/50); quem fez os dois leva tudo. O
+  cartão **Prêmio individual em Riso Coins**, na Equipe, mostra o mês e o
+  acumulado de cada pessoa. Cada pessoa vê os próprios Riso Coins.
+- **Presente de boas-vindas do indicado:** o Consultor aplica na negociação
+  (botão **Aplicar**), por fora do limite de desconto, uma vez só, no primeiro
+  tratamento e dentro do prazo contado da avaliação (manual do riSZon, 6.5).
 - **Relatórios:** retorno e custo por campanha, coortes e as planilhas (sem
   telefone ou e-mail dos indicados).
 - **Auditoria:** você vê os alertas da sua unidade e os ajustes manuais.
@@ -116,6 +124,10 @@ franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só o botão
   ficam segurados.
 - **Configurações:** pontos por etapa, carência, validade, níveis, limites do
   antifraude, modelos de mensagem, modelos de campanha e faixas das metas.
+  Em **Equipe (metas)**, `premio_individual_riso_coins` liga o prêmio
+  individual (0 = desligado) e `premio_individual_percentual_origem` divide
+  entre quem pediu e quem fechou; em **Benefício do indicado**, o percentual e
+  a validade do presente de boas-vindas.
   Toda mudança vale **daqui para frente**: indicação registrada mantém a regra
   com que nasceu.
 

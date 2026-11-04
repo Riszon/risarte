@@ -140,9 +140,17 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
     };
   });
 
+  // AP24 (0363): o presente de boas-vindas do Indica, lido À PARTE — sem a
+  // 0363 no banco a coluna não existe e o orçamento segue como antes.
+  const { data: presenteRow } = await supabase
+    .from("plan_negotiations")
+    .select("indica_presente_cents, indica_presente_percent")
+    .eq("id", id)
+    .maybeSingle<{ indica_presente_cents: number | null; indica_presente_percent: number | string | null }>();
   const conta = numerosDoOrcamento(itens, {
     adjustmentCents: Number(n.adjustment_cents ?? 0),
     finalCents: Number(n.final_cents ?? 0),
+    presenteCents: Number(presenteRow?.indica_presente_cents ?? 0),
   });
   const regioes = odonto?.regioes ?? [];
   const linhas = porDente(conta.incluidos, regioes);
@@ -294,6 +302,17 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
               <tr className="border-b">
                 <td className="py-1">Desconto</td>
                 <td className="py-1 text-right tabular-nums">−{formatBRL(-conta.descontoCents)}</td>
+              </tr>
+            )}
+            {conta.presenteCents > 0 && (
+              <tr className="border-b">
+                <td className="py-1">
+                  Presente de boas-vindas Indica +Risos
+                  {presenteRow?.indica_presente_percent
+                    ? ` (${Number(presenteRow.indica_presente_percent).toLocaleString("pt-BR")}%)`
+                    : ""}
+                </td>
+                <td className="py-1 text-right tabular-nums">−{formatBRL(conta.presenteCents)}</td>
               </tr>
             )}
             <tr className="font-bold">

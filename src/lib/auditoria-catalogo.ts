@@ -261,6 +261,7 @@ export const TABELAS: Record<string, string> = {
   "indica.parceiros": "Parceiro",
   "indica.pedidos_indicacao": "Pedido de indicação",
   "indica.pontos_lancamentos": "Lançamento de Riso Coins",
+  "indica.premios_equipe": "Riso Coins da equipe (prêmio individual)",
   "indica.resgates": "Resgate",
 };
 

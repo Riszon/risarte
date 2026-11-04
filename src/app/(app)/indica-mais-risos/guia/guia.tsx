@@ -103,11 +103,13 @@ export async function GuiaIndica() {
           </Termo>
           <Termo nome="O indicado (o amigo)">
             Chega à Risarte pela recomendação de alguém de confiança e é atendido com cuidado desde o primeiro contato. Só é
-            procurado depois de aceitar o contato (LGPD). Quando a rede ou uma campanha oferecer um presente de boas-vindas, a
-            unidade informa — hoje isso <strong>não é aplicado automaticamente</strong> pelo sistema.
+            procurado depois de aceitar o contato (LGPD). Ganha um <strong>presente de boas-vindas</strong> no primeiro
+            tratamento fechado, um percentual definido pela rede e válido por um prazo contado da avaliação: o Consultor aplica na
+            negociação, uma vez só.
           </Termo>
           <Termo nome="A equipe (Risartanos)">
-            Tem metas coletivas com prêmios por faixa e um ranking individual. Pedir indicação vira parte do atendimento, com
+            Tem metas coletivas com prêmios por faixa e um ranking individual. Quando a rede liga o prêmio individual, cada
+            indicação convertida rende Riso Coins a quem pediu e a quem fechou. Pedir indicação vira parte do atendimento, com
             botões próprios na ficha do cliente.
           </Termo>
           <Termo nome="A unidade e a rede">

@@ -96,6 +96,34 @@ export const CHANGELOG: Versao[] = [
     ],
   },
   {
+    versao: "0.395.0",
+    data: "2026-11-04",
+    migracao: "0363",
+    titulo: "Indica +Risos: o presente de boas-vindas na negociação e o prêmio da equipe em Riso Coins",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cliente que chegou por indicação do Indica +Risos: o painel da negociação mostra o presente de boas-vindas (10%, válido 60 dias depois da avaliação) com o botão Aplicar. Ele sai do total por fora do limite de desconto, vale uma vez e só no primeiro tratamento.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Depois de aplicar ou tirar o presente, salve a negociação de novo para as parcelas acompanharem o total.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Indica +Risos → Equipe: o prêmio individual por indicação convertida agora é em Riso Coins, dividido entre quem pediu e quem fechou. Começa desligado; a franqueadora define o valor em Configurações → Equipe (metas).",
+        papeis: ["unit_manager", "receptionist", "sdr", "commercial_consultant"],
+      },
+    ],
+  },
+  {
     versao: "0.394.0",
     data: "2026-11-04",
     migracao: "0361",

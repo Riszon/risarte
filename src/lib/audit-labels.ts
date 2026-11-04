@@ -294,6 +294,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   indica_alerta: "Alerta antifraude (Indica +Risos)",
   indica_resgate: "Resgate (Indica +Risos)",
   indica_voucher: "Voucher (Indica +Risos)",
+  indica_presente: "Presente de boas-vindas (Indica +Risos)",
 };
 
 export function auditEntityLabel(entityType: string): string {

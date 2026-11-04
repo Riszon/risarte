@@ -3276,6 +3276,23 @@ O mesmo vale para o **preço mínimo de cada procedimento** (versão 0.356.0):
 *"<procedimento> abaixo do mínimo"*. O benefício do programa (PPR+,
 Empresarial) não conta — é direito do cliente.
 
+**O presente de boas-vindas do Indica +Risos (desde a 0.395.0).** Quando o
+cliente chegou por uma **indicação** do Indica +Risos, o painel da negociação
+mostra a faixa *"Presente de boas-vindas Indica +Risos: 10% (IND-…) — válido
+até dd/mm"*. Ele vale **60 dias depois do comparecimento à avaliação**, **uma
+vez só** e **só no primeiro tratamento** (não vale no plano complementar).
+
+- **Salve a negociação** e clique em **Aplicar**. O sistema calcula os 10% sobre
+  o que o cliente pagaria (depois do benefício do programa) e mostra a linha
+  **★ Presente de boas-vindas Indica +Risos** no resumo. **Tirar** desfaz.
+- Depois de aplicar ou tirar, **salve a negociação de novo** para as parcelas
+  acompanharem o total novo.
+- O presente é **benefício do programa**, por fora da regra comercial: ele
+  **não conta no limite de desconto** e não pede autorização do Gerente.
+- No **aceite**, o presente fica **usado** e não aparece em outra negociação.
+- Fora da validade, a faixa diz *"vencido em dd/mm"*; antes da avaliação, *"vale
+  depois da avaliação"*; e o botão não aparece.
+
 **O quadro "Margem da venda"** (embaixo do resumo da negociação e na venda
 direta) mostra quanto sobra para a clínica no preço negociado. Desde a versão
 0.359.0 ele conta **tudo o que a Precificação conta**: o repasse do dentista,
@@ -3309,7 +3326,8 @@ custos da unidade"*, a margem mostrada conta só o repasse — a real é menor.
 **Orçamento** (no alto do painel) abre o documento para imprimir ou salvar em
 PDF; no fechamento, o mesmo documento está em **Imprimir orçamento para
 assinar**. Ele traz o desenho do que foi aceito, os procedimentos por dente, o
-total (subtotal, benefício do programa, desconto), o pagamento, o que ficou de
+total (subtotal, benefício do programa, desconto e, desde a 0.395.0, o
+presente de boas-vindas do Indica +Risos), o pagamento, o que ficou de
 fora com o motivo, a **validade** e as linhas de assinatura. Quando o plano tem
 procedimentos de um **grupo com preço de pacote**, o orçamento e a apresentação
 mostram também a linha **Pacote …: de R$ … por R$ …** (versão 0.353.0) — os

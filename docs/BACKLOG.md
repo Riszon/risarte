@@ -20,7 +20,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP63** — cancelada: compra de novo por nova versão + negociação nova, com a venda cancelada no histórico — **0.388.0 (0354)**
 - [x] **AP64** — plano COMPLEMENTAR do plano vendido, na Fase 5 (Coordenador abre, Planner monta, Coordenador aprova, Consultor apresenta); sinal na Jornada e no prontuário — **✅ os três passos feitos: 0.389.0 (0355), 0.391.0 (0357) e 0.392.0 (0358)**
 - [x] **AP55** — TSB com a mesma lista da ASB; Recepção sem anamnese e sem chamar paciente — **0.385.0 (0351): a TSB ganhou no banco as réguas da ASB; "Fichas de anamnese" saiu do catálogo (fica "Anamneses clínicas", do Coordenador)**
-- [ ] **AP24** — Indica +Risos: implementar os 3 parâmetros (presente de boas-vindas, validade, divisão do prêmio)
+- [x] **AP24** — Indica +Risos: implementar os 3 parâmetros (presente de boas-vindas, validade, divisão do prêmio) — **0.395.0 (0363 + 2011)**
 
 **Defeitos confirmados, a corrigir**
 - [x] **AP58** — aviso "Caso devolvido" (e o da adesão ao PPR+) recusado pelo banco — corrigido na 0316 (0.341.2)
@@ -2195,7 +2195,11 @@ tem mais ícones) e desde quando.
 O arquivo é do núcleo (barra de cima do layout) — correção fica com a sessão
 do core.
 
-### AP24. Indica +Risos: três parâmetros configurados que NADA usa (28/09/2026) — CONFIRMADO — DECIDIDO 03/11/2026: IMPLEMENTAR OS TRÊS
+### AP24. Indica +Risos: três parâmetros configurados que NADA usa (28/09/2026) — CONFIRMADO — DECIDIDO 03/11/2026: IMPLEMENTAR OS TRÊS — ✅ RESOLVIDO em 04/11/2026 (core 0.395.0, migrações 0363 e 2011)
+
+**✅ Feito (decisões I1–I4 do dono, `docs/indica-mais-risos/AP24-PLANO.md`; I4 mudada pelo dono: o prêmio é em RISO COINS, não em R$):** botão **Aplicar** do presente no painel da negociação (`indica.aplicar_presente`), por fora da regra comercial (0363: `evaluate_negotiation_rules` tira o presente do total), válido `beneficio_validade_dias` depois do comparecimento, uma vez (marcado no aceite) e só no primeiro tratamento. Prêmio individual: `premio_individual_riso_coins` (rede, começa em 0) creditado em `indica.premios_equipe` quando a indicação vira convertida, dividido por `premio_individual_percentual_origem`; cartão em Indica → Equipe. Ensaio 22/22 (sem as migrações, 8 reprovam). Régua `presente-do-indicado.test.ts`.
+
+**⏳ Pendente com o dono (AP24b):** como a equipe **usa** os Riso Coins do prêmio (resgatar no catálogo, converter em voucher, só ranking?). Hoje eles acumulam e aparecem na tela Equipe; não há resgate para a equipe. Também fica de fora o `beneficio_indicado` da campanha (o presente usa sempre o parâmetro da rede/unidade).
 
 **✅ Decisão do dono (03/11/2026):** **implementar os três parâmetros.** O presente de boas-vindas (`beneficio_indicado_percentual`) entra na negociação do primeiro plano do indicado, como o voucher, valendo pelo prazo de `beneficio_validade_dias`; a divisão do prêmio individual (`premio_individual_percentual_origem`) entre quem pediu e quem fechou entra nas metas. Falta o plano de implementação.
 

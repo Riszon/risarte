@@ -611,6 +611,7 @@ export default async function CommercialCockpitPage(
                 minMarginPercent={negotiationBlock.minMarginPercent}
                 odonto={negotiationBlock.odonto}
                 ortho={negotiationBlock.ortho}
+                presente={negotiationBlock.presente}
                 ehComplemento={modoComplemento != null}
               />
             </>

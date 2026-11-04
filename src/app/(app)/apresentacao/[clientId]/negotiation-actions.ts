@@ -16,6 +16,8 @@ import {
 } from "@/lib/commercial";
 import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
+import { INDICA_SCHEMA } from "@/lib/indica/db";
+import { mensagemDoBanco } from "@/lib/indica/erros";
 
 export type NegotiationActionResult = {
   ok: boolean;
@@ -250,6 +252,31 @@ export async function savePlanNegotiation(
     violations: (violations as string[] | null) ?? [],
     negotiationId: saved.id,
   };
+}
+
+/**
+ * AP24 (I1): o Consultor APLICA (ou tira) o presente de boas-vindas do Indica
+ * +Risos. Quem confere tudo é o banco (`indica.aplicar_presente`): quem pode, a
+ * validade, o "uma vez só" e o primeiro tratamento; depois recalcula o total
+ * pela regra comercial — o presente é por fora dela (I2).
+ */
+export async function aplicarPresente(
+  clientId: string,
+  negotiationId: string,
+  aplicar: boolean
+): Promise<NegotiationActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema(INDICA_SCHEMA)
+    .rpc("aplicar_presente", { p_negociacao_id: negotiationId, p_aplicar: aplicar });
+  if (error) {
+    if (!/INDICA_/.test(error.message)) console.error("aplicar_presente failed:", error.message);
+    return { ok: false, error: mensagemDoBanco(error) };
+  }
+  revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
+  return { ok: true, violations: (data as string[] | null) ?? [], negotiationId };
 }
 
 /** Consultor marca que o CLIENTE ACEITOU as condições. */

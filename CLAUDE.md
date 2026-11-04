@@ -391,6 +391,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (AP24) — PC Administrador (core 0.395.0, migrações 0363 e 2011; Indica 0.9.0)**
+
+- **Presente de boas-vindas do Indica na negociação + prêmio da equipe em Riso
+  Coins** (bloco 0.395.0 no ESTADO). ⚠️ Ao recriar `evaluate_negotiation_rules`,
+  levar o `v_presente` (0363).
+- ✅ **0363 e 2011 aplicadas na produção** (o dono rodou em 04/11/2026;
+  conferências 3·true·true·false e 2·0·true·true·false) antes do push.
+- ⏳ AP24b com o dono: como a equipe usa os Riso Coins.
+
 **04/11/2026 (Rita — plano 1, itens 5a/5b/7) — PC Administrador (core 0.394.0 → 0.396.0, migrações 0362 e 0364)**
 
 - ✅ **AP104 PROVADO em UTC e corrigido:** a lista de próximos horários é a

@@ -89,6 +89,24 @@ _Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migraç
 > entrou na auditoria) e no treino.
 
 
+> ## 🎁 0.395.0 — INDICA +RISOS: PRESENTE DE BOAS-VINDAS E PRÊMIO EM RISO COINS (04/11/2026, migrações 0363 e 2011, AP24)
+>
+> Decisões do dono I1–I4 (`docs/indica-mais-risos/AP24-PLANO.md`; I4 mudada:
+> prêmio individual em Riso Coins).
+>
+> - **0363 (core):** colunas `indica_presente_*` em `plan_negotiations`, trava
+>   (só a porta e a regra comercial gravam) e `evaluate_negotiation_rules` com o
+>   `v_presente` — por fora do % do desconto.
+> - **2011 (Indica):** `aplicar_presente`, `presente_do_cliente`, o uso marcado
+>   no aceite (blindado), `premios_equipe` e o crédito na conversão.
+> - ⚠️ **Ao recriar `evaluate_negotiation_rules`, levar o `v_presente`** (régua
+>   `presente-do-indicado.test.ts`). A conta mora também em
+>   `presenteDoIndicadoCents` e `numerosDoOrcamento`.
+> - Ensaio no treino 22/22 (sem as migrações, 8 reprovam). **Não visto na tela.**
+> - ✅ **0363 e 2011 APLICADAS na produção** (o dono rodou em 04/11/2026, nesta
+>   ordem; conferências 3·true·true·false e 2·0·true·true·false). Push depois.
+> - ⏳ AP24b: como a equipe usa os Riso Coins do prêmio (decisão do dono).
+
 > ## 🔒 0.394.0 — NÃO DÁ PARA ASSINAR DUAS VEZES O MESMO DOCUMENTO (04/11/2026, migração 0361, AP108)
 >
 > **Decisão do dono:** "não pode ter o risco de assinar duas vezes o mesmo

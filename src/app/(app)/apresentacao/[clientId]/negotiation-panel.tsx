@@ -54,11 +54,17 @@ import {
 import { savePaymentSchedule } from "@/app/(app)/comercial/payment-schedule-actions";
 import {
   acceptNegotiation,
+  aplicarPresente,
   returnToPlanning,
   reviewNegotiationAction,
   savePlanNegotiation,
 } from "./negotiation-actions";
-import { todayInBrazil } from "@/lib/dates";
+import { formatBrDate, todayInBrazil } from "@/lib/dates";
+import {
+  SITUACAO_DO_PRESENTE,
+  presenteDoIndicadoCents,
+  type PresenteDaNegociacao,
+} from "@/lib/indica/presente";
 import { pacotesAbaixoDoMinimo, procedimentosAbaixoDoMinimo } from "@/lib/procedimentos/grupos";
 import { Odontograma } from "@/components/odontograma/odontograma";
 import {
@@ -173,7 +179,10 @@ export function NegotiationPanel({
   odonto = null,
   ortho = null,
   ehComplemento = false,
+  presente = null,
 }: {
+  /** AP24 (0363/2011): o presente de boas-vindas do Indica (nulo = não indicado). */
+  presente?: PresenteDaNegociacao | null;
   /** AP64 (0357): negociação de plano complementar (cliente na Fase 5). */
   ehComplemento?: boolean;
   clientId: string;
@@ -427,8 +436,15 @@ export function NegotiationPanel({
   const autoApplied =
     autoCents > 0 && effectiveAdjustmentCents === -autoCents;
 
-  // O que o cliente paga: orçamento − benefício do programa + ajuste.
-  const finalCents = Math.max(0, payableCents + effectiveAdjustmentCents);
+  // AP24 (I2): o presente de boas-vindas do Indica sai do que o cliente
+  // pagaria, POR FORA da regra comercial — a mesma conta do banco (0363).
+  const presenteCents = presenteDoIndicadoCents(
+    payableCents,
+    presente?.aplicadoPercentual ?? null
+  );
+
+  // O que o cliente paga: orçamento − benefício do programa + ajuste − presente.
+  const finalCents = Math.max(0, payableCents + effectiveAdjustmentCents - presenteCents);
 
   // Parcelas viram SELETOR: 1× (à vista) até o máximo liberado (plano/unidade).
   const maxInstallmentsAllowed = Math.max(
@@ -631,6 +647,23 @@ export function NegotiationPanel({
       } else {
         toast.success("Negociação salva.");
       }
+      router.refresh();
+    });
+  }
+
+  function mudarPresente(aplicar: boolean) {
+    if (!negotiation) return;
+    startTransition(async () => {
+      const r = await aplicarPresente(clientId, negotiation.id, aplicar);
+      if (!r.ok) {
+        toast.error(r.error ?? "Algo deu errado.");
+        return;
+      }
+      toast.success(
+        aplicar
+          ? "Presente aplicado. Salve a negociação para atualizar as parcelas."
+          : "Presente retirado. Salve a negociação para atualizar as parcelas."
+      );
       router.refresh();
     });
   }
@@ -1138,6 +1171,38 @@ export function NegotiationPanel({
             </p>
           )}
 
+          {/* AP24 (I1): o presente de boas-vindas do Indica +Risos — o
+              Consultor aplica com um botão; o banco confere a validade. */}
+          {presente && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
+              <p>
+                <strong>Presente de boas-vindas Indica +Risos</strong>:{" "}
+                {presente.percentual.toLocaleString("pt-BR")}% ({presente.codigo})
+                {presente.aplicadoPercentual !== null
+                  ? " — aplicado"
+                  : presente.situacao === "disponivel" && presente.validoAte
+                    ? ` — válido até ${formatBrDate(presente.validoAte)}`
+                    : ` — ${SITUACAO_DO_PRESENTE[presente.situacao]}`}
+                {presente.situacao === "vencido" && presente.validoAte
+                  ? ` em ${formatBrDate(presente.validoAte)}`
+                  : ""}
+              </p>
+              {!locked && negotiation && presente.aplicadoPercentual === null && presente.situacao === "disponivel" && (
+                <Button size="sm" variant="outline" disabled={isPending} onClick={() => mudarPresente(true)}>
+                  Aplicar
+                </Button>
+              )}
+              {!locked && negotiation && presente.aplicadoPercentual !== null && (
+                <Button size="sm" variant="ghost" disabled={isPending} onClick={() => mudarPresente(false)}>
+                  Tirar
+                </Button>
+              )}
+              {!locked && !negotiation && presente.situacao === "disponivel" && (
+                <span className="text-muted-foreground">Salve a negociação para aplicar.</span>
+              )}
+            </div>
+          )}
+
           {/* UM resumo do dinheiro (mesmo formato da venda direta). */}
           <MoneySummary
             rows={[
@@ -1147,6 +1212,14 @@ export function NegotiationPanel({
                 cents: programDiscountCents,
                 tone: "program",
                 note: programConditions?.label ?? undefined,
+              },
+              {
+                label: "Presente de boas-vindas Indica +Risos",
+                cents: presenteCents,
+                tone: "program",
+                note: presente?.aplicadoPercentual
+                  ? `${presente.aplicadoPercentual.toLocaleString("pt-BR")}%`
+                  : undefined,
               },
               {
                 label:

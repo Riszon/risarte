@@ -578,10 +578,8 @@ criar um guia próprio do programa.
 - Configurações → Níveis: o cabeçalho dizia "Fechamentos (12m)", mas o nível
   conta **conversões** (`recalcular_nivel`, status 'convertida'). Corrigido
   para "Conversões na janela".
-- ⚠️ **AP24 (BACKLOG):** `beneficio_indicado_percentual`,
-  `beneficio_validade_dias` e `premio_individual_percentual_origem` estão na
-  configuração mas nada os usa. O guia não promete o presente de boas-vindas
-  como automático.
+- ✅ **AP24 (resolvido em 04/11/2026, Indica 0.9.0):** os três parâmetros
+  passaram a valer — ver a seção AP24 abaixo. O guia foi atualizado.
 
 **Provas:** tela real no treino (Admin): selo e aba na ficha do Embaixador
 (as 4 indicações dele), "Indicado por" na ficha do indicado, guia com todas
@@ -722,6 +720,35 @@ escrita em `MANUAL-rascunho.md` (com o texto da novidade para o
 `changelog.ts`), a colar quando o dono ligar as permissões (regra desta
 pasta). `changelog.ts` não foi tocado: a entrada do topo tem de casar com
 `APP_VERSION` (core) e a equipe não vê o módulo.
+
+## AP24 — presente de boas-vindas e prêmio individual em Riso Coins (04/11/2026, Indica 0.9.0, migração 2011; core 0.395.0, migração 0363)
+
+Decisões do dono I1–I4 em `AP24-PLANO.md` (nesta pasta); **I4 mudada pelo
+dono: o prêmio individual é em Riso Coins**, não em R$.
+
+- **Presente (I1–I3):** `indica.aplicar_presente` (botão no painel da
+  negociação), `indica.presente_do_cliente` (situação: disponível, aguarda
+  avaliação, vencido, usado, encerrado). Validade = `compareceu_em` +
+  `beneficio_validade_dias`, com a regra do REGISTRO da indicação. Uma vez:
+  `indicacoes.presente_usado_em`/`presente_negociacao_id`, marcados no aceite
+  pelo gatilho `indica_automacao_presente` em `plan_negotiations` (blindado:
+  erro vai para `falhas_automacao`). Só no primeiro tratamento (nem
+  complemento, nem cliente com outra negociação aceita ou cancelada). A conta do
+  total mora na 0363 (core).
+- **Prêmio individual (I4):** `indica.premios_equipe` (só cresce, só pelo
+  motor, RLS: a própria pessoa e o gestor da unidade). Crédito no gatilho
+  `indicacoes_premio_equipe` quando a indicação vira `convertida`:
+  `premio_individual_riso_coins` (rede, travado, começa em 0) dividido por
+  `premio_individual_percentual_origem`. Leitura: `premios_equipe_do_periodo`,
+  cartão na tela Equipe.
+- ⚠️ **AP24b (decisão do dono):** como a equipe USA os Riso Coins. Não há
+  resgate para a equipe; o catálogo é do Embaixador.
+- ⚠️ O `beneficio_indicado` da CAMPANHA continua sem uso: o presente segue o
+  parâmetro da rede/unidade.
+- **Provas:** ensaio no treino em transação desfeita 22/22 (sem 0363+2011, 8
+  reprovam); régua `presente-do-indicado.test.ts`. Não visto na tela.
+- ✅ **0363 e 2011 aplicadas na produção** (o dono rodou em 04/11/2026;
+  conferências 3·true·true·false e 2·0·true·true·false).
 
 ## Notas para as próximas fases
 

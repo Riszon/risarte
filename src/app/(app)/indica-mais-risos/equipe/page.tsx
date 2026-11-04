@@ -53,6 +53,14 @@ type Apuracao = {
   motivo: string | null;
   criado_em: string;
 };
+/** AP24 (I4, 2011): Riso Coins da equipe por conversão. */
+type LinhaPremio = {
+  usuario_id: string;
+  nome: string | null;
+  conversoes: number;
+  riso_coins_periodo: number;
+  riso_coins_acumulado: number;
+};
 type LinhaRanking = {
   usuario_id: string;
   nome: string;
@@ -95,7 +103,7 @@ export default async function EquipePage({ searchParams }: PageProps<"/indica-ma
   }
   const gestor = ehGestorIndica(session, unidade.id);
   const db = await indicaDb();
-  const [{ data: metas, error }, ranking, faixasPadrao, travaPadrao, { data: campanhas }] = await Promise.all([
+  const [{ data: metas, error }, ranking, faixasPadrao, travaPadrao, { data: campanhas }, premios, premioPorConversao, percentualOrigem, meusPremios] = await Promise.all([
     db.from("metas_equipe")
       .select("id, unidade_id, campanha_id, periodo_tipo, periodo_inicio, periodo_fim, metrica, faixas, trava_qualidade_comparecimento, status")
       .eq("unidade_id", unidade.id)
@@ -106,6 +114,13 @@ export default async function EquipePage({ searchParams }: PageProps<"/indica-ma
     parametroVigente<number>("metas_trava_qualidade_padrao", unidade.id),
     db.from("campanhas").select("id, nome").in("status", ["ativa", "pausada", "encerrada", "apurada"]).order("inicio", { ascending: false })
       .returns<{ id: string; nome: string }[]>(),
+    // AP24 (I4): o prêmio individual em Riso Coins. Sem a 2011, volta erro e
+    // o cartão some (a tela segue como antes).
+    db.rpc("premios_equipe_do_periodo", { p_unidade_id: unidade.id, p_de: mesDe, p_ate: mesAte }),
+    parametroVigente<number>("premio_individual_riso_coins", unidade.id),
+    parametroVigente<number>("premio_individual_percentual_origem", unidade.id),
+    db.from("premios_equipe").select("riso_coins").eq("usuario_id", session.userId)
+      .returns<{ riso_coins: number }[]>(),
   ]);
   const ids = (metas ?? []).map((m) => m.id);
   const { data: apuracoes } = ids.length
@@ -117,6 +132,9 @@ export default async function EquipePage({ searchParams }: PageProps<"/indica-ma
     : { data: [] as Apuracao[] };
   const nomeCampanha = new Map((campanhas ?? []).map((c) => [c.id, c.nome]));
   const linhasRanking = (ranking.data ?? []) as LinhaRanking[];
+  const linhasPremio = (premios.data ?? []) as LinhaPremio[];
+  const premioLigado = Number(premioPorConversao ?? 0) > 0;
+  const meusRisoCoins = meusPremios.error ? null : (meusPremios.data ?? []).reduce((t, l) => t + l.riso_coins, 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
@@ -297,6 +315,48 @@ export default async function EquipePage({ searchParams }: PageProps<"/indica-ma
           )}
         </CardContent>
       </Card>
+
+      {!premios.error && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">
+              Prêmio individual em Riso Coins — {formatIsoDateBr(mesDe)} a {formatIsoDateBr(mesAte)}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {premioLigado
+                ? `Cada indicação convertida vale ${Number(premioPorConversao)} Riso Coins: ${Number(percentualOrigem ?? 50)}% para quem pediu e o resto para quem fechou. Quem fez os dois leva tudo.`
+                : "Desligado: a franqueadora define o valor por conversão em Configurações → Equipe (metas)."}
+              {meusRisoCoins !== null ? ` Seus Riso Coins acumulados: ${meusRisoCoins}.` : ""}
+            </p>
+          </CardHeader>
+          <CardContent className="overflow-x-auto p-0">
+            {linhasPremio.length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">Nenhum Riso Coin de prêmio neste mês.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Pessoa</TableHead>
+                    <TableHead className="text-right">Conversões premiadas</TableHead>
+                    <TableHead className="text-right">Riso Coins no mês</TableHead>
+                    <TableHead className="text-right">Acumulado na unidade</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {linhasPremio.map((l) => (
+                    <TableRow key={l.usuario_id}>
+                      <TableCell className="font-medium">{l.nome || "—"}</TableCell>
+                      <TableCell className="text-right">{l.conversoes}</TableCell>
+                      <TableCell className="text-right">{l.riso_coins_periodo}</TableCell>
+                      <TableCell className="text-right">{l.riso_coins_acumulado}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
