@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { reportFileName } from "@/lib/empresarial/filenames";
+import type { LinhaComErro } from "@/lib/empresarial/importacao";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -1156,6 +1157,9 @@ function ImportEmployeesDialog({
   const [depRows, setDepRows] = useState<DependentImportRow[]>([]);
   const [fileName, setFileName] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  // AP97: a lista de linhas recusadas, para o RH corrigir a planilha. Fica na
+  // janela (não num toast que some) até a próxima planilha ser escolhida.
+  const [erros, setErros] = useState<LinhaComErro[]>([]);
 
   async function downloadTemplate() {
     try {
@@ -1217,8 +1221,12 @@ function ImportEmployeesDialog({
             { defval: "" }
           )
         : [];
+      // ⚠️ A LINHA DA PLANILHA VIAJA JUNTO (AP97): a importação é tudo ou
+      // nada e devolve os erros por linha — a linha 1 é o cabeçalho, então a
+      // primeira pessoa está na 2. Linha com QUALQUER coisa preenchida vai ao
+      // servidor (é ele que diz o que falta); só a linha em branco é descartada.
       const mappedDeps: DependentImportRow[] = depJson
-        .map((obj) => {
+        .map((obj, i) => {
           const m: Record<string, string> = {};
           for (const k of Object.keys(obj)) m[norm(k)] = String(obj[k] ?? "").trim();
           const get = (...keys: string[]) => {
@@ -1227,6 +1235,7 @@ function ImportEmployeesDialog({
           };
           const rel = get("parentesco", "grau de parentesco", "vinculo");
           return {
+            linha: i + 2,
             holderCpf: get(
               "cpf do titular",
               "cpf titular",
@@ -1246,11 +1255,11 @@ function ImportEmployeesDialog({
             phone: get("telefone", "celular", "whatsapp"),
           };
         })
-        .filter((d) => d.holderCpf && d.cpf);
-      const depIgnored = depJson.length - mappedDeps.length;
+        .filter((d) => d.holderCpf || d.cpf || d.fullName);
       setDepRows(mappedDeps);
+      setErros([]);
       const mapped: EmployeeImportRow[] = json
-        .map((obj) => {
+        .map((obj, i) => {
           const m: Record<string, string> = {};
           for (const k of Object.keys(obj)) m[norm(k)] = String(obj[k] ?? "").trim();
           const get = (...keys: string[]) => {
@@ -1259,6 +1268,7 @@ function ImportEmployeesDialog({
           };
           const planLabel = get("plano de dependentes", "plano");
           return {
+            linha: i + 2,
             fullName: get("nome", "nome completo"),
             cpf: get("cpf"),
             phone: get("telefone", "whatsapp", "celular"),
@@ -1268,23 +1278,20 @@ function ImportEmployeesDialog({
               : "NONE",
           };
         })
-        .filter((r) => r.fullName && r.cpf);
+        .filter((r) => r.fullName || r.cpf || r.phone || r.email);
       setRows(mapped);
-      if (mapped.length === 0) toast.error("Nenhuma linha válida (confira Nome e CPF).");
+      if (mapped.length === 0) toast.error("Nenhuma linha preenchida na aba Titulares.");
       // Sem a aba de dependentes o usuário achava que a planilha "não trouxe".
       if (!depSheetName && mapped.length > 0) {
         toast.info(
           "A planilha não tem a aba “Dependentes” — só os titulares foram lidos. Baixe o Modelo para incluir dependentes."
-        );
-      } else if (depIgnored > 0) {
-        toast.warning(
-          `${depIgnored} dependente(s) ignorado(s): confira as colunas “CPF do Titular” e “CPF do Dependente”.`
         );
       }
     } catch {
       toast.error("Não foi possível ler a planilha.");
       setRows([]);
       setDepRows([]);
+      setErros([]);
     }
   }
 
@@ -1306,9 +1313,12 @@ function ImportEmployeesDialog({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Aba <strong>Titulares</strong>: Nome, CPF, Telefone, E-mail,
-              Plano de Dependentes. Aba <strong>Dependentes</strong> (opcional):
-              CPF do Titular, CPF do Dependente, Nome, Parentesco, Telefone.
+              Aba <strong>Titulares</strong>: Nome, CPF e Telefone
+              (obrigatórios), E-mail, Plano de Dependentes. Aba{" "}
+              <strong>Dependentes</strong> (opcional): CPF do Titular, CPF do
+              Dependente, Nome, Parentesco, Telefone. A planilha entra inteira
+              ou não entra: qualquer linha com problema recusa a importação e
+              a lista de erros aparece aqui.
             </p>
             <Button size="sm" variant="outline" onClick={downloadTemplate}>
               <Download className="mr-1 size-4" />
@@ -1332,6 +1342,28 @@ function ImportEmployeesDialog({
               {depRows.length > 0 && ` · ${depRows.length} dependente(s)`} lido(s)
             </p>
           )}
+          {erros.length > 0 && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+              <p className="font-medium">
+                A planilha não foi importada: {erros.length} linha(s) com problema.
+                Nada foi gravado.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Corrija na planilha e escolha o arquivo de novo. A linha 1 é o
+                cabeçalho.
+              </p>
+              <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto text-xs">
+                {erros.map((e) => (
+                  <li key={`${e.aba}-${e.linha}`}>
+                    <span className="font-mono">
+                      {e.aba}, linha {e.linha}
+                    </span>
+                    : {e.motivo}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {rows.length > 0 && (
             <Button
               size="sm"
@@ -1345,14 +1377,20 @@ function ImportEmployeesDialog({
                         (r.dependentsInserted
                           ? ` · ${r.dependentsInserted} dependente(s)`
                           : "") +
-                        (r.errors ? ` · ${r.errors} ignorado(s)` : "")
+                        (r.jaCadastrados ? ` · ${r.jaCadastrados} já estava(m) cadastrado(s)` : "")
                     );
                     setRows([]);
                     setDepRows([]);
+                    setErros([]);
                     setFileName("");
                     setOpen(false);
                     router.refresh();
-                  } else toast.error(r.error ?? "Erro.");
+                  } else {
+                    // Tudo ou nada: a recusa fica na janela, com as linhas.
+                    setErros(r.linhasComErro ?? []);
+                    toast.error(r.error ?? "Erro.", { duration: 12000 });
+                    if (r.inserted) router.refresh();
+                  }
                 })
               }
             >

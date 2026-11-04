@@ -1055,7 +1055,29 @@ Aba **Titulares** da empresa.
 dependentes.
 
 **Cadastrar por planilha:** *Importar Excel* — baixe o modelo
-(`modelo-titulares.xlsx`), preencha e importe.
+(`modelo-titulares.xlsx`), preencha e importe. Na aba **Titulares**, **Nome,
+CPF e Telefone são obrigatórios** em toda linha (o telefone é o que a
+recepção usa nas boas-vindas; sem ele o cadastro não serve). A aba
+**Dependentes** é opcional: cada linha precisa do CPF do titular (que esteja
+na planilha ou já na empresa), do CPF do dependente e do parentesco.
+
+> ⚠️ **A planilha entra inteira ou não entra.** Se qualquer linha tiver
+> problema (CPF incompleto, sem nome, sem telefone, CPF repetido, dependente
+> sem titular), **nada é gravado** e a janela mostra a lista: *"Titulares,
+> linha 7: sem telefone"*. Corrija na planilha e escolha o arquivo de novo. A
+> linha 1 é o cabeçalho, então a primeira pessoa é a linha 2. Antes, a linha
+> com problema era pulada em silêncio e o resto entrava — e ninguém sabia
+> quem tinha ficado de fora.
+
+> **A planilha também respeita a quantidade contratada** (seção 11). Só os
+> CPFs **novos** ocupam vaga — quem já está na empresa não conta de novo. Se
+> os novos não couberem, a importação inteira é recusada: *"A planilha tem 20
+> titular(es) novo(s) e a empresa tem só 5 vaga(s); renegocie o limite ou
+> reduza a lista"*. Gere e aceite um **termo de inclusão**, ou tire gente da
+> planilha, e importe de novo.
+
+> Reimportar a mesma planilha não duplica ninguém: quem já estava aparece
+> como *"já estava(m) cadastrado(s)"* na mensagem de sucesso.
 
 **Dependentes:** dentro de um titular, *Adicionar dependente* (CPF +
 parentesco).
@@ -1110,7 +1132,10 @@ bloqueados — o aviso aparece **antes** de alguém ser recusado.
 
 **O cadastro além do limite é recusado** dizendo os dois números e o caminho:
 *"Esta empresa já tem 100 titular(es) ativos, e o contrato fechou 100. Para
-incluir mais, gere um termo de inclusão…"*.
+incluir mais, gere um termo de inclusão…"*. **A importação por planilha
+usa a mesma conta** (seção 9): os CPFs novos da planilha precisam caber de
+uma vez; se não couberem, nada entra e a mensagem diz quantos vieram e quantas
+vagas há. **Só titulares ocupam vaga** — dependentes têm o teto deles (11.1).
 
 **Incluir mais titulares** gera o **termo de inclusão** (código `TI-`):
 
@@ -1554,6 +1579,9 @@ daquela empresa.
 | O que você vê | O que é | O que fazer |
 |---|---|---|
 | *"Esta empresa já tem N titular(es) ativos, e o contrato fechou N"* | A trava da quantidade contratada | Gere e aceite um termo de inclusão (seção 11) |
+| *"A planilha tem N titular(es) novo(s) e a empresa tem só M vaga(s); renegocie o limite ou reduza a lista"* | A mesma trava, na importação por planilha — nada foi gravado | Termo de inclusão (seção 11) ou uma planilha menor; importe de novo |
+| *"A planilha não foi importada: N linha(s) com problema. Nada foi gravado"* + a lista de linhas | Linha com CPF incompleto, sem nome, sem telefone, CPF repetido ou dependente sem titular | Corrija as linhas apontadas (a linha 1 é o cabeçalho) e escolha o arquivo de novo (seção 9) |
+| *"Os N titular(es) novo(s) foram gravados, mas os dependentes não"* | A aba Titulares entrou; a aba Dependentes falhou na gravação | Importe de novo só a aba Dependentes — os titulares não duplicam |
 | *"O termo TI-… foi gerado SEM valor"* | A regra do excedente não foi combinada | Ajuste a proposta (seção 6.6) e gere outro |
 | *"Este termo está sem valor"* ao aceitar | O mesmo caso | Idem |
 | A aba Proposta com **faixa amarela** | Falta rodar uma migração no banco | Avise o Admin: o que você digitar ali não grava |

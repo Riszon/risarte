@@ -1,6 +1,5 @@
 "use server";
 
-import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
@@ -8,11 +7,17 @@ import { logAudit } from "@/lib/audit";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
+import { naoConseguiConferir } from "@/lib/contagem";
+import { recusaDoDependente, vagasDisponiveis } from "@/lib/empresarial/excedente";
+import { vagasParaTitulares } from "@/lib/empresarial/vagas";
 import {
-  recusaDoCadastro,
-  recusaDoDependente,
-  vagasDisponiveis,
-} from "@/lib/empresarial/excedente";
+  conferirPlanilha,
+  resumoDaRecusa,
+  type DependenteDaPlanilha,
+  type LinhaComErro,
+  type LinhaDaPlanilha,
+} from "@/lib/empresarial/importacao";
+import { lerPorLotes } from "@/lib/paginar";
 import { canWorkOnCompanies, isProgramManager } from "@/lib/empresarial/access";
 import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
 
@@ -75,72 +80,13 @@ export async function createEmployee(
   // dono: "a empresa tem 100 colaboradores, e quando foi fazer o cadastro
   // enviou 120 nomes — o sistema não pode permitir cadastrar os 120".
   //
-  // O limite efetivo é o contratado MAIS o que os termos de inclusão ACEITOS
-  // acrescentaram, e quem soma isso é o banco (`limite_de_titulares`): a
-  // mesma resposta precisa valer para esta tela, para a importação de
-  // planilha e para qualquer caminho futuro.
-  //
-  // O MÁXIMO da proposta continua valendo como teto separado — ele pode ser
-  // maior que o contratado (contratou 100, pode chegar a 120 sem renegociar).
-  // ⚠️ AP11 — AQUI O VAZIO TEM SIGNIFICADO, e por isso o ERRO precisa ser lido.
-  // `limite_de_titulares` devolve nulo de propósito quando o contrato não tem
-  // quantidade ("sem trava"). Lendo só `data`, uma consulta que FALHOU também
-  // devolvia nulo — e era lida como "sem trava": o teto contratado sumia.
-  const { data: limiteRow, error: erroDoLimite } = await db.rpc("limite_de_titulares", {
-    p_company_id: companyId,
-  });
-  if (erroDoLimite) {
-    return { ok: false, error: naoConseguiConferir("a quantidade contratada da empresa") };
-  }
-  const limiteContratado =
-    typeof limiteRow === "number" ? limiteRow : (limiteRow?.[0] ?? null);
-
-  const { data: teto, error: erroDoTeto } = await db
-    .from("companies")
-    .select("max_adhesions, adhesion_limit_target")
-    .eq("id", companyId)
-    .maybeSingle<{
-      max_adhesions: number | null;
-      adhesion_limit_target: "HOLDERS" | "DEPENDENTS" | "BOTH" | null;
-    }>();
-  // Mesmo caso: sem ler, o máximo combinado na proposta deixava de valer.
-  if (erroDoTeto) {
-    return { ok: false, error: naoConseguiConferir("o limite combinado na proposta") };
-  }
-
-  const precisaContar =
-    limiteContratado != null ||
-    (teto?.max_adhesions != null && teto.adhesion_limit_target !== "DEPENDENTS");
-
-  if (precisaContar) {
-    const atuais = contagemConfirmada(
-      await db
-        .from("employees")
-        .select("*", { count: "exact", head: true })
-        .eq("company_id", companyId)
-        .eq("status", "ACTIVE")
-    );
-    // ⚠️ AP11: sem contar, "quantos titulares já estão ativos?" virava ZERO,
-    // e o teto contratado deixava passar cadastro além do combinado.
-    if (atuais === null) {
-      return { ok: false, error: naoConseguiConferir("quantos titulares a empresa já tem ativos") };
-    }
-
-    const { semTrava, vagas } = vagasDisponiveis(limiteContratado, atuais);
-    if (!semTrava && vagas <= 0) {
-      return { ok: false, error: recusaDoCadastro(limiteContratado!, atuais) };
-    }
-    if (
-      teto?.max_adhesions != null &&
-      teto.adhesion_limit_target !== "DEPENDENTS" &&
-      atuais >= teto.max_adhesions
-    ) {
-      return {
-        ok: false,
-        error: `Esta empresa já tem ${atuais} titular(es) ativos, e o máximo combinado na proposta é ${teto.max_adhesions}. Renegocie o limite antes de incluir mais.`,
-      };
-    }
-  }
+  // A conta mora em UM lugar (`vagasParaTitulares`, AP97): o limite é o
+  // contratado MAIS os termos de inclusão aceitos (somado pelo banco), o
+  // máximo da proposta é um teto separado, e leitura que falha é RECUSA
+  // (AP11), nunca "sem trava". A importação de planilha pergunta à mesma
+  // função — antes ela dizia que perguntava e não perguntava.
+  const vagas = await vagasParaTitulares(db, companyId, 1);
+  if (!vagas.ok) return { ok: false, error: vagas.motivo };
 
   const { data, error } = await db
     .from("employees")
@@ -568,137 +514,192 @@ export async function removeDependent(
   return { ok: true };
 }
 
-export type EmployeeImportRow = {
-  cpf: string;
-  fullName: string;
-  phone: string;
-  email: string;
-  dependentPlan: string;
-};
+export type EmployeeImportRow = LinhaDaPlanilha;
 
 /** I5b: dependentes vêm na 2ª aba da planilha, ligados pelo CPF do titular. */
-export type DependentImportRow = {
-  holderCpf: string;
-  cpf: string;
-  fullName?: string;
-  relationship?: string;
-  phone?: string;
+export type DependentImportRow = DependenteDaPlanilha;
+
+export type ImportResult = ActionResult & {
+  inserted?: number;
+  dependentsInserted?: number;
+  /** Titulares da planilha que já estavam na empresa (não gravam, não ocupam vaga). */
+  jaCadastrados?: number;
+  /** Quando a planilha foi recusada: cada linha com problema e o motivo. */
+  linhasComErro?: LinhaComErro[];
 };
 
+/**
+ * IMPORTAÇÃO TUDO OU NADA (AP97, item 6 do plano da Rita, 03/11/2026).
+ *
+ * A ordem é: conferir cada linha → conferir as VAGAS do contrato para os CPFs
+ * novos → só então gravar. Qualquer linha inválida (CPF incompleto, sem nome,
+ * SEM TELEFONE, CPF repetido, dependente sem titular ou com parentesco
+ * desconhecido) recusa a planilha inteira e devolve a lista de erros para a
+ * tela. Nada é gravado antes de a conferência passar limpa.
+ *
+ * ⚠️ POR QUE NÃO IMPORTAR "ATÉ A VAGA" E LISTAR QUEM SOBROU: a lista some com
+ * a tela, e o RH fica sem saber quem ficou de fora. Recusar inteiro é menos
+ * cômodo e muito mais seguro (decisão do dono, 03/11/2026).
+ *
+ * Limite declarado: titulares e dependentes são DUAS gravações. A conferência
+ * acontece toda antes da primeira; se a segunda falhar por erro do banco, a
+ * resposta diz exatamente isso (os titulares entraram, os dependentes não) em
+ * vez de "importado com sucesso".
+ */
 export async function importEmployees(
   companyId: string,
   rows: EmployeeImportRow[],
   dependents: DependentImportRow[] = []
-): Promise<ActionResult & {
-  inserted?: number;
-  errors?: number;
-  dependentsInserted?: number;
-}> {
+): Promise<ImportResult> {
   const session = await getSessionContext();
   if (!canManageEmployees(session)) {
     return { ok: false, error: "Sem permissão." };
   }
+  if (rows.length === 0) {
+    return { ok: false, error: "Nenhuma linha na planilha." };
+  }
   const db = await empresarialDb();
 
-  const seen = new Set<string>();
-  const payload: Record<string, unknown>[] = [];
-  let errors = 0;
-  for (const r of rows) {
-    const cpf = (r.cpf ?? "").replace(/\D/g, "");
-    if (cpf.length !== 11 || !r.fullName?.trim()) {
-      errors++;
-      continue;
-    }
-    if (seen.has(cpf)) continue;
-    seen.add(cpf);
-    payload.push({
-      company_id: companyId,
-      cpf: formatCpf(cpf),
-      full_name: r.fullName.trim(),
-      phone: r.phone ? formatPhone(r.phone) : "",
-      email: r.email?.trim() || null,
-      // O plano vem dos dependentes importados (gatilho da 1002), não da coluna.
-      dependent_plan: "NONE",
-    });
+  // Quem já está na empresa (qualquer situação: o upsert por (company_id,
+  // cpf) não grava de novo) — lido em lotes, porque a lista de CPFs vai no
+  // endereço e a API corta em 1.000 linhas (AP47).
+  const cpfsDaPlanilha = [
+    ...new Set(
+      rows
+        .map((r) => String(r.cpf ?? "").replace(/\D/g, ""))
+        .filter((c) => c.length === 11)
+        .map((c) => formatCpf(c))
+    ),
+  ];
+  const existentes = await lerPorLotes<{ cpf: string }>(cpfsDaPlanilha, (lote, de, ate) =>
+    db
+      .from("employees")
+      .select("cpf")
+      .eq("company_id", companyId)
+      .in("cpf", lote)
+      .range(de, ate)
+  );
+  // ⚠️ AP11: sem conseguir ler quem já está, a conta de vagas sairia errada
+  // (todo mundo pareceria novo) — recusa, nada gravado.
+  if (!existentes.ok) {
+    return {
+      ok: false,
+      error: naoConseguiConferir("quais titulares da planilha já estão na empresa"),
+    };
   }
-  if (payload.length === 0) {
-    return { ok: false, error: "Nenhuma linha válida na planilha." };
+  const cpfsJaNaEmpresa = new Set(existentes.linhas.map((e) => e.cpf.replace(/\D/g, "")));
+
+  const conferida = conferirPlanilha(rows, dependents, cpfsJaNaEmpresa);
+  if (conferida.erros.length > 0) {
+    return {
+      ok: false,
+      error: resumoDaRecusa(conferida.erros),
+      linhasComErro: conferida.erros,
+    };
   }
 
+  // As VAGAS do contrato, pela mesma conta do cadastro um a um — para os CPFs
+  // NOVOS: quem já está não ocupa vaga de novo.
+  if (conferida.cpfsNovos.length > 0) {
+    const vagas = await vagasParaTitulares(db, companyId, conferida.cpfsNovos.length);
+    if (!vagas.ok) return { ok: false, error: vagas.motivo };
+  }
+
+  const payload = conferida.titulares.map((t) => ({
+    company_id: companyId,
+    cpf: t.cpfFormatado,
+    full_name: t.fullName,
+    phone: t.phone,
+    email: t.email,
+    // O plano vem dos dependentes importados (gatilho da 1002), não da coluna.
+    dependent_plan: "NONE",
+  }));
+
   // upsert por (company_id, cpf) — reimportar não duplica.
-  const { error, count } = await db
+  const { error } = await db
     .from("employees")
-    .upsert(payload, { onConflict: "company_id,cpf", ignoreDuplicates: true, count: "exact" });
+    .upsert(payload, { onConflict: "company_id,cpf", ignoreDuplicates: true });
   if (error) {
     console.error("importEmployees failed:", error.message);
-    return { ok: false, error: "Não foi possível importar a planilha." };
+    return { ok: false, error: "Não foi possível importar a planilha. Nada foi gravado." };
   }
-  // I5b: dependentes da 2ª aba — ligados ao titular pelo CPF dele.
+  const inserted = conferida.cpfsNovos.length;
+
+  // I5b: dependentes da 2ª aba — ligados ao titular pelo CPF dele. Todos já
+  // conferidos: o titular está na planilha (acabou de entrar) ou na empresa.
   let dependentsInserted = 0;
-  const validDeps = dependents.filter(
-    (d) =>
-      (d.holderCpf ?? "").replace(/\D/g, "").length === 11 &&
-      (d.cpf ?? "").replace(/\D/g, "").length === 11 &&
-      (RELATIONSHIPS as readonly string[]).includes(d.relationship ?? "")
-  );
-  if (validDeps.length > 0) {
-    const holderCpfs = [
-      ...new Set(validDeps.map((d) => formatCpf(d.holderCpf))),
-    ];
-    const { data: holders } = await db
-      .from("employees")
-      .select("id, cpf")
-      .eq("company_id", companyId)
-      .in("cpf", holderCpfs);
-    const idByCpf = new Map(
-      ((holders ?? []) as { id: string; cpf: string }[]).map((h) => [
-        h.cpf.replace(/\D/g, ""),
-        h.id,
-      ])
+  if (conferida.dependentes.length > 0) {
+    const holderCpfs = [...new Set(conferida.dependentes.map((d) => formatCpf(d.holderCpf)))];
+    const holders = await lerPorLotes<{ id: string; cpf: string }>(
+      holderCpfs,
+      (lote, de, ate) =>
+        db
+          .from("employees")
+          .select("id, cpf")
+          .eq("company_id", companyId)
+          .in("cpf", lote)
+          .range(de, ate)
     );
-    const depPayload = validDeps
-      .map((d) => {
-        const employeeId = idByCpf.get(d.holderCpf.replace(/\D/g, ""));
-        if (!employeeId) return null;
-        return {
-          employee_id: employeeId,
-          cpf: formatCpf(d.cpf),
-          full_name: d.fullName?.trim() || null,
-          phone: d.phone ? formatPhone(d.phone) : null,
-          relationship: d.relationship,
-        };
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null);
-    if (depPayload.length > 0) {
-      const { error: depErr, count: depCount } = await db
-        .from("dependents")
-        .upsert(depPayload, {
-          onConflict: "employee_id,cpf",
-          ignoreDuplicates: true,
-          count: "exact",
-        });
-      if (depErr) {
-        console.error("importEmployees dependents failed:", depErr.message);
-      } else {
-        dependentsInserted = depCount ?? depPayload.length;
-      }
+    if (!holders.ok) {
+      console.error("importEmployees holders failed:", holders.error.message);
+      return {
+        ok: false,
+        error: `Os ${inserted} titular(es) novo(s) foram gravados, mas não foi possível ler os titulares para ligar os dependentes. Importe de novo só a aba Dependentes.`,
+        inserted,
+        jaCadastrados: conferida.jaCadastrados,
+      };
     }
-    errors += validDeps.length - depPayload.length;
+    const idByCpf = new Map(holders.linhas.map((h) => [h.cpf.replace(/\D/g, ""), h.id]));
+    const depPayload = conferida.dependentes.map((d) => ({
+      employee_id: idByCpf.get(d.holderCpf) ?? null,
+      cpf: d.cpfFormatado,
+      full_name: d.fullName,
+      phone: d.phone,
+      relationship: d.relationship,
+    }));
+    // Conferido antes; se um titular sumiu entre a conferência e a gravação,
+    // a resposta diz, em vez de gravar dependente sem titular.
+    const semTitular = depPayload.filter((d) => d.employee_id === null).length;
+    if (semTitular > 0) {
+      return {
+        ok: false,
+        error: `Os ${inserted} titular(es) novo(s) foram gravados, mas ${semTitular} dependente(s) ficaram sem titular na empresa. Importe de novo só a aba Dependentes.`,
+        inserted,
+        jaCadastrados: conferida.jaCadastrados,
+      };
+    }
+    const { error: depErr } = await db
+      .from("dependents")
+      .upsert(depPayload, { onConflict: "employee_id,cpf", ignoreDuplicates: true });
+    if (depErr) {
+      console.error("importEmployees dependents failed:", depErr.message);
+      return {
+        ok: false,
+        error: `Os ${inserted} titular(es) novo(s) foram gravados, mas os dependentes não. Importe de novo só a aba Dependentes.`,
+        inserted,
+        jaCadastrados: conferida.jaCadastrados,
+      };
+    }
+    dependentsInserted = depPayload.length;
   }
-  errors += dependents.length - validDeps.length;
 
   await logAudit({
     action: "create",
     entityType: "empresarial_employee_import",
     entityId: companyId,
-    details: { rows: payload.length, dependents: dependentsInserted },
+    details: {
+      rows: payload.length,
+      inserted,
+      already: conferida.jaCadastrados,
+      dependents: dependentsInserted,
+    },
   });
   revalidatePath(`/empresarial/${companyId}`);
   return {
     ok: true,
-    inserted: count ?? payload.length,
-    errors,
+    inserted,
     dependentsInserted,
+    jaCadastrados: conferida.jaCadastrados,
   };
 }
 

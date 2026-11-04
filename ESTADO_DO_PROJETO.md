@@ -1,6 +1,74 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migração: **0364** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migração: **0364** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🏢 EMPRESARIAL 0.96.0 — A PLANILHA DE TITULARES RESPEITA O CONTRATO E ENTRA INTEIRA OU NÃO ENTRA (04/11/2026, sem migração; AP97, item 6 do plano da Rita)
+>
+> Item 6 de `docs/sdr/PLANO-CORRECOES-SECAO-2.md` (aprovado pelo dono em
+> 03/11/2026, com a opção recomendada: **recusar a importação inteira**, não
+> importar até a vaga). Projeto Empresarial, só código.
+>
+> **A conta de vagas mora em UM lugar: `src/lib/empresarial/vagas.ts`.**
+> `vagasParaTitulares(db, companyId, quantosNovos)` lê o limite do contrato
+> (`limite_de_titulares` = contratado + termos de inclusão aceitos, somado
+> pelo banco), o máximo combinado na proposta (teto separado; só vale para
+> titulares quando foi combinado para eles) e, só quando um dos dois existe,
+> conta os **titulares ativos** (`employees`, `status = ACTIVE`). **Só
+> titulares ocupam vaga** — dependentes não entram nesta conta (têm o teto
+> deles, 1021, que `addDependent` confere). A parte pura é
+> `conferirVagasParaTitulares(limite, teto, ativos, quantosNovos)`.
+> `createEmployee` pergunta por 1; `importEmployees` pergunta pelos **CPFs
+> novos** da planilha (quem já está na empresa não ocupa vaga de novo). AP11
+> mantido: qualquer leitura que falhe é recusa com "nada foi alterado", nunca
+> "sem trava" nem "zero ativos".
+>
+> **A importação é TUDO OU NADA** (`src/lib/empresarial/importacao.ts`,
+> `conferirPlanilha`, pura). A ordem na action: lê quem já está na empresa
+> (em lotes, `lerPorLotes`) → confere cada linha → confere as vagas para os
+> novos → só então grava. Linha inválida = CPF incompleto, sem nome, **sem
+> telefone** (ou incompleto), CPF repetido na planilha, dependente com CPF do
+> titular que não está na planilha nem na empresa, CPF do dependente
+> incompleto, parentesco desconhecido, dependente repetido. Qualquer uma
+> recusa a planilha inteira e devolve `linhasComErro` (aba, linha, motivo —
+> **sem dado pessoal**); a janela "Importar titulares" mostra a lista até a
+> próxima planilha ser escolhida. A tela passou a mandar a **linha da
+> planilha** com cada registro (a 1 é o cabeçalho) e a deixar de descartar em
+> silêncio linhas incompletas (só a linha em branco é descartada). Telefone
+> vazio deixou de virar `""` gravado. Sucesso diz também quantos "já
+> estava(m) cadastrado(s)".
+>
+> **Limite declarado:** titulares e dependentes continuam sendo DUAS
+> gravações (sem migração, por decisão do plano). A conferência inteira
+> acontece antes da primeira; se a segunda falhar por erro do banco, a
+> resposta diz exatamente isso ("os N titulares foram gravados, mas os
+> dependentes não — importe de novo só a aba Dependentes") em vez de
+> "importado com sucesso". Uma função do banco que gravasse os dois numa
+> transação fecharia esse resto; anotado no BACKLOG (AP111, junto com o teto
+> de dependentes que a importação em lote ainda não confere).
+>
+> **Provado:** `vagas-para-titulares.test.ts` (16) e
+> `importacao-de-titulares.test.ts` (18): limite 5, 4 ativos e 2 novos →
+> recusa com a frase do plano; 1 novo cabe; limite nulo é sem trava; o máximo
+> da proposta trava sozinho e ignora o alvo "só dependentes"; o banco falso
+> prova que a conta lê `companies` e `employees` com `status = ACTIVE` e
+> nunca a tabela de dependentes; falha ao ler limite, teto ou contagem →
+> recusa; telefone vazio → `erros` = 1 (`Titulares, linha 3: sem telefone`);
+> os outros motivos; nenhum CPF nem nome nos erros; dependente de titular já
+> na empresa passa; réguas que leem a action: os dois caminhos chamam
+> `vagasParaTitulares`, a conferência vem antes de qualquer `upsert`, e a
+> forma antiga `: ""` do telefone não volta. **Provado quebrando:** com
+> `vagas < novos` trocado por `vagas < 0` e a conferência do telefone
+> desligada, 9 dos 34 caem (saída em `prova-ap97-quebrando.txt`, pasta de
+> notas da sessão); restaurado, 34/34.
+>
+> **Não visto na tela** (sem servidor local nesta sessão): a janela com a
+> lista de erros e a frase de recusa das vagas — provados por teste. Nada a
+> rodar na produção: sem migração; o código sobe com o push.
+>
+> **Manual do Empresarial** §9 (planilha: obrigatórios, tudo ou nada, vagas),
+> §11 (a mesma conta na planilha; só titulares ocupam vaga), §17 (3 mensagens
+> novas); `.docx` regerado; `ROTEIRO-TESTE.md` passo 15. `changelog.ts` não
+> tocado (o Empresarial tem o manual próprio; `APP_VERSION` não mudou).
 
 > ## 🔒 0.396.0 — AGENDA SEM FURO E COMISSÕES FORA DO CATÁLOGO (04/11/2026, migrações 0362 e 0364, AP103 + AP104 + item 7 do plano da Rita)
 >

@@ -31,7 +31,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP91** — treino: só 2 pessoas da equipe da Franqueadora têm CPF válido; o envio completo do contrato de adesão (2 testemunhas + titular) não dá para ensaiar lá — **resolvido em 0.387.0 (fichas de teste com CPF válido, `npm run treino:equipe-de-teste`)**
 - [ ] **AP92** — "Reenviar como novo pacote" ainda não vale para pacotes de empresa
 - [x] **AP93** — o cartão do funil fica em "A apresentar" depois do aceite e até depois do contrato assinado (cockpit mostra "Sem apresentação marcada") — **0.382.1: era defeito do cockpit, não do funil; o cockpit segue a coluna do quadro**
-- [ ] **AP97** — Empresarial: a importação de titulares por planilha (`importEmployees`) não aplica a trava de quantidade contratada que o comentário dela diz aplicar; telefone ausente vira `""`
+- [x] **AP97** — Empresarial: a importação de titulares por planilha (`importEmployees`) não aplica a trava de quantidade contratada que o comentário dela diz aplicar; telefone ausente vira `""` — **resolvido em Empresarial 0.96.0 (item 6 do plano da Rita): conta única `vagasParaTitulares` (só titulares ocupam vaga), importação tudo ou nada com a lista de erros por linha, telefone vazio é erro da linha**
+- [ ] **AP111** — Empresarial: a importação em lote grava titulares e dependentes em DUAS gravações (sem transação) e não confere o teto de DEPENDENTES do contrato (`limite_de_dependentes`), que o cadastro um a um confere
 - [ ] **AP98** — a configuração da agenda cai da unidade para a rede por LINHA INTEIRA, não campo a campo: unidade com horário próprio não herda o almoço da rede, ao contrário do que a tela do almoço da rede diz
 
 **Segurança e banco (por etapas)**
@@ -2933,7 +2934,7 @@ nome da unidade, onde o contrato em papel trazia a razão social ("… LTDA").
 Precisa de coluna nova em `clinics` + campo no cadastro da unidade +
 `montarValores` preferindo ela. Pedir o OK do dono (mexe no cadastro).
 
-### AP97. A importação de titulares não aplica a trava de quantidade (03/11/2026)
+### AP97. A importação de titulares não aplica a trava de quantidade (03/11/2026) — ✅ Resolvido em Empresarial 0.96.0
 
 **Confirmado, lendo o código:** em `src/app/(app)/empresarial/[companyId]/employee-actions.ts`,
 o comentário das linhas ~74-76 diz que a trava de `limite_de_titulares` vale
@@ -2942,6 +2943,17 @@ aplicam; `importEmployees` (~583-698) faz o upsert por `(company_id, cpf)` sem
 conferir contratado nem teto. Telefone ausente na planilha vira `""` (~613),
 embora a coluna seja `not null`. A importação é justamente o caminho da lista
 recebida da empresa. Visto no levantamento da Rita (F2); não mexi.
+
+**Resolução (04/11/2026, item 6 de `docs/sdr/PLANO-CORRECOES-SECAO-2.md`,
+opção recomendada — recusar a importação inteira — aprovada pelo dono):** a
+conta de vagas saiu de `createEmployee` para `src/lib/empresarial/vagas.ts`
+(`vagasParaTitulares`; **só titulares ocupam vaga**, leitura que falha é
+recusa); o cadastro um a um pede 1 e a planilha pede pelos CPFs **novos**.
+A importação virou **tudo ou nada** (`src/lib/empresarial/importacao.ts`):
+qualquer linha inválida — inclusive **telefone vazio** — recusa a planilha
+inteira e devolve a lista por linha (aba, linha, motivo, sem dado pessoal)
+para a janela. Réguas `vagas-para-titulares.test.ts` e
+`importacao-de-titulares.test.ts`, provadas quebrando. Sobra o AP111.
 
 ### AP98. O almoço da rede não chega à unidade com horário próprio (03/11/2026)
 
@@ -4000,3 +4012,19 @@ Financeiro da Franqueadora; grava só o Admin. Dados MOVIDOS antes de derrubar
 ela. Provado no treino: sem login e recepção leem nada; a coluna antiga não
 existe mais; Planner e Financeiro leem; a conta do repasse não mudou.
 Registro de origem: `docs/sdr/LEVANTAMENTO_DADOS_RITA_RESULTADO.md` (H1).
+
+### AP111. A importação em lote do Empresarial: dependentes fora da transação e fora do teto (04/11/2026)
+
+**Confirmado, lendo o código** (achado ao fazer o AP97, não mexi além do
+declarado): em `importEmployees` (`employee-actions.ts`), titulares e
+dependentes são **duas gravações** (`upsert` em `employees` e depois em
+`dependents`), sem transação. A 0.96.0 confere tudo ANTES da primeira e, se a
+segunda falhar, diz na resposta que os titulares entraram e os dependentes
+não — mas o estado parcial existe. Fechar isso de vez é uma função do banco
+(`empresarial.importar_titulares(jsonb)`, migração 1040+) que grave os dois
+numa transação. **E o teto de dependentes** (`limite_de_dependentes`, 1021),
+que `addDependent` confere um a um, **não é conferido na aba Dependentes da
+planilha**: uma planilha com 500 dependentes entra numa empresa que fechou 50.
+Caminho: uma `vagasParaDependentes` irmã de `vagasParaTitulares`, perguntada
+pelo número de dependentes novos antes de gravar. Decisão do dono: se vale
+uma migração só para a transação, ou se basta o teto (sem migração).

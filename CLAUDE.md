@@ -391,6 +391,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (Rita — plano 1, item 6) — PC Administrador (Empresarial 0.95.0 → 0.96.0, sem migração)**
+
+- **AP97: a planilha de titulares respeita o contrato e entra inteira ou não
+  entra** (bloco "EMPRESARIAL 0.96.0" no ESTADO). ⚠️ **A conta de vagas mora
+  em `src/lib/empresarial/vagas.ts` (`vagasParaTitulares`)**: cadastro um a
+  um pede 1, a planilha pede pelos CPFs novos. Caminho novo que crie titular
+  pergunta lá — régua `vagas-para-titulares.test.ts` reprova conta paralela
+  na action. **Só titulares ocupam vaga.**
+- ⚠️ **Importação tudo ou nada** (`importacao.ts`, `conferirPlanilha`):
+  telefone vazio é erro da linha; a lista de erros (aba, linha, motivo, sem
+  dado pessoal) volta para a janela. Dependentes ainda são 2ª gravação (AP111).
+- Provado por teste, inclusive quebrando (9/34 caem). **Não visto na tela.**
+  Sem migração; nada a rodar na produção.
+
 **04/11/2026 (AP24) — PC Administrador (core 0.395.0, migrações 0363 e 2011; Indica 0.9.0)**
 
 - **Presente de boas-vindas do Indica na negociação + prêmio da equipe em Riso

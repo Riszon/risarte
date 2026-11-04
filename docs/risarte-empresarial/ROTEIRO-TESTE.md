@@ -46,7 +46,11 @@ Marque cada item ao concluir. Se algo não bater, anote o número do passo.
 14. Abra a empresa → aba **Titulares** → **Novo titular** (nome, CPF, telefone,
     plano de dependentes). Repita para 2–3 titulares.
 15. **Importar Excel**: baixe o modelo, preencha 2 linhas e importe — confira que
-    aparecem na lista.
+    aparecem na lista. Depois, importe outra planilha com **uma linha sem
+    telefone**: a importação inteira tem de ser recusada, com *"Titulares,
+    linha N: sem telefone"* na janela e **nenhuma** linha nova na lista
+    (AP97, 0.96.0). Se a empresa tiver quantidade contratada, uma planilha
+    com mais CPFs novos do que vagas também é recusada inteira.
 16. Em um titular, **Dependentes** → **Adicionar dependente** (CPF + parentesco).
 17. Clique **Completar cadastro** num titular → escolha a **unidade** → confirme.
     Ele deve mostrar **★ Cliente vinculado** e o botão **Ver ficha**.
