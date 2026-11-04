@@ -405,7 +405,7 @@ Syncthing se comportarem de forma estranha.**
   a mesma pessoa que `candidatosDaRisarte` oferece.
 - ⚠️ **0.389.0 é da sessão "Backlogs abertos"** (AP64, 0355, sem commit até o
   dono rodar a 0355): este commit pulou para 0.390.0 e não leva nada dela.
-- ⏳ **0353, 0356 e 1039 não aplicadas na produção.** O dono roda, nessa ordem.
+- ✅ **0353, 0356 e 1039 APLICADAS nos dois bancos** (o dono rodou na produção em 03/11/2026; conferido de fora: sem login `user_staff_scope_clinic_ids`, `is_my_company` e `consultant_usage_summary` recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); as colunas `rg` e `nationality` existem; o modelo de adesão pede `rislife_consultant`; a produção tem 0 pessoas com o papel de Consultor RisLife).
 
 
 **03/11/2026 (AP64, passo 1) — PC Administrador (core 0.388.1 → 0.389.0, migração 0355)**
@@ -462,7 +462,7 @@ Syncthing se comportarem de forma estranha.**
 - ⏳ **Entrega 2 (1039):** `empresarial.is_program_manager()` sem o RisLife,
   relatório de uso próprio, contrato de adesão assinado por ele. Plano no
   BACKLOG (AP95).
-- ⏳ **0353 não aplicada na produção.** O dono roda.
+- ✅ **0353 aplicada nos dois bancos** (03/11/2026; ver o bloco de cima).
 
 **03/11/2026 (AP61) — PC Administrador (core 0.385.0 → 0.386.0, migração 0352)**
 

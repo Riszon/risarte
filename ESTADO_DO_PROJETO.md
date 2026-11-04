@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migração: **0356** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0353 só no treino; 0356 só no treino) · Empresarial **0.95.0** / migração **1039** (1038 aplicada na produção e no treino; 1039 só no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migração: **0356** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 🏢 0.390.0 — O CONSULTOR RISLIFE SÓ NAS EMPRESAS DELE (03/11/2026, migrações 0356 e 1039; Empresarial 0.95.0; AP95 entrega 2)
 >
@@ -42,7 +42,7 @@ _Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migraç
 > **Resíduo no treino (meu):** o RisLife de teste é o responsável pela empresa
 > e pelo lead "ZZZ Fechamento" (teste do agente).
 >
-> ⏳ **0353, 0356 e 1039 não aplicadas na produção.** Ordem: 0353 → 0356 → 1039.
+> ✅ **0353, 0356 e 1039 APLICADAS nos dois bancos** (o dono rodou na produção em 03/11/2026; conferido de fora: sem login `user_staff_scope_clinic_ids`, `is_my_company` e `consultant_usage_summary` recusam com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); as colunas `rg` e `nationality` existem; o modelo de adesão pede `rislife_consultant`; a produção tem 0 pessoas com o papel de Consultor RisLife).
 > ⚠️ **A 0354 desta sessão virou 0356** (a outra sessão publicou a sua 0354
 > antes); no treino o registro foi renomeado.
 
@@ -171,7 +171,7 @@ _Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migraç
 > **Entrega 2 (1039) ⏳:** só as empresas e os leads dele, o relatório de uso
 > com leitura própria e o contrato de adesão assinado por ele (BACKLOG, AP95).
 >
-> ⏳ **0353 não aplicada na produção.** O dono roda. Na produção ninguém tem o
+> ✅ **0353 aplicada na produção** (03/11/2026, junto com a 0356 e a 1039). Na produção ninguém tem o
 > papel hoje.
 
 > ## 💰 0.386.0 — O REPASSE SAI POR PROCEDIMENTO CONCLUÍDO (03/11/2026, migração 0352, AP61)
