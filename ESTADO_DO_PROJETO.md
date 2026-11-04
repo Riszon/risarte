@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migração: **0364** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migração: **0364** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 🔒 0.396.0 — AGENDA SEM FURO E COMISSÕES FORA DO CATÁLOGO (04/11/2026, migrações 0362 e 0364, AP103 + AP104 + item 7 do plano da Rita)
 >
@@ -84,8 +84,9 @@ _Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migraç
 > tempo: o segundo espera o primeiro terminar, pelo código sequencial — não é
 > defeito, é serialização; anotado para a Rita).
 >
-> ⏳ **0362 e 0364 aplicadas no treino; não aplicadas na produção.** O dono
-> roda as duas (0362 antes da 0364; a 0363 é da sessão "Backlogs abertos").
+> ✅ **0362 e 0364 APLICADAS na produção pelo dono em 04/11/2026** (na ordem
+> 0362 → 0363 → 0364; a 0364 respondeu `audit_attach_all` = 1, a tabela irmã
+> entrou na auditoria) e no treino.
 
 
 > ## 🔒 0.394.0 — NÃO DÁ PARA ASSINAR DUAS VEZES O MESMO DOCUMENTO (04/11/2026, migração 0361, AP108)

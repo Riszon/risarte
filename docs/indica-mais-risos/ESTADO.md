@@ -713,7 +713,8 @@ modo novo do script para reaplicar migração já gravada na transação): tirar
 `v_autorizado` da condição do nome e devolver `'/c/' || v_token` à fila
 derrubaram **4** conferências; a régua unitária
 `indica-aviso-ao-indicador.test.ts` (10) caiu em 2 pelas mesmas quebras.
-Migrações aplicadas no treino. **Não visto na tela:** nenhuma das telas foi
+Migrações aplicadas no treino e **na produção pelo dono em 04/11/2026** (2009 e
+depois 2010). **Não visto na tela:** nenhuma das telas foi
 aberta no navegador nesta sessão (detalhe, Nova indicação, /c/, Mensagens).
 
 **Manual/novidades:** o módulo segue escondido da equipe → a seção foi

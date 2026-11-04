@@ -399,9 +399,8 @@ Syncthing se comportarem de forma estranha.**
   `check_appointment_conflict`. **Item 7 (0364, DESTRUTIVO declarado):**
   `procedure_commissions` (irmã; Admin/Planner/Financeiro leem; dados movidos
   antes de derrubar as colunas). Bloco 0.396.0 no ESTADO; EV-292.
-- ⚠️ **Publicar SÓ depois de o dono aplicar na produção, na ordem 0362 → 0363
-  (sessão "Backlogs abertos") → 0364:** o app lê a irmã; sem ela o catálogo
-  abre sem comissão e gravar procedimento responde "a comissão NÃO foi gravada".
+- ✅ **0362, 0363 e 0364 APLICADAS na produção pelo dono em 04/11/2026**, nessa
+  ordem (0364: `audit_attach_all` = 1). O app já lê a irmã.
 - ⚠️ **Disco C: no limite** (14 GB livres depois de limpar `.next-test` e
   `.next-verify`); a varredura completa do `check:telas` não rodou.
 - Achado de passagem: **AP109** (mesma raiz do AP104 no "Ver agenda" e em 4
@@ -421,6 +420,7 @@ Syncthing se comportarem de forma estranha.**
   quem contar por `status_para` precisa ignorá-los.
 - `changelog.ts` e o manual da equipe NÃO tocados (módulo escondido): texto
   pronto em `docs/indica-mais-risos/MANUAL-rascunho.md`.
+- ✅ **2009 e 2010 APLICADAS na produção pelo dono em 04/11/2026.**
 - Não visto na tela. Pendente: a janela "Pedir indicação" (lote) sem a pergunta.
 **04/11/2026 (ZapSign na produção) — PC Administrador (sem código)**
 
