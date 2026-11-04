@@ -424,7 +424,8 @@ Syncthing se comportarem de forma estranha.**
   `npm run backlog`** (grava na PRODUÇÃO); o `docs/BACKLOG.md` está congelado.
 - ⚠️ **Escrita só pelas funções `backlog_*`** (Admin Master logado ou chave de
   serviço); a linha do tempo só cresce. Importação: 125 itens.
-- Próximo: **BK2** (a tela). Ensaio 34/34 + quebra; importação no treino.
+- ✅ **0366 aplicada na produção** (o dono, 04/11/2026) e **125 itens
+  importados lá** antes do push. Próximo: **BK2** (a tela).
 
 **04/11/2026 (aviso do já assinado) — PC Administrador (core 0.397.0 → 0.397.1, sem migração)**
 

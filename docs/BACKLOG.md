@@ -1,5 +1,11 @@
 # Backlog Risarte — feedback do proprietário (2026-06-12)
 
+> ⚠️ **ARQUIVO CONGELADO EM 04/11/2026 (0.399.0, migração 0366).** O backlog
+> passou a morar no BANCO: a tela **Administração → Backlog** (só o Admin
+> Master) e o comando `npm run backlog` (sessões). Todos os itens deste
+> arquivo foram importados (AP1–AP125). **Não acrescentar nem marcar nada
+> aqui** — registrar e fechar pelo comando. O texto abaixo fica como histórico.
+
 Itens organizados por momento de implementação. Fonte: revisão do proprietário
 após a Etapa 3. Nada daqui pode ser perdido; ao concluir um item, marcá-lo.
 

@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.399.0",
+    data: "2026-11-04",
+    migracao: "0366",
+    titulo: "O backlog do sistema passou a morar no banco",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "A lista de pendências do sistema (o backlog: defeitos, melhorias, decisões em aberto) deixou de ser um arquivo e passou a ficar no banco, com categoria, prioridade e a história de cada item. É a base da tela Administração → Backlog, que vem na próxima entrega, só para o Admin Master. Nada muda para a equipe.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.398.0",
     data: "2026-11-04",
     migracao: "0365",

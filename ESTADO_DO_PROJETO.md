@@ -26,6 +26,10 @@ _Atualizado em: 04/11/2026 · Versão do sistema: **0.399.0** · Última migraç
 >   reprovam): `scripts/backlog-ensaio-0366.mjs`. Importação no treino 125/125;
 >   rodar de novo não duplica. Resíduo no treino: **AP126** "Ensaio do comando
 >   (pode ignorar)", resolvido.
+> - ✅ **0366 APLICADA na produção** (o dono rodou em 04/11/2026; conferido de
+>   fora: as 8 categorias; sem login a tabela não entrega nada e abrir item
+>   recusa com "permission denied") e **importação feita na produção: 125
+>   itens** (52 abertos, 73 resolvidos), antes do push.
 > - ⚠️ **Duas migrações 0365** no repositório (Rita e Metas, sessões
 >   diferentes, 04/11/2026). Não quebram nada (nomes distintos), mas a próxima
 >   sessão confere o número livre olhando a pasta.
