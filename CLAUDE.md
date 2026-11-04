@@ -456,8 +456,8 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Ligar = só Admin Master; desligar = Admin ou Gerente da unidade.**
   Gatilho da pausa blindado (erro → `rita.falhas`). Régua
   `rita-portao.test.ts`, provada quebrando 3 vezes.
-- Provado no treino 16/16 (transação desfeita) e quebrando. ⏳ **3001 na
-  produção com o dono** (nenhuma tela lê ainda: o push não depende dela).
+- Provado no treino 16/16 (transação desfeita) e quebrando. ✅ **3001
+  aplicada na produção pelo dono em 04/11/2026.**
 
 **04/11/2026 (Rita — Fase 0A.1) — PC Administrador (core 0.396.0 → 0.397.0, migração 0365; Rita 0.1.0, migração 3000)**
 

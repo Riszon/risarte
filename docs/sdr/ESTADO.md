@@ -16,8 +16,8 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 |---|---|---|
 | Plano 1 (correções da seção 2, itens 1–7) | ✅ concluído em 04/11/2026 | 0362–0364, 2009–2010, sem migração no item 1 e no 6 |
 | **0A.1 Identidade e auditoria** | ✅ concluída: código, treino e produção (04/11/2026) | core **0365**, rita **3000** |
-| **0A.2 Interruptor, modo e portão** | ✅ no código e no treino; ⏳ produção com o dono | **3001** |
-| 0A.3 Consentimento e opt-out | — | 3002 |
+| **0A.2 Interruptor, modo e portão** | ✅ concluída: código, treino e produção (04/11/2026) | **3001** |
+| 0A.3 Consentimento e opt-out | próxima | 3002 |
 | 0A.4 Unidade, horários, feriados | — | core 036x |
 | 0A.5 Avaliação como dado | — | core 036x + 3003 |
 | 0A.6 Escalonamento e avisos | — | 3004 |
@@ -116,8 +116,8 @@ inválido); `rita.settings` auditada. **Quebrando:** deixar o Gerente ligar
 reprova a 8. Régua `rita-portao.test.ts` (13 testes) provada quebrando 3
 vezes (Gerente liga, gatilho que devolve o erro, `enabled` aberta).
 
-**Na produção:** ⏳ a **3001** (com o dono). Nenhuma tela lê ainda, então o
-código publicado não depende dela.
+**Na produção:** ✅ **3001 aplicada pelo dono em 04/11/2026.** A rede e todas
+as unidades seguem desligadas.
 
 ## Regras para as próximas entregas
 
