@@ -1,6 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.392.1** · Última migração: **0359** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.393.0** · Última migração: **0360** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## ✂️ 0.393.0 — CANCELAR O TRATAMENTO VENDA POR VENDA (04/11/2026, migração 0360, AP107)
+>
+> Decisões do dono K1–K3 (`docs/comercial/AP63-AP64-PLANO.md` §7; K3 contra a
+> recomendação): um cancelamento por venda; cancelar só o complemento mantém a
+> Fase 5; cancelar o original NÃO cancela o complemento — o cliente só vai à
+> Fase 6/7 quando não sobra tratamento.
+>
+> - **0360:** `_outra_venda_em_tratamento`; `open_plan_cancellation` e
+>   `apply_plan_cancellation` só pedem destino / mudam a fase / marcam o cartão
+>   "cancelado" quando não sobra outra venda em tratamento.
+> - ⚠️ **A regra está em dois lugares:** `_outra_venda_em_tratamento` (0360) e
+>   `outraVendaEmTratamento` (`src/lib/vendas-do-cliente.ts`). Mudou uma, muda a
+>   outra. Ao recriar as funções do cancelamento, levar o `v_outra`.
+> - Prontuário: um cartão de cancelamento por venda (`vendasDoCliente`).
+> - Ensaio no treino 19/19 (sem a 0360, 2 reprovam). **Não visto na tela.**
+> - ✅ **0360 aplicada na produção** (o dono informou em 04/11/2026; não
+>   conferido de fora) antes do push.
 
 > ## 🧪 0.392.1 — ZS8: A ASSINATURA DIGITAL TESTADA DE VERDADE (04/11/2026, migração 0359)
 >

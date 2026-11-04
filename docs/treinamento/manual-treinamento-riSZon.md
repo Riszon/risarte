@@ -3501,6 +3501,21 @@ aparece a tabela **Mês a mês**.
 **Evidência:** EV-160 a EV-162; `src/lib/horas-da-agenda.ts`;
 `src/app/(app)/agenda/planejamento-anual/`.
 
+**Cancelar o tratamento é por venda** (desde a versão 0.393.0). Na ficha →
+aba **Plano**, cada venda do cliente tem o seu botão: **Cancelar · Plano
+original** e **Cancelar · Complemento 1** (2, 3…). Cada uma tem o seu termo e o
+seu acerto, e o cancelamento só para as sessões e as cobranças **daquela**
+venda.
+
+- Se o cliente **segue em tratamento com outra venda** (o plano original ou um
+  complemento com sessão por fazer), a fase **não muda**: o termo não pede o
+  destino e o cliente continua na Fase 5. Cancelar o plano original **não**
+  cancela o complemento.
+- Se **não sobra tratamento**, o termo pede o destino como sempre:
+  **Reavaliação** (Fase 6) ou **Acompanhamento** (Fase 7, com a data de
+  retorno).
+
+
 ### 6.7. Demais funções
 
 **SDR:** cadastrar e agendar; não move fases. **Assistente Comercial:** enviar
@@ -3795,7 +3810,7 @@ mudada à mão, ela passaria a dizer o que a pessoa achou, e não o que acontece
 | Início de Tratamento | Acompanhamento | resposta **NÃO** em "necessita novo planejamento?" |
 | Acompanhamento | Reavaliação | check-in de uma **reavaliação** |
 | Acompanhamento | Início de Tratamento | check-in de uma **sessão** |
-| qualquer fase | Reavaliação ou Acompanhamento | **cancelamento de plano** efetivado (o Gerente escolhe o destino) |
+| qualquer fase | Reavaliação ou Acompanhamento | **cancelamento de plano** efetivado (o Gerente escolhe o destino) — desde a 0.393.0, só quando não sobra outra venda em tratamento (o plano original ou um complemento); senão a fase não muda |
 
 **E há cinco botões que movem — porque mover é a consequência do que você
 acabou de fazer:**

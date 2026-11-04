@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.393.0",
+    data: "2026-11-04",
+    migracao: "0360",
+    titulo: "Cancelar o tratamento venda por venda (plano original e complementos)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na aba Plano, cada venda do cliente tem o seu botão de cancelamento: Cancelar · Plano original e Cancelar · Complemento 1 (2, 3…), cada uma com o seu termo e o seu acerto.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Se o cliente segue em tratamento com outra venda, cancelar uma delas não muda a fase nem pede o destino: o cliente continua na Fase 5. Cancelar o plano original não cancela o complemento.",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.392.1",
     data: "2026-11-04",
     migracao: "0359",

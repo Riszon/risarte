@@ -31,7 +31,16 @@ export function CancelPlanCard({
   negotiationCancelled,
   wasClosed,
   openCancellation,
+  rotulo = null,
+  exigeDestino,
 }: {
+  /** AP107: "Plano original" / "Complemento 1" — um cartão por venda. */
+  rotulo?: string | null;
+  /**
+   * AP107 (0360): o destino de fase só é exigido quando NÃO sobra outra venda
+   * em tratamento. Sem a informação, vale o de sempre (venda fechada).
+   */
+  exigeDestino?: boolean;
   clientId: string;
   negotiationId: string;
   /** PT-00003 — o código da venda continua valendo depois de cancelada. */
@@ -52,11 +61,12 @@ export function CancelPlanCard({
   const [returnDate, setReturnDate] = useState("");
   const [notes, setNotes] = useState("");
 
+  const pedeDestino = exigeDestino ?? wasClosed;
   const errors = cancellationErrors({
     reason,
     destination: destination || null,
     returnDate: returnDate || null,
-    wasClosed,
+    wasClosed: pedeDestino,
   });
 
   function submit() {
@@ -65,7 +75,7 @@ export function CancelPlanCard({
         clientId,
         negotiationId,
         reason,
-        destination: wasClosed ? destination || null : null,
+        destination: pedeDestino ? destination || null : null,
         returnDate: destination === "follow_up" ? returnDate || null : null,
         notes,
       });
@@ -89,7 +99,7 @@ export function CancelPlanCard({
             <span className="mr-2 rounded border border-border bg-background px-1 font-mono text-[11px]">
               {saleCode ?? "—"}
             </span>
-            <strong>Plano cancelado</strong>
+            <strong>{rotulo ? `${rotulo} cancelado` : "Plano cancelado"}</strong>
             {openCancellation?.code ? ` · termo ${openCancellation.code}` : ""}
             <span className="mt-0.5 block text-xs text-muted-foreground">
               As sessões não realizadas e as cobranças em aberto foram
@@ -154,7 +164,7 @@ export function CancelPlanCard({
           onClick={() => setOpen(true)}
         >
           <Ban className="mr-1 size-4" />
-          Cancelar tratamento
+          {rotulo ? `Cancelar · ${rotulo}` : "Cancelar tratamento"}
         </Button>
       </div>
     );
@@ -163,7 +173,15 @@ export function CancelPlanCard({
   return (
     <Card className="border-destructive/40 bg-destructive/5">
       <CardContent className="space-y-2 p-3">
-        <p className="text-sm font-medium">Cancelar tratamento</p>
+        <p className="text-sm font-medium">
+          {rotulo ? `Cancelar · ${rotulo}` : "Cancelar tratamento"}
+        </p>
+        {wasClosed && !pedeDestino && (
+          <p className="rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs text-violet-950 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100">
+            O cliente segue em tratamento com outra venda: cancela-se só esta
+            (as sessões e as cobranças dela), e ele continua na Fase 5.
+          </p>
+        )}
         <p className="text-xs">
           Este passo <strong>não desfaz nada ainda</strong>: apura o acerto de
           contas e gera o <strong>termo</strong> para o paciente assinar.
@@ -177,7 +195,7 @@ export function CancelPlanCard({
           className="min-h-16 w-full rounded-md border border-input bg-transparent p-2 text-xs"
         />
 
-        {wasClosed && (
+        {pedeDestino && (
           <label className="block">
             <span className="text-[11px] font-medium">
               Para onde o paciente vai depois do cancelamento

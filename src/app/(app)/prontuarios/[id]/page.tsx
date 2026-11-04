@@ -1,4 +1,5 @@
 import type { AlertaDaAnamnese } from "@/lib/anamnesis";
+import { outraVendaEmTratamento, type VendaDoCliente } from "@/lib/vendas-do-cliente";
 import { planosVendidos, podeAbrirComplemento } from "@/lib/plano-complementar";
 import type { Metadata } from "next";
 import { idadeCurta, idadeDetalhada } from "@/lib/idade";
@@ -602,26 +603,64 @@ export default async function ClientDetailPage(
     session.isAdminMaster || financeRoles.includes("unit_manager");
   // Inclui a CANCELADA: o plano cancelado precisa continuar mostrando o código
   // da venda, o selo e o link do termo — senão o histórico do paciente some.
-  const { data: cancellableNeg } = canCancelTreatment
+  // AP107 (0360, K1): um cancelamento POR VENDA — o plano original e cada
+  // complemento vendido. Inclui a CANCELADA: o plano cancelado precisa
+  // continuar mostrando o código da venda, o selo e o link do termo.
+  const { data: vendasRows } = canCancelTreatment
     ? await supabase
         .from("plan_negotiations")
-        .select("id, code, status, commercial_sales ( closed_at )")
+        .select(
+          "id, code, status, plan_id, created_at, commercial_sales ( closed_at, cancelled_at ), plano:treatment_plans!plan_negotiations_plan_id_fkey ( complement_of_plan_id, complement_no )"
+        )
         .eq("client_id", client.id)
         .in("status", ["aceita", "cancelada"])
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
+        .order("created_at", { ascending: true })
     : { data: null };
-  const { data: openCancellationRow } = cancellableNeg
-    ? await supabase
-        .from("plan_cancellations")
-        .select("id, code, status")
-        .eq("negotiation_id", cancellableNeg.id as string)
-        .neq("status", "descartado")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
+  const umSo = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
+  const vendasDoCliente: VendaDoCliente[] = ((vendasRows ?? []) as unknown as {
+    id: string;
+    code: string | null;
+    status: string;
+    plan_id: string | null;
+    commercial_sales: { closed_at: string | null; cancelled_at: string | null } | { closed_at: string | null; cancelled_at: string | null }[] | null;
+    plano: { complement_of_plan_id: string | null; complement_no: number | null } | { complement_of_plan_id: string | null; complement_no: number | null }[] | null;
+  }[]).map((v) => {
+    const venda = umSo(v.commercial_sales);
+    const plano = umSo(v.plano);
+    return {
+      negociacaoId: v.id,
+      planoId: v.plan_id,
+      codigo: v.code,
+      situacao: v.status,
+      fechada: Boolean(venda?.closed_at),
+      cancelada: Boolean(venda?.cancelled_at),
+      rotulo: plano?.complement_of_plan_id ? `Complemento ${plano.complement_no ?? ""}`.trim() : "Plano original",
+    };
+  });
+  const { data: termosRows } =
+    vendasDoCliente.length > 0
+      ? await supabase
+          .from("plan_cancellations")
+          .select("id, code, status, negotiation_id, created_at")
+          .in("negotiation_id", vendasDoCliente.map((v) => v.negociacaoId))
+          .neq("status", "descartado")
+          .order("created_at", { ascending: false })
+      : { data: null };
+  const termoDaVenda = new Map<string, { id: string; code: string | null; status: string }>();
+  for (const t of (termosRows ?? []) as { id: string; code: string | null; status: string; negotiation_id: string }[]) {
+    if (!termoDaVenda.has(t.negotiation_id)) termoDaVenda.set(t.negotiation_id, { id: t.id, code: t.code, status: t.status });
+  }
+  const { data: sessoesAbertasRows } =
+    vendasDoCliente.length > 1
+      ? await supabase
+          .from("treatment_sessions")
+          .select("plan_id")
+          .eq("client_id", client.id)
+          .in("status", ["pending", "scheduled"])
+      : { data: null };
+  const planosComSessaoAberta = new Set(
+    ((sessoesAbertasRows ?? []) as { plan_id: string | null }[]).map((r) => r.plan_id).filter((x): x is string => Boolean(x))
+  );
   // 0208: o cabecalho de cada plano mostra o codigo da venda e se foi cancelado.
   const { data: allNegRows } = await supabase
     .from("plan_negotiations")
@@ -641,9 +680,6 @@ export default async function ClientDetailPage(
     }
   }
 
-  const cancellationSale = Array.isArray(cancellableNeg?.commercial_sales)
-    ? cancellableNeg?.commercial_sales[0]
-    : cancellableNeg?.commercial_sales;
   // Selo vermelho na aba: o atraso aparece sem precisar abrir o Financeiro.
   const lateInstallmentCount = receivables.installments.filter(
     (i) => viewInstallment(i, financeToday).isLate
@@ -3534,26 +3570,23 @@ export default async function ClientDetailPage(
                 })()}
               />
             )}
-            {canCancelTreatment && cancellableNeg && (
-              <div className="mt-4">
-                <CancelPlanCard
-                  clientId={client.id}
-                  negotiationId={cancellableNeg.id as string}
-                  saleCode={(cancellableNeg.code as string | null) ?? null}
-                  negotiationCancelled={cancellableNeg.status === "cancelada"}
-                  wasClosed={Boolean(cancellationSale?.closed_at)}
-                  openCancellation={
-                    openCancellationRow
-                      ? {
-                          id: openCancellationRow.id as string,
-                          code: (openCancellationRow.code as string | null) ?? null,
-                          status: openCancellationRow.status as string,
-                        }
-                      : null
-                  }
-                />
-              </div>
-            )}
+            {canCancelTreatment &&
+              vendasDoCliente.map((v) => (
+                <div key={v.negociacaoId} className="mt-4">
+                  <CancelPlanCard
+                    clientId={client.id}
+                    negotiationId={v.negociacaoId}
+                    saleCode={v.codigo}
+                    negotiationCancelled={v.situacao === "cancelada"}
+                    wasClosed={v.fechada}
+                    // AP107: só pede o destino de fase se não sobra outra venda em tratamento.
+                    exigeDestino={v.fechada && !outraVendaEmTratamento(vendasDoCliente, v.negociacaoId, planosComSessaoAberta)}
+                    // Com uma venda só, o cartão fica como sempre foi.
+                    rotulo={vendasDoCliente.length > 1 ? v.rotulo : null}
+                    openCancellation={termoDaVenda.get(v.negociacaoId) ?? null}
+                  />
+                </div>
+              ))}
           </TabPanel>
         )}
 

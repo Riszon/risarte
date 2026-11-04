@@ -391,6 +391,13 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (AP107) — PC Administrador (core 0.392.1 → 0.393.0, migração 0360)**
+
+- **Cancelar o tratamento venda por venda** (bloco 0.393.0 no ESTADO).
+  ⚠️ A regra "outra venda em tratamento" mora em `_outra_venda_em_tratamento`
+  (0360) e em `outraVendaEmTratamento` — mudou uma, muda a outra.
+- ✅ **0360 aplicada na produção** (o dono informou em 04/11/2026) antes do push.
+
 **04/11/2026 (ZS8) — PC Administrador (core 0.392.0 → 0.392.1, migração 0359)**
 
 - **Assinatura digital testada de verdade no sandbox** (bloco 0.392.1 no

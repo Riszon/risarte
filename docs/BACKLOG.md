@@ -56,7 +56,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)** — **medido em 03/11/2026: não acontece com quem envia; virou a redefinição do papel do Consultor RisLife. Entrega 1 (0.387.0, 0353): ele não vê paciente. Entrega 2 (0.390.0, 1039 + 0356): só as empresas e os leads dele, o resumo do uso e o contrato de adesão assinado por ele — resolvido**
 - [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
 - [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
-- [ ] **AP107** — o cartão de cancelar o tratamento no prontuário pega a negociação aceita MAIS RECENTE: depois de vender um complemento, o cancelamento mira o complemento e o plano original fica fora de alcance
+- [x] **AP107** — o cartão de cancelar o tratamento no prontuário pega a negociação aceita MAIS RECENTE: depois de vender um complemento, o cancelamento mira o complemento e o plano original fica fora de alcance — **0.393.0 (0360): um cancelamento por venda (K1–K3)**
 - [ ] **AP106** — o original de fábrica da matriz (`permissions.ts`) não tem ASB nem TSB em entrada/inventário e compras: voltar a ele as desligaria
 - [x] **AP105** — `docs/PRODUCAO-ONLINE.md` não lista 5 variáveis que o código lê: `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`, `ASAAS_API_KEY`, `ASAAS_BASE_URL` — **0.388.1: as cinco entraram na tabela, mais `ASAAS_WEBHOOK_TOKEN` (segredo da Edge Function, no painel do Supabase) e a seção da Edge Function**
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
@@ -956,7 +956,9 @@ existe quando o que importa é se ela existe **naquele papel**.
 
 ## ACHADOS DE PASSAGEM — encontrados fazendo outra coisa (fila viva)
 
-### AP107. Cancelar o tratamento depois de vender um complemento (03/11/2026)
+### AP107. Cancelar o tratamento depois de vender um complemento (03/11/2026) — ✅ RESOLVIDO em 04/11/2026 (core 0.393.0, migração 0360)
+
+**✅ Feito (decisões K1–K3 do dono, `docs/comercial/AP63-AP64-PLANO.md` §7; K3 contra a recomendação):** um cartão de cancelamento por venda no prontuário (`vendasDoCliente`); `_outra_venda_em_tratamento` (0360) e o espelho `outraVendaEmTratamento` (`src/lib/vendas-do-cliente.ts`): sem outra venda fechada, não cancelada e com sessão por fazer, o termo pede destino e o cliente vai à Fase 6/7 como antes; com outra, cancela só aquela venda, a fase não muda e o cartão do Comercial não vira "cancelado". Cancelar o original não cancela o complemento (K3). Ensaio 19/19 (sem a 0360, 2 reprovam). Régua `cancelar-por-venda.test.ts`.
 
 **Confirmado lendo o código; não executado.** O prontuário escolhe a negociação do cartão de cancelamento por `plan_negotiations` do cliente com situação `aceita`/`cancelada`, a mais recente (`cancellableNeg`, `prontuarios/[id]/page.tsx`). Com um plano complementar vendido (AP64), a mais recente é a do complemento: o cartão cancela o complemento e não há como cancelar o plano original pela tela. **Decidir com o dono:** um cartão por venda (original e cada complemento) ou cancelar o conjunto. Achado fazendo o passo 3 da AP64.
 

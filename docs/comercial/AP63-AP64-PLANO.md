@@ -154,3 +154,26 @@ e versão, como os anteriores.
 | **C2** | Qual **contrato** o complemento assina? | **O mesmo modelo de contrato de prestação**, preenchido com os itens e o resumo do complemento. Um "termo aditivo" próprio fica para quando o jurídico pedir. |
 | **C3** | A cobrança do complemento? | **Cobrança própria**, como qualquer venda: forma de pagamento e parcelas do complemento, separadas das da venda original. |
 | **C4** | Onde o cartão "Complemento" fica no quadro? | **Uma coluna própria, "Complementos", no começo do quadro.** O cartão sai de lá quando a venda do complemento fecha. |
+
+---
+
+## 7. AP107 — cancelar o tratamento depois de vender um complemento (04/11/2026)
+
+**Hoje:** o prontuário mostra um cartão de cancelamento para a venda aceita
+**mais recente** do cliente. Depois de vender um complemento, ela é a do
+complemento: o plano original fica sem como ser cancelado pela tela. E o
+cancelamento com termo (`open_plan_cancellation` / `apply_plan_cancellation`)
+foi feito para uma venda só que é o tratamento inteiro: com a venda fechada,
+ele **exige mandar o cliente para a Fase 6 ou 7** e marca o cartão do Comercial
+como "cancelado" — errado quando o que se cancela é só o complemento e o
+tratamento original continua.
+
+**Decisões para o dono:**
+
+| # | Pergunta | Recomendação |
+|---|---|---|
+| **K1** | Um cancelamento **por venda** (o Gerente escolhe: plano original ou complemento N) ou **tudo de uma vez**? | ✅ **Por venda** (dono, 04/11/2026). O cartão lista as vendas do cliente e o Gerente escolhe qual cancelar. Cada uma tem o seu termo e o seu acerto. |
+| **K2** | Cancelar **só o complemento**: o cliente fica na Fase 5? | ✅ **Sim** (dono, 04/11/2026). Param as sessões e as cobranças do complemento; o tratamento original segue; sem destino de fase e sem marcar o cartão do Comercial como cancelado. |
+| **K3** | Cancelar o **plano original** com um complemento ainda em andamento: o complemento vai junto? | ✅ **Não** (dono, 04/11/2026, contra a recomendação): o complemento **não** é cancelado junto; o cliente continua em tratamento, e só vai à Fase 6 ou 7 quando terminar o complemento. |
+
+**A regra que sai de K1–K3:** cancelar uma venda só leva o cliente à Fase 6 ou 7 (e só marca o cartão do Comercial como cancelado) quando **não sobra outra venda em tratamento** — outra venda fechada, não cancelada, com sessão ainda por fazer. Senão, cancela só aquela venda (as sessões e as cobranças dela) e o cliente segue na Fase 5.
