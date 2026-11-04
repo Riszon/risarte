@@ -37,6 +37,39 @@ nos `.env*.local` (fora do Git).
 | `CRON_SECRET` | **Secret** | As rotinas de `/api/cron/*` (`vercel.json`) só rodam com ele; a Vercel manda sozinha em `Authorization: Bearer`. Um por projeto (treino e produção) |
 | `RESEND_API_KEY` | **Secret** | E-mail (ZS3): a cópia assinada ao paciente, o alerta de consumo e o relatório mensal. Sem ela o sistema diz que o e-mail não está configurado e deixa na fila |
 | `EMAIL_FROM` | Config | O remetente, `Risarte Odontologia <assinaturas@dominio-verificado>` — o domínio precisa estar verificado na Resend |
+| `ASAAS_API_KEY` | **Secret** | Cobrança do Empresarial pelo ASAAS (`src/lib/empresarial/asaas.ts`). **Sem ela a integração fica dormente**: cobrança local e baixa manual, e as telas dizem "ASAAS não configurado". Sandbox no treino; produção só no projeto de produção |
+| `ASAAS_BASE_URL` | Config | Opcional. Vazio = sandbox (`https://sandbox.asaas.com/api/v3`); produção: `https://api.asaas.com/v3` |
+| `TREINO_SUPABASE_URL` | Config | **Só no projeto de PRODUÇÃO**: o endereço do banco de treino, para o espelho (`src/lib/espelho-treino.ts`, 0260) copiar equipe, acessos e permissões de lá para cá |
+| `TREINO_SERVICE_ROLE_KEY` | **Secret** | **Só no projeto de PRODUÇÃO**: a chave de serviço do treino, usada pelo mesmo espelho |
+| `GAMMA_API_KEY` | **Secret** | Apresentação comercial pelo Gamma. Sem ela o botão avisa que não está configurado |
+
+### A Edge Function do ASAAS (`supabase/functions/asaas-webhook`) — segredo fora da Vercel
+
+O receptor dos avisos de pagamento do ASAAS **não roda na Vercel**: é uma Edge
+Function do Supabase, publicada por projeto, e o segredo dela fica em
+**Supabase → Edge Functions → Secrets**, não nas variáveis da Vercel.
+
+| Segredo (painel do Supabase) | Observação |
+|---|---|
+| `ASAAS_WEBHOOK_TOKEN` | O mesmo texto cadastrado como *access token* do webhook no painel do ASAAS, enviado no cabeçalho `asaas-access-token`. **Sem ele a função recusa tudo (500)** — desde a 0.388.1 (AP99); antes, sem a variável, ela aceitava qualquer chamada |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Já existem em todo projeto; a função os lê sozinha |
+
+**Em 03/11/2026 a função NÃO estava publicada em nenhum dos dois projetos**
+(`GET` e `POST` em `https://<id>.supabase.co/functions/v1/asaas-webhook`
+respondem `404 {"code":"NOT_FOUND"}`). O dono publica quando tiver a chave do
+ASAAS, **nesta ordem, por projeto**:
+
+1. Cadastrar `ASAAS_WEBHOOK_TOKEN` nos segredos da Edge Function.
+2. `supabase functions deploy asaas-webhook --no-verify-jwt --project-ref <id>`
+   (o ASAAS não manda JWT; a proteção é o token).
+3. Só então cadastrar a URL da função como webhook de pagamentos no painel do
+   ASAAS, informando o mesmo token.
+
+**Como provar de fora, sem gravar nada** (o corpo inválido é recusado antes de
+qualquer escrita): `POST` com `--data 'isto-nao-e-json'` e sem o cabeçalho →
+`401` = segredo cadastrado e exigido; `500 Webhook não configurado` = publicou
+sem o segredo (volte ao passo 1); com o cabeçalho certo → `400 Bad request`.
+`404` = não publicada.
 
 ## Armadilhas da Vercel
 

@@ -1,6 +1,63 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.387.0** · Última migração: **0353** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0353 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.388.1** · Última migração: **0354** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0353 e 0354 só no treino) · Empresarial **0.94.1** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 🔒 0.388.1 — O WEBHOOK DO ASAAS FECHA SEM O SEGREDO; COMPARAÇÃO EM TEMPO CONSTANTE (03/11/2026, sem migração; Empresarial 0.94.1; AP99)
+>
+> Item 1 do plano `docs/sdr/PLANO-CORRECOES-SECAO-2.md` (aprovado pelo dono
+> em 03/11/2026 junto com `docs/sdr/PLANO-FASE-0A.md`). Achado no levantamento
+> da Rita (`docs/sdr/LEVANTAMENTO_DADOS_RITA_RESULTADO.md`, K2).
+>
+> - **Conferido de fora em 03/11/2026:** a Edge Function `asaas-webhook` **não
+>   está publicada em nenhum dos dois projetos** (`GET`/`POST` em
+>   `…/functions/v1/asaas-webhook` → 404 `NOT_FOUND`). O risco era latente:
+>   viraria real no primeiro deploy sem `ASAAS_WEBHOOK_TOKEN` nos segredos.
+> - **`supabase/functions/asaas-webhook/index.ts`:** sem `ASAAS_WEBHOOK_TOKEN`
+>   responde **500 "Webhook não configurado"** antes de ler o corpo (antes, o
+>   `if (expected)` pulava a conferência e aceitava tudo); o token é
+>   comparado em **tempo constante** (SHA-256 dos dois lados + XOR
+>   acumulado, sem importar nada); corpo **sem `id`** responde 400 (antes
+>   ganhava um `crypto.randomUUID()`, e o mesmo corpo reenviado virava evento
+>   novo — a idempotência depende do `id`). Cabeçalho do arquivo com a ordem
+>   obrigatória: segredo → deploy → URL no painel do ASAAS.
+> - **`src/lib/segredo-de-webhook.ts`** (novo, core): `segredoConfere(recebido,
+>   esperado)` com `timingSafeEqual` sobre SHA-256 (tamanhos iguais; segredo
+>   vazio nunca confere). **`src/app/api/webhooks/zapsign/route.ts`** trocou o
+>   `got !== secret` por ela (de carona, mesma classe de defeito). O cron da
+>   Vercel (`cron-auth.ts`) continua com `===`: fica para quando for tocado.
+> - **Régua `src/lib/__tests__/webhook-asaas.test.ts`** lê os dois arquivos:
+>   reprova `if (expected)`, exige a conferência ANTES do `req.json()`,
+>   reprova `!==` e `randomUUID()`. **Provada quebrando** (devolver o
+>   `if (expected)` e o `!==` derruba 3 das 7 conferências).
+> - **`docs/PRODUCAO-ONLINE.md`:** seção da Edge Function (segredo no painel
+>   do Supabase, não na Vercel; ordem do deploy; sondagem de fora) e as cinco
+>   variáveis que faltavam na tabela (`ASAAS_API_KEY`, `ASAAS_BASE_URL`,
+>   `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`) —
+>   fecha o AP105.
+> - **Nada muda nas telas.** Sem manual. **Não visto:** a função publicada de
+>   verdade (o dono publica quando tiver a chave do ASAAS; a sondagem de fora
+>   descrita em `PRODUCAO-ONLINE.md` é a prova no dia).
+> - ⚠️ **O item 4 do plano (escopo do RisLife) NÃO é desta frente:** a sessão
+>   do core já entregou a parte 1 (0.387.0, migração 0353) e planeja a parte 2
+>   (1039, `is_program_manager()` sem o RisLife) no AP95.
+
+> ## 🔁 0.388.0 — DEPOIS DA VENDA CANCELADA, COMPRA-SE POR VERSÃO NOVA (03/11/2026, migração 0354, AP63)
+>
+> Decisão do dono (AP63): depois de cancelar, o cliente compra de novo por uma
+> versão nova do plano, com negociação nova, e o histórico mostra a venda
+> cancelada. Plano em `docs/comercial/AP63-AP64-PLANO.md`.
+>
+> - **0354:** `return_commercial_to_planning` não reabre o plano da venda
+>   cancelada (o cancelamento rápido da 0205 levava a esse beco); gatilho
+>   `treatment_plan_log_cancelled_sales_trg` dá à versão nova o evento
+>   `venda_cancelada_anterior`.
+> - Tela: `AvisoVendaCancelada` no plano e na negociação; o Enviar ao
+>   Comercial recusa o plano da venda cancelada (`src/lib/venda-cancelada.ts`).
+> - Ensaio no treino 7/7 (sem a 0354, 4 reprovam); régua
+>   `venda-cancelada.test.ts`. **Não visto na tela.**
+> - **Na produção:** rodar a 0354. Conferência: true · 1 · false · N
+>   (negociações canceladas que já existem; nada muda nelas).
+> - **Próximo: AP64**, o plano complementar (3 passos, V1–V7 aprovados).
 
 > ## 🧭 0.387.0 — O CONSULTOR RISLIFE FORA DOS PACIENTES (03/11/2026, migração 0353, AP95 entrega 1 + AP91)
 >

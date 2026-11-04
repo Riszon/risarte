@@ -1,3 +1,4 @@
+import { segredoConfere } from "@/lib/segredo-de-webhook";
 import { aplicarWebhook } from "@/lib/signatures/webhook-apply";
 import { zapsignEnv, zapsignWebhookSecret } from "@/lib/zapsign/env";
 import { parseWebhook, webhookMatchesEnvironment } from "@/lib/zapsign/webhook";
@@ -17,7 +18,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const secret = zapsignWebhookSecret();
   const got = request.headers.get("x-riszon-webhook-secret") ?? "";
-  if (!secret || got !== secret) {
+  // Tempo constante (AP99): `!==` para no primeiro byte errado e entrega o
+  // segredo aos poucos pelo tempo de resposta. Segredo ausente nunca confere.
+  if (!secret || !segredoConfere(got, secret)) {
     if (!secret) console.error("zapsign webhook: ZAPSIGN_WEBHOOK_SECRET não configurado");
     return new Response(null, { status: 401 });
   }

@@ -391,6 +391,35 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (Rita — plano 1, item 1) — PC Administrador (core 0.388.0 → 0.388.1, sem migração; Empresarial 0.94.0 → 0.94.1)**
+
+- **Levantamento da Rita entregue e dois planos aprovados pelo dono**
+  (`docs/sdr/LEVANTAMENTO_DADOS_RITA_RESULTADO.md`, `DECISOES_RITA.md`,
+  `PLANO-CORRECOES-SECAO-2.md`, `PLANO-FASE-0A.md`). Achados AP97–AP105 no
+  BACKLOG. ⚠️ Os planos citam "core 0351+" — já é **0355+**.
+- **Item 1 feito: webhook do ASAAS** (bloco 0.388.1 no ESTADO). ⚠️ **A Edge
+  Function NÃO está publicada em nenhum projeto** (404 de fora). Sem
+  `ASAAS_WEBHOOK_TOKEN` ela agora recusa tudo (500); segredo em tempo
+  constante (`src/lib/segredo-de-webhook.ts`, também na rota da ZapSign);
+  corpo sem `id` → 400. Régua `webhook-asaas.test.ts`, provada quebrando.
+- ⚠️ **Webhook novo compara segredo com `segredoConfere`**, nunca `!==`; e
+  **sem a variável, recusa tudo** — nunca `if (variavel) { confere }`.
+- ⚠️ Item 4 do plano (RisLife) é da sessão do core (0353 + AP95/1039): não
+  mexer aqui. Cards propostos ao dono para os itens 2+3 (Indica, 2009/2010)
+  e 6 (Empresarial) em sessões próprias, compartilhando esta pasta sem commit.
+- **Não visto:** a função publicada (o dono publica quando tiver a chave).
+
+**03/11/2026 (AP63) — PC Administrador (core 0.387.0 → 0.388.0, migração 0354)**
+
+- **Venda cancelada → compra por versão nova** (bloco 0.388.0 no ESTADO).
+  ⚠️ Ao recriar `return_commercial_to_planning`, levar a guarda da venda
+  cancelada (régua `venda-cancelada.test.ts`).
+- ⚠️ **Outra sessão trabalha nesta mesma pasta** (ela fez a 0353 e a 0.387.0
+  enquanto eu escrevia): `git pull` e conferir o número da migração e da
+  versão ANTES de gravar.
+- **AP64 aprovado pelo dono** como plano COMPLEMENTAR na Fase 5 (V1–V7 em
+  `docs/comercial/AP63-AP64-PLANO.md`); a fazer em 3 passos.
+
 **03/11/2026 (AP95/AP91) — PC Administrador (core 0.386.0 → 0.387.0, migração 0353)**
 
 - **O Consultor RisLife fora dos pacientes** (bloco 0.387.0 no ESTADO; papel

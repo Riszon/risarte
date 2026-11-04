@@ -62,6 +62,55 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.388.1",
+    data: "2026-11-03",
+    migracao: null,
+    titulo: "Os avisos automáticos do ASAAS e da ZapSign só entram com o segredo certo",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O receptor dos avisos de pagamento do ASAAS (Empresarial) passou a recusar qualquer chamada enquanto o segredo não estiver cadastrado — antes, sem o segredo, ele aceitava tudo. Ele ainda não está publicado: quando for, a ordem é cadastrar o segredo, publicar e só então informar o endereço ao ASAAS. Nada muda nas telas.",
+        papeis: ["finance_franchisor", "franchisor_staff", "rislife_consultant"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Os receptores de avisos do ASAAS e da ZapSign conferem o segredo de um jeito que não deixa pistas pelo tempo de resposta. Nada muda para quem usa o sistema.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
+    versao: "0.388.0",
+    data: "2026-11-03",
+    migracao: "0354",
+    titulo: "Depois de uma venda cancelada, o cliente compra de novo por uma versão nova do plano",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Devolver ao Planejamento não reabre mais o plano da venda cancelada: ele fica guardado como registro do que foi vendido, e o Planner recebe o aviso para criar uma versão nova.",
+        papeis: ["commercial_consultant", "planner_dentist"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O plano e a negociação mostram o aviso \"Este cliente teve uma venda cancelada\", com a venda, a data e o motivo. O plano da venda cancelada mostra \"A venda deste plano foi cancelada\".",
+        papeis: ["planner_dentist", "clinical_coordinator", "commercial_consultant", "unit_manager"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Enviar ao Comercial recusa o plano da venda cancelada. Para vender de novo, crie uma nova versão, aprove e envie a versão nova.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.387.0",
     data: "2026-11-03",
     migracao: "0353",
