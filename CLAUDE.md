@@ -391,20 +391,6 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**04/11/2026 (Rita — plano 1, itens 2 e 3) — PC Administrador (Indica 0.7.0 → 0.8.0, migrações 2009 e 2010)**
-
-- ✅ **"Podemos avisar quem indicou?" (2009):** autorização SEPARADA do aceite
-  LGPD, na indicação (`autoriza_avisar_*`); sem ela as mensagens ao Embaixador
-  saem SEM o nome (não deixam de sair); evento `agendada` sem data nem horário.
-- ✅ **Fila anonimizada e token fora da fila (2010):** `indica.convites_tokens`
-  só `service_role`; a fila guarda `/c/`; "Abrir WhatsApp" do convite monta o
-  link no servidor (`abrirConvite`); `rotina_diaria` anonimiza a fila.
-- ⚠️ `aceitar_convite` mudou de assinatura (3º parâmetro boolean). Eventos
-  `autorizou_aviso`/`revogou_aviso` em `indicacao_eventos` NÃO são etapa:
-  quem contar por `status_para` precisa ignorá-los.
-- `changelog.ts` e o manual da equipe NÃO tocados (módulo escondido): texto
-  pronto em `docs/indica-mais-risos/MANUAL-rascunho.md`.
-- Não visto na tela. Pendente: a janela "Pedir indicação" (lote) sem a pergunta.
 **04/11/2026 (Rita — plano 1, itens 5a/5b/7) — PC Administrador (core 0.394.0 → 0.396.0, migrações 0362 e 0364)**
 
 - ✅ **AP104 PROVADO em UTC e corrigido:** a lista de próximos horários é a
