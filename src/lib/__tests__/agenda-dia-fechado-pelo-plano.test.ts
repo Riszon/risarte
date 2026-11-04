@@ -80,9 +80,13 @@ describe("as duas réguas da agenda usam a mesma regra", () => {
     expect(acoes).toMatch(/holidayDecision\?\.will_attend === true\) &&\s*!fechadoPeloPlano;/);
   });
   it("e a lista de próximos horários (que antes nem lia o plano)", () => {
-    expect(acoes).toMatch(/const plano = situacaoDoPlanoNoDia\(itensDoPlano, dateOnly, providerUserId \|\| null, isOnline\);/);
-    expect(acoes).toMatch(/if \(plano\.bloqueia\) continue;/);
-    expect(acoes).toMatch(/if \(plano\.fechaODia && !special\) continue;/);
-    expect(acoes).toMatch(/const isNormalDay = \(isWeekdayOpen \|\| hd === true\) && !plano\.fechaODia;/);
+    // AP104 (0.396.0): a conta da lista saiu da action para o módulo puro
+    // `horarios-livres.ts`; a action só lê o banco e chama a conta.
+    const lista = readFileSync(join(__dirname, "..", "horarios-livres.ts"), "utf8");
+    expect(lista).toMatch(/const plano = situacaoDoPlanoNoDia\(itensDoPlano, dateOnly, providerUserId \|\| null, isOnline\);/);
+    expect(acoes).toMatch(/return horariosLivres\(\{/);
+    expect(lista).toMatch(/if \(plano\.bloqueia\) continue;/);
+    expect(lista).toMatch(/if \(plano\.fechaODia && !special\) continue;/);
+    expect(lista).toMatch(/const isNormalDay = \(isWeekdayOpen \|\| hd === true\) && !plano\.fechaODia;/);
   });
 });

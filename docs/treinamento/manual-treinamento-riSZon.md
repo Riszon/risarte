@@ -2467,6 +2467,14 @@ trabalha. **Duração estimada:** 60 minutos.
 4. **O sistema recusa** horário fora do funcionamento da unidade, dia fechado ou
    sala lotada — exceto urgência/emergência.
 
+> **Sala ocupada é recusada pelo próprio banco** (desde a versão 0.396.0): se
+> duas pessoas tentarem marcar a mesma sala, o mesmo profissional ou o mesmo
+> cliente no mesmo instante, só a primeira entra; a segunda vê **"Esta sala já
+> está ocupada neste horário"** (ou a mensagem do profissional / do cliente).
+> Urgência e emergência continuam encaixando. A lista de **Próximos horários
+> disponíveis** passou a seguir o calendário brasileiro: antes, no servidor,
+> ela podia sugerir um dia fechado (domingo) e pular a sexta.
+
 > **Recesso com horário avulso: vale só o avulso** (desde a versão 0.321.0).
 > Num dia fechado pelo **Planejamento anual** — recesso, férias coletivas,
 > evento, treinamento ou manutenção —, liberar um horário avulso abre **só a

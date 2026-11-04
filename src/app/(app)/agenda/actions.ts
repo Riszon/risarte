@@ -45,11 +45,14 @@ import {
 } from "@/lib/annual-plan";
 import { holidayOn } from "@/lib/holidays";
 
-/** "minutes since midnight" → "HH:MM". */
-function minutesToHHMM(m: number): string {
-  const mm = ((m % 1440) + 1440) % 1440;
-  return `${String(Math.floor(mm / 60)).padStart(2, "0")}:${String(mm % 60).padStart(2, "0")}`;
-}
+// A conta dos próximos horários livres é PURA e mora em `@/lib/horarios-livres`
+// (AP104): aqui só se lê o banco e se traduzem as linhas.
+import {
+  horariosLivres,
+  janelaDosHorarios,
+  minutesToHHMM,
+  type AgendamentoOcupado,
+} from "@/lib/horarios-livres";
 
 /** Agenda config the scheduling dialog needs to offer only valid slots/rooms. */
 export type AgendaFormConfig = {
@@ -714,6 +717,14 @@ export async function createAppointment(
           "Este profissional já tem um agendamento neste horário. Escolha outro horário (ou use Urgência/Emergência para encaixe).",
       };
     }
+    // 0362 (AP103): a sala agora também é conferida no banco.
+    if (error.message.includes("ROOM_TIME_CONFLICT")) {
+      return {
+        ok: false,
+        error:
+          "Esta sala já está ocupada neste horário. Escolha outra sala/horário (ou use Urgência/Emergência para encaixe).",
+      };
+    }
     console.error("createAppointment failed:", error.message);
     return { ok: false, error: "Não foi possível criar o agendamento." };
   }
@@ -1160,6 +1171,14 @@ export async function updateAppointment(
         ok: false,
         error:
           "Este profissional já tem um agendamento neste horário. Escolha outro horário (ou use Urgência/Emergência para encaixe).",
+      };
+    }
+    // 0362 (AP103): a sala agora também é conferida no banco.
+    if (error.message.includes("ROOM_TIME_CONFLICT")) {
+      return {
+        ok: false,
+        error:
+          "Esta sala já está ocupada neste horário. Escolha outra sala/horário (ou use Urgência/Emergência para encaixe).",
       };
     }
     console.error("updateAppointment failed:", error.message);
@@ -2304,6 +2323,8 @@ export async function notifyPendingHolidays(
 // Smart scheduling (GR1): next available slots and per-day counts for the
 // "Ver agenda" picker.
 // ---------------------------------------------------------------------------
+// O mesmo formato de `@/lib/horarios-livres` — declarado aqui porque um
+// módulo "use server" não pode REEXPORTAR (o Turbopack trata como valor).
 export type AvailableSlot = { date: string; time: string };
 
 /**
@@ -2326,13 +2347,15 @@ export async function getNextAvailableSlots(params: {
   const limit = Math.max(1, Math.min(30, params.limit || 3));
   if (!clinicId) return [];
 
-  const DAYS_AHEAD = 45;
-  const now = new Date();
-  const winStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const winEnd = new Date(winStart);
-  winEnd.setDate(winEnd.getDate() + DAYS_AHEAD);
-  const startIso = winStart.toISOString();
-  const endIso = winEnd.toISOString();
+  // AP104: a janela é o dia civil BRASILEIRO de hoje até 45 dias à frente
+  // (antes nascia na meia-noite da MÁQUINA — em UTC, a lista oferecia domingo
+  // e pulava a sexta). O banco é filtrado pelos mesmos limites da conta.
+  const agora = new Date();
+  const janela = janelaDosHorarios(agora);
+  const startIso = janela.inicioIso;
+  const endIso = janela.fimIso;
+  const hojeIso = janela.hojeIso;
+  const fimIso = toIsoDate(janela.fim);
 
   const supabase = await createClient();
   const [
@@ -2361,20 +2384,21 @@ export async function getNextAvailableSlots(params: {
       .from("agenda_open_days")
       .select("date, start_time, end_time")
       .eq("clinic_id", clinicId)
-      .gte("date", toIsoDate(winStart))
-      .lt("date", toIsoDate(winEnd)),
+      .gte("date", hojeIso)
+      .lt("date", fimIso),
     supabase
       .from("clinic_holiday_decisions")
       .select("holiday_date, will_attend")
       .eq("clinic_id", clinicId)
-      .gte("holiday_date", toIsoDate(winStart))
-      .lt("holiday_date", toIsoDate(winEnd)),
+      .gte("holiday_date", hojeIso)
+      .lt("holiday_date", fimIso),
     supabase
       .from("appointments")
       .select("provider_user_id, room_id, client_id, starts_at, ends_at, status, type")
       .eq("clinic_id", clinicId)
       .gte("starts_at", startIso)
-      .lt("starts_at", endIso),
+      .lt("starts_at", endIso)
+      .returns<AgendamentoOcupado[]>(),
     // AP41: o Planejamento Anual da unidade E da rede, na janela — sem ele, a
     // lista oferecia horários num dia de recesso que o agendamento recusava.
     supabase
@@ -2383,8 +2407,8 @@ export async function getNextAvailableSlots(params: {
         "id, clinic_id, type, locked, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
       )
       .or(`clinic_id.eq.${clinicId},clinic_id.is.null`)
-      .lte("starts_date", toIsoDate(winEnd))
-      .gte("ends_date", toIsoDate(winStart)),
+      .lte("starts_date", fimIso)
+      .gte("ends_date", hojeIso),
   ]);
   const itensDoPlano = (planRows ?? []).map((r) => mapPlanItem(r as PlanItemRow));
 
@@ -2420,103 +2444,23 @@ export async function getNextAvailableSlots(params: {
   }[]) {
     holidayDecision.set(r.holiday_date, r.will_attend);
   }
-  const active = (s: string) => s !== "cancelled" && s !== "no_show";
-  const appts = (apptRows ?? []).filter((a) => active(a.status));
 
-  const lunchStart = cfg.lunchEnabled ? timeToMinutes(cfg.lunchStart) : -1;
-  const lunchEnd = cfg.lunchEnabled ? timeToMinutes(cfg.lunchEnd) : -1;
-  const nowMs = Date.now();
-  const slots: AvailableSlot[] = [];
-
-  for (let d = 0; d < DAYS_AHEAD && slots.length < limit; d++) {
-    const day = new Date(winStart);
-    day.setDate(day.getDate() + d);
-    const dateOnly = toIsoDate(day);
-    const hd = holidayDecision.get(dateOnly);
-    // O feriado é da unidade; o consultor remoto não fecha por causa dele.
-    if (hd === false && !jornadaOnline) continue;
-    const isWeekdayOpen = (jornadaOnline ?? cfg).weekdays.includes(day.getDay());
-    // Dia avulso é ato da unidade (abrir a porta num sábado): não muda a
-    // jornada de quem atende de casa.
-    const special = jornadaOnline ? undefined : openDayHours.get(dateOnly);
-    const dayOpen = isWeekdayOpen || Boolean(special) || (hd === true && !jornadaOnline);
-    if (!dayOpen) continue;
-    // AP41: a mesma régua da validação. Férias / período da rede travado:
-    // ninguém marca. Período da unidade: fechado — só abre com dia avulso, e
-    // aí vale só a janela dele.
-    const plano = situacaoDoPlanoNoDia(itensDoPlano, dateOnly, providerUserId || null, isOnline);
-    if (plano.bloqueia) continue;
-    if (plano.fechaODia && !special) continue;
-    // AJ7: dia avulso num dia NORMAL estende (une); em dia fechado usa a própria.
-    const normalOpenMin = timeToMinutes((jornadaOnline ?? cfg).openTime);
-    const normalCloseMin = timeToMinutes((jornadaOnline ?? cfg).closeTime);
-    const isNormalDay = (isWeekdayOpen || hd === true) && !plano.fechaODia;
-    const openMin = special
-      ? isNormalDay
-        ? Math.min(normalOpenMin, special.open)
-        : special.open
-      : normalOpenMin;
-    const closeMin = special
-      ? isNormalDay
-        ? Math.max(normalCloseMin, special.close)
-        : special.close
-      : normalCloseMin;
-
-    for (let m = openMin; m + durationMin <= closeMin && slots.length < limit; m += 15) {
-      // Skip the lunch break (not online).
-      if (
-        cfg.lunchEnabled &&
-        !isOnline &&
-        m < lunchEnd &&
-        m + durationMin > lunchStart
-      ) {
-        continue;
-      }
-      const startMs = instantFromBrazil(dateOnly, minutesToHHMM(m)).getTime();
-      const endMs = startMs + durationMin * 60_000;
-      // Sem a conversão certa, os horários das próximas 3 horas sumiam da lista
-      // de opções — eles nasciam no passado.
-      if (startMs < nowMs) continue;
-
-      const closed = closures.some((c) =>
-        closureBlocks(c, {
-          startMs,
-          endMs,
-          roomId: isOnline ? null : roomId,
-          providerId: providerUserId,
-        })
-      );
-      if (closed) continue;
-
-      const overlap = (s: string, e: string) =>
-        startMs < new Date(e).getTime() && endMs > new Date(s).getTime();
-      if (
-        providerUserId &&
-        appts.some(
-          (a) =>
-            a.provider_user_id === providerUserId &&
-            a.type !== "urgency" &&
-            a.type !== "emergency" &&
-            overlap(a.starts_at, a.ends_at)
-        )
-      )
-        continue;
-      if (
-        !isOnline &&
-        roomId &&
-        appts.some((a) => a.room_id === roomId && overlap(a.starts_at, a.ends_at))
-      )
-        continue;
-      if (
-        clientId &&
-        appts.some((a) => a.client_id === clientId && overlap(a.starts_at, a.ends_at))
-      )
-        continue;
-
-      slots.push({ date: dateOnly, time: minutesToHHMM(m) });
-    }
-  }
-  return slots;
+  return horariosLivres({
+    agora,
+    cfg,
+    jornadaOnline,
+    isOnline,
+    providerUserId,
+    roomId,
+    clientId,
+    durationMin,
+    limit,
+    closures,
+    openDayHours,
+    holidayDecision,
+    appts: apptRows ?? [],
+    itensDoPlano,
+  });
 }
 
 // H3.2: situação de cada dia no pop-up "Ver agenda".

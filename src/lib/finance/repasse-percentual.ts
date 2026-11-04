@@ -52,7 +52,8 @@ export function lerPercentual(texto: string): number | null {
 
 /**
  * O que gravar no cadastro do procedimento (`commission_fixed_cents` e
- * `commission_percent`), a partir do que veio da tela:
+ * `commission_percent` — desde a 0364 na irmã `procedure_commissions`, que só
+ * Admin, Planner e Financeiro leem), a partir do que veio da tela:
  *
  * - veio valor em R$ → grava o valor e zera o percentual;
  * - veio só percentual e há preço → converte para R$ e zera o percentual;

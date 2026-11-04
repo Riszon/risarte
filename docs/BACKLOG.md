@@ -42,7 +42,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP100** — Indica: o token do convite (`/c/<token>`) fica EM CLARO em `indica.mensagens.link_caminho`, legível por qualquer Risartano da unidade; a tabela só guarda o hash
 - [ ] **AP101** — Indica: a anonimização (7 dias sem aceite e 12 meses encerrada) só descarta as mensagens; nome, telefone e texto do indicado continuam em `indica.mensagens`
 - [ ] **AP102** — Indica: com a chave de serviço (`auth.uid()` nulo) TODAS as funções de escrita pulam a guarda — inclusive as de gestor (`cancelada`, `ajustar_pontos`, `mudar_resgate`, `usar_voucher`, `aprovar_apuracao`); `embaixadores`, `mensagens`, `consentimentos` e `config` não têm trava
-- [ ] **AP103** — agendamento sem lock: a trava de conflito (`check_appointment_conflict`) é um `exists` sem exclusion constraint nem advisory lock; sala, fechamento, feriado e horário só são conferidos na action — dois inserts simultâneos podem passar
+- [x] **AP103** — agendamento sem lock: a trava de conflito (`check_appointment_conflict`) é um `exists` sem exclusion constraint nem advisory lock; sala, fechamento, feriado e horário só são conferidos na action — dois inserts simultâneos podem passar — **resolvido em 0.396.0 (0362): advisory lock por cliente/profissional/sala no gatilho e conflito de SALA no banco (`ROOM_TIME_CONFLICT`); provado com duas conexões no treino**
+- [x] **AP110** — `procedures` com leitura liberada expunha `commission_percent`/`commission_fixed_cents` a qualquer logado (item 7 do plano da Rita, H1) — **resolvido em 0.396.0 (0364): tabela irmã `procedure_commissions`, só Admin/Planner/Financeiro leem; dados movidos antes de derrubar as colunas**
 
 **Dependem do Risarte Academy**
 - [ ] **AP17 + "ACADEMY — PARA RETOMAR"** — o dono roda a consulta só-leitura das 5 funções do Academy
@@ -55,7 +56,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): **D1–D9 decididas em 03/11/2026** (Gemini 3.1 Pro no Vertex AI em São Paulo; conta central da Risarte organiza o Meet; apresentar dentro do Meet fica para depois). Próximo: fase IA1. **O envio pelo WhatsApp do riSZon tem passo a passo próprio: `docs/whatsapp/WHATSAPP-PASSO-A-PASSO.md` (decisões W1–W4 abertas)**
 - [x] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)** — **medido em 03/11/2026: não acontece com quem envia; virou a redefinição do papel do Consultor RisLife. Entrega 1 (0.387.0, 0353): ele não vê paciente. Entrega 2 (0.390.0, 1039 + 0356): só as empresas e os leads dele, o resumo do uso e o contrato de adesão assinado por ele — resolvido**
 - [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
-- [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
+- [x] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução — **PROVADO em 04/11/2026 (teste com `TZ=UTC`: oferecia domingo e pulava a sexta, em qualquer hora do dia) e resolvido em 0.396.0: conta pura em `src/lib/horarios-livres.ts` com o calendário brasileiro**
+- [ ] **AP109** — a mesma raiz do AP104 em `getMonthAgendaPeek` (o "Ver agenda": `new Date(ref.getFullYear(), …)`, `day.getDay()` e `new Date(\`${dateOnly}T…\`)` partido em linhas, que a 1ª forma da régua não pega) e em `comercial/dashboard`, `comercial/venda-direta`, `empresarial/painel` e `ppr/painel` (`new Date(now.getFullYear(), …)` como fronteira de período); listados como débitos conhecidos na 4ª forma de `dates.test.ts`
 - [x] **AP107** — o cartão de cancelar o tratamento no prontuário pega a negociação aceita MAIS RECENTE: depois de vender um complemento, o cancelamento mira o complemento e o plano original fica fora de alcance — **0.393.0 (0360): um cancelamento por venda (K1–K3)**
 - [ ] **AP106** — o original de fábrica da matriz (`permissions.ts`) não tem ASB nem TSB em entrada/inventário e compras: voltar a ele as desligaria
 - [x] **AP105** — `docs/PRODUCAO-ONLINE.md` não lista 5 variáveis que o código lê: `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`, `ASAAS_API_KEY`, `ASAAS_BASE_URL` — **0.388.1: as cinco entraram na tabela, mais `ASAAS_WEBHOOK_TOKEN` (segredo da Edge Function, no painel do Supabase) e a seção da Edge Function**
@@ -3003,7 +3005,16 @@ quando um processo (a Rita) passar a usá-la. **Caminho:** funções `rita_*`
 estreitas com autor, ou um papel próprio do Postgres. Visto no levantamento da
 Rita (E5, seção 5).
 
-### AP103. O agendamento não tem lock de verdade (03/11/2026)
+### AP103. O agendamento não tem lock de verdade (03/11/2026) — ✅ Resolvido em 0.396.0
+
+**Resolução (0362, plano §5b como aprovado):** `pg_advisory_xact_lock` por
+cliente → profissional → sala no início de `check_appointment_conflict`
+(ordem fixa, sem espera em círculo) e o conflito de SALA no mesmo gatilho
+(`ROOM_TIME_CONFLICT`, com a exceção de urgência/emergência). Provado no
+treino com duas conexões: antes, B gravava na hora com A aberta; depois, B
+espera A terminar. Fechamento, feriado, horário e almoço seguem na action.
+
+**O registro original:**
 
 **Confirmado, lendo o código:** o gatilho `appointments_conflict_check`
 (`check_appointment_conflict`, 0171:26-95) decide por um `exists` sem
@@ -3016,7 +3027,17 @@ recepção por unidade o risco é baixo; com um processo agendando ao mesmo temp
 tstzrange) por profissional e sala, ou advisory lock na RPC de agendar. Visto
 no levantamento da Rita (C2).
 
-### AP104. Suspeita de fuso nos horários livres da agenda (03/11/2026)
+### AP104. Suspeita de fuso nos horários livres da agenda (03/11/2026) — ✅ Provado e resolvido em 0.396.0
+
+**Resolução (plano §5a):** a conta foi extraída para `src/lib/horarios-livres.ts`
+e o teste `horarios-livres.test.ts` roda com o relógio em UTC: contra o código
+antigo reprovou 6 de 8 — **em qualquer hora do dia** a lista conferia o dia da
+semana do dia seguinte (oferecia domingo 08:00 numa unidade fechada no fim de
+semana e pulava a sexta). Corrigido com `startOfDayInBrazil`/`addDaysIso`/
+`weekdayOf`; `dates.test.ts` ganhou a 4ª forma (`new Date(x.getFullYear(), …)`
+em código de servidor), com débitos conhecidos no AP109.
+
+**O registro original:**
 
 **Suspeita, não provada em execução:** em `getNextAvailableSlots`
 (`src/app/(app)/agenda/actions.ts`), a janela começa em `new Date(now.getFullYear(),
@@ -3945,3 +3966,33 @@ manual (13d.4) já orienta a conferir e cancelar o antigo.
 - ☐ **E2E da suíte inteira** não roda no treino: a trava da limpeza recusa
   apagar 12 tabelas do Empresarial e do Indica (a ZS8 rodou só o próprio teste,
   com `SEM_LIMPEZA=1`). Decidir com as sessões dos outros módulos.
+
+### AP109. A mesma raiz do AP104 no "Ver agenda" e em quatro telas de período (04/11/2026)
+
+**Confirmado, lendo o código** (achado ao provar o AP104; não medido em
+execução): `getMonthAgendaPeek` (`agenda/actions.ts`) monta o mês e cada dia
+com `new Date(ref.getFullYear(), ref.getMonth(), d)` e lê `day.getDay()` no
+relógio da máquina — a mesma conta que a prova do AP104 mostrou errar um dia
+em UTC —, e converte o horário com ``new Date(`${dateOnly}T${hora}:00`)``
+partido em duas linhas, que a 1ª forma da régua `dates.test.ts` (`new Date(` +
+crase na mesma linha) não pega. Na Vercel, a contagem de horários livres por
+dia do pop-up pode sair deslocada. Mesma forma (fronteira de período pela
+meia-noite da máquina) em `comercial/dashboard/page.tsx`,
+`comercial/venda-direta/page.tsx`, `empresarial/painel/page.tsx` e
+`ppr/painel/page.tsx`. **Os cinco estão na lista de débitos conhecidos da 4ª
+forma de `dates.test.ts`** (a régua reprova arquivo novo e reprova se um
+débito sumir sem sair da lista). **Caminho:** o pop-up pode reusar
+`janelaDosHorarios`/`horariosLivres` (`src/lib/horarios-livres.ts`); as telas
+de período, `startOfTodayInBrazil`/`monthRangeOf`; e a 1ª forma da régua
+aceitar espaço/quebra de linha depois de `new Date(`.
+
+### AP110. `procedures` com leitura liberada expunha as comissões (item 7 do plano da Rita) — ✅ Resolvido em 0.396.0
+
+**Resolução (0364, opção A como aprovada):** `procedure_commissions`
+(irmã, pk = procedimento) com regra de linha para Admin Master, Planner e
+Financeiro da Franqueadora; grava só o Admin. Dados MOVIDOS antes de derrubar
+`commission_percent`/`commission_fixed_cents` (`-- DESTRUTIVO` declarado);
+`payout_rate_for`/`payout_rate_by_level` leem a irmã; o app grava e lê por
+ela. Provado no treino: sem login e recepção leem nada; a coluna antiga não
+existe mais; Planner e Financeiro leem; a conta do repasse não mudou.
+Registro de origem: `docs/sdr/LEVANTAMENTO_DADOS_RITA_RESULTADO.md` (H1).

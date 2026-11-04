@@ -164,6 +164,40 @@ function parseProcedure(
   };
 }
 
+/**
+ * 0364: o repasse NÃO mora mais em `procedures` — fica na irmã
+ * `procedure_commissions` (só Admin, Planner e Financeiro leem). Separa o que
+ * vai para cada tabela.
+ */
+type Comissao = { commission_percent: number; commission_fixed_cents: number };
+type ColunasDoProcedimento = Omit<ParsedProcedure, keyof Comissao>;
+function separarComissao(values: ParsedProcedure): {
+  colunas: ColunasDoProcedimento;
+  comissao: Comissao;
+} {
+  const { commission_percent, commission_fixed_cents, ...colunas } = values;
+  return { colunas, comissao: { commission_percent, commission_fixed_cents } };
+}
+
+/** Grava o repasse de um ou mais procedimentos na irmã (upsert). */
+async function gravarComissao(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  linhas: { procedure_id: string; commission_percent: number; commission_fixed_cents: number }[]
+): Promise<string | null> {
+  if (linhas.length === 0) return null;
+  const { error } = await supabase
+    .from("procedure_commissions")
+    .upsert(
+      linhas.map((l) => ({ ...l, updated_at: new Date().toISOString() })),
+      { onConflict: "procedure_id" }
+    );
+  if (error) {
+    console.error("gravarComissao failed:", error.message);
+    return "O procedimento foi salvo, mas a comissão NÃO foi gravada.";
+  }
+  return null;
+}
+
 async function logChange(
   procedureId: string,
   userId: string,
@@ -188,15 +222,18 @@ export async function addProcedure(
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
+  const { colunas, comissao } = separarComissao(parsed.values);
   const { data, error } = await supabase
     .from("procedures")
-    .insert(parsed.values)
+    .insert(colunas)
     .select("id")
     .single();
   if (error || !data) {
     console.error("addProcedure failed:", error?.message);
     return { ok: false, error: "Não foi possível adicionar o procedimento." };
   }
+  const erroDaComissao = await gravarComissao(supabase, [{ procedure_id: data.id, ...comissao }]);
+  if (erroDaComissao) return { ok: false, error: erroDaComissao };
   await logChange(data.id, session.userId, "Procedimento criado.");
   await logAudit({
     action: "create",
@@ -241,21 +278,32 @@ export async function editProcedure(
   }
 
   const supabase = await createClient();
-  const { data: old } = await supabase
-    .from("procedures")
-    .select(
-      "name, tuss_code, specialty, pillar, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, estimated_minutes, direct_sale, direct_sale_reception, direct_sale_sdr"
-    )
-    .eq("id", id)
-    .single();
+  const [{ data: oldCols }, { data: oldComissao }] = await Promise.all([
+    supabase
+      .from("procedures")
+      .select(
+        "name, tuss_code, specialty, pillar, default_price_cents, min_price_cents, max_price_cents, estimated_minutes, direct_sale, direct_sale_reception, direct_sale_sdr"
+      )
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("procedure_commissions")
+      .select("commission_percent, commission_fixed_cents")
+      .eq("procedure_id", id)
+      .maybeSingle(),
+  ]);
+  const old = oldCols
+    ? { ...oldCols, ...(oldComissao ?? { commission_percent: 0, commission_fixed_cents: 0 }) }
+    : null;
+  const { colunas, comissao } = separarComissao(parsed.values);
 
   // Preço novo com data futura: o resto salva agora; o preço fica AGENDADO
   // (o de hoje não muda até lá).
   const agendarPreco =
     quando === "futuro" && old != null && parsed.values.default_price_cents !== old.default_price_cents;
   const valores = agendarPreco
-    ? { ...parsed.values, default_price_cents: old.default_price_cents }
-    : parsed.values;
+    ? { ...colunas, default_price_cents: old.default_price_cents }
+    : colunas;
 
   const { error } = await supabase
     .from("procedures")
@@ -265,6 +313,8 @@ export async function editProcedure(
     console.error("editProcedure failed:", error.message);
     return { ok: false, error: "Não foi possível salvar o procedimento." };
   }
+  const erroDaComissao = await gravarComissao(supabase, [{ procedure_id: id, ...comissao }]);
+  if (erroDaComissao) return { ok: false, error: erroDaComissao };
 
   // History: which labelled fields changed (no need to record values).
   const changed: string[] = [];
@@ -451,15 +501,24 @@ export async function importProcedures(
 
   let inserted = 0;
   if (toInsert.length > 0) {
+    // As linhas voltam na ordem em que foram mandadas — é assim que cada
+    // comissão encontra o seu procedimento recém-criado.
     const { data, error } = await supabase
       .from("procedures")
-      .insert(toInsert)
+      .insert(toInsert.map((v) => separarComissao(v).colunas))
       .select("id");
     if (error) {
       console.error("importProcedures insert failed:", error.message);
       return { ok: false, error: "Não foi possível importar (inserção)." };
     }
     inserted = data?.length ?? 0;
+    if (data && data.length === toInsert.length) {
+      const erroDaComissao = await gravarComissao(
+        supabase,
+        data.map((p, i) => ({ procedure_id: p.id, ...separarComissao(toInsert[i]).comissao }))
+      );
+      if (erroDaComissao) return { ok: false, error: erroDaComissao };
+    }
     if (data && data.length > 0) {
       await supabase.from("procedure_changes").insert(
         data.map((p) => ({
@@ -473,11 +532,14 @@ export async function importProcedures(
 
   let updated = 0;
   for (const u of toUpdate) {
+    const { colunas, comissao } = separarComissao(u.values);
     const { error } = await supabase
       .from("procedures")
-      .update({ ...u.values, updated_at: new Date().toISOString() })
+      .update({ ...colunas, updated_at: new Date().toISOString() })
       .eq("id", u.id);
     if (!error) {
+      const erroDaComissao = await gravarComissao(supabase, [{ procedure_id: u.id, ...comissao }]);
+      if (erroDaComissao) return { ok: false, error: erroDaComissao };
       updated += 1;
       await logChange(u.id, session.userId, "Atualizado (importação de planilha).");
     }
@@ -666,16 +728,31 @@ export async function setCommissionBulk(input: {
     return { ok: false, error: "Nenhum procedimento no escopo selecionado." };
   }
 
-  const patch: Record<string, number | string> = {
-    updated_at: new Date().toISOString(),
-  };
-  if (percent !== null) patch.commission_percent = percent;
-  if (fixedCents !== null) patch.commission_fixed_cents = fixedCents;
-
   const ids = procs.map((p) => p.id);
-  const { error } = await supabase.from("procedures").update(patch).in("id", ids);
-  if (error) {
-    console.error("setCommissionBulk failed:", error.message);
+  // 0364: a comissão mora na irmã. O que não foi informado (% ou R$) fica
+  // como está em cada procedimento.
+  const { data: atuais, error: erroDeLeitura } = await supabase
+    .from("procedure_commissions")
+    .select("procedure_id, commission_percent, commission_fixed_cents")
+    .in("procedure_id", ids)
+    .returns<{ procedure_id: string; commission_percent: number; commission_fixed_cents: number }[]>();
+  if (erroDeLeitura) {
+    console.error("setCommissionBulk (leitura) failed:", erroDeLeitura.message);
+    return { ok: false, error: "Não foi possível aplicar a comissão." };
+  }
+  const porId = new Map((atuais ?? []).map((c) => [c.procedure_id, c]));
+  const erroDaComissao = await gravarComissao(
+    supabase,
+    ids.map((id) => {
+      const atual = porId.get(id) ?? { commission_percent: 0, commission_fixed_cents: 0 };
+      return {
+        procedure_id: id,
+        commission_percent: percent ?? atual.commission_percent,
+        commission_fixed_cents: fixedCents ?? atual.commission_fixed_cents,
+      };
+    })
+  );
+  if (erroDaComissao) {
     return { ok: false, error: "Não foi possível aplicar a comissão." };
   }
 
@@ -1221,11 +1298,14 @@ export async function approveProcedureSuggestion(id: string, input: ProcedureInp
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("procedures").insert(parsed.values).select("id").single();
+  const { colunas, comissao } = separarComissao(parsed.values);
+  const { data, error } = await supabase.from("procedures").insert(colunas).select("id").single();
   if (error || !data) {
     console.error("approveProcedureSuggestion (cadastro) failed:", error?.message);
     return { ok: false, error: "Não foi possível cadastrar o procedimento." };
   }
+  const erroDaComissao = await gravarComissao(supabase, [{ procedure_id: data.id, ...comissao }]);
+  if (erroDaComissao) return { ok: false, error: erroDaComissao };
   const { error: erroDaLigacao } = await supabase.rpc("approve_procedure_suggestion", {
     p_id: id,
     p_procedure_id: data.id,

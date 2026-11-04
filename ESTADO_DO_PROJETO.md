@@ -1,6 +1,92 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.394.0** · Última migração: **0361** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migração: **0364** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🔒 0.396.0 — AGENDA SEM FURO E COMISSÕES FORA DO CATÁLOGO (04/11/2026, migrações 0362 e 0364, AP103 + AP104 + item 7 do plano da Rita)
+>
+> Itens 5a, 5b e 7 de `docs/sdr/PLANO-CORRECOES-SECAO-2.md` (aprovado pelo
+> dono em 03/11/2026), exatamente como escritos.
+>
+> **5a — AP104 PROVADO (e maior do que a suspeita).** A conta dos próximos
+> horários saiu de `getNextAvailableSlots` para o módulo puro
+> `src/lib/horarios-livres.ts` (a action só lê o banco e chama
+> `horariosLivres`). O teste `horarios-livres.test.ts` roda com o relógio da
+> máquina em **UTC** (como a Vercel) e, contra o código antigo, reprovou 6 de
+> 8: a janela nascia em `new Date(ano, mês, dia)` (meia-noite da máquina) e o
+> dia da semana vinha de `day.getDay()` — em UTC a lista oferecia **domingo
+> 08:00** numa unidade fechada no fim de semana e **pulava a sexta**, em
+> QUALQUER hora do dia (não só à noite). Correção: `janelaDosHorarios`
+> (dia civil brasileiro, `startOfDayInBrazil`/`addDaysIso`) e `weekdayOf`.
+> A régua `dates.test.ts` ganhou a 4ª forma, `new Date(x.getFullYear(), …)`
+> em código de servidor, com a lista de **débitos conhecidos** (AP109).
+>
+> **5b — AP103 (0362).** `check_appointment_conflict` recriada: no início,
+> `pg_advisory_xact_lock` por **cliente → profissional → sala** (ordem fixa,
+> sem espera em círculo); conflito de **SALA** no gatilho
+> (`ROOM_TIME_CONFLICT`, mesma exceção de urgência/emergência); o atalho do
+> UPDATE também compara `room_id`. Fechamento, feriado, horário, almoço e
+> plano anual seguem na action, de propósito. A tela traduz a mensagem nova
+> (criar e alterar agendamento).
+>
+> **7 — comissões em tabela irmã (0364, DESTRUTIVO declarado).**
+> `procedure_commissions (procedure_id pk, commission_percent,
+> commission_fixed_cents)`: leem Admin, Planner e Financeiro da Franqueadora;
+> grava só o Admin. A migração **move** todos os valores ANTES de derrubar as
+> duas colunas de `procedures`; procedimento novo ganha a linha zerada por
+> gatilho; `payout_rate_for` e `payout_rate_by_level` leem a irmã (left join,
+> mesma conta). App: catálogo (`/procedimentos`) lê por embed; cadastro,
+> edição, importação, comissão em massa e aprovação de sugestão gravam na
+> irmã (`separarComissao`/`gravarComissao`); Planejamento e Prontuário
+> deixaram de pedir as colunas; `Procedure.commission*` virou opcional.
+> `procedure_changes` continua o histórico. Nome na auditoria:
+> "Comissão do procedimento".
+>
+> **Conferido (tudo em transação desfeita no treino):** 0362 — 14/14 contra o
+> gatilho antigo (duas conexões: B gravou NA HORA com A aberta) e 15/15 com o
+> novo (B ficou esperando no advisory lock, `pg_locks` mostra o lock não
+> concedido, e só terminou depois de A; sequencial: PROVIDER/ROOM/CLIENT,
+> urgência passa, cancelado não bloqueia, mover de sala/horário confere).
+> 0364 — 18/18 (migração 2× sem erro; estado anterior simulado: 3 valores
+> conhecidos movidos exatamente e lidos por `payout_rate_for`; sem login e
+> recepção leem NADA da irmã; recepção pedindo `commission_percent` em
+> `procedures` recebe "coluna não existe"; Planner e Financeiro leem; Admin
+> grava; gatilho da auditoria preso). `check-migrations`, `check:destrutivo`
+> (2 declarados), `check:alcance` (a irmã fora do alcance), `test:indica`
+> (244 OK; as 2 falhas são as do AP32, anteriores), régua `dates.test.ts`
+> provada quebrando (6/8 reprovam contra o código antigo).
+>
+> ⚠️ **A prova concorrente "a segunda recebe PROVIDER_TIME_CONFLICT" NÃO foi
+> feita com commit** (deixaria agendamento, avisos e trilha no treino): o
+> mecanismo foi provado em duas metades — B espera A terminar (lock) e, com a
+> linha de A visível, B recebe o erro (sequencial). A função é VOLATILE: cada
+> consulta dentro dela vê a foto mais recente do banco (mesmo padrão da 0361).
+>
+> ⚠️ **PUBLICAR SÓ DEPOIS DE APLICAR A 0364 NA PRODUÇÃO** (como a 0332): o
+> app passa a ler `procedure_commissions`; sem ela o catálogo abre sem
+> comissão e cadastrar/editar procedimento responde "a comissão NÃO foi
+> gravada". A 0362 não muda assinatura (só o gatilho).
+>
+> **Telas:** `check:telas` restrito às quatro telas da entrega (a mesma porta
+> de login e as mesmas regras do instrumento), pelo servidor local de teste
+> contra o treino: Procedimentos, Planejamento, Prontuário e Agenda abrem
+> como Admin Master e Planner (12/12; o catálogo mostra a coluna de comissão
+> lida da irmã) e a Recepção é barrada do catálogo e do planejamento, como
+> manda a regra. **A varredura completa (158 telas × 8 perfis) NÃO rodou:**
+> o disco C: deste PC chegou a 100% no meio dela (`.next` do dono 6,1 GB +
+> `.next-test` 5,7 GB); apaguei `.next-test` (script do projeto, AP40) e a
+> `.next-verify` e sobraram 13 GB — rodar a varredura inteira refaria os
+> 6 GB. **Não visto na tela:** a mensagem "Esta sala já está ocupada" e a
+> lista de horários com a correção (provadas por teste e ensaio no banco).
+>
+> **Achados de passagem:** AP109 (o "Ver agenda" — `getMonthAgendaPeek` — e
+> quatro telas montam data com o relógio da máquina; a 1ª forma da régua não
+> pega `new Date(` partido em linhas) e AP110 (criar dois clientes ao mesmo
+> tempo: o segundo espera o primeiro terminar, pelo código sequencial — não é
+> defeito, é serialização; anotado para a Rita).
+>
+> ⏳ **0362 e 0364 aplicadas no treino; não aplicadas na produção.** O dono
+> roda as duas (0362 antes da 0364; a 0363 é da sessão "Backlogs abertos").
+
 
 > ## 🔒 0.394.0 — NÃO DÁ PARA ASSINAR DUAS VEZES O MESMO DOCUMENTO (04/11/2026, migração 0361, AP108)
 >

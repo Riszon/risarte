@@ -93,7 +93,8 @@ describe("as telas", () => {
   const acoes = ler("src/app/(app)/procedimentos/actions.ts");
 
   it("preço com data futura: o de hoje NÃO muda, o novo fica agendado", () => {
-    expect(acoes).toContain("? { ...parsed.values, default_price_cents: old.default_price_cents }");
+    // 0364: a comissão foi para a irmã; o que vai a `procedures` são as `colunas`.
+    expect(acoes).toContain("? { ...colunas, default_price_cents: old.default_price_cents }");
     expect(acoes).toContain('await supabase.rpc("schedule_procedure_price", {');
     expect(acoes).toContain('await supabase.rpc("schedule_price_readjust", {');
     // o preço da UNIDADE tem o seu próprio desvio para o agendamento

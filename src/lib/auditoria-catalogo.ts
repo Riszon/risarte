@@ -156,6 +156,7 @@ export const TABELAS: Record<string, string> = {
   "public.procedure_groups": "Grupo de procedimentos",
   "public.procedure_group_items": "Procedimento dentro de um grupo",
   "public.procedures": "Procedimento",
+  "public.procedure_commissions": "Comissão do procedimento",
   "public.profiles": "Usuário",
   "public.protocol_change_proposals": "Proposta de mudança de protocolo",
   "public.provider_payout_rates": "Tabela de repasse",

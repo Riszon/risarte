@@ -108,17 +108,13 @@ function centsToInput(cents: number): string {
  * Agora mostra o que vale de verdade.
  */
 function commissionLabel(p: Procedure): string {
+  const fixo = p.commissionFixedCents ?? 0;
+  const pct = p.commissionPercent ?? 0;
   // O repasse em R$ (gravado, ou o percentual antigo convertido pelo preço).
   const valor =
-    p.commissionFixedCents > 0
-      ? p.commissionFixedCents
-      : p.commissionPercent > 0
-        ? valorDoPercentual(p.commissionPercent, p.defaultPriceCents)
-        : null;
+    fixo > 0 ? fixo : pct > 0 ? valorDoPercentual(pct, p.defaultPriceCents) : null;
   if (valor === null) {
-    return p.commissionPercent > 0
-      ? `${textoDoPercentual(p.commissionPercent)} do preço (sem preço definido)`
-      : "—";
+    return pct > 0 ? `${textoDoPercentual(pct)} do preço (sem preço definido)` : "—";
   }
   // Pedido do dono (27/10/2026): o peso do repasse no preço normal E no mínimo.
   const pcts = textoDosPercentuais(valor, p.defaultPriceCents, p.minPriceCents ?? null);
@@ -149,20 +145,16 @@ const EMPTY: ProcedureInput = {
 function repasseNoFormulario(
   p: Procedure
 ): Pick<ProcedureInput, "commissionFixed" | "commissionPercent"> {
-  if (p.commissionFixedCents > 0) {
-    return {
-      commissionFixed: centsToInput(p.commissionFixedCents),
-      commissionPercent: "",
-    };
+  const fixo = p.commissionFixedCents ?? 0;
+  const pct = p.commissionPercent ?? 0;
+  if (fixo > 0) {
+    return { commissionFixed: centsToInput(fixo), commissionPercent: "" };
   }
-  if (p.commissionPercent > 0) {
-    const v = valorDoPercentual(p.commissionPercent, p.defaultPriceCents);
+  if (pct > 0) {
+    const v = valorDoPercentual(pct, p.defaultPriceCents);
     return v != null
       ? { commissionFixed: centsToInput(v), commissionPercent: "" }
-      : {
-          commissionFixed: "",
-          commissionPercent: String(p.commissionPercent).replace(".", ","),
-        };
+      : { commissionFixed: "", commissionPercent: String(pct).replace(".", ",") };
   }
   return { commissionFixed: "", commissionPercent: "" };
 }

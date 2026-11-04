@@ -405,6 +405,37 @@ Syncthing se comportarem de forma estranha.**
 - `changelog.ts` e o manual da equipe NÃO tocados (módulo escondido): texto
   pronto em `docs/indica-mais-risos/MANUAL-rascunho.md`.
 - Não visto na tela. Pendente: a janela "Pedir indicação" (lote) sem a pergunta.
+**04/11/2026 (Rita — plano 1, itens 5a/5b/7) — PC Administrador (core 0.394.0 → 0.396.0, migrações 0362 e 0364)**
+
+- ✅ **AP104 PROVADO em UTC e corrigido:** a lista de próximos horários é a
+  conta pura `src/lib/horarios-livres.ts` (calendário brasileiro). **AP103 (0362):**
+  advisory lock por cliente/profissional/sala e `ROOM_TIME_CONFLICT` no gatilho
+  `check_appointment_conflict`. **Item 7 (0364, DESTRUTIVO declarado):**
+  `procedure_commissions` (irmã; Admin/Planner/Financeiro leem; dados movidos
+  antes de derrubar as colunas). Bloco 0.396.0 no ESTADO; EV-292.
+- ⚠️ **Publicar SÓ depois de o dono aplicar na produção, na ordem 0362 → 0363
+  (sessão "Backlogs abertos") → 0364:** o app lê a irmã; sem ela o catálogo
+  abre sem comissão e gravar procedimento responde "a comissão NÃO foi gravada".
+- ⚠️ **Disco C: no limite** (14 GB livres depois de limpar `.next-test` e
+  `.next-verify`); a varredura completa do `check:telas` não rodou.
+- Achado de passagem: **AP109** (mesma raiz do AP104 no "Ver agenda" e em 4
+  telas de período; débitos conhecidos na 4ª forma de `dates.test.ts`).
+- Não visto na tela: a mensagem de sala ocupada e a lista corrigida.
+
+**04/11/2026 (Rita — plano 1, itens 2 e 3) — PC Administrador (Indica 0.7.0 → 0.8.0, migrações 2009 e 2010)**
+
+- ✅ **"Podemos avisar quem indicou?" (2009):** autorização SEPARADA do aceite
+  LGPD, na indicação (`autoriza_avisar_*`); sem ela as mensagens ao Embaixador
+  saem SEM o nome (não deixam de sair); evento `agendada` sem data nem horário.
+- ✅ **Fila anonimizada e token fora da fila (2010):** `indica.convites_tokens`
+  só `service_role`; a fila guarda `/c/`; "Abrir WhatsApp" do convite monta o
+  link no servidor (`abrirConvite`); `rotina_diaria` anonimiza a fila.
+- ⚠️ `aceitar_convite` mudou de assinatura (3º parâmetro boolean). Eventos
+  `autorizou_aviso`/`revogou_aviso` em `indicacao_eventos` NÃO são etapa:
+  quem contar por `status_para` precisa ignorá-los.
+- `changelog.ts` e o manual da equipe NÃO tocados (módulo escondido): texto
+  pronto em `docs/indica-mais-risos/MANUAL-rascunho.md`.
+- Não visto na tela. Pendente: a janela "Pedir indicação" (lote) sem a pergunta.
 **04/11/2026 (ZapSign na produção) — PC Administrador (sem código)**
 
 - ✅ **Conta real ligada:** token da organização e `ZAPSIGN_ENV=production` só

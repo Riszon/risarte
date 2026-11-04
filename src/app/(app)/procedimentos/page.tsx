@@ -24,6 +24,15 @@ import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
 
 export const metadata: Metadata = { title: "Procedimentos" };
 
+type ComissaoRow = { commission_percent: number; commission_fixed_cents: number };
+/** O embed de uma ligação 1:1 pode vir como objeto ou como lista de um. */
+function comissaoDe(row: ProcedureRow): ComissaoRow {
+  const c = Array.isArray(row.procedure_commissions)
+    ? row.procedure_commissions[0]
+    : row.procedure_commissions;
+  return c ?? { commission_percent: 0, commission_fixed_cents: 0 };
+}
+
 type ProcedureRow = {
   id: string;
   code: string | null;
@@ -33,8 +42,8 @@ type ProcedureRow = {
   default_price_cents: number;
   min_price_cents: number | null;
   max_price_cents: number | null;
-  commission_percent: number;
-  commission_fixed_cents: number;
+  /** 0364: o repasse mora na irmã; quem não a enxerga recebe nulo (= sem repasse). */
+  procedure_commissions: ComissaoRow | ComissaoRow[] | null;
   pillar: MethodologyPillar | null;
   estimated_minutes: number | null;
   is_active: boolean;
@@ -81,7 +90,7 @@ export default async function ProceduresPage(
   let query = supabase
     .from("procedures")
     .select(
-      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, commission_percent, commission_fixed_cents, pillar, estimated_minutes, is_active, direct_sale, direct_sale_reception, direct_sale_sdr"
+      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, pillar, estimated_minutes, is_active, direct_sale, direct_sale_reception, direct_sale_sdr, procedure_commissions ( commission_percent, commission_fixed_cents )"
     )
     .order("specialty", { nullsFirst: true })
     .order("name")
@@ -150,8 +159,8 @@ export default async function ProceduresPage(
     defaultPriceCents: p.default_price_cents,
     minPriceCents: p.min_price_cents,
     maxPriceCents: p.max_price_cents,
-    commissionPercent: p.commission_percent,
-    commissionFixedCents: p.commission_fixed_cents,
+    commissionPercent: comissaoDe(p).commission_percent,
+    commissionFixedCents: comissaoDe(p).commission_fixed_cents,
     pillar: p.pillar,
     estimatedMinutes: p.estimated_minutes,
     isActive: p.is_active,

@@ -174,6 +174,33 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
       nome: "data-só virando instante (`T00:00:00` escrito à mão)",
       padrao: /new Date\([^)]*T00:00:00(?!(?:\.\d+)?Z)/,
     },
+    {
+      // 4. A DATA CIVIL MONTADA COM O RELÓGIO DA MÁQUINA (AP104, provado em
+      //    04/11/2026 com `TZ=UTC`): `new Date(d.getFullYear(), d.getMonth(),
+      //    d.getDate())` é a meia-noite da MÁQUINA, e `getDay()` sobre ela é o
+      //    dia da semana da máquina. No servidor em UTC a lista de próximos
+      //    horários conferia o dia da semana do dia SEGUINTE ao da data que
+      //    oferecia — domingo às 08:00 numa unidade fechada no fim de semana,
+      //    e a sexta pulada. Em qualquer hora do dia, não só à noite.
+      //
+      //    O jeito certo: `isoDateIn`/`todayInBrazil` para a data, `addDaysIso`
+      //    para andar no calendário, `weekdayOf` para o dia da semana e
+      //    `startOfDayInBrazil`/`startOfDayOf` para a fronteira do dia.
+      nome: "data civil montada com o relógio da máquina (`new Date(x.getFullYear(), …)`)",
+      padrao: /new Date\(\s*[\w$.]+\.getFullYear\(\)\s*,/,
+      // ⚠️ DÉBITOS CONHECIDOS (04/11/2026, AP109): os lugares que já tinham a
+      // forma quando a régua nasceu. Ficam aqui para a régua valer para o
+      // código NOVO sem exigir cinco correções fora de escopo; cada um sai da
+      // lista quando for corrigido — e a régua reprova se um deles sumir sem
+      // ter saído daqui (lista velha é lista que ninguém lê).
+      debitos: [
+        "src/app/(app)/agenda/actions.ts", // getMonthAgendaPeek (o "Ver agenda")
+        "src/app/(app)/comercial/dashboard/page.tsx",
+        "src/app/(app)/comercial/venda-direta/page.tsx",
+        "src/app/(app)/empresarial/painel/page.tsx",
+        "src/app/(app)/ppr/painel/page.tsx",
+      ],
+    },
   ];
 
   /**
@@ -208,19 +235,27 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
     return achados;
   }
 
-  for (const [i, { nome, padrao }] of FORMAS.entries()) {
+  for (const [i, { nome, padrao, debitos = [] }] of FORMAS.entries()) {
     const larga = i === 2;
     it(`nenhum arquivo ${larga ? "de src" : "de servidor"} tem ${nome}`, () => {
       const alvos = larga
         ? [...todosOsArquivos("src/app"), ...todosOsArquivos("src/lib")]
         : arquivosDoServidor("src/app");
-      const culpados = alvos
+      const todosOsCulpados = alvos
         .filter((f) => padrao.test(semComentarios(readFileSync(f, "utf8"))))
         .map((f) => f.replace(/\\/g, "/"));
+      const culpados = todosOsCulpados.filter((f) => !debitos.includes(f));
 
       expect(
         culpados,
         `Use instantFromBrazil()/startOfDayInBrazil() de @/lib/dates:\n${culpados.join("\n")}`
+      ).toEqual([]);
+
+      // Débito que sumiu foi corrigido: sai da lista, senão ela envelhece.
+      const quitados = debitos.filter((f) => !todosOsCulpados.includes(f));
+      expect(
+        quitados,
+        `Estes arquivos já não têm a forma — tire-os de "debitos":\n${quitados.join("\n")}`
       ).toEqual([]);
     });
   }
@@ -251,6 +286,13 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
     //  usa isso de propósito para comparar dias.
     expect(FORMAS[2].padrao.test("new Date(`${dia}T00:00:00Z`).getTime()")).toBe(false);
     expect(FORMAS[2].padrao.test("new Date(x + \"T00:00:00.000Z\")")).toBe(false);
+
+    // A quarta (AP104): a janela da lista de horários, como estava, e partida
+    // em linhas; e NÃO acusa a aritmética em UTC nem a leitura de um instante.
+    expect(FORMAS[3].padrao.test("new Date(now.getFullYear(), now.getMonth(), now.getDate())")).toBe(true);
+    expect(FORMAS[3].padrao.test("new Date(\n  ref.getFullYear(),\n  ref.getMonth() + 1,\n  1\n)")).toBe(true);
+    expect(FORMAS[3].padrao.test("new Date(Date.UTC(d.getFullYear(), d.getMonth(), 1))")).toBe(false);
+    expect(FORMAS[3].padrao.test("new Date(iso).getFullYear()")).toBe(false);
   });
 
   it("a varredura descarta COMENTÁRIO — senão acusaria a própria explicação", () => {

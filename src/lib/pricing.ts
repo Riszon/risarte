@@ -13,10 +13,14 @@ export type Procedure = {
   defaultPriceCents: number;
   minPriceCents: number | null;
   maxPriceCents: number | null;
-  /** Commission as a percentage of the procedure price (realized on completion). */
-  commissionPercent: number;
-  /** Fixed commission in cents (realized on completion). */
-  commissionFixedCents: number;
+  /**
+   * Repasse do procedimento (0364): mora na tabela irmã `procedure_commissions`,
+   * que só Admin, Planner e Financeiro leem. Só o catálogo (/procedimentos)
+   * carrega estes campos — as telas de plano/orçamento não os leem, e quem
+   * não enxerga a irmã nunca os recebe.
+   */
+  commissionPercent?: number;
+  commissionFixedCents?: number;
   pillar: MethodologyPillar | null;
   /** Estimated execution time in minutes (null = not set). */
   estimatedMinutes: number | null;

@@ -62,6 +62,40 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.396.0",
+    data: "2026-11-04",
+    migracao: "0364",
+    titulo: "Agenda sem furo: trava de verdade ao agendar, sala conferida pelo banco e a lista de horários no calendário certo",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A lista de \"Próximos horários disponíveis\" da janela de agendamento passou a seguir o calendário brasileiro. O servidor roda em outro fuso e conferia o dia da semana do dia SEGUINTE ao que oferecia: podia sugerir domingo às 08:00 numa unidade fechada no fim de semana e pular a sexta.",
+        papeis: ["receptionist", "sdr", "unit_manager", "clinical_coordinator", "dentist", "commercial_consultant"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Dois agendamentos gravados no mesmo instante para o mesmo profissional, a mesma sala ou o mesmo cliente não passam mais os dois: o banco faz o segundo esperar o primeiro e recusa o choque de horário.",
+        papeis: ["receptionist", "sdr", "unit_manager", "clinical_coordinator", "dentist", "commercial_consultant"],
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Sala ocupada agora é recusada pelo próprio banco, não só pela tela: \"Esta sala já está ocupada neste horário\". Urgência e emergência continuam encaixando.",
+        papeis: ["receptionist", "sdr", "unit_manager", "clinical_coordinator", "dentist", "commercial_consultant"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A comissão (repasse) de cada procedimento saiu da tabela do catálogo e foi para uma tabela própria, que só o Admin Master, o Dentista Planner e o Financeiro da Franqueadora enxergam. Nenhuma tela muda e os valores são os mesmos; quem não deve ver não consegue mais ler pela API.",
+        papeis: ["planner_dentist", "finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.394.0",
     data: "2026-11-04",
     migracao: "0361",
