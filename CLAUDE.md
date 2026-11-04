@@ -398,8 +398,9 @@ Syncthing se comportarem de forma estranha.**
   `session_index`). Ao recriar `accrue_session_payout` ou mudar como as
   sessões são numeradas (`topup_treatment_sessions`, revisão, refação),
   manter a régua `repasse-por-procedimento.test.ts` e o ensaio.
-- ⚠️ **0352 só no treino.** Pendente com o dono: confirmar que o repasse vai
-  para quem concluiu a última sessão.
+- ✅ **0351 e 0352 aplicadas na produção** (o dono informou em 03/11/2026; não
+  conferido de fora). Pendente com o dono: confirmar que o repasse vai para
+  quem concluiu a última sessão.
 
 **03/11/2026 (AP55) — PC Administrador (core 0.384.0 → 0.385.0, migração 0351)**
 
