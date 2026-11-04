@@ -1,5 +1,6 @@
 "use server";
 
+import { lerComplemento } from "@/lib/complemento-comercial";
 import { revalidatePath } from "next/cache";
 import {
   getSessionContext,
@@ -51,11 +52,18 @@ export async function savePlanNegotiation(
     .eq("id", clientId)
     .single();
   if (!client) return { ok: false, error: "Cliente não encontrado." };
-  // Negociação só acontece com o cliente na Fase 4 (Conversão Comercial).
-  if (client.journey_phase !== "commercial_conversion") {
+  // Negociação só acontece com o cliente na Fase 4 (Conversão Comercial) —
+  // AP64 (0357): ou na Fase 5, quando o plano é COMPLEMENTAR.
+  const complemento = await lerComplemento(supabase, clientId, input.planId);
+  const faseCerta = complemento
+    ? client.journey_phase === "treatment_start"
+    : client.journey_phase === "commercial_conversion";
+  if (!faseCerta) {
     return {
       ok: false,
-      error: "O cliente não está na Conversão Comercial — negociação indisponível.",
+      error: complemento
+        ? "O plano complementar é negociado com o cliente em tratamento (Fase 5)."
+        : "O cliente não está na Conversão Comercial — negociação indisponível.",
     };
   }
 
@@ -278,7 +286,11 @@ export async function acceptNegotiation(
           "Esta rodada foi devolvida ao planejamento — salve a negociação (nova rodada) antes de registrar o aceite.",
       };
     if (m.includes("WRONG_PHASE"))
-      return { ok: false, error: "O cliente não está na Conversão Comercial." };
+      return {
+        ok: false,
+        error:
+          "O cliente não está na fase certa: a negociação comum é na Conversão Comercial (Fase 4); a do plano complementar, em tratamento (Fase 5).",
+      };
     if (m.includes("NOT_ALLOWED"))
       return { ok: false, error: "Apenas o Consultor Comercial pode aceitar." };
     console.error("accept_negotiation failed:", m);

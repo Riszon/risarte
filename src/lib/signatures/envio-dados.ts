@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { complementoDaNegociacao, lerApresentacao } from "@/lib/complemento-comercial";
 import type { SessionContext } from "@/lib/auth";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/commercial";
 import { todayInBrazil } from "@/lib/dates";
@@ -365,7 +366,11 @@ async function loadTreatment(
       : Promise.resolve({ data: [] as { item_id: string; included: boolean; program_discount_cents: number | null }[] }),
     supabase.from("commercial_rules").select("clinic_id, budget_validity_days").returns<LinhaDeValidade[]>(),
     // OC-00158: o resumo que o Consultor escreveu no cockpit (`{{apresentacao_resumo}}`).
-    supabase.from("commercial_presentations").select("summary").eq("client_id", clientId).maybeSingle<{ summary: string | null }>(),
+    // AP64 (C2): a negociação de um plano complementar leva o resumo da
+    // apresentação DO COMPLEMENTO.
+    complementoDaNegociacao(supabase, negotiation?.plan_id ?? planId).then((comp) =>
+      lerApresentacao(supabase, clientId, comp).then((a) => ({ data: a ? { summary: a.summary } : null }))
+    ),
   ]);
   const items = itemsRes.data ?? [];
   const negItems = new Map((negItemsRes.data ?? []).map((n) => [n.item_id, n]));

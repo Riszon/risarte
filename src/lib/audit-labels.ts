@@ -102,6 +102,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   commercial_kanban: "Quadro do Comercial",
   commercial_card: "Cartão do Comercial",
   commercial_presentation: "Apresentação comercial",
+  plan_complement_presentation: "Apresentação do plano complementar",
   presentation: "Apresentação",
   commercial_rule: "Regra comercial",
   commercial_rule_removed: "Regra comercial (removida)",

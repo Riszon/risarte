@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { URL_DO_COMPLEMENTO, lerApresentacao, lerComplemento } from "@/lib/complemento-comercial";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -82,7 +83,7 @@ export default async function CommercialCockpitPage(
 ) {
   const session = await getSessionContext();
   const { clientId } = await props.params;
-  const { aba: abaPedida } = await props.searchParams;
+  const { aba: abaPedida, complemento: complementoPedido } = await props.searchParams;
   const supabase = await createClient();
 
   const { data: client } = await supabase
@@ -118,7 +119,28 @@ export default async function CommercialCockpitPage(
   });
 
   const phase = client.journey_phase as JourneyPhase;
-  const inCommercialPhase = phase === "commercial_conversion";
+  // AP64 (0357): o MODO COMPLEMENTO — o Consultor apresenta, negocia e fecha o
+  // plano complementar aprovado, com o cliente em tratamento (Fase 5).
+  const complemento = await lerComplemento(
+    supabase,
+    clientId,
+    typeof complementoPedido === "string" ? complementoPedido : null
+  );
+  const modoComplemento =
+    complemento && complemento.status === "approved" && phase === "treatment_start" ? complemento : null;
+  const inCommercialPhase = phase === "commercial_conversion" || modoComplemento != null;
+  // Fora do modo complemento: os complementos aprovados deste cliente, para o
+  // Consultor achar o caminho (C4 também os põe no quadro).
+  const { data: complementosAbertos } = modoComplemento
+    ? { data: [] as { id: string; complement_no: number | null }[] }
+    : await supabase
+        .from("treatment_plans")
+        .select("id, complement_no")
+        .eq("client_id", clientId)
+        .eq("status", "approved")
+        .not("complement_of_plan_id", "is", null)
+        .eq("lifecycle", "aguardando_apresentacao")
+        .returns<{ id: string; complement_no: number | null }[]>();
   const canAuthorize =
     session.isAdminMaster ||
     hasRoleInClinic(session, clinicId, ["unit_manager"]);
@@ -128,14 +150,10 @@ export default async function CommercialCockpitPage(
 
   const [presentationRow, plans, negotiationBlock, qcRows, sessRows, cardEvents] =
     await Promise.all([
-      supabase
-        .from("commercial_presentations")
-        .select("meet_link, recording_url, summary, notes, consultant_id")
-        .eq("client_id", clientId)
-        .maybeSingle()
-        .then((r) => r.data),
+      // AP64 (C1): no modo complemento, a apresentação é a DELE.
+      lerApresentacao(supabase, clientId, modoComplemento?.id ?? null),
       loadClientPlans(clientId),
-      inCommercialPhase ? loadNegotiationBlock(clientId, clinicId) : null,
+      inCommercialPhase ? loadNegotiationBlock(clientId, clinicId, modoComplemento?.id ?? null) : null,
       supabase
         .from("plan_quality_reviews")
         .select("status, plan:treatment_plans ( client_id )")
@@ -491,6 +509,35 @@ export default async function CommercialCockpitPage(
       {/* OC-00158: o caminho da venda no alto e uma aba por assunto, abrindo
           na etapa da vez. Antes era tudo numa página só, com o Fechamento no
           fim de duas colunas — o consultor rolava para achar o que fazer. */}
+      {/* AP64 (0357): o modo complemento, e o caminho até ele. */}
+      {modoComplemento ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-300 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100">
+          <span>
+            <b>Plano complementar {modoComplemento.numero ?? ""}</b> — apresentação,
+            negociação e fechamento só do complemento. O cliente segue em
+            tratamento, e a venda original continua valendo.
+          </span>
+          <Link href={`/comercial/${clientId}`} className="text-xs font-medium underline">
+            Sair do modo complemento
+          </Link>
+        </div>
+      ) : (
+        (complementosAbertos ?? []).length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-violet-300 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100">
+            <span>Plano complementar aprovado, aguardando apresentação:</span>
+            {(complementosAbertos ?? []).map((c) => (
+              <Link
+                key={c.id}
+                href={URL_DO_COMPLEMENTO(clientId, c.id)}
+                className="rounded-full border border-violet-300 bg-white px-2 py-0.5 text-xs font-medium hover:bg-violet-100 dark:bg-transparent"
+              >
+                Apresentar o complemento {c.complement_no ?? ""}
+              </Link>
+            ))}
+          </div>
+        )
+      )}
+
       <CockpitAbas
         etapas={etapas}
         proximo={proximoPasso(entrada)}
@@ -529,6 +576,7 @@ export default async function CommercialCockpitPage(
                 clientId={clientId}
                 data={presentation}
                 canEdit={canNegotiate}
+                complementoId={modoComplemento?.id ?? null}
               />
             </>
           ),
@@ -563,6 +611,7 @@ export default async function CommercialCockpitPage(
                 minMarginPercent={negotiationBlock.minMarginPercent}
                 odonto={negotiationBlock.odonto}
                 ortho={negotiationBlock.ortho}
+                ehComplemento={modoComplemento != null}
               />
             </>
           ) : (

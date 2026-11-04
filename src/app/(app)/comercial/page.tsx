@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ComplementosColuna, type CartaoDeComplemento } from "./complementos-coluna";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BarChart3, Eye, Handshake, Store } from "lucide-react";
@@ -388,6 +389,55 @@ export default async function ComercialKanbanPage(
     };
   });
 
+  // AP64 (0357, C4): os planos COMPLEMENTARES aprovados e ainda não vendidos
+  // (cliente em tratamento). Leitura que falha deixa a coluna de fora.
+  let complementosQuery = supabase
+    .from("treatment_plans")
+    .select(
+      "id, client_id, clinic_id, complement_no, lifecycle, clinics ( name ), clients!treatment_plans_client_id_fkey ( full_name, journey_phase ), plan_negotiations ( status, commercial_sales ( closed_at ) )"
+    )
+    .eq("status", "approved")
+    .not("complement_of_plan_id", "is", null);
+  if (clinicFilter) complementosQuery = complementosQuery.eq("clinic_id", clinicFilter);
+  const { data: compRows, error: compErro } = await complementosQuery;
+  if (compErro) console.error("comercial — complementos:", compErro.message);
+  const um = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
+  const cartoesDeComplemento: CartaoDeComplemento[] = (compErro ? [] : (compRows ?? []))
+    .map((r) => {
+      const linha = r as unknown as {
+        id: string;
+        client_id: string;
+        complement_no: number | null;
+        clinics: { name: string } | { name: string }[] | null;
+        clients: { full_name: string; journey_phase: string } | { full_name: string; journey_phase: string }[] | null;
+        plan_negotiations:
+          | { status: string; commercial_sales: { closed_at: string | null }[] | { closed_at: string | null } | null }[]
+          | { status: string; commercial_sales: { closed_at: string | null }[] | { closed_at: string | null } | null }
+          | null;
+      };
+      const cliente = um(linha.clients);
+      const neg = um(linha.plan_negotiations);
+      const venda = neg ? um(neg.commercial_sales) : null;
+      return { linha, cliente, neg, venda };
+    })
+    .filter(({ cliente, neg, venda }) =>
+      cliente?.journey_phase === "treatment_start" && !venda?.closed_at && neg?.status !== "cancelada"
+    )
+    .map(({ linha, cliente, neg }) => ({
+      planId: linha.id,
+      clientId: linha.client_id,
+      nome: cliente?.full_name ?? "Cliente",
+      numero: linha.complement_no,
+      unidade: um(linha.clinics)?.name ?? null,
+      situacao: !neg
+        ? "aguardando apresentação"
+        : neg.status === "aceita"
+          ? "aceito — fechamento"
+          : neg.status === "aguardando_autorizacao"
+            ? "aguardando o Gerente"
+            : "em negociação",
+    }));
+
   // O quadro é a fila de trabalho; o que já fechou (ou se perdeu) vai para o
   // Histórico — decisão do dono, 06/08/2026.
   const history = allCards.filter((c) => isHistoryColumn(c.column));
@@ -480,12 +530,15 @@ export default async function ComercialKanbanPage(
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-x-auto pb-2">
-        <CommercialKanban
-          cards={boardCards}
-          history={history}
-          viewer={viewer}
-        />
+      <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
+        <ComplementosColuna cartoes={cartoesDeComplemento} />
+        <div className="min-w-0 flex-1">
+          <CommercialKanban
+            cards={boardCards}
+            history={history}
+            viewer={viewer}
+          />
+        </div>
       </div>
     </div>
   );

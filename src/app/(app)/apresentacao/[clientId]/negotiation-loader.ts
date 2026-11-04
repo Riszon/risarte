@@ -1,4 +1,5 @@
 import "server-only";
+import { lerApresentacao } from "@/lib/complemento-comercial";
 import { createClient } from "@/lib/supabase/server";
 import {
   resolveCommercialRule,
@@ -125,7 +126,9 @@ export type NegotiationBlock = {
  */
 export async function loadNegotiationBlock(
   clientId: string,
-  clinicId: string
+  clinicId: string,
+  /** AP64 (0357): o plano complementar em negociação (modo complemento). */
+  complementoId: string | null = null
 ): Promise<NegotiationBlock | null> {
   const supabase = await createClient();
 
@@ -158,7 +161,9 @@ export async function loadNegotiationBlock(
         };
       })
     ) ?? undefined;
-  if (!planId) return null;
+  // AP64: no modo complemento, a negociação é a do plano complementar.
+  const planoNegociado = complementoId ?? planId;
+  if (!planoNegociado) return null;
 
   const [{ data: optRows }, { data: negRows }, { data: ruleRows }] =
     await Promise.all([
@@ -168,7 +173,7 @@ export async function loadNegotiationBlock(
         .select(
           "id, is_primary, title, sort_order, treatment_plan_option_items ( id, description, quantity, unit_price_cents, procedure_id, sort_order, gut_gravity, gut_urgency, gut_tendency, tooth_code, face_codes, region_code, planned_sessions, planned_total_minutes )"
         )
-        .eq("plan_id", planId)
+        .eq("plan_id", planoNegociado)
         .eq("review_status", "approved")
         .order("is_primary", { ascending: false })
         .order("sort_order")
@@ -201,7 +206,7 @@ export async function loadNegotiationBlock(
         .select(
           "id, code, option_id, status, adjustment_cents, payment_method, installments, partial_reason, client_is_decider, decider_notes, notes, rule_violations, rule_authorized, authorization_note, final_cents, down_payment_cents, plan_negotiation_items ( item_id, included )"
         )
-        .eq("plan_id", planId)
+        .eq("plan_id", planoNegociado)
         .limit(1)
         .returns<
           {
@@ -357,7 +362,7 @@ export async function loadNegotiationBlock(
   const { data: eventRows } = await supabase
     .from("treatment_plan_events")
     .select("id, event_type, description, actor_id, created_at")
-    .eq("plan_id", planId)
+    .eq("plan_id", planoNegociado)
     .order("created_at");
   const actorIds = [
     ...new Set(
@@ -566,11 +571,8 @@ export async function loadNegotiationBlock(
     .map((i) => i.description);
 
   // Resumo da apresentação (COM2) — embutido no contrato do fechamento.
-  const { data: presRow } = await supabase
-    .from("commercial_presentations")
-    .select("summary")
-    .eq("client_id", clientId)
-    .maybeSingle();
+  // AP64 (C1): no modo complemento, o resumo é o da apresentação DELE.
+  const presRow = await lerApresentacao(supabase, clientId, complementoId);
 
   // J3: camada ÚNICA de programas do cliente (PPR+ E Risarte Empresarial) —
   // procedimento coberto por QUALQUER programa não recebe desconto manual de
@@ -636,7 +638,7 @@ export async function loadNegotiationBlock(
   );
 
   return {
-    planId,
+    planId: planoNegociado,
     options,
     negotiation,
     odonto,

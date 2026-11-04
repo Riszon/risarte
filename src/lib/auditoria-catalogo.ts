@@ -70,6 +70,7 @@ export const TABELAS: Record<string, string> = {
   "public.commercial_followup_attempts": "Tentativa de follow-up",
   "public.commercial_followup_settings": "Configuração de follow-up",
   "public.commercial_presentations": "Apresentação comercial",
+  "public.plan_complement_presentations": "Apresentação do plano complementar",
   "public.commercial_rules": "Regra comercial",
   "public.commercial_sales": "Venda",
   "public.cost_centers": "Centro de custo",

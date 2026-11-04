@@ -2672,7 +2672,9 @@ cliente **não muda de fase**, e o plano vendido **continua valendo**.
 1. Os Planners recebem o aviso **"Plano COMPLEMENTAR para montar"**.
 2. O Planner monta e envia: você recebe **"Plano COMPLEMENTAR aguardando
    aprovação"** e aprova como qualquer plano (opção por opção).
-3. Aprovado, o Consultor Comercial apresenta o complemento ao cliente.
+3. Aprovado, o Consultor Comercial apresenta o complemento ao cliente, negocia
+   e fecha a venda dele (desde a versão 0.391.0). O cliente segue na Fase 5 o
+   tempo todo, e a venda original continua valendo.
 
 > **Um complemento por vez.** Enquanto um estiver em montagem ou aprovação, o
 > botão diz que é preciso aprová-lo antes de abrir outro. Depois de aprovado,
@@ -3320,6 +3322,25 @@ nova do plano e ela for aprovada antes do aceite, a negociação da versão
 anterior é **encerrada** com a situação **"Substituída por nova versão do
 plano"** — você recomeça na versão nova (o painel já abre nela). Venda já
 aceita não muda: o que foi vendido vale.
+
+**Plano complementar** (desde a versão 0.391.0). Quando o cliente já está em
+tratamento e o Coordenador aprova um **plano complementar**, você recebe o
+aviso **"Plano complementar para apresentar"**, e o quadro do Comercial mostra
+a coluna **Complementos**, no começo. O cartão abre o cockpit no **modo
+complemento** (a faixa violeta no alto diz isso):
+
+- A aba **Apresentação** é a **do complemento** — link do Meet, gravação e
+  resumo próprios. A apresentação da venda original continua guardada como
+  estava.
+- A aba **Negociação** mostra **só os itens do complemento**, com forma de
+  pagamento e parcelas próprias. O resumo da apresentação do complemento é
+  exigido para registrar o aceite.
+- A aba **Fechamento** fecha a venda do complemento (contrato e pagamento),
+  como qualquer venda. O contrato leva os itens e o resumo do complemento.
+- O cliente **não muda de fase**: ao fechar, a Recepção recebe **"Complemento
+  fechado — agendar"**. O cartão sai da coluna Complementos.
+- No modo complemento não há **Devolver ao planejamento** — o cliente está em
+  tratamento. Para **sair do modo complemento**, use o link na faixa violeta.
 
 **Venda cancelada e compra de novo** (desde a versão 0.388.0). Cancelada a
 venda, o cliente compra de novo por uma **versão nova do plano**, com uma

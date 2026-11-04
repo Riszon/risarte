@@ -172,7 +172,10 @@ export function NegotiationPanel({
   minMarginPercent = null,
   odonto = null,
   ortho = null,
+  ehComplemento = false,
 }: {
+  /** AP64 (0357): negociação de plano complementar (cliente na Fase 5). */
+  ehComplemento?: boolean;
   clientId: string;
   planId: string;
   options: NegotiationOption[];
@@ -1306,15 +1309,19 @@ export function NegotiationPanel({
                   Cliente aceitou
                 </Button>
               )}
-              <Button
-                variant="ghost"
-                className="ml-auto text-muted-foreground"
-                disabled={isPending}
-                onClick={() => setReturnOpen(true)}
-              >
-                <CornerUpLeft className="mr-1 size-4" />
-                Devolver ao planejamento
-              </Button>
+              {/* AP64: o complemento não volta ao planejamento por aqui (o
+                  cliente está em tratamento); a devolução é do Coordenador. */}
+              {!ehComplemento && (
+                <Button
+                  variant="ghost"
+                  className="ml-auto text-muted-foreground"
+                  disabled={isPending}
+                  onClick={() => setReturnOpen(true)}
+                >
+                  <CornerUpLeft className="mr-1 size-4" />
+                  Devolver ao planejamento
+                </Button>
+              )}
             </div>
           )
         )}

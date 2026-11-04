@@ -1,6 +1,26 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migração: **0356** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.391.0** · Última migração: **0357** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🤝 0.391.0 — PLANO COMPLEMENTAR, PASSO 2: APRESENTAR, NEGOCIAR E FECHAR (03/11/2026, migração 0357, AP64)
+>
+> Decisões do dono C1–C4 (`docs/comercial/AP63-AP64-PLANO.md` §6): apresentação
+> própria do complemento, mesmo modelo de contrato com o resumo dele, cobrança
+> própria, coluna Complementos no quadro do Comercial. O cliente fica na Fase 5.
+>
+> - **0357:** `plan_complement_presentations`; aprovado → `aguardando_apresentacao`
+>   + aviso aos Consultores; `accept_negotiation` e `_commercial_close_step_raw`
+>   reconhecem o complemento (Fase 5, resumo dele, fechamento sem mexer na fase).
+> - ⚠️ **Modo complemento = `/comercial/[clientId]?complemento=<plano>`.** A
+>   apresentação certa sai SEMPRE de `lerApresentacao`
+>   (`src/lib/complemento-comercial.ts`): cockpit, negociação e contrato.
+> - ⚠️ **Ao recriar `accept_negotiation` ou `_commercial_close_step_raw`, levar o
+>   `v_complemento`.**
+> - Ensaio no treino 13/13 (sem a 0357, 8 reprovam). **Não visto na tela**
+>   (criar um complemento no treino avisaria pessoas reais).
+> - ✅ **0357 aplicada na produção** (o dono informou em 03/11/2026; não conferido
+>   de fora) antes do push — o cockpit lê a tabela nova.
+> - Falta o passo 3: sessões do complemento e o painel das duas vendas.
 
 > ## 🏢 0.390.0 — O CONSULTOR RISLIFE SÓ NAS EMPRESAS DELE (03/11/2026, migrações 0356 e 1039; Empresarial 0.95.0; AP95 entrega 2)
 >

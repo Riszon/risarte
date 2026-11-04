@@ -391,6 +391,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (AP64, passo 2) — PC Administrador (core 0.390.0 → 0.391.0, migração 0357)**
+
+- **Plano complementar: apresentar, negociar e fechar** (bloco 0.391.0 no
+  ESTADO). Modo complemento no cockpit (`?complemento=`); a apresentação certa
+  sai de `lerApresentacao`. Ao recriar `accept_negotiation` ou
+  `_commercial_close_step_raw`, levar o `v_complemento`.
+- ✅ **0357 aplicada na produção** (o dono informou em 03/11/2026) antes do push.
+- Próximo: AP64 passo 3 (sessões do complemento; painel das duas vendas).
+
 **03/11/2026 (AP95 entrega 2) — PC Administrador (core 0.388.1 → 0.390.0, migração 0356; Empresarial 0.94.1 → 0.95.0, migração 1039)**
 
 - **O Consultor RisLife só nas empresas e nos leads dele** (bloco 0.390.0 no

@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.391.0",
+    data: "2026-11-03",
+    migracao: "0357",
+    titulo: "O Consultor apresenta, negocia e fecha o plano complementar",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O quadro do Comercial ganhou a coluna Complementos: o cartão abre o cockpit no modo complemento, com apresentação, negociação e fechamento só do plano complementar. O cliente segue em tratamento e a venda original continua valendo.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O plano complementar tem a apresentação própria (Meet, gravação e resumo), que vai no contrato dele. A apresentação da venda original não muda.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Aprovado o plano complementar, o Consultor recebe \"Plano complementar para apresentar\"; fechada a venda dele, a Recepção recebe \"Complemento fechado — agendar\".",
+        papeis: ["commercial_consultant", "receptionist", "clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.390.0",
     data: "2026-11-03",
     migracao: "0356",

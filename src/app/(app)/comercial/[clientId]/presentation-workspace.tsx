@@ -32,10 +32,13 @@ export function PresentationWorkspace({
   clientId,
   data,
   canEdit,
+  complementoId = null,
 }: {
   clientId: string;
   data: PresentationData | null;
   canEdit: boolean;
+  /** AP64 (0357, C1): salva na apresentação PRÓPRIA do plano complementar. */
+  complementoId?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -46,12 +49,16 @@ export function PresentationWorkspace({
 
   function save() {
     startTransition(async () => {
-      const r = await saveCommercialPresentation(clientId, {
-        meetLink,
-        recordingUrl,
-        summary,
-        notes,
-      });
+      const r = await saveCommercialPresentation(
+        clientId,
+        {
+          meetLink,
+          recordingUrl,
+          summary,
+          notes,
+        },
+        complementoId
+      );
       if (r.ok) {
         toast.success("Apresentação salva.");
         router.refresh();
