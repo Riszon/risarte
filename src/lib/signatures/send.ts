@@ -33,6 +33,14 @@ import { lerRazaoSocial } from "./razao-social";
 import { montarValores } from "./valores";
 import { preencherModelo } from "./variables";
 import { qualificacaoDoTipo as qualificacao } from "./qualificacao";
+import {
+  mensagemDoConflito,
+  numeroDoConflito,
+  pacoteAbertoComOsMesmos,
+  pacoteAssinadoComOsMesmos,
+  type PacoteAberto,
+  type PacoteAssinado,
+} from "./duplicidade";
 
 export { qualificacao };
 
@@ -66,6 +74,8 @@ export type PrepareInput = {
   /** template_id → chave da pessoa escolhida para assinar pela Risarte. */
   representativeKeys: Record<string, string>;
   attachments: { name: string; bytes: Uint8Array }[];
+  /** AP108: quem envia já viu o aviso de que o mesmo documento foi assinado antes. */
+  confirmouJaAssinado?: boolean;
 };
 
 export type PrepareResult =
@@ -79,7 +89,14 @@ export type PrepareResult =
       authReason: string;
       signers: { name: string; qualification: string; order_group: number }[];
     }
-  | { ok: false; error: string };
+  | {
+      ok: false;
+      error: string;
+      /** AP108: pacote aguardando assinatura com o mesmo documento — bloqueia. */
+      conflito?: PacoteAberto;
+      /** AP108: o mesmo documento já foi assinado — avisa e pede confirmação. */
+      jaAssinado?: PacoteAssinado;
+    };
 
 export type SendResult =
   | {
@@ -169,6 +186,22 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
 
   // 1) A porta do banco: o rascunho, os documentos e os signatários.
   const supabase = await createClient();
+
+  // AP108: o mesmo documento aguardando assinatura bloqueia (o banco também
+  // recusa, 0361); o mesmo documento já assinado só avisa e pede confirmação.
+  const modelos = templates.map((t) => t.id);
+  const aberto = await pacoteAbertoComOsMesmos(supabase, { clientId: input.clientId }, modelos);
+  if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number), conflito: aberto };
+  if (!input.confirmouJaAssinado) {
+    const assinado = await pacoteAssinadoComOsMesmos(supabase, { clientId: input.clientId }, modelos);
+    if (assinado) {
+      return {
+        ok: false,
+        error: `O pacote ${assinado.number} com este documento já foi assinado${assinado.completedAt ? ` em ${formatBrDate(assinado.completedAt)}` : ""}. Confirme se é mesmo para enviar outro.`,
+        jaAssinado: assinado,
+      };
+    }
+  }
   const signersPayload = montado.signers.map((s) => ({
     ...s,
     auth_mode_applied: modoDeAutenticacao({ level: auth.level, orderGroup: s.order_group, phone: s.phone, email: s.email }).auth_mode,
@@ -207,6 +240,11 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
     p_issuer_cnpj: ctx.clinic.cnpj,
   });
   if (rpcError || !created) {
+    const conflitoNoBanco = numeroDoConflito(rpcError?.message);
+    if (conflitoNoBanco) {
+      const { data: p } = await supabase.from("signature_packages").select("id").eq("number", conflitoNoBanco).maybeSingle<{ id: string }>();
+      return { ok: false, error: mensagemDoConflito(conflitoNoBanco), conflito: { packageId: p?.id ?? "", number: conflitoNoBanco } };
+    }
     return { ok: false, error: mensagemDaPorta(rpcError?.message) };
   }
   const packageId = String((created as { id: string }).id);
@@ -511,6 +549,10 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
     }
     await admin.from("signature_events").insert({ package_id: pkg.id, event_type: "send_failed", actor_user_id: input.session.userId, error: msg.slice(0, 500) });
     await admin.from("signature_signers").update({ zapsign_signer_token: null, sign_url: null }).eq("package_id", pkg.id);
+    // AP108: outro envio do mesmo documento passou na frente (0361) — o
+    // documento recém-criado já foi cancelado na ZapSign acima.
+    const conflito = numeroDoConflito(msg);
+    if (conflito) return { ok: false, error: `${mensagemDoConflito(conflito)} Este envio foi desfeito na ZapSign.` };
     return { ok: false, error: e instanceof ZapsignError ? mensagemDaZapsign(e) : "Não foi possível enviar à ZapSign. O pacote continua como rascunho; tente de novo." };
   }
 }
@@ -541,6 +583,8 @@ export function mensagemDaPorta(msg: string | undefined): string {
   if (m.includes("ORIGIN_REQUIRED") || m.includes("ORIGIN_INVALID") || m.includes("CLIENT_NOT_ALLOWED")) return "A origem do envio é inválida para uma empresa.";
   if (m.includes("ITEMS_REQUIRED")) return "Escolha ao menos um documento.";
   if (m.includes("SIGNERS_REQUIRED")) return "O pacote precisa de ao menos um signatário.";
+  const conflito = numeroDoConflito(m);
+  if (conflito) return mensagemDoConflito(conflito);
   if (/does not exist|Could not find the function/i.test(m)) return "A assinatura digital ainda não está instalada neste banco (falta a migração 0342).";
   return "Não foi possível criar o pacote. Tente de novo em instantes.";
 }

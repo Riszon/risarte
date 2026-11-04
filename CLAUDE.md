@@ -391,6 +391,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (AP108) — PC Administrador (core 0.393.0 → 0.394.0, migração 0361)**
+
+- **O mesmo documento não é assinado duas vezes** (bloco 0.394.0 no ESTADO).
+- ⚠️ **O banco recusa o duplicado** (0361: gatilhos em `signature_package_items`
+  e na passagem rascunho → enviado, `OPEN_PACKAGE_EXISTS:<número>`). Caminho
+  novo que crie ou envie pacote herda a trava — tratar a mensagem com
+  `numeroDoConflito` (`duplicidade.ts`).
+- ⚠️ **Já assinado só avisa** (decisão do dono): `confirmouJaAssinado` na
+  preparação. Botão que chama `preparar` não pode passar o clique como
+  argumento (régua).
+- ⏳ **0361 não aplicada na produção.** O dono roda.
+
+
 **04/11/2026 (AP107) — PC Administrador (core 0.392.1 → 0.393.0, migração 0360)**
 
 - **Cancelar o tratamento venda por venda** (bloco 0.393.0 no ESTADO).

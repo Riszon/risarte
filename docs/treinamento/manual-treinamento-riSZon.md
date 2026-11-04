@@ -4916,10 +4916,18 @@ vencimento, quem visualizou, baixou, reenviou ou cancelou.
 > sobre sua recusa"* — como se ele tivesse recusado. É o texto da ZapSign, não
 > do riSZon (visto no teste real, 03/11/2026).
 
-> ⚠️ **O sistema deixa enviar de novo o mesmo documento** para quem já tem um
-> pacote aguardando — e os dois poderiam ser assinados. Antes de enviar,
-> confira na aba Documentos da ficha se já não há um pacote aberto; se houver e
-> for para refazer, **cancele o antigo** (visto no teste real, 03/11/2026).
+**O mesmo documento não é assinado duas vezes** (desde a versão 0.394.0):
+
+- **Já aguardando assinatura** para o mesmo paciente (ou a mesma empresa): a
+  janela **não deixa enviar** e mostra o pacote aberto. Quem pode cancelar tem
+  o botão **Cancelar o anterior e enviar este** — o anterior é cancelado também
+  na ZapSign (os links dele param) com o motivo "Substituído por um novo envio
+  do mesmo documento", e o novo é preparado em seguida. O banco também recusa:
+  nem dois cliques seguidos, nem duas abas, criam dois envios.
+- **Já assinado antes**: a janela **avisa** (número e data do pacote assinado)
+  e só segue com **Enviar mesmo assim** — por exemplo, um contrato novo para
+  outro tratamento.
+- PDF avulso (enviado do computador) não entra nessa conferência.
 
 **Auditoria.** Cada visualização, download, reenvio e cancelamento fica na
 Auditoria ("Pacote de assinatura digital") e em **O que aconteceu**, com quem

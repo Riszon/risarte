@@ -140,6 +140,7 @@ export async function prepararEnvio(formData: FormData): Promise<PrepareResult> 
     witnessKeys,
     representativeKeys,
     attachments,
+    confirmouJaAssinado: str("confirmou_ja_assinado") === "1",
   });
 }
 

@@ -9,7 +9,7 @@ Pedido do dono. É o ÍNDICE do que está aberto; o detalhe de cada item está n
 seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seção.
 
 **Esperando decisão do dono**
-- [ ] **AP108** — o mesmo documento pode ser enviado para assinatura duas vezes ao mesmo paciente, sem aviso (ZS8, ASS-000049 e ASS-000050 abertos juntos): avisar, bloquear ou deixar?
+- [x] **AP108** — o mesmo documento pode ser enviado para assinatura duas vezes ao mesmo paciente, sem aviso (ZS8, ASS-000049 e ASS-000050 abertos juntos) — **resolvido em 0.394.0 (0361): aberto bloqueia com "Cancelar o anterior e enviar este"; já assinado avisa e pede confirmação**
 - [x] **AP53** — Planner e especialidades: decidido MANTER com o Planner (03/11/2026)
 - [x] **AP66** — anonimizar paciente no núcleo: decidido NÃO FAZER por enquanto (03/11/2026)
 - [x] **AP51** — em qual conta o dinheiro entrou (duas contas e o Caixa) — corrigido na 0317 (0.342.0); a maquininha casada sozinha ficou para depois (decisão do dono)
@@ -3903,7 +3903,19 @@ investigado** — é do módulo Indica +Risos (outra sessão). Pode ser a tela
 recusando um tipo de apuração, ou a régua pegando um registro que a tela não
 abre. Fica para a sessão do Indica conferir.
 
-### AP108. Envio em dobro do mesmo documento, sem aviso (04/11/2026)
+### AP108. Envio em dobro do mesmo documento, sem aviso (04/11/2026) — ✅ Resolvido em 0.394.0
+
+**Resolução (decisão do dono: "não pode ter o risco de assinar duas vezes o
+mesmo documento"):** pacote aguardando assinatura com o mesmo modelo para a
+mesma parte BLOQUEIA — no banco (0361: gatilhos na criação e no envio, com trava
+por parte) e na tela (aviso vermelho com "Cancelar o anterior e enviar este").
+O mesmo modelo já ASSINADO avisa e pede confirmação ("Enviar mesmo assim").
+Respondido ao dono: "Reenviar" num pacote aberto reusa os mesmos links;
+"Reenviar como novo pacote" só existe para pacote fechado; o risco era o
+"Enviar para assinatura" de novo — dois documentos na ZapSign, um não trava o
+outro.
+
+**O registro original:**
 
 **Confirmado no teste real da ZS8 (treino, sandbox):** com o ASS-000049
 (contrato + TCLE) aguardando assinatura, a janela de envio deixou mandar de novo

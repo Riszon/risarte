@@ -1,6 +1,40 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.393.0** · Última migração: **0360** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.394.0** · Última migração: **0361** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🔒 0.394.0 — NÃO DÁ PARA ASSINAR DUAS VEZES O MESMO DOCUMENTO (04/11/2026, migração 0361, AP108)
+>
+> **Decisão do dono:** "não pode ter o risco de assinar duas vezes o mesmo
+> documento". O teste real da ZS8 mostrou que "Enviar para assinatura" de novo
+> criava um segundo documento na ZapSign (assinar um não trava o outro).
+>
+> - **0361:** gatilho na criação (cada documento com modelo) e no envio
+>   (rascunho → enviado) recusam com `OPEN_PACKAGE_EXISTS:<número>` quando há
+>   pacote enviado/parcialmente assinado da mesma parte (paciente, empresa ou
+>   lead) com o mesmo modelo; `pg_advisory_xact_lock` por parte para dois
+>   envios simultâneos. Cancelado e assinado não bloqueiam; PDF avulso não conta.
+> - **Tela:** `duplicidade.ts` confere antes de criar (paciente e empresa);
+>   `aviso-de-duplicidade.tsx` — vermelho com **Cancelar o anterior e enviar
+>   este** (cancela também na ZapSign, motivo "Substituído por um novo envio do
+>   mesmo documento", e prepara de novo); âmbar quando o mesmo documento já foi
+>   assinado → **Enviar mesmo assim** (decisão do dono). `enviarPacote` traduz a
+>   recusa no envio (o documento recém-criado já é cancelado na ZapSign).
+>
+> **Conferido:** ensaio no treino 8/8 em transação desfeita; concorrência com
+> duas conexões (o segundo envio esperou e foi recusado); visto na tela pelo
+> servidor local (Gerente de teste, ZapSign simulada): âmbar → envio do
+> ASS-000060 → segunda tentativa bloqueada em vermelho → cancelar e preparar
+> de novo. Régua `assinaturas-sem-duplicidade.test.ts` (7) provada quebrando 2
+> vezes; o verificador de tipos pegou o botão passando o clique como "já
+> confirmei".
+>
+> **Não visto:** a janela da empresa mostrando o aviso (o mesmo componente).
+>
+> **Resíduo no treino (meu):** ASS-000058/059 (ensaio, cancelados), ASS-000060
+> (cancelado com o motivo da substituição), ASS-000061 (rascunho descartado).
+>
+> ⏳ **0361 não aplicada na produção.** O dono roda.
+
 
 > ## ✂️ 0.393.0 — CANCELAR O TRATAMENTO VENDA POR VENDA (04/11/2026, migração 0360, AP107)
 >

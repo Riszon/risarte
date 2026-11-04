@@ -15,6 +15,8 @@ import { modoDeAutenticacao, nivelDeAutenticacao } from "./auth-level";
 import { loadStaffOptions } from "./envio-dados";
 import { inspectAttachment } from "./pdf/merge";
 import { gerarPdfDoPacote, mensagemDaPorta, type PrepareResult } from "./send";
+import { mensagemDoConflito, numeroDoConflito, pacoteAbertoComOsMesmos, pacoteAssinadoComOsMesmos } from "./duplicidade";
+import { formatBrDate } from "@/lib/dates";
 import { loadSignatureSettings } from "./settings";
 import { candidatosDoRepresentante, montarSignatariosDaEmpresa } from "./signers";
 import type { SignatureTemplate, StaffSignerOption, TemplateBody } from "./types";
@@ -301,6 +303,8 @@ export async function prepararPacoteDaEmpresa(input: {
   representativeKey: string | null;
   /** Os anexos na ordem escolhida (o contrato de adesão vai antes de todos). */
   anexos: AnexoDoPacote[];
+  /** AP108: quem envia já viu o aviso de que o mesmo documento foi assinado antes. */
+  confirmouJaAssinado?: boolean;
 }): Promise<PrepareResult> {
   const loaded = await loadEmpresaSendContext({ session: input.session, origin: input.origin });
   if (!loaded.ok) return loaded;
@@ -402,6 +406,23 @@ export async function prepararPacoteDaEmpresa(input: {
       origin_id: null,
     })),
   ];
+  // AP108: o mesmo documento aguardando assinatura para a empresa/lead bloqueia
+  // (o banco também recusa, 0361); já assinado, só avisa e pede confirmação.
+  const parte = { companyId: ctx.companyId, leadId: ctx.leadId };
+  const modelos = itemsPayload.map((i) => i.template_id).filter((x): x is string => Boolean(x));
+  const aberto = await pacoteAbertoComOsMesmos(supabase, parte, modelos);
+  if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number), conflito: aberto };
+  if (!input.confirmouJaAssinado) {
+    const assinado = await pacoteAssinadoComOsMesmos(supabase, parte, modelos);
+    if (assinado) {
+      return {
+        ok: false,
+        error: `O pacote ${assinado.number} com este contrato já foi assinado${assinado.completedAt ? ` em ${formatBrDate(assinado.completedAt)}` : ""}. Confirme se é mesmo para enviar outro.`,
+        jaAssinado: assinado,
+      };
+    }
+  }
+
   const { data: created, error: rpcError } = await supabase.rpc("signature_create_package", {
     p_clinic_id: ctx.clinic.id,
     p_audience: "company",
@@ -420,7 +441,14 @@ export async function prepararPacoteDaEmpresa(input: {
     p_cover_data: coverData,
     p_issuer_cnpj: ctx.contratada.cnpj,
   });
-  if (rpcError || !created) return { ok: false, error: mensagemDaPorta(rpcError?.message) };
+  if (rpcError || !created) {
+    const conflitoNoBanco = numeroDoConflito(rpcError?.message);
+    if (conflitoNoBanco) {
+      const { data: p } = await supabase.from("signature_packages").select("id").eq("number", conflitoNoBanco).maybeSingle<{ id: string }>();
+      return { ok: false, error: mensagemDoConflito(conflitoNoBanco), conflito: { packageId: p?.id ?? "", number: conflitoNoBanco } };
+    }
+    return { ok: false, error: mensagemDaPorta(rpcError?.message) };
+  }
   const packageId = String((created as { id: string }).id);
   const number = String((created as { number: string }).number);
 

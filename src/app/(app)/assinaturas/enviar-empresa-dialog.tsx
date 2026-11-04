@@ -29,6 +29,7 @@ import {
   type EmpresaDialogContext,
 } from "./envio-empresa-actions";
 import { LinksDeAssinatura } from "./links-de-assinatura";
+import { AvisoDeDuplicidade, type Duplicidade } from "./aviso-de-duplicidade";
 
 /**
  * A JANELA "ENVIAR PARA ASSINATURA" DA EMPRESA (ZS5, plano ZS0 §4.6), no
@@ -83,6 +84,8 @@ export function EnviarEmpresaParaAssinaturaDialog({
   const [repKey, setRepKey] = useState<string>("");
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [prepared, setPrepared] = useState<Extract<PrepareResult, { ok: true }> | null>(null);
+  // AP108: o mesmo documento aberto (bloqueia) ou já assinado (pede confirmação).
+  const [duplicidade, setDuplicidade] = useState<Duplicidade | null>(null);
   const [sent, setSent] = useState<Extract<SendResult, { ok: true }> | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -108,6 +111,7 @@ export function EnviarEmpresaParaAssinaturaDialog({
 
   function reset() {
     setStep(1);
+    setDuplicidade(null);
     setPrepared(null);
     setSent(null);
     setAnexos([]);
@@ -175,8 +179,10 @@ export function EnviarEmpresaParaAssinaturaDialog({
     });
   }
 
-  function preparar() {
+  function preparar(confirmouJaAssinado = false) {
     const fd = new FormData();
+    if (confirmouJaAssinado) fd.set("confirmou_ja_assinado", "1");
+    setDuplicidade(null);
     fd.set("origin_type", origin.type);
     fd.set("origin_id", origin.id);
     fd.set("incluir_contrato", incluirContrato ? "1" : "0");
@@ -201,8 +207,13 @@ export function EnviarEmpresaParaAssinaturaDialog({
     startTransition(async () => {
       const r = await prepararEnvioDaEmpresa(fd);
       if (r.ok) {
+        setDuplicidade(null);
         setPrepared(r);
         setStep(3);
+      } else if (r.conflito) {
+        setDuplicidade({ tipo: "aberto", ...r.conflito });
+      } else if (r.jaAssinado) {
+        setDuplicidade({ tipo: "assinado", ...r.jaAssinado });
       } else toast.error(r.error);
     });
   }
@@ -512,6 +523,15 @@ export function EnviarEmpresaParaAssinaturaDialog({
             </>
           )}
 
+{ctx && step === 2 && duplicidade && (
+            <AvisoDeDuplicidade
+              duplicidade={duplicidade}
+              clientId={null}
+              onTentarDeNovo={() => preparar()}
+              onEnviarMesmoAssim={() => preparar(true)}
+            />
+          )}
+
           {ctx && step === 3 && prepared && (
             <>
               <p className="text-sm">
@@ -563,7 +583,7 @@ export function EnviarEmpresaParaAssinaturaDialog({
               <Button variant="outline" disabled={isPending} onClick={() => setStep(1)}>
                 Voltar
               </Button>
-              <Button disabled={!ctx || isPending || faltandoPasso2.length > 0} onClick={preparar}>
+              <Button disabled={!ctx || isPending || faltandoPasso2.length > 0} onClick={() => preparar()}>
                 {isPending && <Loader2 className="mr-1 size-4 animate-spin" />}
                 Gerar a pré-visualização
               </Button>

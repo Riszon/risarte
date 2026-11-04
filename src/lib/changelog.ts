@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.394.0",
+    data: "2026-11-04",
+    migracao: "0361",
+    titulo: "Não dá mais para mandar assinar duas vezes o mesmo documento",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Se o mesmo documento já está aguardando assinatura para o paciente (ou a empresa), a janela de envio não deixa mandar de novo: mostra o pacote aberto e oferece \"Cancelar o anterior e enviar este\" — os links antigos param de funcionar antes do novo sair.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Se o mesmo documento já foi assinado antes, a janela avisa (com o número e a data) e só segue com \"Enviar mesmo assim\" — para um contrato novo de outro tratamento, por exemplo.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+    ],
+  },
+  {
     versao: "0.393.0",
     data: "2026-11-04",
     migracao: "0360",

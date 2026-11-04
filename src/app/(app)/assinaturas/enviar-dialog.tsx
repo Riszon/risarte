@@ -29,6 +29,7 @@ import {
 import type { PrepareResult, SendResult } from "@/lib/signatures/send";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { LinksDeAssinatura } from "./links-de-assinatura";
+import { AvisoDeDuplicidade, type Duplicidade } from "./aviso-de-duplicidade";
 
 /**
  * A JANELA "ENVIAR PARA ASSINATURA" (plano ZS0 §10), em três passos:
@@ -70,6 +71,8 @@ export function EnviarParaAssinaturaDialog({
   const [repKeys, setRepKeys] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<File[]>([]);
   const [prepared, setPrepared] = useState<Extract<PrepareResult, { ok: true }> | null>(null);
+  // AP108: o mesmo documento aberto (bloqueia) ou já assinado (pede confirmação).
+  const [duplicidade, setDuplicidade] = useState<Duplicidade | null>(null);
   const [sent, setSent] = useState<Extract<SendResult, { ok: true }> | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -97,6 +100,7 @@ export function EnviarParaAssinaturaDialog({
 
   function reset() {
     setStep(1);
+    setDuplicidade(null);
     setPrepared(null);
     setSent(null);
     setAttachments([]);
@@ -155,9 +159,11 @@ export function EnviarParaAssinaturaDialog({
     setTemplateIds(kit.templateIds);
   }
 
-  function preparar() {
+  function preparar(confirmouJaAssinado = false) {
     if (!ctx) return;
     const fd = new FormData();
+    if (confirmouJaAssinado) fd.set("confirmou_ja_assinado", "1");
+    setDuplicidade(null);
     fd.set("client_id", clientId);
     fd.set("clinic_id", clinicId);
     fd.set("origin_type", origin.type);
@@ -169,8 +175,13 @@ export function EnviarParaAssinaturaDialog({
     startTransition(async () => {
       const r = await prepararEnvio(fd);
       if (r.ok) {
+        setDuplicidade(null);
         setPrepared(r);
         setStep(3);
+      } else if (r.conflito) {
+        setDuplicidade({ tipo: "aberto", ...r.conflito });
+      } else if (r.jaAssinado) {
+        setDuplicidade({ tipo: "assinado", ...r.jaAssinado });
       } else toast.error(r.error);
     });
   }
@@ -390,6 +401,15 @@ export function EnviarParaAssinaturaDialog({
             </>
           )}
 
+{ctx && step === 2 && duplicidade && (
+            <AvisoDeDuplicidade
+              duplicidade={duplicidade}
+              clientId={clientId}
+              onTentarDeNovo={() => preparar()}
+              onEnviarMesmoAssim={() => preparar(true)}
+            />
+          )}
+
           {ctx && step === 3 && prepared && (
             <>
               <p className="text-sm">
@@ -441,7 +461,7 @@ export function EnviarParaAssinaturaDialog({
               <Button variant="outline" disabled={isPending} onClick={() => setStep(1)}>
                 Voltar
               </Button>
-              <Button disabled={!ctx || isPending || faltando.length > 0} onClick={preparar}>
+              <Button disabled={!ctx || isPending || faltando.length > 0} onClick={() => preparar()}>
                 {isPending && <Loader2 className="mr-1 size-4 animate-spin" />}
                 Gerar a pré-visualização
               </Button>
