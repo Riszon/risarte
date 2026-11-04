@@ -9,6 +9,7 @@ export const EVENT_LABEL: Record<string, string> = {
   package_created: "Pacote preparado",
   sent: "Enviado à ZapSign",
   send_failed: "Falha ao enviar à ZapSign",
+  send_mark_skipped: "Enviado, mas a gravação do envio não pegou (falta quem enviou)",
   resent_from: "Criado como reenvio de outro pacote",
   webhook_doc_signed: "Assinatura registrada pela ZapSign",
   webhook_doc_refused: "Recusado na ZapSign",
@@ -29,7 +30,7 @@ export const EVENT_LABEL: Record<string, string> = {
 };
 
 /** Eventos que pedem atenção (o detalhe pinta de âmbar). */
-export const EVENT_WARNING = new Set(["send_failed", "pending_download", "copy_failed", "closing_failed"]);
+export const EVENT_WARNING = new Set(["send_failed", "send_mark_skipped", "pending_download", "copy_failed", "closing_failed"]);
 
 export const RESEND_CHANNEL_LABEL: Record<string, string> = {
   whatsapp_link: "WhatsApp",

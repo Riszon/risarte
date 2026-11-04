@@ -77,6 +77,10 @@ export default defineConfig({
       // compartilhá-la com o servidor do dono já quebrou o sistema dele uma vez
       // (404 em página que existe).
       NEXT_DIST_DIR: ".next-test",
+      // ZS8: a ZapSign de MENTIRA (só fora da produção). O envio para assinatura
+      // percorre o caminho inteiro sem gastar documento nem depender do sandbox.
+      ZAPSIGN_ENV: "fake",
+      ZAPSIGN_API_TOKEN: "",
     },
   },
 });

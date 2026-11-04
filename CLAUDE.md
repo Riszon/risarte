@@ -391,6 +391,22 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (ZS8) — PC Administrador (core 0.392.0 → 0.392.1, migração 0359)**
+
+- **Assinatura digital testada de verdade no sandbox** (bloco 0.392.1 no
+  ESTADO; checklist em `docs/assinaturas/CHECKLIST-PRODUCAO.md`).
+- ⚠️ **`signature_apply_webhook` lê o pacote com `for update`** (0359). Ao
+  recriar, manter — e NÃO forçar "rascunho → enviado" no aviso (fez o envio
+  perder quem enviou). Régua `assinaturas-corrida-do-envio.test.ts`.
+- ⚠️ **E2E no treino:** a limpeza da suíte recusa (apagaria tabelas do
+  Empresarial e do Indica). Teste isolado: `SEM_LIMPEZA=1 npm run test:e2e --
+  e2e/16-assinaturas.spec.ts`. O `playwright.config.ts` liga `ZAPSIGN_ENV=fake`.
+- ⚠️ **Entrar no site do treino como conta de teste:** a sessão cai à
+  meia-noite ("virada do dia") — gerar de novo.
+- Pendente com o dono: AP108 (envio em dobro) e o checklist de produção.
+- ⏳ **0359 não aplicada na produção.** O dono roda.
+
+
 **03/11/2026 (AP64, passo 3) — PC Administrador (core 0.391.0 → 0.392.0, migração 0358)**
 
 - **AP64 completa: sessões do complemento vendido** (bloco 0.392.0 no ESTADO).

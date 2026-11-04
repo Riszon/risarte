@@ -459,8 +459,21 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
         channel_used: fake ? "fake" : "zapsign",
       })
       .eq("id", pkg.id)
-      .eq("status", "draft");
+      .eq("status", "draft")
+      .select("id");
     if (u.error) throw new Error(`DB: ${u.error.message}`);
+    // ZS8: a gravação só vale sobre rascunho. Se nada foi gravado, o documento
+    // JÁ está na ZapSign e os links já existem — não desfazer; deixar no rastro
+    // para alguém olhar (antes ficava calado e o pacote perdia quem enviou).
+    if ((u.data ?? []).length === 0) {
+      console.error("signature send: package was no longer a draft when marking it sent");
+      await admin.from("signature_events").insert({
+        package_id: pkg.id,
+        event_type: "send_mark_skipped",
+        actor_user_id: input.session.userId,
+        error: "O pacote já não era rascunho ao gravar o envio (quem enviou e o mês do consumo podem faltar).",
+      });
+    }
     await admin.from("signature_events").insert({
       package_id: pkg.id,
       event_type: "sent",

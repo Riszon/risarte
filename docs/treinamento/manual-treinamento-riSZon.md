@@ -4896,6 +4896,16 @@ vencimento, quem visualizou, baixou, reenviou ou cancelou.
 > ZapSign. Para quem cancela, o botão aparece apagado com esse aviso. E
 > nenhum pacote é apagado, assinado ou não.
 
+> ⚠️ **Ao cancelar, avise o paciente.** A ZapSign mostra a quem abrir o link
+> cancelado a frase *"Esse documento foi recusado! O emissor foi notificado
+> sobre sua recusa"* — como se ele tivesse recusado. É o texto da ZapSign, não
+> do riSZon (visto no teste real, 03/11/2026).
+
+> ⚠️ **O sistema deixa enviar de novo o mesmo documento** para quem já tem um
+> pacote aguardando — e os dois poderiam ser assinados. Antes de enviar,
+> confira na aba Documentos da ficha se já não há um pacote aberto; se houver e
+> for para refazer, **cancele o antigo** (visto no teste real, 03/11/2026).
+
 **Auditoria.** Cada visualização, download, reenvio e cancelamento fica na
 Auditoria ("Pacote de assinatura digital") e em **O que aconteceu**, com quem
 fez e quando.

@@ -9,6 +9,7 @@ Pedido do dono. É o ÍNDICE do que está aberto; o detalhe de cada item está n
 seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seção.
 
 **Esperando decisão do dono**
+- [ ] **AP108** — o mesmo documento pode ser enviado para assinatura duas vezes ao mesmo paciente, sem aviso (ZS8, ASS-000049 e ASS-000050 abertos juntos): avisar, bloquear ou deixar?
 - [x] **AP53** — Planner e especialidades: decidido MANTER com o Planner (03/11/2026)
 - [x] **AP66** — anonimizar paciente no núcleo: decidido NÃO FAZER por enquanto (03/11/2026)
 - [x] **AP51** — em qual conta o dinheiro entrou (duas contas e o Caixa) — corrigido na 0317 (0.342.0); a maquininha casada sozinha ficou para depois (decisão do dono)
@@ -3899,3 +3900,34 @@ dois perfis de Admin; o registro usado veio de `indica.apuracoes`. **Não
 investigado** — é do módulo Indica +Risos (outra sessão). Pode ser a tela
 recusando um tipo de apuração, ou a régua pegando um registro que a tela não
 abre. Fica para a sessão do Indica conferir.
+
+### AP108. Envio em dobro do mesmo documento, sem aviso (04/11/2026)
+
+**Confirmado no teste real da ZS8 (treino, sandbox):** com o ASS-000049
+(contrato + TCLE) aguardando assinatura, a janela de envio deixou mandar de novo
+os mesmos documentos ao mesmo paciente (ASS-000050), sem nenhum aviso em nenhum
+dos 3 passos. Os dois links ficam válidos ao mesmo tempo: o paciente poderia
+assinar os dois, e haveria dois contratos assinados. **A decidir com o dono:**
+(a) avisar no passo 1 ("já há um pacote aberto com este documento — enviar
+mesmo assim?"), (b) bloquear até cancelar o antigo, ou (c) deixar como está. O
+manual (13d.4) já orienta a conferir e cancelar o antigo.
+
+### ZS8 — o que o teste real no sandbox deixou (04/11/2026)
+
+- ✅ **Corrida no envio** (o aviso "documento criado" gravava rascunho por cima
+  do envio) — corrigida na 0359 (0.392.1).
+- ☐ **Ordem não obrigatória** com a preferência "Bloquear assinatura fora da
+  ordem" desligada — testemunha assinou antes do paciente. Tarefa do dono nas
+  duas contas (checklist de produção).
+- ⚠️ **Cancelar** aparece ao paciente, na ZapSign, como "documento recusado"
+  (texto da ZapSign). Manual 13d.4 orienta avisar o paciente.
+- ⚠️ Depois do cancelamento a ZapSign mandou `doc_signed` com a situação
+  "recusado" (em português). O sistema ignora porque o pacote já está fechado;
+  se algum dia um aviso desses chegar com o pacote aberto, `signature_apply_webhook`
+  não o trataria como recusa (lê o tipo do evento, não a situação). **Suspeita,
+  não vista com pacote aberto.**
+- ⚠️ A ZapSign pede celular a quem não tem telefone no cadastro, e a assinatura
+  "Digitar" pede código por e-mail (com `@example.com` no treino, não chega).
+- ☐ **E2E da suíte inteira** não roda no treino: a trava da limpeza recusa
+  apagar 12 tabelas do Empresarial e do Indica (a ZS8 rodou só o próprio teste,
+  com `SEM_LIMPEZA=1`). Decidir com as sessões dos outros módulos.

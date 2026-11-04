@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.392.1",
+    data: "2026-11-04",
+    migracao: "0359",
+    titulo: "Assinatura digital testada de verdade: o envio não volta mais a rascunho",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Um documento enviado para assinatura podia aparecer como \"Rascunho\" logo depois do envio, sem deixar cancelar nem reenviar — acontecia quando a ZapSign respondia no mesmo instante. Agora o envio fica sempre como \"Enviado\".",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Ao cancelar um envio, avise o paciente: a ZapSign mostra a quem abrir o link cancelado que o documento foi \"recusado\". E confira antes de enviar se não há um pacote aberto com o mesmo documento — o sistema deixa enviar de novo.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+    ],
+  },
+  {
     versao: "0.392.0",
     data: "2026-11-03",
     migracao: "0358",

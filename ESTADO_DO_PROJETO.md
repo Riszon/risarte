@@ -1,6 +1,60 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.392.0** · Última migração: **0358** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.392.1** · Última migração: **0359** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🧪 0.392.1 — ZS8: A ASSINATURA DIGITAL TESTADA DE VERDADE (04/11/2026, migração 0359)
+>
+> Última fase do plano `docs/assinaturas/PLANO-ZS0.md`. O teste real foi pelo
+> **site do treino, contra o sandbox da ZapSign**, com as contas de teste
+> (decisões do dono: razão social de teste na "Risarte Unidade Teste"; pode
+> rodar e criar o que for preciso; testar envio em dobro, avisos aos
+> Risartanos e se dá para marcar assinado sem assinar).
+>
+> **O que funcionou de ponta a ponta:**
+> - **ASS-000049** (contrato de prestação + TCLE ao paciente fictício, 2
+>   testemunhas, Gerente pela Risarte): 4 assinaturas pelos links da ZapSign,
+>   retorno em segundos, "Parcialmente assinado" → "Assinado", PDF assinado
+>   guardado 2 s depois, cópia ao paciente na fila de e-mail (sem Resend, fica
+>   pendente).
+> - **ASS-000051** (contrato de adesão do lead "ZZZ Fechamento"): o **RisLife de
+>   Teste** assinou pela Risarte e o texto o cita com RG e CPF da ficha (1039 +
+>   0356 de pé).
+> - **Avisos:** cada Risartano recebeu "É a sua vez de assinar" na vez dele
+>   (testemunhas juntas, depois o representante); quem enviou recebeu "Pacote
+>   assinado por todos"; "Minhas assinaturas pendentes" mostra só o que é da vez.
+> - **Cancelar** (com motivo, link morto na ZapSign), **Reenviar como novo**
+>   (ASS-000052), **recusa** pelo paciente (motivo guardado) e **vencimento**
+>   pela rotina diária (transação desfeita).
+> - O **PDF na tela da ZapSign** está legível (o "não visto" do AP89).
+>
+> **Achados:**
+> - 🔴 **Corrida no envio (corrigida, 0359):** o aviso "documento criado"
+>   chegou 14 ms depois de o envio gravar "enviado" e gravou rascunho por cima
+>   (ASS-000050) — `signature_apply_webhook` lia sem trava. Agora lê com `for
+>   update` e a 0359 conserta os presos. A primeira tentativa (forçar
+>   "rascunho → enviado" no aviso) fazia o envio não gravar quem enviou
+>   (ASS-000052, dado de teste corrigido) e saiu. `enviarPacote` registra
+>   `send_mark_skipped` se a gravação não pegar. Provado com duas conexões nas
+>   duas ordens.
+> - **Envio em dobro** do mesmo documento, sem aviso → AP108 (decisão do dono).
+> - **Ordem não obrigatória** com a preferência da conta desligada (testemunha
+>   assinou antes do paciente) → checklist.
+> - **Marcar assinado sem assinar:** o pacote não (só o retorno da ZapSign); a
+>   venda e o selo do Empresarial têm o marcador manual de propósito (papel).
+>
+> **Também:** `docs/assinaturas/CHECKLIST-PRODUCAO.md` (o que o dono liga na
+> conta ZapSign, na Vercel, no e-mail e na tela); E2E `e2e/16-assinaturas.spec.ts`
+> (ZapSign de mentira, `ZAPSIGN_ENV=fake` no `playwright.config.ts`) passou —
+> rodado com `SEM_LIMPEZA=1`, porque a trava da limpeza recusou apagar 12
+> tabelas do Empresarial e do Indica; `check:telas` no treino: só a AP31; régua
+> `assinaturas-corrida-do-envio.test.ts` (4) provada quebrando 2 vezes.
+>
+> **Resíduo no treino (meu, de teste):** a razão social "RISARTE UNIDADE TESTE
+> LTDA"; os pacotes ASS-000049 a 000052 do "Teste do portão 2" e o ASS-000051
+> da "ZZZ Fechamento"; o paciente criado pelo E2E ("Assinatura …").
+>
+> ⏳ **0359 não aplicada na produção.** O dono roda.
+
 
 > ## 🗓️ 0.392.0 — PLANO COMPLEMENTAR, PASSO 3: AS SESSÕES DO COMPLEMENTO (03/11/2026, migração 0358, AP64 COMPLETA)
 >
