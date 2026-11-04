@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { mensagemDoConflito, numeroDoConflito } from "@/lib/signatures/duplicidade";
+import { clienteJaAssinou, mensagemDoConflito, numeroDoConflito, situacaoDasAssinaturas } from "@/lib/signatures/duplicidade";
 import { mensagemDaPorta } from "@/lib/signatures/send";
 
 // AP108 (decisão do dono, 04/11/2026): "não pode ter o risco de assinar duas
@@ -75,5 +75,71 @@ describe("a tela explica e oferece a saída", () => {
     const s = ler("src/app/(app)/assinaturas/aviso-de-duplicidade.tsx");
     expect(s).toContain("cancelarPacoteDeAssinatura(");
     expect(s).toContain("MOTIVO_DA_SUBSTITUICAO");
+  });
+});
+
+// Pedido do dono (04/11/2026, primeiro TCLE real): com o paciente já tendo
+// assinado e só a Risarte faltando, o aviso dizia "ainda não foi assinado" e
+// oferecia cancelar em destaque — o paciente assinaria o mesmo documento duas
+// vezes. Vale para o paciente e para a empresa (a mesma janela de aviso).
+describe("o pacote aberto diz quem já assinou", () => {
+  const linhas = [
+    { name: "Ana Paciente", signer_type: "client", order_group: 1, status: "signed", signed_at: "2026-11-04T15:07:00Z", user_id: null },
+    { name: "Bruno Gerente", signer_type: "risarte_representative", order_group: 3, status: "pending", signed_at: null, user_id: "u-bruno" },
+  ];
+
+  it("separa quem assinou de quem falta, e marca quem está enviando", () => {
+    const p = situacaoDasAssinaturas(linhas, "u-bruno");
+    expect(p.assinaram.map((a) => a.name)).toEqual(["Ana Paciente"]);
+    expect(p.assinaram[0]).toMatchObject({ ladoDoCliente: true, qualificacao: "Paciente", assinouEm: "2026-11-04T15:07:00Z" });
+    expect(p.faltam).toEqual([expect.objectContaining({ name: "Bruno Gerente", souEu: true, ladoDoCliente: false })]);
+    expect(clienteJaAssinou(p)).toBe(true);
+  });
+
+  it("só a assinatura do lado do cliente conta (testemunha ou Risarte não)", () => {
+    const p = situacaoDasAssinaturas(
+      [{ name: "Teo", signer_type: "witness", order_group: 2, status: "signed", signed_at: null, user_id: null }],
+      null,
+    );
+    expect(clienteJaAssinou(p)).toBe(false);
+    expect(situacaoDasAssinaturas(linhas, null).faltam[0].souEu).toBe(false);
+  });
+
+  it("a representante da empresa também é o lado do cliente", () => {
+    const p = situacaoDasAssinaturas(
+      [{ name: "Carla RH", signer_type: "company_representative", order_group: 1, status: "signed", signed_at: null, user_id: null }],
+      null,
+    );
+    expect(clienteJaAssinou(p)).toBe(true);
+  });
+
+  it("a mensagem diz quem assinou, quando (no horário do Brasil) e quem falta", () => {
+    const m = mensagemDoConflito("ASS-000070", situacaoDasAssinaturas(linhas, null));
+    expect(m).toContain("já foi assinado por Ana Paciente (paciente) em 04/11/2026, 12:07");
+    expect(m).toContain("falta Bruno Gerente (representante da Risarte)");
+    expect(m).toContain("cancelar faria o cliente assinar de novo");
+    expect(m).not.toContain("cancele o anterior");
+  });
+
+  it("a preparação e a recusa do banco levam quem assinou (paciente e empresa)", () => {
+    for (const f of ["src/lib/signatures/send.ts", "src/lib/signatures/send-empresa.ts"]) {
+      const s = ler(f);
+      expect(s, f).toContain("pacoteAbertoComOsMesmos(supabase, ");
+      expect(s, f).toMatch(/pacoteAbertoComOsMesmos\([^)]*input\.session\.userId\)/);
+      expect(s, f).toContain("mensagemDoConflito(aberto.number, aberto)");
+      expect(s, f).toContain("pacoteAbertoPeloNumero(");
+      expect(s, f).not.toContain("mensagemDoConflito(conflitoNoBanco)");
+    }
+  });
+
+  it("com o cliente já assinado, cancelar pede a segunda confirmação", () => {
+    const s = ler("src/app/(app)/assinaturas/aviso-de-duplicidade.tsx");
+    const bloco = s.slice(s.indexOf("clienteJaAssinou(duplicidade)"), s.indexOf('if (duplicidade.tipo === "aberto") {'));
+    expect(bloco).toContain("Cancelar mesmo assim");
+    expect(bloco).toContain("vai ter que assinar de novo");
+    // o primeiro clique só abre a confirmação; quem cancela é o segundo
+    expect(bloco).toMatch(/onClick=\{\(\) => setConfirmandoCancelar\(true\)\}[^]*Cancelar mesmo assim/);
+    expect(bloco.indexOf("onClick={cancelarEEnviar}")).toBeGreaterThan(bloco.indexOf("confirmandoCancelar ? ("));
+    expect(bloco).toContain("Assinar agora");
   });
 });

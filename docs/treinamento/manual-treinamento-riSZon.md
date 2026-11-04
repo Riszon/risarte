@@ -4955,6 +4955,14 @@ vencimento, quem visualizou, baixou, reenviou ou cancelou.
   na ZapSign (os links dele param) com o motivo "Substituído por um novo envio
   do mesmo documento", e o novo é preparado em seguida. O banco também recusa:
   nem dois cliques seguidos, nem duas abas, criam dois envios.
+- **Já aguardando, mas o cliente já assinou** (desde a versão 0.397.1): o
+  paciente — ou o representante da empresa — assinou a parte dele e o pacote
+  espera só as testemunhas ou a Risarte. A janela mostra **quem já assinou e
+  quando** e **quem falta**, e **não é preciso enviar de novo**: use **Abrir o
+  pacote** (ou **Assinar agora**, quando quem falta é você) e conclua as
+  assinaturas que faltam. Se for mesmo para refazer, **Cancelar mesmo assim**
+  pede uma segunda confirmação — o cliente terá de assinar tudo de novo, e a
+  assinatura dele no pacote cancelado deixa de valer.
 - **Já assinado antes**: a janela **avisa** (número e data do pacote assinado)
   e só segue com **Enviar mesmo assim** — por exemplo, um contrato novo para
   outro tratamento.

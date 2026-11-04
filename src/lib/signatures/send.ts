@@ -37,6 +37,7 @@ import {
   mensagemDoConflito,
   numeroDoConflito,
   pacoteAbertoComOsMesmos,
+  pacoteAbertoPeloNumero,
   pacoteAssinadoComOsMesmos,
   type PacoteAberto,
   type PacoteAssinado,
@@ -190,8 +191,8 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   // AP108: o mesmo documento aguardando assinatura bloqueia (o banco também
   // recusa, 0361); o mesmo documento já assinado só avisa e pede confirmação.
   const modelos = templates.map((t) => t.id);
-  const aberto = await pacoteAbertoComOsMesmos(supabase, { clientId: input.clientId }, modelos);
-  if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number), conflito: aberto };
+  const aberto = await pacoteAbertoComOsMesmos(supabase, { clientId: input.clientId }, modelos, input.session.userId);
+  if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number, aberto), conflito: aberto };
   if (!input.confirmouJaAssinado) {
     const assinado = await pacoteAssinadoComOsMesmos(supabase, { clientId: input.clientId }, modelos);
     if (assinado) {
@@ -242,8 +243,8 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   if (rpcError || !created) {
     const conflitoNoBanco = numeroDoConflito(rpcError?.message);
     if (conflitoNoBanco) {
-      const { data: p } = await supabase.from("signature_packages").select("id").eq("number", conflitoNoBanco).maybeSingle<{ id: string }>();
-      return { ok: false, error: mensagemDoConflito(conflitoNoBanco), conflito: { packageId: p?.id ?? "", number: conflitoNoBanco } };
+      const conflito = await pacoteAbertoPeloNumero(supabase, conflitoNoBanco, input.session.userId);
+      return { ok: false, error: mensagemDoConflito(conflitoNoBanco, conflito), conflito };
     }
     return { ok: false, error: mensagemDaPorta(rpcError?.message) };
   }
@@ -552,7 +553,10 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
     // AP108: outro envio do mesmo documento passou na frente (0361) — o
     // documento recém-criado já foi cancelado na ZapSign acima.
     const conflito = numeroDoConflito(msg);
-    if (conflito) return { ok: false, error: `${mensagemDoConflito(conflito)} Este envio foi desfeito na ZapSign.` };
+    if (conflito) {
+      const aberto = await pacoteAbertoPeloNumero(admin, conflito, input.session.userId);
+      return { ok: false, error: `${mensagemDoConflito(conflito, aberto)} Este envio foi desfeito na ZapSign.` };
+    }
     return { ok: false, error: e instanceof ZapsignError ? mensagemDaZapsign(e) : "Não foi possível enviar à ZapSign. O pacote continua como rascunho; tente de novo." };
   }
 }

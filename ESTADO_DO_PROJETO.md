@@ -1,7 +1,28 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.397.0** · Última migração: **0365** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.397.1** · Última migração: **0365** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## ✍️ 0.397.1 — O AVISO DE DOCUMENTO REPETIDO DIZ QUANDO O CLIENTE JÁ ASSINOU (04/11/2026, sem migração)
+>
+> **Pedido do dono, depois do primeiro TCLE real na produção:** ele assinou como
+> paciente, tentou mandar de novo o mesmo documento e o aviso dizia "ainda não
+> foi assinado", com "Cancelar o anterior e enviar este" em destaque — o
+> cliente assinaria duas vezes. Vale para todos os documentos, inclusive o
+> Empresarial.
+>
+> - `duplicidade.ts`: o pacote aberto leva os signatários
+>   (`situacaoDasAssinaturas`, `clienteJaAssinou`; lado do cliente = grupo 1).
+>   `mensagemDoConflito` diz quem assinou e quem falta.
+> - `aviso-de-duplicidade.tsx`: com o cliente já assinado, aviso azul —
+>   "Assinar agora" (quando falta quem envia), "Abrir o pacote" e "Cancelar
+>   mesmo assim", que só cancela na segunda confirmação.
+>
+> **Conferido:** régua (6 testes novos, provada quebrando); visto na tela pelo
+> servidor local (ASS-000062 no treino). **Não visto:** a janela da empresa.
+>
+> **Resíduo no treino (meu):** ASS-000062 (TCLE, cancelado com o motivo da
+> substituição depois da assinatura simulada do paciente).
+>
 > ## 🤖 0.397.0 — RITA, FASE 0A.1: A IDENTIDADE E A AUDITORIA (04/11/2026, migrações 0365 e 3000; Rita 0.1.0)
 >
 > Primeira entrega da Fase 0A da Rita (`docs/sdr/PLANO-FASE-0A.md`, DA1–DA3;

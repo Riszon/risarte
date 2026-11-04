@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.397.1",
+    data: "2026-11-04",
+    migracao: null,
+    titulo: "O aviso de documento repetido diz quando o cliente já assinou",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao tentar mandar de novo um documento que o paciente (ou a empresa) já assinou e que só espera a Risarte ou as testemunhas, a janela não diz mais \"ainda não foi assinado\": mostra quem assinou e quando, quem falta, e oferece \"Abrir o pacote\" (e \"Assinar agora\", quando quem falta é você). Cancelar continua possível, mas como \"Cancelar mesmo assim\", com uma segunda confirmação avisando que o cliente terá de assinar de novo.",
+        papeis: ["commercial_consultant", "rislife_consultant", "commercial_assistant", "finance_franchisor", "unit_manager"],
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+    ],
+  },
+  {
     versao: "0.397.0",
     data: "2026-11-04",
     migracao: "0365",

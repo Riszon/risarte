@@ -15,7 +15,7 @@ import { modoDeAutenticacao, nivelDeAutenticacao } from "./auth-level";
 import { loadStaffOptions } from "./envio-dados";
 import { inspectAttachment } from "./pdf/merge";
 import { gerarPdfDoPacote, mensagemDaPorta, type PrepareResult } from "./send";
-import { mensagemDoConflito, numeroDoConflito, pacoteAbertoComOsMesmos, pacoteAssinadoComOsMesmos } from "./duplicidade";
+import { mensagemDoConflito, numeroDoConflito, pacoteAbertoComOsMesmos, pacoteAbertoPeloNumero, pacoteAssinadoComOsMesmos } from "./duplicidade";
 import { formatBrDate } from "@/lib/dates";
 import { loadSignatureSettings } from "./settings";
 import { candidatosDoRepresentante, montarSignatariosDaEmpresa } from "./signers";
@@ -410,8 +410,8 @@ export async function prepararPacoteDaEmpresa(input: {
   // (o banco também recusa, 0361); já assinado, só avisa e pede confirmação.
   const parte = { companyId: ctx.companyId, leadId: ctx.leadId };
   const modelos = itemsPayload.map((i) => i.template_id).filter((x): x is string => Boolean(x));
-  const aberto = await pacoteAbertoComOsMesmos(supabase, parte, modelos);
-  if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number), conflito: aberto };
+  const aberto = await pacoteAbertoComOsMesmos(supabase, parte, modelos, input.session.userId);
+  if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number, aberto), conflito: aberto };
   if (!input.confirmouJaAssinado) {
     const assinado = await pacoteAssinadoComOsMesmos(supabase, parte, modelos);
     if (assinado) {
@@ -444,8 +444,8 @@ export async function prepararPacoteDaEmpresa(input: {
   if (rpcError || !created) {
     const conflitoNoBanco = numeroDoConflito(rpcError?.message);
     if (conflitoNoBanco) {
-      const { data: p } = await supabase.from("signature_packages").select("id").eq("number", conflitoNoBanco).maybeSingle<{ id: string }>();
-      return { ok: false, error: mensagemDoConflito(conflitoNoBanco), conflito: { packageId: p?.id ?? "", number: conflitoNoBanco } };
+      const conflito = await pacoteAbertoPeloNumero(supabase, conflitoNoBanco, input.session.userId);
+      return { ok: false, error: mensagemDoConflito(conflitoNoBanco, conflito), conflito };
     }
     return { ok: false, error: mensagemDaPorta(rpcError?.message) };
   }
