@@ -33,7 +33,7 @@ _Atualizado em: 03/11/2026 · Versão do sistema: **0.394.0** · Última migraç
 > **Resíduo no treino (meu):** ASS-000058/059 (ensaio, cancelados), ASS-000060
 > (cancelado com o motivo da substituição), ASS-000061 (rascunho descartado).
 >
-> ⏳ **0361 não aplicada na produção.** O dono roda.
+> ✅ **0361 APLICADA nos dois bancos** (o dono rodou na produção em 04/11/2026; conferência 2·3·0; conferido de fora: sem login `_signature_open_conflict` e `_signature_party_lock` recusam com "permission denied"; a chave de serviço as encontra; a produção tem 0 pacotes).
 
 
 > ## ✂️ 0.393.0 — CANCELAR O TRATAMENTO VENDA POR VENDA (04/11/2026, migração 0360, AP107)

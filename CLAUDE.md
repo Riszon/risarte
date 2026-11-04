@@ -401,7 +401,7 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Já assinado só avisa** (decisão do dono): `confirmouJaAssinado` na
   preparação. Botão que chama `preparar` não pode passar o clique como
   argumento (régua).
-- ⏳ **0361 não aplicada na produção.** O dono roda.
+- ✅ **0361 APLICADA nos dois bancos** (o dono rodou na produção em 04/11/2026; conferência 2·3·0; conferido de fora: sem login `_signature_open_conflict` e `_signature_party_lock` recusam com "permission denied"; a chave de serviço as encontra; a produção tem 0 pacotes).
 
 
 **04/11/2026 (AP107) — PC Administrador (core 0.392.1 → 0.393.0, migração 0360)**

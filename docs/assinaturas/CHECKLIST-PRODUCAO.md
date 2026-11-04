@@ -67,6 +67,7 @@ Depois de salvar: **republicar sem o cache** (variável é lida na montagem).
 
 ## 5. Migrações
 
+- ✅ **0361** (aplicada na produção em 04/11/2026; o mesmo documento não é assinado duas vezes — AP108).
 - ✅ **0359** (aplicada na produção em 04/11/2026; o aviso da ZapSign não desfaz o envio — a corrida achada no teste;
   ver o item 7). Rodar na produção antes do primeiro envio de verdade.
 
@@ -87,7 +88,7 @@ Depois de salvar: **republicar sem o cache** (variável é lida na montagem).
 |---|---|
 | **Corrida no envio:** o aviso "documento criado" da ZapSign chegou 14 ms depois de o envio gravar "enviado" e gravou "rascunho" por cima (ASS-000050). O pacote some de "aguardando" e não deixa cancelar nem reenviar. | ✅ corrigido na **0359** (a leitura trava o pacote) + o envio deixa no rastro quando a gravação não pega. Provado nas duas ordens. |
 | **Ordem não obrigatória** na ZapSign (testemunha assinou antes do paciente). | ☐ preferência da conta (item 1). |
-| **O mesmo contrato pode ser enviado duas vezes** ao mesmo paciente, sem aviso (ASS-000049 e ASS-000050 abertos juntos). Os dois poderiam ser assinados. | ☐ **decisão do dono:** avisar, bloquear ou deixar. |
+| **O mesmo contrato pode ser enviado duas vezes** ao mesmo paciente, sem aviso (ASS-000049 e ASS-000050 abertos juntos). Os dois poderiam ser assinados. | ✅ resolvido na **0361** (0.394.0, AP108): aberto bloqueia com "Cancelar o anterior e enviar este"; já assinado avisa e pede confirmação. |
 | **Cancelar** pelo sistema aparece ao paciente, na ZapSign, como "Esse documento foi **recusado**! O emissor foi notificado sobre sua recusa". | ⚠️ é o texto da ZapSign (o cancelamento é feito pela recusa da API). Avisar o paciente por WhatsApp ao cancelar. |
 | Depois do cancelamento a ZapSign mandou um aviso do tipo `doc_signed` com a situação "recusado". | ✅ o sistema ignorou (pacote já fechado). Fica registrado. |
 | Marcar como assinado sem assinar | O **pacote** não: só o retorno da ZapSign marca "assinado". A **venda** e o **selo do Empresarial** têm o marcador manual de propósito (contrato assinado no papel). |
