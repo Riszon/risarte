@@ -540,9 +540,13 @@ export function PlanningSection({
     (plan.status === "submitted" || plan.status === "approved");
   const allOptionsHaveItems =
     options.length > 0 && options.every((o) => o.items.length > 0);
+  // AP64 (0355): o plano complementar se monta e se envia com o cliente em
+  // tratamento (Fase 5) — o banco confere a fase.
+  const ehComplemento = Boolean(plan.complementOfPlanId);
+  const montaAqui = inPlanningPhase || ehComplemento;
   const canSubmit =
     canEditContent &&
-    inPlanningPhase &&
+    montaAqui &&
     diagnosis.trim().length > 0 &&
     options.length > 0 &&
     allOptionsHaveItems;
@@ -1193,7 +1197,7 @@ export function PlanningSection({
               Enviar para aprovação do Coordenador
             </Button>
             {/* 0339: o banco recusa o envio; a tela avisa antes do clique. */}
-            {semPrioridade > 0 && inPlanningPhase && (
+            {semPrioridade > 0 && montaAqui && (
               <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
                 Falta definir a prioridade de {semPrioridade}{" "}
                 {semPrioridade === 1 ? "procedimento" : "procedimentos"}.{" "}
@@ -1211,14 +1215,14 @@ export function PlanningSection({
               </p>
             )}
             {/* OC-00010: o banco recusa o envio; a tela avisa antes do clique. */}
-            {options.some((o) => !o.sequenceConfirmedAt) && inPlanningPhase && (
+            {options.some((o) => !o.sequenceConfirmedAt) && montaAqui && (
               <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
                 Falta confirmar os atendimentos e a sequência de:{" "}
                 {options.filter((o) => !o.sequenceConfirmedAt).map((o) => o.title).join(", ")}. Abra{" "}
                 <strong>Atendimentos e sequência</strong> no Cockpit de Planejamento.
               </p>
             )}
-            {(!canSubmit || !pillarChoice) && inPlanningPhase && (
+            {(!canSubmit || !pillarChoice) && montaAqui && (
               <p className="text-xs text-muted-foreground">
                 Para enviar: preencha o diagnóstico, tenha ao menos uma opção,
                 lance os <strong>procedimentos</strong> (itens do orçamento) em{" "}
@@ -1278,13 +1282,20 @@ export function PlanningSection({
         {/* Já foi ao Comercial — edição bloqueada; revisão vira um plano novo. */}
         {canEdit &&
           plan.status === "approved" &&
-          !inPlanningPhase && (
+          !inPlanningPhase &&
+          !ehComplemento && (
             <p className="border-t pt-3 text-xs text-muted-foreground">
               Plano enviado ao Comercial — a edição fica bloqueada. Para uma nova
               conduta, crie um <strong>novo plano</strong> (o cliente precisa
               estar no Centro de Planejamento).
             </p>
           )}
+        {canEdit && plan.status === "approved" && ehComplemento && (
+          <p className="border-t pt-3 text-xs text-muted-foreground">
+            Plano complementar aprovado — a edição fica bloqueada. A apresentação
+            ao cliente é do Consultor Comercial.
+          </p>
+        )}
 
         {/* Aprovação por opção (F4): o Coordenador decide cada opção acima. */}
         {canReview && plan.status === "submitted" && (

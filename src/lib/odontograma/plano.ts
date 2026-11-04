@@ -210,11 +210,13 @@ export function itensDoPlanoVigente<I>(
     status: string;
     supersededAt?: string | null;
     createdAt: string;
+    /** AP64 (0355): o complemento não é o plano que vale (até ser vendido). */
+    complementOfPlanId?: string | null;
     options: { isPrimary: boolean; reviewStatus: string; items: I[] }[];
   }[]
 ): I[] {
   const vigentes = planos
-    .filter((p) => !p.supersededAt)
+    .filter((p) => !p.supersededAt && !p.complementOfPlanId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   const plano = vigentes.find((p) => p.status === "approved") ?? vigentes[0];
   if (!plano) return [];

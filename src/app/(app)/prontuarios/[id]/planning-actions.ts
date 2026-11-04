@@ -9,6 +9,7 @@ import type { PlanLifecycle, PlanResult, ProjectedSession } from "@/lib/planning
 import type { LinhaDaSequencia } from "@/lib/sequencia-do-plano";
 import { parseBRLToCents } from "@/lib/pricing";
 import { mensagemDoPlano } from "@/lib/odontograma/plano";
+import { mensagemDoComplemento } from "@/lib/plano-complementar";
 
 /**
  * Only the Dentista Planner (or Admin) works on a treatment plan. The plan is
@@ -666,6 +667,38 @@ export async function removePlanOption(optionId: string): Promise<PlanResult> {
 }
 
 /**
+ * AP64 (0355): o Coordenador Clínico ABRE o plano complementar de um plano
+ * vendido, com o cliente em tratamento (Fase 5), escrevendo as informações
+ * clínicas. Quem confere tudo é o banco (`open_plan_complement`).
+ */
+export async function openPlanComplement(
+  clientId: string,
+  parentPlanId: string,
+  clinicalNotes: string
+): Promise<PlanResult & { planId?: string }> {
+  await getSessionContext();
+  if (!clinicalNotes.trim()) {
+    return { ok: false, error: mensagemDoComplemento("CLINICAL_NOTES_REQUIRED") };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("open_plan_complement", {
+    p_parent_plan_id: parentPlanId,
+    p_clinical_notes: clinicalNotes,
+  });
+  if (error) {
+    if (!/NOT_ALLOWED|CLINICAL_NOTES_REQUIRED|WRONG_PHASE|PARENT_NOT_SOLD|COMPLEMENT_IN_PROGRESS|PLAN_NOT_FOUND/.test(error.message)) {
+      console.error("open_plan_complement failed:", error.message);
+    }
+    return { ok: false, error: mensagemDoComplemento(error.message) };
+  }
+  revalidatePath(`/prontuarios/${clientId}`);
+  revalidatePath(`/planejamento/${clientId}`);
+  revalidatePath("/jornada");
+  revalidatePath("/notificacoes");
+  return { ok: true, planId: (data as string | null) ?? undefined };
+}
+
+/**
  * The Coordenador Clínico approves or returns a submitted plan (Etapa 5.3/4.3).
  * Approve → status 'approved' + notify the Planner to send to Commercial.
  * Return → status 'returned' with orientações + sub-status revision_with_coordinator.
@@ -843,7 +876,8 @@ export async function submitTreatmentPlan(planId: string): Promise<PlanResult> {
     if (error.message.includes("WRONG_PHASE")) {
       return {
         ok: false,
-        error: "O cliente precisa estar no Centro de Planejamento (Fase 3).",
+        error:
+          "O cliente precisa estar no Centro de Planejamento (Fase 3). O plano complementar é enviado com o cliente em tratamento (Fase 5).",
       };
     }
     if (error.message.includes("DIAGNOSIS_REQUIRED")) {

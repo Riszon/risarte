@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migração: **0356** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0353 só no treino; 0356 só no treino) · Empresarial **0.95.0** / migração **1039** (1038 aplicada na produção e no treino; 1039 só no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migração: **0356** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0353 só no treino; 0356 só no treino) · Empresarial **0.95.0** / migração **1039** (1038 aplicada na produção e no treino; 1039 só no treino)_
 
 > ## 🏢 0.390.0 — O CONSULTOR RISLIFE SÓ NAS EMPRESAS DELE (03/11/2026, migrações 0356 e 1039; Empresarial 0.95.0; AP95 entrega 2)
 >
@@ -46,6 +46,26 @@ _Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migraç
 > ⚠️ **A 0354 desta sessão virou 0356** (a outra sessão publicou a sua 0354
 > antes); no treino o registro foi renomeado.
 
+
+> ## 🧩 0.389.0 — PLANO COMPLEMENTAR, PASSO 1: ABRIR, MONTAR E APROVAR (03/11/2026, migração 0355, AP64)
+>
+> Decisão do dono (AP64, V1–V7 em `docs/comercial/AP63-AP64-PLANO.md`): com o
+> cliente em tratamento (Fase 5), o Coordenador abre um plano complementar
+> (separado, ligado ao vendido), o Planner monta, o Coordenador aprova e o
+> Consultor apresenta. O plano vendido não muda.
+>
+> - **0355:** colunas `complement_*` (só pela função), `open_plan_complement`,
+>   e envio/aprovação (`submit_treatment_plan`, `review_treatment_plan`,
+>   `review_plan_option`) valendo na Fase 5 sem mexer no sub-status.
+> - ⚠️ **O complemento é um plano aprovado a mais.** Todo leitor de "o plano
+>   aprovado do cliente" tem de pular `complement_of_plan_id` — feito em
+>   `planoQueAbre`, `itensDoPlanoVigente`, apresentação, negociação, resumo do
+>   dentista, assinatura, lista de procedimentos, envio 3→4 e `/planos`.
+> - ⚠️ **O código supõe a 0355 no banco** (filtros pela coluna nova).
+>   ✅ 0355 aplicada na produção (o dono informou em 03/11/2026; não conferido
+>   de fora) antes do push.
+> - Ensaio no treino 21/21; régua `plano-complementar.test.ts`. **Não visto na
+>   tela.** Passos 2 (apresentação e negociação) e 3 (sessões) a fazer.
 
 > ## 🔒 0.388.1 — O WEBHOOK DO ASAAS FECHA SEM O SEGREDO; COMPARAÇÃO EM TEMPO CONSTANTE (03/11/2026, sem migração; Empresarial 0.94.1; AP99)
 >

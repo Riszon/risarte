@@ -2662,6 +2662,27 @@ Por qualquer um deles, o prontuário do cliente abre **direto na aba Plano**.
 > "Aguardando aprovação do Coordenador"); o plano **já foi avaliado**; ou você
 > está em **outra unidade** que não a do cliente (confira no alto do menu).
 
+**Terceira tarefa — abrir um plano complementar** (desde a versão 0.389.0).
+Quando o cliente **já está em tratamento** (Fase 5) e precisa de algo que não
+contratou — por exemplo, espera os meses do enxerto e quer adiantar outra
+etapa —, abra a ficha → aba **Plano** → **Abrir plano complementar**. Escreva
+as **informações clínicas** (o que viu, o que indica e por quê) e confirme. O
+cliente **não muda de fase**, e o plano vendido **continua valendo**.
+
+1. Os Planners recebem o aviso **"Plano COMPLEMENTAR para montar"**.
+2. O Planner monta e envia: você recebe **"Plano COMPLEMENTAR aguardando
+   aprovação"** e aprova como qualquer plano (opção por opção).
+3. Aprovado, o Consultor Comercial apresenta o complemento ao cliente.
+
+> **Um complemento por vez.** Enquanto um estiver em montagem ou aprovação, o
+> botão diz que é preciso aprová-lo antes de abrir outro. Depois de aprovado,
+> pode haver outros ao longo do tratamento (Complemento 1, 2…).
+
+> **Onde ver.** Na aba **Plano**, uma faixa violeta mostra o **plano vendido**
+> e os **complementos**, cada um com a situação (clique para abrir). Na
+> **Jornada**, o cartão do cliente ganha a etiqueta **"Complemento 1 ·
+> aguardando aprovação"** (ou a situação do momento).
+
 **Cuidado:** você vê **o total** de cada opção, não o preço item a item. Isso é
 proposital: sua aprovação é clínica, não comercial. Desde a 0.336.0 vale
 também na **Apresentação** (antes ela mostrava o preço de cada item ao
@@ -2824,6 +2845,16 @@ deste plano foi cancelada"**. Para o cliente comprar de novo, **crie uma nova
 versão**: o **Enviar ao Comercial** recusa o plano da venda cancelada. A versão
 nova nasce com o aviso **"Este cliente teve uma venda cancelada"**, que mostra
 a venda, a data e o motivo — e o Consultor vê o mesmo aviso na negociação.
+
+**Plano complementar** (desde a versão 0.389.0). Quando o cliente já está em
+tratamento (Fase 5), o **Coordenador Clínico** pode abrir um **plano
+complementar** — um plano novo, separado, só com o que se acrescenta. Você
+recebe o aviso **"Plano COMPLEMENTAR para montar"** com as informações
+clínicas do Coordenador. Na ficha → aba **Plano**, a faixa violeta leva ao
+complemento (o plano vendido continua aberto por padrão). Monte como qualquer
+plano, confirme os **Atendimentos e sequência** no cockpit e **envie para
+aprovação** — no complemento o envio funciona com o cliente na Fase 5. O plano
+vendido não muda e não é substituído.
 
 **Atendimentos e sequência** — é onde você diz **como o tratamento vai ser
 executado**: o que é feito no mesmo horário, em que ordem e por quem. O botão

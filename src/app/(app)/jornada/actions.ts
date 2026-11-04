@@ -218,6 +218,8 @@ export async function moveClientPhase(
       .eq("client_id", clientId)
       .eq("status", "approved")
       .is("lifecycle", null)
+      // AP64 (0355): o complemento segue o caminho dele, não o do envio 3→4.
+      .is("complement_of_plan_id", null)
       .returns<{ id: string }[]>();
     for (const p of approvedPlans ?? []) {
       await supabase.rpc("set_plan_lifecycle", {

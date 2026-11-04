@@ -252,14 +252,20 @@ export function itensPelaSequencia<T extends ItemPlanejado>(
   });
 }
 
-/** O plano que a tela abre: o editável que vale; senão o que vale; senão o mais novo. */
-export function planoQueAbre<P extends Pick<TreatmentPlan, "status" | "supersededAt">>(
-  plans: readonly P[]
-): P | null {
+/**
+ * O plano que a tela abre: o editável que vale; senão o que vale; senão o mais
+ * novo. AP64 (0355): o plano COMPLEMENTAR não toma o lugar do plano do cliente —
+ * ele é aberto pela própria entrada dele (só abre sozinho se for o único).
+ */
+export function planoQueAbre<
+  P extends Pick<TreatmentPlan, "status" | "supersededAt"> & { complementOfPlanId?: string | null },
+>(plans: readonly P[]): P | null {
+  const doCliente = plans.filter((p) => !p.complementOfPlanId);
+  const lista = doCliente.length > 0 ? doCliente : plans;
   return (
-    plans.find((p) => (p.status === "draft" || p.status === "returned") && !p.supersededAt) ??
-    plans.find((p) => !p.supersededAt) ??
-    plans[0] ??
+    lista.find((p) => (p.status === "draft" || p.status === "returned") && !p.supersededAt) ??
+    lista.find((p) => !p.supersededAt) ??
+    lista[0] ??
     null
   );
 }

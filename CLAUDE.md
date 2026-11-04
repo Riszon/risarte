@@ -408,6 +408,17 @@ Syncthing se comportarem de forma estranha.**
 - ⏳ **0353, 0356 e 1039 não aplicadas na produção.** O dono roda, nessa ordem.
 
 
+**03/11/2026 (AP64, passo 1) — PC Administrador (core 0.388.1 → 0.389.0, migração 0355)**
+
+- **Plano complementar: abrir, montar e aprovar** (bloco 0.389.0 no ESTADO).
+  ⚠️ Leitor novo de "o plano aprovado do cliente" tem de pular
+  `complement_of_plan_id`. Ao recriar `submit_treatment_plan`,
+  `review_treatment_plan` ou `review_plan_option`, levar o `v_complemento`.
+- ⚠️ **O código filtra pela coluna da 0355.** ✅ 0355 aplicada na produção
+  (o dono informou em 03/11/2026) antes do push.
+- Próximo: AP64 passo 2 (apresentação e negociação do complemento, cartão
+  "Complemento" no Comercial) e passo 3 (sessões e painel das duas vendas).
+
 **03/11/2026 (Rita — plano 1, item 1) — PC Administrador (core 0.388.0 → 0.388.1, sem migração; Empresarial 0.94.0 → 0.94.1)**
 
 - **Levantamento da Rita entregue e dois planos aprovados pelo dono**

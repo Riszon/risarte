@@ -281,4 +281,11 @@ export type TreatmentPlan = {
   supersededByPlanId?: string | null;
   /** F3: quando o preço dos itens congelou (no envio para aprovação). */
   pricesFrozenAt?: string | null;
+  /**
+   * AP64 (0355): plano COMPLEMENTAR do plano vendido apontado. Montado com o
+   * cliente em tratamento (Fase 5); o vendido não muda.
+   */
+  complementOfPlanId?: string | null;
+  complementNo?: number | null;
+  complementClinicalNotes?: string | null;
 };

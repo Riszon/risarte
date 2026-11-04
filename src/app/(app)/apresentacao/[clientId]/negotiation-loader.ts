@@ -136,6 +136,8 @@ export async function loadNegotiationBlock(
     .select("id, created_at, superseded_at, plan_negotiations ( status )")
     .eq("client_id", clientId)
     .eq("status", "approved")
+    // AP64 (0355): o complemento tem a negociação dele (passo 2), não esta.
+    .is("complement_of_plan_id", null)
     .returns<
       {
         id: string;

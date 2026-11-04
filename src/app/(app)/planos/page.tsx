@@ -88,13 +88,17 @@ function classify(
   planStatus: TreatmentPlanStatus,
   phase: JourneyPhase | null,
   jStatus: JourneyStatus | null,
-  commercialReturnNote: string | null
+  commercialReturnNote: string | null,
+  ehComplemento = false
 ): Situation {
   if (planStatus === "draft" || planStatus === "returned") {
     // Devolvido pelo Comercial (nota pendente) = Replanejamento.
     return commercialReturnNote ? "replanejamento" : "em_planejamento";
   }
   if (planStatus === "submitted") return "aguardando_aprovacao";
+  // AP64 (0355): o complemento aprovado ainda não foi vendido — não está "em
+  // tratamento" só porque o cliente está.
+  if (ehComplemento) return "aprovado";
   // Aprovado: a situação segue a jornada do cliente.
   if (
     jStatus === "treatment_finished" ||
@@ -117,6 +121,7 @@ type PlanRow = {
   clinic_id: string;
   status: TreatmentPlanStatus;
   commercial_return_note: string | null;
+  complement_of_plan_id: string | null;
   created_at: string;
   updated_at: string | null;
   submitted_at: string | null;
@@ -197,7 +202,7 @@ export default async function PlansPage(props: PageProps<"/planos">) {
     let q = supabase
       .from("treatment_plans")
       .select(
-        "id, client_id, clinic_id, status, commercial_return_note, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status, phase_entered_at )"
+        "id, client_id, clinic_id, status, commercial_return_note, complement_of_plan_id, created_at, updated_at, submitted_at, reviewed_at, clinics ( name ), clients ( id, full_name, code, journey_phase, journey_status, phase_entered_at )"
       );
     if (scopeIds) q = q.in("clinic_id", scopeIds);
     if (unidade) q = q.eq("clinic_id", unidade);
@@ -239,7 +244,8 @@ export default async function PlansPage(props: PageProps<"/planos">) {
         p.status,
         p.clients!.journey_phase,
         p.clients!.journey_status,
-        p.commercial_return_note
+        p.commercial_return_note,
+        Boolean(p.complement_of_plan_id)
       ),
       createdAt: p.created_at,
       lastAt: p.reviewed_at ?? p.submitted_at ?? p.updated_at ?? p.created_at,

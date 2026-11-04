@@ -17,7 +17,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 **Decididos pelo dono em 03/11/2026, a implementar**
 - [x] **AP61** — repasse por PROCEDIMENTO CONCLUÍDO: entra uma vez, quando a última sessão do procedimento termina — **0.386.0 (0352); falta o dono confirmar: o repasse vai para quem concluiu a ÚLTIMA sessão**
 - [x] **AP63** — cancelada: compra de novo por nova versão + negociação nova, com a venda cancelada no histórico — **0.388.0 (0354)**
-- [ ] **AP64** — plano COMPLEMENTAR do plano vendido, na Fase 5 (Coordenador abre, Planner monta, Coordenador aprova, Consultor apresenta); sinal na Jornada e no prontuário — **plano aprovado em `docs/comercial/AP63-AP64-PLANO.md` (V1–V7); a fazer em 3 passos**
+- [ ] **AP64** — plano COMPLEMENTAR do plano vendido, na Fase 5 (Coordenador abre, Planner monta, Coordenador aprova, Consultor apresenta); sinal na Jornada e no prontuário — **passo 1 feito na 0.389.0 (0355); faltam o passo 2 (apresentação/negociação) e o 3 (sessões e painel das duas vendas)**
 - [x] **AP55** — TSB com a mesma lista da ASB; Recepção sem anamnese e sem chamar paciente — **0.385.0 (0351): a TSB ganhou no banco as réguas da ASB; "Fichas de anamnese" saiu do catálogo (fica "Anamneses clínicas", do Coordenador)**
 - [ ] **AP24** — Indica +Risos: implementar os 3 parâmetros (presente de boas-vindas, validade, divisão do prêmio)
 
@@ -3229,6 +3229,8 @@ Corrigido com `coalesce(…, false)` na mesma guarda que a OD5 recriou (H4/D6).
 Produção: 0 atendimentos com sessão concluídos.
 
 ### AP64. Versão nova do plano aprovada DEPOIS da venda — o painel passa para ela (20/10/2026) — DECIDIDO 03/11/2026, A IMPLEMENTAR
+
+**✅ Passo 1 feito (0.389.0, 0355):** colunas `complement_*` em `treatment_plans` (só pela função, gatilho `treatment_plan_complement_guard`); `open_plan_complement` (Coordenador, Fase 5, plano vendido, um por vez, informações clínicas obrigatórias); `submit_treatment_plan`, `review_treatment_plan` e `review_plan_option` aceitam o complemento na Fase 5 sem mexer no sub-status. Telas: botão do Coordenador, faixa violeta no prontuário, etiqueta no cartão da Jornada; os leitores do "plano aprovado" (abrir a tela, odontograma, apresentação, negociação, resumo do dentista, assinatura, lista de procedimentos, envio 3→4, lista de Planos) pulam o complemento. Ensaio no treino 21/21; régua `plano-complementar.test.ts`. **Para o passo 3:** `topup_treatment_sessions` escolhe UM plano (hoje cai no vendido porque o complemento não tem sessão); a lista de procedimentos do prontuário exclui o complemento até ele ser vendido.
 
 **Desenho revisto com o dono (03/11/2026):** não é versão nova, é **plano complementar** separado, ligado ao vendido, com o cliente na Fase 5. Plano e decisões V1–V7 em `docs/comercial/AP63-AP64-PLANO.md` §3–§5.
 

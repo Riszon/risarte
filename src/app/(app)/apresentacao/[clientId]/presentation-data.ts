@@ -90,6 +90,14 @@ export async function loadPresentationData(
       .not("superseded_at", "is", null)
       .returns<{ id: string }[]>();
     if (!subErro) for (const s of subRows ?? []) substituidos.add(s.id);
+    // AP64 (0355): o plano complementar não é o plano apresentado aqui.
+    const { data: compRows, error: compErro } = await supabase
+      .from("treatment_plans")
+      .select("id")
+      .eq("client_id", clientId)
+      .not("complement_of_plan_id", "is", null)
+      .returns<{ id: string }[]>();
+    if (!compErro) for (const s of compRows ?? []) substituidos.add(s.id);
   }
   const vigentes = (planRows ?? []).filter((p) => !substituidos.has(p.id));
   const planRow = vigentes.find((p) => p.status === "approved") ?? vigentes[0] ?? planRows?.[0];

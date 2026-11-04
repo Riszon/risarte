@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { rotuloDoComplemento } from "@/lib/plano-complementar";
+import type { PlanLifecycle, TreatmentPlanStatus } from "@/lib/planning";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -175,6 +177,57 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
   const proximoDe = (id: string): ProximoAgendamento | null | undefined =>
     agendamentosLidos ? (agendamentosLidos.get(id) ?? null) : undefined;
 
+  // AP64 (0355): o plano complementar aparece no cartão (o mais recente de cada
+  // cliente). Leitura que falha deixa a marca de fora.
+  const complementoPorCliente = new Map<string, string>();
+  {
+    const leituras = await Promise.all(
+      lotes.map((lote) =>
+        supabase
+          .from("treatment_plans")
+          .select("client_id, status, lifecycle, commercial_return_note, complement_of_plan_id, complement_no, created_at")
+          .in("client_id", lote)
+          .not("complement_of_plan_id", "is", null)
+          .returns<
+            {
+              client_id: string;
+              status: TreatmentPlanStatus;
+              lifecycle: PlanLifecycle | null;
+              commercial_return_note: string | null;
+              complement_of_plan_id: string | null;
+              complement_no: number | null;
+              created_at: string;
+            }[]
+          >()
+      )
+    );
+    const maisRecente = new Map<string, { no: number; rotulo: string }>();
+    for (const l of leituras) {
+      if (l.error) {
+        console.error("jornada — complementos:", l.error.message);
+        continue;
+      }
+      for (const p of l.data ?? []) {
+        const no = p.complement_no ?? 0;
+        const atual = maisRecente.get(p.client_id);
+        if (atual && atual.no >= no) continue;
+        maisRecente.set(p.client_id, {
+          no,
+          rotulo: rotuloDoComplemento({
+            id: p.client_id,
+            status: p.status,
+            lifecycle: p.lifecycle,
+            commercialReturnNote: p.commercial_return_note,
+            complementOfPlanId: p.complement_of_plan_id,
+            complementNo: p.complement_no,
+            createdAt: p.created_at,
+          }),
+        });
+      }
+    }
+    for (const [id, v] of maisRecente) complementoPorCliente.set(id, v.rotulo);
+  }
+
   // In the network view use the unit's SLA when filtered, else network default.
   const slaClinicId = isFranchisor ? unitFilter || null : clinicId;
   const sla = resolveSla(slaRows ?? [], slaClinicId);
@@ -295,6 +348,7 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
             clinic_name: isFranchisor ? (c.clinics?.name ?? null) : null,
             next_appointment: proximoDe(c.id),
             clinic_id: c.clinic_id,
+            complemento: complementoPorCliente.get(c.id) ?? null,
           })) as KanbanClient[]}
           visaoDaRede={isFranchisor}
           sla={sla}

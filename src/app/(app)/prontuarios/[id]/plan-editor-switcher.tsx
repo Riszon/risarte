@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { CornerUpLeft } from "lucide-react";
 import { PlanHistoryDialog } from "@/components/plan-history-dialog";
 import { AvisoVendaCancelada } from "@/components/aviso-venda-cancelada";
+import { AbrirComplemento } from "./abrir-complemento";
+import { complementosDoCliente, planoVendidoDeBase, rotuloDoComplemento } from "@/lib/plano-complementar";
 import { cn } from "@/lib/utils";
 import {
   PLAN_STAGE_LABELS,
@@ -58,7 +60,10 @@ export function PlanEditorSwitcher({
   grupos = [],
   sequencias,
   sequenciaNoCartao = false,
+  aberturaDoComplemento = null,
 }: {
+  /** AP64 (0355): o Coordenador abre o plano complementar (na Fase 5). */
+  aberturaDoComplemento?: { pode: true; baseId: string } | { pode: false; motivo: string | null } | null;
   /** OC-00006: os totais e a sequência para LER, dentro de cada opção. */
   sequencias?: SequenciasPorPlano;
   /** No cockpit do Planner, a lista fica no cartão; aqui, só os totais. */
@@ -122,8 +127,50 @@ export function PlanEditorSwitcher({
     });
   }
 
+  // AP64: o sinal do complemento — o plano vendido e os complementos, cada um
+  // com a situação. Some quando não há complemento.
+  const complementos = complementosDoCliente(plans);
+  const vendido = planoVendidoDeBase(plans);
+
   return (
     <div className="space-y-3">
+      {(complementos.length > 0 || aberturaDoComplemento) && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-violet-300 bg-violet-50 p-2 text-xs dark:border-violet-800 dark:bg-violet-950/40">
+          {complementos.length > 0 && (
+            <>
+              <span className="font-medium text-violet-900 dark:text-violet-100">Plano complementar:</span>
+              {vendido && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlanId(vendido.id)}
+                  className="rounded-full border border-violet-300 bg-white px-2 py-0.5 hover:bg-violet-100 dark:bg-transparent"
+                >
+                  Plano vendido · {PLAN_STAGE_LABELS[planStage(vendido)]}
+                </button>
+              )}
+              {complementos.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedPlanId(c.id)}
+                  className={cn(
+                    "rounded-full border border-violet-300 px-2 py-0.5 hover:bg-violet-100",
+                    c.id === selected?.id ? "bg-violet-200 font-medium dark:bg-violet-900" : "bg-white dark:bg-transparent"
+                  )}
+                >
+                  {rotuloDoComplemento(c)}
+                </button>
+              ))}
+            </>
+          )}
+          {aberturaDoComplemento && (
+            <span className="ml-auto">
+              <AbrirComplemento clientId={clientId} abertura={aberturaDoComplemento} />
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Lista de planos do cliente — nenhum é escondido/apagado. */}
       {plans.length > 1 && (
         <div className="flex flex-wrap items-center gap-1.5 rounded-lg border bg-muted/30 p-2">
@@ -152,7 +199,12 @@ export function PlanEditorSwitcher({
                   )}
                   aria-hidden
                 />
-                {pl.previousPlanId ? `Plano v${pl.versionNo ?? plans.length - i}` : `Plano ${plans.length - i}`} ·{" "}
+                {pl.complementOfPlanId
+                  ? `Complemento ${pl.complementNo ?? ""}`
+                  : pl.previousPlanId
+                    ? `Plano v${pl.versionNo ?? plans.length - i}`
+                    : `Plano ${plans.length - i}`}{" "}
+                ·{" "}
                 {pl.supersededAt ? "substituído" : PLAN_STAGE_LABELS[st]} ·{" "}
                 {new Date(pl.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}
               </button>
@@ -191,6 +243,25 @@ export function PlanEditorSwitcher({
           </p>
           <p className="text-xs text-muted-foreground">
             Fica guardado para consulta. O que vale é a versão nova — é ela que vai para a apresentação.
+          </p>
+        </div>
+      )}
+
+      {/* AP64: o complemento aberto pelo Coordenador — as informações clínicas. */}
+      {selected?.complementOfPlanId && (
+        <div className="rounded-xl border border-violet-300 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100">
+          <p className="font-semibold">
+            Plano complementar {selected.complementNo ?? ""} — o cliente segue em tratamento
+          </p>
+          {selected.complementClinicalNotes && (
+            <p className="mt-1 whitespace-pre-wrap">
+              <span className="text-xs opacity-80">Informações clínicas do Coordenador: </span>
+              {selected.complementClinicalNotes}
+            </p>
+          )}
+          <p className="mt-1.5 text-xs opacity-90">
+            Acrescenta tratamento ao plano vendido, que continua valendo. O Planner
+            monta, o Coordenador aprova e o Consultor apresenta ao cliente.
           </p>
         </div>
       )}
@@ -235,7 +306,8 @@ export function PlanEditorSwitcher({
       )}
 
       {/* Situação (linha do tempo única) do plano selecionado, quando já aprovado. */}
-      {selected && selected.status === "approved" && (
+      {/* AP64: o complemento não tem a situação mexida à mão (passos 2 e 3). */}
+      {selected && selected.status === "approved" && !selected.complementOfPlanId && (
         <PlanLifecycleBar
           planId={selected.id}
           stage={planStage(selected)}

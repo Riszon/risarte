@@ -97,6 +97,35 @@ export const CHANGELOG: Versao[] = [
     ],
   },
   {
+    versao: "0.389.0",
+    data: "2026-11-03",
+    migracao: "0355",
+    titulo: "Plano complementar para o cliente em tratamento (abrir, montar e aprovar)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O Coordenador Clínico pode abrir um plano complementar para o cliente em tratamento, com as informações clínicas: o cliente não muda de fase e o plano vendido continua valendo. O Planner monta, e o Coordenador aprova.",
+        papeis: ["clinical_coordinator", "planner_dentist"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A aba Plano mostra o plano vendido e os complementos numa faixa violeta, e o cartão da Jornada ganha a etiqueta do complemento com a situação.",
+        papeis: ["clinical_coordinator", "planner_dentist", "unit_manager", "receptionist", "commercial_consultant"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A apresentação do complemento ao cliente pelo Consultor e as sessões dele chegam nas próximas versões.",
+        papeis: ["commercial_consultant", "clinical_coordinator"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.388.1",
     data: "2026-11-03",
     migracao: null,

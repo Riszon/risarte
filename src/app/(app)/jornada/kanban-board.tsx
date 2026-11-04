@@ -60,6 +60,8 @@ export type KanbanClient = {
   next_appointment?: ProximoAgendamento | null;
   /** A unidade do cliente — para a marca abrir a agenda certa na visão da rede. */
   clinic_id?: string;
+  /** AP64 (0355): "Complemento 1 · aguardando aprovação" — o mais recente. */
+  complemento?: string | null;
 };
 
 type Props = {
@@ -298,6 +300,15 @@ export function KanbanBoard({
                       >
                         <CalendarX className="size-3 shrink-0" />
                         Sem agendamento
+                      </Link>
+                    )}
+                    {client.complemento && (
+                      <Link
+                        href={`/prontuarios/${client.id}?aba=plano`}
+                        className="mt-1 inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-900 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100"
+                        title="Plano complementar do plano vendido — abre o plano no prontuário"
+                      >
+                        {client.complemento}
                       </Link>
                     )}
                     {canCoordinate &&

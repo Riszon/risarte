@@ -309,6 +309,22 @@ export async function loadClientPlans(
     if (!verErro) for (const v of verRows ?? []) versaoPorPlano.set(v.id, v);
   }
 
+  // AP64 (0355): o complemento — à parte: sem a 0355 no banco, nada aparece.
+  const complementoPorPlano = new Map<
+    string,
+    { complement_of_plan_id: string | null; complement_no: number | null; complement_clinical_notes: string | null }
+  >();
+  {
+    const { data: compRows, error: compErro } = await supabase
+      .from("treatment_plans")
+      .select("id, complement_of_plan_id, complement_no, complement_clinical_notes")
+      .in("id", planIds)
+      .returns<
+        { id: string; complement_of_plan_id: string | null; complement_no: number | null; complement_clinical_notes: string | null }[]
+      >();
+    if (!compErro) for (const v of compRows ?? []) complementoPorPlano.set(v.id, v);
+  }
+
   const optionsByPlan = new Map<string, PlanOption[]>();
   for (const o of opts) {
     const list = optionsByPlan.get(o.plan_id) ?? [];
@@ -357,5 +373,8 @@ export async function loadClientPlans(
     supersededAt: versaoPorPlano.get(p.id)?.superseded_at ?? null,
     supersededByPlanId: versaoPorPlano.get(p.id)?.superseded_by_plan_id ?? null,
     pricesFrozenAt: versaoPorPlano.get(p.id)?.prices_frozen_at ?? null,
+    complementOfPlanId: complementoPorPlano.get(p.id)?.complement_of_plan_id ?? null,
+    complementNo: complementoPorPlano.get(p.id)?.complement_no ?? null,
+    complementClinicalNotes: complementoPorPlano.get(p.id)?.complement_clinical_notes ?? null,
   }));
 }

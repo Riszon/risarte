@@ -1,4 +1,5 @@
 import type { AlertaDaAnamnese } from "@/lib/anamnesis";
+import { podeAbrirComplemento } from "@/lib/plano-complementar";
 import type { Metadata } from "next";
 import { idadeCurta, idadeDetalhada } from "@/lib/idade";
 import Link from "next/link";
@@ -1935,6 +1936,9 @@ export default async function ClientDetailPage(
       )
       .eq("client_id", id)
       .eq("status", "approved")
+      // AP64 (0355): procedimento de complemento só conta depois de vendido
+      // (passo 3 da AP64); até lá ele aparece só no próprio plano.
+      .is("complement_of_plan_id", null)
       .order("created_at", { ascending: true })
       .returns<
         {
@@ -2370,6 +2374,8 @@ export default async function ClientDetailPage(
       .select("id, diagnosis, objectives")
       .eq("client_id", id)
       .eq("status", "approved")
+      // AP64 (0355): o resumo é do plano do cliente, não do complemento.
+      .is("complement_of_plan_id", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .returns<{ id: string; diagnosis: string | null; objectives: string | null }[]>();
@@ -3466,7 +3472,7 @@ export default async function ClientDetailPage(
                 <EnviarParaAssinaturaDialog
                   clientId={client.id}
                   clinicId={scheduleClinicId}
-                  origin={{ type: "treatment_plan", id: plans.find((p) => p.status === "approved")?.id ?? null }}
+                  origin={{ type: "treatment_plan", id: plans.find((p) => p.status === "approved" && !p.complementOfPlanId)?.id ?? null }}
                   label="Enviar plano para assinatura"
                 />
               </div>
@@ -3511,6 +3517,15 @@ export default async function ClientDetailPage(
                 programBenefits={program?.byProcedure ?? {}}
                 lifecycleCaps={lifecycleCaps}
                 commercialByPlan={commercialByPlan}
+                aberturaDoComplemento={(() => {
+                  // AP64 (0355): o Coordenador abre o plano complementar na Fase 5.
+                  const r = podeAbrirComplemento({
+                    fase: client.journey_phase as JourneyPhase,
+                    ehCoordenadorOuAdmin: canReviewPlan,
+                    planos: plans,
+                  });
+                  return r.pode || r.motivo ? r : null;
+                })()}
               />
             )}
             {canCancelTreatment && cancellableNeg && (
