@@ -12,13 +12,13 @@ Legenda: ☐ a fazer · ✅ feito
 
 ## 1. Na conta ZapSign de VERDADE (o dono)
 
-- ☐ **Plano API contratado.** Sem ele não há token para o sistema enviar.
+- ✅ **Plano API contratado** — "Equipe Plus", ativo, 50 créditos (conferido pela API em 04/11/2026).
 - ☐ **Ligar "Bloquear assinatura fora da ordem definida"** (Configurações →
   Organização → Preferências da conta). **Provado no sandbox:** com ela
   desligada, a testemunha conseguiu assinar ANTES do paciente (ASS-000049). A
   ordem que o sistema manda (paciente → testemunhas → Risarte) vira só
   sugestão. **Ligar também na conta do sandbox** (é a do treino).
-- ☐ **Cadastrar o retorno (webhook)** para a produção:
+- ✅ **Retorno (webhook) da produção cadastrado em 04/11/2026** — ids 292657 (eventos de documento) e 292658 (`doc_expired`), ambos com o cabeçalho secreto. Conferido de fora: sem segredo 401, segredo errado 401, segredo certo com evento de mentira 200 (`matched: false`; ficou 1 linha `webhook_doc_signed` sem pacote em `signature_events` da produção, imutável — é essa conferência). Como era:
   URL `https://risarte.vercel.app/api/webhooks/zapsign`, eventos
   `doc_signed`, `doc_refused`, `doc_expired`, `doc_deleted`, com o cabeçalho
   `x-riszon-webhook-secret` = o mesmo valor de `ZAPSIGN_WEBHOOK_SECRET` da
@@ -30,9 +30,9 @@ Legenda: ☐ a fazer · ✅ feito
 
 | Variável | Tipo | Valor |
 |---|---|---|
-| `ZAPSIGN_API_TOKEN` | Secret | o token da conta de verdade |
-| `ZAPSIGN_ENV` | Config | `production` |
-| `ZAPSIGN_WEBHOOK_SECRET` | Secret | um texto longo e aleatório (o mesmo do cabeçalho do webhook) |
+| `ZAPSIGN_API_TOKEN` | Secret | ✅ o token da ORGANIZAÇÃO (Integrações → API ZapSign), só em Production — renovado em 04/11/2026 depois de aparecer numa imagem no chat. NÃO é o de Meu perfil → Assinatura via API (assinar em nome da pessoa; o riSZon não usa) |
+| `ZAPSIGN_ENV` | Config | `production` (só em Production) |
+| `ZAPSIGN_WEBHOOK_SECRET` | Secret | ✅ texto aleatório de 48 caracteres, diferente do treino (o mesmo do cabeçalho do webhook) |
 | `CRON_SECRET` | Secret | ✅ já cadastrado (31/10) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Secret / Config | ver o item 3 |
 

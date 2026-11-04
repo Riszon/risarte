@@ -391,6 +391,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (ZapSign na produção) — PC Administrador (sem código)**
+
+- ✅ **Conta real ligada:** token da organização e `ZAPSIGN_ENV=production` só
+  em Production na Vercel; webhooks 292657 e 292658 com o segredo; rota
+  conferida de fora (401/401/200). Checklist em
+  `docs/assinaturas/CHECKLIST-PRODUCAO.md`.
+- ⏳ Com o dono: ordem obrigatória na conta, RG do titular (RIS-000015), CPF
+  de RIS-000009/016, limite do plano, primeiro envio real (TCLE).
+
 **04/11/2026 (AP108) — PC Administrador (core 0.393.0 → 0.394.0, migração 0361)**
 
 - **O mesmo documento não é assinado duas vezes** (bloco 0.394.0 no ESTADO).
