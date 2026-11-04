@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.401.1** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.402.0** · Última migração: **0367** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 🔒 0.401.1 — DOCUMENTO JÁ ASSINADO POR TODOS NÃO SAI DE NOVO SEM MOTIVO (04/11/2026, sem migração)
 >
@@ -41,6 +41,29 @@ _Atualizado em: 04/11/2026 · Versão do sistema: **0.401.1** · Última migraç
 > - Manual 9.4, EV-296. **Não visto na tela.** O texto do André não volta
 >   (nunca chegou ao banco). Resíduo: o código OC-00165 do treino foi consumido
 >   pelo ensaio (a sequência não volta no rollback).
+>
+> ## 📋 0.402.0 / 0367 — RELATO → BACKLOG, FASE BK4 (04/11/2026)
+>
+> **Enviar para o backlog** no relato e na barra do lote dos Problemas (só
+> Admin Master): item novo preenchido por `sugestaoDoRelato` (sem o nome de quem
+> relatou) ou ligar a item existente; o relato Aberto passa a Em análise
+> (B-D4). `src/app/(app)/problemas/enviar-ao-backlog.ts` (+ janela). O relato
+> mostra "No backlog: AP…"; o item, os relatos ligados e o aviso de responder
+> quando fechado. Manual 15.2, EV-298.
+> - ⚠️ **0367 tirou a chave estrangeira** de `backlog_item_reports` para
+>   `system_reports`: a produção mostra relatos do TREINO (outro banco). A
+>   ligação guarda `ambiente`, `report_id`, `report_code`, `report_title`;
+>   grava só `backlog_link_report` (idempotente, evento "relato").
+> - ⚠️ O link para um relato do treino vai ao ENDEREÇO do treino
+>   (`carregarEnderecos`): o mesmo OC pode existir nos dois bancos.
+> - Ensaio 13/13 em transação desfeita + quebrando a guarda (3 reprovam).
+>   Visto na tela no treino: OC-00168 → AP127 (resíduo de ensaio: AP127
+>   resolvido; OC-00168 encerrado como "Não é defeito"). **Não visto:** o
+>   envio de vários relatos pela barra do lote (mesma janela).
+> - ✅ **0367 APLICADA na produção** (o dono rodou em 04/11/2026; conferência
+>   3·false·true·true; de fora: sem login `backlog_link_report` recusa com
+>   "permission denied"; as colunas novas respondem; item inexistente para em
+>   ITEM_NOT_FOUND antes de gravar) antes do push.
 >
 > ## 📋 0.401.0 — BACKLOG: ESCOLHER E PEDIR, FASE BK3 (04/11/2026, sem migração)
 >

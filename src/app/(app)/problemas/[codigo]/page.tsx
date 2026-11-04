@@ -24,6 +24,7 @@ import { CorDaIdade, SeloDeSituacao } from "../selos";
 import { Conversa } from "./conversa";
 import { carregarRelatoDoTreinoPorCodigo } from "@/lib/relatos-do-treino";
 import { carregarEnderecos } from "@/lib/ambientes-db";
+import { SITUACAO_ROTULO as SITUACAO_DO_ITEM, type SituacaoDoItem } from "@/lib/backlog";
 
 export async function generateMetadata(
   props: PageProps<"/problemas/[codigo]">
@@ -88,6 +89,18 @@ export default async function RelatoPage(props: PageProps<"/problemas/[codigo]">
     conversa = doTreino.conversa;
     anexos = doTreino.anexos;
     reporterId = doTreino.reporterId;
+  }
+  // BK4: a que item do backlog este relato está ligado (só o Admin Master lê o
+  // backlog; para os outros a consulta volta vazia, pela regra do banco).
+  const noBacklog: { code: string; title: string; status: string }[] = [];
+  if (session.isAdminMaster) {
+    const { data: ligados } = await supabase
+      .from("backlog_item_reports")
+      .select("backlog_items ( code, title, status )")
+      .eq("ambiente", relato.ambiente)
+      .eq("report_id", relato.id)
+      .returns<{ backlog_items: { code: string; title: string; status: string } | null }[]>();
+    for (const l of ligados ?? []) if (l.backlog_items) noBacklog.push(l.backlog_items);
   }
   const agora = instanteDoPedido();
   const relogio = relogioDoRelato(relato, agora);
@@ -216,6 +229,17 @@ export default async function RelatoPage(props: PageProps<"/problemas/[codigo]">
           ))}
         </dl>
       </section>
+
+      {noBacklog.length > 0 && (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-sm dark:bg-violet-950/30">
+          <span className="font-medium">No backlog:</span>
+          {noBacklog.map((b) => (
+            <Link key={b.code} href={`/admin/backlog/${b.code}`} className="hover:underline">
+              <span className="font-mono">{b.code}</span> — {b.title} ({SITUACAO_DO_ITEM[b.status as SituacaoDoItem] ?? b.status})
+            </Link>
+          ))}
+        </p>
+      )}
 
       <Conversa
         relato={relato}

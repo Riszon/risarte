@@ -436,6 +436,14 @@ Syncthing se comportarem de forma estranha.**
   fora: sem login recusa, os indicadores novos medem). Provada com dados montados (o cliente que
   sai do Empresarial no meio do mês) numa transação desfeita.
 
+**04/11/2026 (BK4 — relato → backlog) — PC Administrador (core 0.401.0 → 0.402.0, migração 0367)**
+
+- **Enviar para o backlog** nos Problemas (bloco 0.402.0 no ESTADO; manual
+  15.2). ⚠️ A ligação relato↔item não tem chave estrangeira (relato pode ser
+  do treino): grava só `backlog_link_report`.
+- ✅ **0367 aplicada na produção** (o dono, 04/11/2026; conferência
+  3·false·true·true; conferido de fora) antes do push.
+
 **04/11/2026 (BK3 — escolher e pedir) — PC Administrador (core 0.400.1 → 0.401.0, sem migração)**
 
 - **Backlog: escolher vários e preparar o pedido** (bloco 0.401.0 no ESTADO;

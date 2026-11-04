@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.402.0",
+    data: "2026-11-04",
+    migracao: "0367",
+    titulo: "Relato → Backlog: o relato vira item do backlog, ou se liga a um que já existe",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na tela de um relato (e na barra quando vários estão escolhidos), o Admin Master tem o botão Enviar para o backlog: abre já preenchido pelo relato — título, o texto sem o nome de quem relatou, categoria pelo tipo e prioridade pela gravidade — para revisar e gravar; ou liga a um item que já existe. O relato passa a Em análise e mostra a que item está ligado; o item mostra os relatos e, quando resolvido, avisa que eles esperam resposta.",
+        papeis: [],
+        manual: "15.2. Problemas",
+      },
+    ],
+  },
+  {
     versao: "0.401.1",
     data: "2026-11-04",
     migracao: null,

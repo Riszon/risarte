@@ -5565,6 +5565,27 @@ E há dois caminhos:
 > **O nome de quem relatou nunca entra no texto.** A função e a unidade dizem
 > tudo o que importa para corrigir.
 
+#### Só para o Admin Master: enviar para o backlog (0.402.0)
+
+Ao lado de **Preparar para correção** está **Enviar para o backlog** (também na
+barra do rodapé quando vários relatos estão escolhidos). Ele guarda o relato na
+lista de pendências (**Administração → Backlog**, seção 13e), para ser resolvido
+depois:
+
+- **Criar item novo** — a janela já vem preenchida: o título do relato, o texto
+  (tela, versão, unidade, função, o que aconteceu e o que se esperava — **sem o
+  nome de quem relatou**), a categoria pelo tipo (*Algo deu errado* → Defeito;
+  dúvida e sugestão → Melhoria) e a prioridade pela gravidade (*Impede de
+  trabalhar* → Urgente; *Atrapalha o trabalho* → Alta; *Atrapalha pouco* →
+  Média). Revise — o relato pode citar paciente — e **Enviar**;
+- **Ligar a um item que já existe** — escreva o código (AP56). Serve quando
+  vários relatos falam do mesmo defeito: todos ficam no mesmo item.
+
+O relato que estava **Aberto** passa a **Em análise** (sem mensagem para quem
+relatou) e mostra, acima da conversa, **No backlog: AP…**. No item, os relatos
+aparecem em *Relatos ligados*; quando o item é resolvido, a tela avisa que eles
+esperam a sua resposta — quem decide o texto é você.
+
 ### 15.3. Alertas
 
 *Tela `/alertas` — o **triângulo** na barra de cima.*

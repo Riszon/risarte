@@ -8,6 +8,7 @@ import {
   mensagemDoErro,
   montarPedido,
   quemVaiParaAndamento,
+  sugestaoDoRelato,
   type ItemDoBacklog,
 } from "@/lib/backlog";
 
@@ -105,5 +106,37 @@ describe("backlog na tela", () => {
         { code: "AP5", status: "descartado" },
       ])
     ).toEqual(["AP1", "AP2"]);
+  });
+
+  it("relato → item: gravidade vira prioridade, tipo vira categoria, e o nome de quem relatou não entra", () => {
+    const base = {
+      code: "OC-00012",
+      kind: "erro" as const,
+      severity: "media" as const,
+      title: "A agenda não salva",
+      whatHappened: "Cliquei em salvar e nada.",
+      expected: "Que salvasse.",
+      screen: "/agenda",
+      module: "agenda",
+      appVersion: "0.400.0",
+      reporterRole: "Recepção",
+      clinicName: "Cambé",
+      ambiente: "sistema" as const,
+    };
+    const s1 = sugestaoDoRelato([base]);
+    expect(s1).toMatchObject({ title: "A agenda não salva", category: "Defeito", priority: "alta", module: "agenda" });
+    expect(s1.detail).toContain("**Relato OC-00012**");
+    expect(s1.detail).toContain("Cliquei em salvar e nada.");
+    expect(s1.detail).toContain("**Função de quem relatou:** Recepção");
+    expect(s1.detail).not.toMatch(/reporterName|Relatado por/);
+
+    const s2 = sugestaoDoRelato([
+      { ...base, severity: "baixa", kind: "sugestao" },
+      { ...base, code: "OC-00013", severity: "alta", ambiente: "treino" },
+    ]);
+    expect(s2.priority).toBe("urgente"); // o mais grave manda
+    expect(s2.category).toBe("Melhoria"); // o primeiro dá a categoria
+    expect(s2.detail).toContain("**Relato OC-00013** (treino)");
+    expect(() => sugestaoDoRelato([])).toThrow();
   });
 });

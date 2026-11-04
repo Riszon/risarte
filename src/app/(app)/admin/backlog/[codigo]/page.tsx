@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireAdminMaster } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { carregarEnderecos } from "@/lib/ambientes-db";
 import { formatInBrazil, formatIsoDateInBrazil } from "@/lib/dates";
 import { parseMarkdown } from "@/lib/markdown";
 import { MODULO_ROTULO, type ModuloDoSistema } from "@/lib/system-reports";
@@ -36,7 +38,14 @@ export default async function ItemDoBacklogPage({ params }: Props) {
   const code = codigo.toUpperCase();
   if (!/^AP\d+$/.test(code)) notFound();
 
-  const [lido, categorias] = await Promise.all([carregarDetalhe(code), carregarCategorias()]);
+  const supabase = await createClient();
+  const [lido, categorias, enderecos] = await Promise.all([
+    carregarDetalhe(code),
+    carregarCategorias(),
+    carregarEnderecos(supabase),
+  ]);
+  // O relato do treino abre na tela de lá: o mesmo código pode existir nos dois bancos.
+  const enderecoDoTreino = enderecos.treino?.replace(/\/$/, "") ?? null;
   if (lido.ok && lido.dados === null) notFound();
 
   return (
@@ -92,11 +101,27 @@ export default async function ItemDoBacklogPage({ params }: Props) {
                   {relatos.length > 0 && (
                     <section className="space-y-2">
                       <h2 className="text-sm font-semibold">Relatos ligados</h2>
+                      {/* B-D4: resolvido o item, quem relatou espera a resposta — o dono decide o texto. */}
+                      {estaFechado(item.status) && (
+                        <p className="rounded-md border border-violet-300 bg-violet-50 p-2 text-xs dark:bg-violet-950/30">
+                          O item foi {item.status === "resolvido" ? "resolvido" : "descartado"}: responda{" "}
+                          {relatos.length === 1 ? "o relato" : "os relatos"} abaixo — quem relatou está esperando.
+                        </p>
+                      )}
                       <ul className="space-y-1 text-sm">
                         {relatos.map((r) => (
-                          <li key={r.code}>
-                            <Link href={`/problemas/${r.code}`} className="hover:underline">
-                              <span className="font-mono text-xs text-muted-foreground">{r.code}</span> {r.title}
+                          <li key={`${r.ambiente}-${r.code}`}>
+                            <Link
+                              href={
+                                r.ambiente === "treino" && enderecoDoTreino
+                                  ? `${enderecoDoTreino}/problemas/${r.code}`
+                                  : `/problemas/${r.code}`
+                              }
+                              className="hover:underline"
+                            >
+                              <span className="font-mono text-xs text-muted-foreground">{r.code}</span>
+                              {r.ambiente === "treino" && <span className="ml-1 text-xs text-amber-700">(treino)</span>}{" "}
+                              {r.title}
                             </Link>
                           </li>
                         ))}

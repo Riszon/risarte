@@ -30,6 +30,7 @@ import {
   responderProblema,
 } from "../actions";
 import { PrepararBriefing } from "../preparar-briefing";
+import { EnviarAoBacklog } from "../enviar-ao-backlog-janela";
 import {
   GaleriaDeAnexos,
   SeletorDeAnexos,
@@ -93,7 +94,12 @@ export function Conversa({
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Conversa</h2>
-        {isAdminMaster && <PrepararBriefing relato={relato} mensagens={mensagens} />}
+        {isAdminMaster && (
+          <div className="flex flex-wrap gap-2">
+            <EnviarAoBacklog relatos={[relato]} />
+            <PrepararBriefing relato={relato} mensagens={mensagens} />
+          </div>
+        )}
       </div>
 
       {mensagens.length === 0 ? (

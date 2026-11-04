@@ -100,7 +100,8 @@ export type EventoDoItem = {
   createdAt: string;
 };
 
-export type RelatoLigado = { code: string; title: string; status: string };
+/** A foto do relato gravada na ligação (0367) — ele pode morar no treino. */
+export type RelatoLigado = { code: string; title: string | null; ambiente: "sistema" | "treino" };
 
 export async function carregarDetalhe(code: string): Promise<
   Leitura<{ item: DetalheDoItem; eventos: EventoDoItem[]; relatos: RelatoLigado[] } | null>
@@ -140,9 +141,10 @@ export async function carregarDetalhe(code: string): Promise<
       >(),
     supabase
       .from("backlog_item_reports")
-      .select("system_reports ( code, title, status )")
+      .select("ambiente, report_code, report_title")
       .eq("item_id", it.id)
-      .returns<{ system_reports: { code: string; title: string; status: string } | null }[]>(),
+      .order("linked_at")
+      .returns<{ ambiente: "sistema" | "treino"; report_code: string; report_title: string | null }[]>(),
   ]);
   if (ev.error || rel.error) {
     console.error("backlog (linha do tempo/relatos):", ev.error?.message ?? rel.error?.message);
@@ -178,7 +180,7 @@ export async function carregarDetalhe(code: string): Promise<
         author: e.profiles?.full_name ?? e.author_label ?? "Sistema",
         createdAt: e.created_at,
       })),
-      relatos: (rel.data ?? []).flatMap((r) => (r.system_reports ? [r.system_reports] : [])),
+      relatos: (rel.data ?? []).map((r) => ({ code: r.report_code, title: r.report_title, ambiente: r.ambiente })),
     },
   };
 }

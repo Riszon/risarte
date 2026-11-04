@@ -256,3 +256,89 @@ export function montarPedido(
 export function quemVaiParaAndamento(itens: { code: string; status: SituacaoDoItem }[]): string[] {
   return itens.filter((i) => i.status === "aberto" || i.status === "aguardando_dono").map((i) => i.code);
 }
+
+// -----------------------------------------------------------------------------
+// BK4 — o relato que vai para o backlog.
+// -----------------------------------------------------------------------------
+
+export type RelatoParaOBacklog = {
+  code: string;
+  kind: "erro" | "duvida" | "sugestao";
+  severity: "baixa" | "media" | "alta";
+  title: string;
+  whatHappened: string;
+  expected: string | null;
+  screen: string | null;
+  module: string | null;
+  appVersion: string | null;
+  reporterRole: string | null;
+  clinicName: string;
+  ambiente: "sistema" | "treino";
+};
+
+const GRAVIDADE_PARA_PRIORIDADE: Record<RelatoParaOBacklog["severity"], Prioridade> = {
+  alta: "urgente", // "Impede de trabalhar"
+  media: "alta", // "Atrapalha o trabalho"
+  baixa: "media", // "Atrapalha pouco"
+};
+
+const TIPO_PARA_CATEGORIA: Record<RelatoParaOBacklog["kind"], string> = {
+  erro: "Defeito",
+  duvida: "Melhoria",
+  sugestao: "Melhoria",
+};
+
+const TIPO_TEXTO: Record<RelatoParaOBacklog["kind"], string> = {
+  erro: "Algo deu errado",
+  duvida: "Dúvida",
+  sugestao: "Sugestão",
+};
+
+/**
+ * O item que o relato sugere. A prioridade sai da gravidade que a pessoa
+ * marcou; a categoria, do tipo; o módulo, o do relato. O detalhe é o relato
+ * em Markdown — SEM o nome de quem relatou (a função e a unidade dizem o que
+ * importa; o nome é dado pessoal viajando à toa, a mesma regra do briefing).
+ * Com vários relatos, o primeiro dá título e classificação, e cada um entra
+ * no detalhe.
+ */
+export function sugestaoDoRelato(relatos: RelatoParaOBacklog[]): {
+  title: string;
+  detail: string;
+  category: string;
+  priority: Prioridade;
+  module: string | null;
+} {
+  if (relatos.length === 0) throw new Error("sugestaoDoRelato: nenhum relato");
+  const [primeiro] = relatos;
+  // O mais grave manda na prioridade.
+  const prioridade = relatos
+    .map((r) => GRAVIDADE_PARA_PRIORIDADE[r.severity])
+    .sort((a, b) => PRIORIDADES.indexOf(a) - PRIORIDADES.indexOf(b))[0];
+  const blocos = relatos.map((r) => {
+    const linhas = [
+      `**Relato ${r.code}**${r.ambiente === "treino" ? " (treino)" : ""} — ${TIPO_TEXTO[r.kind]}: ${r.title}`,
+      "",
+      [
+        r.screen ? `**Tela:** \`${r.screen}\`` : null,
+        r.appVersion ? `**Versão:** ${r.appVersion}` : null,
+        `**Unidade:** ${r.clinicName}`,
+        r.reporterRole ? `**Função de quem relatou:** ${r.reporterRole}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      "",
+      "**O que aconteceu:**",
+      r.whatHappened.trim(),
+    ];
+    if (r.expected?.trim()) linhas.push("", "**O que esperava:**", r.expected.trim());
+    return linhas.join("\n");
+  });
+  return {
+    title: primeiro.title.slice(0, 300),
+    detail: blocos.join("\n\n---\n\n"),
+    category: TIPO_PARA_CATEGORIA[primeiro.kind],
+    priority: prioridade,
+    module: primeiro.module,
+  };
+}

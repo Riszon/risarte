@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Relato } from "@/lib/system-reports";
 import { montarBriefingDoConjunto } from "./preparar-briefing";
+import { EnviarAoBacklog } from "./enviar-ao-backlog-janela";
 import { responderVariosProblemas, type ResultadoEmLote } from "./actions";
 
 const ITENS_SITUACAO = [
@@ -126,6 +127,7 @@ export function BarraDoLote({
             <ClipboardCopy className="mr-1.5 size-4" />
             Pedir a correção do conjunto
           </Button>
+          <EnviarAoBacklog relatos={selecionados} aoTerminar={aoLimpar} className="h-8" />
           <Button size="sm" onClick={() => setResponder(true)}>
             <Send className="mr-1.5 size-4" />
             Responder juntos
