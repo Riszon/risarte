@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { MENSAGEM_ENVIO_COM_VENDA_CANCELADA, planoTemVendaCancelada } from "@/lib/venda-cancelada";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
@@ -158,6 +159,32 @@ export async function moveClientPhase(
             error:
               "O plano precisa ser aprovado pelo Coordenador Clínico antes de enviar ao Comercial.",
           };
+        }
+      }
+      // AP63: o plano da venda cancelada não volta ao Comercial — a compra
+      // nova sai de uma versão nova (vale também para o Admin Master).
+      const { data: ultimo } = await supabase
+        .from("treatment_plans")
+        .select("id")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ id: string }>();
+      if (ultimo) {
+        // Pela linha do tempo do plano (`venda_cancelada`, 0208): o Planner
+        // a lê; a negociação, nem sempre.
+        const { data: eventos, error: erroEventos } = await supabase
+          .from("treatment_plan_events")
+          .select("event_type")
+          .eq("plan_id", ultimo.id)
+          .eq("event_type", "venda_cancelada")
+          .limit(1)
+          .returns<{ event_type: string }[]>();
+        if (erroEventos) {
+          return { ok: false, error: "Não foi possível conferir a venda do plano. Tente de novo." };
+        }
+        if (planoTemVendaCancelada((eventos ?? []).map((e) => e.event_type))) {
+          return { ok: false, error: MENSAGEM_ENVIO_COM_VENDA_CANCELADA };
         }
       }
     }

@@ -2808,6 +2808,13 @@ fica **substituída**, guardada para consulta. Procedimento que não combina
 mais com o diagnóstico de hoje não é copiado — a tela avisa quantos ficaram
 de fora.
 
+**Plano com a venda cancelada** (desde a versão 0.388.0). O plano fica
+guardado como registro do que foi vendido, com o aviso vermelho **"A venda
+deste plano foi cancelada"**. Para o cliente comprar de novo, **crie uma nova
+versão**: o **Enviar ao Comercial** recusa o plano da venda cancelada. A versão
+nova nasce com o aviso **"Este cliente teve uma venda cancelada"**, que mostra
+a venda, a data e o motivo — e o Consultor vê o mesmo aviso na negociação.
+
 **Atendimentos e sequência** — é onde você diz **como o tratamento vai ser
 executado**: o que é feito no mesmo horário, em que ordem e por quem. O botão
 fica no alto do cockpit, mostra **Configurado** ou **Pendente** e vale para o
@@ -3273,6 +3280,12 @@ anterior é **encerrada** com a situação **"Substituída por nova versão do
 plano"** — você recomeça na versão nova (o painel já abre nela). Venda já
 aceita não muda: o que foi vendido vale.
 
+**Venda cancelada e compra de novo** (desde a versão 0.388.0). Cancelada a
+venda, o cliente compra de novo por uma **versão nova do plano**, com uma
+**negociação nova** — a negociação cancelada não reabre. No alto da negociação
+nova aparece o aviso **"Este cliente teve uma venda cancelada"**, com a venda,
+a data e o motivo.
+
 > **Você trabalha no funil; a sala de espera é da recepção.** As duas telas se
 > falam sozinhas desde a v0.270.0:
 >
@@ -3315,7 +3328,10 @@ barato, mudou de ideia sobre o escopo, ou o orçamento não cabe no que ele pode
 pagar —, use **Devolver ao Planejamento** e escreva as considerações. O plano
 **reabre** para o Planner com o seu texto em destaque, a negociação é encerrada,
 e o cliente volta para o **Centro de Planejamento**. É o único jeito de fazer
-esse caminho: a fase não se move à mão.
+esse caminho: a fase não se move à mão. **Exceção: plano com a venda
+cancelada** (desde a versão 0.388.0). Ele **não reabre** — é o registro do que
+foi vendido. O cliente volta ao Centro de Planejamento do mesmo jeito, e o
+Planner recebe o aviso para criar uma **versão nova**.
 
 ### 6.6. Gerente de Unidade
 

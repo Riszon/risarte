@@ -412,6 +412,7 @@ Syncthing se comportarem de forma estranha.**
 **03/11/2026 (AP63) — PC Administrador (core 0.387.0 → 0.388.0, migração 0354)**
 
 - **Venda cancelada → compra por versão nova** (bloco 0.388.0 no ESTADO).
+  ✅ 0354 aplicada na produção (o dono informou em 03/11/2026).
   ⚠️ Ao recriar `return_commercial_to_planning`, levar a guarda da venda
   cancelada (régua `venda-cancelada.test.ts`).
 - ⚠️ **Outra sessão trabalha nesta mesma pasta** (ela fez a 0353 e a 0.387.0

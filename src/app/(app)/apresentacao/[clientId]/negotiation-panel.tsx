@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { GutBadge } from "@/components/gut-badge";
 import { PlanHistoryDialog } from "@/components/plan-history-dialog";
+import { AvisoVendaCancelada } from "@/components/aviso-venda-cancelada";
 import { OrthoAgreementBlock } from "./ortho-agreement-block";
 import type { NegotiationOrthoBlock } from "./negotiation-loader";
 import type { PlanEvent } from "@/lib/planning";
@@ -739,6 +740,8 @@ export function NegotiationPanel({
             )}
           </div>
         </div>
+        {/* AP63: a negociação nova mostra a venda cancelada antes dela. */}
+        <AvisoVendaCancelada events={planEvents} />
         {/* Regra comercial vigente. */}
         <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           <BadgePercent className="size-3.5" />

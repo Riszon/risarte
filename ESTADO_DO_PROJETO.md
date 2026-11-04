@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.388.1** · Última migração: **0354** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0353 e 0354 só no treino) · Empresarial **0.94.1** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.388.1** · Última migração: **0354** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0353 só no treino) · Empresarial **0.94.1** / migração **1038** (aplicada na produção e no treino)_
 
 > ## 🔒 0.388.1 — O WEBHOOK DO ASAAS FECHA SEM O SEGREDO; COMPARAÇÃO EM TEMPO CONSTANTE (03/11/2026, sem migração; Empresarial 0.94.1; AP99)
 >
@@ -55,8 +55,8 @@ _Atualizado em: 03/11/2026 · Versão do sistema: **0.388.1** · Última migraç
 >   Comercial recusa o plano da venda cancelada (`src/lib/venda-cancelada.ts`).
 > - Ensaio no treino 7/7 (sem a 0354, 4 reprovam); régua
 >   `venda-cancelada.test.ts`. **Não visto na tela.**
-> - **Na produção:** rodar a 0354. Conferência: true · 1 · false · N
->   (negociações canceladas que já existem; nada muda nelas).
+> - ✅ **0354 aplicada na produção** (o dono informou em 03/11/2026; não
+>   conferido de fora).
 > - **Próximo: AP64**, o plano complementar (3 passos, V1–V7 aprovados).
 
 > ## 🧭 0.387.0 — O CONSULTOR RISLIFE FORA DOS PACIENTES (03/11/2026, migração 0353, AP95 entrega 1 + AP91)

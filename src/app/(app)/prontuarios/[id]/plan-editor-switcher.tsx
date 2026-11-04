@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CornerUpLeft } from "lucide-react";
 import { PlanHistoryDialog } from "@/components/plan-history-dialog";
+import { AvisoVendaCancelada } from "@/components/aviso-venda-cancelada";
 import { cn } from "@/lib/utils";
 import {
   PLAN_STAGE_LABELS,
@@ -193,6 +194,9 @@ export function PlanEditorSwitcher({
           </p>
         </div>
       )}
+
+      {/* AP63: venda cancelada — deste plano ou de um plano anterior do cliente. */}
+      {selected && <AvisoVendaCancelada events={selected.events} />}
 
       {/* COM: plano DEVOLVIDO pelo Comercial — considerações em destaque até o
           plano ser reaprovado pelo Coordenador. */}
