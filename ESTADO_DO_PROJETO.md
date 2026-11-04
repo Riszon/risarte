@@ -1,7 +1,35 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.398.0** · Última migração: **0365** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.399.0** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 📋 0.399.0 / 0366 — O BACKLOG NO BANCO, FASE BK1 (04/11/2026)
+>
+> Pedido do dono: tela só dele com a lista viva do backlog. Plano e decisões
+> B-D1–B-D5 em `docs/backlog/TELA-BACKLOG-PLANO.md`. A BK1 é o alicerce, sem
+> tela: **0366** (`backlog_categories` editável, `backlog_items`,
+> `backlog_item_reports` para a BK4, `backlog_item_events` que só cresce;
+> leitura só do Admin Master; escrita só pelas funções `backlog_*`, que
+> aceitam o Admin Master logado OU a chave de serviço — nunca o anônimo, e a
+> guarda não depende de "não há usuário"). Importação só pela chave
+> (`backlog_import_item`, não duplica pelo código).
+> - ⚠️ **As sessões registram pelo comando `npm run backlog`** (novo, mudar,
+>   andamento, resolver, descartar, listar, ver, categorias), que grava na
+>   PRODUÇÃO (`--treino` no treino). O `docs/BACKLOG.md` vira histórico.
+> - **Importação** (`scripts/backlog-do-arquivo.mjs`, régua
+>   `backlog-do-arquivo.test.ts`, provada quebrando): 125 itens — AP1–AP111 +
+>   14 sem código (AP112–AP125: AP24b, adiados antigos, tarefas do dono,
+>   grupos, OC-00133). 52 abertos (9 aguardando o dono), 73 resolvidos.
+>   Achados: o índice tinha **esquecido 5 abertos** (AP69, AP70, AP71, AP74,
+>   AP75) e dava **3 resolvidos como abertos** (AP87 pela 1039; AP100 e AP101
+>   pela 2010) — corrigidos na importação.
+> - Ensaio no treino em transação desfeita **34/34** e quebrando a guarda (2
+>   reprovam): `scripts/backlog-ensaio-0366.mjs`. Importação no treino 125/125;
+>   rodar de novo não duplica. Resíduo no treino: **AP126** "Ensaio do comando
+>   (pode ignorar)", resolvido.
+> - ⚠️ **Duas migrações 0365** no repositório (Rita e Metas, sessões
+>   diferentes, 04/11/2026). Não quebram nada (nomes distintos), mas a próxima
+>   sessão confere o número livre olhando a pasta.
+>
 > ## 🎯 0.398.0 / 0365 — METAS: ORTODONTIA, PPR+ E A RECEITA BRUTA (04/11/2026)
 >
 > Plano §9f do `docs/metas/METAS-PLANO.md` (P1–P6, N1–N3 com os ajustes do
@@ -72,8 +100,9 @@ _Atualizado em: 04/11/2026 · Versão do sistema: **0.398.0** · Última migraç
 >   com `begin_as_agent` → assistente; id de pessoa e lixo ignorados; logado
 >   nunca vira Rita; fechado a anon/authenticated; tipo travado; uma só;
 >   sem a Rita → `RITA_AGENT_MISSING`). Sem a conferência do tipo, a 3 reprova.
-> - ⏳ **Na produção, nesta ordem, ANTES do push:** 0365 → 3000 → o roteiro
->   (`docs/PRODUCAO-ONLINE.md`, seção da Rita). O app filtra `profiles.kind`.
+> - ✅ **APLICADA na produção pelo dono em 04/11/2026:** 0365 (conferência
+>   1·1·true·true·0) → 3000 (1·2·0) → o roteiro; conferido de fora: a Rita
+>   existe lá. ⚠️ Outra 0365 (metas, 0.398.0) tem o mesmo número: independentes.
 
 > ## 🏢 EMPRESARIAL 0.96.0 — A PLANILHA DE TITULARES RESPEITA O CONTRATO E ENTRA INTEIRA OU NÃO ENTRA (04/11/2026, sem migração; AP97, item 6 do plano da Rita)
 >

@@ -15,7 +15,7 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | Entrega | Situação | Migrações |
 |---|---|---|
 | Plano 1 (correções da seção 2, itens 1–7) | ✅ concluído em 04/11/2026 | 0362–0364, 2009–2010, sem migração no item 1 e no 6 |
-| **0A.1 Identidade e auditoria** | ✅ no código e no treino; ⏳ produção com o dono | core **0365**, rita **3000** |
+| **0A.1 Identidade e auditoria** | ✅ concluída: código, treino e produção (04/11/2026) | core **0365**, rita **3000** |
 | 0A.2 Interruptor, modo e portão | próxima | 3001 |
 | 0A.3 Consentimento e opt-out | — | 3002 |
 | 0A.4 Unidade, horários, feriados | — | core 036x |
@@ -34,7 +34,8 @@ regra de linha ela não lê nada. Ela é só **autora**.
   só diz o que faria; rodar de novo só confere). **Uma por banco**, cada uma
   com o seu id: o espelho do treino (0260) só copia Risartanos, não a Rita.
 - Treino (`bsnptybalszjjbhxeejo`): criada em 04/11/2026.
-- Produção: ⏳ com o dono (`docs/PRODUCAO-ONLINE.md`, seção da Rita).
+- Produção (`hvhbijctanrrkxhemlza`): criada pelo dono em 04/11/2026, depois da
+  0365 e da 3000 (conferências 1·1·true·true·0 e 1·2·0).
 
 **Como ela vira autora.** Toda função `rita.*` que gravar começa por
 `rita.begin_as_agent()`: ela faz `set_config('rita.actor', <id>, true)` e a

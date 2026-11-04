@@ -3,7 +3,8 @@
 Guia para o Claude Code (claude.ai/code) ao trabalhar neste repositório.
 Regras de **produto e negócio** ficam aqui; regras de **código** ficam em
 `docs/ARQUITETURA-TECNICA.md`. Detalhe da jornada em `docs/JORNADA.md`; fila de
-pendências em `docs/BACKLOG.md` (ler antes de iniciar qualquer etapa nova).
+pendências no BANCO (`npm run backlog -- listar`; o `docs/BACKLOG.md` é
+histórico desde 04/11/2026) — ler antes de iniciar qualquer etapa nova.
 
 @AGENTS.md
 @docs/ARQUITETURA-TECNICA.md
@@ -352,8 +353,12 @@ Syncthing se comportarem de forma estranha.**
    `git status -sb` sem `[ahead N]`.
 2. Atualizar "Estado da última sessão" abaixo (data, PC, feito, pendente,
    próximo passo) e incluir no push.
-3. **⚠️ ACHADO DE PASSAGEM VIRA LINHA NO `docs/BACKLOG.md`** (seção *Achados de
-   passagem*), **no mesmo dia em que foi encontrado** — ordem do dono,
+3. **⚠️ ACHADO DE PASSAGEM VIRA ITEM DO BACKLOG — PELO COMANDO** (desde
+   04/11/2026, 0366: `npm run backlog -- novo --titulo … --detalhe …
+   --categoria … --prioridade … --sessao "nome da sessão"`; fechar com
+   `resolver APn --versao … --como …`). O dono vê na tela Administração →
+   Backlog na hora; o `docs/BACKLOG.md` está congelado. **No mesmo dia em que
+   foi encontrado** — ordem do dono,
    25/09/2026: *"se encontrar e não registrar para lembrar depois do que
    precisamos corrigir, podemos esquecer e o relato de ter encontrado não teve
    utilidade nenhuma."*
@@ -412,6 +417,15 @@ Syncthing se comportarem de forma estranha.**
   fora: sem login recusa, os indicadores novos medem). Provada com dados montados (o cliente que
   sai do Empresarial no meio do mês) numa transação desfeita.
 
+**04/11/2026 (BK1 — backlog no banco) — PC Administrador (core 0.398.0 → 0.399.0, migração 0366)**
+
+- **O backlog mora no banco** (bloco 0.399.0 no ESTADO; plano
+  `docs/backlog/TELA-BACKLOG-PLANO.md`). ⚠️ **Registrar e fechar item é pelo
+  `npm run backlog`** (grava na PRODUÇÃO); o `docs/BACKLOG.md` está congelado.
+- ⚠️ **Escrita só pelas funções `backlog_*`** (Admin Master logado ou chave de
+  serviço); a linha do tempo só cresce. Importação: 125 itens.
+- Próximo: **BK2** (a tela). Ensaio 34/34 + quebra; importação no treino.
+
 **04/11/2026 (aviso do já assinado) — PC Administrador (core 0.397.0 → 0.397.1, sem migração)**
 
 - **O aviso de documento repetido diz quando o cliente já assinou** (bloco
@@ -434,7 +448,11 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **`profiles.kind = 'agent'` não é pessoa:** lista nova de pessoas filtra
   `.neq("kind", "agent")`. Só a chave de serviço muda o tipo.
 - O usuário técnico nasce por `scripts/rita-criar-identidade.mjs` em cada banco
-  (o espelho não copia). Treino: feito. Produção: com o dono, antes do push.
+  (o espelho não copia). Treino: feito. ✅ **Produção: 0365 (conferência
+  1·1·true·true·0), 3000 (1·2·0) e o roteiro rodados pelo dono em 04/11/2026**;
+  conferido de fora: a Rita existe lá. ⚠️ O código foi ao ar ANTES da 0365 (o
+  push de outra sessão levou este commit); sem efeito além da lista de logins
+  sem cadastro e da contagem do Chat vazias por alguns minutos.
 - Provado no treino 12/12 (transação desfeita) e quebrando. **Não visto na
   tela** (a Rita ainda não grava nada).
 
