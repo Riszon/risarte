@@ -53,7 +53,7 @@ _Atualizado em: 03/11/2026 · Versão do sistema: **0.392.1** · Última migraç
 > LTDA"; os pacotes ASS-000049 a 000052 do "Teste do portão 2" e o ASS-000051
 > da "ZZZ Fechamento"; o paciente criado pelo E2E ("Assinatura …").
 >
-> ⏳ **0359 não aplicada na produção.** O dono roda.
+> ✅ **0359 APLICADA nos dois bancos** (o dono rodou na produção em 04/11/2026; conferido de fora: sem login `signature_apply_webhook` recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a produção tem 0 pacotes — ninguém afetado).
 
 
 > ## 🗓️ 0.392.0 — PLANO COMPLEMENTAR, PASSO 3: AS SESSÕES DO COMPLEMENTO (03/11/2026, migração 0358, AP64 COMPLETA)

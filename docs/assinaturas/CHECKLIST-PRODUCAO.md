@@ -67,7 +67,7 @@ Depois de salvar: **republicar sem o cache** (variável é lida na montagem).
 
 ## 5. Migrações
 
-- ☐ **0359** (o aviso da ZapSign não desfaz o envio — a corrida achada no teste;
+- ✅ **0359** (aplicada na produção em 04/11/2026; o aviso da ZapSign não desfaz o envio — a corrida achada no teste;
   ver o item 7). Rodar na produção antes do primeiro envio de verdade.
 
 ## 6. O primeiro envio de verdade (roteiro curto)

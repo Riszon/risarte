@@ -404,7 +404,7 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Entrar no site do treino como conta de teste:** a sessão cai à
   meia-noite ("virada do dia") — gerar de novo.
 - Pendente com o dono: AP108 (envio em dobro) e o checklist de produção.
-- ⏳ **0359 não aplicada na produção.** O dono roda.
+- ✅ **0359 APLICADA nos dois bancos** (o dono rodou na produção em 04/11/2026; conferido de fora: sem login `signature_apply_webhook` recusa com "permission denied" (uma função inexistente, de controle, responde "não encontrada"); a produção tem 0 pacotes — ninguém afetado).
 
 
 **03/11/2026 (AP64, passo 3) — PC Administrador (core 0.391.0 → 0.392.0, migração 0358)**
