@@ -16,7 +16,8 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 
 **Decididos pelo dono em 03/11/2026, a implementar**
 - [x] **AP61** — repasse por PROCEDIMENTO CONCLUÍDO: entra uma vez, quando a última sessão do procedimento termina — **0.386.0 (0352); falta o dono confirmar: o repasse vai para quem concluiu a ÚLTIMA sessão**
-- [ ] **AP63 / AP64** — cancelada: compra de novo por nova versão + negociação nova, com a venda cancelada no histórico; vendido: versão nova é complemento, a venda anterior continua valendo
+- [x] **AP63** — cancelada: compra de novo por nova versão + negociação nova, com a venda cancelada no histórico — **0.388.0 (0354)**
+- [ ] **AP64** — plano COMPLEMENTAR do plano vendido, na Fase 5 (Coordenador abre, Planner monta, Coordenador aprova, Consultor apresenta); sinal na Jornada e no prontuário — **plano aprovado em `docs/comercial/AP63-AP64-PLANO.md` (V1–V7); a fazer em 3 passos**
 - [x] **AP55** — TSB com a mesma lista da ASB; Recepção sem anamnese e sem chamar paciente — **0.385.0 (0351): a TSB ganhou no banco as réguas da ASB; "Fichas de anamnese" saiu do catálogo (fica "Anamneses clínicas", do Coordenador)**
 - [ ] **AP24** — Indica +Risos: implementar os 3 parâmetros (presente de boas-vindas, validade, divisão do prêmio)
 
@@ -36,7 +37,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP16 (sobra)** — funções que respondem sem login: faltam Estoque/Compras, Agenda/Clínico, Empresarial
 - [ ] **AP67** — o banco ignora o escopo "Específicas" do Financeiro da Franqueadora
 - [ ] **AP87** — Empresarial: todo Consultor RisLife vê TODAS as empresas e leads (`empresarial.is_program_manager()` inclui o papel; `assigned_consultant_id`/`consultant_id` não restringem nada para ele). Achado no plano ZS0 (`docs/assinaturas/PLANO-ZS0.md`); o módulo de assinaturas trava por empresa/lead, o resto espera decisão do dono — **reconfirmado em 03/11/2026 no levantamento da Rita (`docs/sdr/LEVANTAMENTO_DADOS_RITA_RESULTADO.md`, F5)**
-- [ ] **AP99** — Edge Function `asaas-webhook`: sem a variável `ASAAS_WEBHOOK_TOKEN` no painel, aceita QUALQUER chamada (a conferência do token é condicional)
+- [x] **AP99** — Edge Function `asaas-webhook`: sem a variável `ASAAS_WEBHOOK_TOKEN` no painel, aceita QUALQUER chamada (a conferência do token é condicional) — **0.388.1: sem o segredo recusa tudo (500) antes de ler o corpo; comparação em tempo constante (ASAAS e ZapSign); corpo sem `id` → 400. Conferido de fora em 03/11/2026: a função NÃO está publicada em nenhum projeto (404) — o risco era latente**
 - [ ] **AP100** — Indica: o token do convite (`/c/<token>`) fica EM CLARO em `indica.mensagens.link_caminho`, legível por qualquer Risartano da unidade; a tabela só guarda o hash
 - [ ] **AP101** — Indica: a anonimização (7 dias sem aceite e 12 meses encerrada) só descarta as mensagens; nome, telefone e texto do indicado continuam em `indica.mensagens`
 - [ ] **AP102** — Indica: com a chave de serviço (`auth.uid()` nulo) TODAS as funções de escrita pulam a guarda — inclusive as de gestor (`cancelada`, `ajustar_pontos`, `mudar_resgate`, `usar_voucher`, `aprovar_apuracao`); `embaixadores`, `mensagens`, `consentimentos` e `config` não têm trava
@@ -55,7 +56,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
 - [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
 - [ ] **AP106** — o original de fábrica da matriz (`permissions.ts`) não tem ASB nem TSB em entrada/inventário e compras: voltar a ele as desligaria
-- [ ] **AP105** — `docs/PRODUCAO-ONLINE.md` não lista 5 variáveis que o código lê: `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`, `ASAAS_API_KEY`, `ASAAS_BASE_URL`
+- [x] **AP105** — `docs/PRODUCAO-ONLINE.md` não lista 5 variáveis que o código lê: `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`, `ASAAS_API_KEY`, `ASAAS_BASE_URL` — **0.388.1: as cinco entraram na tabela, mais `ASAAS_WEBHOOK_TOKEN` (segredo da Edge Function, no painel do Supabase) e a seção da Edge Function**
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
 - [ ] **Grupos de procedimentos (depois)** — orçamento e apresentação agrupados, com subtotal do grupo (GP3: "não agora"; só se o Comercial pedir — `docs/procedimentos/GRUPOS-PLANO.md`)
 - [ ] **OC-00133 (depois)** — medalha de META atingida (decisão M1: ficou para depois; esbarra na R4 das Metas)
@@ -2945,6 +2946,17 @@ painel do Supabase, qualquer POST com corpo válido chega a `settle_billing`.
 recusar quando a variável faltar (como o cron da Vercel faz com `CRON_SECRET`).
 Visto no levantamento da Rita (K2).
 
+**✅ Resolvido em 0.388.1 (03/11/2026, item 1 do `docs/sdr/PLANO-CORRECOES-SECAO-2.md`).**
+Conferido de fora antes de mexer: a função **não está publicada** em nenhum dos
+dois projetos (`GET`/`POST` → 404 `NOT_FOUND`), então o risco era latente. A
+função passou a recusar tudo (500) sem `ASAAS_WEBHOOK_TOKEN`, antes de ler o
+corpo; compara o token em tempo constante (SHA-256 + XOR); corpo sem `id`
+responde 400 (a idempotência depende dele — antes ganhava um UUID novo a cada
+reenvio). A rota da ZapSign ganhou a mesma comparação
+(`src/lib/segredo-de-webhook.ts`). Régua `webhook-asaas.test.ts`, provada
+quebrando. A ordem obrigatória (segredo → deploy → URL no ASAAS) está em
+`docs/PRODUCAO-ONLINE.md`. **Não visto:** a função publicada de verdade.
+
 ### AP100. O token do convite do Indica fica em claro na fila (03/11/2026)
 
 **Confirmado, lendo o código:** `indicacoes.convite_token_hash` guarda só o
@@ -3011,6 +3023,11 @@ no sábado, pedindo horários numa sexta à noite. Visto no levantamento da Rita
 `src/lib/espelho-treino.ts`), `GAMMA_API_KEY`, `ASAAS_API_KEY` e
 `ASAAS_BASE_URL`, que o código lê por `process.env`. Só documentação. Visto no
 levantamento da Rita (K4).
+
+**✅ Resolvido em 0.388.1 (03/11/2026):** as cinco entraram na tabela de
+`docs/PRODUCAO-ONLINE.md`, junto com `ASAAS_WEBHOOK_TOKEN` (segredo da Edge
+Function, cadastrado no painel do Supabase, não na Vercel) e uma seção própria
+sobre a Edge Function do ASAAS (ordem do deploy e como provar de fora).
 
 ### AP92. Reenviar como novo pacote não vale para empresas (02/11/2026)
 
@@ -3209,6 +3226,8 @@ Produção: 0 atendimentos com sessão concluídos.
 
 ### AP64. Versão nova do plano aprovada DEPOIS da venda — o painel passa para ela (20/10/2026) — DECIDIDO 03/11/2026, A IMPLEMENTAR
 
+**Desenho revisto com o dono (03/11/2026):** não é versão nova, é **plano complementar** separado, ligado ao vendido, com o cliente na Fase 5. Plano e decisões V1–V7 em `docs/comercial/AP63-AP64-PLANO.md` §3–§5.
+
 **✅ Decisão do dono (03/11/2026):** **plano vendido pode ganhar versão nova, e a venda anterior continua valendo.** A versão nova é proposta de complemento e deve ser consolidada como nova versão do plano. O painel de fechamento da venda anterior não pode sumir por causa dela.
 
 **Suspeita, lida no código (não executado).** Achado na OD4. "Criar nova
@@ -3220,7 +3239,9 @@ painel já pegava "o aprovado mais novo". A venda e as sessões não mudam (a
 0313 não toca a aceita; as sessões seguem a venda). Mesma família da AP63:
 decidir com o dono como se muda um plano já vendido. Produção com 0 vendas.
 
-### AP63. Nova venda depois de uma negociação cancelada — suspeita (20/10/2026) — DECIDIDO 03/11/2026, A IMPLEMENTAR
+### AP63. Nova venda depois de uma negociação cancelada — suspeita (20/10/2026) — ✅ RESOLVIDO em 03/11/2026 (core 0.388.0, migração 0354)
+
+**✅ Feito (0.388.0, 0354).** O caminho pelo termo já funcionava (Fase 6 → planejamento → versão nova → Comercial; a 0250 reabre o cartão). Dois furos fechados: (1) o cancelamento rápido (`cancel_negotiation`, Fase 4) levava a `return_commercial_to_planning`, que reabria como rascunho o plano da venda cancelada — agora ele não reabre (o cliente vai à Fase 3 e o Planner é avisado para criar versão nova); (2) a versão nova não mostrava o cancelamento — agora nasce com o evento `venda_cancelada_anterior` (gatilho na inserção do plano) e a tela mostra o aviso no plano e na negociação (`AvisoVendaCancelada`). "Enviar ao Comercial" recusa o plano da venda cancelada, também para o Admin. Ensaio no treino em transação desfeita 7/7; sem a 0354, 4 reprovam. Régua `venda-cancelada.test.ts` (provada quebrando).
 
 **✅ Decisão do dono (03/11/2026):** **depois de cancelar, o cliente compra de novo por uma NOVA VERSÃO do plano, com negociação nova.** A negociação cancelada não reabre. O histórico do cliente tem de registrar que houve uma venda cancelada.
 
