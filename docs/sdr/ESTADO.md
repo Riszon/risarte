@@ -16,7 +16,7 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 |---|---|---|
 | Plano 1 (correções da seção 2, itens 1–7) | ✅ concluído em 04/11/2026 | 0362–0364, 2009–2010, sem migração no item 1 e no 6 |
 | **0A.1 Identidade e auditoria** | ✅ concluída: código, treino e produção (04/11/2026) | core **0365**, rita **3000** |
-| 0A.2 Interruptor, modo e portão | próxima | 3001 |
+| **0A.2 Interruptor, modo e portão** | ✅ no código e no treino; ⏳ produção com o dono | **3001** |
 | 0A.3 Consentimento e opt-out | — | 3002 |
 | 0A.4 Unidade, horários, feriados | — | core 036x |
 | 0A.5 Avaliação como dado | — | core 036x + 3003 |
@@ -64,6 +64,60 @@ testes) provada quebrando 3 vezes (tipo, tela, permissão).
 **Diferenças em relação ao plano.** Os números mudaram (o plano dizia 0351; o
 core já estava na 0364). O id da Rita **não** foi para `rita.settings` (0A.2):
 `rita.agent_id()` lê o perfil `agent`, e a unicidade é do índice.
+
+## 0A.2 — Interruptor, modo e portão (Rita 0.2.0, 04/11/2026)
+
+**`rita.settings`**, em cascata: a linha da **rede** (`clinic_id` nulo, nasce
+desligada) e uma por unidade (nasce quando alguém liga ou desliga). `enabled`
+(padrão desligado) e `mode`: `off`, `sombra` (padrão: a Rita prepara, uma
+pessoa envia) ou `ativo`. Campos da rede ainda vazios: mensagem de urgência
+fora do horário (decisão 28), política de privacidade e encarregado de dados
+(decisão 30, aberta). Tabela sem permissão para quem loga; só pelas funções.
+
+| Função | Quem chama | O que faz |
+|---|---|---|
+| `rita.enabled(unidade)` | só a chave de serviço | rede ligada E unidade ligada E nenhuma em `off` |
+| `rita.effective_mode(unidade)` | só a chave de serviço | `off`, `sombra` ou `ativo` — o mais cauteloso entre rede e unidade |
+| `rita.activation_gaps(unidade)` | tela (Admin, ou quem tem a unidade no escopo) e chave | o portão, item a item: `ordem, item, rotulo, ok, detalhe` |
+| `rita.set_enabled(unidade, ligar, motivo)` | tela, pessoa logada | ligar: só Admin Master, rede ligada (`NETWORK_OFF`), portão completo (`ACTIVATION_GAPS:<itens>`). Desligar: Admin Master ou Gerente da unidade. Unidade nula = a rede (só Admin) |
+| `rita.set_mode(unidade, modo)` | tela, só Admin Master | muda o modo (`INVALID_INPUT` se não for um dos três) |
+| `rita._pause_if_gaps(unidade, origem)` | gatilhos e chave de serviço | pausa a unidade ligada cujo portão deixou de estar completo |
+
+**O portão** (`rita._gaps`). Conferidos de verdade desde já: a Rita existe,
+unidade ativa (não a Franqueadora), endereço completo, agenda configurada
+(abertura, fechamento, dias) e um Coordenador clínico ativo. **Pendentes**
+(`rita._pending_items`, sempre `ok = false`): link do Maps e horário por dia
+(0A.4), duração/valor e "o que inclui" da avaliação (0A.5), quem recebe as
+transferências (0A.6). **Enquanto houver pendente, nenhuma unidade liga.**
+Cada entrega recria `_pending_items` sem o item dela e põe a conferência real
+em `_gaps`.
+
+**Pausa automática.** Gatilho `rita_recheck` em `clinics`,
+`clinic_agenda_settings` e `user_clinic_roles_all` (depois de alterar ou
+apagar) e `rita_recheck_profile` em `profiles` (pessoa desativada que
+coordena): unidade ligada com o portão incompleto desliga sozinha,
+`paused_by` nulo e `paused_reason = 'Pausada sozinha (<tabela>). Falta: …'`.
+Blindado: erro vai para `rita.falhas` (fora da auditoria) e a gravação de
+quem mexeu segue. **O aviso ao Gerente e ao Admin vem na 0A.6.**
+
+**Auditoria.** `rita.settings` entra na trilha (com quem mexeu);
+`rita.falhas` é registro técnico, declarado fora. O schema `rita` passou a
+dar `usage` a quem loga — sem nenhuma tabela nem função interna aberta.
+
+**Provas.** Treino, transação desfeita, **16/16**: sem login recusa; só as
+três funções da tela abrem para quem loga; portão com 10 itens e os 5
+pendentes; pessoa de fora não lê; rede desligada recusa; Gerente não liga
+rede nem unidade; portão incompleto recusa com a lista; com as entregas
+simuladas e a unidade completa o Admin liga (modo sombra); Gerente de outra
+unidade não desliga, o desta desliga com motivo; endereço apagado e
+coordenador removido pausam sozinhos; pausa quebrada não derruba a gravação
+e vai para `rita.falhas`; modo (Gerente recusado, ativo/sombra/off,
+inválido); `rita.settings` auditada. **Quebrando:** deixar o Gerente ligar
+reprova a 8. Régua `rita-portao.test.ts` (13 testes) provada quebrando 3
+vezes (Gerente liga, gatilho que devolve o erro, `enabled` aberta).
+
+**Na produção:** ⏳ a **3001** (com o dono). Nenhuma tela lê ainda, então o
+código publicado não depende dela.
 
 ## Regras para as próximas entregas
 

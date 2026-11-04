@@ -266,6 +266,7 @@ export const TABELAS: Record<string, string> = {
   "indica.pontos_lancamentos": "Lançamento de Riso Coins",
   "indica.premios_equipe": "Riso Coins da equipe (prêmio individual)",
   "indica.resgates": "Resgate",
+  "rita.settings": "Rita: interruptor e configuração",
 };
 
 /** As três áreas, para o filtro e para o selo ao lado do registro. */

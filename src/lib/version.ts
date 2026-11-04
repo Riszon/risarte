@@ -19,5 +19,5 @@ export const INDICA_MIGRATION = "2011";
 
 // Rita (assistente virtual de SDR) — schema `rita`, faixa de migração 3000+.
 // Estado em `docs/sdr/ESTADO.md`.
-export const RITA_VERSION = "0.1.0";
-export const RITA_MIGRATION = "3000";
+export const RITA_VERSION = "0.2.0";
+export const RITA_MIGRATION = "3001";

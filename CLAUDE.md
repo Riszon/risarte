@@ -437,6 +437,22 @@ Syncthing se comportarem de forma estranha.**
 - Visto na tela no treino (ASS-000062). Sem migração; publicado (push
   2c2d475d).
 
+**04/11/2026 (Rita — Fase 0A.2) — PC Administrador (Rita 0.1.0 → 0.2.0, migração 3001; core sem versão nova)**
+
+- **Interruptor, modo e portão da Rita** (estado em `docs/sdr/ESTADO.md`).
+  `rita.settings` (rede = `clinic_id` nulo), `rita.enabled`,
+  `rita.effective_mode`, `rita.activation_gaps`, `rita.set_enabled`,
+  `rita.set_mode`, pausa automática por gatilho em `clinics`,
+  `clinic_agenda_settings`, `user_clinic_roles_all` e `profiles`.
+- ⚠️ **O portão tem 5 itens PENDENTES** (`rita._pending_items`): enquanto
+  existirem, nenhuma unidade liga. Cada entrega (0A.4–0A.6) recria
+  `_pending_items` SEM o item dela e põe a conferência real em `rita._gaps`.
+- ⚠️ **Ligar = só Admin Master; desligar = Admin ou Gerente da unidade.**
+  Gatilho da pausa blindado (erro → `rita.falhas`). Régua
+  `rita-portao.test.ts`, provada quebrando 3 vezes.
+- Provado no treino 16/16 (transação desfeita) e quebrando. ⏳ **3001 na
+  produção com o dono** (nenhuma tela lê ainda: o push não depende dela).
+
 **04/11/2026 (Rita — Fase 0A.1) — PC Administrador (core 0.396.0 → 0.397.0, migração 0365; Rita 0.1.0, migração 3000)**
 
 - **A identidade da Rita e a auditoria** (bloco 0.397.0 no ESTADO; estado da

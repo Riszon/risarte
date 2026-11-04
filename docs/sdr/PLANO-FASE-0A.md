@@ -57,6 +57,13 @@ O que isso muda no plano:
 
 ### 0A.2 — Interruptor, modo e portão (**3001**)
 
+> ✅ **Feita em 04/11/2026 (Rita 0.2.0).** Diferenças: os itens do portão que
+> dependem das entregas 0A.4–0A.6 ficam como **pendentes** (`rita._pending_items`)
+> até cada uma; a pausa automática hoje vigia `clinics`,
+> `clinic_agenda_settings`, `user_clinic_roles_all` e `profiles` (as demais
+> tabelas entram com as entregas que as criam); o aviso da pausa vem na 0A.6.
+> Também `rita.set_mode` e `rita.effective_mode`. Detalhe em `docs/sdr/ESTADO.md`.
+
 - `rita.settings` em cascata (`clinic_id null` = rede; `unique nulls not distinct`): `enabled bool default false`, `mode` (`off` / `sombra` / `ativo`, default `sombra`), `activated_by`, `activated_at`, `paused_at`, `paused_reason`, `paused_by`, `agent_profile_id` (só na linha da rede), `after_hours_urgent_message text` (decisão 28, texto do RT), `privacy_policy_url`, `dpo_name`, `dpo_email`, `dpo_phone` (rede; ❓ decisão 30 ainda aberta — ficam vazios).
 - `rita.enabled(p_clinic) returns boolean` = rede ligada **e** unidade ligada **e** `mode <> 'off'`.
 - `rita.activation_gaps(p_clinic) returns table(item, ok, detalhe)`: a lista do portão (kickoff, proteção 3): endereço, link do Maps, horário por dia, dias/horários de avaliação (0A: "há coordenador com agenda na unidade"), duração, valor ou gratuidade, "o que a avaliação inclui", responsável pelas transferências em horário comercial. É a mesma função que a tela usa.
