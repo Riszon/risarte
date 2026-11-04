@@ -100,3 +100,19 @@ As lacunas da seção 3.3 do levantamento seguem para a Fase 2 em diante.
 ## 4. Consultas agregadas
 
 ✅ As 6 consultas da seção 7 do levantamento (só contagens, sem dados de pessoas) estão **autorizadas em produção e no treino**, somente leitura. Reportar os números dos dois ambientes junto com o plano da Fase 0A.
+
+---
+
+## 5. Decisões de 03/11/2026 (noite) — respostas pelo chat, depois da aprovação dos planos
+
+| # | Status | Decisão |
+|---|---|---|
+| 34 | ✅ | **Os dois planos aprovados como estão**, com as opções recomendadas em cada ❓ e as DA1–DA9. |
+| 35 | ✅ | **Ordem:** as correções do plano 1 saem em sessões paralelas (cards); a **Fase 0A.1 só começa depois** delas, para não disputar `version.ts`, `changelog.ts` e `ESTADO` com três sessões. |
+| 36 | ✅ | **Vercel é Pro:** cron a cada 15 minutos liberado. Os jobs da Rita seguem o padrão pg_cron monta a fila + Vercel Cron despacha. |
+| 37 | ✅ | **DPO provisório: Jeferson** (Admin Master), até nomear outra pessoa; e-mail de contato a definir. Vai em `rita.settings` da rede (0A.2). O texto do consentimento continua pendente (decisão 30). |
+| 38 | ✅ | **A avaliação NÃO é um procedimento novo.** O catálogo já tem (nos dois bancos, R$ 300,00, "Clínica Geral"): **"Consulta odontológica inicial"** = a avaliação de quem é novo, e **"Consulta odontológica"** = a consulta de quem já é cliente. "Consulta odontológica de Urgência" e "… de Urgência 24 hs" (R$ 0,00) entram no rol como tipos que a Rita reconhece e **escala** (não agenda). A 0A.5 **marca** esses procedimentos em vez de criar "Avaliação"; o preço é o deles (`default_price_cents` e, quando houver, `clinic_procedure_prices` — hoje nenhum preço por unidade cadastrado). |
+| 39 | ✅ | **Rol da Rita = marca no procedimento:** coluna "A Rita pode oferecer" (`procedures.rita_can_offer`), **só o Admin Master marca**, mais o **nome amigável para o paciente** (`procedures.patient_name`). A Rita só informa o que está no rol, e nunca preço de tratamento. |
+| 40 | ✅ | **A oferta varia por unidade:** entra a tabela `clinic_procedure_availability` (Gerente marca o que a unidade NÃO faz; sem linha = oferece). Sobe da Fase 1 para a **0A.5**, porque a tela "O que a Rita sabe" precisa mostrar. |
+| 41 | ✅ | **Crianças: a rede atende, e a idade mínima varia por unidade** (`clinic_public_info.min_child_age`, Gerente configura). Sem configurar, a Rita não promete e escala. Entra na 0A.4. |
+| 42 | ✅ | **Políticas até a Parte 6 chegar — padrão sugerido, editável na tela:** tolerância de **15 min** de atraso; remarcar e cancelar pela Rita a qualquer hora (decisão 10); **falta não bloqueia**, a Rita oferece reagendar **uma vez**; menores só com o responsável. Textos em `patient_texts`/`rita.settings` (0A.5/0A.2). |
