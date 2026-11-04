@@ -5181,6 +5181,23 @@ houver) e como foi resolvido; ao marcar **Descartado**, o motivo é obrigatório
 "Editar título e detalhe" reescreve o texto. Tudo o que muda entra na **Linha do
 tempo** do item, com quem fez e quando — e nada se apaga.
 
+**Escolher vários e pedir a correção (0.401.0):** cada linha tem uma caixa de
+escolha (e **Escolher os N da lista** marca todos os que o filtro mostra). A
+escolha continua valendo se você trocar de filtro. Com um ou mais escolhidos,
+aparece a barra no rodapé:
+
+- **Preparar pedido para resolver** — abre o texto completo dos itens (código,
+  classificação e detalhe), com as regras de trabalho para a sessão. **Revise e
+  acrescente o que quiser**, depois **Copiar** e cole na conversa com o Claude
+  Code. Ao copiar, os itens abertos (e os que aguardam você) passam a **Em
+  andamento** — desmarque a caixa se não quiser. Se o navegador não deixar
+  copiar, a tela avisa e nada é marcado;
+- **Prioridade…** ou **Categoria…** e **Aplicar** — muda todos os escolhidos de
+  uma vez (cada um ganha a mudança na sua linha do tempo);
+- **Limpar** desfaz a escolha.
+
+Resolver e descartar continuam item a item, porque cada um tem o seu "como".
+
 **Novo item:** o botão **Novo item** registra algo que você notou; o código
 (AP…) é dado pelo sistema.
 

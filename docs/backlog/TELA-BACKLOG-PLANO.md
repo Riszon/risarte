@@ -113,7 +113,7 @@ pendência: ficam só no arquivo. Roda primeiro no treino, depois na produção.
 |---|---|---|
 | **BK1** ✅ 0.399.0 (0366) | migração (tabelas, RLS, linha do tempo), importação, comando das sessões | ensaio no treino em transação desfeita; importação conferida item a item contra o arquivo (111 AP + os não-AP) |
 | **BK2** ✅ 0.400.0 | a tela: lista, filtros, detalhe, edição, abas | tela vista no treino como Admin Master; outro perfil não vê o menu nem abre o endereço |
-| **BK3** | seleção e "Preparar pedido para resolver" | régua do texto montado (sem dado pessoal, todos os itens selecionados) |
+| **BK3** ✅ 0.401.0 | seleção e "Preparar pedido para resolver" | régua do texto montado (sem dado pessoal, todos os itens selecionados) |
 | **BK4** | "Enviar para o backlog" nos relatos | relato do treino vira item, vínculo dos dois lados |
 
 Cada fase com versão própria, changelog, manual e evidência, como sempre.

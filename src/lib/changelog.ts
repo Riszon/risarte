@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.401.0",
+    data: "2026-11-04",
+    migracao: "0366",
+    titulo: "Backlog: escolher vários itens e preparar o pedido para resolver",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No Backlog, cada item tem uma caixa de escolha. Com um ou vários escolhidos, a barra do rodapé prepara o pedido para resolver (o texto completo dos itens, para revisar e colar numa sessão do Claude Code — ao copiar, os abertos passam a Em andamento) e muda a prioridade ou a categoria de todos de uma vez.",
+        papeis: [],
+        manual: "13e. Para o Admin Master: o Backlog (0.400.0)",
+      },
+    ],
+  },
+  {
     versao: "0.400.1",
     data: "2026-11-04",
     migracao: null,

@@ -7,6 +7,7 @@ import {
   PRIORIDADES,
   SITUACOES,
   mensagemDoErro,
+  type ItemDoPedido,
   type Prioridade,
   type SituacaoDoItem,
 } from "@/lib/backlog";
@@ -130,4 +131,105 @@ export async function salvarCategoria(formData: FormData): Promise<Resultado> {
   }
   revalidar();
   return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// BK3 — vários itens de uma vez.
+// -----------------------------------------------------------------------------
+
+const MAXIMO_NO_LOTE = 100;
+
+function codigosValidos(codes: string[]): string[] | null {
+  const lista = [...new Set(codes.map((c) => String(c).trim().toUpperCase()))];
+  if (lista.length === 0 || lista.length > MAXIMO_NO_LOTE) return null;
+  return lista.every((c) => /^AP\d+$/.test(c)) ? lista : null;
+}
+
+/** Os itens escolhidos, com o detalhe inteiro — para montar o pedido. */
+export async function lerItensDoPedido(
+  codes: string[]
+): Promise<{ ok: true; itens: ItemDoPedido[] } | { ok: false; error: string }> {
+  await requireAdminMaster();
+  const lista = codigosValidos(codes);
+  if (!lista) return { ok: false, error: `Escolha de 1 a ${MAXIMO_NO_LOTE} itens.` };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("backlog_items")
+    .select("code, title, detail, priority, status, module, backlog_categories ( name )")
+    .in("code", lista)
+    .returns<
+      {
+        code: string;
+        title: string;
+        detail: string;
+        priority: Prioridade;
+        status: SituacaoDoItem;
+        module: string | null;
+        backlog_categories: { name: string } | null;
+      }[]
+    >();
+  if (error) {
+    console.error("backlog (pedido):", error.message);
+    return { ok: false, error: "Não foi possível ler os itens. Tente de novo." };
+  }
+  // Leu menos do que pediu: dizer, nunca montar o pedido pela metade.
+  if ((data ?? []).length !== lista.length) {
+    return { ok: false, error: "Algum item escolhido não existe mais. Recarregue a página." };
+  }
+  return {
+    ok: true,
+    itens: (data ?? []).map((r) => ({
+      code: r.code,
+      title: r.title,
+      detail: r.detail,
+      priority: r.priority,
+      status: r.status,
+      module: r.module,
+      category: r.backlog_categories?.name ?? "—",
+    })),
+  };
+}
+
+export type ResultadoDoLote = { ok: boolean; gravados: string[]; falhas: { code: string; error: string }[] };
+
+/**
+ * A mesma mudança em vários itens. Item a item, pela mesma porta da tela de
+ * detalhe: cada um ganha o seu evento na linha do tempo. Uma falha não
+ * esconde as outras — o resultado diz quais passaram e quais não.
+ */
+export async function mudarEmLote(
+  codes: string[],
+  mudanca: { status?: SituacaoDoItem; priority?: Prioridade; category?: string; note?: string }
+): Promise<ResultadoDoLote> {
+  await requireAdminMaster();
+  const lista = codigosValidos(codes);
+  if (!lista) return { ok: false, gravados: [], falhas: [{ code: "—", error: `Escolha de 1 a ${MAXIMO_NO_LOTE} itens.` }] };
+  if (mudanca.status === "resolvido" || mudanca.status === "descartado") {
+    return { ok: false, gravados: [], falhas: [{ code: "—", error: "Resolver e descartar são item a item." }] };
+  }
+  const invalido = conferir(mudanca.priority ?? null, mudanca.status ?? null, null);
+  if (invalido) return { ok: false, gravados: [], falhas: [{ code: "—", error: invalido }] };
+  if (!mudanca.status && !mudanca.priority && !mudanca.category) {
+    return { ok: false, gravados: [], falhas: [{ code: "—", error: "Nada para mudar." }] };
+  }
+
+  const supabase = await createClient();
+  const gravados: string[] = [];
+  const falhas: { code: string; error: string }[] = [];
+  for (const code of lista) {
+    const { error } = await supabase.rpc("backlog_update_item", {
+      p_code: code,
+      p_status: mudanca.status ?? null,
+      p_priority: mudanca.priority ?? null,
+      p_category: mudanca.category ?? null,
+      p_note: mudanca.note?.trim() || null,
+      p_author_label: null,
+    });
+    if (error) {
+      console.error("backlog_update_item (lote):", code, error.message);
+      falhas.push({ code, error: mensagemDoErro(error.message) });
+    } else gravados.push(code);
+  }
+  revalidar();
+  return { ok: falhas.length === 0, gravados, falhas };
 }

@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.400.1** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.401.0** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 📋 0.400.1 — RELATO QUE DÁ ERRO NÃO APAGA O TEXTO (04/11/2026, sem migração)
 >
@@ -22,6 +22,23 @@ _Atualizado em: 04/11/2026 · Versão do sistema: **0.400.1** · Última migraç
 > - Manual 9.4, EV-296. **Não visto na tela.** O texto do André não volta
 >   (nunca chegou ao banco). Resíduo: o código OC-00165 do treino foi consumido
 >   pelo ensaio (a sequência não volta no rollback).
+>
+> ## 📋 0.401.0 — BACKLOG: ESCOLHER E PEDIR, FASE BK3 (04/11/2026, sem migração)
+>
+> Caixa de escolha por linha (a escolha é por código e sobrevive aos filtros) e
+> a barra do rodapé (`barra-do-lote.tsx`): **Preparar pedido para resolver**
+> (`montarPedido` em `src/lib/backlog.ts` — os itens inteiros, na ordem da
+> tela, com as regras: plano antes, `npm run backlog -- andamento/resolver`)
+> numa caixa editável; ao **Copiar**, os abertos e os aguardando você passam a
+> Em andamento (`mudarEmLote`, com nota). Prioridade/Categoria + **Aplicar**
+> em lote. Resolver e descartar ficam item a item. Manual 13e, EV-297.
+> - ⚠️ **A área de transferência pode ficar PARADA** (no navegador embutido o
+>   botão ficava "Gravando…" para sempre): `copiarTexto` dá 2 s e cai para
+>   selecionar-e-copiar; se nada copiar, nada é marcado.
+> - ⚠️ A mudança em lote pede **Aplicar** de propósito: aplicar ao escolher na
+>   lista deixava passar clique sem querer.
+> - Visto na tela no treino (Admin de teste). O ensaio no AP120 foi desfeito.
+> - Próximo: **BK4** (relato → backlog).
 >
 > ## 📋 0.400.0 — A TELA DO BACKLOG, FASE BK2 (04/11/2026, sem migração)
 >

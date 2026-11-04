@@ -6,6 +6,8 @@ import {
   ordenar,
   valorDoEvento,
   mensagemDoErro,
+  montarPedido,
+  quemVaiParaAndamento,
   type ItemDoBacklog,
 } from "@/lib/backlog";
 
@@ -72,5 +74,36 @@ describe("backlog na tela", () => {
     expect(valorDoEvento("categoria", "Defeito")).toBe("Defeito");
     expect(mensagemDoErro("NOT_ALLOWED")).toMatch(/Admin Master/);
     expect(mensagemDoErro("CATEGORY_EXISTS")).toMatch(/Já existe/);
+  });
+
+  it("o pedido leva cada item inteiro, na ordem da tela, com as regras de trabalho", () => {
+    const texto = montarPedido(
+      [
+        { code: "AP10", title: "Baixa", category: "Melhoria", priority: "baixa", status: "aberto", module: null, detail: "detalhe dez" },
+        { code: "AP2", title: "Urgente", category: "Defeito", priority: "urgente", status: "aguardando_dono", module: "agenda", detail: "detalhe dois" },
+      ],
+      (m) => (m === "agenda" ? "Agenda e Atendimento" : m)
+    );
+    expect(texto).toMatch(/^Resolva estes 2 itens do backlog do riSZon \(AP2, AP10\)\./);
+    expect(texto.indexOf("━━━ AP2")).toBeLessThan(texto.indexOf("━━━ AP10"));
+    expect(texto).toContain("Prioridade: Urgente · Categoria: Defeito · Módulo: Agenda e Atendimento · Situação: Aguardando você");
+    expect(texto).toContain("detalhe dois");
+    expect(texto).toContain("detalhe dez");
+    expect(texto).toContain("espere o meu OK");
+    expect(texto).toContain("npm run backlog -- resolver APn");
+    expect(montarPedido([{ code: "AP7", title: "t", category: "c", priority: "media", status: "aberto", module: null, detail: "" }]))
+      .toMatch(/^Resolva este item[\s\S]*\(sem detalhe escrito\)/);
+  });
+
+  it("ao copiar, só os abertos e os que aguardam você vão para Em andamento", () => {
+    expect(
+      quemVaiParaAndamento([
+        { code: "AP1", status: "aberto" },
+        { code: "AP2", status: "aguardando_dono" },
+        { code: "AP3", status: "em_andamento" },
+        { code: "AP4", status: "resolvido" },
+        { code: "AP5", status: "descartado" },
+      ])
+    ).toEqual(["AP1", "AP2"]);
   });
 });

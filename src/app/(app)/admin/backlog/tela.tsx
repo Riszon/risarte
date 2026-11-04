@@ -29,6 +29,7 @@ import {
 import { Escolha, SeloDePrioridade, SeloDeSituacao } from "./pecas";
 import { JanelaDasCategorias } from "./categorias";
 import { NovoItem } from "./novo-item";
+import { BarraDoLote } from "./barra-do-lote";
 
 const TODAS = "__todas";
 
@@ -65,6 +66,16 @@ export function TelaDoBacklog({
   noTreino: boolean;
 }) {
   const [f, setF] = useState<Filtro>(FILTRO_INICIAL);
+  // BK3: a escolha é por código e sobrevive aos filtros — filtrar depois de
+  // escolher não pode tirar ninguém do lote em silêncio.
+  const [escolhidos, setEscolhidos] = useState<Set<string>>(() => new Set());
+  const alternar = (code: string) =>
+    setEscolhidos((antes) => {
+      const proximo = new Set(antes);
+      if (proximo.has(code)) proximo.delete(code);
+      else proximo.add(code);
+      return proximo;
+    });
   const mudar = (parte: Partial<Filtro>) => setF((antes) => ({ ...antes, ...parte }));
 
   const contagem = useMemo(() => contar(itens), [itens]);
@@ -230,6 +241,23 @@ export function TelaDoBacklog({
         )}
       </div>
 
+      {lista.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={() => setEscolhidos((antes) => new Set([...antes, ...lista.map((i) => i.code)]))}
+          >
+            Escolher os {lista.length} da lista
+          </button>
+          {escolhidos.size > 0 && (
+            <span className="text-muted-foreground">
+              {escolhidos.size} escolhido{escolhidos.size > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
+
       {lista.length === 0 ? (
         <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
           {filtrando ? "Nenhum item com esses filtros." : f.aba === "abertos" ? "Nada em aberto." : "Nenhum item aqui."}
@@ -243,10 +271,19 @@ export function TelaDoBacklog({
               )}
               <ul className="divide-y rounded-lg border">
                 {g.itens.map((i) => (
-                  <li key={i.code}>
+                  <li key={i.code} className={cn("flex items-start gap-1", escolhidos.has(i.code) && "bg-primary/5")}>
+                    <label className="flex shrink-0 cursor-pointer items-center self-stretch py-2.5 pl-3">
+                      <input
+                        type="checkbox"
+                        checked={escolhidos.has(i.code)}
+                        onChange={() => alternar(i.code)}
+                        aria-label={`Escolher ${i.code}`}
+                        className="size-4"
+                      />
+                    </label>
                     <Link
                       href={`/admin/backlog/${i.code}`}
-                      className="flex min-w-0 flex-col gap-1 px-3 py-2.5 hover:bg-muted/50 sm:flex-row sm:items-center sm:gap-3"
+                      className="flex min-w-0 flex-1 flex-col gap-1 px-2 py-2.5 hover:bg-muted/50 sm:flex-row sm:items-center sm:gap-3"
                     >
                       <span className="w-14 shrink-0 font-mono text-xs text-muted-foreground">{i.code}</span>
                       <span className="min-w-0 flex-1 text-sm">{i.title}</span>
@@ -272,6 +309,12 @@ export function TelaDoBacklog({
           ))}
         </div>
       )}
+
+      <BarraDoLote
+        escolhidos={itens.filter((i) => escolhidos.has(i.code))}
+        categorias={categorias}
+        aoLimpar={() => setEscolhidos(new Set())}
+      />
     </div>
   );
 }

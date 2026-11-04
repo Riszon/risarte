@@ -195,3 +195,64 @@ export function mensagemDoErro(msg: string): string {
   if (/backlog_items_title_ok/.test(msg)) return "O título é obrigatório (até 300 letras).";
   return "Não foi possível gravar. Tente de novo.";
 }
+
+// -----------------------------------------------------------------------------
+// BK3 — o pedido para uma sessão resolver os itens escolhidos.
+// -----------------------------------------------------------------------------
+
+export type ItemDoPedido = {
+  code: string;
+  title: string;
+  category: string;
+  priority: Prioridade;
+  status: SituacaoDoItem;
+  module: string | null;
+  detail: string;
+};
+
+/**
+ * O texto que o dono cola numa sessão do Claude Code. Leva o que a sessão
+ * precisa para começar sem perguntar de novo (código, classificação, o
+ * detalhe inteiro) e as duas regras do projeto que mais se esquecem: plano
+ * antes de mexer e fechar o item pelo comando ao terminar.
+ *
+ * A ordem é a da tela (prioridade, depois número). `moduloRotulo` vem de
+ * fora para esta regra não depender do catálogo de relatos.
+ */
+export function montarPedido(
+  itens: ItemDoPedido[],
+  moduloRotulo: (m: string) => string = (m) => m
+): string {
+  const ordenados = [...itens].sort((a, b) => {
+    const p = PRIORIDADES.indexOf(a.priority) - PRIORIDADES.indexOf(b.priority);
+    return p !== 0 ? p : numeroDoCodigo(a.code) - numeroDoCodigo(b.code);
+  });
+  const n = ordenados.length;
+  const codigos = ordenados.map((i) => i.code).join(", ");
+  const cabecalho = [
+    `Resolva ${n === 1 ? "este item" : `estes ${n} itens`} do backlog do riSZon (${codigos}).`,
+    "",
+    "Antes de mexer: leia o CLAUDE.md e confira cada item no código e no banco — o texto foi escrito quando o item foi achado e pode ter mudado. Apresente um plano curto e espere o meu OK. O que depender de decisão minha, pergunte; não decida sozinho.",
+    "",
+    "Ao começar um item: npm run backlog -- andamento APn",
+    'Ao terminar: npm run backlog -- resolver APn --versao <versão> --como "<o que foi feito>"',
+    'Achado novo no caminho: npm run backlog -- novo --titulo "…" --detalhe "…" --categoria "…" --prioridade …',
+  ];
+  const blocos = ordenados.map((i) => {
+    const linha = [
+      `Prioridade: ${PRIORIDADE_ROTULO[i.priority]}`,
+      `Categoria: ${i.category}`,
+      i.module ? `Módulo: ${moduloRotulo(i.module)}` : null,
+      `Situação: ${SITUACAO_ROTULO[i.status]}`,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return [`━━━ ${i.code} — ${i.title}`, linha, "", i.detail.trim() || "(sem detalhe escrito)"].join("\n");
+  });
+  return [...cabecalho, "", ...blocos.flatMap((b) => [b, ""])].join("\n").trimEnd() + "\n";
+}
+
+/** Os que passam a "Em andamento" ao copiar o pedido: só os abertos de verdade. */
+export function quemVaiParaAndamento(itens: { code: string; status: SituacaoDoItem }[]): string[] {
+  return itens.filter((i) => i.status === "aberto" || i.status === "aguardando_dono").map((i) => i.code);
+}

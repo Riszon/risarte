@@ -426,6 +426,11 @@ Syncthing se comportarem de forma estranha.**
   fora: sem login recusa, os indicadores novos medem). Provada com dados montados (o cliente que
   sai do Empresarial no meio do mês) numa transação desfeita.
 
+**04/11/2026 (BK3 — escolher e pedir) — PC Administrador (core 0.400.1 → 0.401.0, sem migração)**
+
+- **Backlog: escolher vários e preparar o pedido** (bloco 0.401.0 no ESTADO;
+  manual 13e). Copiar marca os abertos Em andamento. Próximo: **BK4**.
+
 **04/11/2026 (BK2 — tela do backlog) — PC Administrador (core 0.399.0 → 0.400.0, sem migração)**
 
 - **Administração → Backlog** (bloco 0.400.0 no ESTADO; manual 13e). Regras
