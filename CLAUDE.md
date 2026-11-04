@@ -391,6 +391,27 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 — PC Administrador (core 0.397.0 → 0.398.0, migração 0365)**
+
+- **Metas: Ortodontia, PPR+ e a receita bruta em linhas** (pedido do dono;
+  plano §9f do `docs/metas/METAS-PLANO.md`, P1–P6 e N1–N3 com os ajustes
+  dele). É a etapa **ORTO3** do plano da Ortodontia. 13 indicadores; a ficha
+  mostra a composição da receita bruta; a especialidade Ortodontia ganhou o
+  aviso em Procedimentos → Especialidades.
+- ⚠️ **Feito num WORKTREE à parte** (`C:/Users/Administrador/wt-metas`,
+  branch `feature/metas-orto-pprplus`): a pasta principal tinha trabalho SEM
+  COMMIT de outra sessão (presente de boas-vindas do Indica, a 0363 e a 2011),
+  em arquivos compartilhados. Não toquei neles; a sessão dela commitou no meio
+  do caminho e a minha branch foi rebaseada sobre o `main`. A 0363 é dela; por
+  isso a minha é a **0365**. ⚠️ **A Rita (Fase 0A.1) também usou a 0365**
+  (`0365_auditoria_reconhece_a_assistente.sql`), e as DUAS já estavam na
+  produção quando a colisão apareceu: nenhuma foi renumerada (regra: migração
+  aplicada não muda de nome). O treino registra pelo nome do arquivo, então
+  convivem. A versão da Rita ficou 0.397.0; a minha, **0.398.0**.
+- ✅ **0365 APLICADA nos dois bancos** (produção em 04/11/2026; conferido de
+  fora: sem login recusa, os indicadores novos medem). Provada com dados montados (o cliente que
+  sai do Empresarial no meio do mês) numa transação desfeita.
+
 **04/11/2026 (aviso do já assinado) — PC Administrador (core 0.397.0 → 0.397.1, sem migração)**
 
 - **O aviso de documento repetido diz quando o cliente já assinou** (bloco

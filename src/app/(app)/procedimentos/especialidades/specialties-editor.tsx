@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ESPECIALIDADE_DA_ORTODONTIA, ONDE_A_ORTODONTIA_E_USADA } from "@/lib/metas/receita";
 import {
   addSpecialty,
   deleteSpecialty,
@@ -26,6 +27,31 @@ export type SpecialtyItem = {
   isActive: boolean;
   procedureCount: number;
 };
+
+/**
+ * P5 (0365): a especialidade que as Metas usam para achar a Ortodontia.
+ * Renomear ou excluir faz essas contas pararem de achar os procedimentos —
+ * desativar não (o procedimento continua com o nome).
+ */
+function AvisoDaOrtodontia({ acao }: { acao: "renomear" | "excluir" }) {
+  return (
+    <div className="mt-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-2 text-xs">
+      <p className="font-medium">
+        Atenção: {acao === "renomear" ? "renomear" : "excluir"} a especialidade &quot;{ESPECIALIDADE_DA_ORTODONTIA}&quot; faz o
+        sistema parar de achar os procedimentos de ortodontia em:
+      </p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4">
+        {ONDE_A_ORTODONTIA_E_USADA.map((x) => (
+          <li key={x}>{x}</li>
+        ))}
+      </ul>
+      <p className="mt-1">
+        Os novos casos, os pacientes em tratamento e as mensalidades de ortodontia continuam funcionando: vêm do módulo de
+        Ortodontia, não do nome da especialidade. Desativar não afeta nada disso.
+      </p>
+    </div>
+  );
+}
 
 export function SpecialtiesEditor({ items }: { items: SpecialtyItem[] }) {
   const router = useRouter();
@@ -169,6 +195,11 @@ export function SpecialtiesEditor({ items }: { items: SpecialtyItem[] }) {
                     <>
                       <div className="min-w-0 flex-1">
                         <span className="font-medium">{sp.name}</span>
+                        {sp.name === ESPECIALIDADE_DA_ORTODONTIA && (
+                          <Badge variant="outline" className="ml-2 text-[10px]" title="Renomear ou excluir afeta as Metas de ortodontia">
+                            usada pelas Metas
+                          </Badge>
+                        )}
                         {!sp.isActive && (
                           <Badge variant="outline" className="ml-2 text-[10px]">
                             Inativa
@@ -218,6 +249,8 @@ export function SpecialtiesEditor({ items }: { items: SpecialtyItem[] }) {
                     </>
                   )}
                   </div>
+                  {editingId === sp.id && sp.name === ESPECIALIDADE_DA_ORTODONTIA && <AvisoDaOrtodontia acao="renomear" />}
+                  {deletingId === sp.id && sp.name === ESPECIALIDADE_DA_ORTODONTIA && <AvisoDaOrtodontia acao="excluir" />}
                   {deletingId === sp.id && (
                     <div className="mt-2 space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
                       <p>

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { indicadorDe } from "@/lib/metas/indicadores";
+import { INDICADORES_DE_META, indicadorDe } from "@/lib/metas/indicadores";
+import { ESPECIALIDADE_DA_ORTODONTIA, composicaoDaReceita, mostraComposicao } from "@/lib/metas/receita";
 import {
   abaDa,
   alvoDoSujeito,
@@ -560,5 +561,74 @@ describe("M5 — relatório de resultados", () => {
     expect(p.linhas).toHaveLength(4);
     expect(p.colunas.some((c) => c.tipo === "dinheiro")).toBe(false);
     expect(p.linhas[0]).toMatchObject({ codigo: "MT-2", desfecho: "Não atingida" });
+  });
+});
+
+// ============================================================ 0365 — ORTODONTIA, PPR+ E RECEITA BRUTA
+
+describe("0365 — os grupos novos do catálogo", () => {
+  const doGrupo = (g: string) => INDICADORES_DE_META.filter((i) => i.grupo === g).map((i) => i.chave).sort();
+  it("Ortodontia tem os seis da ORTO3 + o pedido do dono", () => {
+    expect(doGrupo("Ortodontia")).toEqual(
+      ["ortho_active_patients", "ortho_finished_on_time", "ortho_new_cases", "ortho_overdue", "ortho_revenue", "ortho_revenue_share"].sort()
+    );
+  });
+  it("P6: o PPR+ junta os três antigos e os três novos", () => {
+    expect(doGrupo("PPR+")).toEqual(["ppr_adhesions", "ppr_cancellations", "ppr_lives", "ppr_overdue", "ppr_revenue", "ppr_revenue_share"].sort());
+  });
+  it("só os novos casos têm dono por pessoa (N1: o Coordenador que indicou)", () => {
+    expect(indicadorDe("ortho_new_cases")?.porPessoa).toBe(true);
+    for (const k of ["ortho_revenue", "ppr_revenue", "gross_revenue", "revenue_empresarial_all", "ortho_overdue"])
+      expect(indicadorDe(k)?.porPessoa, k).toBe(false);
+  });
+  it("as inadimplências são de reduzir; as receitas, de aumentar; dinheiro é financeiro (D3)", () => {
+    expect(indicadorDe("ortho_overdue")?.direcoes).toEqual(["decrease"]);
+    expect(indicadorDe("ppr_overdue")?.direcoes).toEqual(["decrease"]);
+    for (const k of ["ortho_revenue", "ortho_revenue_share", "ppr_revenue", "ppr_revenue_share", "gross_revenue", "revenue_private", "revenue_empresarial", "revenue_empresarial_all"]) {
+      expect(indicadorDe(k)?.direcoes, k).toEqual(["increase"]);
+      expect(indicadorDe(k)?.financeiro, k).toBe(true);
+    }
+  });
+});
+
+describe("0365 — a composição da receita bruta (P3)", () => {
+  const c = composicaoDaReceita([
+    { line: "private", cents: 50000 },
+    { line: "empresarial", cents: "20000" },
+    { line: "ortho_procedures", cents: 10000 },
+    { line: "ortho_monthly", cents: 15000 },
+    { line: "ppr", cents: 5000 },
+    { line: "empresarial_all", cents: 26000 },
+  ]);
+  it("as quatro linhas somam a bruta; a ortodontia abre em procedimentos + mensalidades", () => {
+    expect(c.total).toBe(100000);
+    const l = Object.fromEntries(c.linhas.map((x) => [x.chave, x]));
+    expect(l.ortho.cents).toBe(25000);
+    expect(l.ortho.pct).toBe(25);
+    expect(l.ortho_procedures.nivel).toBe(1);
+    expect(c.linhas.filter((x) => x.nivel === 0).reduce((a, x) => a + x.cents, 0)).toBe(c.total);
+  });
+  it("a linha do Empresarial fica à parte (não soma) e tem o seu %", () => {
+    expect(c.empresarialTodos).toEqual({ cents: 26000, pct: 26 });
+  });
+  it("linha que falta vale zero; sem receita, % vazio", () => {
+    const vazia = composicaoDaReceita([]);
+    expect(vazia.total).toBe(0);
+    expect(vazia.linhas.every((x) => x.cents === 0 && x.pct === null)).toBe(true);
+  });
+  it("só as metas de receita mostram a composição", () => {
+    expect(mostraComposicao("gross_revenue")).toBe(true);
+    expect(mostraComposicao("ppr_revenue_share")).toBe(true);
+    expect(mostraComposicao("ortho_overdue")).toBe(false);
+    expect(mostraComposicao("sales_value")).toBe(false);
+  });
+});
+
+describe("0365 — P5: a especialidade da Ortodontia", () => {
+  it("o nome que a tela avisa é o MESMO que o banco procura", () => {
+    const sql = readFileSync("supabase/migrations/0365_metas_ortodontia_ppr_receita_bruta.sql", "utf8");
+    const m = /function public\._goal_ortho_specialty\(\)[\s\S]*?select '([^']+)'::text/.exec(sql);
+    expect(m, "não achei _goal_ortho_specialty na 0365").not.toBeNull();
+    expect(m![1]).toBe(ESPECIALIDADE_DA_ORTODONTIA);
   });
 });

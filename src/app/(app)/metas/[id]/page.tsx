@@ -48,6 +48,7 @@ import {
   type Meta,
 } from "@/lib/metas/regras";
 import { percentuaisDasPessoas, percentuaisDasUnidades, resumirMeta, serieDoGrafico } from "@/lib/metas/resumo";
+import { composicaoDaReceita, mostraComposicao } from "@/lib/metas/receita";
 import { AcoesDaMeta } from "./acoes";
 
 export const metadata: Metadata = { title: "Meta — Metas" };
@@ -102,13 +103,19 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
       .limit(200),
     db.from("goal_milestones").select("id, label, indicator, due_on, target_value").eq("goal_id", id).order("position").limit(100),
   ]);
-  const [{ data: planosPpr }, equilibrio] = await Promise.all([
+  const [{ data: planosPpr }, equilibrio, composicaoLida] = await Promise.all([
     db.from("ppr_plans").select("id, name").limit(100),
     // O1: as duas leituras (R$ e atendimentos) — só para quem vê o financeiro.
     meta.indicator === "breakeven_reached" && meta.status !== "draft"
       ? lerLeituraDoEquilibrio(db, id)
       : Promise.resolve(null),
+    // 0365 (P3): a composição da receita bruta — o banco só responde a quem vê
+    // o dinheiro da meta (D3); para os outros (ou sem a 0365) volta vazio.
+    mostraComposicao(meta.indicator) && meta.status !== "draft" && meta.status !== "scheduled"
+      ? db.rpc("goal_revenue_breakdown", { p_goal_id: id }).then((r) => (r.error ? [] : ((r.data ?? []) as { line: string; cents: number }[])))
+      : Promise.resolve([] as { line: string; cents: number }[]),
   ]);
+  const composicao = composicaoLida.length > 0 ? composicaoDaReceita(composicaoLida) : null;
   const nomesDosPlanos = new Map((planosPpr ?? []).map((p) => [p.id as string, p.name as string]));
   const lida = medicoes.get(id);
   const minhasPausas = pausas.get(id) ?? [];
@@ -450,6 +457,43 @@ export default async function MetaPage({ params }: { params: Promise<{ id: strin
             Unidade sem nenhum registro no período não aparece aqui.
             {ranking ? " A posição é pelo percentual do alvo de cada unidade." : ""}
             {resumo.limite ? " No limite, o percentual é o quanto dele cada unidade já usou — quem usou menos fica na frente." : ""}
+          </p>
+        </section>
+      )}
+
+      {/* ------------------------------------------------ composição da receita bruta (0365) */}
+      {composicao && (
+        <section className="space-y-3 rounded-xl border bg-card p-5 shadow-sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-semibold">Composição da receita bruta</h2>
+            <p className="text-xs text-muted-foreground">Do início da meta até hoje, nas unidades da meta</p>
+          </div>
+          <ul className="space-y-1.5 text-sm">
+            {composicao.linhas.map((l) => (
+              <li
+                key={l.chave}
+                className={`grid grid-cols-[1fr_auto_4rem] items-baseline gap-3 ${l.nivel === 1 ? "pl-4 text-xs text-muted-foreground" : ""}`}
+              >
+                <span className="min-w-0 truncate">{l.nivel === 1 ? `• ${l.rotulo}` : l.rotulo}</span>
+                <span className="tabular-nums">{formatarValor("brl", l.cents)}</span>
+                <span className="text-right text-xs tabular-nums text-muted-foreground">{formatarPct(l.pct)}</span>
+              </li>
+            ))}
+            <li className="grid grid-cols-[1fr_auto_4rem] items-baseline gap-3 border-t pt-1.5 font-semibold">
+              <span>Receita bruta</span>
+              <span className="tabular-nums">{formatarValor("brl", composicao.total)}</span>
+              <span />
+            </li>
+          </ul>
+          <p className="grid grid-cols-[1fr_auto_4rem] items-baseline gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm">
+            <span>
+              Recebimentos de clientes do Empresarial
+              <span className="block text-xs text-muted-foreground">
+                Linha à parte (não soma): tudo o que eles pagaram — procedimentos, ortodontia e PPR+ —, pelo vínculo no dia de cada pagamento.
+              </span>
+            </span>
+            <span className="tabular-nums">{formatarValor("brl", composicao.empresarialTodos.cents)}</span>
+            <span className="text-right text-xs tabular-nums text-muted-foreground">{formatarPct(composicao.empresarialTodos.pct)}</span>
           </p>
         </section>
       )}

@@ -71,7 +71,20 @@ export type ChaveIndicador =
   | "journey_conversion"
   | "reactivated_clients"
   | "certifications"
-  | "reports_sent";
+  | "reports_sent"
+  | "ortho_new_cases"
+  | "ortho_active_patients"
+  | "ortho_finished_on_time"
+  | "ortho_revenue"
+  | "ortho_revenue_share"
+  | "ortho_overdue"
+  | "ppr_revenue"
+  | "ppr_revenue_share"
+  | "ppr_overdue"
+  | "gross_revenue"
+  | "revenue_private"
+  | "revenue_empresarial"
+  | "revenue_empresarial_all";
 
 export type TipoIndicador = "sum" | "rate" | "point";
 /** Como o número aparece: centavos (R$), quantidade, percentual ou horas (guardadas em minutos). */
@@ -93,6 +106,8 @@ export type GrupoIndicador =
   | "Agenda e atendimento"
   | "Clínico"
   | "Clientes"
+  | "Ortodontia"
+  | "PPR+"
   | "Programas da Risarte"
   | "Equipe";
 
@@ -348,7 +363,7 @@ export const INDICADORES_DE_META: Indicador[] = [
   {
     chave: "ppr_adhesions",
     rotulo: "Adesões ao Riso+ (Programa de Prevenção)",
-    grupo: "Programas da Risarte",
+    grupo: "PPR+",
     ajuda:
       "Adesões ATIVADAS no período (contrato assinado + 1º pagamento). Adesão só criada não conta, e transferência entre unidades não é adesão nova. Pode recortar pelo plano (ex.: Familiar).",
     onde: "PPR+ → Nova adesão",
@@ -522,7 +537,7 @@ export const INDICADORES_DE_META: Indicador[] = [
   {
     chave: "ppr_cancellations",
     rotulo: "Cancelamentos do Riso+",
-    grupo: "Programas da Risarte",
+    grupo: "PPR+",
     ajuda:
       "Adesões canceladas no período. É uma meta de NO MÁXIMO: a barra mostra quanto do limite já foi usado. Transferência entre unidades não é cancelamento.",
     onde: "PPR+ → adesão → cancelar",
@@ -540,7 +555,7 @@ export const INDICADORES_DE_META: Indicador[] = [
   {
     chave: "ppr_lives",
     rotulo: "Vidas no Riso+",
-    grupo: "Programas da Risarte",
+    grupo: "PPR+",
     ajuda:
       "Beneficiários (titulares e dependentes) das adesões ativas. FOTOGRAFIA: vale o número de cada dia, e o resultado é o do último dia do prazo.",
     onde: "PPR+ → adesões",
@@ -866,6 +881,236 @@ export const INDICADORES_DE_META: Indicador[] = [
     verbo: "enviar",
     objeto: "relatos e sugestões",
   },
+  // ===========================================================================
+  // ORTODONTIA (0365 — etapa ORTO3 do plano da Ortodontia)
+  // ===========================================================================
+  {
+    chave: "ortho_new_cases",
+    rotulo: "Novos casos de ortodontia",
+    grupo: "Ortodontia",
+    ajuda:
+      "Casos de ortodontia iniciados no período — a mesma régua do Painel da Ortodontia (a data de início; sem início, a de abertura). Na meta individual, o caso é do Coordenador que fez a última indicação de ortodontia do cliente antes de o caso começar; caso antigo sem indicação conta só na meta coletiva.",
+    onde: "Ortodontia → Painel",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: true,
+    quemConta: "o Coordenador Clínico que indicou a ortodontia",
+    financeiro: false,
+    recortes: [],
+    verbo: "iniciar",
+    objeto: "novos casos de ortodontia",
+  },
+  {
+    chave: "ortho_active_patients",
+    rotulo: "Pacientes em tratamento ortodôntico",
+    grupo: "Ortodontia",
+    ajuda:
+      "Casos em tratamento hoje (o \"Em tratamento\" do Painel da Ortodontia). FOTOGRAFIA: vale o número de cada dia, e o resultado é o do último dia do prazo.",
+    onde: "Ortodontia → Painel",
+    tipo: "point",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "pacientes em tratamento ortodôntico",
+  },
+  {
+    chave: "ortho_finished_on_time",
+    rotulo: "Tratamentos ortodônticos finalizados no prazo",
+    grupo: "Ortodontia",
+    ajuda:
+      "Casos finalizados no período (contenções entregues ou alta) até a data prevista de término — que já carrega as faltas — mais a tolerância da unidade. A mesma régua do \"no prazo\" do Painel da Ortodontia.",
+    onde: "Ortodontia → Painel",
+    tipo: "sum",
+    unidade: "count",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: [],
+    verbo: "finalizar",
+    objeto: "tratamentos ortodônticos no prazo",
+  },
+  {
+    chave: "ortho_revenue",
+    rotulo: "Receita de ortodontia",
+    grupo: "Ortodontia",
+    ajuda:
+      "Dinheiro recebido no período com ortodontia: a parte de Ortodontia dos recebimentos de procedimentos (proporcional ao valor dos procedimentos de cada venda) mais as mensalidades e contenções de ortodontia pagas. A parte de procedimentos depende da especialidade \"Ortodontia\" do cadastro de procedimentos (renomeá-la faz esta parte parar de achar).",
+    onde: "Financeiro → Recebíveis e Ortodontia → Mensalidades",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "receber",
+    objeto: "em ortodontia",
+  },
+  {
+    chave: "ortho_revenue_share",
+    rotulo: "% da receita de ortodontia na receita bruta",
+    grupo: "Ortodontia",
+    ajuda:
+      "Receita de ortodontia ÷ receita bruta da unidade (procedimentos particular + procedimentos Empresarial + ortodontia + mensalidades do PPR+), no período. A parte de procedimentos depende da especialidade \"Ortodontia\" do cadastro de procedimentos (renomeá-la faz esta parte parar de achar).",
+    onde: "Metas → a ficha mostra a composição da receita bruta",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "da receita bruta em ortodontia",
+  },
+  {
+    chave: "ortho_overdue",
+    rotulo: "Inadimplência da ortodontia",
+    grupo: "Ortodontia",
+    ajuda:
+      "Das cobranças de ortodontia que venceram no período (até ontem) — mensalidades, contenções e a parte de Ortodontia das parcelas de procedimentos —, quantos % do valor não foram pagos. Mede o que venceu no período; a dívida antiga não entra. A parte de procedimentos depende da especialidade \"Ortodontia\" do cadastro de procedimentos (renomeá-la faz esta parte parar de achar).",
+    onde: "Ortodontia → Mensalidades e Financeiro → Recebíveis",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["decrease"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "reduzir a",
+    objeto: "de inadimplência na ortodontia",
+  },
+  // ===========================================================================
+  // PPR+ (0365)
+  // ===========================================================================
+  {
+    chave: "ppr_revenue",
+    rotulo: "Receita com PPR+",
+    grupo: "PPR+",
+    ajuda:
+      "Mensalidades do PPR+ pagas no período (pela data do pagamento).",
+    onde: "PPR+ → mensalidades",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "receber",
+    objeto: "em mensalidades do PPR+",
+  },
+  {
+    chave: "ppr_revenue_share",
+    rotulo: "% da receita de PPR+ na receita bruta",
+    grupo: "PPR+",
+    ajuda:
+      "Mensalidades do PPR+ pagas ÷ receita bruta da unidade (procedimentos particular + procedimentos Empresarial + ortodontia + mensalidades do PPR+), no período.",
+    onde: "Metas → a ficha mostra a composição da receita bruta",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "da receita bruta em PPR+",
+  },
+  {
+    chave: "ppr_overdue",
+    rotulo: "Inadimplência das mensalidades do PPR+",
+    grupo: "PPR+",
+    ajuda:
+      "Das mensalidades do PPR+ que venceram no período (até ontem), quantos % do valor não foram pagos. Mede o que venceu no período; a dívida antiga não entra.",
+    onde: "PPR+ → mensalidades",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["decrease"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "reduzir a",
+    objeto: "de inadimplência nas mensalidades do PPR+",
+  },
+  // ===========================================================================
+  // A RECEITA BRUTA EM QUATRO LINHAS (0365 — P3)
+  // ===========================================================================
+  {
+    chave: "gross_revenue",
+    rotulo: "Receita bruta da unidade",
+    grupo: "Financeiro",
+    ajuda:
+      "Tudo o que entrou no período: procedimentos (particular) + procedimentos (Empresarial) + ortodontia (procedimentos e mensalidades) + mensalidades do PPR+. Diferente da \"Receita recebida\", que não soma as mensalidades. A ficha da meta mostra a composição.",
+    onde: "Metas → a ficha mostra a composição",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "receber",
+    objeto: "de receita bruta",
+  },
+  {
+    chave: "revenue_private",
+    rotulo: "Receita de procedimentos — particular",
+    grupo: "Financeiro",
+    ajuda:
+      "Recebimentos de procedimentos (fora a parte de Ortodontia) de clientes que, no dia do recebimento, não estavam no programa Empresarial.",
+    onde: "Financeiro → Recebíveis",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "receber",
+    objeto: "em procedimentos particulares",
+  },
+  {
+    chave: "revenue_empresarial",
+    rotulo: "Receita de procedimentos — Empresarial",
+    grupo: "Financeiro",
+    ajuda:
+      "Recebimentos de procedimentos (fora a parte de Ortodontia) de clientes que, NO DIA do recebimento, estavam no programa Empresarial. Quem sai do programa continua Empresarial nos recebimentos de antes da saída.",
+    onde: "Financeiro → Recebíveis",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "receber",
+    objeto: "em procedimentos do Empresarial",
+  },
+  {
+    chave: "revenue_empresarial_all",
+    rotulo: "Recebimentos de clientes do Empresarial",
+    grupo: "Financeiro",
+    ajuda:
+      "Tudo o que os clientes do programa Empresarial pagaram no período — procedimentos, ortodontia e PPR+ —, pelo vínculo no dia de cada pagamento. É uma linha à parte: não se soma às outras da receita bruta.",
+    onde: "Empresarial e Financeiro → Recebíveis",
+    tipo: "sum",
+    unidade: "brl",
+    direcoes: ["increase"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: true,
+    recortes: [],
+    verbo: "receber",
+    objeto: "de clientes do Empresarial",
+  },
 ];
 
 const POR_CHAVE = new Map(INDICADORES_DE_META.map((i) => [i.chave, i]));
@@ -881,6 +1126,8 @@ export const GRUPOS_DE_INDICADOR: GrupoIndicador[] = [
   "Agenda e atendimento",
   "Clínico",
   "Clientes",
+  "Ortodontia",
+  "PPR+",
   "Programas da Risarte",
   "Equipe",
 ];

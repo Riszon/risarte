@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.397.1** · Última migração: **0365** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.398.0** · Última migração: **0365** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🎯 0.398.0 / 0365 — METAS: ORTODONTIA, PPR+ E A RECEITA BRUTA (04/11/2026)
+>
+> Plano §9f do `docs/metas/METAS-PLANO.md` (P1–P6, N1–N3 com os ajustes do
+> dono) = a etapa **ORTO3** do plano da Ortodontia. 13 indicadores. ⚠️ **A
+> receita bruta tem 4 linhas que não se repetem** (procedimentos particular,
+> procedimentos Empresarial, ortodontia = parte de orto dos recebimentos +
+> mensalidades, PPR+) + a linha à parte do Empresarial — peças
+> `_goal_receipts_split` / `_goal_ortho_paid` / `_goal_ppr_paid`, usadas pelos
+> indicadores E pela composição da ficha (`goal_revenue_breakdown`, D3).
+> ⚠️ **Empresarial é o vínculo NA DATA** (`_goal_empresarial_on`, lendo
+> `empresarial.membership_history` — só leitura do schema do Empresarial).
+> ⚠️ **A ortodontia nos procedimentos é a especialidade "Ortodontia"**
+> (`_goal_ortho_specialty` ↔ `ESPECIALIDADE_DA_ORTODONTIA`, régua no teste);
+> a tela de Especialidades avisa ao renomear/excluir. Feito num worktree
+> separado (havia trabalho sem commit de outra sessão na pasta principal).
+> ⚠️ **Duas migrações 0365**: esta e a da Rita
+> (`0365_auditoria_reconhece_a_assistente.sql`). As duas já estavam na produção
+> quando a colisão apareceu — nenhuma foi renumerada (o treino registra pelo nome
+> do arquivo). Versão: Rita 0.397.0, esta 0.398.0.
+> ✅ **0365 (metas) APLICADA na produção em 04/11/2026** (o dono; conferido de
+> fora: sem login as funções novas recusam; os indicadores novos medem e o
+> desconhecido segue recusado).
 
 > ## ✍️ 0.397.1 — O AVISO DE DOCUMENTO REPETIDO DIZ QUANDO O CLIENTE JÁ ASSINOU (04/11/2026, sem migração)
 >
@@ -51,7 +74,6 @@ _Atualizado em: 04/11/2026 · Versão do sistema: **0.397.1** · Última migraç
 >   sem a Rita → `RITA_AGENT_MISSING`). Sem a conferência do tipo, a 3 reprova.
 > - ⏳ **Na produção, nesta ordem, ANTES do push:** 0365 → 3000 → o roteiro
 >   (`docs/PRODUCAO-ONLINE.md`, seção da Rita). O app filtra `profiles.kind`.
-
 
 > ## 🏢 EMPRESARIAL 0.96.0 — A PLANILHA DE TITULARES RESPEITA O CONTRATO E ENTRA INTEIRA OU NÃO ENTRA (04/11/2026, sem migração; AP97, item 6 do plano da Rita)
 >

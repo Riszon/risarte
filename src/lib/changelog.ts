@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.398.0",
+    data: "2026-11-04",
+    migracao: "0365",
+    titulo: "Metas: ortodontia, PPR+ e a receita bruta em linhas",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novos indicadores de meta no grupo Ortodontia: novos casos (do Coordenador que indicou), pacientes em tratamento, finalizados no prazo, receita de ortodontia (procedimentos + mensalidades), % da receita bruta e inadimplência.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee", "clinical_coordinator"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Grupo PPR+ nas metas: receita das mensalidades, % da receita bruta e inadimplência das mensalidades — junto com adesões, cancelamentos e vidas, que mudaram para este grupo.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Receita bruta da unidade em linhas: procedimentos particular, procedimentos Empresarial (pelo vínculo no dia do recebimento), ortodontia e PPR+, mais a linha à parte de tudo o que os clientes do Empresarial pagaram. A ficha da meta mostra a composição.",
+        papeis: ["franchisor_staff", "unit_manager", "franchisee"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A especialidade Ortodontia ganhou o selo \"usada pelas Metas\": renomear ou excluir mostra um aviso com o que para de achar os procedimentos de ortodontia.",
+        papeis: ["franchisor_staff", "planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.397.1",
     data: "2026-11-04",
     migracao: null,

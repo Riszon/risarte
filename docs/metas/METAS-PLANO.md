@@ -4,6 +4,7 @@
 *✅ **M1 entregue** em 23/10/2026 (core 0.343.0, migração 0318).*
 *✅ **M2 entregue** em 23/10/2026 (core 0.344.0, migração 0319, decisões N1–N7 da §9b). 0318 e 0319 aplicadas no treino e na produção (24/10/2026).*
 *✅ **M3 entregue** em 24/10/2026 (core 0.345.0, migração 0320, decisões O1–O7 da §9c). 0320 aplicada no treino e na produção (24/10/2026).*
+*✅ **Ortodontia, PPR+ e receita bruta** entregues em 04/11/2026 (core 0.398.0, migração 0365, decisões P1–P6 e N1–N3 da §9f). 0365 aplicada no treino e na produção (04/11/2026).*
 *✅ **M5 entregue** em 25/10/2026 (core 0.347.0, migração 0322, decisões R1–R5 da §9e). 0322 aplicada no treino e na produção (25/10/2026).*
 *✅ **M4 entregue** em 24/10/2026 (core 0.346.0, migração 0321, decisões Q1–Q5 da §9d, aprovadas como propostas). 0321 aplicada no treino e na produção (24/10/2026).*
 *Pedido de origem: mensagem do dono de 23/10/2026 ("Módulo de Metas/campanhas
@@ -498,6 +499,25 @@ com metas (rede e por unidade)". Migração **0322**.
 | R3 | Quem cria modelos? | Só o Admin e a Franqueadora (a mesma régua de criar meta da rede) |
 | R4 | Ranking de "quem mais atinge" entre pessoas | Só para quem pode editar a meta (gestão); cada pessoa vê o próprio resultado |
 | R5 | Meta recorrente automática | Fora: o Duplicar resolve com um clique, com alguém revisando o alvo |
+
+## 9f. Ortodontia, PPR+ e a receita bruta em linhas (aprovado em 04/11/2026; entregue)
+
+Pedido do dono (04/11/2026): no passo S, os grupos **Ortodontia** e **PPR+**.
+Investigando, apareceu o módulo de Ortodontia (0329–0336) com o caso e as
+mensalidades próprias — e a etapa **ORTO3** do plano dele ("indicadores de
+Metas"), que nunca tinha sido feita. Este pedido é a ORTO3. Migração **0365**.
+
+| # | Pergunta | Decisão do dono |
+|---|---|---|
+| P1 | Receita = vendido ou recebido? | **Recebido** (o vendido de orto já existe: Vendas com recorte) |
+| P2 | Receita de ortodontia | **Procedimentos de orto + mensalidades de orto** (ajuste do dono). A parte de orto de um recebimento é proporcional ao valor dos procedimentos de orto da venda |
+| P3 | Receita geral | **Receita bruta = procedimentos (particular) + procedimentos (Empresarial) + ortodontia + PPR+ (mensalidades)** e uma linha à parte com tudo o que os clientes do Empresarial pagaram (ajuste do dono) |
+| P4 | Inadimplência | **O que venceu no período** (até ontem); a fotografia antiga continua no indicador de sempre |
+| P5 | Como achar a ortodontia nos procedimentos | Pela especialidade **"Ortodontia"**, com **aviso** na tela de Especialidades mostrando o que para de achar (ajuste do dono) |
+| P6 | Os 3 indicadores antigos do PPR+ | Mudam para o grupo **PPR+** |
+| N1 | De quem é "novos casos" | Do **Coordenador Clínico** que avalia e indica a ortodontia: a última indicação (`clinical_evaluations.ortho_indicated_by`) antes de o caso começar (ajuste do dono) |
+| N2 | Quem é "cliente do Empresarial" | O **vínculo de cada data** — o sistema já guarda (`empresarial.membership_history`); quem sai continua Empresarial no passado (ajuste do dono) |
+| N3 | Os outros dois da ORTO3 | **Entram**: pacientes em tratamento e finalizados no prazo |
 
 ## 10. Achados de passagem (registrados no `docs/BACKLOG.md` como AP69 e AP70)
 

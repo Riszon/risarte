@@ -1395,6 +1395,46 @@ Em **Metas → Resultados**: as metas **encerradas** num período (padrão: os
 | Certificações concluídas | Certificados emitidos pelo portão de certificação | A pessoa certificada |
 | Relatos e sugestões enviados | Relatos e sugestões registrados — use para incentivar quem nunca relatou, não para competir | Quem relatou |
 
+**Ortodontia, PPR+ e a receita bruta** (versão 0.398.0, migração 0365). A
+lista do passo S ganhou os grupos **Ortodontia** e **PPR+** (adesões,
+cancelamentos e vidas do Riso+ mudaram para o grupo PPR+), e o grupo
+Financeiro ganhou a receita bruta em linhas:
+
+| Indicador | O que conta | Número de quem |
+|---|---|---|
+| Novos casos de ortodontia | Casos iniciados no período — a régua do Painel da Ortodontia (a data de início; sem início, a de abertura) | O **Coordenador Clínico** que fez a última indicação de ortodontia do cliente antes de o caso começar (caso antigo sem indicação: só coletiva) |
+| Pacientes em tratamento ortodôntico | **Fotografia** — os casos em tratamento hoje | A unidade (só coletiva) |
+| Tratamentos ortodônticos finalizados no prazo | Finalizados no período (contenções entregues ou alta) até a previsão de término — que já carrega as faltas — mais a tolerância da unidade | A unidade (só coletiva) |
+| Receita de ortodontia | A **parte de Ortodontia** dos recebimentos de procedimentos (proporcional ao valor dos procedimentos de cada venda) **+** as mensalidades e contenções de ortodontia pagas | A unidade (só coletiva) |
+| % da receita de ortodontia na receita bruta | Receita de ortodontia ÷ receita bruta | A unidade (só coletiva) |
+| Inadimplência da ortodontia | Das cobranças de ortodontia que **venceram no período** (até ontem) — mensalidades, contenções e a parte de orto das parcelas —, quantos % do valor não foram pagos. Meta de reduzir | A unidade (só coletiva) |
+| Receita com PPR+ | Mensalidades do PPR+ pagas, pela data do pagamento | A unidade (só coletiva) |
+| % da receita de PPR+ na receita bruta | Mensalidades do PPR+ pagas ÷ receita bruta | A unidade (só coletiva) |
+| Inadimplência das mensalidades do PPR+ | Das mensalidades que **venceram no período** (até ontem), quantos % do valor não foram pagos. Meta de reduzir | A unidade (só coletiva) |
+| Receita bruta da unidade | Procedimentos (particular) **+** procedimentos (Empresarial) **+** ortodontia (procedimentos e mensalidades) **+** mensalidades do PPR+. Diferente da "Receita recebida", que não soma as mensalidades | A unidade (só coletiva) |
+| Receita de procedimentos — particular | Recebimentos de procedimentos (fora a parte de orto) de quem **não** estava no Empresarial no dia do recebimento | A unidade (só coletiva) |
+| Receita de procedimentos — Empresarial | O mesmo, de quem **estava** no Empresarial no dia do recebimento | A unidade (só coletiva) |
+| Recebimentos de clientes do Empresarial | Tudo o que os clientes do Empresarial pagaram — procedimentos, ortodontia e PPR+. **Linha à parte: não soma** com as outras | A unidade (só coletiva) |
+
+> **Empresarial é o vínculo de cada data.** O sistema guarda quando o cliente
+> entrou e saiu de uma empresa do programa. Um recebimento conta como
+> Empresarial se, **naquele dia**, o cliente estava no programa — quem sai
+> continua Empresarial nos recebimentos de antes da saída.
+
+> **A composição na ficha.** A ficha de uma meta de receita (bruta, das
+> linhas, de ortodontia, de PPR+ e dos dois percentuais) mostra a
+> **composição da receita bruta** do início da meta até hoje: as quatro linhas
+> que somam (a ortodontia aberta em procedimentos e mensalidades) e a linha à
+> parte do Empresarial. Só para quem vê o financeiro da meta.
+
+> **Ortodontia nos procedimentos = a especialidade "Ortodontia".** A parte de
+> procedimentos da receita e da inadimplência de orto é achada pela
+> especialidade do cadastro de procedimentos. Em **Procedimentos →
+> Especialidades** ela tem o selo **usada pelas Metas**, e renomear ou excluir
+> mostra um aviso com o que para de achar. Os novos casos, os pacientes em
+> tratamento e as mensalidades vêm do módulo de Ortodontia e não dependem do
+> nome.
+
 > **Ocupação e horas ociosas usam a conta do Planejamento Anual.** O número
 > da meta é o mesmo da tela **Agenda → Planejamento anual** no mesmo período.
 > Por isso o resultado final dessas duas é gravado na **primeira vez que a
@@ -1407,7 +1447,7 @@ Em **Metas → Resultados**: as metas **encerradas** num período (padrão: os
 > mostra as duas leituras: "faltam R$ 8.400 para empatar" e "faltam 23
 > atendimentos", pela margem média por atendimento do período.
 
-**Evidência:** EV-209 e EV-210 (etapa 1); EV-211 e EV-212 (etapa 2); EV-213 e EV-214 (etapa 3).
+**Evidência:** EV-209 e EV-210 (etapa 1); EV-211 e EV-212 (etapa 2); EV-213 e EV-214 (etapa 3); EV-293 e EV-294 (ortodontia, PPR+ e receita bruta).
 
 ### 2.8. Ortodontia
 
@@ -2954,6 +2994,12 @@ Clique no cartão para ver os detalhes (faixa de preço, repasse, repasse por
 nível, kits, sessões, histórico e os botões de editar); abre um por vez. Os
 **inativos** ficam numa seção própria no fim da lista, em cinza e riscados,
 com o botão **Reativar** à vista — eles não aparecem no orçamento nem na venda.
+
+**Especialidades** (Procedimentos → Especialidades). A especialidade
+**Ortodontia** tem o selo **usada pelas Metas**: é por ela que as metas de
+ortodontia acham os procedimentos de orto. Ao **renomear** ou **excluir**,
+aparece um aviso com a lista do que para de achar (versão 0.398.0).
+Desativar não afeta as metas.
 
 **O repasse ao dentista em R$ ou em %** (versão 0.352.0). No cartão aberto, a
 linha **Repasse** mostra o valor e quanto ele é do preço padrão — por exemplo,
