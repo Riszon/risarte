@@ -1370,7 +1370,7 @@ Em **Metas → Resultados**: as metas **encerradas** num período (padrão: os
 | Receita faturada (DRE) | Receita bruta − deduções, pela conta da DRE. Sem gráfico dia a dia (a DRE é por período) | A unidade (só coletiva) |
 | Taxa de inadimplência / Valor inadimplente | **Fotografia** — a mesma conta da tela do Financeiro | A unidade (só coletiva) |
 | Recuperação de inadimplência | Recebido **depois do vencimento**, de parcelas que ficaram vencidas | A unidade (só coletiva) |
-| Produção do dentista (R$) | O repasse das sessões concluídas (o mesmo da tela de Repasses) | O dentista |
+| Produção do dentista (R$) | O repasse dos procedimentos concluídos — o procedimento conta quando a última sessão dele termina (o mesmo da tela de Repasses) | O dentista |
 | Opções de plano aprovadas | Aprovadas pelo Coordenador | O Planner que montou o plano |
 | Novos clientes que avaliaram | Cadastrados no período que já fizeram a avaliação | Quem cadastrou |
 | Cancelamentos do Riso+ | Adesões canceladas — meta de **no máximo**. Transferência não conta | A unidade (só coletiva) |
@@ -3028,7 +3028,16 @@ Seu menu é diferente: **não tem Jornada**, e tem **Meu Dia** e **Minha Agenda*
 > regra de que atendimento sem registro não encerra.
 
 **O que acontece automaticamente ao concluir:** o material do kit **baixa do
-estoque** e o repasse do procedimento é apurado. Você não digita nada disso.
+estoque** e, quando a sessão concluída é a **última do procedimento**, o
+repasse do procedimento é apurado. Você não digita nada disso.
+
+**O repasse é por procedimento, não por sessão** (desde a versão 0.386.0).
+Um procedimento de 3 sessões entra no repasse **uma vez**, com o valor da
+tabela, quando as 3 estiverem concluídas — antes disso, nada aparece em
+Repasses. Se o plano tem o mesmo procedimento em dois dentes, cada dente conta
+quando as sessões dele terminam. O repasse vai para quem concluiu a **última
+sessão**, na data dela. Sessão de **revisão** não gera repasse, e um
+procedimento **refeito** não é pago de novo.
 
 **O dente de cada sessão e o odontograma do atendimento (desde a 0.339.0).**
 
@@ -3662,7 +3671,8 @@ EV-171, EV-172 e EV-182.
    **Pagamento confirmado** → venda fechada → **Fase 5**.
 8. **Recepção** recebe aviso e agenda o início do tratamento.
 9. **Dentista** executa, escreve o Desenvolvimento Clínico e conclui →
-   **estoque baixa e repasse é apurado automaticamente**.
+   **estoque baixa e, na última sessão do procedimento, o repasse é apurado
+   automaticamente**.
 
 **Evidência:** este fluxo está coberto por teste automatizado ponta a ponta
 (`e2e/01-jornada.spec.ts` a `e2e/10-estoque.spec.ts`), o que confirma que cada

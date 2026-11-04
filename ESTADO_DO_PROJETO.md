@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.385.0** · Última migração: **0351** (0318 a 0350 aplicadas na produção e no treino; 0351 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.386.0** · Última migração: **0352** (0318 a 0350 aplicadas na produção e no treino; 0351 e 0352 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 💰 0.386.0 — O REPASSE SAI POR PROCEDIMENTO CONCLUÍDO (03/11/2026, migração 0352, AP61)
+>
+> Decisão do dono (AP61): *"paga por procedimento concluído. Se um procedimento
+> tem 3 sessões só vai contabilizar para o repasse quando finalizar as 3
+> sessões daquele procedimento."*
+>
+> - **Era defeito, não só suspeita:** com a regra antiga, um item de quantidade
+>   2 com 3 sessões cada lançava 6 repasses (R$ 600,00 com a tabela em
+>   R$ 100,00); o certo são 2 (R$ 200,00), que é o que a estimativa da
+>   negociação já contava.
+> - **0352:** `accrue_session_payout` acha o bloco do procedimento pela
+>   quantidade do item e a `session_index`, só lança com o bloco inteiro
+>   concluído, não paga de novo bloco que já tem repasse (refação) e ignora a
+>   revisão. Sessões que não dividem pela quantidade = um bloco que paga Q.
+>   Venda direta igual. Repasse já apurado não é recalculado.
+> - ⚠️ **Escolha do agente, para o dono confirmar:** o repasse vai para quem
+>   concluiu a ÚLTIMA sessão, na data dela.
+> - Ensaio no treino (transação desfeita) 10/10; com a regra antiga, 9
+>   reprovam. Régua `repasse-por-procedimento.test.ts` (provada quebrando).
+> - **Na produção:** rodar a 0352. A conferência no fim mostra a regra nova,
+>   1 gatilho e quantos repasses de sessão já existem (eles não mudam; a
+>   produção tinha 0 em 20/10/2026).
 
 > ## 🧰 0.385.0 — A TSB CUIDA DO MATERIAL COMO A ASB; MISSÃO DA RECEPÇÃO SEM ANAMNESE (03/11/2026, migração 0351, AP55)
 >

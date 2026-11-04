@@ -473,7 +473,7 @@ export const INDICADORES_DE_META: Indicador[] = [
     rotulo: "Produção do dentista (R$)",
     grupo: "Clínico",
     ajuda:
-      "O repasse das sessões concluídas no período, o mesmo valor congelado da tela de Repasses. Pode recortar por especialidade.",
+      "O repasse dos procedimentos concluídos no período (o procedimento conta quando a última sessão dele termina), o mesmo valor congelado da tela de Repasses. Pode recortar por especialidade.",
     onde: "Atendimento → concluir a sessão; Financeiro → Repasses",
     tipo: "sum",
     unidade: "brl",

@@ -391,6 +391,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (AP61) — PC Administrador (core 0.385.0 → 0.386.0, migração 0352)**
+
+- **Repasse por procedimento concluído** (bloco 0.386.0 no ESTADO). ⚠️ **O
+  procedimento é o BLOCO de sessões do item** (quantidade × protocolo, pela
+  `session_index`). Ao recriar `accrue_session_payout` ou mudar como as
+  sessões são numeradas (`topup_treatment_sessions`, revisão, refação),
+  manter a régua `repasse-por-procedimento.test.ts` e o ensaio.
+- ⚠️ **0352 só no treino.** Pendente com o dono: confirmar que o repasse vai
+  para quem concluiu a última sessão.
+
 **03/11/2026 (AP55) — PC Administrador (core 0.384.0 → 0.385.0, migração 0351)**
 
 - **Decisões do dono nos 6 itens em espera** (AP61, AP63/64, AP55, AP53, AP24,
@@ -399,7 +409,7 @@ Syncthing se comportarem de forma estranha.**
   banco (0351) e na missão; Recepção sem anamnese e sem chamar paciente.
 - ⚠️ **0351 só no treino.** Na produção: rodar a consulta do bloco 0.385.0
   antes (metas nos itens que saíram) e depois a 0351.
-- Próximo da fila decidida: AP61, AP63/64, AP24. Achado: AP106.
+- Próximo da fila decidida: AP63/64, AP24. Achado: AP106.
 
 **03/11/2026 (razão social) — PC Administrador (core 0.383.0 → 0.384.0, migração 0350)**
 

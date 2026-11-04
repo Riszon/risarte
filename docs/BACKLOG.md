@@ -15,7 +15,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP49** — Franqueadora/Rede gestora no Empresarial: decidido MANTER (16/10/2026)
 
 **Decididos pelo dono em 03/11/2026, a implementar**
-- [ ] **AP61** — repasse por PROCEDIMENTO CONCLUÍDO: entra uma vez, quando a última sessão do procedimento termina
+- [x] **AP61** — repasse por PROCEDIMENTO CONCLUÍDO: entra uma vez, quando a última sessão do procedimento termina — **0.386.0 (0352); falta o dono confirmar: o repasse vai para quem concluiu a ÚLTIMA sessão**
 - [ ] **AP63 / AP64** — cancelada: compra de novo por nova versão + negociação nova, com a venda cancelada no histórico; vendido: versão nova é complemento, a venda anterior continua valendo
 - [x] **AP55** — TSB com a mesma lista da ASB; Recepção sem anamnese e sem chamar paciente — **0.385.0 (0351): a TSB ganhou no banco as réguas da ASB; "Fichas de anamnese" saiu do catálogo (fica "Anamneses clínicas", do Coordenador)**
 - [ ] **AP24** — Indica +Risos: implementar os 3 parâmetros (presente de boas-vindas, validade, divisão do prêmio)
@@ -3204,7 +3204,11 @@ não. O "só edita em rascunho ou devolvido" é do componente
 (`canEditContent`). Pela API, um Planner muda item de plano aprovado.
 **O plano da OD3 propõe a trava no banco** (versões, D4).
 
-### AP61. Repasse por SESSÃO paga o valor inteiro a cada sessão — suspeita (20/10/2026) — DECIDIDO 03/11/2026, A IMPLEMENTAR
+### AP61. Repasse por SESSÃO paga o valor inteiro a cada sessão — suspeita (20/10/2026) — ✅ RESOLVIDO em 03/11/2026 (core 0.386.0, migração 0352)
+
+**✅ Feito (0.386.0, 0352). A suspeita era defeito:** no ensaio do treino, com a regra antiga, um item com quantidade 2 e 3 sessões cada gerou 6 repasses (R$ 600,00 com a tabela em R$ 100,00); com a 0352, 2 (R$ 200,00). `accrue_session_payout` agora acha o bloco do procedimento (item com quantidade Q e T sessões: um procedimento a cada T/Q sessões; se não divide, o item inteiro é um bloco que paga Q), só lança quando o bloco inteiro está concluído e não lança de novo se o bloco já tem repasse (refação). Revisão não paga. Venda direta (sessão 1 de 1) segue igual. Repasse já apurado não é recalculado (FIN5). Ensaio em transação desfeita 10/10; com a regra antiga, 9 reprovam. Régua: `repasse-por-procedimento.test.ts` (provada quebrando).
+
+**⚠️ Escolha do agente, para o dono confirmar:** o repasse vai para quem concluiu a **última sessão** do procedimento, na data dela. Se o dono quiser outra regra (dividir entre quem fez cada sessão, ou o dentista do plano), é mudança só no gatilho.
 
 **✅ Decisão do dono (03/11/2026):** **o repasse é por PROCEDIMENTO CONCLUÍDO.** Um procedimento de 3 sessões só entra no repasse quando as 3 sessões daquele procedimento estiverem concluídas, e entra uma vez, com o valor da tabela. `accrue_session_payout` precisa mudar; a estimativa (`estimated_option_payout`, taxa × quantidade) já segue essa regra.
 

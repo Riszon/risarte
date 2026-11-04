@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.386.0",
+    data: "2026-11-03",
+    migracao: "0352",
+    titulo: "O repasse do dentista sai por procedimento concluído, não por sessão",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O repasse ao dentista passou a contar por procedimento: um procedimento de 3 sessões entra no repasse uma vez, quando a última sessão termina. Antes, cada sessão concluída lançava o valor inteiro da tabela.",
+        papeis: ["dentist", "planner_dentist", "clinical_coordinator", "unit_manager", "finance_franchisor"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Sessão de revisão não gera repasse, e um procedimento refeito não é pago de novo. O repasse vai para quem concluiu a última sessão do procedimento.",
+        papeis: ["dentist", "unit_manager", "finance_franchisor"],
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
     versao: "0.385.0",
     data: "2026-11-03",
     migracao: "0351",
