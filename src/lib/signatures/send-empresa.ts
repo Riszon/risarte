@@ -15,8 +15,16 @@ import { modoDeAutenticacao, nivelDeAutenticacao } from "./auth-level";
 import { loadStaffOptions } from "./envio-dados";
 import { inspectAttachment } from "./pdf/merge";
 import { gerarPdfDoPacote, mensagemDaPorta, type PrepareResult } from "./send";
-import { mensagemDoConflito, numeroDoConflito, pacoteAbertoComOsMesmos, pacoteAbertoPeloNumero, pacoteAssinadoComOsMesmos } from "./duplicidade";
-import { formatBrDate } from "@/lib/dates";
+import {
+  mensagemDoConflito,
+  numeroDoConflito,
+  pacoteAbertoComOsMesmos,
+  pacoteAbertoPeloNumero,
+  pacoteAssinadoComOsMesmos,
+  podeLiberarNovoEnvio,
+  recusaDoNovoEnvio,
+  registrarMotivoDoNovoEnvio,
+} from "./duplicidade";
 import { loadSignatureSettings } from "./settings";
 import { candidatosDoRepresentante, montarSignatariosDaEmpresa } from "./signers";
 import type { SignatureTemplate, StaffSignerOption, TemplateBody } from "./types";
@@ -303,8 +311,8 @@ export async function prepararPacoteDaEmpresa(input: {
   representativeKey: string | null;
   /** Os anexos na ordem escolhida (o contrato de adesão vai antes de todos). */
   anexos: AnexoDoPacote[];
-  /** AP108: quem envia já viu o aviso de que o mesmo documento foi assinado antes. */
-  confirmouJaAssinado?: boolean;
+  /** O mesmo contrato já assinado por todos: só sai de novo com o motivo (`recusaDoNovoEnvio`). */
+  motivoDoNovoEnvio?: string | null;
 }): Promise<PrepareResult> {
   const loaded = await loadEmpresaSendContext({ session: input.session, origin: input.origin });
   if (!loaded.ok) return loaded;
@@ -407,20 +415,17 @@ export async function prepararPacoteDaEmpresa(input: {
     })),
   ];
   // AP108: o mesmo documento aguardando assinatura para a empresa/lead bloqueia
-  // (o banco também recusa, 0361); já assinado, só avisa e pede confirmação.
+  // (o banco também recusa, 0361); já assinado por todos, TRAVA — só sai com o
+  // motivo escrito, pelo Gerente da unidade ou pelo Admin.
   const parte = { companyId: ctx.companyId, leadId: ctx.leadId };
   const modelos = itemsPayload.map((i) => i.template_id).filter((x): x is string => Boolean(x));
   const aberto = await pacoteAbertoComOsMesmos(supabase, parte, modelos, input.session.userId);
   if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number, aberto), conflito: aberto };
-  if (!input.confirmouJaAssinado) {
-    const assinado = await pacoteAssinadoComOsMesmos(supabase, parte, modelos);
-    if (assinado) {
-      return {
-        ok: false,
-        error: `O pacote ${assinado.number} com este contrato já foi assinado${assinado.completedAt ? ` em ${formatBrDate(assinado.completedAt)}` : ""}. Confirme se é mesmo para enviar outro.`,
-        jaAssinado: assinado,
-      };
-    }
+  const assinado = await pacoteAssinadoComOsMesmos(supabase, parte, modelos, input.session.userId);
+  const podeLiberar = podeLiberarNovoEnvio(input.session, ctx.clinic.id);
+  if (assinado) {
+    const recusa = recusaDoNovoEnvio({ assinado, motivo: input.motivoDoNovoEnvio, podeLiberar });
+    if (recusa) return { ok: false, error: recusa, jaAssinado: assinado, podeLiberarNovoEnvio: podeLiberar };
   }
 
   const { data: created, error: rpcError } = await supabase.rpc("signature_create_package", {
@@ -451,6 +456,9 @@ export async function prepararPacoteDaEmpresa(input: {
   }
   const packageId = String((created as { id: string }).id);
   const number = String((created as { number: string }).number);
+  if (assinado && input.motivoDoNovoEnvio) {
+    await registrarMotivoDoNovoEnvio(createAdminClient(), { packageId, actorUserId: input.session.userId, motivo: input.motivoDoNovoEnvio, anterior: assinado });
+  }
 
   // 5) O contrato antigo da empresa espelha o pacote (1038).
   if (ctx.companyId && input.origin.type === "company") {

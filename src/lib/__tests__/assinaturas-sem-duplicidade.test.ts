@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { clienteJaAssinou, mensagemDoConflito, numeroDoConflito, situacaoDasAssinaturas } from "@/lib/signatures/duplicidade";
+import {
+  clienteJaAssinou,
+  mensagemDoConflito,
+  numeroDoConflito,
+  podeLiberarNovoEnvio,
+  recusaDoNovoEnvio,
+  situacaoDasAssinaturas,
+} from "@/lib/signatures/duplicidade";
+import { rotuloDoEvento } from "@/lib/signatures/eventos";
 import { mensagemDaPorta } from "@/lib/signatures/send";
 
 // AP108 (decisão do dono, 04/11/2026): "não pode ter o risco de assinar duas
@@ -11,8 +19,9 @@ import { mensagemDaPorta } from "@/lib/signatures/send";
 //
 // O banco recusa (0361): na criação (cada documento) e no envio (rascunho →
 // enviado, com trava por parte para dois envios simultâneos). A tela explica
-// antes e oferece "Cancelar o anterior e enviar este"; documento já ASSINADO
-// só avisa e pede confirmação.
+// antes e oferece "Cancelar o anterior e enviar este". Documento já ASSINADO
+// por todos TRAVA desde 04/11/2026 (ASS-000063/064 no treino): só sai de novo
+// com motivo escrito, pelo Gerente da unidade ou pelo Admin.
 
 const RAIZ = join(__dirname, "..", "..", "..");
 const ler = (p: string) => readFileSync(join(RAIZ, p), "utf8").replace(/\r\n/g, "\n");
@@ -58,7 +67,11 @@ describe("a tela explica e oferece a saída", () => {
       expect(confere, f).toBeGreaterThan(0);
       expect(confere, `${f}: a conferência vem antes da criação`).toBeLessThan(cria);
       expect(s, f).toContain("pacoteAssinadoComOsMesmos(");
-      expect(s, f).toContain("confirmouJaAssinado");
+      expect(s, f).toContain("recusaDoNovoEnvio(");
+      expect(s, f).not.toContain("confirmouJaAssinado");
+      // o motivo vai para a história do pacote novo, depois de criado
+      const registra = s.indexOf("registrarMotivoDoNovoEnvio(createAdminClient()");
+      expect(registra, f).toBeGreaterThan(cria);
     }
   });
 
@@ -67,7 +80,8 @@ describe("a tela explica e oferece a saída", () => {
       const s = ler(f);
       expect(s, f).not.toContain("onClick={preparar}");
       expect(s, f).toContain("<AvisoDeDuplicidade");
-      expect(s, f).toContain("onEnviarMesmoAssim={() => preparar(true)}");
+      expect(s, f).toContain("onEnviarComMotivo={(motivo) => preparar(motivo)}");
+      expect(s, f).toContain('typeof motivo === "string"');
     }
   });
 
@@ -141,5 +155,50 @@ describe("o pacote aberto diz quem já assinou", () => {
     expect(bloco).toMatch(/onClick=\{\(\) => setConfirmandoCancelar\(true\)\}[^]*Cancelar mesmo assim/);
     expect(bloco.indexOf("onClick={cancelarEEnviar}")).toBeGreaterThan(bloco.indexOf("confirmandoCancelar ? ("));
     expect(bloco).toContain("Assinar agora");
+  });
+});
+
+describe("o documento já assinado por todos trava (ASS-000063/064)", () => {
+  const assinado = { number: "ASS-000063", completedAt: "2026-11-04T19:57:01.246Z" };
+  const gerente = { isAdminMaster: false, rolesByClinic: { u1: ["unit_manager"], u2: ["commercial_consultant"] } };
+  const consultor = { isAdminMaster: false, rolesByClinic: { u1: ["commercial_consultant"] } };
+  const admin = { isAdminMaster: true, rolesByClinic: {} };
+
+  it("só o Gerente DA UNIDADE emissora ou o Admin liberam", () => {
+    expect(podeLiberarNovoEnvio(gerente, "u1")).toBe(true);
+    expect(podeLiberarNovoEnvio(gerente, "u2")).toBe(false);
+    expect(podeLiberarNovoEnvio(consultor, "u1")).toBe(false);
+    expect(podeLiberarNovoEnvio(admin, "u9")).toBe(true);
+  });
+
+  it("sem motivo, recusa — e diz quando foi assinado", () => {
+    const r = recusaDoNovoEnvio({ assinado, motivo: null, podeLiberar: true });
+    expect(r).toContain("ASS-000063");
+    expect(r).toContain("04/11/2026, 16:57");
+    expect(r).toContain("Não é preciso assinar de novo");
+    expect(recusaDoNovoEnvio({ assinado, motivo: "   ", podeLiberar: true })).not.toBeNull();
+  });
+
+  it("com motivo, quem não pode liberar continua recusado (o clique não basta)", () => {
+    expect(recusaDoNovoEnvio({ assinado, motivo: "contrato do novo tratamento", podeLiberar: false })).toContain("Gerente da unidade ou o Admin");
+  });
+
+  it("motivo curto demais é recusado; motivo de verdade libera", () => {
+    expect(recusaDoNovoEnvio({ assinado, motivo: "ok", podeLiberar: true })).toContain("pelo menos");
+    expect(recusaDoNovoEnvio({ assinado, motivo: "contrato do novo tratamento", podeLiberar: true })).toBeNull();
+  });
+
+  it("o motivo aparece na história do pacote novo", () => {
+    expect(rotuloDoEvento("new_send_reason", { reason: "contrato do implante", previous_number: "ASS-000063" })).toBe(
+      "Enviado de novo um documento já assinado (já assinado no ASS-000063) — motivo: contrato do implante",
+    );
+  });
+
+  it("o aviso não tem mais o 'Enviar mesmo assim' de um clique", () => {
+    const s = ler("src/app/(app)/assinaturas/aviso-de-duplicidade.tsx");
+    expect(s).not.toContain("Enviar mesmo assim");
+    expect(s).toContain("É um documento novo");
+    expect(s).toMatch(/disabled=\{!motivoOk\}[^]*Enviar de novo com este motivo/);
+    expect(s).toContain("{duplicidade.podeLiberar && (");
   });
 });

@@ -5018,9 +5018,15 @@ vencimento, quem visualizou, baixou, reenviou ou cancelou.
   assinaturas que faltam. Se for mesmo para refazer, **Cancelar mesmo assim**
   pede uma segunda confirmação — o cliente terá de assinar tudo de novo, e a
   assinatura dele no pacote cancelado deixa de valer.
-- **Já assinado antes**: a janela **avisa** (número e data do pacote assinado)
-  e só segue com **Enviar mesmo assim** — por exemplo, um contrato novo para
-  outro tratamento.
+- **Já assinado por todos** (desde a versão 0.401.1): a janela **não deixa
+  enviar**. Ela mostra o pacote concluído, **quem assinou e quando**, e o botão
+  principal é **Abrir o pacote** — o PDF assinado já está lá, e o cliente não
+  precisa assinar de novo. Se for mesmo um **documento novo** (por exemplo, o
+  contrato de outro tratamento), o **Gerente da unidade** ou o **Admin** clica em
+  **É um documento novo**, escreve o **motivo** (pelo menos 10 letras) e usa
+  **Enviar de novo com este motivo**. O motivo fica na história do pacote novo
+  (**O que aconteceu**). Para as outras funções o aviso diz que só o Gerente ou o
+  Admin pode liberar.
 - PDF avulso (enviado do computador) não entra nessa conferência.
 
 **Auditoria.** Cada visualização, download, reenvio e cancelamento fica na

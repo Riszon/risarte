@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.401.1",
+    data: "2026-11-04",
+    migracao: null,
+    titulo: "Documento já assinado por todos não sai de novo sem motivo",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Mandar de novo um documento que o cliente já assinou e que já foi concluído agora é bloqueado: a janela mostra quem assinou e quando e oferece abrir o pacote. Antes bastava um clique em \"Enviar mesmo assim\" e o cliente assinava o mesmo documento duas vezes. Se for mesmo um documento novo, o Gerente da unidade ou o Admin escreve o motivo e envia; o motivo fica na história do pacote novo. Vale para o paciente e para o Empresarial.",
+        papeis: "todos",
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+    ],
+  },
+  {
     versao: "0.401.0",
     data: "2026-11-04",
     migracao: "0366",

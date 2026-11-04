@@ -147,7 +147,7 @@ export async function prepararEnvioDaEmpresa(formData: FormData): Promise<Prepar
     witnessKeys,
     representativeKey: str("representative_key") || null,
     anexos,
-    confirmouJaAssinado: str("confirmou_ja_assinado") === "1",
+    motivoDoNovoEnvio: str("motivo_do_novo_envio") || null,
   });
 }
 

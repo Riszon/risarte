@@ -39,6 +39,9 @@ import {
   pacoteAbertoComOsMesmos,
   pacoteAbertoPeloNumero,
   pacoteAssinadoComOsMesmos,
+  podeLiberarNovoEnvio,
+  recusaDoNovoEnvio,
+  registrarMotivoDoNovoEnvio,
   type PacoteAberto,
   type PacoteAssinado,
 } from "./duplicidade";
@@ -75,8 +78,11 @@ export type PrepareInput = {
   /** template_id → chave da pessoa escolhida para assinar pela Risarte. */
   representativeKeys: Record<string, string>;
   attachments: { name: string; bytes: Uint8Array }[];
-  /** AP108: quem envia já viu o aviso de que o mesmo documento foi assinado antes. */
-  confirmouJaAssinado?: boolean;
+  /**
+   * O mesmo documento já assinado por todos: só sai de novo com o MOTIVO
+   * escrito, pelo Gerente da unidade ou pelo Admin (`recusaDoNovoEnvio`).
+   */
+  motivoDoNovoEnvio?: string | null;
 };
 
 export type PrepareResult =
@@ -95,8 +101,10 @@ export type PrepareResult =
       error: string;
       /** AP108: pacote aguardando assinatura com o mesmo documento — bloqueia. */
       conflito?: PacoteAberto;
-      /** AP108: o mesmo documento já foi assinado — avisa e pede confirmação. */
+      /** O mesmo documento já foi assinado por todos — trava; só sai com motivo. */
       jaAssinado?: PacoteAssinado;
+      /** Quem está enviando pode liberar o novo envio (Gerente da unidade ou Admin). */
+      podeLiberarNovoEnvio?: boolean;
     };
 
 export type SendResult =
@@ -189,19 +197,16 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   const supabase = await createClient();
 
   // AP108: o mesmo documento aguardando assinatura bloqueia (o banco também
-  // recusa, 0361); o mesmo documento já assinado só avisa e pede confirmação.
+  // recusa, 0361). Já assinado por todos: TRAVA — só sai com o motivo escrito,
+  // pelo Gerente da unidade ou pelo Admin (pedido do dono, 04/11/2026).
   const modelos = templates.map((t) => t.id);
   const aberto = await pacoteAbertoComOsMesmos(supabase, { clientId: input.clientId }, modelos, input.session.userId);
   if (aberto) return { ok: false, error: mensagemDoConflito(aberto.number, aberto), conflito: aberto };
-  if (!input.confirmouJaAssinado) {
-    const assinado = await pacoteAssinadoComOsMesmos(supabase, { clientId: input.clientId }, modelos);
-    if (assinado) {
-      return {
-        ok: false,
-        error: `O pacote ${assinado.number} com este documento já foi assinado${assinado.completedAt ? ` em ${formatBrDate(assinado.completedAt)}` : ""}. Confirme se é mesmo para enviar outro.`,
-        jaAssinado: assinado,
-      };
-    }
+  const assinado = await pacoteAssinadoComOsMesmos(supabase, { clientId: input.clientId }, modelos, input.session.userId);
+  const podeLiberar = podeLiberarNovoEnvio(input.session, input.clinicId);
+  if (assinado) {
+    const recusa = recusaDoNovoEnvio({ assinado, motivo: input.motivoDoNovoEnvio, podeLiberar });
+    if (recusa) return { ok: false, error: recusa, jaAssinado: assinado, podeLiberarNovoEnvio: podeLiberar };
   }
   const signersPayload = montado.signers.map((s) => ({
     ...s,
@@ -250,6 +255,9 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   }
   const packageId = String((created as { id: string }).id);
   const number = String((created as { number: string }).number);
+  if (assinado && input.motivoDoNovoEnvio) {
+    await registrarMotivoDoNovoEnvio(createAdminClient(), { packageId, actorUserId: input.session.userId, motivo: input.motivoDoNovoEnvio, anterior: assinado });
+  }
 
   // 2) O PDF: cada modelo, a capa, os anexos, tudo num arquivo.
   const pdf = await gerarPdfDoPacote({

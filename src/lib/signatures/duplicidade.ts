@@ -99,7 +99,67 @@ export async function pacoteAbertoPeloNumero(db: SupabaseClient, number: string,
   if (!data) return { packageId: "", number, assinaram: [], faltam: [] };
   return { packageId: data.id, number, ...(await assinaturasDoPacote(db, data.id, meuUserId)) };
 }
-export type PacoteAssinado = { packageId: string; number: string; completedAt: string | null };
+/**
+ * O MESMO DOCUMENTO JÁ ASSINADO POR TODOS (pedido do dono, 04/11/2026, depois
+ * do ASS-000063/064 no treino): o "Enviar mesmo assim" de um clique deixou o
+ * cliente assinar o mesmo contrato duas vezes. Agora TRAVA: só sai de novo
+ * com um MOTIVO escrito, e só pelo Gerente da unidade ou pelo Admin. O motivo
+ * fica na história do pacote novo (`new_send_reason`).
+ */
+export type PacoteAssinado = {
+  packageId: string;
+  number: string;
+  completedAt: string | null;
+  /** Quem assinou e quando (para o aviso dizer, em vez de só "já foi assinado"). */
+  assinaram: AssinaturaDoPacote[];
+};
+
+/** O motivo do novo envio precisa dizer alguma coisa. */
+export const MOTIVO_MINIMO = 10;
+
+/** Quem libera o novo envio do mesmo documento: Admin ou Gerente da unidade emissora. */
+export function podeLiberarNovoEnvio(
+  session: { isAdminMaster: boolean; rolesByClinic: Record<string, readonly string[]> },
+  clinicId: string,
+): boolean {
+  return session.isAdminMaster || (session.rolesByClinic[clinicId] ?? []).includes("unit_manager");
+}
+
+/**
+ * A trava do novo envio (regra pura). Devolve o texto da recusa, ou `null`
+ * quando o envio pode seguir.
+ */
+export function recusaDoNovoEnvio(input: {
+  assinado: Pick<PacoteAssinado, "number" | "completedAt">;
+  motivo: string | null | undefined;
+  podeLiberar: boolean;
+}): string | null {
+  const quando = input.assinado.completedAt ? ` em ${formatBrDateTime(input.assinado.completedAt)}` : "";
+  const base = `Este documento já foi assinado por todos no pacote ${input.assinado.number}${quando}. Não é preciso assinar de novo.`;
+  const motivo = (input.motivo ?? "").trim();
+  if (!motivo) {
+    return input.podeLiberar
+      ? `${base} Se for mesmo um documento novo, escreva o motivo para enviar.`
+      : `${base} Se for mesmo um documento novo, só o Gerente da unidade ou o Admin pode liberar o envio.`;
+  }
+  if (!input.podeLiberar) return `${base} Só o Gerente da unidade ou o Admin pode liberar um novo envio.`;
+  if (motivo.length < MOTIVO_MINIMO) return `Escreva o motivo do novo envio com pelo menos ${MOTIVO_MINIMO} letras.`;
+  return null;
+}
+
+/** O motivo vai para a história do pacote novo. */
+export async function registrarMotivoDoNovoEnvio(
+  admin: SupabaseClient,
+  input: { packageId: string; actorUserId: string; motivo: string; anterior: Pick<PacoteAssinado, "packageId" | "number"> },
+) {
+  const { error } = await admin.from("signature_events").insert({
+    package_id: input.packageId,
+    event_type: "new_send_reason",
+    actor_user_id: input.actorUserId,
+    payload: { reason: input.motivo.trim().slice(0, 500), previous_package_id: input.anterior.packageId, previous_number: input.anterior.number },
+  });
+  if (error) console.error("signature new send reason:", error.message);
+}
 
 type Linha = {
   id: string;
@@ -146,11 +206,18 @@ export async function pacoteAbertoComOsMesmos(
 }
 
 /** O pacote mais recente, já assinado, que tem algum destes modelos. */
-export async function pacoteAssinadoComOsMesmos(db: SupabaseClient, parte: Parte, templateIds: string[]): Promise<PacoteAssinado | null> {
+export async function pacoteAssinadoComOsMesmos(
+  db: SupabaseClient,
+  parte: Parte,
+  templateIds: string[],
+  meuUserId: string | null = null,
+): Promise<PacoteAssinado | null> {
   const modelos = new Set(templateIds.filter(Boolean));
   if (modelos.size === 0) return null;
   const achado = (await pacotesDaParte(db, parte, ["signed"])).find((l) => temAlgum(l, modelos));
-  return achado ? { packageId: achado.id, number: achado.number, completedAt: achado.completed_at } : null;
+  if (!achado) return null;
+  const { assinaram } = await assinaturasDoPacote(db, achado.id, meuUserId);
+  return { packageId: achado.id, number: achado.number, completedAt: achado.completed_at, assinaram };
 }
 
 /** O número do pacote aberto na recusa do banco (`OPEN_PACKAGE_EXISTS:ASS-000049`). */

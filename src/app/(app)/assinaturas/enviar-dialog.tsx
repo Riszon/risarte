@@ -159,10 +159,11 @@ export function EnviarParaAssinaturaDialog({
     setTemplateIds(kit.templateIds);
   }
 
-  function preparar(confirmouJaAssinado = false) {
+  /** `motivo`: só quando o mesmo documento já foi assinado e alguém liberou o novo envio. */
+  function preparar(motivo?: string) {
     if (!ctx) return;
     const fd = new FormData();
-    if (confirmouJaAssinado) fd.set("confirmou_ja_assinado", "1");
+    if (typeof motivo === "string" && motivo.trim()) fd.set("motivo_do_novo_envio", motivo.trim());
     setDuplicidade(null);
     fd.set("client_id", clientId);
     fd.set("clinic_id", clinicId);
@@ -181,7 +182,7 @@ export function EnviarParaAssinaturaDialog({
       } else if (r.conflito) {
         setDuplicidade({ tipo: "aberto", ...r.conflito });
       } else if (r.jaAssinado) {
-        setDuplicidade({ tipo: "assinado", ...r.jaAssinado });
+        setDuplicidade({ tipo: "assinado", ...r.jaAssinado, podeLiberar: Boolean(r.podeLiberarNovoEnvio), mensagem: r.error });
       } else toast.error(r.error);
     });
   }
@@ -406,7 +407,7 @@ export function EnviarParaAssinaturaDialog({
               duplicidade={duplicidade}
               clientId={clientId}
               onTentarDeNovo={() => preparar()}
-              onEnviarMesmoAssim={() => preparar(true)}
+              onEnviarComMotivo={(motivo) => preparar(motivo)}
             />
           )}
 

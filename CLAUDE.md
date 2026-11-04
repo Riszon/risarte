@@ -396,6 +396,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (já assinado trava) — PC Administrador (core 0.401.0 → 0.401.1, sem migração)**
+
+- **Documento já assinado por todos não sai de novo sem motivo** (bloco 0.401.1
+  no ESTADO; pedido do dono depois do ASS-000063/064 no treino). ⚠️ Liberar =
+  Admin ou Gerente da unidade emissora, com motivo (`recusaDoNovoEnvio`, no
+  servidor); `confirmouJaAssinado` saiu. Não visto na tela.
+- ⚠️ Commit feito com a sessão "Backlogs abertos" no meio da 0.402.0/0367 nos
+  mesmos arquivos: o índice foi montado de HEAD + o meu trecho; o trabalho dela
+  continua sem commit na pasta (e já contém o meu trecho).
+
 **04/11/2026 (RIS-000003) — PC Administrador (core 0.400.0 → 0.400.1, sem migração)**
 
 - **Relato que dá erro não apaga mais o texto** (bloco 0.400.1 no ESTADO).

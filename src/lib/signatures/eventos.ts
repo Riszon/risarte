@@ -11,6 +11,7 @@ export const EVENT_LABEL: Record<string, string> = {
   send_failed: "Falha ao enviar à ZapSign",
   send_mark_skipped: "Enviado, mas a gravação do envio não pegou (falta quem enviou)",
   resent_from: "Criado como reenvio de outro pacote",
+  new_send_reason: "Enviado de novo um documento já assinado",
   webhook_doc_signed: "Assinatura registrada pela ZapSign",
   webhook_doc_refused: "Recusado na ZapSign",
   webhook_doc_expired: "Prazo vencido na ZapSign",
@@ -30,7 +31,7 @@ export const EVENT_LABEL: Record<string, string> = {
 };
 
 /** Eventos que pedem atenção (o detalhe pinta de âmbar). */
-export const EVENT_WARNING = new Set(["send_failed", "send_mark_skipped", "pending_download", "copy_failed", "closing_failed"]);
+export const EVENT_WARNING = new Set(["new_send_reason", "send_failed", "send_mark_skipped", "pending_download", "copy_failed", "closing_failed"]);
 
 export const RESEND_CHANNEL_LABEL: Record<string, string> = {
   whatsapp_link: "WhatsApp",
@@ -46,5 +47,10 @@ export function rotuloDoEvento(eventType: string, payload: Record<string, unknow
     return `${base} (${RESEND_CHANNEL_LABEL[payload.channel] ?? payload.channel})`;
   }
   if (eventType === "action:view" && payload?.file === "signed") return "Visualizado (PDF assinado)";
+  if (eventType === "new_send_reason" && payload) {
+    const antes = typeof payload.previous_number === "string" ? ` (já assinado no ${payload.previous_number})` : "";
+    const motivo = typeof payload.reason === "string" && payload.reason ? ` — motivo: ${payload.reason}` : "";
+    return `${base}${antes}${motivo}`;
+  }
   return base;
 }
