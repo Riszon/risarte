@@ -408,9 +408,11 @@ export async function carregarEquipe(
     const vinculados = new Set(
       cadastros.filter((r) => r.user_id).map((r) => r.user_id as string)
     );
+    // 0365: a assistente virtual (Rita) tem perfil, mas não é pessoa da equipe.
     const { data: perfis } = await supabase
       .from("profiles")
       .select("id, full_name, email, is_active, is_admin_master")
+      .neq("kind", "agent")
       .order("full_name")
       .returns<PerfilRow[]>();
     // No treino, só os logins que vieram da produção: os usuários de teste por

@@ -43,7 +43,7 @@ if (!target) {
 // do CLAUDE.md). O nome guardado leva o schema (`empresarial.settle_billing`):
 // funções de mesmo nome em schemas diferentes são funções diferentes.
 const FN =
-  /create\s+(?:or\s+replace\s+)?function\s+(public|empresarial|indica)\.(\w+)\s*\(([\s\S]*?)\)\s*returns\s+([\s\S]*?)\s+language\s+(\w+)/gi;
+  /create\s+(?:or\s+replace\s+)?function\s+(public|empresarial|indica|rita)\.(\w+)\s*\(([\s\S]*?)\)\s*returns\s+([\s\S]*?)\s+language\s+(\w+)/gi;
 /** O nome completo, como as Regras 1 a 3 guardam e comparam. */
 const nomeDe = (schema, nome) => `${schema.toLowerCase()}.${nome.toLowerCase()}`;
 
@@ -100,11 +100,11 @@ const sql = readFileSync(join(DIR, target), "utf8");
 // "retorno mudou" em cada porta.
 const drops = new Set([
   ...[
-    ...sql.matchAll(/drop\s+function\s+(?:if\s+exists\s+)?(public|empresarial|indica)\.(\w+)/gi),
+    ...sql.matchAll(/drop\s+function\s+(?:if\s+exists\s+)?(public|empresarial|indica|rita)\.(\w+)/gi),
   ].map((m) => nomeDe(m[1], m[2])),
   ...[
     ...sql.matchAll(
-      /alter\s+function\s+(public|empresarial|indica)\.(\w+)\s*\([^)]*\)\s+rename\s+to\s+\w+/gi
+      /alter\s+function\s+(public|empresarial|indica|rita)\.(\w+)\s*\([^)]*\)\s+rename\s+to\s+\w+/gi
     ),
   ].map((m) => nomeDe(m[1], m[2])),
 ]);
@@ -204,18 +204,18 @@ if (target.slice(0, 4) > "0278") {
 // Desde a 0288 o banco registra sozinho cada inclusão, alteração e exclusão,
 // por um gatilho preso em cada tabela de cadastro. Tabela criada depois nasce
 // SEM o gatilho — e o que acontece nela some da auditoria sem ninguém notar.
-// Quem cria tabela em `public`, `empresarial` ou `indica` termina a migração
+// Quem cria tabela em `public`, `empresarial`, `indica` ou `rita` (3000+) termina a migração
 // com `select public.audit_attach_all();` (prende em todas as que faltam; é
 // idempotente). Se a tabela NÃO deve ser auditada (histórico, derivada,
 // registro técnico), declara o motivo em `public.audit_excluded_tables`.
-// Vale para as três faixas, só DEPOIS da 0288 / 1026 / 2008.
+// Vale para as quatro faixas, só DEPOIS da 0288 / 1026 / 2008 (a Rita, 3000+, já nasce depois).
 {
   const faixa = Number(target.slice(0, 4));
   const vale =
-    (faixa >= 288 && faixa < 1000) || (faixa > 1026 && faixa < 2000) || faixa > 2008;
+    (faixa >= 288 && faixa < 1000) || (faixa > 1026 && faixa < 2000) || faixa > 2008; // 2008+ inclui a Rita (3000+)
   const criadas = [
     ...semComentarios.matchAll(
-      /create\s+table\s+(?:if\s+not\s+exists\s+)?(public|empresarial|indica)\.(\w+)/gi
+      /create\s+table\s+(?:if\s+not\s+exists\s+)?(public|empresarial|indica|rita)\.(\w+)/gi
     ),
   ].map((m) => `${m[1].toLowerCase()}.${m[2].toLowerCase()}`);
   if (vale && criadas.length > 0) {
@@ -223,7 +223,7 @@ if (target.slice(0, 4) > "0278") {
     const declaradas = new Set(
       [
         ...semComentarios.matchAll(
-          /\(\s*'(public|empresarial|indica)'\s*,\s*'(\w+)'\s*,\s*'/gi
+          /\(\s*'(public|empresarial|indica|rita)'\s*,\s*'(\w+)'\s*,\s*'/gi
         ),
       ].map((m) => `${m[1].toLowerCase()}.${m[2].toLowerCase()}`)
     );

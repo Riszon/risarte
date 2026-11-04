@@ -45,7 +45,8 @@ export default async function ChatPage() {
     const supabase = await createClient();
     const { count } = await supabase
       .from("profiles")
-      .select("id", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true })
+      .neq("kind", "agent"); // 0365: a assistente virtual não conta como pessoa
     totalUsers = count ?? 0;
   }
 

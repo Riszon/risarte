@@ -1,6 +1,36 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.396.0** · Última migração: **0364** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.397.0** · Última migração: **0365** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🤖 0.397.0 — RITA, FASE 0A.1: A IDENTIDADE E A AUDITORIA (04/11/2026, migrações 0365 e 3000; Rita 0.1.0)
+>
+> Primeira entrega da Fase 0A da Rita (`docs/sdr/PLANO-FASE-0A.md`, DA1–DA3;
+> estado próprio em `docs/sdr/ESTADO.md`). A Rita ainda não fala com ninguém.
+>
+> - **0365 (core):** `profiles.kind` (`person`/`agent`, uma assistente por
+>   banco; só a chave de serviço muda — `profiles_kind_guard`,
+>   `PROFILE_KIND_LOCKED`); `audit_changes.actor` aceita `assistente`;
+>   **`audit_capture` lê `rita.actor` só sem pessoa logada e só se o id for o
+>   perfil `agent`** (senão, `servico`/`sistema` como antes; nunca derruba a
+>   operação); `audit_attach_all`/`audit_missing_tables` olham o schema `rita`.
+> - **3000 (rita):** schema `rita` (só a chave de serviço), `rita.agent_id()` e
+>   `rita.begin_as_agent()` — toda função `rita.*` que gravar chama esta
+>   primeiro, e a trilha sai "Rita (assistente virtual)".
+> - ⚠️ **Ao recriar `audit_capture`, levar o bloco da 0365** (régua
+>   `rita-identidade.test.ts`, provada quebrando 3 vezes).
+> - **O usuário técnico** nasce por `scripts/rita-criar-identidade.mjs` (sem
+>   senha, login bloqueado, 0 funções), em CADA banco — não pelo espelho (ele
+>   só copia Risartanos). Treino: criado (04/11/2026).
+> - Tela: Auditoria traduz o autor; Risartanos (logins sem cadastro) e a
+>   contagem do Chat escondem a assistente. Manual 13c; `check-migrations` e a
+>   régua da auditoria enxergam o schema `rita`.
+> - **Provado no treino** em transação desfeita, 12/12 (sem declarar → servico;
+>   com `begin_as_agent` → assistente; id de pessoa e lixo ignorados; logado
+>   nunca vira Rita; fechado a anon/authenticated; tipo travado; uma só;
+>   sem a Rita → `RITA_AGENT_MISSING`). Sem a conferência do tipo, a 3 reprova.
+> - ⏳ **Na produção, nesta ordem, ANTES do push:** 0365 → 3000 → o roteiro
+>   (`docs/PRODUCAO-ONLINE.md`, seção da Rita). O app filtra `profiles.kind`.
+
 
 > ## 🏢 EMPRESARIAL 0.96.0 — A PLANILHA DE TITULARES RESPEITA O CONTRATO E ENTRA INTEIRA OU NÃO ENTRA (04/11/2026, sem migração; AP97, item 6 do plano da Rita)
 >

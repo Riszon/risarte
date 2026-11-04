@@ -3021,6 +3021,11 @@ quando um processo (a Rita) passar a usá-la. **Caminho:** funções `rita_*`
 estreitas com autor, ou um papel próprio do Postgres. Visto no levantamento da
 Rita (E5, seção 5).
 
+**Andamento (04/11/2026, 0.397.0):** o AUTOR já existe — `rita.begin_as_agent()`
+(3000) faz a trilha sair "Rita (assistente virtual)" em vez de "Sistema". A
+guarda ainda não: segue aberto até as funções `rita.*` estreitas (Fase 1)
+chamarem o Indica no lugar da chave de serviço solta.
+
 ### AP103. O agendamento não tem lock de verdade (03/11/2026) — ✅ Resolvido em 0.396.0
 
 **Resolução (0362, plano §5b como aprovado):** `pg_advisory_xact_lock` por

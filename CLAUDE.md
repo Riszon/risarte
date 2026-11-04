@@ -391,6 +391,22 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (Rita — Fase 0A.1) — PC Administrador (core 0.396.0 → 0.397.0, migração 0365; Rita 0.1.0, migração 3000)**
+
+- **A identidade da Rita e a auditoria** (bloco 0.397.0 no ESTADO; estado da
+  Rita em `docs/sdr/ESTADO.md`). ⚠️ **Rita é o 4º projeto do banco:** schema
+  `rita`, faixa **3000+**, `RITA_VERSION`/`RITA_MIGRATION` no `version.ts`.
+- ⚠️ **Ao recriar `audit_capture`, levar o bloco `rita.actor` da 0365** (só sem
+  pessoa logada, só perfil `agent`). Régua `rita-identidade.test.ts`.
+- ⚠️ **Função `rita.*` que grava começa por `rita.begin_as_agent()`** — é o que
+  põe "Rita (assistente virtual)" na trilha.
+- ⚠️ **`profiles.kind = 'agent'` não é pessoa:** lista nova de pessoas filtra
+  `.neq("kind", "agent")`. Só a chave de serviço muda o tipo.
+- O usuário técnico nasce por `scripts/rita-criar-identidade.mjs` em cada banco
+  (o espelho não copia). Treino: feito. Produção: com o dono, antes do push.
+- Provado no treino 12/12 (transação desfeita) e quebrando. **Não visto na
+  tela** (a Rita ainda não grava nada).
+
 **04/11/2026 (Rita — plano 1, item 6) — PC Administrador (Empresarial 0.95.0 → 0.96.0, sem migração)**
 
 - **AP97: a planilha de titulares respeita o contrato e entra inteira ou não

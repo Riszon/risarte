@@ -43,6 +43,12 @@ O que isso muda no plano:
 
 ### 0A.1 — Identidade e auditoria (core **0351** + primeiro passo do schema `rita`, **3000**)
 
+> ✅ **Feita em 04/11/2026 como core 0365 + rita 3000** (core 0.397.0, Rita
+> 0.1.0). Duas diferenças do texto abaixo: o usuário técnico nasce por
+> `scripts/rita-criar-identidade.mjs` em cada banco (o espelho só copia
+> Risartanos), e o id dela é lido por `rita.agent_id()` (perfil `agent`, um por
+> banco), não guardado em `rita.settings`. Detalhe em `docs/sdr/ESTADO.md`.
+
 - 0351 (core): `profiles.kind` (`person` default, `agent`); `audit_capture` lê `rita.actor`; check de `actor` ganha `'assistente'`; `auditoria-alteracoes.ts` e a tela traduzem.
 - 3000 (rita): `create schema rita`; `grant usage to service_role` (e a `authenticated` só para as views da tela); tabela `rita.settings` nasce vazia aqui? **Não** — fica na 0A.2 para a migração ser pequena e provável.
 - Criar o usuário técnico **na produção** pelo Admin (API de auth com a chave de serviço, como `check-screens` faz para o link de uso único; sem senha; `banned_until = infinity`) e deixar o espelho (0260) copiá-lo para o treino. O id fica em `rita.settings` da rede (0A.2), **não** em variável de ambiente.

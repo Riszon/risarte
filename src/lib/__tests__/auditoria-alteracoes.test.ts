@@ -251,6 +251,10 @@ describe("quem, qual registro e a contagem do dia", () => {
     expect(quemFez(alteracao({ user_id: null, actor: "sistema" }), nomes)).toBe(
       "Sistema (rotina automática)"
     );
+    // 0365: a assistente aparece pelo nome, mesmo fora da lista de pessoas.
+    expect(
+      quemFez(alteracao({ user_id: "00000000-0000-4000-8000-0000000000aa", actor: "assistente" }), nomes)
+    ).toBe("Rita (assistente virtual)");
     expect(quemFez(alteracao({ user_id: "00000000-0000-4000-8000-000000000000" }), nomes)).toBe(
       "Usuário removido"
     );
@@ -334,7 +338,7 @@ function tabelasCriadas(): Set<string> {
   const criadas = new Set<string>();
   for (const f of arquivosDeMigracao) {
     for (const m of semComentarios(lerMigracao(f)).matchAll(
-      /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:(public|empresarial|indica)\.)?(\w+)/gi
+      /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:(public|empresarial|indica|rita)\.)?(\w+)/gi
     )) {
       criadas.add(`${(m[1] ?? "public").toLowerCase()}.${m[2].toLowerCase()}`);
     }
@@ -356,7 +360,7 @@ function tabelasDeclaradasFora(): Set<string> {
     const sql = semComentarios(lerMigracao(f));
     if (!/insert\s+into\s+public\.audit_excluded_tables/i.test(sql)) continue;
     for (const m of sql.matchAll(
-      /\(\s*'(public|empresarial|indica)'\s*,\s*'(\w+)'\s*,\s*'[^']/gi
+      /\(\s*'(public|empresarial|indica|rita)'\s*,\s*'(\w+)'\s*,\s*'[^']/gi
     )) {
       fora.add(`${m[1]}.${m[2]}`);
     }

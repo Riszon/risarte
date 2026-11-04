@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.397.0",
+    data: "2026-11-04",
+    migracao: "0365",
+    titulo: "A Auditoria já sabe reconhecer a Rita, a futura assistente virtual de atendimento",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "A Auditoria ganhou um terceiro autor além das pessoas e do Sistema: \"Rita (assistente virtual)\", a assistente de atendimento pelo WhatsApp que está sendo preparada. Ela ainda não fala com ninguém e não grava nada; quando começar, tudo o que ela fizer aparecerá com o nome dela, nunca como \"Sistema\". Ela não aparece na lista de Risartanos nem conta como pessoa no Chat.",
+        papeis: [],
+        manual: "13c. Para o Admin Master: a Auditoria",
+      },
+    ],
+  },
+  {
     versao: "0.396.0",
     data: "2026-11-04",
     migracao: "0364",

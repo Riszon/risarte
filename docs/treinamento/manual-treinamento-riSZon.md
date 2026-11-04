@@ -4578,6 +4578,11 @@ mudaram.
   banco (a cobrança que vence, o aviso que sai sozinho).
 - **Sistema (em nome de alguém)** — o servidor gravando depois de conferir a
   permissão da pessoa. A ação **dela** aparece no mesmo horário, na aba Ações.
+- **Rita (assistente virtual)** (desde a versão 0.397.0) — a assistente de
+  atendimento pelo WhatsApp que está sendo preparada. **Ainda não grava nada**;
+  quando começar, o que ela fizer aparece com o nome dela, e ela pode ser
+  escolhida no filtro de pessoas. Ela não é uma pessoa da equipe: não entra no
+  sistema, não aparece na lista de Risartanos e não conta no Chat.
 
 **O que você vê em português e o que não:** nomes dos cadastros, dos campos
 mais comuns, sim/não, dinheiro, datas, funções, fases e situações saem em

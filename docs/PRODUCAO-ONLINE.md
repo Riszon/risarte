@@ -71,6 +71,27 @@ qualquer escrita): `POST` com `--data 'isto-nao-e-json'` e sem o cabeçalho →
 sem o segredo (volte ao passo 1); com o cabeçalho certo → `400 Bad request`.
 `404` = não publicada.
 
+### A identidade da Rita (assistente virtual) — um login técnico por banco
+
+Desde a 0.397.0 (migrações 0365 e 3000). A Rita é autora nas trilhas, não uma
+pessoa: login `rita@risarte.local` **sem senha e bloqueado**, perfil
+`kind = 'agent'`, nenhuma função em unidade. Ela nasce por um roteiro que usa a
+chave de serviço do arquivo de ambiente — **não** pela tela e **não** pelo
+espelho do treino.
+
+Ordem na produção:
+
+1. Rodar a **0365** e depois a **3000** no SQL Editor.
+2. No computador, na pasta `risarte`, conferir sem gravar:
+   `node scripts/rita-criar-identidade.mjs` (usa o `.env.local`, que aponta
+   para a produção; a primeira linha diz o banco).
+3. Criar: `node scripts/rita-criar-identidade.mjs --confirmar`. Rodar de novo
+   só confere ("A Rita já existe neste banco").
+
+No treino: `RISARTE_ENV_FILE=.env.test.local node scripts/rita-criar-identidade.mjs --confirmar`
+(já feito em 04/11/2026). ⚠️ `auth.users` é território comum com o Risarte
+Academy: o roteiro só acrescenta um login, não apaga nem muda ninguém.
+
 ## Armadilhas da Vercel
 
 - **`NEXT_PUBLIC_*` é embutida na MONTAGEM.** Mudar o valor não muda o site:

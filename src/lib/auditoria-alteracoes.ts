@@ -41,7 +41,11 @@ export function lerOperacao(v: unknown): Operacao | "" {
   return v === "I" || v === "U" || v === "D" ? v : "";
 }
 
-export type Autor = "usuario" | "servico" | "sistema";
+/** 0365: "assistente" = a Rita (assistente virtual), com `user_id` = o perfil dela. */
+export type Autor = "usuario" | "servico" | "sistema" | "assistente";
+
+/** O nome que a Rita tem em toda a trilha, mesmo se o perfil sumir da lista. */
+export const NOME_DA_ASSISTENTE = "Rita (assistente virtual)";
 
 export type Alteracao = {
   id: number;
@@ -365,6 +369,9 @@ export function quemFez(
   a: Pick<Alteracao, "user_id" | "actor">,
   nomes: Nomes
 ): string {
+  if (a.actor === "assistente") {
+    return (a.user_id && nomes.usuarios.get(a.user_id)) || NOME_DA_ASSISTENTE;
+  }
   if (a.user_id) return nomes.usuarios.get(a.user_id) ?? "Usuário removido";
   return a.actor === "servico"
     ? "Sistema (em nome de alguém)"
@@ -374,7 +381,8 @@ export function quemFez(
 export const EXPLICACAO_DO_SISTEMA =
   "“Sistema (em nome de alguém)” é o servidor gravando depois de conferir a " +
   "permissão da pessoa — a ação dela aparece no mesmo horário, na aba Ações. " +
-  "“Sistema (rotina automática)” são as tarefas agendadas e as regras do banco.";
+  "“Sistema (rotina automática)” são as tarefas agendadas e as regras do banco. " +
+  "“Rita (assistente virtual)” é a assistente de atendimento pelo WhatsApp.";
 
 /** Para onde o registro leva: hoje, o prontuário do cliente envolvido. */
 export function destinoDoRegistro(
