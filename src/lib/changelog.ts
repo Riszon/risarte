@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.400.1",
+    data: "2026-11-04",
+    migracao: null,
+    titulo: "Relatar um problema não apaga mais o que você escreveu quando dá erro",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Se o relato não puder ser registrado, o que você escreveu continua no formulário — antes os campos eram apagados junto com o aviso de erro. Vale também para responder, acrescentar informação e \"Não resolveu\" na conversa do relato.",
+        papeis: "todos",
+        manual: "9.4. Como relatar um problema",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O Financeiro da Franqueadora voltou a conseguir relatar com uma unidade escolhida no seletor: o relato fica registrado na Franqueadora, com a tela onde o problema aconteceu.",
+        papeis: ["finance_franchisor"],
+        manual: "9.4. Como relatar um problema",
+      },
+    ],
+  },
+  {
     versao: "0.400.0",
     data: "2026-11-04",
     migracao: "0366",

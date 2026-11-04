@@ -396,6 +396,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**04/11/2026 (RIS-000003) — PC Administrador (core 0.400.0 → 0.400.1, sem migração)**
+
+- **Relato que dá erro não apaga mais o texto** (bloco 0.400.1 no ESTADO).
+  ⚠️ `<form action={fn}>` no React 19 limpa os campos AO FIM do envio, também
+  no erro — formulário de texto longo usa `onSubmit`. ⚠️ Unidade no seletor
+  SEM função (Financeiro da Franqueadora, OC-00120) não passa nas regras que
+  usam `user_clinic_ids()`: o relato cai na unidade da ficha.
+- Provado no treino (transação desfeita). Não visto na tela.
+
 **04/11/2026 — PC Administrador (core 0.397.0 → 0.398.0, migração 0365)**
 
 - **Metas: Ortodontia, PPR+ e a receita bruta em linhas** (pedido do dono;

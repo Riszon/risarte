@@ -4111,6 +4111,15 @@ painel:
 > está lá (o painel avisa *"Relato começado em …"*). Para desistir de vez, use
 > **Cancelar**.
 
+> **Deu erro ao registrar? O texto fica.** Se aparecer *"Não foi possível
+> registrar agora"*, o que você escreveu continua no formulário — é só tentar
+> de novo. Os campos só são limpos quando o relato é registrado (aparece o
+> código, como *OC-00012*).
+
+> **Financeiro da Franqueadora trabalhando numa unidade:** o relato fica
+> registrado na **Franqueadora** (a unidade da sua ficha), já que você não tem
+> função naquela unidade. A tela onde o problema aconteceu vai junto no relato.
+
 **Na primeira captura o navegador pede permissão** para ver a tela. É só
 permitir: o sistema tira uma única foto e para de ver na mesma hora. O arquivo
 recebe o nome da tela de onde veio (ex.: *captura-agenda-20260917-0930.png*).

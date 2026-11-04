@@ -238,7 +238,7 @@ function Responder({ relato, comAnexos }: { relato: Relato; comAnexos: boolean }
   return (
     <form
       ref={formRef}
-      action={salvar}
+      onSubmit={(e) => { e.preventDefault(); salvar(new FormData(e.currentTarget)); }}
       className="space-y-3 rounded-lg border bg-muted/20 p-4"
     >
       <p className="text-sm font-medium">Responder</p>
@@ -323,7 +323,7 @@ function Complementar({ relato, comAnexos }: { relato: Relato; comAnexos: boolea
   }
 
   return (
-    <form ref={formRef} action={salvar} className="space-y-2 rounded-lg border p-4">
+    <form ref={formRef} onSubmit={(e) => { e.preventDefault(); salvar(new FormData(e.currentTarget)); }} className="space-y-2 rounded-lg border p-4">
       <Label htmlFor="complemento">Acrescentar informação</Label>
       <input type="hidden" name="id" value={relato.id} />
       <textarea
@@ -377,7 +377,7 @@ function Reabrir({ relato }: { relato: Relato }) {
   }
 
   return (
-    <form action={salvar} className="space-y-2 rounded-lg border border-destructive/30 p-4">
+    <form onSubmit={(e) => { e.preventDefault(); salvar(new FormData(e.currentTarget)); }} className="space-y-2 rounded-lg border border-destructive/30 p-4">
       <Label htmlFor="motivo">O que não funcionou?</Label>
       <input type="hidden" name="id" value={relato.id} />
       <textarea

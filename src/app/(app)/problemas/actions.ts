@@ -41,6 +41,15 @@ export async function registrarProblema(
   // a leitura da ficha pela tela não as enxerga, e o banco recusava o relato.
   // `my_report_clinic` (0304) devolve a unidade da ficha e as funções nela.
   let papeisDaFicha: string[] | null = null;
+  // RIS-000003 (04/11/2026): o Financeiro da Franqueadora tem no seletor as
+  // unidades do ESCOPO dele (OC-00120), mas SEM função nelas — e a regra de
+  // inclusão de `system_reports` só aceita clínica onde a pessoa tem função
+  // (ou a da ficha). Com uma dessas unidades ativa, o banco recusava (42501)
+  // e a pessoa via "tente de novo em instantes", que nunca ia funcionar.
+  // O relato vai então para a unidade da ficha; a tela fica no campo `screen`.
+  if (clinicId && !session.isAdminMaster && !(session.rolesByClinic[clinicId]?.length)) {
+    clinicId = null;
+  }
   if (!clinicId) {
     const { data: daFicha } = await (await createClient()).rpc("my_report_clinic");
     const linha = ((daFicha ?? []) as { clinic_id: string | null; roles: string[] | null }[])[0];

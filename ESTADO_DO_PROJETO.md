@@ -1,7 +1,28 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.400.0** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.400.1** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 📋 0.400.1 — RELATO QUE DÁ ERRO NÃO APAGA O TEXTO (04/11/2026, sem migração)
+>
+> Relato de RIS-000003 (André, Financeiro da Franqueadora, produção): escreveu
+> muito, recebeu "tente de novo em instantes" e perdeu tudo. **Duas causas:**
+> 1. **O banco recusava (42501).** As unidades do escopo entram no seletor sem
+>    função (OC-00120); a regra de inclusão de `system_reports` (0304) só aceita
+>    clínica com função ou a da ficha. Provado no treino em transação desfeita
+>    (unidade recusa, Franqueadora grava). `registrarProblema` agora troca a
+>    unidade ativa SEM função pela da ficha (`my_report_clinic`). Na produção o
+>    André tem 0 relatos.
+> 2. **O React 19 limpa `<form action>` ao fim do envio, também no erro.** Os
+>    formulários do relato e os três da conversa passaram a `onSubmit` e limpam
+>    só no sucesso.
+> - ⚠️ **Formulário onde a pessoa escreve muito: `onSubmit`, nunca
+>   `action={fn}`.** Régua `relato-nao-perde-o-texto.test.ts` (provada quebrando
+>   as duas correções). Outros formulários do sistema com `action=` não foram
+>   varridos.
+> - Manual 9.4, EV-296. **Não visto na tela.** O texto do André não volta
+>   (nunca chegou ao banco). Resíduo: o código OC-00165 do treino foi consumido
+>   pelo ensaio (a sequência não volta no rollback).
+>
 > ## 📋 0.400.0 — A TELA DO BACKLOG, FASE BK2 (04/11/2026, sem migração)
 >
 > **Administração → Backlog** (`src/app/(app)/admin/backlog/`), só o Admin

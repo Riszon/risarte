@@ -164,7 +164,17 @@ export function FormularioDeRelato({
   }
 
   return (
-    <form ref={formRef} action={enviar} className="@container space-y-4 rounded-lg border bg-muted/20 p-4">
+    // ⚠️ `onSubmit`, NÃO `action` (RIS-000003, 04/11/2026): com `action` o
+    // React 19 limpa os campos sozinho ao fim do envio — também quando o banco
+    // recusa. Quem escreveu um relato longo e viu "tente de novo" perdia tudo.
+    // A limpeza aqui é só a do sucesso (`formRef.current?.reset()`).
+    <form
+      ref={formRef}
+      onSubmit={(e) => {
+        e.preventDefault();
+        enviar(new FormData(e.currentTarget));
+      }}
+      className="@container space-y-4 rounded-lg border bg-muted/20 p-4">
       <p className="text-sm text-muted-foreground">
         Você não precisa informar quem é, a função, a unidade nem a versão — o
         sistema já sabe e envia junto (versão {versaoAtual}). Escreva só o que
