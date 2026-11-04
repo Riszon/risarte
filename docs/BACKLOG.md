@@ -9,6 +9,7 @@ Pedido do dono. É o ÍNDICE do que está aberto; o detalhe de cada item está n
 seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seção.
 
 **Esperando decisão do dono**
+- [ ] **AP24b** — Indica: como a equipe USA os Riso Coins do prêmio individual (resgatar no catálogo, virar voucher, só ranking?); hoje só acumulam e aparecem na tela Equipe
 - [x] **AP108** — o mesmo documento pode ser enviado para assinatura duas vezes ao mesmo paciente, sem aviso (ZS8, ASS-000049 e ASS-000050 abertos juntos) — **resolvido em 0.394.0 (0361): aberto bloqueia com "Cancelar o anterior e enviar este"; já assinado avisa e pede confirmação**
 - [x] **AP53** — Planner e especialidades: decidido MANTER com o Planner (03/11/2026)
 - [x] **AP66** — anonimizar paciente no núcleo: decidido NÃO FAZER por enquanto (03/11/2026)
