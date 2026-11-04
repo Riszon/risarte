@@ -60,6 +60,11 @@ const TODOS: UserRole[] = [
   "franchisor_staff", "franchisee", "tsb", "asb", "rislife_consultant",
   "finance_franchisor", "purchaser",
 ];
+// ⚠️ O CONSULTOR RISLIFE NÃO VÊ PACIENTE (AP95, decisão do dono, 03/11/2026):
+// ele vende o programa às empresas e trabalha só no Empresarial. As telas de
+// paciente (Jornada, Agenda, Atendimento, Prontuários, PPR+) não são dele, e
+// o banco também não entrega esses dados a ele (0353).
+const TODOS_MENOS_RISLIFE: UserRole[] = TODOS.filter((r) => r !== "rislife_consultant");
 
 /**
  * O catálogo. A ORDEM aqui é a ordem da tela.
@@ -77,7 +82,7 @@ export const CAPACIDADES: Capability[] = [
     descricao: "O quadro dos pacientes por fase.",
     dependeDoBanco: false,
     // Regra antiga: todos, menos quem tem SÓ o papel de dentista.
-    padrao: TODOS.filter((r) => r !== "dentist"),
+    padrao: TODOS_MENOS_RISLIFE.filter((r) => r !== "dentist"),
   },
   {
     id: "menu.agenda",
@@ -85,7 +90,7 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Navegação",
     descricao: "Marcar e acompanhar horários.",
     dependeDoBanco: false,
-    padrao: TODOS,
+    padrao: TODOS_MENOS_RISLIFE,
   },
   {
     id: "menu.atendimento",
@@ -102,7 +107,7 @@ export const CAPACIDADES: Capability[] = [
     // ⚠️ Este padrão só vale onde a matriz NÃO tem linha gravada. A instalação
     // do dono tinha (liberando o menu), e por isso a 0269 apaga aquela linha —
     // mudar só este arquivo não teria efeito nenhum.
-    padrao: TODOS.filter((r) => r !== "commercial_consultant"),
+    padrao: TODOS_MENOS_RISLIFE.filter((r) => r !== "commercial_consultant"),
   },
   {
     id: "menu.prontuarios",
@@ -110,7 +115,7 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Navegação",
     descricao: "A ficha dos pacientes.",
     dependeDoBanco: false,
-    padrao: TODOS,
+    padrao: TODOS_MENOS_RISLIFE,
   },
   {
     id: "menu.planejamento",
@@ -202,7 +207,7 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Módulos",
     descricao: "O programa de prevenção.",
     dependeDoBanco: false,
-    padrao: TODOS,
+    padrao: TODOS_MENOS_RISLIFE,
   },
   {
     id: "modulo.empresarial",

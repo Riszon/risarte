@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.387.0",
+    data: "2026-11-03",
+    migracao: "0353",
+    titulo: "O Consultor RisLife trabalha só no Empresarial e não vê paciente",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O Consultor RisLife deixou de ver os pacientes das unidades: cadastro, agenda, atendimento, prontuário, planos, negociações e o resumo da apresentação. Ele vende o programa às empresas e acompanha o uso pelos relatórios do Empresarial. O chat e a lista da equipe continuam como antes.",
+        papeis: ["rislife_consultant"],
+        manual: "4.3. Ficha de cada papel",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No treino, as contas de teste ganharam ficha de Risartano com CPF de teste, e dá para ensaiar o contrato de adesão com testemunhas sem usar os dados de ninguém da equipe.",
+        papeis: ["unit_manager", "finance_franchisor", "rislife_consultant"],
+      },
+    ],
+  },
+  {
     versao: "0.386.0",
     data: "2026-11-03",
     migracao: "0352",

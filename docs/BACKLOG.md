@@ -26,7 +26,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [ ] **AP11 (sobra)** — telas que mostram "0 esperando" se a contagem falhar (Início, Compras, relatos)
 - [ ] **AP38** — Empresarial: sugestão de "Quem assina" na aba Proposta não se atualiza
 - [x] **AP90** — o cadastro aceita CPF com dígito verificador errado: o erro só aparecia ao enviar para assinatura — **0.377.0: avisa no cadastro e lembra na ficha (decisão do dono: só avisar, por enquanto)**
-- [ ] **AP91** — treino: só 2 pessoas da equipe da Franqueadora têm CPF válido; o envio completo do contrato de adesão (2 testemunhas + titular) não dá para ensaiar lá
+- [x] **AP91** — treino: só 2 pessoas da equipe da Franqueadora têm CPF válido; o envio completo do contrato de adesão (2 testemunhas + titular) não dá para ensaiar lá — **resolvido em 0.387.0 (fichas de teste com CPF válido, `npm run treino:equipe-de-teste`)**
 - [ ] **AP92** — "Reenviar como novo pacote" ainda não vale para pacotes de empresa
 - [x] **AP93** — o cartão do funil fica em "A apresentar" depois do aceite e até depois do contrato assinado (cockpit mostra "Sem apresentação marcada") — **0.382.1: era defeito do cockpit, não do funil; o cockpit segue a coluna do quadro**
 - [ ] **AP97** — Empresarial: a importação de titulares por planilha (`importEmployees`) não aplica a trava de quantidade contratada que o comentário dela diz aplicar; telefone ausente vira `""`
@@ -51,7 +51,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 
 **Futuro / sem causa encontrada**
 - [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): **D1–D9 decididas em 03/11/2026** (Gemini 3.1 Pro no Vertex AI em São Paulo; conta central da Risarte organiza o Meet; apresentar dentro do Meet fica para depois). Próximo: fase IA1**
-- [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)**
+- [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)** — **medido em 03/11/2026: não acontece com quem envia; virou a redefinição do papel do Consultor RisLife. Entrega 1 (0.387.0, 0353): ele não vê paciente. Falta a entrega 2 (1039): só as empresas e os leads dele, o relatório de uso e o contrato de adesão assinado por ele**
 - [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
 - [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
 - [ ] **AP106** — o original de fábrica da matriz (`permissions.ts`) não tem ASB nem TSB em entrada/inventário e compras: voltar a ele as desligaria
@@ -2782,6 +2782,19 @@ minutos (1 testemunha, sem Risarte) e voltou ao original. **A decidir:** dar
 CPF de teste às contas `@example.com` no treino (o cadastro da equipe lá é
 cópia da produção, `MIRROR_READ_ONLY`) ou ensaiar só pelo sandbox (ZS8).
 
+**Resolução (03/11/2026, 0.387.0):** `npm run treino:equipe-de-teste`
+(`scripts/treino-equipe-de-teste.mjs`, só no treino: a trava de `test-db.mjs`
+e `is_mirror_db()`) dá às contas `@example.com` com nome "… de Teste" uma
+ficha de Risartano com CPF de teste válido (sem repetir CPF de equipe nem de
+cliente), o e-mail da própria conta e código `TST-…-TREINO`. Nunca mexe em
+ficha de pessoa real (a `rede@example.com`, com nome real, fica de fora) nem
+apaga nada; rodar de novo não muda nada. A cópia da produção não desfaz (ela
+não apaga ficha que só existe no treino). Resultado: 13 fichas novas; a
+Franqueadora do treino passou de 2 para 9 pessoas com CPF válido. **Correção do
+registro:** o titular TEM CPF válido nos dois bancos, e na produção a
+Franqueadora já tem 2 testemunhas possíveis: lá o contrato de adesão completo
+já podia sair.
+
 ### AP93. O cartão do funil fica em "A apresentar" depois do aceite (03/11/2026) — ✅ Resolvido em 0.382.1
 
 **Resolução (03/11/2026):** a suspeita estava errada no alvo. A etapa gravada
@@ -2863,6 +2876,33 @@ do dono, B12 do contrato padrão). O risco mudou de forma: para quem não lê
 `commercial_presentations`, o resumo viria vazio e o contrato sairia dizendo
 *"(não registrado até a data da assinatura deste documento)"*, mesmo com o
 resumo escrito. Continua suspeita, não medida.
+
+**Medido em 03/11/2026 (treino, só leitura):** os cinco papéis que enviam por
+padrão (Consultor, Assistente, RisLife, Financeiro da Franqueadora e Gerente)
+enxergam o resumo, o plano e a negociação — quem tem função na unidade ou na
+Franqueadora com escopo entra por `user_full_access_clinic_ids()`. Só o
+Dentista ficaria de fora. **Mas a medição mostrou outra coisa:** o Consultor
+RisLife via TODOS os pacientes de todas as unidades. **Decisão do dono:** ele
+vende o programa às empresas e tem acesso SÓ ao Empresarial — só das empresas
+e dos leads em que é o responsável (lead sem responsável fica com o gestor);
+vê tudo das empresas e dos beneficiários, mas no Empresarial; quando vão às
+unidades, não acompanha; sabe do uso pelos relatórios do Empresarial; assina
+o contrato de adesão no lugar do titular (sem consultor responsável, assina
+quem envia).
+
+- **Entrega 1 (0.387.0, 0353) ✅:** fora dos pacientes; a equipe e o chat
+  continuam (`user_staff_scope_clinic_ids()`); telas de paciente fora dos
+  padrões dele.
+- **Entrega 2 (1039) ⏳:** `empresarial.is_program_manager()` sem o RisLife;
+  as tabelas do Empresarial que só tinham o ramo do gestor ganham o "é a
+  empresa/o lead dele" (documentos, arquivos e preços da empresa; envios,
+  unidades e conferência do lead); as 92 decisões de tela que usam
+  `isProgramManager` separadas entre gestor e consultor; relatório de uso com
+  leitura própria (sem dado clínico); o contrato de adesão assinado pelo
+  consultor responsável. **A confirmar com o dono na entrega 2:** "completar
+  cadastro" do titular (`complete_employee`, que cria o cliente na unidade) hoje
+  passa pelo ramo do gestor; sem ele, deixa de valer para o RisLife (a unidade
+  leva o titular).
 
 ### AP96. A unidade não tem razão social; o contrato usa o nome (03/11/2026) — ✅ Resolvido em 0.384.0
 

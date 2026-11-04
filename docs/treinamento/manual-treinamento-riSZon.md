@@ -2278,8 +2278,17 @@ de salvar.
 
 #### Consultor RisLife *(franqueadora)*
 
-- **Objetivo:** gerir o programa Empresarial (B2B).
-- **Vê:** Empresarial ✅ (é gestor do programa).
+- **Objetivo:** fazer o contato e a venda do programa Empresarial (B2B) às
+  empresas.
+- **Vê:** Empresarial ✅, Assinaturas (os pacotes das empresas e dos leads em
+  que é o responsável), Metas, Manual e o chat.
+- **Não vê paciente** (desde a versão 0.387.0): nem cadastro, agenda,
+  atendimento, prontuário, plano, negociação ou resumo da apresentação — o
+  banco não entrega, mesmo que alguém abra o endereço da tela. Quando titulares
+  e dependentes vão às unidades, quem acompanha é a unidade; o consultor fica
+  sabendo do uso pelos relatórios do Empresarial.
+- **Continua vendo a equipe** (Risartanos, certificação) e conversando no chat
+  como antes.
 
 #### TSB e ASB *(unidade)*
 
@@ -3413,7 +3422,7 @@ aparece a tabela **Mês a mês**.
 documentos e acompanhar. **TSB/ASB:** apoio clínico e consumo de estoque.
 **Franqueado:** leitura da própria unidade. **Financeiro da Franqueadora:**
 configuração da rede e visão consolidada. **Comprador:** mesa de negociação.
-**Consultor RisLife:** programa Empresarial.
+**Consultor RisLife:** venda do programa Empresarial às empresas; não vê paciente (seção 4.3).
 
 Para essas funções, os passos seguem os módulos descritos na
 [seção 7](#7-mapeamento-da-interface). ⚠️ Roteiros detalhados

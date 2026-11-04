@@ -391,6 +391,21 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (AP95/AP91) — PC Administrador (core 0.386.0 → 0.387.0, migração 0353)**
+
+- **O Consultor RisLife fora dos pacientes** (bloco 0.387.0 no ESTADO; papel
+  definido pelo dono: só o Empresarial, só as empresas e os leads dele).
+- ⚠️ **`user_full_access_clinic_ids()` NÃO conta o `rislife_consultant`**
+  (0353). A equipe e o chat leem `user_staff_scope_clinic_ids()`. Função nova
+  que trate de EQUIPE (não de paciente) e precise incluir o RisLife usa a da
+  equipe. Régua: `rislife-fora-dos-pacientes.test.ts`.
+- **AP91:** `npm run treino:equipe-de-teste` (fichas com CPF de teste para as
+  contas `@example.com`, só no treino). Contas novas de teste: rodar de novo.
+- ⏳ **Entrega 2 (1039):** `empresarial.is_program_manager()` sem o RisLife,
+  relatório de uso próprio, contrato de adesão assinado por ele. Plano no
+  BACKLOG (AP95).
+- ⏳ **0353 não aplicada na produção.** O dono roda.
+
 **03/11/2026 (AP61) — PC Administrador (core 0.385.0 → 0.386.0, migração 0352)**
 
 - **Repasse por procedimento concluído** (bloco 0.386.0 no ESTADO). ⚠️ **O

@@ -1,6 +1,56 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.386.0** · Última migração: **0352** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.387.0** · Última migração: **0353** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0353 só no treino) · Empresarial **0.94.0** / migração **1038** (aplicada na produção e no treino)_
+
+> ## 🧭 0.387.0 — O CONSULTOR RISLIFE FORA DOS PACIENTES (03/11/2026, migração 0353, AP95 entrega 1 + AP91)
+>
+> **Pedido do dono:** resolver o AP91 e o AP95 antes da ZS8. Medindo o AP95
+> (só leitura), ele não acontecia com quem envia — mas mostrou que o Consultor
+> RisLife via TODOS os pacientes (o papel dele na Franqueadora tem escopo
+> "todas"). **Decisão do dono, o papel definido:** ele faz o contato e a venda
+> do programa às empresas, é da Franqueadora, tem acesso SÓ ao Empresarial (só
+> das empresas e dos leads em que é o responsável; lead sem responsável fica
+> com o gestor), vê tudo das empresas e dos beneficiários no Empresarial, não
+> acompanha quando eles vão às unidades, sabe do uso pelos relatórios do
+> Empresarial, e assina o contrato de adesão no lugar do titular (sem
+> consultor responsável, assina quem envia e fica registrado). Duas entregas.
+>
+> **Entrega 1 (esta):**
+> - **0353:** `user_full_access_clinic_ids()` não conta o papel
+>   `rislife_consultant` (papel direto, escopo "todas" e "específicas"). Quem
+>   tem outro papel segue com ele. A equipe e o chat leem
+>   `user_staff_scope_clinic_ids()` (a regra de antes): `can_see_staff`,
+>   `can_access_chat_channel`, `chat_can_dm`, `chat_contacts`,
+>   `chat_my_channel_ids`, `ensure_unit_chat_channel` (texto do banco, só a
+>   chamada trocada). O Indica deixa de mostrar a ele as indicações (são de
+>   pacientes; nenhum arquivo do Indica mexido). O schema `empresarial` e a
+>   assinatura não mudam para ele (pacote de empresa fica na Franqueadora,
+>   onde ele tem papel direto).
+> - **Telas:** Jornada, Agenda, Atendimento, Prontuários e PPR+ saem dos
+>   padrões de fábrica dele (`TODOS_MENOS_RISLIFE` em `permissions.ts`); na
+>   produção a matriz gravada já não os dava.
+> - **AP91:** `npm run treino:equipe-de-teste` dá às contas `@example.com`
+>   ("… de Teste") ficha de Risartano com CPF de teste válido, sem repetir CPF
+>   de equipe ou cliente, código `TST-…-TREINO`; só no treino, nunca em ficha
+>   real, nada apagado. 13 fichas criadas; a Franqueadora do treino passou de 2
+>   para 9 pessoas com CPF válido. O titular TEM CPF válido nos dois bancos.
+>
+> **Conferido:** `check-migrations` OK; ensaio no treino em transação desfeita
+> **27/27** (RisLife de teste: clientes 77 → 0, agendamentos 125 → 0, planos 38
+> → 0, negociações 6 → 0, resumos 2 → 0; equipe, certificação e chat iguais;
+> Consultor, Gerente, Financeiro, Assistente, Recepção e Coordenador iguais;
+> sem login nada; segunda rodada sem erro); `migrar:teste`; régua
+> `rislife-fora-dos-pacientes.test.ts` (8) provada quebrando 3 vezes;
+> `npm run verificar`, `npm test` (3.297) e `npm run lint` OK.
+>
+> **Não visto na tela:** o RisLife de teste abrindo a ficha de um paciente pelo
+> endereço (o banco não entrega — provado no ensaio).
+>
+> **Entrega 2 (1039) ⏳:** só as empresas e os leads dele, o relatório de uso
+> com leitura própria e o contrato de adesão assinado por ele (BACKLOG, AP95).
+>
+> ⏳ **0353 não aplicada na produção.** O dono roda. Na produção ninguém tem o
+> papel hoje.
 
 > ## 💰 0.386.0 — O REPASSE SAI POR PROCEDIMENTO CONCLUÍDO (03/11/2026, migração 0352, AP61)
 >
