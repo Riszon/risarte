@@ -1,6 +1,51 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.388.1** · Última migração: **0354** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0353 só no treino) · Empresarial **0.94.1** / migração **1038** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.390.0** · Última migração: **0356** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0353 só no treino; 0356 só no treino) · Empresarial **0.95.0** / migração **1039** (1038 aplicada na produção e no treino; 1039 só no treino)_
+
+> ## 🏢 0.390.0 — O CONSULTOR RISLIFE SÓ NAS EMPRESAS DELE (03/11/2026, migrações 0356 e 1039; Empresarial 0.95.0; AP95 entrega 2)
+>
+> **O papel, definido pelo dono:** o Consultor RisLife faz o contato e a venda
+> do programa às empresas, é da Franqueadora, trabalha só no Empresarial e só
+> nas empresas e nos leads em que é o responsável. Decisões: lead sem
+> responsável fica com o gestor; titulares — cadastrar e editar, sem levar à
+> unidade; cobranças — só vê; dados da empresa — vê e edita; o relatório de
+> uso — um resumo próprio, sem dado clínico; ele assina o contrato de adesão
+> no lugar do titular, e o texto o cita (sem consultor responsável, assina e é
+> citado quem envia).
+>
+> - **1039 (Empresarial):** `is_program_manager()` = Admin ou Franqueadora/Rede;
+>   `is_my_company()` nas regras de escrita dos dados da empresa e dos
+>   titulares; `companies_insert` (a empresa nasce do lead com ele);
+>   ativar/restaurar/excluir titular da empresa dele; `complete_employee` e
+>   `link_dependent` sem mudança (levar à unidade não é dele);
+>   `consultant_usage_summary`; o modelo `adesao_empresarial` passa a pedir o
+>   Consultor RisLife.
+> - **0356 (core):** `staff_members.rg` e `nationality` (opcionais), no
+>   formulário do Risartano (lidos à parte: sem a migração, o campo não aparece).
+> - **Telas:** `canWorkOnCompanies` (gestor ou consultor; o banco limita às
+>   dele) nas ações e abas da empresa; configurações da rede e o split com o
+>   gestor; Painel do Empresarial aberto a ele; "Completar cadastro" e
+>   "Vincular cliente" só com unidade para escolher; o resumo do uso em
+>   `relatorio-beneficios` para ele; o contrato lê o representante da ficha
+>   (`representante-da-risarte.ts`) e a janela de envio oferece a mesma pessoa.
+>
+> **Conferido:** `check-migrations` OK nas duas; ensaio no treino em transação
+> desfeita **34/34**; régua `rislife-so-nas-empresas-dele.test.ts` (14) provada
+> quebrando 3 vezes; 3 testes antigos ajustados à regra nova; `npm run
+> verificar`, `npm test` (3.327) e lint OK. Visto na tela pelo servidor local
+> (treino, RisLife de teste).
+>
+> **Não visto:** o envio do contrato de adesão com o consultor assinando; o
+> formulário do Risartano com RG (no treino a ficha é só consulta — as contas
+> de teste ganharam RG e nacionalidade pelo `npm run treino:equipe-de-teste`).
+>
+> **Resíduo no treino (meu):** o RisLife de teste é o responsável pela empresa
+> e pelo lead "ZZZ Fechamento" (teste do agente).
+>
+> ⏳ **0353, 0356 e 1039 não aplicadas na produção.** Ordem: 0353 → 0356 → 1039.
+> ⚠️ **A 0354 desta sessão virou 0356** (a outra sessão publicou a sua 0354
+> antes); no treino o registro foi renomeado.
+
 
 > ## 🔒 0.388.1 — O WEBHOOK DO ASAAS FECHA SEM O SEGREDO; COMPARAÇÃO EM TEMPO CONSTANTE (03/11/2026, sem migração; Empresarial 0.94.1; AP99)
 >

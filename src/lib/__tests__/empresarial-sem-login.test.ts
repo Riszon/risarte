@@ -86,6 +86,8 @@ describe("AP50: as funções do Empresarial que gravam conferem quem chama", () 
     expect(papeisDaTela.length).toBeGreaterThan(0);
     expect(papeisDoBanco).toEqual(papeisDaTela);
     expect(banco).toContain("empresarial.is_program_manager()");
-    expect(trechoDaTela).toContain("isProgramManager(session)");
+    // 1039: na tela entra também o Consultor RisLife (`canWorkOnCompanies`);
+    // no banco ele passa pelas regras "é a empresa dele" (`is_my_company`).
+    expect(trechoDaTela).toContain("canWorkOnCompanies(session)");
   });
 });

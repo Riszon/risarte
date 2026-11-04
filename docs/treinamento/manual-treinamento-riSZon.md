@@ -689,6 +689,11 @@ caminho para criar acesso sem a ficha completa.
 > e-mail) está em `docs/treinamento/mensagem-cadastro-risartano.md`, com a
 > lista exata do que o formulário exige.
 
+> **RG e Nacionalidade** (desde a versão 0.390.0) são opcionais na ficha. Vão
+> no **contrato de adesão** do Empresarial quando é essa pessoa quem assina
+> pela Risarte (o Consultor RisLife responsável ou quem envia): sem o RG, o
+> envio do contrato para e diz o que falta.
+
 **Cadastrar alguém novo:** botão **Novo Risartano**. Ao salvar, a ficha já abre
 na aba **Acesso**, com tudo preenchido a partir do cadastro: e-mail, a unidade,
 a função escolhida e uma **senha provisória sugerida** pelo sistema (sem letras
@@ -2280,8 +2285,13 @@ de salvar.
 
 - **Objetivo:** fazer o contato e a venda do programa Empresarial (B2B) às
   empresas.
-- **Vê:** Empresarial ✅, Assinaturas (os pacotes das empresas e dos leads em
-  que é o responsável), Metas, Manual e o chat.
+- **Vê:** Empresarial ✅ — **só as empresas e os leads em que é o consultor
+  responsável** (desde a versão 0.390.0; lead sem responsável fica com o
+  gestor do programa) —, Assinaturas (os pacotes dessas empresas e leads),
+  Metas, Manual e o chat.
+- **Assina o contrato de adesão** das empresas dele pela Risarte, e o texto o
+  cita com os dados da ficha de Risartano dele (RG e nacionalidade inclusos).
+  O detalhe do que ele faz no programa está no manual do Empresarial, seção 3.
 - **Não vê paciente** (desde a versão 0.387.0): nem cadastro, agenda,
   atendimento, prontuário, plano, negociação ou resumo da apresentação — o
   banco não entrega, mesmo que alguém abra o endereço da tela. Quando titulares

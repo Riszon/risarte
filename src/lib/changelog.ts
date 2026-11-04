@@ -62,6 +62,41 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.390.0",
+    data: "2026-11-03",
+    migracao: "0356",
+    titulo: "O Consultor RisLife trabalha só nas empresas dele e assina o contrato de adesão",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O Consultor RisLife passou a ver só as empresas e os leads em que é o consultor responsável, e o Painel do Empresarial com os números só delas. Lead sem responsável fica com o gestor do programa até alguém ser escolhido.",
+        papeis: ["rislife_consultant", "franchisor_staff"],
+        manual: "4.3. Ficha de cada papel",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha da empresa, Titulares → Benefícios e economia mostra ao Consultor RisLife o uso do programa: quem já virou cliente, atendimentos, faltas e os usos do benefício, sem dado clínico.",
+        papeis: ["rislife_consultant"],
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O contrato de adesão passou a ser assinado pela Risarte pelo consultor responsável pela empresa, e o texto o cita com os dados da ficha de Risartano dele. Sem consultor responsável, assina quem envia.",
+        papeis: ["rislife_consultant", "franchisor_staff"],
+        manual: "4.3. Ficha de cada papel",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha do Risartano ganhou RG e Nacionalidade, que vão no contrato de adesão quando é essa pessoa quem assina pela Risarte.",
+        papeis: ["unit_manager", "franchisor_staff", "franchisee"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.388.1",
     data: "2026-11-03",
     migracao: null,

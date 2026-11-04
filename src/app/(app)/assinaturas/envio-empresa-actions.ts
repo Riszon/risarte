@@ -28,8 +28,15 @@ export type EmpresaDialogContext = {
     | { disponivel: false; motivo: string };
   representante: { name: string; role: string; cpf: string; email: string; phone: string };
   template: { name: string; witnessCount: number; authLevel: string };
-  risarte: { mode: string; candidates: { key: string; name: string; roleLabel: string }[] };
-  /** O representante digitado em Configurações → Contrato (o nome que o texto cita). */
+  risarte: {
+    mode: string;
+    candidates: { key: string; name: string; roleLabel: string }[];
+    /** AP95: o modelo pede o consultor responsável e a empresa não tem — assina quem envia. */
+    semConsultorResponsavel: boolean;
+    /** O modelo pede o Consultor RisLife responsável. */
+    pedeConsultor: boolean;
+  };
+  /** O representante que o texto do contrato cita (desde a 1039, o de quem assina). */
   contratadaRepName: string | null;
   /** Os PDFs da aba Documentos da empresa que podem entrar no pacote (sem o caminho no bucket). */
   arquivosGuardados: { id: string; nome: string; tipo: string }[];
@@ -70,6 +77,8 @@ export async function carregarContextoDaEmpresa(input: { origin: EmpresaOrigin }
       risarte: {
         mode: c.template.risarte_signer_mode,
         candidates: candidatosDaRisarte(c).map((p) => ({ key: p.key, name: p.name, roleLabel: p.role_label })),
+        semConsultorResponsavel: c.semConsultorResponsavel,
+        pedeConsultor: c.template.risarte_signer_mode === "role" && c.template.risarte_signer_role === "rislife_consultant",
       },
       contratadaRepName: c.contratada.repName,
       arquivosGuardados: c.arquivosGuardados.map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })),

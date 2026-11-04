@@ -8,6 +8,7 @@ import {
   alcanceDoUsuario,
   carregarClinicas,
   carregarEspecialidades,
+  documentosProntos,
   podeVerEquipe,
 } from "../dados";
 import { FormularioDoRisartano } from "../formulario";
@@ -93,6 +94,7 @@ export default async function NovoRisartanoPage(
           specialtyOptions={especialidades}
           prefill={prefill}
           vincularUsuario={vincular}
+          documentos={(await documentosProntos(supabase)) ? { rg: null, nationality: null } : null}
         />
       </section>
     </div>

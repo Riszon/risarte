@@ -6,7 +6,7 @@ import { getSessionContext, requireAdminMaster } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies, isProgramManager } from "@/lib/empresarial/access";
 import { BENEFIT_TYPES } from "@/lib/empresarial/constants";
 import { lerGenero, lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
 import { maskDocument } from "@/lib/empresarial/documents";
@@ -18,7 +18,10 @@ import {
 
 export type ActionResult = { ok: boolean; error?: string };
 
-/** Config da REDE (company_id null) = Admin/Franqueadora; da EMPRESA = gestor do programa. */
+/**
+ * Config da REDE (company_id null) = Admin/Franqueadora; da EMPRESA = o gestor
+ * ou o Consultor RisLife responsável por ela (1039: a RLS confere qual é).
+ */
 function canEditConfig(session: SessionContext, companyId: string | null): boolean {
   if (companyId === null) {
     return (
@@ -26,7 +29,7 @@ function canEditConfig(session: SessionContext, companyId: string | null): boole
       Object.values(session.rolesByClinic).flat().includes("franchisor_staff")
     );
   }
-  return isProgramManager(session);
+  return canWorkOnCompanies(session);
 }
 
 function field(formData: FormData, key: string): string | null {
@@ -119,7 +122,8 @@ export async function saveSplitRules(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!canEditConfig(session, companyId)) {
+  // A divisão da receita é do gestor, também na empresa (1039).
+  if (!canEditConfig(session, companyId) || !isProgramManager(session)) {
     return { ok: false, error: "Sem permissão." };
   }
   const fr = num(field(formData, "first_payment_risarte_pct")) ?? 0;
@@ -303,7 +307,9 @@ export async function removeOverride(
   companyId: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) {
+  // Preço de adesão da empresa: também o consultor responsável; split, só o gestor.
+  const pode = table === "split_rules" ? isProgramManager(session) : canWorkOnCompanies(session);
+  if (!pode) {
     return { ok: false, error: "Sem permissão." };
   }
   const db = await empresarialDb();

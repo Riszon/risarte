@@ -314,8 +314,11 @@ function EmployeeRow({
           )}
           {canManage && employee.status !== "DELETED" && (
             <>
+              {/* Levar à unidade: só quem tem unidade para escolher (o
+                  Consultor RisLife não tem — 0353/1039). */}
               {employee.registrationStage === "PRE_REGISTERED" &&
-                employee.status === "ACTIVE" && (
+                employee.status === "ACTIVE" &&
+                units.length > 0 && (
                   <UnitPickerDialog
                     units={units}
                     trigger={
@@ -598,7 +601,7 @@ function DependentsBlock({
                     employeeId={employee.id}
                     dependent={d}
                   />
-                  {!d.clientId && (
+                  {!d.clientId && units.length > 0 && (
                     <UnitPickerDialog
                       units={units}
                       trigger={

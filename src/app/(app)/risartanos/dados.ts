@@ -540,9 +540,22 @@ function pessoaDoCadastro(
 // A ficha de um Risartano
 // -----------------------------------------------------------------------------
 
+/**
+ * RG e nacionalidade (0356): lidos À PARTE — a coluna chega com a migração,
+ * que viaja à mão. `null` = o banco ainda não tem; a tela não mostra o campo.
+ */
+export type DocumentosDoRisartano = { rg: string | null; nationality: string | null } | null;
+
+/** O banco já tem RG e nacionalidade na ficha (0356)? */
+export async function documentosProntos(supabase: Supa): Promise<boolean> {
+  const { error } = await supabase.from("staff_members").select("rg, nationality").limit(1);
+  return !error;
+}
+
 export type FichaDeRisartano = {
   staff: StaffMember;
   row: StaffRow;
+  documentos: DocumentosDoRisartano;
   unidadeOrigem: string | null;
   acesso: StaffAccess | null;
   fotoUrl: string | null;
@@ -602,9 +615,16 @@ export async function carregarFicha(
     };
   }
 
+  const { data: docs, error: erroDocs } = await supabase
+    .from("staff_members")
+    .select("rg, nationality")
+    .eq("id", row.id)
+    .maybeSingle<{ rg: string | null; nationality: string | null }>();
+
   return {
     staff: paraStaff(row),
     row,
+    documentos: erroDocs ? null : { rg: docs?.rg ?? null, nationality: docs?.nationality ?? null },
     unidadeOrigem: row.clinics?.name ?? null,
     acesso,
     fotoUrl: (row.photo_path && fotos.get(row.photo_path)) || null,

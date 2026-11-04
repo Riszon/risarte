@@ -222,6 +222,7 @@ export default async function FichaDoRisartanoPage(
           <FormularioDoRisartano
             units={[]}
             staff={staff}
+            documentos={ficha.documentos}
             photoUrl={ficha.fotoUrl}
             specialtyOptions={especialidades}
             podeGerir={podeGerir}

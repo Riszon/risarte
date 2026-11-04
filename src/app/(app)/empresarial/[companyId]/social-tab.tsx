@@ -89,10 +89,14 @@ export function SocialTab({
   companyId,
   social,
   podeEditar,
+  podeCuidarDaEmpresa = podeEditar,
 }: {
   companyId: string;
   social: SocialView;
+  /** Gestor: liberar ficha, aprovar, recusar, vincular ao cliente. */
   podeEditar: boolean;
+  /** Também o consultor responsável (1039): metas e registrar indicação. */
+  podeCuidarDaEmpresa?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -147,7 +151,7 @@ export function SocialTab({
                     ))}
                   </ol>
                 ))}
-              {podeEditar && (
+              {podeCuidarDaEmpresa && (
                 <Button size="sm" variant="outline" onClick={() => setEditandoMetas(true)}>
                   Editar participação e metas
                 </Button>
@@ -286,6 +290,7 @@ export function SocialTab({
           indicacoes={social.indicacoes}
           fichasLivres={livres}
           podeEditar={podeEditar}
+          podeRegistrar={podeCuidarDaEmpresa}
         />
       )}
 
@@ -364,11 +369,13 @@ function Indicacoes({
   indicacoes,
   fichasLivres,
   podeEditar,
+  podeRegistrar,
 }: {
   companyId: string;
   indicacoes: IndicacaoView[];
   fichasLivres: number;
   podeEditar: boolean;
+  podeRegistrar: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -400,7 +407,7 @@ function Indicacoes({
           cliente pela recepção, do jeito de sempre, e vinculada aqui pelo CPF.
         </p>
 
-        {podeEditar &&
+        {podeRegistrar &&
           (registrando ? (
             <form
               onSubmit={(e) => {

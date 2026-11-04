@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies, isProgramManager } from "@/lib/empresarial/access";
 import type { PaymentModel } from "@/lib/empresarial/constants";
 import {
   lerMetas,
@@ -132,7 +132,8 @@ export async function salvarMetasDaEmpresa(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  // O consultor responsável cuida das metas da empresa dele (1039).
+  if (!canWorkOnCompanies(session)) return { ok: false, error: "Sem permissão." };
   const participa = formData.get("social_participates") === "on";
   const metas = participa
     ? metasDoFormulario((k) => {
@@ -182,7 +183,9 @@ export async function registrarIndicacao(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  // Registrar a indicação: também o consultor responsável. Aprovar, recusar,
+  // liberar ficha e vincular ao cliente seguem com o gestor (1039).
+  if (!canWorkOnCompanies(session)) return { ok: false, error: "Sem permissão." };
   const nome = String(formData.get("full_name") ?? "").trim();
   if (nome.length < 3) return { ok: false, error: "Informe o nome de quem foi indicado." };
   const cpfBruto = String(formData.get("cpf") ?? "").trim();

@@ -17,6 +17,8 @@ import { carregarVantagensDaProposta } from "./vantagens-servidor";
 import { lerMetas, participaDoSocial, rotuloDaMeta, textoDoPagamento } from "./riso-social";
 import { lerGenero, montarContrato, type Contratada, type ContratoMontado, type ModeloDeContrato } from "./contrato";
 import { lerContratada, lerModelosDoContrato, type ModelosDoContrato } from "./contrato-dados";
+import { comRepresentante, lerRepresentanteDaRisarte } from "./representante-da-risarte";
+import { getSessionContext } from "@/lib/auth";
 import type { AnexoDoContrato } from "./contrato-para-assinatura";
 import { empresarialDb } from "./db";
 
@@ -108,7 +110,15 @@ export type ContratoDoLeadResult =
   | { ok: false; motivo: "modelo"; erroDoModelo: boolean }
   | { ok: false; motivo: "leitura"; naoLido: string[] };
 
-export async function carregarContratoDoLead(leadId: string): Promise<ContratoDoLeadResult> {
+/**
+ * `representanteUserId`: quem assina pela Risarte (e o texto cita). Sem ele,
+ * o consultor responsável pelo lead; sem consultor, quem está vendo/enviando
+ * (decisão do dono, AP95). A janela de envio passa o mesmo que vai assinar.
+ */
+export async function carregarContratoDoLead(
+  leadId: string,
+  opcoes: { representanteUserId?: string | null } = {}
+): Promise<ContratoDoLeadResult> {
   const db = await empresarialDb();
   const { data: lead } = await db
     .from("commercial_leads")
@@ -126,7 +136,7 @@ export async function carregarContratoDoLead(leadId: string): Promise<ContratoDo
     { data: faixasRows, error: erroDasFaixas },
     { data: benRows, error: erroDosBeneficios },
     { data: parceriaRows, error: erroDaParceria },
-    { contratada, erro: erroDaContratada },
+    { contratada: contratadaDaRede, erro: erroDaContratada },
   ] = await Promise.all([
     db.from("lead_qualification").select("*").eq("lead_id", leadId).maybeSingle<QualDoContrato>(),
     db
@@ -144,6 +154,12 @@ export async function carregarContratoDoLead(leadId: string): Promise<ContratoDo
     db.from("lead_clinics").select("clinic_id").eq("lead_id", leadId).returns<{ clinic_id: string }[]>(),
     lerContratada(db),
   ]);
+  // AP95: o representante da Risarte é quem assina — da ficha do Risartano.
+  const repUserId =
+    opcoes.representanteUserId ?? lead.consultant_id ?? (await getSessionContext()).userId;
+  const repLido = await lerRepresentanteDaRisarte(repUserId);
+  const contratada = repLido.ok ? comRepresentante(contratadaDaRede, repLido.rep) : contratadaDaRede;
+  const semFichaComRg = !repLido.ok && repLido.semColuna;
   // 1033: as outras vantagens combinadas — entram no anexo (decisão do dono).
   const vantagens = await carregarVantagensDaProposta(db, leadId);
 
@@ -230,6 +246,11 @@ export async function carregarContratoDoLead(leadId: string): Promise<ContratoDo
     beneficios: beneficios.length,
     hoje: todayInBrazil(),
   });
+  if (semFichaComRg) {
+    contrato.avisos.push(
+      "O banco ainda não tem o RG e a nacionalidade na ficha do Risartano (atualização 0356): o representante da Risarte saiu de Configurações → Contrato."
+    );
+  }
 
   return {
     ok: true,

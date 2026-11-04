@@ -257,6 +257,18 @@ export default async function EmpresarialPage(props: {
               Cobranças
             </Button>
           )}
+          {canFunnel && !canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={BOTAO_NO_CABECALHO}
+              nativeButton={false}
+              render={<Link href="/empresarial/painel" />}
+            >
+              <BarChart3 className="mr-1 size-4" />
+              Painel
+            </Button>
+          )}
           {canManage && (
             <>
               <Button

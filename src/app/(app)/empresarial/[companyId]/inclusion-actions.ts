@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies } from "@/lib/empresarial/access";
 import { contaDoExcedente, contaPelaTabela } from "@/lib/empresarial/excedente";
 import { naoConseguiConferir } from "@/lib/contagem";
 import { ehValorFixo, mensalidadeDoFixo } from "@/lib/empresarial/mensalidade";
@@ -30,7 +30,7 @@ export async function criarTermoDeInclusao(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) {
+  if (!canWorkOnCompanies(session)) {
     return { ok: false, error: "Só o gestor do programa gera termo de inclusão." };
   }
 
@@ -211,7 +211,7 @@ export async function aceitarTermoDeInclusao(
   termId: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canWorkOnCompanies(session)) return { ok: false, error: "Sem permissão." };
 
   const db = await empresarialDb();
   const { data: termo } = await db
@@ -262,7 +262,7 @@ export async function cancelarTermoDeInclusao(
   termId: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canWorkOnCompanies(session)) return { ok: false, error: "Sem permissão." };
 
   const db = await empresarialDb();
   const { error } = await db

@@ -151,7 +151,8 @@ describe("a tela e o PDF leem o contrato do MESMO jeito (ZS5)", () => {
   const ler = (p: string) => readFileSync(path.join(process.cwd(), p), "utf8");
   it("a tela do contrato e o envio usam carregarContratoDoLead", () => {
     expect(ler("src/app/(app)/empresarial/funil/[leadId]/contrato/page.tsx")).toContain("carregarContratoDoLead(leadId)");
-    expect(ler("src/lib/signatures/send-empresa.ts")).toContain("carregarContratoDoLead(leadId)");
+    // O envio passa quem vai assinar pela Risarte (o texto cita a mesma pessoa, AP95).
+    expect(ler("src/lib/signatures/send-empresa.ts")).toContain("carregarContratoDoLead(leadId, { representanteUserId:");
   });
   it("a aba Envio e selos do funil tem o envio digital do contrato", () => {
     expect(ler("src/app/(app)/empresarial/funil/[leadId]/page.tsx")).toMatch(/<EnvioESelos[\s\S]{0,800}assinatura=\{\s*<AssinaturasDaEmpresa/);

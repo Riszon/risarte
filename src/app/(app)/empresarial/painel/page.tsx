@@ -6,7 +6,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies } from "@/lib/empresarial/access";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBRL } from "@/lib/pricing";
 import {
@@ -33,7 +33,9 @@ export const metadata: Metadata = { title: "Painel · Risarte Empresarial" };
 
 export default async function PainelPage() {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) redirect("/empresarial");
+  // O Consultor RisLife também abre: tudo aqui passa pela RLS, e ele só
+  // enxerga as empresas e os leads dele (1039).
+  if (!canWorkOnCompanies(session)) redirect("/empresarial");
 
   const db = await empresarialDb();
   const [

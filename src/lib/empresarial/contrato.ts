@@ -437,6 +437,12 @@ export type Contratada = {
   signingCity: string | null;
   /** 1037: Sr./Sra. — nulo até alguém escolher em Configurações → Contrato. */
   repGender?: Genero | null;
+  /**
+   * De onde vêm os dados do representante, para as mensagens do que falta.
+   * Desde a 1039 é a ficha do Risartano de quem assina (o consultor
+   * responsável); sem valor, Configurações → Contrato.
+   */
+  repOrigem?: string;
 };
 
 export type DadosDaEmpresaNoContrato = {
@@ -526,11 +532,17 @@ export function montarContrato(entrada: {
   if (!c || !c.legalName?.trim() || !c.cnpj?.trim() || !c.address?.trim()) {
     faltando.push("dados da Risarte: razão social, CNPJ e endereço (Configurações → Contrato)");
   }
-  if (!c?.repName?.trim()) faltando.push("nome do representante da Risarte (Configurações → Contrato)");
-  if (!c?.repRg?.trim()) faltando.push("RG do representante da Risarte (Configurações → Contrato)");
+  const ondeRep = c?.repOrigem ?? "Configurações → Contrato";
+  if (!c?.repName?.trim()) faltando.push(`nome do representante da Risarte (${ondeRep})`);
+  if (!c?.repRg?.trim()) faltando.push(`RG do representante da Risarte (${ondeRep})`);
   const cpfDaRisarte = (c?.repCpf ?? "").replace(/\D/g, "");
   if (cpfDaRisarte.length !== 11) {
-    faltando.push("CPF do representante da Risarte (Configurações → Contrato)");
+    faltando.push(`CPF do representante da Risarte (${ondeRep})`);
+  }
+  if (c?.repOrigem && !c.repNationality?.trim()) {
+    avisos.push(
+      `A nacionalidade do representante da Risarte não está na ${c.repOrigem}: o contrato sai com a linha em branco.`
+    );
   }
 
   // ---- os valores
@@ -576,7 +588,7 @@ export function montarContrato(entrada: {
   }
   if (c && !c.repGender) {
     avisos.push(
-      "Não foi informado se o representante da Risarte é Sr. ou Sra. (Configurações → Contrato): o contrato sai com \"seu(sua)\", \"portador(a)\"."
+      `Não foi informado se o representante da Risarte é Sr. ou Sra. (${ondeRep}): o contrato sai com "seu(sua)", "portador(a)".`
     );
   }
   const daEmpresa = concordancia(e.responsibleGender ?? null);

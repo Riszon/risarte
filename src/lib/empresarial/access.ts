@@ -6,14 +6,26 @@ function allRoles(session: SessionContext): UserRole[] {
 }
 
 /**
- * Gere o programa por inteiro (parte comercial): Admin, Franqueadora (rede) ou
- * Consultor RisLife. Espelha `empresarial.is_program_manager()` da RLS.
+ * Gere o programa por inteiro (parte comercial, toda a rede): Admin ou
+ * Franqueadora (rede). Espelha `empresarial.is_program_manager()` da RLS.
+ *
+ * ⚠️ O Consultor RisLife NÃO é gestor (AP95, decisão do dono, 03/11/2026;
+ * 1039): ele trabalha só nas empresas e nos leads em que é o responsável. Para
+ * deixar o consultor agir numa empresa ou num lead, use
+ * `canWorkOnCompanies` — o banco limita às dele.
  */
 export function isProgramManager(session: SessionContext): boolean {
   if (session.isAdminMaster) return true;
-  return allRoles(session).some(
-    (r) => r === "franchisor_staff" || r === "rislife_consultant"
-  );
+  return allRoles(session).includes("franchisor_staff");
+}
+
+/**
+ * Pode mexer nos dados de uma empresa ou de um lead: o gestor (todas) ou o
+ * Consultor RisLife (o banco só deixa as dele — `is_my_company`,
+ * `can_access_lead`). As configurações da REDE seguem com `isProgramManager`.
+ */
+export function canWorkOnCompanies(session: SessionContext): boolean {
+  return isProgramManager(session) || isRislifeConsultant(session);
 }
 
 /**

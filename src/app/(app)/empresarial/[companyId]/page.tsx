@@ -8,7 +8,13 @@ import { notFound, redirect } from "next/navigation";
 import { fullAccessClinicIds, getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { canViewEmpresarial, isProgramFinance, isProgramManager } from "@/lib/empresarial/access";
+import {
+  canViewEmpresarial,
+  canWorkOnCompanies,
+  isProgramFinance,
+  isProgramManager,
+  isRislifeConsultant,
+} from "@/lib/empresarial/access";
 import { VantagensDaEmpresa, type CompromissoView } from "./vantagens-da-empresa";
 import type { Vantagem } from "@/lib/empresarial/vantagens";
 import {
@@ -240,7 +246,10 @@ export default async function CompanyDetailPage(props: {
 }) {
   const session = await getSessionContext();
   if (!canViewEmpresarial(session)) redirect("/");
+  // Gestor (a rede toda) × quem cuida desta empresa (também o Consultor
+  // RisLife responsável — a RLS só mostra a ele as dele, 1039).
   const canManage = isProgramManager(session);
+  const canEdit = canWorkOnCompanies(session);
   // OC-00105: cobrar é do financeiro do programa (gestor OU Financeiro da
   // Franqueadora) — mais largo que gerir a empresa.
   const podeCobrar = isProgramFinance(session);
@@ -327,13 +336,15 @@ export default async function CompanyDetailPage(props: {
   // Aba Titulares: carrega titulares + dependentes + unidades do seletor.
   const allRoles = Object.values(session.rolesByClinic).flat();
   const canManageEmp =
-    isProgramManager(session) ||
+    canWorkOnCompanies(session) ||
     allRoles.some((r) =>
       ["sdr", "receptionist", "unit_manager", "franchisee"].includes(r)
     );
   // Extrato de benefícios tem dado clínico por pessoa (sessões/pilar): só gestão.
-  // O Consultor RisLife (comercial) fica de fora — mesma regra da página.
+  // O Consultor RisLife abre a MESMA rota e vê o resumo do uso, sem dado
+  // clínico (a página decide; o banco só responde para as empresas dele, 1039).
   const canViewBenefitsReport =
+    isRislifeConsultant(session) ||
     session.isAdminMaster ||
     allRoles.some((r) =>
       [
@@ -1103,7 +1114,7 @@ export default async function CompanyDetailPage(props: {
             <FileText className="mr-1 size-4" />
             Ficha em PDF
           </Button>
-          {canManage && (
+          {canEdit && (
             <CompanyFormDialog
               noCabecalho
               company={company}
@@ -1355,7 +1366,7 @@ export default async function CompanyDetailPage(props: {
             documents={docsTab.documents}
             files={docsTab.files}
             billingModel={company.billingModel}
-            canManage={canManage}
+            canManage={canEdit}
           />
         </div>
       )}
@@ -1395,7 +1406,7 @@ export default async function CompanyDetailPage(props: {
             companyId={companyId}
             compromissos={plano.compromissos}
             catalogo={plano.catalogoDeVantagens}
-            podeEditar={canManage}
+            podeEditar={canEdit}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>
@@ -1445,7 +1456,7 @@ export default async function CompanyDetailPage(props: {
             />
           </div>
 
-          {canManage && (
+          {canEdit && (
             <>
               <Card>
                 <CardHeader className="flex-row items-center justify-between">
@@ -1469,6 +1480,7 @@ export default async function CompanyDetailPage(props: {
                 </CardContent>
               </Card>
 
+              {canManage && (
               <Card>
                 <CardHeader className="flex-row items-center justify-between">
                   <CardTitle className="text-base">
@@ -1490,6 +1502,7 @@ export default async function CompanyDetailPage(props: {
                   />
                 </CardContent>
               </Card>
+              )}
 
               <BenefitsEditor
                 companyId={company.id}
@@ -1538,7 +1551,12 @@ export default async function CompanyDetailPage(props: {
       )}
 
       {aba === "social" && social && (
-        <SocialTab companyId={company.id} social={social} podeEditar={canManage} />
+        <SocialTab
+          companyId={company.id}
+          social={social}
+          podeEditar={canManage}
+          podeCuidarDaEmpresa={canEdit}
+        />
       )}
 
       {aba === "contratos" && contracts && (

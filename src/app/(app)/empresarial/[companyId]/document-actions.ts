@@ -7,7 +7,7 @@ import type { SessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatCpf } from "@/lib/masks";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies } from "@/lib/empresarial/access";
 import {
   COMPANY_DOCS_BUCKET,
   COMPANY_FILE_TYPES,
@@ -27,14 +27,14 @@ function field(formData: FormData, key: string): string | null {
   return v || null;
 }
 
-/** Documentos/arquivos da empresa: só quem gere o programa. */
+/** Documentos/arquivos da empresa: o gestor ou o consultor responsável (1039). */
 function canManageCompany(session: SessionContext): boolean {
-  return isProgramManager(session);
+  return canWorkOnCompanies(session);
 }
 
 /** Arquivos do titular: programa + equipe da unidade (quem cadastra). */
 function canManageEmployeeFiles(session: SessionContext): boolean {
-  if (isProgramManager(session)) return true;
+  if (canWorkOnCompanies(session)) return true;
   return Object.values(session.rolesByClinic)
     .flat()
     .some((r) =>

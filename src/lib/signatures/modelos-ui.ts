@@ -27,6 +27,7 @@ export function representanteLabel(mode: RisarteSignerMode, role: UserRole | nul
     case "user":
       return "pessoa fixa";
     case "role":
+      if (role === "rislife_consultant") return "Consultor RisLife responsável (sem ele, quem envia)";
       return role ? ROLE_LABELS[role] : "Titular (Admin Principal)";
   }
 }

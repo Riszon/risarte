@@ -52,7 +52,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 
 **Futuro / sem causa encontrada**
 - [ ] **AP94** — resumo da apresentação gerado pela gravação (IA): etapa própria, com plano (decisão do dono, OC-00158) — **plano em `docs/comercial/AP94-PLANO.md` (03/11/2026, v2 com o escopo ampliado pelo dono: dois momentos — avaliação clínica e apresentação comercial —, envio manual de áudio/transcrição, Google Meet + Gemini pela API, follow-up): **D1–D9 decididas em 03/11/2026** (Gemini 3.1 Pro no Vertex AI em São Paulo; conta central da Risarte organiza o Meet; apresentar dentro do Meet fica para depois). Próximo: fase IA1. **O envio pelo WhatsApp do riSZon tem passo a passo próprio: `docs/whatsapp/WHATSAPP-PASSO-A-PASSO.md` (decisões W1–W4 abertas)**
-- [ ] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)** — **medido em 03/11/2026: não acontece com quem envia; virou a redefinição do papel do Consultor RisLife. Entrega 1 (0.387.0, 0353): ele não vê paciente. Falta a entrega 2 (1039): só as empresas e os leads dele, o relatório de uso e o contrato de adesão assinado por ele**
+- [x] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)** — **medido em 03/11/2026: não acontece com quem envia; virou a redefinição do papel do Consultor RisLife. Entrega 1 (0.387.0, 0353): ele não vê paciente. Entrega 2 (0.390.0, 1039 + 0356): só as empresas e os leads dele, o resumo do uso e o contrato de adesão assinado por ele — resolvido**
 - [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
 - [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
 - [ ] **AP106** — o original de fábrica da matriz (`permissions.ts`) não tem ASB nem TSB em entrada/inventário e compras: voltar a ele as desligaria
@@ -2894,16 +2894,20 @@ quem envia).
 - **Entrega 1 (0.387.0, 0353) ✅:** fora dos pacientes; a equipe e o chat
   continuam (`user_staff_scope_clinic_ids()`); telas de paciente fora dos
   padrões dele.
-- **Entrega 2 (1039) ⏳:** `empresarial.is_program_manager()` sem o RisLife;
-  as tabelas do Empresarial que só tinham o ramo do gestor ganham o "é a
-  empresa/o lead dele" (documentos, arquivos e preços da empresa; envios,
-  unidades e conferência do lead); as 92 decisões de tela que usam
-  `isProgramManager` separadas entre gestor e consultor; relatório de uso com
-  leitura própria (sem dado clínico); o contrato de adesão assinado pelo
-  consultor responsável. **A confirmar com o dono na entrega 2:** "completar
-  cadastro" do titular (`complete_employee`, que cria o cliente na unidade) hoje
-  passa pelo ramo do gestor; sem ele, deixa de valer para o RisLife (a unidade
-  leva o titular).
+- **Entrega 2 (0.390.0 / Empresarial 0.95.0, 1039 + 0356) ✅:**
+  `empresarial.is_program_manager()` = Admin e Franqueadora/Rede;
+  `is_my_company(empresa)` nas regras dos dados da empresa (documentos,
+  arquivos, unidades, termos, vantagens, preços, benefícios, indicações) e dos
+  titulares e dependentes; a empresa nasce do lead com ele como responsável
+  (`companies_insert`); `consultant_usage_summary` (o uso, sem dado clínico);
+  o contrato de adesão assinado pelo consultor responsável (sem ele, quem
+  envia) e citado pelo texto com os dados da ficha (0356: RG e
+  nacionalidade). Decisões do dono: titulares — cadastrar e editar, sem levar
+  à unidade ("Completar cadastro" e "Vincular cliente" ficam com a unidade);
+  cobranças — só vê; dados da empresa — vê e edita; o split segue com o
+  gestor. Ensaio 34/34 em transação desfeita; visto na tela pelo servidor
+  local (RisLife de teste: 2 empresas, 4 leads, Painel e resumo do uso; menu só
+  Início, Metas, Empresarial e Assinaturas).
 
 ### AP96. A unidade não tem razão social; o contrato usa o nome (03/11/2026) — ✅ Resolvido em 0.384.0
 

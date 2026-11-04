@@ -258,6 +258,9 @@ function parseStaffForm(
       contract_type: contractType,
       role_title: roleTitle,
       notes: field(formData, "notes"),
+      // 0356: só quando o formulário mostrou os campos (o banco já os tem).
+      ...(formData.has("rg") ? { rg: field(formData, "rg") } : {}),
+      ...(formData.has("nationality") ? { nationality: field(formData, "nationality") } : {}),
     },
   };
 }

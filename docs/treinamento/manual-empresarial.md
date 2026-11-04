@@ -108,12 +108,37 @@ Cada passo tem a sua seção detalhada mais adiante.
 
 O módulo tem dois níveis de acesso, e a diferença importa.
 
-**Gestor do programa** — vê e faz tudo na parte comercial: funil, proposta,
-fechamento, configurações da rede, cobranças, termos de inclusão. São:
+**Gestor do programa** — vê e faz tudo na parte comercial, em TODAS as
+empresas: funil, proposta, fechamento, configurações da rede, cobranças,
+termos de inclusão, e é quem escolhe o consultor responsável de cada lead e
+empresa. São:
 
 - **Admin Master**
 - **Franqueadora (rede)**
-- **Consultor Comercial Empresarial (RisLife)**
+
+**Consultor Comercial Empresarial (RisLife)** — faz o contato e a venda do
+programa às empresas (desde a versão 0.390.0 / Empresarial 0.95.0, decisão do
+dono). Trabalha **só nas empresas e nos leads em que é o consultor
+responsável**:
+
+- **Vê** tudo dessas empresas e dos titulares e dependentes delas, o funil, a
+  agenda, o **Painel** (com os números só das dele) e as cobranças.
+- **Faz** o funil dos leads dele (o lead que ele cadastra já nasce com ele),
+  a proposta, o contrato e a conversão em empresa; mantém os dados da empresa
+  (documentos, arquivos, unidades atendidas, termos de inclusão, vantagens,
+  preços e benefícios negociados) e **cadastra, edita, ativa e desativa
+  titulares e dependentes**.
+- **Não faz:** levar alguém à unidade (**Completar cadastro** e **Vincular
+  cliente** ficam com a unidade e o gestor — os botões nem aparecem para ele),
+  gerar ou dar baixa em cobrança, mudar o **split**, aprovar ou recusar
+  indicação do Riso Social, nem mexer nas configurações da rede.
+- **Lead sem consultor responsável** não aparece para ele: fica com o gestor
+  até que alguém seja escolhido.
+- **Uso do programa:** em **Titulares → Benefícios e economia** ele vê um
+  resumo próprio — quem já virou cliente, atendimentos, faltas, cancelamentos,
+  último atendimento e os usos do benefício (procedimento, data, valores),
+  **sem dado clínico**. O extrato completo segue com a gestão.
+- **Assina o contrato de adesão** pela Risarte — ver a seção 6.10.
 
 **Financeiro da Franqueadora** — cuida do **financeiro do programa**, e só
 dele (desde a versão 0.80.0, relato OC-00105): na aba **Financeiro** da
@@ -142,8 +167,11 @@ propósito: gestor do programa, **SDR**, **recepção**, **gerente de unidade** 
 > Usuários (acesso)**, dê ao usuário o papel **Consultor Comercial Empresarial
 > (RisLife)** na **Franqueadora**.
 
-**O que o Consultor RisLife não faz:** ele não acessa dado clínico. O programa
-é comercial; prontuário é outro assunto, e a separação é exigência de LGPD.
+**O que o Consultor RisLife não faz:** ele não acessa dado clínico nem
+acompanha paciente nas unidades — cadastro, agenda, prontuário, planos e
+negociações dos pacientes não aparecem para ele, nem pelo endereço da tela
+(desde a versão 0.387.0). O programa é comercial; prontuário é outro assunto,
+e a separação é exigência de LGPD.
 
 ---
 
@@ -772,7 +800,8 @@ empresa para outra o sistema preenche sozinho:
 | Valores da cláusula quarta (titular, dependente, pacote familiar, dependente extra) | A proposta desta empresa, com o valor por extenso |
 | Dia de vencimento | O dia combinado; sem combinado, dia 5 |
 | Cidades de abrangência | As unidades da parceria; sem parceria definida, todas as unidades da rede |
-| A Risarte (razão social, CNPJ, endereço, quem assina e se é Sr./Sra.) | Configurações → Contrato |
+| A Risarte (razão social, CNPJ, endereço) | Configurações → Contrato |
+| Quem representa a Risarte (nome, CPF, RG, cargo, nacionalidade, Sr./Sra.) | A **ficha do Risartano** do consultor responsável pelo lead; sem consultor, de quem está vendo/enviando (desde a versão 0.390.0) |
 | Data | A de hoje |
 | **Anexo I** — procedimentos, cobertura, limite e carência | Os benefícios salvos no passo 3 da proposta |
 
@@ -856,10 +885,12 @@ A janela tem três passos:
    - Quem assina pela empresa precisa de **CPF válido** e de **celular com DDD
      ou e-mail**.
 2. **Testemunhas e quem assina pela Risarte.** As testemunhas saem da equipe
-   da Franqueadora (o modelo pede duas). Pela Risarte assina quem o modelo
-   define — hoje, o **titular**. Se o nome for diferente do representante
-   digitado em *Configurações → Contrato* (o nome que o texto do contrato
-   cita), a janela avisa antes de enviar.
+   da Franqueadora (o modelo pede duas). Pela Risarte assina o **consultor
+   RisLife responsável** pela empresa (ou pelo lead) — e é ele que o texto do
+   contrato cita, com os dados da ficha de Risartano dele (desde a versão
+   0.390.0, decisão do dono). **Sem consultor responsável, assina quem envia**
+   (a janela diz isso), e fica registrado quem enviou. Sem o RG na ficha, o
+   envio para e diz o que falta; sem a nacionalidade, só avisa.
 3. **A pré-visualização.** O PDF inteiro, com a capa, antes de sair. **Enviar
    para assinatura** manda para a ZapSign e mostra o link de cada pessoa
    (WhatsApp, copiar o link, assinar agora).

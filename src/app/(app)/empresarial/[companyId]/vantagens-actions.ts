@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies } from "@/lib/empresarial/access";
 import {
   SITUACOES_DO_COMPROMISSO,
   limparDetalhe,
@@ -26,7 +26,7 @@ export async function atualizarCompromisso(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canWorkOnCompanies(session)) return { ok: false, error: "Sem permissão." };
 
   const status = String(formData.get("status") ?? "") as SituacaoDoCompromisso;
   if (!SITUACOES_DO_COMPROMISSO.includes(status)) {
@@ -62,7 +62,7 @@ export async function incluirCompromisso(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canWorkOnCompanies(session)) return { ok: false, error: "Sem permissão." };
 
   const perkId = String(formData.get("perk_id") ?? "");
   if (!perkId) return { ok: false, error: "Escolha a vantagem." };
@@ -99,7 +99,7 @@ export async function removerCompromisso(
   compromissoId: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canWorkOnCompanies(session)) return { ok: false, error: "Sem permissão." };
   const db = await empresarialDb();
   const { error } = await db
     .from("company_perks")

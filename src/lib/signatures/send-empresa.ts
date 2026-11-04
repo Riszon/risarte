@@ -69,6 +69,13 @@ export type EmpresaSendContext = {
   sender: StaffSignerOption;
   staff: StaffSignerOption[];
   byRole: Record<string, StaffSignerOption[]>;
+  /**
+   * AP95: quem assina pela Risarte quando o modelo pede o Consultor RisLife —
+   * o responsável pela empresa/lead; sem ele, quem envia
+   * (`semConsultorResponsavel`). É a mesma pessoa que o texto do contrato cita.
+   */
+  responsavel: StaffSignerOption | null;
+  semConsultorResponsavel: boolean;
   zapsign: { configured: boolean; fake: boolean; env: "sandbox" | "production" };
 };
 
@@ -114,10 +121,12 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
   let companyId: string | null = null;
   let companyName = "";
   let representante: RepresentanteDaEmpresa = { name: null, role: null, cpf: null, email: null, phone: null };
+  // O Consultor RisLife responsável (da empresa; senão, do lead de origem).
+  let consultorId: string | null = null;
 
   if (origin.type === "commercial_lead") {
     const [{ data: lead }, { data: q }] = await Promise.all([
-      db.from("commercial_leads").select("id, company_name, company_id").eq("id", origin.id).maybeSingle<{ id: string; company_name: string; company_id: string | null }>(),
+      db.from("commercial_leads").select("id, company_name, company_id, consultant_id").eq("id", origin.id).maybeSingle<{ id: string; company_name: string; company_id: string | null; consultant_id: string | null }>(),
       db
         .from("lead_qualification")
         .select("legal_name, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone")
@@ -127,6 +136,7 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
     if (!lead) return { ok: false, error: "Lead não encontrado (ou você não tem acesso a ele)." };
     leadId = lead.id;
     companyId = lead.company_id;
+    consultorId = lead.consultant_id;
     companyName = q?.legal_name?.trim() || lead.company_name;
     representante = {
       name: q?.responsible_name ?? null,
@@ -138,10 +148,11 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
   } else {
     const { data: company } = await db
       .from("companies")
-      .select("id, legal_name, trade_name, origin_lead_id, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone")
+      .select("id, legal_name, trade_name, origin_lead_id, assigned_consultant_id, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone")
       .eq("id", origin.id)
       .maybeSingle<{
         id: string;
+        assigned_consultant_id: string | null;
         legal_name: string;
         trade_name: string | null;
         origin_lead_id: string | null;
@@ -154,6 +165,11 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
     if (!company) return { ok: false, error: "Empresa não encontrada (ou você não tem acesso a ela)." };
     companyId = company.id;
     leadId = company.origin_lead_id;
+    consultorId = company.assigned_consultant_id;
+    if (!consultorId && leadId) {
+      const { data: l } = await db.from("commercial_leads").select("consultant_id").eq("id", leadId).maybeSingle<{ consultant_id: string | null }>();
+      consultorId = l?.consultant_id ?? null;
+    }
     companyName = company.legal_name || company.trade_name || "Empresa";
     representante = {
       name: company.responsible_name,
@@ -193,7 +209,8 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
   if (!leadId) {
     contrato = { disponivel: false, motivo: "Esta empresa não veio do funil: não há proposta salva de onde montar o contrato de adesão. Envie o contrato como PDF." };
   } else {
-    const c = await carregarContratoDoLead(leadId);
+    // O texto cita quem vai assinar: o consultor responsável; sem ele, quem envia.
+    const c = await carregarContratoDoLead(leadId, { representanteUserId: consultorId ?? session.userId });
     if (c.ok) {
       const corpo = corpoDoContratoParaAssinatura({ modelo: c.dados.modelo, valores: c.dados.contrato.valores, anexo: anexoDoContrato(c.dados) });
       contrato = { disponivel: true, titulo: corpo.titulo, faltando: c.dados.contrato.faltando, avisos: c.dados.contrato.avisos, dados: c.dados };
@@ -223,6 +240,11 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
 
   const admin = createAdminClient();
   const { sender, staff, byRole } = await loadStaffOptions(admin, session, clinic.id);
+  const responsavel = consultorId
+    ? (byRole.rislife_consultant ?? []).find((o) => o.user_id === consultorId) ??
+      staff.find((o) => o.user_id === consultorId) ??
+      (sender.user_id === consultorId ? sender : null)
+    : sender;
 
   return {
     ok: true,
@@ -239,21 +261,33 @@ export async function loadEmpresaSendContext(input: { session: SessionContext; o
       contratada: {
         legalName: contratadaLida.contratada?.legalName ?? null,
         cnpj: contratadaLida.contratada?.cnpj ?? null,
-        repName: contratadaLida.contratada?.repName ?? null,
+        // O nome que o TEXTO cita (desde a 1039, o de quem assina, da ficha).
+        repName: (contrato.disponivel ? contrato.dados.contratada?.repName : null) ?? contratadaLida.contratada?.repName ?? null,
       },
       settings: { companyExpiryDays: settings.company_expiry_days, defaultMessage: settings.default_message },
       sender,
       staff,
       byRole,
+      responsavel,
+      semConsultorResponsavel: !consultorId,
       zapsign: { configured: isZapsignConfigured() || isZapsignFake(), fake: isZapsignFake(), env: zapsignEnv() },
     },
   };
 }
 
-/** Quem pode assinar pela Risarte neste modelo (papel nulo = o titular). */
-export function candidatosDaRisarte(ctx: Pick<EmpresaSendContext, "template" | "sender" | "staff" | "byRole">): StaffSignerOption[] {
+/**
+ * Quem pode assinar pela Risarte neste modelo (papel nulo = o titular). O
+ * papel Consultor RisLife = o responsável pela empresa/lead, ou quem envia
+ * quando não há (AP95) — uma pessoa só, a que o texto cita.
+ */
+export function candidatosDaRisarte(
+  ctx: Pick<EmpresaSendContext, "template" | "sender" | "staff" | "byRole"> & Partial<Pick<EmpresaSendContext, "responsavel">>
+): StaffSignerOption[] {
   const t = ctx.template;
   if (t.risarte_signer_mode === "role" && !t.risarte_signer_role) return ctx.byRole.owner ?? [];
+  if (t.risarte_signer_mode === "role" && t.risarte_signer_role === "rislife_consultant") {
+    return ctx.responsavel ? [ctx.responsavel] : [];
+  }
   return candidatosDoRepresentante({ template: t, sender: ctx.sender, staff: ctx.staff, byRole: ctx.byRole });
 }
 

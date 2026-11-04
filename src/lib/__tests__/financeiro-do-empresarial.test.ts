@@ -35,7 +35,11 @@ describe("quem cuida do financeiro do Empresarial", () => {
   it("os gestores do programa continuam cobrando", () => {
     expect(isProgramFinance(sessao(null, true))).toBe(true);
     expect(isProgramFinance(sessao("franchisor_staff"))).toBe(true);
-    expect(isProgramFinance(sessao("rislife_consultant"))).toBe(true);
+  });
+
+  it("o Consultor RisLife só VÊ as cobranças (AP95, decisão do dono, 1039)", () => {
+    expect(isProgramManager(sessao("rislife_consultant"))).toBe(false);
+    expect(isProgramFinance(sessao("rislife_consultant"))).toBe(false);
   });
 
   it("a unidade não cobra", () => {

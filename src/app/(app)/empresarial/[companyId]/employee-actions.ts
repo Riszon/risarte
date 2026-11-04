@@ -13,14 +13,19 @@ import {
   recusaDoDependente,
   vagasDisponiveis,
 } from "@/lib/empresarial/excedente";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies, isProgramManager } from "@/lib/empresarial/access";
 import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
 
 export type ActionResult = { ok: boolean; error?: string };
 
-/** Pode mexer nos titulares: gestor do programa, SDR, recepção ou gestão da unidade. */
+/**
+ * Pode mexer nos titulares: gestor do programa, Consultor RisLife (só nas
+ * empresas dele — a RLS confere, 1039), SDR, recepção ou gestão da unidade.
+ * Levar à unidade ("completar cadastro", "vincular") passa também por
+ * `canUseClinic`, que o consultor não tem.
+ */
 function canManageEmployees(session: SessionContext): boolean {
-  if (isProgramManager(session)) return true;
+  if (canWorkOnCompanies(session)) return true;
   return Object.values(session.rolesByClinic)
     .flat()
     .some((r) =>

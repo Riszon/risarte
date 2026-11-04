@@ -65,6 +65,7 @@ export function FormularioDoRisartano({
   modoTreino = false,
   prefill,
   vincularUsuario,
+  documentos = null,
 }: {
   units: { id: string; name: string; type: ClinicType }[];
   staff?: StaffMember;
@@ -83,6 +84,11 @@ export function FormularioDoRisartano({
   prefill?: { fullName?: string; email?: string };
   /** Login a vincular ao novo cadastro (Admin, vindo de "Completar cadastro"). */
   vincularUsuario?: string;
+  /**
+   * RG e nacionalidade (0356) — vão no contrato de adesão quando é esta
+   * pessoa quem assina pela Risarte. `null` = o banco ainda não tem os campos.
+   */
+  documentos?: { rg: string | null; nationality: string | null } | null;
 }) {
   const router = useRouter();
   const isEdit = Boolean(staff);
@@ -323,6 +329,21 @@ export function FormularioDoRisartano({
                   falta ou sobra de número salta aos olhos antes de salvar. */}
               <CpfComAviso inicial={staff?.cpf ?? ""} />
             </Campo>
+            {documentos && (
+              <>
+                <Campo id="rg" rotulo="RG">
+                  <Input id="rg" name="rg" defaultValue={documentos.rg ?? ""} />
+                </Campo>
+                <Campo id="nationality" rotulo="Nacionalidade">
+                  <Input
+                    id="nationality"
+                    name="nationality"
+                    placeholder="brasileira, brasileiro…"
+                    defaultValue={documentos.nationality ?? ""}
+                  />
+                </Campo>
+              </>
+            )}
             <Campo id="birth_date" rotulo="Nascimento *">
               <Input
                 id="birth_date"

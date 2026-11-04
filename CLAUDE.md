@@ -391,6 +391,23 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (AP95 entrega 2) — PC Administrador (core 0.388.1 → 0.390.0, migração 0356; Empresarial 0.94.1 → 0.95.0, migração 1039)**
+
+- **O Consultor RisLife só nas empresas e nos leads dele** (bloco 0.390.0 no
+  ESTADO; papel e decisões do dono no BACKLOG, AP95).
+- ⚠️ **`isProgramManager` NÃO inclui o RisLife** (nem `is_program_manager()`
+  no banco). Para deixar o consultor agir numa empresa/lead use
+  `canWorkOnCompanies` — o banco limita às dele (`is_my_company`,
+  `can_access_lead`). Configuração da REDE e split: `isProgramManager`.
+- ⚠️ **O contrato de adesão cita quem assina** (`representante-da-risarte.ts`:
+  ficha do Risartano do consultor responsável; sem ele, quem envia).
+  `carregarContratoDoLead(leadId, { representanteUserId })` — a janela passa
+  a mesma pessoa que `candidatosDaRisarte` oferece.
+- ⚠️ **0.389.0 é da sessão "Backlogs abertos"** (AP64, 0355, sem commit até o
+  dono rodar a 0355): este commit pulou para 0.390.0 e não leva nada dela.
+- ⏳ **0353, 0356 e 1039 não aplicadas na produção.** O dono roda, nessa ordem.
+
+
 **03/11/2026 (Rita — plano 1, item 1) — PC Administrador (core 0.388.0 → 0.388.1, sem migração; Empresarial 0.94.0 → 0.94.1)**
 
 - **Levantamento da Rita entregue e dois planos aprovados pelo dono**

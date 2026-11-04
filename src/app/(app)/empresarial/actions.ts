@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canWorkOnCompanies, isProgramManager } from "@/lib/empresarial/access";
 import {
   COMPANY_STATUSES,
   PAYMENT_MODELS,
@@ -235,7 +235,8 @@ export async function updateCompany(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) {
+  // O consultor responsável edita a empresa dele (a RLS confere qual é).
+  if (!canWorkOnCompanies(session)) {
     return { ok: false, error: "Você não tem permissão para editar empresas." };
   }
   const parsed = parseCompanyForm(formData);

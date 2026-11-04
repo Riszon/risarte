@@ -7,7 +7,9 @@
 //
 // Este script dá às contas de teste (`…@example.com`, nome "… de Teste") uma
 // ficha de Risartano com CPF de teste válido e o e-mail da própria conta
-// (domínio reservado: nada é entregue a ninguém).
+// (domínio reservado: nada é entregue a ninguém). Desde a 0356, também RG e
+// nacionalidade de teste: o contrato de adesão cita quem assina pela Risarte
+// (o consultor responsável) com eles, e no treino a ficha não se edita.
 //
 //   node scripts/treino-equipe-de-teste.mjs              → só mostra o que faria
 //   node scripts/treino-equipe-de-teste.mjs --confirmar  → grava
@@ -97,14 +99,35 @@ try {
     }
   };
 
+  // 0356: RG e nacionalidade na ficha (o contrato de adesão os cita).
+  const comDocumentos = await db.query("select rg, nationality from public.staff_members limit 1").then(
+    () => true,
+    () => false
+  );
+  const rgDeTeste = () => `TESTE-${String(Math.floor(Math.random() * 1e7)).padStart(7, "0")}`;
+
   let criar = 0;
   let corrigir = 0;
   let prontas = 0;
+  let documentos = 0;
   if (confirmar) await db.query("begin");
   for (const c of contas) {
     const ficha = (
-      await db.query(`select id, code, cpf from public.staff_members where user_id = $1 order by created_at limit 1`, [c.id])
+      await db.query(
+        `select id, code, cpf${comDocumentos ? ", rg, nationality" : ""} from public.staff_members where user_id = $1 order by created_at limit 1`,
+        [c.id]
+      )
     ).rows[0];
+    if (ficha && comDocumentos && String(ficha.code ?? "").endsWith("-TREINO") && (!ficha.rg || !ficha.nationality)) {
+      documentos++;
+      console.log(`  ~ ${c.email} — RG e nacionalidade de teste`);
+      if (confirmar) {
+        await db.query(
+          `update public.staff_members set rg = coalesce(rg, $1), nationality = coalesce(nationality, 'brasileira') where id = $2`,
+          [rgDeTeste(), ficha.id]
+        );
+      }
+    }
     if (ficha && cpfValido(ficha.cpf)) {
       prontas++;
       console.log(`  ✓ ${c.email} — já tem ficha com CPF válido (${ficha.code})`);
@@ -125,18 +148,23 @@ try {
     console.log(`  + ${c.email} — ficha nova ${codigo}`);
     if (confirmar) {
       await db.query(
-        `insert into public.staff_members (clinic_id, user_id, full_name, cpf, email, code, is_active)
-         values ($1, $2, $3, $4, $5, $6, true)`,
-        [c.clinic_id, c.id, c.full_name, novoCpf(), c.email, codigo]
+        comDocumentos
+          ? `insert into public.staff_members (clinic_id, user_id, full_name, cpf, email, code, is_active, rg, nationality)
+             values ($1, $2, $3, $4, $5, $6, true, $7, 'brasileira')`
+          : `insert into public.staff_members (clinic_id, user_id, full_name, cpf, email, code, is_active)
+             values ($1, $2, $3, $4, $5, $6, true)`,
+        comDocumentos
+          ? [c.clinic_id, c.id, c.full_name, novoCpf(), c.email, codigo, rgDeTeste()]
+          : [c.clinic_id, c.id, c.full_name, novoCpf(), c.email, codigo]
       );
     }
   }
   if (confirmar) await db.query("commit");
 
   console.log(
-    `\n${contas.length} contas de teste: ${prontas} já prontas, ${criar} fichas novas, ${corrigir} com CPF corrigido.`
+    `\n${contas.length} contas de teste: ${prontas} já prontas, ${criar} fichas novas, ${corrigir} com CPF corrigido, ${documentos} com RG e nacionalidade.`
   );
-  if (!confirmar && criar + corrigir > 0) console.log("Nada foi gravado. Para gravar: --confirmar");
+  if (!confirmar && criar + corrigir + documentos > 0) console.log("Nada foi gravado. Para gravar: --confirmar");
 } catch (e) {
   if (confirmar) await db.query("rollback").catch(() => {});
   console.error(e.message);

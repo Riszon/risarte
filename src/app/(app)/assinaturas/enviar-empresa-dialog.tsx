@@ -469,7 +469,11 @@ export function EnviarEmpresaParaAssinaturaDialog({
                 {ctx.risarte.mode === "none" ? (
                   <p className="text-xs text-muted-foreground">O modelo não leva assinatura da Risarte.</p>
                 ) : ctx.risarte.candidates.length === 0 ? (
-                  <p className="text-xs text-destructive">Ninguém com o papel definido no modelo (Assinaturas → Configurações → Modelos).</p>
+                  <p className="text-xs text-destructive">
+                    {ctx.risarte.pedeConsultor
+                      ? "O consultor responsável por esta empresa não está ativo na equipe da Franqueadora. Troque o responsável antes de enviar."
+                      : "Ninguém com o papel definido no modelo (Assinaturas → Configurações → Modelos)."}
+                  </p>
                 ) : (
                   <select className="w-full rounded-md border bg-background px-2 py-1 text-sm" value={repKey} onChange={(e) => setRepKey(e.target.value)}>
                     {ctx.risarte.candidates.map((c) => (
@@ -479,10 +483,15 @@ export function EnviarEmpresaParaAssinaturaDialog({
                     ))}
                   </select>
                 )}
+                {ctx.risarte.pedeConsultor && ctx.risarte.semConsultorResponsavel && (
+                  <p className="text-xs text-muted-foreground">
+                    Esta empresa ainda não tem consultor responsável: assina pela Risarte quem envia, e fica registrado.
+                  </p>
+                )}
                 {nomeDiferente && (
                   <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
                     O texto do contrato diz que a Risarte é representada por <strong>{ctx.contratadaRepName}</strong>, mas quem vai assinar é{" "}
-                    <strong>{escolhidoRisarte?.name}</strong>. Confira em Risarte Empresarial → Configurações → Contrato antes de enviar.
+                    <strong>{escolhidoRisarte?.name}</strong>. Confira a ficha do Risartano de quem assina antes de enviar.
                   </p>
                 )}
               </div>
