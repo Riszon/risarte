@@ -398,8 +398,8 @@ Syncthing se comportarem de forma estranha.**
   ⚠️ `pacoteAbertoComOsMesmos` agora pede o `userId` de quem envia (para o
   "Assinar agora"); recusa do banco → `pacoteAbertoPeloNumero`, nunca só o
   número. Cancelar com o cliente já assinado exige a 2ª confirmação (régua).
-- Visto na tela no treino (ASS-000062). Sem migração; sai no mesmo push da
-  0.397.0 (que espera a 0365 na produção).
+- Visto na tela no treino (ASS-000062). Sem migração; publicado (push
+  2c2d475d).
 
 **04/11/2026 (Rita — Fase 0A.1) — PC Administrador (core 0.396.0 → 0.397.0, migração 0365; Rita 0.1.0, migração 3000)**
 
