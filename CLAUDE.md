@@ -391,6 +391,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**03/11/2026 (AP64, passo 3) — PC Administrador (core 0.391.0 → 0.392.0, migração 0358)**
+
+- **AP64 completa: sessões do complemento vendido** (bloco 0.392.0 no ESTADO).
+  ⚠️ Ao recriar `topup_treatment_sessions` ou `ensure_treatment_sessions`,
+  manter o filtro `complement_of_plan_id is null` e a chamada a
+  `_generate_complement_sessions` (régua `plano-complementar-sessoes.test.ts`).
+- ⚠️ **"Vendido" é negociação aceita, não `lifecycle`** (marcado à mão).
+- ✅ 0358 aplicada na produção (o dono informou em 04/11/2026).
+- Achado AP107 (cancelamento com complemento vendido).
+
 **03/11/2026 (AP64, passo 2) — PC Administrador (core 0.390.0 → 0.391.0, migração 0357)**
 
 - **Plano complementar: apresentar, negociar e fechar** (bloco 0.391.0 no

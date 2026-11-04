@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.392.0",
+    data: "2026-11-03",
+    migracao: "0358",
+    titulo: "A venda do plano complementar gera as sessões dele",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Fechada a venda do plano complementar, as sessões dele nascem na hora, só dos itens comprados, e aparecem na ficha como Complemento 1 (2, 3…), ao lado das sessões do plano original.",
+        papeis: ["receptionist", "clinical_coordinator", "dentist", "commercial_consultant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O botão Abrir plano complementar passou a reconhecer o plano vendido pela negociação aceita: antes, plano vendido sem a situação marcada à mão aparecia como \"sem plano vendido\".",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.391.0",
     data: "2026-11-03",
     migracao: "0357",

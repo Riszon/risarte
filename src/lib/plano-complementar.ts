@@ -26,14 +26,27 @@ export function ehComplemento(p: Pick<PlanoResumo, "complementOfPlanId">): boole
   return Boolean(p.complementOfPlanId);
 }
 
-/** O plano vendido que recebe o complemento: o mais novo que foi vendido e não é complemento. */
-export function planoVendidoDeBase<T extends PlanoResumo>(planos: T[]): T | null {
+/**
+ * O plano vendido que recebe o complemento: o mais novo que foi vendido e não é
+ * complemento. ⚠️ "Vendido" = tem negociação ACEITA (`vendidos`, os ids). A
+ * situação do plano (aceito, em tratamento) é marcada à mão e no treino 3 de 4
+ * planos vendidos seguiam "aguardando apresentação" — ela só vale como reforço.
+ */
+export function planoVendidoDeBase<T extends PlanoResumo>(
+  planos: T[],
+  vendidos: ReadonlySet<string> = new Set()
+): T | null {
   return (
     [...planos]
       .filter((p) => !ehComplemento(p) && p.status === "approved" && !p.supersededAt)
-      .filter((p) => p.lifecycle && VENDIDO.includes(p.lifecycle))
+      .filter((p) => vendidos.has(p.id) || (p.lifecycle && VENDIDO.includes(p.lifecycle)))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0] ?? null
   );
+}
+
+/** Os planos com negociação aceita, a partir do mapa comercial do prontuário. */
+export function planosVendidos(commercialByPlan: Record<string, { status: string }>): Set<string> {
+  return new Set(Object.entries(commercialByPlan).filter(([, v]) => v.status === "aceita").map(([id]) => id));
 }
 
 /** Os complementos do cliente, do primeiro ao último. */
@@ -57,10 +70,12 @@ export function podeAbrirComplemento(args: {
   fase: JourneyPhase;
   ehCoordenadorOuAdmin: boolean;
   planos: PlanoResumo[];
+  /** Os ids dos planos com negociação aceita (`planosVendidos`). */
+  vendidos?: ReadonlySet<string>;
 }): { pode: true; baseId: string } | { pode: false; motivo: string | null } {
   if (!args.ehCoordenadorOuAdmin) return { pode: false, motivo: null };
   if (args.fase !== "treatment_start") return { pode: false, motivo: null };
-  const base = planoVendidoDeBase(args.planos);
+  const base = planoVendidoDeBase(args.planos, args.vendidos);
   if (!base) return { pode: false, motivo: "O complemento parte de um plano vendido, e este cliente ainda não tem." };
   const andamento = complementoEmAndamento(args.planos);
   if (andamento) {

@@ -75,7 +75,10 @@ describe("AP64 — o complemento não toma o lugar do plano vendido", () => {
     expect(ler("src/app/(app)/apresentacao/[clientId]/presentation-data.ts")).toContain('.not("complement_of_plan_id", "is", null)');
     expect(ler("src/app/(app)/apresentacao/[clientId]/negotiation-loader.ts")).toContain('.is("complement_of_plan_id", null)');
     const pagina = ler("src/app/(app)/prontuarios/[id]/page.tsx");
-    expect(pagina.match(/\.is\("complement_of_plan_id", null\)/g)?.length).toBe(2);
+    // o resumo do dentista pula o complemento; a lista de procedimentos o
+    // inclui só depois de vendido (passo 3, 0358)
+    expect(pagina.match(/\.is\("complement_of_plan_id", null\)/g)?.length).toBe(1);
+    expect(pagina).toContain('(pl) => !pl.complement_of_plan_id || commercialByPlan[pl.id]?.status === "aceita"');
     expect(pagina).toContain('p.status === "approved" && !p.complementOfPlanId');
     expect(ler("src/app/(app)/jornada/actions.ts")).toContain('.is("complement_of_plan_id", null)');
   });

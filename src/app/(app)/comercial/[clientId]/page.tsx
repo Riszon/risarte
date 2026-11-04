@@ -687,7 +687,10 @@ export default async function CommercialCockpitPage(
                         >
                           <span className="min-w-0">
                             <span className="font-medium">
-                              Plano {plans.length - i}
+                              {/* AP64: o complemento com o nome dele. */}
+                              {p.complementOfPlanId
+                                ? `Complemento ${p.complementNo ?? ""}`
+                                : `Plano ${plans.length - i}`}
                             </span>{" "}
                             <span className="text-xs text-muted-foreground">
                               · {new Date(p.createdAt).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })} ·{" "}

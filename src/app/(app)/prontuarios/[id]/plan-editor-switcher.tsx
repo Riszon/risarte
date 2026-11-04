@@ -7,7 +7,7 @@ import { CornerUpLeft } from "lucide-react";
 import { PlanHistoryDialog } from "@/components/plan-history-dialog";
 import { AvisoVendaCancelada } from "@/components/aviso-venda-cancelada";
 import { AbrirComplemento } from "./abrir-complemento";
-import { complementosDoCliente, planoVendidoDeBase, rotuloDoComplemento } from "@/lib/plano-complementar";
+import { complementosDoCliente, planoVendidoDeBase, planosVendidos, rotuloDoComplemento } from "@/lib/plano-complementar";
 import { cn } from "@/lib/utils";
 import {
   PLAN_STAGE_LABELS,
@@ -130,7 +130,7 @@ export function PlanEditorSwitcher({
   // AP64: o sinal do complemento — o plano vendido e os complementos, cada um
   // com a situação. Some quando não há complemento.
   const complementos = complementosDoCliente(plans);
-  const vendido = planoVendidoDeBase(plans);
+  const vendido = planoVendidoDeBase(plans, planosVendidos(commercialByPlan));
 
   return (
     <div className="space-y-3">

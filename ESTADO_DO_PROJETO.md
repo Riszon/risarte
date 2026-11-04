@@ -1,6 +1,23 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 03/11/2026 · Versão do sistema: **0.391.0** · Última migração: **0357** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 03/11/2026 · Versão do sistema: **0.392.0** · Última migração: **0358** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.95.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🗓️ 0.392.0 — PLANO COMPLEMENTAR, PASSO 3: AS SESSÕES DO COMPLEMENTO (03/11/2026, migração 0358, AP64 COMPLETA)
+>
+> - **0358:** `_generate_complement_sessions` (sessões de cada complemento
+>   vendido, só dos itens comprados, sem duplicar); gatilho no fechamento da
+>   venda (gera na hora, complemento "aceito", nunca derruba o fechamento);
+>   `topup_treatment_sessions` e `ensure_treatment_sessions` nunca escolhem o
+>   complemento.
+> - ⚠️ **Era defeito real, provado no treino:** sem a 0358, um item novo do
+>   plano ORIGINAL ficava sem sessão (a geração escolhia o complemento).
+> - ⚠️ **"Plano vendido" = negociação aceita** (`planosVendidos`), não a
+>   situação do plano, que é marcada à mão (3 de 4 vendidos no treino estavam
+>   "aguardando apresentação" — o botão do passo 1 falhava nesses).
+> - Ensaio 14/14 (sem a 0358, 3 reprovam). **Não visto na tela.**
+> - ✅ **0358 aplicada na produção** (o dono informou em 04/11/2026; não
+>   conferido de fora).
+> - Achado: AP107 (cancelar o tratamento depois de vender um complemento).
 
 > ## 🤝 0.391.0 — PLANO COMPLEMENTAR, PASSO 2: APRESENTAR, NEGOCIAR E FECHAR (03/11/2026, migração 0357, AP64)
 >

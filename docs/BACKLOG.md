@@ -17,7 +17,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 **Decididos pelo dono em 03/11/2026, a implementar**
 - [x] **AP61** — repasse por PROCEDIMENTO CONCLUÍDO: entra uma vez, quando a última sessão do procedimento termina — **0.386.0 (0352); falta o dono confirmar: o repasse vai para quem concluiu a ÚLTIMA sessão**
 - [x] **AP63** — cancelada: compra de novo por nova versão + negociação nova, com a venda cancelada no histórico — **0.388.0 (0354)**
-- [ ] **AP64** — plano COMPLEMENTAR do plano vendido, na Fase 5 (Coordenador abre, Planner monta, Coordenador aprova, Consultor apresenta); sinal na Jornada e no prontuário — **passo 1 feito na 0.389.0 (0355) e passo 2 na 0.391.0 (0357); falta o passo 3 (sessões do complemento e o painel das duas vendas)**
+- [x] **AP64** — plano COMPLEMENTAR do plano vendido, na Fase 5 (Coordenador abre, Planner monta, Coordenador aprova, Consultor apresenta); sinal na Jornada e no prontuário — **✅ os três passos feitos: 0.389.0 (0355), 0.391.0 (0357) e 0.392.0 (0358)**
 - [x] **AP55** — TSB com a mesma lista da ASB; Recepção sem anamnese e sem chamar paciente — **0.385.0 (0351): a TSB ganhou no banco as réguas da ASB; "Fichas de anamnese" saiu do catálogo (fica "Anamneses clínicas", do Coordenador)**
 - [ ] **AP24** — Indica +Risos: implementar os 3 parâmetros (presente de boas-vindas, validade, divisão do prêmio)
 
@@ -55,6 +55,7 @@ seção dele, mais abaixo. Ao fechar um item: marcar aqui E no título da seçã
 - [x] **AP95** — quem envia contrato sem enxergar a apresentação comercial seria barrado por "resumo não escrito" (suspeita, não medida) — **0.383.0: a recusa saiu; agora o contrato sairia dizendo "não registrado" mesmo com resumo escrito (ainda suspeita)** — **medido em 03/11/2026: não acontece com quem envia; virou a redefinição do papel do Consultor RisLife. Entrega 1 (0.387.0, 0353): ele não vê paciente. Entrega 2 (0.390.0, 1039 + 0356): só as empresas e os leads dele, o resumo do uso e o contrato de adesão assinado por ele — resolvido**
 - [x] **AP96** — a unidade não tem campo de RAZÃO SOCIAL: o contrato de prestação imprime o NOME da unidade como razão social da CONTRATADA — **0.384.0 (0350): campo na unidade; sem ele o envio é recusado**
 - [ ] **AP104** — SUSPEITA: `getNextAvailableSlots` monta a janela e o dia da semana pelo relógio da MÁQUINA (`new Date(ano, mês, dia)`, `day.getDay()`); na Vercel (UTC) o dia conferido pode ser o seguinte — mesma raiz do defeito de 05/09/2026; não provado em execução
+- [ ] **AP107** — o cartão de cancelar o tratamento no prontuário pega a negociação aceita MAIS RECENTE: depois de vender um complemento, o cancelamento mira o complemento e o plano original fica fora de alcance
 - [ ] **AP106** — o original de fábrica da matriz (`permissions.ts`) não tem ASB nem TSB em entrada/inventário e compras: voltar a ele as desligaria
 - [x] **AP105** — `docs/PRODUCAO-ONLINE.md` não lista 5 variáveis que o código lê: `TREINO_SUPABASE_URL`, `TREINO_SERVICE_ROLE_KEY`, `GAMMA_API_KEY`, `ASAAS_API_KEY`, `ASAAS_BASE_URL` — **0.388.1: as cinco entraram na tabela, mais `ASAAS_WEBHOOK_TOKEN` (segredo da Edge Function, no painel do Supabase) e a seção da Edge Function**
 - [ ] **AP27** — ASAAS: boleto num passo próprio ("Emitir boleto") — exigência para a integração
@@ -953,6 +954,10 @@ existe quando o que importa é se ela existe **naquele papel**.
 ---
 
 ## ACHADOS DE PASSAGEM — encontrados fazendo outra coisa (fila viva)
+
+### AP107. Cancelar o tratamento depois de vender um complemento (03/11/2026)
+
+**Confirmado lendo o código; não executado.** O prontuário escolhe a negociação do cartão de cancelamento por `plan_negotiations` do cliente com situação `aceita`/`cancelada`, a mais recente (`cancellableNeg`, `prontuarios/[id]/page.tsx`). Com um plano complementar vendido (AP64), a mais recente é a do complemento: o cartão cancela o complemento e não há como cancelar o plano original pela tela. **Decidir com o dono:** um cartão por venda (original e cada complemento) ou cancelar o conjunto. Achado fazendo o passo 3 da AP64.
 
 ### AP106. O original de fábrica da matriz não tem a ASB nem a TSB no estoque e nas compras (03/11/2026)
 
@@ -3233,6 +3238,8 @@ Produção: 0 atendimentos com sessão concluídos.
 **✅ Passo 1 feito (0.389.0, 0355):** colunas `complement_*` em `treatment_plans` (só pela função, gatilho `treatment_plan_complement_guard`); `open_plan_complement` (Coordenador, Fase 5, plano vendido, um por vez, informações clínicas obrigatórias); `submit_treatment_plan`, `review_treatment_plan` e `review_plan_option` aceitam o complemento na Fase 5 sem mexer no sub-status. Telas: botão do Coordenador, faixa violeta no prontuário, etiqueta no cartão da Jornada; os leitores do "plano aprovado" (abrir a tela, odontograma, apresentação, negociação, resumo do dentista, assinatura, lista de procedimentos, envio 3→4, lista de Planos) pulam o complemento. Ensaio no treino 21/21; régua `plano-complementar.test.ts`. **Para o passo 3:** `topup_treatment_sessions` escolhe UM plano (hoje cai no vendido porque o complemento não tem sessão); a lista de procedimentos do prontuário exclui o complemento até ele ser vendido.
 
 **✅ Passo 2 feito (0.391.0, 0357; C1–C4 em `docs/comercial/AP63-AP64-PLANO.md` §6):** `plan_complement_presentations` (apresentação própria, só de plano complementar); gatilho `treatment_plan_complement_approved` (aprovado → `aguardando_apresentacao` + aviso aos Consultores); `accept_negotiation` aceita o complemento na Fase 5 com o resumo dele; `_commercial_close_step_raw` fecha a venda do complemento sem mexer na fase. Telas: modo complemento no cockpit (`?complemento=`), apresentação salva na tabela dele, negociação na Fase 5, contrato com o resumo do complemento (`lerApresentacao`), sem "Devolver ao planejamento", coluna Complementos no quadro. Ensaio no treino 13/13 (sem a 0357, 8 reprovam). **Para o passo 3:** a venda fechada do complemento ainda não gera sessões (`topup_treatment_sessions` escolhe um plano só) e a lista de procedimentos do prontuário exclui o complemento.
+
+**✅ Passo 3 feito (0.392.0, 0358):** `_generate_complement_sessions` gera as sessões de cada complemento VENDIDO (venda fechada, não cancelada), só dos itens comprados e sem duplicar; gatilho no fechamento da venda (`commercial_sale_complement_sessions`, nunca derruba o fechamento) gera na hora e marca o complemento "aceito"; `topup_treatment_sessions` chama a geração e, no resto, nunca escolhe o complemento (provado no treino: sem a 0358 um item novo do plano ORIGINAL ficava sem sessão); `ensure_treatment_sessions` idem. Prontuário: lista de procedimentos com o complemento vendido ("Complemento N"); o plano vendido passa a ser reconhecido pela negociação aceita (`planosVendidos`) — no treino 3 de 4 planos vendidos seguiam "aguardando apresentação" e o botão do passo 1 dizia que não havia plano vendido. Ensaio 14/14; régua `plano-complementar-sessoes.test.ts`.
 
 **Desenho revisto com o dono (03/11/2026):** não é versão nova, é **plano complementar** separado, ligado ao vendido, com o cliente na Fase 5. Plano e decisões V1–V7 em `docs/comercial/AP63-AP64-PLANO.md` §3–§5.
 

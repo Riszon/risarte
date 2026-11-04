@@ -1,5 +1,5 @@
 import type { AlertaDaAnamnese } from "@/lib/anamnesis";
-import { podeAbrirComplemento } from "@/lib/plano-complementar";
+import { planosVendidos, podeAbrirComplemento } from "@/lib/plano-complementar";
 import type { Metadata } from "next";
 import { idadeCurta, idadeDetalhada } from "@/lib/idade";
 import Link from "next/link";
@@ -1932,18 +1932,17 @@ export default async function ClientDetailPage(
     const { data: planOptRows } = await supabase
       .from("treatment_plans")
       .select(
-        "id, created_at, quality_locked, quality_locked_at, treatment_plan_options ( id, is_primary, sort_order, title, treatment_plan_option_items ( id, description, sort_order ) )"
+        "id, created_at, quality_locked, quality_locked_at, complement_of_plan_id, complement_no, treatment_plan_options ( id, is_primary, sort_order, title, treatment_plan_option_items ( id, description, sort_order ) )"
       )
       .eq("client_id", id)
       .eq("status", "approved")
-      // AP64 (0355): procedimento de complemento só conta depois de vendido
-      // (passo 3 da AP64); até lá ele aparece só no próprio plano.
-      .is("complement_of_plan_id", null)
       .order("created_at", { ascending: true })
       .returns<
         {
           id: string;
           created_at: string;
+          complement_of_plan_id: string | null;
+          complement_no: number | null;
           quality_locked: boolean;
           quality_locked_at: string | null;
           treatment_plan_options: {
@@ -1960,8 +1959,14 @@ export default async function ClientDetailPage(
         }[]
       >();
 
-    (planOptRows ?? []).forEach((pl, idx) => {
-      const planNo = idx + 1;
+    // AP64 (0358): o complemento entra depois de VENDIDO (negociação aceita),
+    // com o nome dele; antes disso ele aparece só no próprio plano.
+    const planosDosProcedimentos = (planOptRows ?? []).filter(
+      (pl) => !pl.complement_of_plan_id || commercialByPlan[pl.id]?.status === "aceita"
+    );
+    let numeroDoPlano = 0;
+    planosDosProcedimentos.forEach((pl) => {
+      const planNo = pl.complement_of_plan_id ? 0 : ++numeroDoPlano;
       const opts = pl.treatment_plan_options ?? [];
       // Opção executada: a que tem sessões; senão a principal; senão a primeira.
       const chosen =
@@ -1973,7 +1978,7 @@ export default async function ClientDetailPage(
         opts.find((o) => o.is_primary) ??
         [...opts].sort((a, b) => a.sort_order - b.sort_order)[0];
       if (!chosen) return;
-      const planLabel = `Plano ${planNo}${chosen.title ? ` · ${chosen.title}` : ""}`;
+      const planLabel = `${pl.complement_of_plan_id ? `Complemento ${pl.complement_no ?? ""}` : `Plano ${planNo}`}${chosen.title ? ` · ${chosen.title}` : ""}`;
       const items = [...(chosen.treatment_plan_option_items ?? [])].sort(
         (a, b) => a.sort_order - b.sort_order
       );
@@ -3523,6 +3528,7 @@ export default async function ClientDetailPage(
                     fase: client.journey_phase as JourneyPhase,
                     ehCoordenadorOuAdmin: canReviewPlan,
                     planos: plans,
+                    vendidos: planosVendidos(commercialByPlan),
                   });
                   return r.pode || r.motivo ? r : null;
                 })()}

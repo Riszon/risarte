@@ -2669,7 +2669,9 @@ etapa —, abra a ficha → aba **Plano** → **Abrir plano complementar**. Escr
 as **informações clínicas** (o que viu, o que indica e por quê) e confirme. O
 cliente **não muda de fase**, e o plano vendido **continua valendo**.
 
-1. Os Planners recebem o aviso **"Plano COMPLEMENTAR para montar"**.
+1. Os Planners recebem o aviso **"Plano COMPLEMENTAR para montar"**. O botão
+   aparece quando o cliente tem um plano **vendido** (negociação aceita), mesmo
+   que a situação do plano não tenha sido marcada à mão (desde a versão 0.392.0).
 2. O Planner monta e envia: você recebe **"Plano COMPLEMENTAR aguardando
    aprovação"** e aprova como qualquer plano (opção por opção).
 3. Aprovado, o Consultor Comercial apresenta o complemento ao cliente, negocia
@@ -3339,6 +3341,11 @@ complemento** (a faixa violeta no alto diz isso):
   como qualquer venda. O contrato leva os itens e o resumo do complemento.
 - O cliente **não muda de fase**: ao fechar, a Recepção recebe **"Complemento
   fechado — agendar"**. O cartão sai da coluna Complementos.
+- **As sessões do complemento nascem no fechamento** (desde a versão 0.392.0),
+  só dos itens comprados, com a sequência que o Planner montou. Elas aparecem
+  na ficha do cliente → **Sessões & Procedimentos**, com o nome **Complemento
+  1** (2, 3…), ao lado das do plano original — que continuam iguais. A
+  Recepção agenda as duas juntas.
 - No modo complemento não há **Devolver ao planejamento** — o cliente está em
   tratamento. Para **sair do modo complemento**, use o link na faixa violeta.
 
