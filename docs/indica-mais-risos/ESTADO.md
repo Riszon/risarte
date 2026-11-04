@@ -620,6 +620,108 @@ corrigida e salva de novo → 3 indicações e o pedido continuou 1; selo de
 Embaixador na ficha; 0 erro no console. Ficou no treino "Cliente Lote (teste —
 pode ignorar)" com as indicações "Lote … (pode ignorar)".
 
+## Autorização para avisar quem indicou; fila anonimizada; token fora da fila (04/11/2026, Indica 0.7.0 → 0.8.0, migrações 2009 e 2010)
+
+Itens 2 e 3 do plano aprovado pelo dono em 03/11/2026
+(`docs/sdr/PLANO-CORRECOES-SECAO-2.md`; achados E4/E10/E13 do levantamento da
+Rita, AP100 e AP101 do BACKLOG). Decisões do dono: **sem autorização a
+mensagem sai SEM o nome** (não deixa de sair); token do convite na **opção A**
+(tabela só da chave de serviço).
+
+**Migração 2009 — "podemos avisar quem te indicou?"**
+
+- É OUTRA pergunta, separada do aceite LGPD ("a Risarte pode te contatar?"),
+  e fica na indicação: `indicacoes.autoriza_avisar_indicador_em`, `_canal`
+  (mesmos canais de `consentimentos`), `_por` e `_revogado_em`.
+- `registrar_autorizacao_aviso(p_indicacao_id, p_canal)` e
+  `revogar_autorizacao_aviso(p_indicacao_id, p_motivo, p_desvincular
+  default false)` — guarda `eh_risartano` com usuário, idempotentes, gravam
+  **evento na linha do tempo** (`status_para = 'autorizou_aviso' /
+  'revogou_aviso'`, `status_de` = etapa atual; rótulos em
+  `EVENTO_SEM_ETAPA_LABEL`, `status.ts`) e `audit_logs` (só ids). ⚠️ Gatilho
+  ou leitura que conte `indicacao_eventos` por `status_para` precisa ignorar
+  esses dois valores (não são etapa). `p_desvincular = true` grava
+  `desvinculada_em` — a coluna morta da 2000 passou a ter quem a preencha; o
+  portal e o "Indicado por" já a liam. Autorizar de novo limpa
+  `desvinculada_em`.
+- `registrar_indicacao` ganhou a chave `autoriza_avisar` no `p_dados`: só
+  vale **com** `consentimento` presencial/telefone na hora (sem aceite, o
+  indicado não está ali para responder; é ignorada).
+- `aceitar_convite(p_token, p_ip, p_avisar_indicador default false)` — a
+  assinatura mudou (drop + create). `/c/[token]` pergunta as duas coisas.
+- `mensagens_dos_eventos`: entra o evento **`agendada`** (modelo
+  `msg_agendou_embaixador`, rede, `travado=false`, **sem data nem horário**); o
+  `{indicado}` de `agendada/compareceu/fechou/convertida` é o primeiro nome
+  **só com autorização vigente** (dada e não revogada, e sem
+  `desvinculada_em`); senão "a pessoa que você indicou". O "obrigado"
+  (`registrada`) continua igual — o nome ali é o que o próprio Embaixador
+  acabou de informar (o plano diz que ele "não cita o indicado"; o modelo
+  cita, e ficou como estava, por decisão do plano). O índice único
+  `(indicacao_id, evento)` faz "trocar a avaliação" não repetir a mensagem.
+- Dados existentes: nenhuma indicação tem autorização → as mensagens futuras
+  saem sem nome até alguém registrar. Nada retroativo.
+
+**Migração 2010 — a fila acompanha a anonimização; o token sai da fila**
+
+- `indica.convites_tokens (indicacao_id pk → indicacoes cascade, token,
+  criado_em)`: RLS ligada **sem política**, `revoke all … from public, anon,
+  authenticated`, `grant all … to service_role`; fora da auditoria
+  (`audit_excluded_tables`, "registro técnico": auditar gravaria o token na
+  trilha). Declarada em `scripts/reset-test.mjs` (`PERMITIDAS_FORA_DA_LISTA`:
+  o cascade da limpeza a alcança).
+- `_gerar_convite` grava o token no cofre e deixa `mensagens.link_caminho =
+  '/c/'`. `_gravar_consentimento` apaga o token ao aceitar. `portal_indicar`
+  lê o link do cofre (o portal continua devolvendo o convite completo).
+- `link_do_convite(p_mensagem_id, p_usuario default null)` — **só
+  `service_role`**, recusa com `auth.uid()`; devolve `'/c/'||token` só se o
+  hash bate, não venceu, sem aceite e indicação aberta; registra quem pediu
+  em `audit_logs` (`indica_convite_link`, só ids). A tela de Mensagens chama
+  a server action `abrirConvite` (`mensagens/actions.ts`): o logado prova
+  pela RLS que vê a mensagem, a chave de serviço pede o link; o texto na tela
+  mostra "[link do convite — vai junto ao abrir o WhatsApp]".
+- `rotina_diaria`: nos passos (0) e (5), `_anonimizar_fila(id)` deixa as
+  mensagens da indicação com `nome='Anonimizado'`, `telefone=''`, `texto=''`,
+  `link_caminho=null`, `a_enviar → descartada`, e apaga o token. O passo (5)
+  virou laço por indicação (cada uma protegida com `exception`).
+- A migração **move** os tokens já gravados (`insert … select substr(…)` +
+  `update … set link_caminho = '/c/'`; nada se apaga) e anonimiza a fila de
+  indicações já anonimizadas. `check:destrutivo` não acusa.
+
+**Telas:** detalhe da indicação (`indicacoes/[id]`) mostra a situação da
+autorização e os botões **"Autorizou avisar quem indicou · por telefone /
+pessoalmente"** e **"Pediu para não avisar mais"** (motivo + "não quer ser
+ligado a quem o indicou"); a linha do tempo traduz os eventos novos. Janela
+**Nova indicação**: bloco "Podemos avisar quem indicou?" (habilita com o
+aceite presencial/telefone). Convite público `/c/[token]`: segunda caixa
+"Podemos avisar {indicador} … quando você vier?" (opcional). Mensagens: rótulo
+"Indicado agendou a avaliação"; "Abrir WhatsApp" do convite pelo servidor.
+⚠️ A janela "Pedir indicação" da ficha (lote) **não** ganhou a pergunta
+(fora do item 2 do plano) — registrar depois pelo detalhe.
+
+**Provas:** `npm run test:indica` **246/246** (seção 18, 34 conferências
+novas + 2 ajustadas na 15): sem autorização → `agendada` sem nome e sem
+data/horário; agendada→agendada uma mensagem só; autorização pela recepção
+(canal, quem, evento, idempotente; recusa 'link' da equipe e outra unidade);
+check-in → `compareceu` COM o primeiro nome; revogar (motivo obrigatório,
+`desvinculada_em`) → `fechou` sem nome; `autoriza_avisar` junto do aceite /
+ignorada sem aceite; fila com `/c/` e nenhum token de 64 hex; logado não lê
+o cofre nem chama `link_do_convite`; o servidor obtém o link, hash confere,
+`audit_logs`; `/c/` grava as duas respostas; token sai do cofre ao aceitar;
+portal continua; rotina anonimiza a fila nos dois passos, 0 falhas.
+**Provado quebrando** (`INDICA_REAPLICAR=2009,2010 npm run test:indica`,
+modo novo do script para reaplicar migração já gravada na transação): tirar
+`v_autorizado` da condição do nome e devolver `'/c/' || v_token` à fila
+derrubaram **4** conferências; a régua unitária
+`indica-aviso-ao-indicador.test.ts` (10) caiu em 2 pelas mesmas quebras.
+Migrações aplicadas no treino. **Não visto na tela:** nenhuma das telas foi
+aberta no navegador nesta sessão (detalhe, Nova indicação, /c/, Mensagens).
+
+**Manual/novidades:** o módulo segue escondido da equipe → a seção foi
+escrita em `MANUAL-rascunho.md` (com o texto da novidade para o
+`changelog.ts`), a colar quando o dono ligar as permissões (regra desta
+pasta). `changelog.ts` não foi tocado: a entrada do topo tem de casar com
+`APP_VERSION` (core) e a equipe não vê o módulo.
+
 ## Notas para as próximas fases
 
 - ⚠️ **Embed ambíguo:** `indica.indicacoes` tem TRÊS ligações para `profiles`

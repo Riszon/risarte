@@ -62,12 +62,28 @@ franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só o botão
    pessoa por pessoa. Quem ainda não autorizou recebe o convite pela aba
    **Mensagens**. Para registrar a indicação de alguém que não está na ficha
    aberta, use Indicações → **Nova indicação** e busque o Embaixador.
-3. **Mensagens:** a fila tem o texto pronto. Clique em **Abrir WhatsApp**,
-   envie e marque **Enviada**.
-4. **Resgates:** o Embaixador pede o prêmio (na recepção ou pelo portal). Você
+3. **"Podemos avisar quem indicou?"** É uma segunda pergunta, separada do
+   aceite. Sem ela, o Embaixador continua recebendo as mensagens das etapas
+   (agendou, compareceu, fechou, pontos liberados), **mas sem o nome** do
+   indicado ("a pessoa que você indicou"). Com ela, vai o primeiro nome. Onde
+   responder: na **Nova indicação**, a caixa "O indicado autorizou que quem o
+   indicou seja avisado…" (só abre com o aceite pessoalmente ou por telefone);
+   no **detalhe da indicação**, os botões **"Autorizou avisar quem indicou ·
+   por telefone / · pessoalmente"**; e no convite pelo WhatsApp, o próprio
+   indicado marca a segunda caixa. Se ele pedir para não contar mais:
+   **"Pediu para não avisar mais"**, com o motivo — e marque "não quer ser
+   ligado a quem o indicou" se for o caso (ele some das indicações no portal
+   do Embaixador). Tudo fica na linha do tempo da indicação.
+4. **Mensagens:** a fila tem o texto pronto. Clique em **Abrir WhatsApp**,
+   envie e marque **Enviada**. No **convite ao indicado** o link entra na
+   hora do clique (a fila não mostra o endereço completo, de propósito); se o
+   convite já foi aceito ou venceu, o sistema avisa e você descarta a
+   mensagem. Há também a mensagem **"Indicado agendou a avaliação"**, sem data
+   nem horário.
+5. **Resgates:** o Embaixador pede o prêmio (na recepção ou pelo portal). Você
    aprova, entrega e, se for Crédito Risarte, informa o código do voucher na
    negociação.
-5. Se aparecer **"os resgates deste Embaixador estão em análise"**, não é
+6. Se aparecer **"os resgates deste Embaixador estão em análise"**, não é
    defeito: a franqueadora está conferindo um alerta. Oriente o cliente a
    aguardar o contato da unidade.
 
@@ -113,3 +129,22 @@ franqueado e franqueadora. Dentistas, coordenação, TSB e ASB veem só o botão
 | "os resgates deste Embaixador estão em análise pela franqueadora" | alerta de fraude alto em aberto | aguardar a franqueadora |
 | "campanha em andamento não pode ter o multiplicador reduzido" | campanha ativa só amplia | encerrar e criar outra |
 | "a final sai depois do período e da carência" | ainda há venda do período em carência | apurar a final depois |
+
+## Novidades a registrar no `changelog.ts` quando o módulo abrir
+
+Texto pronto, na voz de quem opera (Indica 0.8.0, migrações 2009 e 2010,
+04/11/2026). Entra na primeira versão do core publicada depois de ligar as
+permissões, com `manual` apontando para a seção do Indica:
+
+- **novidade** (recepção, SDR, consultor, gerente, franqueado, rede): "O
+  Indica +Risos passou a perguntar ao indicado se quem o indicou pode ser
+  avisado das etapas dele. Sem essa autorização, as mensagens ao Embaixador
+  saem sem o nome ('a pessoa que você indicou'). A pergunta aparece na Nova
+  indicação (junto com o aceite), no detalhe da indicação (botão 'Autorizou
+  avisar quem indicou') e no convite que o indicado recebe pelo WhatsApp."
+- **novidade** (os mesmos): "Quando o indicado agenda a avaliação, o
+  Embaixador recebe uma mensagem nova na fila — sem data nem horário."
+- **aviso** (os mesmos): "Na aba Mensagens, o convite ao indicado abre o
+  WhatsApp com o link completo só na hora do clique; a fila não mostra mais o
+  endereço. Se o convite já foi aceito ou venceu, o sistema avisa e a
+  mensagem pode ser descartada."

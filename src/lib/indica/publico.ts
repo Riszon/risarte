@@ -81,8 +81,19 @@ export async function registrarPeloLink(
 // ---- /c/[token] -------------------------------------------------------------
 export type VerConvite = { indicado: string; indicador: string; unidade: string; termo_versao: string };
 export const verConvite = (token: string) => chamar<VerConvite>("ver_convite", { p_token: token });
-export async function aceitarConvite(token: string): Promise<boolean> {
-  return (await chamar<boolean>("aceitar_convite", { p_token: token, p_ip: await ipDoVisitante() })) === true;
+/**
+ * O indicado aceita o contato e, se quiser, autoriza avisar quem o indicou
+ * (2009): duas perguntas, uma gravação. Sem a segunda, as mensagens ao
+ * Embaixador saem sem o nome dele.
+ */
+export async function aceitarConvite(token: string, avisarIndicador = false): Promise<boolean> {
+  return (
+    (await chamar<boolean>("aceitar_convite", {
+      p_token: token,
+      p_ip: await ipDoVisitante(),
+      p_avisar_indicador: avisarIndicador === true,
+    })) === true
+  );
 }
 
 // ---- /e/[token] — portal do Embaixador -------------------------------------

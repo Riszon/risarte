@@ -61,6 +61,9 @@ export function NovaIndicacaoDialog({
   const [telefone, setTelefone] = useState("");
   const [cpf, setCpf] = useState("");
   const [conferencia, setConferencia] = useState<Conferencia | null>(null);
+  // Aceite LGPD escolhido: a 2ª pergunta ("avisar quem indicou?") só vale com
+  // aceite dado na hora; sem aceite, o convite /c/ pergunta as duas coisas.
+  const [consentimento, setConsentimento] = useState("");
   const [gravando, gravar] = useTransition();
 
   // Conferência em tempo real: 400ms depois da última tecla; a resposta velha
@@ -95,6 +98,7 @@ export function NovaIndicacaoDialog({
     setTelefone("");
     setCpf("");
     setConferencia(null);
+    setConsentimento("");
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -231,13 +235,35 @@ export function NovaIndicacaoDialog({
                 ["", "Ainda não — gerar convite para ele aceitar pelo WhatsApp"],
               ].map(([valor, rotulo]) => (
                 <label key={valor || "convite"} className="flex items-center gap-2 text-sm">
-                  <input type="radio" name="consentimento" value={valor} required defaultChecked={false} />
+                  <input
+                    type="radio"
+                    name="consentimento"
+                    value={valor}
+                    required
+                    checked={consentimento === valor}
+                    onChange={() => setConsentimento(valor)}
+                  />
                   {rotulo}
                 </label>
               ))}
               <p className="text-xs text-muted-foreground">
                 O aceite fica gravado com a data e quem registrou. Sem aceite, o convite vai para a fila de
                 mensagens; se o indicado não aceitar em 7 dias, os dados dele são apagados.
+              </p>
+            </fieldset>
+            <fieldset className="space-y-1.5 rounded-lg border px-3 py-2">
+              <legend className="px-1 text-sm font-medium">Podemos avisar quem indicou?</legend>
+              <label className={cn("flex items-start gap-2 text-sm", !consentimento && "text-muted-foreground")}>
+                <input type="checkbox" name="autoriza_avisar" className="mt-1" disabled={!consentimento} />
+                <span>
+                  O indicado autorizou que quem o indicou seja avisado, com o nome dele, quando vier à avaliação e
+                  quando começar o tratamento.
+                </span>
+              </label>
+              <p className="text-xs text-muted-foreground">
+                {consentimento
+                  ? "Sem esta autorização, as mensagens ao Embaixador saem sem o nome do indicado. Dá para registrar depois, no detalhe da indicação."
+                  : "Pergunte junto com o aceite (pessoalmente ou por telefone). Pelo convite, o próprio indicado responde às duas perguntas."}
               </p>
             </fieldset>
             <AvisoDeConferencia conferencia={conferencia} />

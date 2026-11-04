@@ -109,6 +109,8 @@ const PERMITIDAS_FORA_DA_LISTA = new Set([
   "indica.apuracoes",
   // 2005: o registro de falhas da automação aponta para a indicação.
   "indica.falhas_automacao",
+  // 2010: o token do convite ao indicado aponta para a indicação (cascade).
+  "indica.convites_tokens",
 ]);
 
 /**

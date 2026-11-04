@@ -137,3 +137,22 @@ export const ROTULO_DA_ACAO: Record<IndicacaoStatus, string> = {
 
 /** Só o gestor cancela (o banco também confere). */
 export const SO_GESTOR: readonly IndicacaoStatus[] = ["cancelada"];
+
+/**
+ * Eventos da linha do tempo que NÃO são mudança de etapa (2009): a
+ * autorização do indicado para avisar quem o indicou. `status_para` leva
+ * estes valores; `status_de` fica com a etapa em que a indicação estava.
+ */
+export const EVENTO_SEM_ETAPA_LABEL: Record<string, string> = {
+  autorizou_aviso: "Autorizou avisar quem indicou",
+  revogou_aviso: "Pediu para não avisar mais quem indicou",
+};
+
+/** Rótulo de qualquer `status_para` da linha do tempo (etapa ou evento avulso). */
+export function rotuloDoEvento(statusPara: string): string {
+  return (
+    INDICACAO_STATUS_LABEL[statusPara as IndicacaoStatus] ??
+    EVENTO_SEM_ETAPA_LABEL[statusPara] ??
+    statusPara
+  );
+}

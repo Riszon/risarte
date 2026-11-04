@@ -5,21 +5,51 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { marcarMensagem } from "./actions";
+import { abrirConvite, marcarMensagem } from "./actions";
 
 /**
  * Abrir o WhatsApp com o texto pronto e, depois de enviar, marcar. Abrir não
  * marca sozinho: só quem viu a mensagem sair sabe que ela saiu.
+ *
+ * `pedirLinkAoServidor`: o CONVITE ao indicado não traz o token na fila
+ * (AP100) — o link do WhatsApp é montado no servidor na hora do clique.
  */
-export function BotoesMensagem({ id, link, status }: { id: number; link: string | null; status: string }) {
+export function BotoesMensagem({
+  id,
+  link,
+  pedirLinkAoServidor = false,
+  status,
+}: {
+  id: number;
+  link: string | null;
+  pedirLinkAoServidor?: boolean;
+  status: string;
+}) {
   const router = useRouter();
   const [gravando, gravar] = useTransition();
+  const [abrindo, abrir] = useTransition();
   const marcar = (s: "enviada" | "descartada" | "a_enviar") =>
     gravar(async () => {
       const r = await marcarMensagem(id, s);
       if (r.ok) router.refresh();
       else toast.error(r.error);
     });
+
+  // A janela abre no clique (síncrono, antes do pedido ao servidor) para o
+  // navegador não a bloquear como pop-up; o endereço entra quando chegar.
+  function abrirPeloServidor() {
+    const janela = window.open("", "_blank", "noopener");
+    abrir(async () => {
+      const r = await abrirConvite(id);
+      if (r.ok) {
+        if (janela) janela.location.href = r.link;
+        else window.open(r.link, "_blank", "noopener");
+      } else {
+        janela?.close();
+        toast.error(r.error);
+      }
+    });
+  }
 
   if (status !== "a_enviar") {
     return (
@@ -30,7 +60,11 @@ export function BotoesMensagem({ id, link, status }: { id: number; link: string 
   }
   return (
     <div className="flex flex-wrap justify-end gap-1.5">
-      {link ? (
+      {pedirLinkAoServidor ? (
+        <Button size="sm" className="h-7 text-xs" disabled={abrindo} onClick={abrirPeloServidor}>
+          <Send className="mr-1 size-3" /> {abrindo ? "Abrindo…" : "Abrir WhatsApp"}
+        </Button>
+      ) : link ? (
         <Button
           size="sm"
           className="h-7 text-xs"

@@ -30,6 +30,7 @@ type Mensagem = {
 const EVENTO: Record<string, string> = {
   convite: "Convite ao indicado (aceite LGPD)",
   registrada: "Obrigado por indicar",
+  agendada: "Indicado agendou a avaliação",
   compareceu: "Indicado compareceu",
   fechou: "Indicado fechou",
   convertida: "Pontos liberados",
@@ -87,7 +88,13 @@ export default async function MensagensPage(props: PageProps<"/indica-mais-risos
       ) : (
         <ul className="space-y-2">
           {(data ?? []).map((m) => {
-            const texto = m.texto.replace("{link}", m.link_caminho ? `${origem}${m.link_caminho}` : "");
+            // O convite ao indicado (/c/<token>) NÃO traz o token na fila (AP100):
+            // o link completo é pedido ao servidor na hora de abrir o WhatsApp.
+            const convite = m.evento === "convite";
+            const texto = m.texto.replace(
+              "{link}",
+              convite ? "[link do convite — vai junto ao abrir o WhatsApp]" : m.link_caminho ? `${origem}${m.link_caminho}` : ""
+            );
             return (
               <li key={m.id} className="rounded-xl border bg-card p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -111,7 +118,12 @@ export default async function MensagensPage(props: PageProps<"/indica-mais-risos
                       )}
                     </p>
                   </div>
-                  <BotoesMensagem id={m.id} link={whatsappLink(m.telefone, texto)} status={m.status} />
+                  <BotoesMensagem
+                    id={m.id}
+                    link={convite ? null : whatsappLink(m.telefone, texto)}
+                    pedirLinkAoServidor={convite && Boolean(whatsappLink(m.telefone, ""))}
+                    status={m.status}
+                  />
                 </div>
                 <p className="mt-2 rounded-lg bg-muted/40 px-3 py-2 text-sm whitespace-pre-wrap">{texto}</p>
               </li>

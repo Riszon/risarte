@@ -212,6 +212,9 @@ export async function registrarIndicacao(
       consentimento: ["presencial", "telefone"].includes(campo("consentimento"))
         ? campo("consentimento")
         : null,
+      // 2009: "podemos avisar quem te indicou?" — só vale com o aceite dado
+      // na hora (o banco ignora sem aceite; o convite /c/ pergunta as duas).
+      autoriza_avisar: campo("autoriza_avisar") === "on",
     },
   });
   if (error) {
@@ -349,6 +352,52 @@ export async function registrarAceite(
   const { error } = await db.rpc("registrar_aceite", { p_indicacao_id: indicacaoId, p_canal: canal });
   if (error) {
     console.error("registrar_aceite:", error.message);
+    return { ok: false, error: mensagemDoBanco(error) };
+  }
+  revalidar(indicacaoId);
+  return { ok: true };
+}
+
+/**
+ * O indicado autorizou que quem o indicou seja avisado das etapas dele, com o
+ * nome (2009). Sem isso, as mensagens ao Embaixador saem sem o nome.
+ */
+export async function registrarAutorizacaoAviso(
+  indicacaoId: string,
+  canal: "presencial" | "telefone" | "whatsapp"
+): Promise<Resultado> {
+  const session = await getSessionContext();
+  if (!canViewIndica(session)) return { ok: false, error: SEM_PERMISSAO };
+  const db = await indicaDb();
+  const { error } = await db.rpc("registrar_autorizacao_aviso", { p_indicacao_id: indicacaoId, p_canal: canal });
+  if (error) {
+    console.error("registrar_autorizacao_aviso:", error.message);
+    return { ok: false, error: mensagemDoBanco(error) };
+  }
+  revalidar(indicacaoId);
+  return { ok: true };
+}
+
+/**
+ * O indicado pediu para não contar mais. `desvincular` = "não quero ser ligado
+ * a quem me indicou": o portal e o "Indicado por" deixam de ligar os dois.
+ */
+export async function revogarAutorizacaoAviso(
+  indicacaoId: string,
+  motivo: string,
+  desvincular: boolean
+): Promise<Resultado> {
+  const session = await getSessionContext();
+  if (!canViewIndica(session)) return { ok: false, error: SEM_PERMISSAO };
+  if (!motivo.trim()) return { ok: false, error: "Informe o motivo." };
+  const db = await indicaDb();
+  const { error } = await db.rpc("revogar_autorizacao_aviso", {
+    p_indicacao_id: indicacaoId,
+    p_motivo: motivo.trim().slice(0, 300),
+    p_desvincular: desvincular === true,
+  });
+  if (error) {
+    console.error("revogar_autorizacao_aviso:", error.message);
     return { ok: false, error: mensagemDoBanco(error) };
   }
   revalidar(indicacaoId);

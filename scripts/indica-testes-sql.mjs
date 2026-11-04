@@ -96,7 +96,14 @@ async function main() {
   const gravadas = new Set(
     (await q("select filename from public.schema_migrations")).map((r) => r.filename)
   );
-  const pendentes = todas.filter((f) => !gravadas.has(f));
+  // INDICA_REAPLICAR=2009,2010 → reaplica essas migrações DENTRO da transação
+  // mesmo já gravadas: é como se prova uma régua quebrando depois do
+  // `migrar:teste` (tirar a condição do arquivo tem de derrubar a conferência).
+  const reaplicar = (process.env.INDICA_REAPLICAR ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const pendentes = todas.filter((f) => !gravadas.has(f) || reaplicar.some((p) => f.startsWith(p)));
+  if (reaplicar.length > 0 && pendentes.length === 0) {
+    throw new Error(`INDICA_REAPLICAR=${reaplicar.join(",")} não casou com nenhuma migração 2000+`);
+  }
   for (const f of pendentes) {
     await db.query(readFileSync(join(DIR, f), "utf8"));
     console.log(`(aplicada só nesta transação: ${f})`);
@@ -863,9 +870,13 @@ async function main() {
   // Sem aceite: convite pelo link
   const indQ = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Quitéria Convite", indicado_telefone: tel(18) })).id;
   const mConvite = await msg(indQ, "convite");
-  ok(mConvite && /^\/c\/[0-9a-f]{64}$/.test(mConvite.link_caminho) && mConvite.texto.includes("Joana indicou você"),
-    "sem aceite, o convite ao indicado vai para a fila com o link /c/…");
-  const tokenQ = mConvite.link_caminho.slice(3);
+  ok(mConvite && mConvite.link_caminho === "/c/" && mConvite.texto.includes("Joana indicou você"),
+    "sem aceite, o convite ao indicado vai para a fila — com o caminho /c/ e SEM o token (2010, AP100)");
+  // O token em claro mora no cofre, que só o servidor lê (seção 18 prova a recusa a logados).
+  await sistema();
+  const tokenQ = (await um("select token from indica.convites_tokens where indicacao_id = $1", [indQ]))?.token;
+  ok(typeof tokenQ === "string" && /^[0-9a-f]{64}$/.test(tokenQ), "o token do convite fica no cofre (indica.convites_tokens)");
+  await como(recepcao.id);
   await falha("select indica.ver_convite($1)", [tokenQ], "permission denied", "logado não lê o convite público (só o servidor)");
   await como(null, "service_role");
   const verQ = (await um("select indica.ver_convite($1) as v", [tokenQ])).v;
@@ -1390,6 +1401,149 @@ async function main() {
   ok(visGerente.length > 0, "o gestor enxerga os alertas da unidade dele");
   await falha("select indica.tratar_alerta($1, 'em_analise')", [idAlto], "INDICA_SEM_PERMISSAO",
     "mas quem decide é a franqueadora");
+
+  // =========================================================================
+  const temAviso = (await um("select to_regprocedure('indica.registrar_autorizacao_aviso(uuid,text)') is not null as sim")).sim;
+  if (!temAviso) return;
+  console.log("\n18. Autorização para avisar quem indicou; fila anonimizada; token fora da fila (2009/2010)");
+  const fila = (id) =>
+    q("select nome, telefone, texto, link_caminho, status from indica.mensagens where indicacao_id = $1", [id]);
+  const anonimizada = (m) =>
+    m.nome === "Anonimizado" && m.telefone === "" && m.texto === "" && m.link_caminho === null && m.status !== "a_enviar";
+
+  // --- A: sem autorização, a mensagem ao Embaixador sai SEM o nome -----------
+  await como(recepcao.id);
+  const ind18A = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Ubaldo Semautorizacao",
+    indicado_telefone: tel(70), consentimento: "telefone" })).id;
+  const colsA = await um("select autoriza_avisar_indicador_em from indica.indicacoes where id = $1", [ind18A]);
+  ok(colsA.autoriza_avisar_indicador_em === null, "aceite sem a segunda pergunta: nenhuma autorização gravada");
+  await avancar(ind18A, "validada");
+  await sistema();
+  const cli18A = await novoCliente("Ubaldo Semautorizacao", tel(70));
+  const ag18A = await avaliacao(cli18A, false, "now() + interval '1 day'");
+  await como(recepcao.id);
+  await avancar(ind18A, "agendada", null, { agendamento_id: ag18A });
+  const mAg = await msg(ind18A, "agendada");
+  ok(mAg && mAg.destinatario === "embaixador" && mAg.texto.includes("a pessoa que você indicou") && !mAg.texto.includes("Ubaldo"),
+    "agendou: a mensagem ao Embaixador sai SEM o nome do indicado (sem autorização)");
+  ok(mAg && !/\d{2}\/\d{2}|\d{1,2}:\d{2}|\d{1,2}h\b/.test(mAg.texto), "a mensagem 'agendou' não traz data nem horário");
+  await sistema();
+  const ag18A2 = await avaliacao(cli18A, false, "now() + interval '2 days'");
+  await como(recepcao.id);
+  await avancar(ind18A, "agendada", null, { agendamento_id: ag18A2 });
+  const nAg = await um("select count(*)::int n from indica.mensagens where indicacao_id = $1 and evento = 'agendada'", [ind18A]);
+  ok(nAg.n === 1, "trocar a avaliação (agendada → agendada) não gera segunda mensagem");
+
+  // --- B: com autorização, o nome sai -----------------------------------------
+  await falha("select indica.registrar_autorizacao_aviso($1, 'link')", [ind18A], "INDICA_DADOS",
+    "a equipe não registra autorização 'pelo link' (essa é do próprio indicado)");
+  await como(franqueado.id);
+  await falha("select indica.registrar_autorizacao_aviso($1, 'telefone')", [ind18A], "INDICA_SEM_PERMISSAO",
+    "outra unidade não registra a autorização desta");
+  await como(recepcao.id);
+  await q("select indica.registrar_autorizacao_aviso($1, 'telefone')", [ind18A]);
+  const colsB = await um(
+    "select autoriza_avisar_indicador_em, autoriza_avisar_canal, autoriza_avisar_por from indica.indicacoes where id = $1", [ind18A]);
+  ok(colsB.autoriza_avisar_indicador_em !== null && colsB.autoriza_avisar_canal === "telefone" && colsB.autoriza_avisar_por === recepcao.id,
+    "a recepção registra 'autorizou avisar quem indicou' (canal e quem registrou)");
+  const evB = () => um("select count(*)::int n from indica.indicacao_eventos where indicacao_id = $1 and status_para = 'autorizou_aviso'", [ind18A]);
+  ok((await evB()).n === 1, "a autorização entra na linha do tempo");
+  await q("select indica.registrar_autorizacao_aviso($1, 'presencial')", [ind18A]);
+  ok((await evB()).n === 1, "registrar de novo não repete (idempotente)");
+  // A automação (2005, religada na seção 14) avança no check-in.
+  await sistema();
+  await q("update public.appointments set checked_in_at = now(), attendance = 'waiting' where id = $1", [ag18A2]);
+  ok((await um("select status from indica.indicacoes where id = $1", [ind18A])).status === "compareceu",
+    "o check-in avança a indicação para compareceu (automação)");
+  await como(recepcao.id);
+  const mComp = await msg(ind18A, "compareceu");
+  ok(mComp && mComp.texto.includes("Ubaldo") && !mComp.texto.includes("Semautorizacao"),
+    "compareceu COM autorização: a mensagem traz o PRIMEIRO nome do indicado");
+
+  // --- C: revogação → volta a sem nome; desvincular grava desvinculada_em -----
+  await falha("select indica.revogar_autorizacao_aviso($1, '')", [ind18A], "INDICA_MOTIVO_OBRIGATORIO", "revogar exige motivo");
+  await q("select indica.revogar_autorizacao_aviso($1, 'Pediu para não contar', true)", [ind18A]);
+  const colsC = await um("select autoriza_avisar_revogado_em, desvinculada_em from indica.indicacoes where id = $1", [ind18A]);
+  ok(colsC.autoriza_avisar_revogado_em !== null && colsC.desvinculada_em !== null,
+    "revogar grava a revogação e, se pedido, o desligamento de quem indicou (desvinculada_em deixou de ser coluna morta)");
+  await sistema();
+  // A automação da venda avança para fechou quando `closed_at` é preenchido (como na seção 14).
+  const v18A = await venda(cli18A, 300_000, false);
+  await q("update public.commercial_sales set closed_at = now() where id = $1", [v18A.vendaId]);
+  ok((await um("select status from indica.indicacoes where id = $1", [ind18A])).status === "fechou",
+    "a venda fechada avança a indicação para fechou (automação)");
+  await como(recepcao.id);
+  const mFech = await msg(ind18A, "fechou");
+  ok(mFech && !mFech.texto.includes("Ubaldo") && mFech.texto.includes("a pessoa que você indicou"),
+    "fechou DEPOIS da revogação: a mensagem volta a sair sem o nome");
+
+  // --- D: Nova indicação pergunta junto do aceite --------------------------------
+  const ind18D = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Vera Autoriza Junto",
+    indicado_telefone: tel(71), consentimento: "presencial", autoriza_avisar: true })).id;
+  const colsD = await um("select autoriza_avisar_canal from indica.indicacoes where id = $1", [ind18D]);
+  ok(colsD.autoriza_avisar_canal === "presencial",
+    "Nova indicação: 'autoriza avisar' junto do aceite presencial grava a autorização com o mesmo canal");
+  const ind18D2 = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Wanda Sem Aceite",
+    indicado_telefone: tel(72), autoriza_avisar: true })).id;
+  ok((await um("select autoriza_avisar_indicador_em e from indica.indicacoes where id = $1", [ind18D2])).e === null,
+    "sem aceite na hora, 'autoriza avisar' é ignorado (a pergunta vai no convite)");
+
+  // --- E: o convite pergunta as duas coisas; o token fica fora da fila -------------
+  const mConvD2 = await msg(ind18D2, "convite");
+  ok(mConvD2 && mConvD2.link_caminho === "/c/", "o convite vai para a fila SEM o token (só '/c/')");
+  const comHex = await um("select count(*)::int n from indica.mensagens where link_caminho ~ '[0-9a-f]{64}'");
+  ok(comHex.n === 0, "nenhuma mensagem da fila contém um token de 64 hex (AP100)");
+  await falha("select token from indica.convites_tokens where indicacao_id = $1", [ind18D2], "permission denied",
+    "quem está logado não lê o cofre dos tokens");
+  await falha("select indica.link_do_convite($1)", [mConvD2.id], "permission denied",
+    "quem está logado não pede o link do convite (só o servidor)");
+  await como(null, "service_role");
+  const linkD2 = (await um("select indica.link_do_convite($1, $2) as l", [mConvD2.id, recepcao.id])).l;
+  ok(/^\/c\/[0-9a-f]{64}$/.test(linkD2 ?? ""), "o servidor obtém o link do convite pelo cofre");
+  const tokD2 = String(linkD2 ?? "").slice(3);
+  const hashOk = await um("select convite_token_hash = sha256(convert_to($2, 'UTF8')) as ok from indica.indicacoes where id = $1", [ind18D2, tokD2]);
+  ok(hashOk.ok === true, "o token do cofre é o do hash da indicação");
+  const audD2 = await um(
+    "select count(*)::int n from public.audit_logs where entity_type = 'indica_convite_link' and entity_id = $1 and user_id = $2",
+    [String(mConvD2.id), recepcao.id]);
+  ok(audD2.n === 1, "quem pediu o link fica em audit_logs (só ids)");
+  ok((await um("select indica.aceitar_convite($1, '200.1.2.4', true) as ok", [tokD2])).ok === true,
+    "o indicado aceita pelo link e autoriza avisar quem indicou");
+  const colsE = await um("select autoriza_avisar_canal, consentimento_id from indica.indicacoes where id = $1", [ind18D2]);
+  ok(colsE.consentimento_id !== null && colsE.autoriza_avisar_canal === "link",
+    "/c/[token] grava as DUAS respostas (aceite + autorização, canal 'link')");
+  ok((await um("select count(*)::int n from indica.convites_tokens where indicacao_id = $1", [ind18D2])).n === 0,
+    "aceito, o token sai do cofre");
+  ok((await um("select indica.link_do_convite($1, $2) as l", [mConvD2.id, recepcao.id])).l === null,
+    "convite já aceito: o servidor não devolve link");
+  await como(recepcao.id);
+  const tokP2 = (await um("select indica.gerar_link_portal($1) as t", [emb])).t;
+  await como(null, "service_role");
+  const pInd2 = (await um("select indica.portal_indicar($1, $2) as r", [tokP2, { nome: "Xavier Portal Dois", telefone: tel(73) }])).r;
+  ok(pInd2.ok === true && /^\/c\/[0-9a-f]{64}$/.test(pInd2.link ?? ""),
+    "pelo portal, o Embaixador continua recebendo o convite com o link completo");
+
+  // --- F: a rotina anonimiza a FILA junto com a indicação (AP101) -----------------
+  await como(recepcao.id);
+  const indF = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Yago Sem Resposta", indicado_telefone: tel(74) })).id;
+  await bastidor("update indica.indicacoes set registrada_em = now() - interval '8 days' where id = $1", [indF]);
+  await como(recepcao.id);
+  const indG = (await registrar({ embaixador_id: emb, canal: "agendamento", indicado_nome: "Zilda Antiga",
+    indicado_telefone: tel(75), consentimento: "telefone" })).id;
+  await avancar(indG, "recusada", "Não quis");
+  await bastidor("update indica.indicacoes set encerrada_em = now() - interval '13 months' where id = $1", [indG]);
+  await sistema();
+  const rot18 = (await um("select indica.rotina_diaria() as r")).r;
+  const fF = await fila(indF);
+  ok(fF.length >= 1 && fF.every(anonimizada),
+    "rotina (7 dias sem aceite): a fila da indicação fica sem nome, telefone, texto e link");
+  ok((await um("select count(*)::int n from indica.convites_tokens where indicacao_id = $1", [indF])).n === 0,
+    "e o token sai do cofre");
+  const fG = await fila(indG);
+  const sG = await um("select anonimizada_em, indicado_nome from indica.indicacoes where id = $1", [indG]);
+  ok(rot18.anonimizadas >= 1 && sG.anonimizada_em !== null && sG.indicado_nome === "Anonimizado" && fG.length >= 1 && fG.every(anonimizada),
+    "rotina (encerrada há mais de 12 meses): a indicação E a fila dela são anonimizadas");
+  ok(rot18.falhas === 0, `a rotina não registrou falha (${JSON.stringify(rot18)})`);
 }
 
 try {

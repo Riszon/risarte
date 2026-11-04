@@ -281,6 +281,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   indica_embaixador: "Embaixador",
   indica_embaixador_status: "Situação do Embaixador",
   indica_link_portal: "Link do portal do Embaixador",
+  indica_convite_link: "Link do convite ao indicado (Indica +Risos)",
   indica_parceiro: "Parceiro (Indica +Risos)",
   indica_campanha: "Campanha (Indica +Risos)",
   indica_catalogo_item: "Item do catálogo de prêmios",

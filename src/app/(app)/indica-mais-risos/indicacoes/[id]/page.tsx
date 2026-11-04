@@ -8,7 +8,7 @@ import { SALDO_LABEL, TIPO_LANCAMENTO_LABEL } from "@/lib/indica/rotulos";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { indicaDb } from "@/lib/indica/db";
-import { CANAL_LABEL, INDICACAO_STATUS_LABEL, type Canal, type IndicacaoStatus } from "@/lib/indica/status";
+import { CANAL_LABEL, INDICACAO_STATUS_LABEL, rotuloDoEvento, type Canal, type IndicacaoStatus } from "@/lib/indica/status";
 import { formatBrDate, formatBrDateTime } from "@/lib/dates";
 import { formatBRL } from "@/lib/pricing";
 import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@/lib/appointments";
@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "../../status-badge";
 import { AcoesIndicacao } from "../../acoes-indicacao";
-import { RegistrarAceite } from "./aceite";
+import { AutorizacaoAviso, RegistrarAceite } from "./aceite";
 import { nomesDePessoas } from "../../dados";
 
 export const metadata: Metadata = { title: "Indicação — Indica +Risos" };
@@ -53,7 +53,8 @@ type Indicacao = {
 type Evento = {
   id: number;
   status_de: IndicacaoStatus | null;
-  status_para: IndicacaoStatus;
+  /** Uma etapa, ou um evento avulso (2009: `autorizou_aviso`, `revogou_aviso`). */
+  status_para: string;
   motivo: string | null;
   usuario_id: string | null;
   criado_em: string;
@@ -104,12 +105,14 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
     { data: unidade },
     { data: lgpd },
     { data: aceite },
+    { data: aviso },
   ] = await Promise.all([
       db
         .from("indicacao_eventos")
         .select("id, status_de, status_para, motivo, usuario_id, criado_em")
         .eq("indicacao_id", id)
         .order("criado_em", { ascending: false })
+        .order("id", { ascending: false })
         .returns<Evento[]>(),
       db
         .from("pontos_lancamentos")
@@ -135,7 +138,18 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
         .order("criado_em", { ascending: false })
         .limit(1)
         .maybeSingle<{ canal: string; aceito_em: string | null }>(),
+      // 2009 — à parte: antes da migração no banco, só este bloco fica sem resposta.
+      db.from("indicacoes")
+        .select("autoriza_avisar_indicador_em, autoriza_avisar_canal, autoriza_avisar_revogado_em")
+        .eq("id", id)
+        .maybeSingle<{
+          autoriza_avisar_indicador_em: string | null;
+          autoriza_avisar_canal: string | null;
+          autoriza_avisar_revogado_em: string | null;
+        }>(),
     ]);
+  const encerrada = ["recusada", "cancelada", "expirada"].includes(ind.status);
+  const avisoVigente = Boolean(aviso?.autoriza_avisar_indicador_em) && !aviso?.autoriza_avisar_revogado_em;
   const CANAL_ACEITE: Record<string, string> = {
     presencial: "pessoalmente",
     telefone: "por telefone",
@@ -221,10 +235,36 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
                     Aguardando o aceite do contato
                     {lgpd?.convite_expira_em ? ` (convite vale até ${formatBrDate(lgpd.convite_expira_em)} — está na fila de mensagens)` : ""}.
                   </span>
-                  {!["recusada", "cancelada", "expirada"].includes(ind.status) && <RegistrarAceite indicacaoId={ind.id} />}
+                  {!encerrada && <RegistrarAceite indicacaoId={ind.id} />}
                 </div>
               )}
             </div>
+            {/* 2009: outra pergunta, separada do aceite — "podemos avisar quem te indicou?" */}
+            {aviso && !lgpd?.anonimizada_em && (
+              <div className="space-y-1.5 rounded-md border bg-muted/30 px-2 py-1.5 text-xs">
+                {avisoVigente ? (
+                  <span className="text-emerald-700 dark:text-emerald-300">
+                    Autorizou avisar quem indicou {CANAL_ACEITE[aviso.autoriza_avisar_canal ?? ""] ?? ""} em{" "}
+                    {formatBrDate(aviso.autoriza_avisar_indicador_em!)}: as mensagens ao Embaixador trazem o nome.
+                  </span>
+                ) : aviso.autoriza_avisar_revogado_em ? (
+                  <span className="text-muted-foreground">
+                    Pediu para não avisar quem indicou em {formatBrDate(aviso.autoriza_avisar_revogado_em)}: as mensagens
+                    saem sem o nome.
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    Sem autorização para avisar quem indicou: as mensagens ao Embaixador saem sem o nome.
+                  </span>
+                )}
+                <AutorizacaoAviso
+                  indicacaoId={ind.id}
+                  autorizadoEm={aviso.autoriza_avisar_indicador_em}
+                  revogadoEm={aviso.autoriza_avisar_revogado_em}
+                  encerrada={encerrada}
+                />
+              </div>
+            )}
             {ind.cliente_indicado_id ? (
               <Link href={`/prontuarios/${ind.cliente_indicado_id}`} className="font-medium text-primary hover:underline">
                 Abrir a ficha
@@ -360,12 +400,12 @@ export default async function IndicacaoPage(props: PageProps<"/indica-mais-risos
                 <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
                 <div>
                   <p>
-                    {e.status_de ? (
+                    {e.status_de && e.status_de !== e.status_para && INDICACAO_STATUS_LABEL[e.status_para as IndicacaoStatus] ? (
                       <>
-                        {INDICACAO_STATUS_LABEL[e.status_de]} → <strong>{INDICACAO_STATUS_LABEL[e.status_para]}</strong>
+                        {INDICACAO_STATUS_LABEL[e.status_de]} → <strong>{rotuloDoEvento(e.status_para)}</strong>
                       </>
                     ) : (
-                      <strong>{INDICACAO_STATUS_LABEL[e.status_para]}</strong>
+                      <strong>{rotuloDoEvento(e.status_para)}</strong>
                     )}
                   </p>
                   {e.motivo && <p className="text-muted-foreground">“{e.motivo}”</p>}

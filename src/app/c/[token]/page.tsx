@@ -30,7 +30,7 @@ export default async function AceiteConvitePage(props: PageProps<"/c/[token]">) 
               avaliação. Só entramos em contato com a sua autorização.
             </p>
           </div>
-          <BotaoAceitar token={token} termoVersao={convite.termo_versao} />
+          <BotaoAceitar token={token} termoVersao={convite.termo_versao} indicador={convite.indicador} />
           <p className="text-center text-xs text-muted-foreground">
             Se não quiser, é só ignorar: seus dados são apagados em poucos dias.
           </p>
