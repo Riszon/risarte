@@ -5139,6 +5139,50 @@ anterior (a rede inteira, em PDF, com os números no corpo do e-mail) vai para
 quem está em *Assinaturas → Configurações → Relatório mensal*. Sem o serviço de
 e-mail configurado, ele espera na fila.
 
+## 13e. Para o Admin Master: o Backlog (0.400.0)
+
+**Onde:** **Administração → Backlog**. Só o Admin Master entra — e é o banco
+que garante isso, não a tela.
+
+**Para que serve:** ver, sem precisar perguntar, **o que está em aberto no
+sistema e o que já foi resolvido**: defeitos, melhorias, decisões que esperam
+por você e tarefas suas. As sessões de desenvolvimento registram aqui o que
+encontram e marcam como resolvido o que consertam; **recarregue a página** para
+ver o mais novo.
+
+**No alto, três números** (sempre da lista inteira): **Em aberto**,
+**Resolvidos** e **Aguardando você**. Clicar num deles mostra aqueles itens.
+Logo abaixo, quantos abertos há em cada **prioridade** — clique para filtrar:
+
+- **Urgente** — impede o trabalho, ou é risco de segurança ou LGPD;
+- **Alta** — atrapalha o trabalho ou pode dar dado errado;
+- **Média** — incomoda, tem contorno;
+- **Baixa** — quando der.
+
+**Abas e filtros:** **Abertos** (com Aguardando você e Em andamento),
+**Resolvidos** (com os descartados) e **Todos**, cada uma com o número do que
+vai mostrar. Filtre por **categoria, prioridade, módulo e situação**, ou busque
+pelo código (AP56) ou por uma palavra do título. Os abertos vêm agrupados por
+prioridade, Urgente primeiro; os resolvidos, do mais recente.
+
+**O item:** clique para abrir. À esquerda, o detalhe escrito por quem achou; à
+direita, **Classificar** — mude a prioridade, a categoria, o módulo e a
+situação, e escreva uma **nota**. Ao marcar **Resolvido**, diga a versão (se
+houver) e como foi resolvido; ao marcar **Descartado**, o motivo é obrigatório.
+"Editar título e detalhe" reescreve o texto. Tudo o que muda entra na **Linha do
+tempo** do item, com quem fez e quando — e nada se apaga.
+
+**Novo item:** o botão **Novo item** registra algo que você notou; o código
+(AP…) é dado pelo sistema.
+
+**Categorias:** o botão **Categorias** mostra cada uma com quantos itens tem.
+Crie, renomeie e mude a ordem (o número). Categoria com itens não se apaga:
+**desative** — ela some da escolha de item novo e continua nos itens que já a
+usam.
+
+**No treino** a lista é uma cópia de ensaio, com um aviso no alto. A lista de
+verdade é a da produção.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

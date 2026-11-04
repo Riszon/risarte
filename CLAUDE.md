@@ -417,6 +417,12 @@ Syncthing se comportarem de forma estranha.**
   fora: sem login recusa, os indicadores novos medem). Provada com dados montados (o cliente que
   sai do Empresarial no meio do mês) numa transação desfeita.
 
+**04/11/2026 (BK2 — tela do backlog) — PC Administrador (core 0.399.0 → 0.400.0, sem migração)**
+
+- **Administração → Backlog** (bloco 0.400.0 no ESTADO; manual 13e). Regras
+  em `src/lib/backlog.ts`; o detalhe usa `Blocos` do leitor do manual.
+- Visto na tela no treino. Próximo: **BK3** (escolher e pedir) e **BK4**.
+
 **04/11/2026 (BK1 — backlog no banco) — PC Administrador (core 0.398.0 → 0.399.0, migração 0366)**
 
 - **O backlog mora no banco** (bloco 0.399.0 no ESTADO; plano

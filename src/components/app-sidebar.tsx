@@ -35,6 +35,7 @@ import {
   Route,
   ScrollText,
   Timer,
+  ListTodo,
   Stethoscope,
   Tags,
   Target,
@@ -285,6 +286,9 @@ const ADMIN_ITEMS = [
   // 0287: quanto tempo sem uso até desconectar, por função.
   { href: "/admin/sessao", label: "Sessão e inatividade", icon: Timer },
   { href: "/admin/auditoria", label: "Auditoria", icon: ScrollText },
+  // 0366 (BK2): a lista viva do backlog — o que está aberto e o que já foi
+  // resolvido no sistema. As sessões registram pelo `npm run backlog`.
+  { href: "/admin/backlog", label: "Backlog", icon: ListTodo },
 ];
 
 /** O evento que o botão ☰ da barra de cima dispara para abrir a gaveta. */

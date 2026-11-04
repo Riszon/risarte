@@ -1,7 +1,25 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.399.0** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 04/11/2026 · Versão do sistema: **0.400.0** · Última migração: **0366** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 📋 0.400.0 — A TELA DO BACKLOG, FASE BK2 (04/11/2026, sem migração)
+>
+> **Administração → Backlog** (`src/app/(app)/admin/backlog/`), só o Admin
+> Master. Regras puras em `src/lib/backlog.ts` (contagem, filtro, ordem,
+> rótulos — `backlog.test.ts`); leituras em `dados.ts` (falha vira aviso, nunca
+> lista vazia); gravações em `actions.ts` pelas funções da 0366. Detalhe em
+> `[codigo]` com o texto desenhado pelo leitor do manual (`Blocos`, agora
+> exportado de `manual-reader.tsx`), Classificar, nota e linha do tempo.
+> Janela de categorias (criar, renomear, ordenar, desativar) e Novo item
+> (origem "dono"). Item no menu Administração. Manual **13e**, EV-295.
+> - ⚠️ **A situação só vai ao banco quando MUDA** (`editar.tsx`): reenviar
+>   "descartado" exigiria o motivo a cada mudança de prioridade.
+> - Visto na tela no treino (servidor local como treino, Admin de teste):
+>   números, abas, filtros, detalhe, gravação no AP126, categorias, celular;
+>   a Recepção de teste é mandada embora (307). Console sem erro.
+> - Próximo: **BK3** (escolher itens e "Preparar pedido para resolver") e
+>   **BK4** (relato → backlog).
+>
 > ## 📋 0.399.0 / 0366 — O BACKLOG NO BANCO, FASE BK1 (04/11/2026)
 >
 > Pedido do dono: tela só dele com a lista viva do backlog. Plano e decisões

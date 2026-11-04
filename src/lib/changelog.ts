@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.400.0",
+    data: "2026-11-04",
+    migracao: "0366",
+    titulo: "Administração → Backlog: a lista viva do que está aberto e do que já foi resolvido",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Nova tela Administração → Backlog, só para o Admin Master: quantos itens estão em aberto, quantos foram resolvidos e quantos aguardam você; filtros por categoria, prioridade, módulo e situação; cada item com o detalhe, a classificação e a linha do tempo. As categorias se criam e se renomeiam pela própria tela.",
+        papeis: [],
+        manual: "13e. Para o Admin Master: o Backlog (0.400.0)",
+      },
+    ],
+  },
+  {
     versao: "0.399.0",
     data: "2026-11-04",
     migracao: "0366",

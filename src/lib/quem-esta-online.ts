@@ -228,6 +228,7 @@ export const NOME_NA_ADMINISTRACAO: Record<string, string> = {
   ambientes: "Ambientes",
   anamnese: "Fichas de Anamnese",
   auditoria: "Auditoria",
+  backlog: "Backlog",
   certificacao: "Certificação",
   chat: "Chat (contatos)",
   clinicas: "Clínicas",

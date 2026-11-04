@@ -58,7 +58,8 @@ function Trechos({ trechos }: { trechos: Trecho[] }) {
   );
 }
 
-function Blocos({ blocos }: { blocos: Bloco[] }) {
+/** Também desenha o detalhe dos itens do backlog (admin/backlog/[codigo]). */
+export function Blocos({ blocos }: { blocos: Bloco[] }) {
   return (
     <>
       {blocos.map((b, i) => {
