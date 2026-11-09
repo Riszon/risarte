@@ -403,7 +403,9 @@ Syncthing se comportarem de forma estranha.**
   `fornecedoresDaUnidade`** (nunca `suppliers` por `clinic_id`; régua). ⚠️
   **Gravar = porta `save_supplier`**; campo novo muda a porta e
   `supplierToPayload` juntos (régua).
-- ⏳ **0371 só no treino**: o dono roda na produção antes do push. Pendente
+- ✅ **0371 aplicada na produção** (o dono, 09/11/2026; conferido de fora:
+  19 tipos, RisLife da Franqueadora "só Franqueadora" e a de Cambé listada
+  em Cambé, telefone só dígitos; sem login as 3 portas recusam) antes do push. Pendente
   com o dono: juntar ou não a RisLife duplicada (mesmo CNPJ na Franqueadora e
   em Cambé).
 

@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.405.0** · Última migração: **0371** (⏳ 0371 só no treino até o dono rodar na produção; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.405.0** · Última migração: **0371** (0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 🚚 0.405.0 / 0371 — FORNECEDORES: FICHA, ONDE VALE, TIPOS E HISTÓRICO (09/11/2026)
 >
@@ -27,7 +27,11 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.405.0** · Última migraç
 >   de teste (Financeiro e Gerente de teste). Manual 2.3, EV-304.
 > - Resíduo no treino (meu): razão social "Dental Teste Distribuidora Ltda" no
 >   fornecedor de teste "Dental Teste Distribuidora" (salvo pela tela).
-> - ⏳ **0371 só no treino.** O dono roda na produção ANTES do push.
+> - ✅ **0371 APLICADA na produção** (o dono, 09/11/2026; conferido de fora:
+>   19 tipos; a RisLife da Franqueadora virou "só Franqueadora" e a de Cambé
+>   ficou listada em Cambé; telefone só dígitos; sem login `save_supplier`,
+>   `suppliers_for_clinic` e `supplier_history` recusam com "permission
+>   denied") antes do push.
 
 > ## 💼 EMPRESARIAL 0.98.0 / 1040 — O EMPRESARIAL NO RAZÃO DA FRANQUEADORA (AP69, etapa 2; 09/11/2026)
 >
