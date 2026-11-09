@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Boxes } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fornecedoresDaUnidade } from "@/lib/fornecedores-db";
 import { todayInBrazil } from "@/lib/dates";
 import {
   canConsumeStock,
@@ -92,14 +93,14 @@ export default async function StockPage() {
       )
       .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
       .order("name"),
-    supabase
-      .from("suppliers")
-      // 0223: o CNPJ é como a nota encontra o fornecedor — pelo documento, não
-      // pelo nome, que varia entre a nota e o cadastro.
-      .select("id, name, document")
-      .eq("clinic_id", clinicId)
-      .eq("active", true)
-      .order("name"),
+    // 0223: o CNPJ é como a nota encontra o fornecedor — pelo documento, não
+    // pelo nome, que varia entre a nota e o cadastro. 0371: os que VALEM na
+    // unidade (rede, Franqueadora ou unidades escolhidas).
+    fornecedoresDaUnidade<{ id: string; name: string; document: string | null }>(
+      supabase,
+      clinicId,
+      "id, name, document"
+    ).then((data) => ({ data })),
     supabase.rpc("stock_expiring", { p_clinic_id: clinicId, p_days: 120 }),
     // 0217: procedimento concluído sem kit não consome nada. Normal no começo,
     // problema quando ninguém percebe — o saldo para de bater e a culpa cai no

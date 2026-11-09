@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Landmark } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fornecedoresDaUnidade } from "@/lib/fornecedores-db";
 import { canPostFinance, canViewFinance } from "@/lib/finance/access";
 import { todayInBrazil } from "@/lib/dates";
 import { AssetsManager } from "./assets-client";
@@ -48,12 +49,8 @@ export default async function AssetsPage() {
       .eq("active", true)
       .or(`clinic_id.is.null,clinic_id.eq.${clinicId}`)
       .order("name"),
-    supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("clinic_id", clinicId)
-      .eq("active", true)
-      .order("name"),
+    // 0371: os fornecedores que VALEM na unidade.
+    fornecedoresDaUnidade(supabase, clinicId).then((data) => ({ data })),
     supabase
       .from("asset_depreciations")
       .select("period_month, amount_cents")

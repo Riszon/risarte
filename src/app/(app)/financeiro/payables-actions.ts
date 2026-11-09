@@ -388,58 +388,8 @@ export async function saveRecurrence(input: {
 }
 
 // ---------------------------------------------------------------------------
-// Fornecedores e alçada (escrita direta, protegida pela RLS)
+// Alçada (escrita direta, protegida pela RLS). Fornecedores: fornecedores/actions.ts
 // ---------------------------------------------------------------------------
-export async function saveSupplier(input: {
-  id: string | null;
-  clinicId: string;
-  name: string;
-  document: string;
-  kind: string;
-  contactName: string;
-  phone: string;
-  email: string;
-  paymentNotes: string;
-  active: boolean;
-}): Promise<PayableResult> {
-  const session = await getSessionContext();
-  const supabase = await createClient();
-
-  if (!input.name.trim()) return { ok: false, error: "Informe o nome." };
-
-  const row = {
-    clinic_id: input.clinicId,
-    name: input.name.trim(),
-    document: input.document.replace(/\D/g, "") || null,
-    kind: input.kind,
-    contact_name: input.contactName || null,
-    phone: input.phone || null,
-    email: input.email || null,
-    payment_notes: input.paymentNotes || null,
-    active: input.active,
-    updated_at: new Date().toISOString(),
-    updated_by: session.userId,
-  };
-
-  const { error } = input.id
-    ? await supabase.from("suppliers").update(row).eq("id", input.id)
-    : await supabase
-        .from("suppliers")
-        .insert({ ...row, created_by: session.userId });
-  if (error) {
-    console.error("saveSupplier failed:", error.message);
-    return { ok: false, error: "Não foi possível salvar o fornecedor." };
-  }
-
-  await logAudit({
-    action: input.id ? "update" : "create",
-    entityType: "supplier",
-    entityId: input.id ?? input.clinicId,
-  });
-  refresh();
-  return { ok: true };
-}
-
 /** Alçada: `clinicId` nulo grava o padrão da REDE; `accountCode` nulo, o geral. */
 export async function saveApprovalRule(input: {
   clinicId: string | null;

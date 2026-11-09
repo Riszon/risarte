@@ -193,6 +193,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   stock_purchase: "Compra de estoque",
   stock_purchase_nfe: "Compra de estoque (nota fiscal)",
   supplier: "Fornecedor",
+  supplier_kind: "Tipo de fornecedor",
   purchase_request: "Requisição de compra",
   purchase_request_send: "Requisição de compra enviada",
   purchase_round: "Rodada de compra",

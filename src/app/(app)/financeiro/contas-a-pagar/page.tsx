@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Receipt } from "lucide-react";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fornecedoresDaUnidade } from "@/lib/fornecedores-db";
 import { canViewFinance } from "@/lib/finance/access";
 import { sortAccounts, type ChartAccount } from "@/lib/finance/accounts";
 import type {
@@ -59,12 +60,13 @@ export default async function PayablesPage() {
       )
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false }),
-    supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("clinic_id", clinicId)
-      .eq("active", true)
-      .order("name"),
+    // 0371: os fornecedores que VALEM na unidade (rede, Franqueadora ou
+    // unidades escolhidas), com a conta padrão para sugerir no lançamento.
+    fornecedoresDaUnidade<{ id: string; name: string; default_account_code?: string | null }>(
+      supabase,
+      clinicId,
+      "id, name, default_account_code"
+    ).then((data) => ({ data })),
     supabase
       .from("chart_of_accounts")
       .select("code, name, parent_code, kind, nature, cost_behavior, scope, is_analytic, fiscal_account_code, active")
@@ -256,6 +258,7 @@ export default async function PayablesPage() {
         suppliers={(supplierRows ?? []).map((s) => ({
           id: s.id as string,
           name: s.name as string,
+          defaultAccountCode: s.default_account_code ?? null,
         }))}
         accounts={accounts}
         costCenters={costCenters}

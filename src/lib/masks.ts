@@ -43,6 +43,25 @@ export function formatCep(value: string): string {
 }
 
 /**
+ * CNPJ válido pelos dígitos verificadores (fornecedores, 0371). Aceita com ou
+ * sem máscara; sequências repetidas são inválidas.
+ */
+export function isValidCnpj(value: string | null | undefined): boolean {
+  const d = (value ?? "").replace(/\D/g, "");
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
+  const dv = (len: number) => {
+    const pesos = len === 12
+      ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+      : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += Number(d[i]) * pesos[i];
+    const r = sum % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  return dv(12) === Number(d[12]) && dv(13) === Number(d[13]);
+}
+
+/**
  * CPF válido pelos dígitos verificadores (ZS2). Aceita com ou sem máscara.
  * Sequências repetidas ("111.111.111-11") são inválidas, como na Receita.
  */

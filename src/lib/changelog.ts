@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.405.0",
+    data: "2026-11-09",
+    migracao: "0371",
+    titulo: "Fornecedores: ficha completa, onde cada um vale, tipos editáveis e histórico",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha do fornecedor ficou completa: razão social, inscrições, WhatsApp, e-mail financeiro, site, endereço, banco, chave PIX, forma e prazo de pagamento e a conta padrão do plano de contas. Nome, CNPJ/CPF, tipo e onde vale são obrigatórios, e a ficha avisa quando o CNPJ já está cadastrado em outro lugar da rede.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cada fornecedor vale só para a Franqueadora, para todas as unidades ou para as unidades escolhidas. As listas de Contas a pagar, Estoque (com a nota fiscal) e Bens mostram os que valem na unidade. O Gerente cadastra para as unidades que gerencia; o da rede toda é do Financeiro da Franqueadora.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor", "purchaser"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A ficha mostra quem cadastrou e quem alterou por último, e a aba Histórico mostra cada mudança (antes → depois) e quando o fornecedor passou a valer ou deixou de valer numa unidade.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A lista de tipos de fornecedor cresceu (laboratório, ortodontia, materiais, equipamentos, esterilização, TI, aluguel, água e luz, impostos e outros) e o Financeiro da Franqueadora edita pelo botão Tipos. Em Contas a pagar, escolher o fornecedor já sugere a conta padrão dele.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Comprador, Coordenador e ASB passaram a enxergar os fornecedores da unidade nas listas de Compras e Estoque (antes a lista vinha vazia para eles).",
+        papeis: ["purchaser", "clinical_coordinator", "asb"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.404.0",
     data: "2026-11-09",
     migracao: "0370",

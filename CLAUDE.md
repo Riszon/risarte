@@ -396,6 +396,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/11/2026 (fornecedores) — PC Administrador (core 0.404.0 → 0.405.0, migração 0371)**
+
+- **Fornecedores: ficha completa, onde vale, tipos editáveis e histórico**
+  (bloco 0.405.0 no ESTADO; manual 2.3). ⚠️ **Lista de fornecedor numa tela =
+  `fornecedoresDaUnidade`** (nunca `suppliers` por `clinic_id`; régua). ⚠️
+  **Gravar = porta `save_supplier`**; campo novo muda a porta e
+  `supplierToPayload` juntos (régua).
+- ⏳ **0371 só no treino**: o dono roda na produção antes do push. Pendente
+  com o dono: juntar ou não a RisLife duplicada (mesmo CNPJ na Franqueadora e
+  em Cambé).
+
 **09/11/2026 (AP69, etapa 2) — PC Administrador (Empresarial 0.97.0 → 0.98.0, migração 1040)**
 
 - **O Empresarial no razão da Franqueadora** (bloco "EMPRESARIAL 0.98.0" no

@@ -230,7 +230,9 @@ nele. Quem **grava** é decidido pelo banco, e a tela segue o banco:
 
 | O quê | Quem grava |
 |---|---|
-| Contas a pagar, fornecedores, conta bancária e conciliação da unidade | Gerente da unidade, Financeiro da Franqueadora, Admin Master |
+| Contas a pagar, conta bancária e conciliação da unidade | Gerente da unidade, Financeiro da Franqueadora, Admin Master |
+| Fornecedores das unidades que a pessoa gerencia | Gerente da unidade, Financeiro da Franqueadora, Admin Master |
+| Fornecedores da rede toda ou só da Franqueadora, e a lista de tipos de fornecedor | Financeiro da Franqueadora, Admin Master |
 | Multa, juros, carência e centros de custo (regras da rede) | Financeiro da Franqueadora, Admin Master |
 
 Quem abre a tela sem poder gravar vê **"Só consulta"** e o nome de quem faz.
@@ -302,6 +304,53 @@ certo é o que impede o mesmo dinheiro de entrar duas vezes:
 - A tela lê o extrato e os lançamentos **inteiros**, por maior que seja a
   conta (antes parava nas primeiras 1.000 linhas). Se a leitura falhar, um
   aviso vermelho diz que os saldos podem estar incompletos.
+
+#### Fornecedores: a ficha, onde vale e o histórico *(desde a 0.405.0)*
+
+**Financeiro → Cadastros → Fornecedores.** Clicar num fornecedor abre a
+**ficha**, com duas abas: **Dados** e **Histórico**.
+
+**A ficha.** Identificação (nome como aparece nas listas, razão social,
+CNPJ/CPF, tipo, inscrições estadual e municipal), contato (pessoa, telefone,
+WhatsApp, e-mail, e-mail financeiro para notas e boletos, site), endereço,
+pagamento (forma e prazo padrão, **conta padrão do plano de contas**, banco,
+agência, conta, titular, chave PIX, outras condições) e observações.
+**Obrigatórios: nome, CNPJ/CPF, tipo e onde vale** (marcados com \*).
+
+- Ao sair do campo CNPJ/CPF, a ficha **avisa se já existe fornecedor com o
+  mesmo documento** em qualquer lugar da rede — antes de cadastrar outro, veja
+  se não basta ampliar onde o existente vale.
+- CNPJ ou CPF com dígito verificador errado **só avisa**; não impede salvar.
+- A **conta padrão** é sugerida em **Contas a pagar**: ao escolher o
+  fornecedor numa conta nova, a conta do plano de contas vem preenchida (se
+  ainda estiver vazia e se valer naquela unidade).
+
+**Onde vale.** Cada fornecedor vale em um destes:
+
+| Opção | Aparece para |
+|---|---|
+| **Só a Franqueadora** | a Franqueadora |
+| **Todas as unidades** | todas as unidades e a Franqueadora |
+| **Unidades escolhidas** | só as unidades marcadas |
+
+A lista de fornecedores de **Contas a pagar**, **Estoque** (inclusive a
+importação de nota fiscal) e **Bens** mostra os que valem na unidade ativa.
+O **Gerente** cadastra e altera só fornecedores das unidades que gerencia;
+fornecedor da rede toda, só da Franqueadora, ou que vale também em outra
+unidade é do **Financeiro da Franqueadora** (para o Gerente ele aparece em
+"Só consulta"). O Financeiro da Franqueadora pode clicar em **"Ver todos os
+fornecedores da rede"**. Comprador, Coordenador e ASB também **enxergam** os
+fornecedores que valem na unidade deles (nas listas de Compras e Estoque).
+
+**Tipos.** O botão **Tipos** (Financeiro da Franqueadora e Admin Master)
+edita a lista da rede: renomear, mudar a ordem, criar e desativar. Tipo
+desativado some da escolha, mas continua nos fornecedores que já o usam.
+
+**Histórico.** No alto da ficha: **quando e por quem** o fornecedor foi
+cadastrado e alterado pela última vez. A aba **Histórico** mostra cada
+alteração — quem, quando, e o campo **antes → depois** — e quando ele passou a
+valer ou deixou de valer numa unidade. Vê o histórico quem vê o fornecedor. O
+registro automático começou em 09/10/2026: o que aconteceu antes não aparece.
 
 #### As mensalidades no Financeiro e as taxas da rede *(desde a 0.404.0, AP69)*
 

@@ -1,6 +1,33 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.404.0** · Última migração: **0370** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.405.0** · Última migração: **0371** (⏳ 0371 só no treino até o dono rodar na produção; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🚚 0.405.0 / 0371 — FORNECEDORES: FICHA, ONDE VALE, TIPOS E HISTÓRICO (09/11/2026)
+>
+> Pedido do dono (4 pontos) e decisões "seguir recomendações": obrigatórios
+> nome, CNPJ/CPF, tipo e abrangência; tipos editáveis pela Franqueadora; rede
+> toda/só Franqueadora = Admin e Financeiro da Franqueadora, Gerente só as
+> unidades dele; os existentes ficam como estavam (Franqueadora → "só
+> Franqueadora"; unidade → "unidades escolhidas: ela"); histórico para quem vê
+> o fornecedor. A RisLife duplicada (mesmo CNPJ na Franqueadora e em Cambé, na
+> produção) NÃO foi juntada — decisão do dono pendente.
+> - ⚠️ **Onde o fornecedor vale = `scope` + `supplier_clinics`**; `clinic_id`
+>   passou a ser só "onde foi cadastrado". Tela nova que liste fornecedores
+>   usa `fornecedoresDaUnidade` (`src/lib/fornecedores-db.ts`, sobre
+>   `suppliers_for_clinic`); a régua `fornecedores.test.ts` reprova
+>   `.from("suppliers")…eq("clinic_id"`.
+> - ⚠️ **Gravar fornecedor só pela porta `save_supplier`** (a RLS de escrita
+>   direta ficou só para Admin/Financeiro da Franqueadora). Campo novo na ficha
+>   = mudar a porta e `supplierToPayload` juntos (régua compara os dois).
+> - ⚠️ **Quem vê = `can_see_supplier`**: Admin, Financeiro da Franqueadora e
+>   Comprador veem todos; Gerente, Franqueado, Coordenador e ASB, os que valem
+>   na unidade deles. Histórico (`supplier_history`) segue a mesma regra.
+> - Ensaio 34/34 em transação desfeita + quebras (5 e 4 reprovam):
+>   `scripts/fornecedores-ensaio-0371.mjs`. Visto na tela pelo servidor local
+>   de teste (Financeiro e Gerente de teste). Manual 2.3, EV-304.
+> - Resíduo no treino (meu): razão social "Dental Teste Distribuidora Ltda" no
+>   fornecedor de teste "Dental Teste Distribuidora" (salvo pela tela).
+> - ⏳ **0371 só no treino.** O dono roda na produção ANTES do push.
 
 > ## 💼 EMPRESARIAL 0.98.0 / 1040 — O EMPRESARIAL NO RAZÃO DA FRANQUEADORA (AP69, etapa 2; 09/11/2026)
 >

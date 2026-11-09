@@ -22,6 +22,12 @@ import {
 } from "@/lib/auditoria-catalogo";
 import { PAYMENT_METHOD_LABELS } from "@/lib/commercial";
 import { BRAZIL_TIME_ZONE, formatIsoDateBr } from "@/lib/dates";
+import {
+  BANK_ACCOUNT_TYPE_LABELS,
+  PAYMENT_METHOD_LABELS as SUPPLIER_PAYMENT_LABELS,
+  PIX_KEY_TYPE_LABELS,
+  SCOPE_LABELS as SUPPLIER_SCOPE_LABELS,
+} from "@/lib/fornecedores";
 import { PHASE_LABELS, PILLAR_LABELS, STATUS_LABELS } from "@/lib/journey";
 import { PLAN_STATUS_LABELS } from "@/lib/planning";
 import { formatBRL } from "@/lib/pricing";
@@ -181,6 +187,10 @@ const VALORES_POR_TABELA_E_CAMPO: Record<string, Record<string, string>> = {
   "public.appointments.type": APPOINTMENT_TYPE_LABELS,
   "public.appointments.status": APPOINTMENT_STATUS_LABELS,
   "public.treatment_plans.status": PLAN_STATUS_LABELS,
+  "public.suppliers.scope": SUPPLIER_SCOPE_LABELS,
+  "public.suppliers.default_payment_method": SUPPLIER_PAYMENT_LABELS,
+  "public.suppliers.bank_account_type": BANK_ACCOUNT_TYPE_LABELS,
+  "public.suppliers.pix_key_type": PIX_KEY_TYPE_LABELS,
   "public.clients.status": {
     active: "Ativo",
     inactive: "Inativo",

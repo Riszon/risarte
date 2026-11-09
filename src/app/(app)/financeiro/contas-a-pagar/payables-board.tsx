@@ -126,7 +126,7 @@ export function PayablesBoard({
   payables: Payable[];
   payments: PaymentRow[];
   paymentEntries: PayablePaymentEntry[];
-  suppliers: { id: string; name: string }[];
+  suppliers: { id: string; name: string; defaultAccountCode?: string | null }[];
   accounts: ChartAccount[];
   costCenters: { id: string; name: string }[];
   rules: ApprovalRule[];
@@ -843,7 +843,15 @@ export function PayablesBoard({
               <Label className="text-[11px]">Fornecedor</Label>
               <ListaComBusca
                 value={supplierId}
-                onValueChange={setSupplierId}
+                onValueChange={(v) => {
+                  setSupplierId(v);
+                  // 0371: a conta padrão do fornecedor entra só se a conta
+                  // ainda está vazia e se ela vale nesta unidade.
+                  const padrao = suppliers.find((s) => s.id === v)?.defaultAccountCode;
+                  if (!accountCode && padrao && accounts.some((a) => a.code === padrao)) {
+                    setAccountCode(padrao);
+                  }
+                }}
                 className="mt-0.5 h-9 w-full"
                 options={[
                   { value: "", label: "— sem fornecedor —" },
