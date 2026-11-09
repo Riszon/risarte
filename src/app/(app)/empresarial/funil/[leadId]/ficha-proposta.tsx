@@ -80,6 +80,7 @@ import {
 import { CondicoesComerciais, type CondicoesView } from "./condicoes-editor";
 import { UnidadesDaParceria, type Unidade } from "./unidades-editor";
 import { PainelDoPasso, TrilhaDaProposta } from "./passos-da-proposta";
+import { PedirPeloWhatsApp, type PedidoDeInformacoes } from "./pedir-pelo-whatsapp";
 import {
   resumoDosPassos,
   type PassoDaProposta,
@@ -123,6 +124,7 @@ export function FichaDaProposta({
   precoPadrao,
   mostrarPadrao,
   fidelidade,
+  pedidoDeInformacoes,
   unidades,
   unidadePrincipal,
   unidadesDaParceria,
@@ -171,6 +173,8 @@ export function FichaDaProposta({
    * migração 1037 ainda não rodou: o bloco não aparece.
    */
   fidelidade: { meses: number | null; multaCents: number | null } | null;
+  /** 09/11/2026: o que pedir à empresa pelo WhatsApp (dados SALVOS). */
+  pedidoDeInformacoes: PedidoDeInformacoes;
   /** I3: as unidades do sistema, e as desta parceria. */
   unidades: Unidade[];
   unidadePrincipal: string | null;
@@ -890,6 +894,8 @@ export function FichaDaProposta({
             estimativaDependentes={estimativaDeps}
             padrao={padrao}
             padraoNoDocumento={mostrarPadrao === null ? null : mostrarPadraoNoDocumento}
+            leadId={leadId}
+            pedidoDeInformacoes={pedidoDeInformacoes}
           />
         </aside>
       </div>
@@ -1128,6 +1134,8 @@ function SimuladorDaProposta({
   estimativaDependentes,
   padrao,
   padraoNoDocumento,
+  leadId,
+  pedidoDeInformacoes,
 }: {
   proposta: ReturnType<typeof simularProposta>;
   basis: BillingBasis;
@@ -1144,6 +1152,8 @@ function SimuladorDaProposta({
   padrao: ComparacaoComOPadrao | null;
   /** 1036: a caixa "mostrar no documento" (nulo = migração pendente). */
   padraoNoDocumento: boolean | null;
+  leadId: string;
+  pedidoDeInformacoes: PedidoDeInformacoes;
 }) {
   const economia = proposta.economiaMensalCents;
   return (
@@ -1301,6 +1311,7 @@ function SimuladorDaProposta({
             <FileText className="mr-1.5 size-4" />
             Ver o contrato
           </Button>
+          <PedirPeloWhatsApp leadId={leadId} pedido={pedidoDeInformacoes} />
           <span className="text-xs text-muted-foreground">
             {faltaProposta.length > 0
               ? "Preencha o que falta acima para gerar a proposta."

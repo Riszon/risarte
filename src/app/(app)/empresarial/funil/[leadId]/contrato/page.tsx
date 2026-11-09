@@ -35,6 +35,12 @@ import { AssinaturasDaEmpresa } from "@/app/(app)/assinaturas/assinaturas-da-emp
 import { BotaoImprimir } from "../botao-imprimir";
 import { nomeDoArquivo } from "@/lib/empresarial/documento-da-proposta";
 import { DadosDoContrato } from "./dados-do-contrato";
+import { PedirPeloWhatsApp } from "../pedir-pelo-whatsapp";
+import {
+  mensagemDoPedido,
+  pendenciasDoPedido,
+} from "@/lib/empresarial/pedido-de-informacoes";
+import { createClient } from "@/lib/supabase/server";
 
 /** O título é o nome do arquivo ao salvar em PDF, como na proposta (0.91.0). */
 export async function generateMetadata({
@@ -130,6 +136,51 @@ export default async function ContratoPage({
   const v = contrato.valores;
   const texto = (t: string) => preencher(t, v);
 
+  // 09/11/2026: pedir à empresa pelo WhatsApp o que falta. A MESMA régua da
+  // aba Proposta (com os mesmos pontos de partida: razão social = nome do
+  // funil, quem assina = o contato), mais os campos que só o contrato usa.
+  const db = await empresarialDb();
+  const { data: contato } = await db
+    .from("commercial_leads")
+    .select("contact_name, contact_phone")
+    .eq("id", leadId)
+    .maybeSingle<{ contact_name: string | null; contact_phone: string | null }>();
+  let consultor: string | null = null;
+  if (lead.consultant_id) {
+    const { data: p } = await (await createClient())
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", lead.consultant_id)
+      .maybeSingle();
+    consultor = p ? p.full_name || p.email : null;
+  }
+  const pendencias = pendenciasDoPedido({
+    employeeCount: q?.employee_count ?? null,
+    paymentModel: q?.payment_model ?? null,
+    billingBasis: q?.billing_basis ?? null,
+    legalName: q?.legal_name ?? lead.company_name,
+    responsibleName: q?.responsible_name ?? contato?.contact_name ?? null,
+    responsibleCpf: q?.responsible_cpf ?? null,
+    responsibleEmail: q?.responsible_email ?? null,
+    cnpj: lead.cnpj,
+    responsibleRole: q?.responsible_role ?? null,
+    address: q?.address ?? null,
+    responsibleRg: q?.responsible_rg ?? null,
+    responsibleNationality: q?.responsible_nationality ?? null,
+    dueDay: q?.due_day ?? null,
+  });
+  const pedidoDeInformacoes = {
+    perguntas: pendencias.daEmpresa,
+    nossas: pendencias.nossas,
+    telefone: q?.responsible_phone || contato?.contact_phone || null,
+    mensagem: mensagemDoPedido({
+      contato: q?.responsible_name || contato?.contact_name || null,
+      empresa: q?.legal_name || lead.company_name,
+      consultor,
+      perguntas: pendencias.daEmpresa,
+    }),
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       {/* Some na impressão: o PDF que vai para a empresa não leva botões. */}
@@ -182,8 +233,6 @@ export default async function ContratoPage({
                 ))}
               </ul>
               <p className="mt-2 text-xs text-muted-foreground">
-                Razão social, CNPJ, quem assina, cargo e CPF ficam no passo 6
-                da proposta (<em>Dados do contrato</em>). O endereço, o RG e o
                 vencimento ficam logo abaixo.
               </p>
             </div>
@@ -191,6 +240,14 @@ export default async function ContratoPage({
             <p className="rounded-md border border-emerald-600/40 bg-emerald-600/5 p-3 text-sm">
               Todos os campos do contrato estão preenchidos.
             </p>
+          )}
+
+          {/* Mesmo com o contrato "completo", RG e nacionalidade em branco
+              saem como linha para preencher à mão — e podem ser pedidos. */}
+          {pedidoDeInformacoes.perguntas.length > 0 && (
+            <div>
+              <PedirPeloWhatsApp leadId={leadId} pedido={pedidoDeInformacoes} />
+            </div>
           )}
 
           {contrato.avisos.length > 0 && (

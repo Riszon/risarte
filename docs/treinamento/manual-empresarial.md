@@ -817,6 +817,32 @@ empresa para outra o sistema preenche sozinho:
 > **RG e nacionalidade são opcionais.** Em branco, o contrato sai com a linha
 > para preencher à mão.
 
+**Pedir o que falta pelo WhatsApp.** Quando falta alguma informação que a
+**empresa** precisa mandar, aparece o botão **Pedir o que falta pelo
+WhatsApp** — aqui, no alto do contrato, e no quadro *Simulação da proposta*,
+ao lado de *Ver a proposta* e *Ver o contrato*. As duas telas pedem a mesma
+lista.
+
+1. O botão abre uma janela com a mensagem pronta (*"Olá, Franciele! Para
+   finalizar a proposta e o contrato… preciso de: • CNPJ da empresa • RG de
+   quem vai assinar…"*), assinada com o nome do consultor. Dá para editar o
+   texto antes.
+2. **Abrir no WhatsApp** abre a conversa com o telefone de quem assina
+   (*Dados do contrato*) ou, sem ele, o telefone do contato da empresa. **O
+   sistema não envia nada sozinho:** quem aperta enviar é você.
+3. Ao abrir, fica uma anotação na aba **Histórico**: *"Pedido de informações
+   enviado pelo WhatsApp: …"*.
+
+- **Só vai na mensagem o que a empresa responde:** quantos titulares, razão
+  social, CNPJ, endereço da sede, nome, cargo, CPF, RG, nacionalidade e e-mail
+  de quem assina, e o dia preferido de vencimento.
+- **O que é decisão nossa fica fora** (quem paga o programa, como será
+  cobrado): a janela mostra em *"Falta também, e é com você"*.
+- **Sem telefone,** a janela diz onde cadastrar em vez de abrir o WhatsApp
+  vazio.
+- A lista sai dos dados **salvos** — salve a proposta antes, se acabou de
+  preencher algo.
+
 **O texto do modelo da rede (desde a 1037):**
 
 - usa **Titular** (nunca colaborador, funcionário ou empregado) e **Programa

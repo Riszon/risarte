@@ -1,3 +1,4 @@
+import type { CompanyAddress } from "@/lib/empresarial/types";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ClipboardList } from "lucide-react";
@@ -11,6 +12,10 @@ import {
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { DEFAULT_ADHESION_PRICING } from "@/lib/empresarial/pricing";
 import { loadPricing } from "../../configuracoes/data";
+import {
+  mensagemDoPedido,
+  pendenciasDoPedido,
+} from "@/lib/empresarial/pedido-de-informacoes";
 import { valorDaPropostaGravada } from "@/lib/empresarial/valor-da-proposta";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -212,6 +217,11 @@ type QualRow = {
   responsible_cpf: string | null;
   responsible_email: string | null;
   responsible_phone: string | null;
+  // 1027 — só o contrato usa; o pedido pelo WhatsApp pergunta por eles.
+  address?: CompanyAddress | null;
+  responsible_rg?: string | null;
+  responsible_nationality?: string | null;
+  due_day?: number | null;
   notes: string | null;
   proposal_valid_days: number | null;
   company_grace_days: number | null;
@@ -678,6 +688,28 @@ export default async function FichaDoLeadPage({
   }));
   const nome = (id: string | null) => (id ? nomePorId.get(id) ?? null : null);
 
+  // 09/11/2026: o que pedir à empresa pelo WhatsApp — a régua da proposta e
+  // do contrato, mais os campos que só o contrato usa.
+  const pendencias = pendenciasDoPedido({
+    ...dadosDaProposta,
+    responsibleRole: qual?.responsible_role ?? null,
+    address: qual?.address ?? null,
+    responsibleRg: qual?.responsible_rg ?? null,
+    responsibleNationality: qual?.responsible_nationality ?? null,
+    dueDay: qual?.due_day ?? null,
+  });
+  const pedidoDeInformacoes = {
+    perguntas: pendencias.daEmpresa,
+    nossas: pendencias.nossas,
+    telefone: qual?.responsible_phone || lead.contact_phone,
+    mensagem: mensagemDoPedido({
+      contato: qual?.responsible_name || lead.contact_name,
+      empresa: qual?.legal_name || lead.company_name,
+      consultor: nome(lead.consultant_id),
+      perguntas: pendencias.daEmpresa,
+    }),
+  };
+
   // A MESMA forma que o cartão do quadro usa (`LeadView`): é o que deixa a
   // ficha reusar as peças dele (editar dados, registrar tentativa, marcar
   // reunião) em vez de ter cópias.
@@ -832,6 +864,7 @@ export default async function FichaDoLeadPage({
           }}
           condicoes={condicoes}
           precoPadrao={precoPadrao}
+          pedidoDeInformacoes={pedidoDeInformacoes}
           fidelidade={
             // Sem a coluna (migração 1037 pendente) ou sem levantamento, o
             // bloco não aparece — e salvar não grava onde não existe.
