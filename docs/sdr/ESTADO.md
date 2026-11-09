@@ -17,8 +17,8 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | Plano 1 (correções da seção 2, itens 1–7) | ✅ concluído em 04/11/2026 | 0362–0364, 2009–2010, sem migração no item 1 e no 6 |
 | **0A.1 Identidade e auditoria** | ✅ concluída: código, treino e produção (04/11/2026) | core **0365**, rita **3000** |
 | **0A.2 Interruptor, modo e portão** | ✅ concluída: código, treino e produção (04/11/2026) | **3001** |
-| **0A.3 Consentimento e descadastro** | ✅ no código e no treino; ⏳ produção com o dono | **3002** |
-| 0A.4 Unidade, horários, feriados | — | core 036x |
+| **0A.3 Consentimento e descadastro** | ✅ concluída: código, treino e produção (09/11/2026) | **3002** |
+| 0A.4 Unidade, horários, feriados | próxima | core 036x |
 | 0A.5 Avaliação como dado | — | core 036x + 3003 |
 | 0A.6 Escalonamento e avisos | — | 3004 |
 | 0A.7 "O que a Rita sabe" | — | — |
@@ -169,7 +169,7 @@ quebrando de propósito (aceite do Indica valendo para marketing; empate
 liberando; gravar sem texto aprovado) caem 1, 4 e 1 conferências. Régua
 estática `rita-consentimento.test.ts` (9 testes), provada quebrando 3 vezes.
 
-**Na produção:** ⏳ a **3002** (com o dono). Nenhuma tela lê ainda.
+**Na produção:** ✅ **3002 aplicada pelo dono em 09/11/2026** (`audit_attach_all` = 3: as três tabelas novas na auditoria). `rita.consent_texts` segue vazia (decisão 30).
 
 ## Regras para as próximas entregas
 

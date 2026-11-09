@@ -485,7 +485,7 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **`npm run test:rita`** (novo): rodar em toda entrega da Rita e
   acrescentar a seção dela. `RITA_REAPLICAR=300x` prova antes de gravar.
 - Provado: test:rita 43/43 e quebrando; régua `rita-consentimento.test.ts`.
-  ⏳ 3002 na produção com o dono.
+  ✅ **3002 aplicada na produção pelo dono em 09/11/2026** (`audit_attach_all` = 3).
 
 **04/11/2026 (Rita — Fase 0A.2) — PC Administrador (Rita 0.1.0 → 0.2.0, migração 3001; core sem versão nova)**
 
