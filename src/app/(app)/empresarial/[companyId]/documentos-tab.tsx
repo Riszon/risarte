@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { FileUp, Plus, Star, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatCpf } from "@/lib/masks";
+import { BotaoCpfDeTeste } from "@/components/cpf-de-teste";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -380,6 +381,12 @@ function DocumentDialog({
                 placeholder="000.000.000-00"
                 defaultValue={document?.holderCpf ?? ""}
                 onChange={(e) => (e.target.value = formatCpf(e.target.value))}
+              />
+              <BotaoCpfDeTeste
+                onGerar={(c) => {
+                  const campo = window.document.getElementById("holder_cpf") as HTMLInputElement | null;
+                  if (campo) campo.value = c;
+                }}
               />
             </div>
           )}

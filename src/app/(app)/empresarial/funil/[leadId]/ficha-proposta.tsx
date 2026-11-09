@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatBRL } from "@/lib/pricing";
 import { formatCpf, formatPhone } from "@/lib/masks";
+import { BotaoCpfDeTeste } from "@/components/cpf-de-teste";
 import {
   PAYMENT_MODELS,
   PAYMENT_MODEL_LABELS,
@@ -769,6 +770,7 @@ export function FichaDaProposta({
                 onChange={(e) => setRespCpf(formatCpf(e.target.value))}
                 placeholder="000.000.000-00"
               />
+              <BotaoCpfDeTeste onGerar={setRespCpf} />
             </Campo>
             <Campo id="responsible_email" rotulo="E-mail de quem assina">
               <Input

@@ -14,6 +14,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { formatCpf, formatPhone } from "@/lib/masks";
+import { BotaoCpfDeTeste } from "@/components/cpf-de-teste";
 import { reportFileName } from "@/lib/empresarial/filenames";
 import type { LinhaComErro } from "@/lib/empresarial/importacao";
 import { Badge } from "@/components/ui/badge";
@@ -772,6 +773,14 @@ function EmployeeFormDialog({
                 onChange={(e) => setCpf(formatCpf(e.target.value))}
                 onBlur={(e) => lookup(e.target.value)}
               />
+              {!isEdit && (
+                <BotaoCpfDeTeste
+                  onGerar={(c) => {
+                    setCpf(c);
+                    lookup(c);
+                  }}
+                />
+              )}
               {found && (
                 <p className="mt-1 text-xs text-emerald-700">
                   Já é cliente da Risarte
@@ -958,6 +967,12 @@ function DependentFormDialog({
               value={cpf}
               onChange={(e) => setCpf(formatCpf(e.target.value))}
               onBlur={(e) => lookup(e.target.value)}
+            />
+            <BotaoCpfDeTeste
+              onGerar={(c) => {
+                setCpf(c);
+                lookup(c);
+              }}
             />
             {found && (
               <p className="mt-1 text-xs text-emerald-700">

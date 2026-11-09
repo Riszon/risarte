@@ -1108,6 +1108,13 @@ na planilha ou já na empresa), do CPF do dependente e do parentesco.
 **Dependentes:** dentro de um titular, *Adicionar dependente* (CPF +
 parentesco).
 
+> **No ambiente de TREINO**, abaixo do CPF aparece o link **Gerar CPF de
+> teste (só no treino)**: ele preenche um CPF válido inventado, como no
+> cadastro de clientes. Está no novo titular, no dependente, no responsável
+> pela empresa e no titular do CAEPF (cadastro da empresa e aba Documentos) e
+> em **quem assina pela empresa** (passo 6 da proposta). No sistema real o link
+> não aparece.
+
 **Completar cadastro** — é o passo que liga a pessoa ao riSZon. Escolha a
 **unidade** e confirme: ela passa a mostrar **★ Cliente vinculado** e o botão
 **Ver ficha**. Na ficha (ou em **Prontuários**) aparece o selo **★ Risarte

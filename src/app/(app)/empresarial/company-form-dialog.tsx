@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { formatCnpj, formatCep, formatCpf, formatPhone } from "@/lib/masks";
+import { BotaoCpfDeTeste } from "@/components/cpf-de-teste";
 import {
   COMPANY_CATEGORIES,
   COMPANY_CATEGORY_LABELS,
@@ -208,6 +209,10 @@ export function CompanyFormDialog({
                   placeholder="000.000.000-00"
                   onChange={(e) => (e.target.value = formatCpf(e.target.value))}
                 />
+                <BotaoCpfDeTeste onGerar={(c) => {
+                  const campo = document.getElementById("holder_cpf") as HTMLInputElement | null;
+                  if (campo) campo.value = c;
+                }} />
               </div>
             )}
             <div className="sm:col-span-2">
@@ -304,6 +309,10 @@ export function CompanyFormDialog({
                 defaultValue={company?.responsibleCpf ?? ""}
                 onChange={(e) => (e.target.value = formatCpf(e.target.value))}
               />
+              <BotaoCpfDeTeste onGerar={(c) => {
+                  const campo = document.getElementById("responsible_cpf") as HTMLInputElement | null;
+                  if (campo) campo.value = c;
+                }} />
             </div>
             <div>
               <Label htmlFor="responsible_phone">Telefone</Label>
