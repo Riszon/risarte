@@ -159,6 +159,8 @@ export const TABELAS: Record<string, string> = {
   "public.procedure_groups": "Grupo de procedimentos",
   "public.procedure_group_items": "Procedimento dentro de um grupo",
   "public.procedures": "Procedimento",
+  "public.clinic_procedure_availability": "Procedimento que a unidade não faz",
+  "public.patient_texts": "Texto para o paciente",
   "public.clinic_public_info": "Dados públicos da unidade",
   "public.clinic_service_areas": "Área atendida pela unidade",
   "public.clinic_weekday_hours": "Horário por dia da semana",
@@ -274,6 +276,7 @@ export const TABELAS: Record<string, string> = {
   "rita.consent_texts": "Rita: texto do consentimento",
   "rita.contact_consents": "Rita: consentimento de contato",
   "rita.opt_outs": "Rita: descadastro (não quer mais receber)",
+  "rita.evaluation_fee_campaigns": "Rita: campanha de isenção da avaliação",
 };
 
 /** As três áreas, para o filtro e para o selo ao lado do registro. */

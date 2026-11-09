@@ -105,6 +105,12 @@ Tudo no `public`, porque é dado da unidade que outras telas vão ler.
 
 ### 0A.5 — A avaliação como dado (core **035x** + rita **3003**) — _revisada em 03/11/2026 à noite (decisões 38–42)_
 
+> ✅ **Feita em 09/11/2026 como core 0369 + rita 3004** (core 0.403.1, Rita
+> 0.5.0). Diferenças: o catálogo e o valor são funções (`rita.catalog`,
+> `rita.evaluation_fee`), não views; a edição da oferta por unidade, da
+> duração, dos textos e das campanhas pela tela fica para a 0A.7. Detalhe em
+> `docs/sdr/ESTADO.md`.
+
 - **Nenhum procedimento novo** (decisão 38): o catálogo já tem, nos dois bancos, **"Consulta odontológica inicial"** (R$ 300,00) = avaliação de quem é novo, e **"Consulta odontológica"** (R$ 300,00) = consulta de quem já é cliente; as duas "de Urgência" (R$ 0,00) a Rita reconhece e escala. A migração acrescenta `procedures.rita_role` (`evaluation_new` / `evaluation_returning` / `urgency` / `null`), com índice único parcial por papel, e **marca os quatro pelo `code`/nome** (idempotente; se o nome não casar, falha alto em vez de marcar errado). O preço é o deles: `default_price_cents` e `clinic_procedure_prices` (hoje **nenhum** preço por unidade cadastrado nos dois bancos). Os benefícios por procedimento do Empresarial e do PPR+ já os alcançam.
 - **Rol da Rita** (decisão 39): `procedures.rita_can_offer boolean default false` (**só o Admin Master marca**, na tela de Procedimentos) e `procedures.patient_name text` (nome amigável). A Rita só informa o que está no rol; preço de tratamento, nunca.
 - **Oferta por unidade** (decisão 40, subiu da Fase 1): `clinic_procedure_availability (clinic_id, procedure_id, offered bool default false, note, updated_by)`; **sem linha = a unidade oferece**; o Gerente marca o que a unidade não faz. View `rita.v_catalog(p_clinic)` = rol ∩ oferta da unidade, com `patient_name`.

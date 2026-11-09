@@ -3032,6 +3032,17 @@ do teto. Duas regras:
   próprio** segue a regra do grupo, não a do procedimento. Grupo sem desconto
   e sem mínimo não muda nada: vale o mínimo do procedimento.
 
+**Assistente virtual no procedimento** (versão 0.403.1). Na lista, a
+etiqueta **Assistente virtual** marca o que a futura assistente de atendimento
+pelo WhatsApp **pode oferecer** ao paciente. Abra o cartão (setinha) para ver
+o quadro **Assistente virtual**: se ela pode oferecer, o **papel** (avaliação
+de quem é novo, consulta de quem já é cliente ou urgência) e o **nome que o
+paciente vê**. **Só o Admin Master muda** (botão **Alterar**); o Planner vê. A
+assistente nunca informa preço de tratamento — só o da avaliação e o da
+consulta. Já vêm marcadas a **Consulta odontológica inicial** (avaliação de
+quem é novo) e a **Consulta odontológica** (quem já é cliente); as duas
+**urgências** ela reconhece e passa para a equipe.
+
 **Grupos de procedimentos** (versão 0.350.0). Em **Procedimentos → Grupos**,
 o Planner e o Admin Master montam os grupos que o plano oferece no botão
 **Grupo**. Os grupos valem para a **rede inteira**.

@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.403.1",
+    data: "2026-11-09",
+    migracao: "0369",
+    titulo: "Procedimentos: o que a futura assistente virtual pode oferecer",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cada procedimento ganhou o quadro \"Assistente virtual\" (abre pela setinha do cartão) e, quando ela pode oferecer, a etiqueta \"Assistente virtual\" na lista. Só o Admin Master muda: se a assistente pode oferecer, o papel (avaliação de quem é novo, consulta de quem já é cliente, urgência) e o nome que o paciente vê. A \"Consulta odontológica inicial\" e a \"Consulta odontológica\" já vêm marcadas; as duas urgências a assistente reconhece e passa para a equipe.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.403.0",
     data: "2026-11-09",
     migracao: "0368",

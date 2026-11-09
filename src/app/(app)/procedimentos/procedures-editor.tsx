@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   AlertTriangle,
+  Bot,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -71,6 +72,8 @@ import {
 } from "@/lib/finance/repasse-percentual";
 import { RepasseValorOuPercentual } from "./repasse-valor-percentual";
 import { GruposDoProcedimento, type GrupoParaVincular } from "./grupos-do-procedimento";
+import { RitaDoProcedimento } from "./rita-do-procedimento";
+import type { RitaDoProcedimento as RitaDoProc } from "@/lib/rita-procedimento";
 import {
   dataBr,
   proximoReajuste,
@@ -720,6 +723,7 @@ export function ProceduresEditor({
   // "grupos" aqui dentro já são os blocos por especialidade.
   grupos: gruposDeProcedimentos = null,
   podeVincularGrupo = false,
+  rita: ritaPorProcedimento = null,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -758,6 +762,9 @@ export function ProceduresEditor({
   grupos?: GrupoParaVincular[] | null;
   /** GP1: Admin Master e Planner põem e tiram procedimento de grupo. */
   podeVincularGrupo?: boolean;
+  /** 0369 (Rita, 0A.5): os campos da assistente virtual, por procedimento
+   *  (nulo = o banco ainda sem a 0369; o painel não aparece). */
+  rita?: Record<string, RitaDoProc> | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -843,6 +850,8 @@ export function ProceduresEditor({
         nomesDasUnidades={nomesDasUnidades}
         grupos={gruposDeProcedimentos}
         podeVincularGrupo={podeVincularGrupo}
+        rita={ritaPorProcedimento ? (ritaPorProcedimento[p.id] ?? null) : null}
+        podeMarcarRita={isAdmin}
       />
     );
   };
@@ -1265,6 +1274,8 @@ function ProcedureRow({
   nomesDasUnidades,
   grupos,
   podeVincularGrupo,
+  rita,
+  podeMarcarRita,
 }: {
   procedure: Procedure;
   specialties: string[];
@@ -1307,6 +1318,8 @@ function ProcedureRow({
   nomesDasUnidades: Record<string, string>;
   grupos: GrupoParaVincular[] | null;
   podeVincularGrupo: boolean;
+  rita: RitaDoProc | null;
+  podeMarcarRita: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [showKits, setShowKits] = useState(false);
@@ -1421,6 +1434,17 @@ function ProcedureRow({
               {!inativo && p.pillar && (
                 <Badge className="bg-gold text-gold-foreground text-[10px]">
                   {PILLAR_LABELS[p.pillar]}
+                </Badge>
+              )}
+              {/* 0369 (Rita, 0A.5): no rol da assistente virtual. */}
+              {!inativo && rita?.canOffer && (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-sky-300 bg-sky-50 text-[10px] text-sky-800 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-200"
+                  title="A assistente virtual pode oferecer este procedimento"
+                >
+                  <Bot className="size-3" />
+                  Assistente virtual
                 </Badge>
               )}
               {/* Indicador de venda direta + quem pode lançar (§7.3). */}
@@ -1762,6 +1786,10 @@ function ProcedureRow({
           grupos={grupos}
           podeVincular={podeVincularGrupo}
         />
+      )}
+
+      {networkMode && rita && (podeMarcarRita || rita.canOffer || rita.role) && (
+        <RitaDoProcedimento procedureId={p.id} rita={rita} podeEditar={podeMarcarRita} />
       )}
 
       {showHistory && <ChangeHistory changes={changes} />}

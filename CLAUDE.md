@@ -475,6 +475,18 @@ Syncthing se comportarem de forma estranha.**
 - Visto na tela no treino (ASS-000062). Sem migração; publicado (push
   2c2d475d).
 
+**09/11/2026 (Rita — Fase 0A.5) — PC Administrador (core 0.403.0 → 0.403.1, migração 0369; Rita 0.4.0 → 0.5.0, migração 3004)**
+
+- **A avaliação como dado** (bloco 0.403.1 no ESTADO; Rita em
+  `docs/sdr/ESTADO.md`). ⚠️ **0.404.0/0370 é do AP69 ("Backlogs abertos")**,
+  que sobe depois desta (combinado por mensagem).
+- ⚠️ **Campos da Rita no procedimento: só o Admin** (`procedures_rita_guard`).
+  **Textos ao paciente: o Gerente propõe, só o Admin aprova.**
+- ⚠️ **A Rita nunca informa preço de tratamento** (`rita.catalog` só dá preço de
+  avaliação/consulta; régua `rita-procedimento.test.ts`).
+- `test:rita` 93/93 e quebrando; visto na tela. ⏳ **0369 → 3004 na produção**
+  (o código lê à parte: publicado antes, o quadro só não aparece).
+
 **09/11/2026 (Rita — Fase 0A.4) — PC Administrador (core 0.402.0 → 0.403.0, migração 0368; Rita 0.3.0 → 0.4.0, migração 3003)**
 
 - **Horário por dia, feriados e dados públicos da unidade** (bloco 0.403.0 no

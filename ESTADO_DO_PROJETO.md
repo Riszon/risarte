@@ -1,6 +1,29 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.403.0** · Última migração: **0368** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.403.1** · Última migração: **0369** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🤖 0.403.1 — A AVALIAÇÃO COMO DADO (09/11/2026, migrações 0369 e 3004; Rita 0.5.0 — Fase 0A.5)
+>
+> - **0369 (core):** `procedures.rita_role` / `rita_can_offer` / `patient_name`
+>   (**só o Admin** — `procedures_rita_guard`, `RITA_FIELDS_ADMIN_ONLY`); as 4
+>   consultas marcadas pelo **nome exato** (decisão 38; falha alto se não casar);
+>   `clinic_procedure_availability` (Gerente: o que a unidade NÃO faz; sem linha
+>   = faz); `clinic_agenda_settings.evaluation_minutes` (cascata; rede 60);
+>   `patient_texts` (Gerente propõe → rascunho; só o Admin aprova; mudar o
+>   texto volta a rascunho e conta versão; 4 políticas da decisão 42 aprovadas).
+> - **3004 (rita):** `rita.evaluation_fee_campaigns` (`propose_fee_campaign`,
+>   `set_fee_campaign_status` só Admin), `rita.catalog` (rol ∩ oferta da
+>   unidade; **preço só de avaliação/consulta**), `rita.evaluation_fee` (preço
+>   da unidade > rede, duração, campanha ativa, gratuidade por origem); o portão
+>   confere a avaliação e "o que inclui" — **só falta "transferências" (0A.6)**.
+> - ⚠️ **Ao recriar `rita._gaps`/`_recheck_trg`, levar os blocos da 3004.**
+> - Tela: Procedimentos → etiqueta e quadro **Assistente virtual** (só o Admin
+>   muda). Oferta por unidade, duração, textos e campanhas: banco pronto; a
+>   edição pela tela vem na **0A.7** ("O que a Rita sabe").
+> - Provas: `test:rita` 93/93 e quebrando (2+1+2); régua
+>   `rita-procedimento.test.ts`; visto na tela (Admin e Planner de teste).
+> - ⏳ **Na produção:** 0369 → 3004. O código lê os campos novos À PARTE:
+>   publicado antes, o quadro "Assistente virtual" só não aparece até a 0369.
 
 > ## 🗓️ 0.403.0 — HORÁRIO POR DIA, FERIADOS E DADOS PÚBLICOS DA UNIDADE (09/11/2026, migrações 0368 e 3003; Rita 0.4.0 — Fase 0A.4)
 >

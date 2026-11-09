@@ -19,8 +19,8 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.2 Interruptor, modo e portão** | ✅ concluída: código, treino e produção (04/11/2026) | **3001** |
 | **0A.3 Consentimento e descadastro** | ✅ concluída: código, treino e produção (09/11/2026) | **3002** |
 | **0A.4 Unidade, horários, feriados** | ✅ concluída: código, treino e produção (09/11/2026) | core **0368**, rita **3003** |
-| 0A.5 Avaliação como dado | próxima | core 036x + 3004 |
-| 0A.6 Escalonamento e avisos | — | 3004 |
+| **0A.5 Avaliação como dado** | ✅ no código e no treino; ⏳ produção com o dono | core **0369**, rita **3004** |
+| 0A.6 Escalonamento e avisos | próxima | 3005 |
 | 0A.7 "O que a Rita sabe" | — | — |
 
 ## 0A.1 — Identidade e auditoria (Rita 0.1.0, 04/11/2026)
@@ -208,6 +208,50 @@ a 3003 (feriado sem decisão abre) caem 2 e 2. Régua `unidade-publica.test.ts`.
 Visto na tela pelo servidor local de teste, nada salvo.
 
 **Na produção:** ✅ **0368 e 3003 aplicadas pelo dono em 09/11/2026**; conferido de fora (48 nacionais, 7 dias da rede, 14 de unidades, 0 dados públicos).
+
+## 0A.5 — A avaliação como dado (Rita 0.5.0, 09/11/2026)
+
+**No core (0369):**
+
+- `procedures.rita_role` (`evaluation_new` / `evaluation_returning` /
+  `urgency`; uma avaliação de cada), `rita_can_offer` (o ROL) e
+  `patient_name`. **Só o Admin Master muda** (`procedures_rita_guard`).
+  Decisão 38: as 4 consultas marcadas pelo **nome exato** (falha alto se não
+  casar); as duas consultas no rol, as duas urgências fora (a Rita reconhece e
+  escala). Tela: etiqueta e quadro "Assistente virtual" no cartão do
+  procedimento.
+- `clinic_procedure_availability`: o Gerente marca o que a unidade NÃO faz.
+- `clinic_agenda_settings.evaluation_minutes`: cascata (unidade > rede > 60).
+- `patient_texts` (`evaluation_includes`, `evaluation_bring`,
+  `late_tolerance`, `reschedule_policy`, `no_show_policy`,
+  `minors_policy`), cascata rede → unidade. **O Gerente propõe (rascunho), só
+  o Admin aprova**; mudar o texto volta a rascunho e conta versão. As 4
+  políticas da decisão 42 nascem aprovadas na rede; "o que inclui" e "o que
+  trazer" nascem vazios.
+
+**Na Rita (3004):**
+
+| Função | O que faz |
+|---|---|
+| `rita.catalog(unidade)` | o rol ∩ o que a unidade faz, com nome para o paciente; **preço e duração só de avaliação/consulta** |
+| `rita.evaluation_fee(unidade)` | preço (unidade > rede), duração, campanha ativa, gratuidade por origem (Indica: sempre; nº de empresas e planos PPR+ com o benefício — se a PESSOA tem direito é da Fase 1) |
+| `rita.propose_fee_campaign(unidades, título, texto, de, até)` | Admin (rede ou unidades) ou o Gerente das unidades — nasce rascunho |
+| `rita.set_fee_campaign_status(id, active|ended)` | só o Admin |
+
+**O portão** confere a avaliação (no rol, a unidade faz, com duração, com valor
+— ou campanha ativa) e o texto aprovado de "o que a avaliação inclui". **Só
+falta "transferências" (0A.6).** A pausa vigia `procedures`,
+`clinic_procedure_prices`, `clinic_procedure_availability` e
+`patient_texts`.
+
+**Ainda sem tela** (vem na 0A.7, "O que a Rita sabe"): a oferta por unidade, a
+duração, os textos e as campanhas — o banco já guarda e confere quem grava.
+
+**Provas:** `test:rita` **93/93**; quebrando (qualquer um mexe no rol;
+rascunho de campanha vale; Gerente aprova texto) caem 2, 1 e 2. Régua
+`rita-procedimento.test.ts`. Visto na tela (Admin e Planner de teste).
+
+**Na produção:** ⏳ **0369** e depois **3004**, antes do push.
 
 ## Regras para as próximas entregas
 

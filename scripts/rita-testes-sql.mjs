@@ -393,6 +393,12 @@ try {
   let g = await um("select ok from rita._gaps($1) where item = 'maps'", [X]);
   ok(g.ok === false, "sem link do mapa → item 'maps' falta");
   await q("update public.clinic_public_info set maps_url = 'https://maps.example/ensaio' where clinic_id = $1", [X]);
+  // Desde a 0A.5 "o que a avaliação inclui" é conferido: o texto entra na simulação.
+  if ((await um("select to_regclass('public.patient_texts') t")).t) {
+    await q(`insert into public.patient_texts (text_key, clinic_id, content, status, approved_at)
+             values ('evaluation_includes', null, 'Exame clínico completo (ensaio).', 'approved', now())
+             on conflict on constraint patient_texts_unique do update set status = 'approved', approved_at = now()`);
+  }
   const faltam = await q("select item from rita._gaps($1) where not ok", [X]);
   ok(faltam.length === 0, "unidade completa (com as próximas entregas simuladas): portão vazio", JSON.stringify(faltam));
   await q("update rita.settings set enabled = true where clinic_id = $1", [X]);
@@ -405,6 +411,118 @@ try {
   await q("update public.clinic_weekday_hours set closed = true, open_time = null, close_time = null, lunch_start = null, lunch_end = null where clinic_id is null");
   st = await um("select enabled, paused_reason from rita.settings where clinic_id = $1", [X]);
   ok(st.enabled === false && /Horário/.test(st.paused_reason ?? ""), "rede toda fechada no horário por dia → unidade que herda pausa", JSON.stringify(st));
+
+  // =========================================================== 0A.5 (0369 + 3004)
+  console.log("\n0A.5 — a avaliação como dado");
+  await como(null);
+  // Desfaz o "rede toda fechada" da seção anterior (tudo na mesma transação).
+  await q("update public.clinic_weekday_hours set closed = false, open_time = '08:00', close_time = '18:00' where clinic_id is null and weekday between 1 and 5");
+  const marcas = await q("select name, rita_role, rita_can_offer from public.procedures where rita_role is not null order by rita_role, name");
+  const m = (nome) => marcas.find((x) => x.name.trim() === nome);
+  ok(
+    m("Consulta odontológica inicial")?.rita_role === "evaluation_new" && m("Consulta odontológica inicial")?.rita_can_offer === true &&
+      m("Consulta odontológica")?.rita_role === "evaluation_returning" && m("Consulta odontológica")?.rita_can_offer === true &&
+      m("Consulta odontológica de Urgência")?.rita_role === "urgency" && m("Consulta odontológica de Urgência")?.rita_can_offer === false &&
+      m("Consulta odontológica de Urgência 24 hs")?.rita_role === "urgency" && marcas.length === 4,
+    "decisão 38: as 4 consultas marcadas pelo nome (2 no rol, 2 urgências fora)",
+    JSON.stringify(marcas)
+  );
+  const aval = (await um("select id from public.procedures where rita_role = 'evaluation_new'")).id;
+  const urg = (await um("select id from public.procedures where rita_role = 'urgency' order by name limit 1")).id;
+  await como(ger.user_id);
+  ok(/RITA_FIELDS_ADMIN_ONLY/.test((await erroDe("update public.procedures set rita_can_offer = true where id = $1", [urg])) ?? ""), "Gerente não mexe no rol da Rita");
+  await como(admin);
+  ok((await erroDe("update public.procedures set patient_name = 'Avaliação odontológica' where id = $1", [aval])) === null, "Admin dá o nome para o paciente");
+  await como("servico");
+  let cat = await q("select procedure_id, patient_name, rita_role, price_cents, minutes from rita.catalog($1)", [X]);
+  const cAval = cat.find((x) => x.procedure_id === aval);
+  ok(cAval?.patient_name === "Avaliação odontológica" && cAval.price_cents > 0 && cAval.minutes === 60, "catálogo: avaliação com nome do paciente, preço e 60 min", JSON.stringify(cAval));
+  ok(!cat.some((x) => x.rita_role === "urgency") && cat.every((x) => x.rita_role || x.price_cents === null), "urgência fora do rol; preço só de avaliação/consulta", JSON.stringify(cat));
+  await como(null);
+  await q("insert into public.clinic_procedure_prices (clinic_id, procedure_id, price_cents) values ($1, $2, 25000) on conflict (clinic_id, procedure_id) do update set price_cents = 25000", [X, aval]);
+  let fee = await um("select * from rita.evaluation_fee($1)", [X]);
+  ok(fee.price_cents === 25000 && fee.offered === true && fee.free_for_indica === true, "preço da unidade vence o da rede", JSON.stringify(fee));
+  await q("update public.clinic_agenda_settings set evaluation_minutes = 45 where clinic_id = $1", [X]);
+  fee = await um("select * from rita.evaluation_fee($1)", [X]);
+  ok(fee.minutes === 45, "duração da unidade vence a da rede", String(fee.minutes));
+  // Oferta por unidade: o Gerente marca que a unidade não faz.
+  ok(
+    (await comoLogado(ger.user_id, "insert into public.clinic_procedure_availability (clinic_id, procedure_id, offered) values ($1, $2, false)", [X, aval])) === null,
+    "Gerente marca que a unidade não faz"
+  );
+  ok((await comoLogado(ger.user_id, "insert into public.clinic_procedure_availability (clinic_id, procedure_id, offered) values ($1, $2, false)", [Y, aval])) !== null, "Gerente não marca em outra unidade");
+  await como("servico");
+  cat = await q("select procedure_id from rita.catalog($1)", [X]);
+  fee = await um("select * from rita.evaluation_fee($1)", [X]);
+  let gA = await um("select ok, detalhe from rita._gaps($1) where item = 'avaliacao'", [X]);
+  ok(!cat.some((x) => x.procedure_id === aval) && fee.offered === false && gA.ok === false && /não faz/.test(gA.detalhe), "unidade que não faz: some do catálogo e o portão acusa", JSON.stringify(gA));
+  await como(null);
+  await q("delete from public.clinic_procedure_availability where clinic_id = $1", [X]);
+
+  // Valor zero só passa com campanha ativa
+  await q("delete from public.clinic_procedure_prices where clinic_id = $1 and procedure_id = $2", [X, aval]);
+  await q("update public.procedures set default_price_cents = 0 where id = $1", [aval]);
+  gA = await um("select ok, detalhe from rita._gaps($1) where item = 'avaliacao'", [X]);
+  ok(gA.ok === false && /valor zero/.test(gA.detalhe), "valor zero sem campanha = lacuna", JSON.stringify(gA));
+  const hoje = (await um("select (now() at time zone 'America/Sao_Paulo')::date::text d")).d;
+  await como(ger.user_id);
+  const eOutra = await erroDe("select rita.propose_fee_campaign(array[$1]::uuid[], 'Campanha de ensaio', 'Avaliação gratuita neste mês (ensaio).', $2::date, $2::date + 30)", [Y, hoje]);
+  ok(/NOT_ALLOWED/.test(eOutra ?? ""), "Gerente não propõe campanha para outra unidade", eOutra ?? "passou");
+  const camp = (await um("select rita.propose_fee_campaign(array[$1]::uuid[], 'Campanha de ensaio', 'Avaliação gratuita neste mês (ensaio).', $2::date, $2::date + 30) id", [X, hoje])).id;
+  ok(/NOT_ALLOWED/.test((await erroDe("select rita.set_fee_campaign_status($1, 'active')", [camp])) ?? ""), "Gerente não aprova campanha");
+  await como("servico");
+  ok((await um("select campaign_id from rita.evaluation_fee($1)", [X])).campaign_id === null, "campanha proposta (rascunho) não vale");
+  await como(admin);
+  await q("select rita.set_fee_campaign_status($1, 'active')", [camp]);
+  await como("servico");
+  fee = await um("select * from rita.evaluation_fee($1)", [X]);
+  gA = await um("select ok from rita._gaps($1) where item = 'avaliacao'", [X]);
+  ok(fee.campaign_id === camp && /gratuita/.test(fee.campaign_text) && gA.ok === true, "campanha aprovada: aparece e cobre o valor zero", JSON.stringify(fee));
+  await como(null);
+  await q("update rita.evaluation_fee_campaigns set starts_on = $1::date - 40, ends_on = $1::date - 1 where id = $2", [hoje, camp]);
+  await como("servico");
+  ok((await um("select campaign_id from rita.evaluation_fee($1)", [X])).campaign_id === null, "campanha vencida some");
+  ok(/INVALID_INPUT/.test((await erroDe("select rita.propose_fee_campaign(null, 'x', 'curto', current_date, current_date)")) ?? "") ||
+     /NOT_ALLOWED/.test((await erroDe("select rita.propose_fee_campaign(null, 'x', 'curto', current_date, current_date)")) ?? ""),
+     "sem pessoa logada, ninguém propõe campanha");
+  await como(null);
+  await q("update public.procedures set default_price_cents = 30000 where id = $1", [aval]);
+
+  // Textos para o paciente
+  const insTexto = "insert into public.patient_texts (text_key, clinic_id, content, status, approved_at) values ($1, $2, $3, $4, $5)";
+  ok(/PATIENT_TEXT_ADMIN_APPROVES/.test((await comoLogado(ger.user_id, insTexto, ["evaluation_includes", X, "Exame clínico completo e conversa sobre o plano.", "approved", new Date().toISOString()])) ?? ""), "Gerente não aprova texto");
+  ok((await comoLogado(ger.user_id, insTexto, ["evaluation_includes", X, "Exame clínico completo e conversa sobre o plano.", "draft", null])) === null, "Gerente propõe o texto da unidade (rascunho)");
+  ok((await comoLogado(ger.user_id, insTexto, ["evaluation_bring", null, "Documento com foto.", "draft", null])) !== null, "Gerente não escreve o texto da rede");
+  await como(null);
+  let gI = await um("select ok from rita._gaps($1) where item = 'avaliacao_inclui'", [X]);
+  ok(gI.ok === false, "texto em rascunho não vale para o portão");
+  ok(
+    (await comoLogado(admin, "update public.patient_texts set status = 'approved', approved_at = now(), approved_by = $2 where text_key = 'evaluation_includes' and clinic_id = $1", [X, admin])) === null,
+    "Admin aprova o texto da unidade"
+  );
+  await como(null);
+  gI = await um("select ok from rita._gaps($1) where item = 'avaliacao_inclui'", [X]);
+  ok(gI.ok === true, "texto aprovado: o portão aceita");
+  await comoLogado(ger.user_id, "update public.patient_texts set content = 'Exame clínico, radiografia e a conversa sobre o plano.' where text_key = 'evaluation_includes' and clinic_id = $1", [X]);
+  await como(null);
+  const t = await um("select status, version, approved_at from public.patient_texts where text_key = 'evaluation_includes' and clinic_id = $1", [X]);
+  ok(t.status === "draft" && t.version === 2 && t.approved_at === null, "Gerente mudou o texto: volta a rascunho, versão 2", JSON.stringify(t));
+  const pol = await um("select count(*)::int n from public.patient_texts where clinic_id is null and status = 'approved' and text_key in ('late_tolerance','reschedule_policy','no_show_policy','minors_policy')");
+  ok(pol.n === 4, "decisão 42: as 4 políticas padrão da rede, aprovadas", String(pol.n));
+  const pend5 = (await q("select item from rita._pending_items()")).map((x) => x.item);
+  // (o _pending_items foi trocado por "nenhum" na seção 0A.4; a conferência
+  // real lê a definição gravada, que não muda dentro desta transação)
+  const def = (await um("select prosrc from pg_proc where oid = 'rita._pending_items()'::regprocedure")).prosrc;
+  ok(pend5.length === 0 || (!/'avaliacao'/.test(def) && !/'avaliacao_inclui'/.test(def)), "avaliação e 'o que inclui' saíram dos pendentes");
+
+  // Pausa: a unidade ligada deixa de fazer a avaliação
+  await q("update public.patient_texts set status = 'approved', approved_at = now() where text_key = 'evaluation_includes' and clinic_id = $1", [X]);
+  const faltam5 = await q("select item from rita._gaps($1) where not ok", [X]);
+  if (faltam5.length) naoMedi("a unidade não ficou completa para a prova da pausa: " + JSON.stringify(faltam5));
+  await q("update rita.settings set enabled = true where clinic_id = $1", [X]);
+  await q("insert into public.clinic_procedure_availability (clinic_id, procedure_id, offered) values ($1, $2, false)", [X, aval]);
+  st = await um("select enabled, paused_reason from rita.settings where clinic_id = $1", [X]);
+  ok(st.enabled === false && /avaliação/.test(st.paused_reason ?? ""), "unidade deixa de fazer a avaliação → pausa sozinha", JSON.stringify(st));
 } catch (e) {
   falhas.push(e.message);
   console.log(`\n  ✘ ${e.message}`);

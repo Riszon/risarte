@@ -21,6 +21,7 @@ import { ProtocolProposals, type PendingProposal } from "./protocol-proposals";
 import { SugestoesDeProcedimento, type SugestaoNaTela } from "./sugestoes";
 import type { SituacaoDaSugestao } from "@/lib/sugestao-de-procedimento";
 import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
+import type { PapelDaRita, RitaDoProcedimento } from "@/lib/rita-procedimento";
 
 export const metadata: Metadata = { title: "Procedimentos" };
 
@@ -360,6 +361,18 @@ export default async function ProceduresPage(
   // cartão (pedido do dono, 27/10/2026). Leitura que falha não vira "nenhum".
   const grupos = await carregarGrupos(supabase);
 
+  // 0369 (Rita, 0A.5): os campos da assistente virtual, lidos À PARTE — sem a
+  // migração num banco, o painel "Assistente virtual" não aparece.
+  const { data: ritaRows, error: ritaErro } = await supabase
+    .from("procedures")
+    .select("id, rita_role, rita_can_offer, patient_name")
+    .returns<{ id: string; rita_role: PapelDaRita | null; rita_can_offer: boolean; patient_name: string | null }[]>();
+  const ritaPorProcedimento: Record<string, RitaDoProcedimento> | null = ritaErro
+    ? null
+    : Object.fromEntries(
+        (ritaRows ?? []).map((r) => [r.id, { canOffer: r.rita_can_offer, role: r.rita_role, patientName: r.patient_name }])
+      );
+
   const [{ data: kitDetailRows }, { data: kitItemRows }] = await Promise.all([
     supabase.rpc("procedure_kits_detail", { p_clinic_id: activeClinicId }),
     supabase
@@ -664,6 +677,7 @@ export default async function ProceduresPage(
             : null
         }
         podeVincularGrupo={canSeeCatalog}
+        rita={ritaPorProcedimento}
       />
     </div>
   );
