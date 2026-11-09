@@ -3509,6 +3509,32 @@ auditoria ou por ordem judicial: ficha do paciente → aba **Linha do tempo** �
 > gera um **contra-lançamento** com motivo. Conferir antes de salvar vale mais
 > aqui do que em qualquer outra tela.
 
+#### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
+
+Em **Agenda → Configurar agenda**, dois cartões novos no fim da página:
+
+- **Horário por dia da semana.** Cada dia com abertura, fechamento e almoço
+  próprios (o almoço é opcional: deixe os dois campos vazios). Enquanto a
+  unidade não salvar o dela, segue o **padrão da rede** (o Admin Master
+  muda o padrão na Franqueadora). **Voltar ao padrão da rede** desfaz o
+  horário próprio.
+  ⚠️ **A agenda da equipe ainda usa o horário do primeiro cartão**
+  ("Horário de atendimento"). O horário por dia é o que a assistente virtual
+  vai informar aos pacientes quando for ligada; ele passará a valer na agenda
+  numa próxima etapa.
+- **Feriados da unidade (próximos 12 meses).** Os feriados nacionais já vêm
+  cadastrados. Em cada um, clique **Vai atender** ou **Não vai**. A mesma
+  decisão vale para a agenda da equipe naquele dia. **Para a assistente
+  virtual, feriado sem decisão = unidade fechada.** Para cadastrar um feriado
+  **da cidade ou do estado** da unidade: data, nome, "Vale para" e
+  **Cadastrar**.
+
+**Dados públicos da unidade** — o que se pode dizer a um paciente (nome
+público, **link do mapa**, ponto de referência, estacionamento,
+acessibilidade, WhatsApp da unidade, idade mínima para atender criança e as
+cidades e bairros atendidos) — ficam com o Admin Master, em **Administração →
+Clínicas → Dados públicos**.
+
 #### Planejamento anual: quantas horas a unidade pode trabalhar — e quantas trabalhou
 
 **Onde:** Agenda → **Mais ações** → **Planejamento anual**

@@ -18,8 +18,8 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.1 Identidade e auditoria** | ✅ concluída: código, treino e produção (04/11/2026) | core **0365**, rita **3000** |
 | **0A.2 Interruptor, modo e portão** | ✅ concluída: código, treino e produção (04/11/2026) | **3001** |
 | **0A.3 Consentimento e descadastro** | ✅ concluída: código, treino e produção (09/11/2026) | **3002** |
-| 0A.4 Unidade, horários, feriados | próxima | core 036x |
-| 0A.5 Avaliação como dado | — | core 036x + 3003 |
+| **0A.4 Unidade, horários, feriados** | ✅ no código e no treino; ⏳ produção com o dono | core **0368**, rita **3003** |
+| 0A.5 Avaliação como dado | próxima | core 036x + 3004 |
 | 0A.6 Escalonamento e avisos | — | 3004 |
 | 0A.7 "O que a Rita sabe" | — | — |
 
@@ -170,6 +170,44 @@ liberando; gravar sem texto aprovado) caem 1, 4 e 1 conferências. Régua
 estática `rita-consentimento.test.ts` (9 testes), provada quebrando 3 vezes.
 
 **Na produção:** ✅ **3002 aplicada pelo dono em 09/11/2026** (`audit_attach_all` = 3: as três tabelas novas na auditoria). `rita.consent_texts` segue vazia (decisão 30).
+
+## 0A.4 — Unidade, horário por dia e feriados (Rita 0.4.0, 09/11/2026)
+
+**No core (0368)** — tudo no `public`, todos leem:
+`clinic_public_info` (nome público, **link do mapa**, referência,
+estacionamento, acessibilidade, WhatsApp, `min_child_age` — decisão 41) e
+`clinic_service_areas` (Admin ou Gerente da unidade);
+`clinic_weekday_hours` em cascata (a rede só o Admin); `holidays` (48
+nacionais de 2026–2029; estadual/municipal pelo Gerente do estado/cidade).
+**A agenda da equipe não lê o horário por dia** (DA8).
+
+**Na Rita (3003):**
+
+| Função | O que faz |
+|---|---|
+| `rita.weekday_hours(unidade)` | os 7 dias que valem (da unidade, senão da rede), com `origem` |
+| `rita.unit_day(unidade, data)` | `is_open`, horário, almoço, `holiday_name` e `reason`: `aberto`, `dia_fechado`, `feriado_sem_decisao`, `feriado_fechado`, `feriado_com_atendimento` |
+
+**Feriado sem decisão do Gerente = fechado para a Rita** (decisão 9). Ainda
+**não** entram no `unit_day`: o fechamento por período do Planejamento anual,
+os dias avulsos e as salas/profissionais — isso é dos horários livres (Fase 1).
+
+**O portão** passou a conferir o **link do mapa** e **ao menos um dia aberto**
+no horário por dia. Pendentes agora: avaliação (duração/valor e o que inclui,
+0A.5) e transferências (0A.6). A pausa automática vigia
+`clinic_public_info` e `clinic_weekday_hours`; mudar o horário da REDE
+confere todas as unidades ligadas.
+
+**Telas:** Configurar agenda → "Horário por dia da semana" e "Feriados da
+unidade" (Gerente; a decisão é a de sempre); na Franqueadora, o horário padrão
+da rede (só o Admin muda); Administração → Clínicas → "Dados públicos" (Admin).
+
+**Provas:** `test:rita` **66/66** (seção 0A.4 com as regras de linha valendo,
+papel `authenticated`); quebrando a 0368 (qualquer um grava dados públicos) e
+a 3003 (feriado sem decisão abre) caem 2 e 2. Régua `unidade-publica.test.ts`.
+Visto na tela pelo servidor local de teste, nada salvo.
+
+**Na produção:** ⏳ **0368** e depois **3003**, antes do push.
 
 ## Regras para as próximas entregas
 

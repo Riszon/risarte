@@ -1,6 +1,31 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 04/11/2026 · Versão do sistema: **0.402.0** · Última migração: **0367** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.403.0** · Última migração: **0368** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🗓️ 0.403.0 — HORÁRIO POR DIA, FERIADOS E DADOS PÚBLICOS DA UNIDADE (09/11/2026, migrações 0368 e 3003; Rita 0.4.0 — Fase 0A.4)
+>
+> - **0368 (core):** `clinic_public_info` e `clinic_service_areas` (Admin ou
+>   Gerente da unidade), `clinic_weekday_hours` em cascata (rede = `clinic_id`
+>   nulo, só o Admin grava; semente pela mesma conta de `resolveAgendaSettings`)
+>   e `holidays` (48 nacionais 2026–2029 de `nationalHolidays`; estadual e
+>   municipal pelo Gerente do estado/cidade — `can_manage_holiday`). Todos leem.
+> - ⚠️ **DA8: a agenda da equipe NÃO lê `clinic_weekday_hours`** (Fase 1). Quem
+>   lê: a Rita e as telas novas. A decisão do feriado continua a de sempre
+>   (`decideHoliday` → `clinic_holiday_decisions`).
+> - **3003 (rita):** o portão confere o link do mapa e o horário por dia de
+>   verdade (saíram dos pendentes); `rita.weekday_hours`, `rita.unit_day`
+>   (**feriado sem decisão = fechado para a Rita**, decisão 9); a pausa vigia
+>   as tabelas novas (horário da REDE confere todas as unidades ligadas).
+> - Telas: Configurar agenda → **Horário por dia da semana** e **Feriados da
+>   unidade** (Gerente; na Franqueadora, o horário padrão da rede só o Admin
+>   muda); Administração → Clínicas → **Dados públicos**. Manual 6.6; EV-300.
+> - Provas: `test:rita` 66/66 (RLS valendo) e quebrando (2+2); régua
+>   `unidade-publica.test.ts`; visto na tela pelo servidor local de teste
+>   (Gerente e Admin de teste, nada salvo; 390 px ok).
+> - Achados: **AP126** (nacionais só até 2029) e **AP127** (decisão do dono:
+>   "Vai atender" abre a agenda num dia fechado).
+> - ⏳ **Na produção, ANTES do push:** 0368 → 3003 (o app lê as tabelas novas).
+
 
 > ## 🔒 0.401.1 — DOCUMENTO JÁ ASSINADO POR TODOS NÃO SAI DE NOVO SEM MOTIVO (04/11/2026, sem migração)
 >

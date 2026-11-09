@@ -89,6 +89,12 @@ O que isso muda no plano:
 
 ### 0A.4 — Dados públicos da unidade, horário por dia e feriados (core **0352**)
 
+> ✅ **Feita em 09/11/2026 como core 0368 + rita 3003** (core 0.403.0, Rita
+> 0.4.0). Diferenças: os dados públicos ficaram num botão próprio em
+> Administração → Clínicas (não numa aba da janela); o calendário da Rita é a
+> função `rita.unit_day` (não uma view); feriados nacionais semeados de 2026 a
+> 2029 (AP126). Detalhe em `docs/sdr/ESTADO.md`.
+
 Tudo no `public`, porque é dado da unidade que outras telas vão ler.
 
 - `clinic_public_info (clinic_id pk, landmark, maps_url, parking, accessibility, whatsapp_e164, public_name, min_child_age smallint, updated_at, updated_by)` — `min_child_age` é a decisão 41 (idade mínima varia por unidade; vazio = a Rita não promete e escala); `clinic_service_areas (clinic_id, city, state, neighborhood)`. Leitura `using (true)` a `authenticated` (como `clinics`); escrita Admin + `unit_manager` da unidade. Auditadas.

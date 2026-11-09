@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.403.0",
+    data: "2026-11-09",
+    migracao: "0368",
+    titulo: "Horário por dia da semana, feriados da unidade e os dados públicos de cada unidade",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Configurar agenda ganhou o cartão \"Horário por dia da semana\": cada dia com o seu horário e o seu almoço (sábado diferente, por exemplo). A unidade segue o padrão da rede até salvar o dela. Por enquanto a agenda da equipe continua usando o horário do primeiro cartão; este é o horário que a futura assistente virtual vai informar aos pacientes.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Configurar agenda ganhou \"Feriados da unidade\": os próximos 12 meses, com os nacionais já cadastrados, e os botões \"Vai atender\" e \"Não vai\". O Gerente também cadastra os feriados do estado e da cidade da unidade. A decisão vale para a agenda da equipe naquele dia.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Administração → Clínicas ganhou o botão \"Dados públicos\" em cada unidade: nome público, link do mapa, ponto de referência, estacionamento, acessibilidade, WhatsApp, idade mínima para atender criança e as cidades e bairros atendidos.",
+        papeis: [],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.402.0",
     data: "2026-11-04",
     migracao: "0367",

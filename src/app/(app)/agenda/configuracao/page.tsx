@@ -11,6 +11,9 @@ import {
 import { mapRoom, sortRooms, type RoomRow } from "@/lib/rooms";
 import { AgendaConfigEditor } from "./agenda-config-editor";
 import { NetworkLunchEditor } from "./network-lunch-editor";
+import { HorarioPorDiaEditor } from "./horario-por-dia-editor";
+import { FeriadosDaUnidade } from "./feriados-da-unidade";
+import { lerFeriadosDaUnidade, lerHorarioPorDia } from "./horario-feriados-dados";
 import { todayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Configurar agenda" };
@@ -48,6 +51,8 @@ export default async function AgendaConfigPage() {
       .is("clinic_id", null)
       .returns<AgendaSettingRow[]>();
     const net = resolveAgendaSettings(netRows ?? [], null);
+    // 0368 (Rita, 0A.4): o horário padrão da rede por dia (só o Admin muda).
+    const horarioRede = await lerHorarioPorDia(supabase, null);
 
     return (
       <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
@@ -78,6 +83,15 @@ export default async function AgendaConfigPage() {
             end: net.lunchEnd,
           }}
         />
+
+        {horarioRede && (
+          <HorarioPorDiaEditor
+            clinicId={null}
+            dias={horarioRede.dias}
+            origem="rede"
+            podeEditar={session.isAdminMaster}
+          />
+        )}
       </div>
     );
   }
@@ -141,9 +155,20 @@ export default async function AgendaConfigPage() {
       >(),
     supabase
       .from("clinics")
-      .select("max_rooms")
+      .select("max_rooms, state, city")
       .eq("id", clinic.id)
       .maybeSingle(),
+  ]);
+
+  // 0368 (Rita, 0A.4): lidos à parte — sem a migração, os cartões não aparecem.
+  const meta = clinicMeta as { max_rooms: number | null; state: string | null; city: string | null } | null;
+  const [horarioDaUnidade, feriadosDaUnidade] = await Promise.all([
+    lerHorarioPorDia(supabase, clinic.id),
+    lerFeriadosDaUnidade(
+      supabase,
+      { id: clinic.id, state: meta?.state ?? null, city: meta?.city ?? null },
+      session.isAdminMaster
+    ),
   ]);
 
   const values = resolveAgendaSettings(settingRows ?? [], clinic.id);
@@ -225,6 +250,25 @@ export default async function AgendaConfigPage() {
           end: networkDefault.lunchEnd,
         }}
       />
+
+      {horarioDaUnidade && (
+        <HorarioPorDiaEditor
+          key={horarioDaUnidade.origem}
+          clinicId={clinic.id}
+          dias={horarioDaUnidade.dias}
+          origem={horarioDaUnidade.origem}
+          podeEditar
+        />
+      )}
+
+      {feriadosDaUnidade && (
+        <FeriadosDaUnidade
+          clinicId={clinic.id}
+          uf={meta?.state?.trim().toUpperCase() || null}
+          cidade={meta?.city?.trim() || null}
+          feriados={feriadosDaUnidade}
+        />
+      )}
     </div>
   );
 }

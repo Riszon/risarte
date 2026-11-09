@@ -284,6 +284,127 @@ try {
     "tabelas fechadas a quem loga; só as portas abrem",
     JSON.stringify(p)
   );
+
+  // =========================================================== 0A.4 (0368 + 3003)
+  console.log("\n0A.4 — dados públicos, horário por dia e feriados");
+  await como(null);
+  // Semente do horário por dia = a mesma conta da agenda de hoje.
+  const rede = await q("select weekday, closed from public.clinic_weekday_hours where clinic_id is null order by weekday");
+  ok(rede.length === 7, "a rede tem os 7 dias", String(rede.length));
+  const diverge = await q(`
+    select s.clinic_id from public.clinic_agenda_settings s
+    where exists (
+      select 1 from generate_series(0, 6) d
+      left join public.clinic_weekday_hours w on w.clinic_id is not distinct from s.clinic_id and w.weekday = d
+      where w.id is null
+         or w.closed = (d = any (coalesce(nullif(s.weekdays, '{}'), '{1,2,3,4,5,6}')))
+         or (not w.closed and (w.open_time <> s.open_time or w.close_time <> s.close_time))
+    )`);
+  ok(diverge.length === 0, "a semente bate com a agenda (dias abertos e horário), rede e unidades", JSON.stringify(diverge));
+  const nac = await um("select count(*)::int n from public.holidays where scope = 'national' and holiday_date between '2026-01-01' and '2029-12-31'");
+  ok(nac.n === 48, "48 feriados nacionais semeados (2026–2029)", String(nac.n));
+  const pend4 = (await q("select item from rita._pending_items()")).map((x) => x.item);
+  ok(!pend4.includes("maps") && !pend4.includes("horario_por_dia"), "mapa e horário por dia saíram dos pendentes", pend4.join(","));
+
+  // Regras de linha valendo: o papel do banco vira `authenticated`.
+  async function comoLogado(uid, sql, p = []) {
+    await como(uid);
+    await db.query("savepoint rls");
+    try {
+      await db.query("set local role authenticated");
+      await db.query(sql, p);
+      await db.query("reset role");
+      await db.query("release savepoint rls");
+      return null;
+    } catch (e) {
+      await db.query("rollback to savepoint rls");
+      return e.message;
+    } finally {
+      await db.query("reset role");
+    }
+  }
+  const Y = (await um("select id from public.clinics where id <> $1 and type::text <> 'franchisor' order by created_at limit 1", [X]))?.id;
+  if (!Y) naoMedi("faltou uma segunda unidade no treino");
+  const upsertInfo = `insert into public.clinic_public_info (clinic_id, maps_url) values ($1, 'https://maps.example/ensaio')
+    on conflict (clinic_id) do update set maps_url = excluded.maps_url`;
+  ok((await comoLogado(ger.user_id, upsertInfo, [X])) === null, "Gerente grava os dados públicos da unidade dele");
+  ok((await comoLogado(ger.user_id, upsertInfo, [Y])) !== null, "Gerente NÃO grava os dados públicos de outra unidade");
+  ok((await comoLogado(fora, upsertInfo, [X])) !== null, "pessoa de fora não grava os dados públicos");
+  ok(
+    (await comoLogado(ger.user_id, "update public.clinic_weekday_hours set closed = true where clinic_id is null and weekday = 0")) === null &&
+      (await um("select closed from public.clinic_weekday_hours where clinic_id is null and weekday = 0")).closed ===
+        rede.find((d) => d.weekday === 0).closed,
+    "Gerente não muda o horário da REDE (a regra filtra: nada muda)"
+  );
+  const insHoliday = "insert into public.holidays (holiday_date, name, scope, state, city) values ($1, 'Feriado de ensaio', $2, $3, $4)";
+  const uf = (await um("select upper(btrim(state)) uf, btrim(city) cidade from public.clinics where id = $1", [X]));
+  if (!uf.uf) naoMedi("a unidade do Gerente não tem estado no treino");
+  ok((await comoLogado(ger.user_id, insHoliday, ["2027-03-19", "state", uf.uf, null])) === null, "Gerente cadastra feriado do estado dele");
+  ok((await comoLogado(ger.user_id, insHoliday, ["2027-03-20", "state", uf.uf === "SP" ? "RJ" : "SP", null])) !== null, "Gerente NÃO cadastra feriado de outro estado");
+  ok((await comoLogado(ger.user_id, insHoliday, ["2027-03-21", "national", null, null])) !== null, "Gerente NÃO cadastra feriado nacional");
+  ok((await comoLogado(admin, insHoliday, ["2027-03-22", "national", null, null])) === null, "Admin cadastra feriado nacional");
+  await como(null);
+  ok(/holidays_unique|duplicate/.test((await erroDe(insHoliday, ["2027-03-22", "national", null, null])) ?? ""), "feriado repetido é recusado");
+
+  // O calendário da Rita
+  await como(null);
+  await q("delete from public.clinic_weekday_hours where clinic_id = $1", [X]);
+  await q(`insert into public.clinic_weekday_hours (clinic_id, weekday, closed, open_time, close_time, lunch_start, lunch_end)
+           select $1, d, d in (0, 6), case when d not in (0, 6) then '08:00'::time end, case when d not in (0, 6) then '18:00'::time end,
+                  case when d not in (0, 6) then '12:00'::time end, case when d not in (0, 6) then '13:00'::time end
+           from generate_series(0, 6) d`, [X]);
+  let dia = await um("select * from rita.unit_day($1, '2026-12-21')", [X]); // segunda
+  ok(dia.is_open && dia.open_time === "08:00:00" && dia.lunch_start === "12:00:00" && dia.reason === "aberto", "dia útil: aberto, com horário e almoço", JSON.stringify(dia));
+  dia = await um("select * from rita.unit_day($1, '2026-12-20')", [X]); // domingo
+  ok(!dia.is_open && dia.reason === "dia_fechado", "domingo fechado no horário por dia", JSON.stringify(dia));
+  await q("delete from public.clinic_holiday_decisions where clinic_id = $1 and holiday_date = '2026-12-25'", [X]);
+  dia = await um("select * from rita.unit_day($1, '2026-12-25')", [X]); // Natal, sexta
+  ok(!dia.is_open && dia.reason === "feriado_sem_decisao" && dia.holiday_name === "Natal", "feriado SEM decisão = fechado para a Rita (decisão 9)", JSON.stringify(dia));
+  await q("insert into public.clinic_holiday_decisions (clinic_id, holiday_date, will_attend) values ($1, '2026-12-25', true)", [X]);
+  dia = await um("select * from rita.unit_day($1, '2026-12-25')", [X]);
+  ok(dia.is_open && dia.reason === "feriado_com_atendimento", "feriado com 'vai atender' abre", JSON.stringify(dia));
+  await q("update public.clinic_holiday_decisions set will_attend = false where clinic_id = $1 and holiday_date = '2026-12-25'", [X]);
+  dia = await um("select * from rita.unit_day($1, '2026-12-25')", [X]);
+  ok(!dia.is_open && dia.reason === "feriado_fechado", "feriado com 'não vai atender' fecha", JSON.stringify(dia));
+  if (uf.cidade) {
+    await q("insert into public.holidays (holiday_date, name, scope, state, city) values ('2027-06-15', 'Aniversário da cidade (ensaio)', 'city', $1, $2)", [uf.uf, uf.cidade]);
+    dia = await um("select * from rita.unit_day($1, '2027-06-15')", [X]);
+    const dY = await um("select * from rita.unit_day($1, '2027-06-15')", [Y]);
+    const outraCidade = (await um("select lower(btrim(city)) = lower($2) mesma from public.clinics where id = $1", [Y, uf.cidade])).mesma;
+    ok(
+      dia.reason === "feriado_sem_decisao" && (outraCidade || dY.holiday_name === null),
+      "feriado municipal vale só para a cidade da unidade",
+      `${JSON.stringify(dia)} | ${JSON.stringify(dY)}`
+    );
+  }
+
+  // O portão enxerga o mapa e a pausa vigia as tabelas novas
+  await q("create or replace function rita._pending_items() returns table (ordem integer, item text, rotulo text, detalhe text) language sql immutable security definer set search_path = '' as $f$ select 0, ''::text, ''::text, ''::text where false $f$");
+  await q(`update public.clinics set address = coalesce(nullif(address,''),'Rua Ensaio'), address_number = coalesce(nullif(address_number,''),'1'),
+      neighborhood = coalesce(nullif(neighborhood,''),'Centro'), city = coalesce(nullif(city,''),'Cidade'),
+      state = coalesce(nullif(state,''),'PR'), zip_code = coalesce(nullif(zip_code,''),'86000-000'), is_active = true where id = $1`, [X]);
+  if ((await q("select 1 from public.clinic_agenda_settings where clinic_id = $1", [X])).length === 0) {
+    await q("insert into public.clinic_agenda_settings (clinic_id, open_time, close_time, weekdays) values ($1, '08:00', '18:00', '{1,2,3,4,5}')", [X]);
+  }
+  if ((await q("select 1 from public.user_clinic_roles_all u join public.profiles p on p.id = u.user_id where u.clinic_id = $1 and u.role = 'clinical_coordinator' and p.is_active", [X])).length === 0) {
+    await q("insert into public.user_clinic_roles_all (user_id, clinic_id, role) values ($1, $2, 'clinical_coordinator')", [fora, X]);
+  }
+  await q("update public.clinic_public_info set maps_url = null where clinic_id = $1", [X]);
+  let g = await um("select ok from rita._gaps($1) where item = 'maps'", [X]);
+  ok(g.ok === false, "sem link do mapa → item 'maps' falta");
+  await q("update public.clinic_public_info set maps_url = 'https://maps.example/ensaio' where clinic_id = $1", [X]);
+  const faltam = await q("select item from rita._gaps($1) where not ok", [X]);
+  ok(faltam.length === 0, "unidade completa (com as próximas entregas simuladas): portão vazio", JSON.stringify(faltam));
+  await q("update rita.settings set enabled = true where clinic_id = $1", [X]);
+  await q("update public.clinic_public_info set maps_url = null where clinic_id = $1", [X]);
+  let st = await um("select enabled, paused_reason from rita.settings where clinic_id = $1", [X]);
+  ok(st.enabled === false && /mapa/.test(st.paused_reason ?? ""), "link do mapa apagado → pausa sozinha", JSON.stringify(st));
+  await q("update public.clinic_public_info set maps_url = 'https://maps.example/ensaio' where clinic_id = $1", [X]);
+  await q("delete from public.clinic_weekday_hours where clinic_id = $1", [X]); // passa a herdar a rede
+  await q("update rita.settings set enabled = true where clinic_id = $1", [X]);
+  await q("update public.clinic_weekday_hours set closed = true, open_time = null, close_time = null, lunch_start = null, lunch_end = null where clinic_id is null");
+  st = await um("select enabled, paused_reason from rita.settings where clinic_id = $1", [X]);
+  ok(st.enabled === false && /Horário/.test(st.paused_reason ?? ""), "rede toda fechada no horário por dia → unidade que herda pausa", JSON.stringify(st));
 } catch (e) {
   falhas.push(e.message);
   console.log(`\n  ✘ ${e.message}`);

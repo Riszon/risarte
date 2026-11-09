@@ -475,6 +475,18 @@ Syncthing se comportarem de forma estranha.**
 - Visto na tela no treino (ASS-000062). Sem migração; publicado (push
   2c2d475d).
 
+**09/11/2026 (Rita — Fase 0A.4) — PC Administrador (core 0.402.0 → 0.403.0, migração 0368; Rita 0.3.0 → 0.4.0, migração 3003)**
+
+- **Horário por dia, feriados e dados públicos da unidade** (bloco 0.403.0 no
+  ESTADO; Rita em `docs/sdr/ESTADO.md`).
+- ⚠️ **A agenda da equipe NÃO lê `clinic_weekday_hours`** (DA8, Fase 1). Ao
+  ligar na agenda, resolver o AP98 (almoço) junto e trocar a régua.
+- ⚠️ **Para a Rita, feriado sem decisão = fechado** (`rita.unit_day`); para a
+  agenda da equipe continua "sem decisão = aberto". AP127 aguarda o dono.
+- ⚠️ **`holidays` tem nacionais só até 2029** (AP126).
+- `test:rita` 66/66 e quebrando; visto na tela (servidor local de teste).
+  ⏳ **0368 → 3003 na produção ANTES do push.**
+
 **09/11/2026 (Rita — Fase 0A.3) — PC Administrador (Rita 0.2.0 → 0.3.0, migração 3002; core sem versão nova)**
 
 - **Consentimento e descadastro** (estado em `docs/sdr/ESTADO.md`).
