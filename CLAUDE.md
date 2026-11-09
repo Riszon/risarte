@@ -494,8 +494,8 @@ Syncthing se comportarem de forma estranha.**
   **Textos ao paciente: o Gerente propõe, só o Admin aprova.**
 - ⚠️ **A Rita nunca informa preço de tratamento** (`rita.catalog` só dá preço de
   avaliação/consulta; régua `rita-procedimento.test.ts`).
-- `test:rita` 93/93 e quebrando; visto na tela. ⏳ **0369 → 3004 na produção**
-  (o código lê à parte: publicado antes, o quadro só não aparece).
+- `test:rita` 93/93 e quebrando; visto na tela. ✅ **0369 e 3004 aplicadas na
+  produção pelo dono em 09/11/2026** (conferido de fora).
 
 **09/11/2026 (Rita — Fase 0A.4) — PC Administrador (core 0.402.0 → 0.403.0, migração 0368; Rita 0.3.0 → 0.4.0, migração 3003)**
 

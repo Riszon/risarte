@@ -22,8 +22,9 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.404.0** · Última migraç
 >   edição pela tela vem na **0A.7** ("O que a Rita sabe").
 > - Provas: `test:rita` 93/93 e quebrando (2+1+2); régua
 >   `rita-procedimento.test.ts`; visto na tela (Admin e Planner de teste).
-> - ⏳ **Na produção:** 0369 → 3004. O código lê os campos novos À PARTE:
->   publicado antes, o quadro "Assistente virtual" só não aparece até a 0369.
+> - ✅ **0369 e 3004 APLICADAS na produção pelo dono em 09/11/2026**; conferido
+>   de fora: as 4 consultas marcadas (2 no rol, 2 urgências fora), 4 políticas
+>   aprovadas na rede, 60 minutos de avaliação na rede, 0 restrições de oferta.
 
 > ## 💰 0.404.0 / 0370 — PPR+ NO RAZÃO E TAXAS NAS MENSALIDADES (AP69, etapa 1; 09/11/2026)
 >

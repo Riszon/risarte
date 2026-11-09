@@ -19,7 +19,7 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.2 Interruptor, modo e portão** | ✅ concluída: código, treino e produção (04/11/2026) | **3001** |
 | **0A.3 Consentimento e descadastro** | ✅ concluída: código, treino e produção (09/11/2026) | **3002** |
 | **0A.4 Unidade, horários, feriados** | ✅ concluída: código, treino e produção (09/11/2026) | core **0368**, rita **3003** |
-| **0A.5 Avaliação como dado** | ✅ no código e no treino; ⏳ produção com o dono | core **0369**, rita **3004** |
+| **0A.5 Avaliação como dado** | ✅ concluída: código, treino e produção (09/11/2026) | core **0369**, rita **3004** |
 | 0A.6 Escalonamento e avisos | próxima | 3005 |
 | 0A.7 "O que a Rita sabe" | — | — |
 
@@ -251,7 +251,7 @@ duração, os textos e as campanhas — o banco já guarda e confere quem grava.
 rascunho de campanha vale; Gerente aprova texto) caem 2, 1 e 2. Régua
 `rita-procedimento.test.ts`. Visto na tela (Admin e Planner de teste).
 
-**Na produção:** ⏳ **0369** e depois **3004**, antes do push.
+**Na produção:** ✅ **0369 e 3004 aplicadas pelo dono em 09/11/2026**; conferido de fora (4 consultas marcadas, 4 políticas aprovadas, 60 minutos na rede).
 
 ## Regras para as próximas entregas
 
