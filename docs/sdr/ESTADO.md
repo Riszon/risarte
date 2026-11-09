@@ -17,7 +17,7 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | Plano 1 (correções da seção 2, itens 1–7) | ✅ concluído em 04/11/2026 | 0362–0364, 2009–2010, sem migração no item 1 e no 6 |
 | **0A.1 Identidade e auditoria** | ✅ concluída: código, treino e produção (04/11/2026) | core **0365**, rita **3000** |
 | **0A.2 Interruptor, modo e portão** | ✅ concluída: código, treino e produção (04/11/2026) | **3001** |
-| 0A.3 Consentimento e opt-out | próxima | 3002 |
+| **0A.3 Consentimento e descadastro** | ✅ no código e no treino; ⏳ produção com o dono | **3002** |
 | 0A.4 Unidade, horários, feriados | — | core 036x |
 | 0A.5 Avaliação como dado | — | core 036x + 3003 |
 | 0A.6 Escalonamento e avisos | — | 3004 |
@@ -119,7 +119,62 @@ vezes (Gerente liga, gatilho que devolve o erro, `enabled` aberta).
 **Na produção:** ✅ **3001 aplicada pelo dono em 04/11/2026.** A rede e todas
 as unidades seguem desligadas.
 
+## 0A.3 — Consentimento e descadastro (Rita 0.3.0, 09/11/2026)
+
+**Telefone.** `rita.phone_e164(texto)` devolve `+55DDNÚMERO` ou nulo (sem DDD,
+curto, longo). Tira zeros de discagem e o 55 repetido. Será reusada na Fase 1
+para o telefone do cliente.
+
+**Tabelas** (todas auditadas, nenhuma se apaga — `RITA_NEVER_DELETE`, nem pela
+chave de serviço):
+
+- `rita.consent_texts` — as versões do TEXTO do consentimento. **Nasce vazia
+  (decisão 30 aberta).** Só o Admin Master aprova
+  (`rita.approve_consent_text(versão, finalidade, texto)`); texto aprovado não
+  muda (`CONSENT_TEXT_EXISTS`: versão nova).
+- `rita.contact_consents` — telefone, finalidade (`contato`/`marketing`),
+  versão do texto, por onde veio, evidência, quem registrou; revogar marca
+  `revoked_at`.
+- `rita.opt_outs` — cada "não quero mais receber", em linhas.
+
+**Portas** (chave de serviço = a Rita como autora; pessoa logada = ela):
+
+| Função | Quem |
+|---|---|
+| `rita.register_consent(fone, finalidade, versão, via, unidade, …)` | a Rita (só `via = 'whatsapp'`) ou quem tem a unidade no escopo. **Sem texto aprovado: `CONSENT_TEXT_NOT_APPROVED`** |
+| `rita.revoke_consent(fone, finalidade, via)` | a Rita ou qualquer pessoa da equipe (proteger nunca depende do escopo) |
+| `rita.register_opt_out(fone, via, nota)` | a Rita ou qualquer pessoa da equipe |
+| `rita.can_contact(fone, finalidade)` → `allowed, reason` | a Rita ou qualquer pessoa da equipe |
+
+**A regra do "pode contatar"** (`rita._can_contact`): vale o **fato mais
+recente** sobre o telefone; no empate, quem bloqueia ganha. Liberam: o
+consentimento da Rita (`consentimento`) e o aceite do indicado no Indica
+(`aceite_indica`, **só para contato**, decisão 17). Bloqueiam: revogação
+(`consentimento_revogado`, `aceite_indica_revogado`) e descadastro
+(`descadastro`). Sem fato nenhum: `sem_consentimento`. Os horários usam o
+relógio de cada comando (`clock_timestamp()`), para "descadastrou e depois
+consentiu" ficar na ordem certa até dentro de uma transação.
+
+**"Não quero contato" (decisão 18):** a Rita registra o descadastro do
+telefone — o bloqueio vale para qualquer abordagem nova, inclusive nova
+indicação. As recusas do Indica têm motivo em texto livre e **não** são lidas.
+
+**Limite conhecido:** celular gravado com 10 dígitos (sem o 9) e com 11 viram
+telefones diferentes. A Fase 1 decide se normaliza o nono dígito.
+
+**Provas.** `npm run test:rita` (novo, no molde do `test:indica`; uma
+transação desfeita no treino, com as seções 0A.1, 0A.2 e 0A.3): **43/43**.
+`RITA_REAPLICAR=3002` reaplica a migração do disco dentro da transação;
+quebrando de propósito (aceite do Indica valendo para marketing; empate
+liberando; gravar sem texto aprovado) caem 1, 4 e 1 conferências. Régua
+estática `rita-consentimento.test.ts` (9 testes), provada quebrando 3 vezes.
+
+**Na produção:** ⏳ a **3002** (com o dono). Nenhuma tela lê ainda.
+
 ## Regras para as próximas entregas
+
+- **Rodar `npm run test:rita`** em toda entrega da Rita e acrescentar a seção
+  dela no `scripts/rita-testes-sql.mjs`.
 
 - Tabela nova no schema `rita` termina com `select public.audit_attach_all();`
   (a 0365 já incluiu o schema) ou declara o motivo em

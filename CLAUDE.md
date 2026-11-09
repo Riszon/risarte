@@ -475,6 +475,18 @@ Syncthing se comportarem de forma estranha.**
 - Visto na tela no treino (ASS-000062). Sem migração; publicado (push
   2c2d475d).
 
+**09/11/2026 (Rita — Fase 0A.3) — PC Administrador (Rita 0.2.0 → 0.3.0, migração 3002; core sem versão nova)**
+
+- **Consentimento e descadastro** (estado em `docs/sdr/ESTADO.md`).
+  `rita.can_contact` = o fato mais recente (consentimento ou aceite do Indica
+  libera; revogação e descadastro bloqueiam; empate bloqueia).
+- ⚠️ **Sem texto aprovado em `rita.consent_texts`, ninguém grava
+  consentimento** (decisão 30 aberta). Só o Admin aprova.
+- ⚠️ **`npm run test:rita`** (novo): rodar em toda entrega da Rita e
+  acrescentar a seção dela. `RITA_REAPLICAR=300x` prova antes de gravar.
+- Provado: test:rita 43/43 e quebrando; régua `rita-consentimento.test.ts`.
+  ⏳ 3002 na produção com o dono.
+
 **04/11/2026 (Rita — Fase 0A.2) — PC Administrador (Rita 0.1.0 → 0.2.0, migração 3001; core sem versão nova)**
 
 - **Interruptor, modo e portão da Rita** (estado em `docs/sdr/ESTADO.md`).

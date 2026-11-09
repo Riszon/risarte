@@ -267,6 +267,9 @@ export const TABELAS: Record<string, string> = {
   "indica.premios_equipe": "Riso Coins da equipe (prêmio individual)",
   "indica.resgates": "Resgate",
   "rita.settings": "Rita: interruptor e configuração",
+  "rita.consent_texts": "Rita: texto do consentimento",
+  "rita.contact_consents": "Rita: consentimento de contato",
+  "rita.opt_outs": "Rita: descadastro (não quer mais receber)",
 };
 
 /** As três áreas, para o filtro e para o selo ao lado do registro. */

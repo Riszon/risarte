@@ -73,6 +73,12 @@ O que isso muda no plano:
 
 ### 0A.3 — Consentimento de contato e opt-out (**3002**)
 
+> ✅ **Feita em 09/11/2026 (Rita 0.3.0).** Diferenças: `rita.consent_texts`
+> (texto aprovado pelo Admin; sem ele, nenhum consentimento novo); `opt_outs`
+> em linhas (não uma por telefone); vale o fato mais recente; as recusas do
+> Indica (texto livre) não são lidas — "não quero contato" vira descadastro.
+> Detalhe em `docs/sdr/ESTADO.md`.
+
 - `rita.contact_consents`: `phone_e164 text not null`, `person_kind` (`client` / `guardian` / `lead` / `employee` / `dependent`), `person_id uuid`, `channel` (`whatsapp`), `purpose` (`contato` / `marketing`), `text_version text`, `granted_at`, `granted_via` (`whatsapp` / `presencial` / `telefone` / `evento` / `importacao` / `portal`), `evidence jsonb` (id da mensagem, arquivo da lista, quem registrou), `revoked_at`, `revoked_via`, `registered_by → profiles`. Índice por `phone_e164`. Auditada.
 - `rita.opt_outs`: `phone_e164 pk`, `opted_out_at`, `via`, `note`, `registered_by`. **Nunca se apaga**; voltar atrás é linha nova em `contact_consents` com data posterior. Auditada.
 - Funções (`security definer`, grant `service_role`; e uma versão para a tela, logada, com guarda de unidade): `rita.register_consent(...)`, `rita.revoke_consent(...)`, `rita.register_opt_out(phone, via, note)`, `rita.can_contact(phone_e164, purpose) returns (allowed bool, reason text)` — devolve `false` para opt-out vigente, sem consentimento, ou (decisão 18) telefone com recusa "não quero contato" no Indica.
