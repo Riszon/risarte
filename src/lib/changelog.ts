@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.404.0",
+    data: "2026-11-09",
+    migracao: "0370",
+    titulo: "A mensalidade do PPR+ entra no Financeiro, e as taxas da rede valem sobre as mensalidades",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A mensalidade do PPR+ passou a entrar na DRE da unidade (linha \"PPR+ — mensalidades\") no mês de referência, e no fluxo de caixa no dia da baixa — como a mensalidade da Ortodontia.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Royalty, fundo de propaganda e as demais taxas percentuais da rede passaram a valer também sobre a mensalidade do PPR+ e sobre a mensalidade e a contenção da Ortodontia, na baixa e sobre o valor que entrou. Desfazer a baixa tira a taxa.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.403.1",
     data: "2026-11-09",
     migracao: "0369",

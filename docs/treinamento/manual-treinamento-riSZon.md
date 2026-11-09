@@ -303,6 +303,26 @@ certo é o que impede o mesmo dinheiro de entrar duas vezes:
   conta (antes parava nas primeiras 1.000 linhas). Se a leitura falhar, um
   aviso vermelho diz que os saldos podem estar incompletos.
 
+#### As mensalidades no Financeiro e as taxas da rede *(desde a 0.404.0, AP69)*
+
+- **A mensalidade do PPR+ entra no Financeiro da unidade**, na linha
+  **"PPR+ — mensalidades" (1.2.01)** da DRE, no mês de referência, assim que
+  é gerada; a **baixa** leva o valor para o **fluxo de caixa** do dia;
+  desfazer a baixa volta; cancelar tira da DRE. É o mesmo caminho da
+  mensalidade da Ortodontia (seção 2.8).
+- **As taxas percentuais da rede** (royalty, fundo de propaganda,
+  planejamento, comercial e as demais em %) valem sobre **toda receita da
+  unidade**: além do que o paciente paga de tratamento, agora também sobre a
+  **mensalidade do PPR+** e a **mensalidade e a contenção da Ortodontia**.
+  A conta é a mesma: o percentual do **dia da baixa**, sobre o **valor que
+  entrou** (na Ortodontia, já com o desconto de pontualidade), somando na
+  conta a pagar do mês de cada taxa. **Desfazer a baixa** tira a taxa; pagar
+  de novo a devolve.
+- **Mês fechado:** dar ou desfazer a baixa de uma mensalidade de um mês já
+  fechado é permitido — o resultado daquele mês não muda, só o caixa.
+  Cancelar a cobrança ou mudar o valor dela continua barrado, como qualquer
+  lançamento de mês fechado.
+
 #### Em qual conta o dinheiro está *(desde a 0.342.0, AP51)*
 
 Cada recebimento e cada pagamento passa a dizer **em qual conta** o dinheiro
@@ -1724,7 +1744,9 @@ prontuário.
 - Cada cobrança (mensalidade ou contenção) entra na **DRE da unidade** na linha
   **"Ortodontia — mensalidades e contenções" (1.1.04)**, no mês de
   competência, assim que é gerada; a **baixa** leva o valor para o **fluxo de
-  caixa** do dia; desfazer a baixa volta; cancelar tira da DRE.
+  caixa** do dia; desfazer a baixa volta; cancelar tira da DRE. Desde a
+  0.404.0 a baixa também gera as **taxas da rede** (royalty, fundo etc.)
+  sobre o valor pago — seção 2.3.
 - **Quem dá baixa** (desde a 0.363.0): o **Gerente da unidade** e o
   **Financeiro da Franqueadora** (e o Admin). A Recepção e, desde a 0.364.0,
   o **Coordenador** **veem** a situação de cada paciente — na ficha do caso,
@@ -4402,7 +4424,7 @@ exclusão de procedimento, cadastro de cliente e cadastro de Risartano.
 | **Alçada** | Até quanto alguém pode autorizar | Contas a pagar |
 | **Adquirente** | A empresa da maquininha | Cobra taxa e paga em D+n |
 | **Repasse** | O que o dentista recebe por procedimento | Valor fixo por nível |
-| **Split** | A parte da franqueadora em cada recebimento | Royalty, fundo, etc. |
+| **Split** | A parte da franqueadora em cada recebimento — parcela de tratamento e, desde a 0.404.0, mensalidade do PPR+ e da Ortodontia | Royalty, fundo, etc. |
 | **RLS** | Regra do banco que decide quem vê cada linha | É a proteção de verdade |
 | **Migração** | Uma alteração na estrutura do banco | "migração 0245" no rodapé |
 

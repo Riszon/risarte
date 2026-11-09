@@ -396,6 +396,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/11/2026 (AP69, etapa 1) — PC Administrador (core 0.403.0 → 0.404.0, migração 0370)**
+
+- **PPR+ no razão (1.2.01) e taxas da rede sobre as mensalidades do PPR+ e da
+  Ortodontia** (bloco 0.404.0 no ESTADO; decisões do dono na linha do tempo do
+  AP69). ⚠️ **A conta das taxas é `_apply_fee_split`** (uma para parcela,
+  Ortodontia e PPR+). ⚠️ **`fiscal_period_guard` deixa passar aberto↔quitado
+  sem mudança de valor** — ao recriar, levar junto.
+- ✅ **0370 aplicada na produção** (o dono, 09/11/2026; conferido de fora)
+  antes do push. Etapa 2 (Empresarial, 1040) a seguir. Achado AP128.
+
 **04/11/2026 (já assinado trava) — PC Administrador (core 0.401.0 → 0.401.1, sem migração)**
 
 - **Documento já assinado por todos não sai de novo sem motivo** (bloco 0.401.1

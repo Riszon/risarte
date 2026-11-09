@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.403.1** · Última migração: **0369** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.404.0** · Última migração: **0370** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 🤖 0.403.1 — A AVALIAÇÃO COMO DADO (09/11/2026, migrações 0369 e 3004; Rita 0.5.0 — Fase 0A.5)
 >
@@ -24,6 +24,28 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.403.1** · Última migraç
 >   `rita-procedimento.test.ts`; visto na tela (Admin e Planner de teste).
 > - ⏳ **Na produção:** 0369 → 3004. O código lê os campos novos À PARTE:
 >   publicado antes, o quadro "Assistente virtual" só não aparece até a 0369.
+
+> ## 💰 0.404.0 / 0370 — PPR+ NO RAZÃO E TAXAS NAS MENSALIDADES (AP69, etapa 1; 09/11/2026)
+>
+> Decisões do dono no AP69 (linha do tempo do item): PPR+ na **1.2.01** da
+> unidade como a Ortodontia; **taxas percentuais da rede sobre TODA receita**
+> da unidade, inclusive PPR+ e Ortodontia; o Empresarial na Franqueadora fica
+> para a etapa 2 (1040), e o split da RisLife para a sessão do ASAAS.
+> - ⚠️ **A conta das taxas mora em `_apply_fee_split`** (0370): baixa de
+>   parcela, mensalidade da Ortodontia e do PPR+. Mudou a regra das taxas,
+>   muda lá. `split_charges` tem origem (`source_type`/`source_id`); a
+>   mensalidade desfeita estorna e a paga de novo reativa (upsert).
+> - ⚠️ **O guarda do mês fechado (`fiscal_period_guard`) deixa passar a
+>   troca aberto↔quitado** sem mudança de valor/conta/sentido/competência/
+>   centro de custo. Ao recriar o guarda, levar isso junto.
+> - Ensaio 24/24 (transação desfeita) + quebras (5 e 3 reprovam):
+>   `scripts/ap69-ensaio-0370.mjs`. Produção: 0 cobranças de PPR+, Ortodontia
+>   e Empresarial — nada para trás. **Não visto na tela.** Manual 2.3, EV-301.
+> - ✅ **0370 APLICADA na produção** (o dono rodou em 09/11/2026; conferido de
+>   fora: sem login `_apply_fee_split` recusa com "permission denied"; as
+>   colunas novas de `split_charges` respondem; 0 taxas sem origem) antes do push.
+> - Achado registrado: AP128 (baixa da Ortodontia com desconto de
+>   pontualidade em mês fechado continua barrada).
 
 > ## 🗓️ 0.403.0 — HORÁRIO POR DIA, FERIADOS E DADOS PÚBLICOS DA UNIDADE (09/11/2026, migrações 0368 e 3003; Rita 0.4.0 — Fase 0A.4)
 >
