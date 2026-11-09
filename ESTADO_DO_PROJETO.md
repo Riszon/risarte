@@ -24,7 +24,9 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.403.0** · Última migraç
 >   (Gerente e Admin de teste, nada salvo; 390 px ok).
 > - Achados: **AP126** (nacionais só até 2029) e **AP127** (decisão do dono:
 >   "Vai atender" abre a agenda num dia fechado).
-> - ⏳ **Na produção, ANTES do push:** 0368 → 3003 (o app lê as tabelas novas).
+> - ✅ **0368 e 3003 APLICADAS na produção pelo dono em 09/11/2026**, antes do
+>   push; conferido de fora: 48 nacionais, 7 dias da rede, 14 de unidades (2
+>   com agenda própria), 0 dados públicos; sem login, os feriados não aparecem.
 
 
 > ## 🔒 0.401.1 — DOCUMENTO JÁ ASSINADO POR TODOS NÃO SAI DE NOVO SEM MOTIVO (04/11/2026, sem migração)

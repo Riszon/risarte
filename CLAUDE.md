@@ -485,7 +485,8 @@ Syncthing se comportarem de forma estranha.**
   agenda da equipe continua "sem decisão = aberto". AP127 aguarda o dono.
 - ⚠️ **`holidays` tem nacionais só até 2029** (AP126).
 - `test:rita` 66/66 e quebrando; visto na tela (servidor local de teste).
-  ⏳ **0368 → 3003 na produção ANTES do push.**
+  ✅ **0368 e 3003 aplicadas na produção pelo dono em 09/11/2026** antes do
+  push (conferido de fora: 48 · 7 · 14 · 0).
 
 **09/11/2026 (Rita — Fase 0A.3) — PC Administrador (Rita 0.2.0 → 0.3.0, migração 3002; core sem versão nova)**
 

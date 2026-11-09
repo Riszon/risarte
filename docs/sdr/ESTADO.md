@@ -18,7 +18,7 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.1 Identidade e auditoria** | ✅ concluída: código, treino e produção (04/11/2026) | core **0365**, rita **3000** |
 | **0A.2 Interruptor, modo e portão** | ✅ concluída: código, treino e produção (04/11/2026) | **3001** |
 | **0A.3 Consentimento e descadastro** | ✅ concluída: código, treino e produção (09/11/2026) | **3002** |
-| **0A.4 Unidade, horários, feriados** | ✅ no código e no treino; ⏳ produção com o dono | core **0368**, rita **3003** |
+| **0A.4 Unidade, horários, feriados** | ✅ concluída: código, treino e produção (09/11/2026) | core **0368**, rita **3003** |
 | 0A.5 Avaliação como dado | próxima | core 036x + 3004 |
 | 0A.6 Escalonamento e avisos | — | 3004 |
 | 0A.7 "O que a Rita sabe" | — | — |
@@ -207,7 +207,7 @@ papel `authenticated`); quebrando a 0368 (qualquer um grava dados públicos) e
 a 3003 (feriado sem decisão abre) caem 2 e 2. Régua `unidade-publica.test.ts`.
 Visto na tela pelo servidor local de teste, nada salvo.
 
-**Na produção:** ⏳ **0368** e depois **3003**, antes do push.
+**Na produção:** ✅ **0368 e 3003 aplicadas pelo dono em 09/11/2026**; conferido de fora (48 nacionais, 7 dias da rede, 14 de unidades, 0 dados públicos).
 
 ## Regras para as próximas entregas
 
