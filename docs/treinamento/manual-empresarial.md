@@ -1388,6 +1388,31 @@ Ao dar baixa, o pagamento é dividido **Risarte / RisLife**. O padrão da rede �
 **0% / 100% no primeiro pagamento** e **50% / 50% nas mensalidades**
 (Configurações → Split de pagamento).
 
+### A mensalidade no Financeiro da Franqueadora *(desde a Empresarial 0.98.0, AP69)*
+
+Quando uma **mensalidade** é paga, ela entra no **Financeiro da Franqueadora**
+(RISARTE Franchising):
+
+- o **valor inteiro** pago pela empresa entra como receita, na linha
+  **"Risarte Empresarial — adesão e mensalidade" (1.2.02)** da DRE, no mês de
+  referência da cobrança, e no caixa no dia do pagamento;
+- a **parte da RisLife** entra no mesmo mês como custo, na linha **"Comissão
+  RisLife — Programa Empresarial" (2.5.02)**:
+  - pagamento pelo **ASAAS com o split** (quando a integração estiver ligada):
+    o custo já nasce **quitado** — o dinheiro da RisLife nem passa pela conta
+    da Risarte;
+  - **baixa manual** (como hoje): a Risarte recebeu tudo, então o custo vira
+    uma **conta a pagar à RisLife** no Contas a pagar da Franqueadora,
+    vencendo no **dia 10 do mês seguinte** ao pagamento;
+- a **implantação não entra** no Financeiro: ela é 100% da RisLife. Paga ou
+  não, ela continua registrada aqui, na aba de cobranças da empresa;
+- **estornar** a baixa, **cancelar** ou **excluir** a cobrança tira a receita e
+  o custo, e cancela a conta a pagar à RisLife que ainda não foi paga (a já
+  paga fica, com uma nota — a devolução se combina com a RisLife);
+- se o mês da mensalidade já foi **fechado** no Financeiro da Franqueadora, o
+  estorno e a exclusão são recusados com esse aviso: reabra o mês antes. Uma
+  baixa de mês já fechado entra no mês aberto.
+
 ### Estornar uma baixa
 
 Baixa errada acontece; o que não pode é ficar sem saída. Na linha **Paga**,

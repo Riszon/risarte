@@ -322,6 +322,12 @@ certo é o que impede o mesmo dinheiro de entrar duas vezes:
   fechado é permitido — o resultado daquele mês não muda, só o caixa.
   Cancelar a cobrança ou mudar o valor dela continua barrado, como qualquer
   lançamento de mês fechado.
+- **Na Franqueadora, o Risarte Empresarial** *(desde a Empresarial 0.98.0)*: a
+  mensalidade paga por uma empresa entra **inteira** na linha 1.2.02 da DRE da
+  Franqueadora, e a parte da RisLife como custo na **2.5.02** — quitada quando
+  o split vier pelo ASAAS, ou como **conta a pagar à RisLife** (dia 10 do mês
+  seguinte) na baixa manual. A implantação, 100% da RisLife, não entra.
+  Detalhe no manual do Risarte Empresarial, seção 12.
 
 #### Em qual conta o dinheiro está *(desde a 0.342.0, AP51)*
 

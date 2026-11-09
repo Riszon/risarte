@@ -396,6 +396,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/11/2026 (AP69, etapa 2) — PC Administrador (Empresarial 0.97.0 → 0.98.0, migração 1040)**
+
+- **O Empresarial no razão da Franqueadora** (bloco "EMPRESARIAL 0.98.0" no
+  ESTADO). ⚠️ **A sessão do ASAAS liga `split_at_source`** na cobrança paga
+  com split: o custo da RisLife nasce quitado; sem a marca vira conta a pagar.
+- ✅ **1040 aplicada na produção** (o dono, 09/11/2026; conferido de fora)
+  antes do push. AP69 resolvido.
+
 **09/11/2026 (AP69, etapa 1) — PC Administrador (core 0.403.0 → 0.404.0, migração 0370)**
 
 - **PPR+ no razão (1.2.01) e taxas da rede sobre as mensalidades do PPR+ e da

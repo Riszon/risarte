@@ -757,6 +757,14 @@ export async function deleteBilling(
   });
   if (error) {
     console.error("deleteBilling failed:", error.message);
+    // 1040 (AP69): a mensalidade paga está no Financeiro da Franqueadora.
+    if (error.message.includes("PERIOD_CLOSED")) {
+      return {
+        ok: false,
+        error:
+          "O mês desta mensalidade já foi fechado no Financeiro da Franqueadora. Peça para reabrir o mês antes de excluir.",
+      };
+    }
     return {
       ok: false,
       error: error.hint ?? "Não foi possível excluir a cobrança.",

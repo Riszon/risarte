@@ -2,6 +2,30 @@
 
 _Atualizado em: 09/11/2026 · Versão do sistema: **0.404.0** · Última migração: **0370** (0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.98.0 / 1040 — O EMPRESARIAL NO RAZÃO DA FRANQUEADORA (AP69, etapa 2; 09/11/2026)
+>
+> Decisões do dono no AP69: a mensalidade paga entra INTEIRA como receita da
+> Franqueadora (1.2.02); a parte da RisLife como custo comercial (conta nova
+> **2.5.02**); a implantação (100% RisLife) fica fora; o split será feito pelo
+> ASAAS (sessão própria).
+> - ⚠️ **Gatilho `empresarial.billing_ledger`** em `adhesion_billing`: entra na
+>   BAIXA (PAID), competência = mês de referência (fechado → mês aberto);
+>   estorno/cancelamento/exclusão cancelam; pagar de novo reativa (upsert por
+>   `source_type`/`source_id`, e a conta a pagar por `empresarial_billing_id`).
+> - ⚠️ **A integração do ASAAS liga `adhesion_billing.split_at_source`**
+>   quando o split foi retido: o custo nasce quitado (`emp_rislife`). Sem a
+>   marca, o custo é conta a pagar à RisLife (dia 10 do mês seguinte). Marcar
+>   depois da baixa refaz sozinho.
+> - Estorno e exclusão em mês fechado → PERIOD_CLOSED com mensagem própria
+>   nas duas telas. Ensaio 16/16 + quebras (1 e 3 reprovam):
+>   `scripts/ap69-ensaio-1040.mjs`. Produção: 0 cobranças. No treino a
+>   mensalidade já paga ganhou receita e conta a pagar. **Não visto na tela.**
+>   Manual do Empresarial §12 + manual 2.3, EV-303.
+> - ✅ **1040 APLICADA na produção** (o dono rodou em 09/11/2026; conferido de
+>   fora: sem login `_billing_ledger_post` recusa com "permission denied"; a
+>   conta 2.5.02, a marca `split_at_source` e `payables.empresarial_billing_id`
+>   existem) antes do push. **AP69 resolvido.**
+
 > ## 🤖 0.403.1 — A AVALIAÇÃO COMO DADO (09/11/2026, migrações 0369 e 3004; Rita 0.5.0 — Fase 0A.5)
 >
 > - **0369 (core):** `procedures.rita_role` / `rita_can_offer` / `patient_name`

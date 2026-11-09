@@ -297,6 +297,15 @@ export async function estornarCobranca(
     if (error.message.includes("BILLING_NOT_FOUND")) {
       return { ok: false, error: "Cobrança não encontrada." };
     }
+    // 1040 (AP69): a mensalidade paga entra no Financeiro da Franqueadora; se
+    // o mês dela já foi fechado lá, desfazer mudaria um resultado fechado.
+    if (error.message.includes("PERIOD_CLOSED")) {
+      return {
+        ok: false,
+        error:
+          "O mês desta mensalidade já foi fechado no Financeiro da Franqueadora. Peça para reabrir o mês antes de estornar.",
+      };
+    }
     console.error("estornarCobranca falhou:", error.message);
     return { ok: false, error: "Não foi possível estornar agora." };
   }
