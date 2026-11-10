@@ -25,3 +25,19 @@ export function resumoDaRita(r: RitaDoProcedimento): string {
   if (r.patientName) partes.push(`“${r.patientName}”`);
   return partes.join(" · ");
 }
+
+/**
+ * AP132 (0383, decisão do dono em 10/11/2026) — URGÊNCIA NUNCA ENTRA NO ROL.
+ *
+ * A assistente RECONHECE a urgência e passa para a equipe (decisão 38); ela
+ * não oferece nem agenda. A tela deixava marcar "pode oferecer" num
+ * procedimento de urgência, e `rita.catalog` passava a listá-lo. Agora a tela
+ * esconde a caixa, a ação recusa e o banco tem a trava
+ * (`procedures_rita_urgency_not_offered`).
+ */
+export function podeEntrarNoRol(role: PapelDaRita | null): boolean {
+  return role !== "urgency";
+}
+
+export const RECUSA_DA_URGENCIA_NO_ROL =
+  "Urgência não entra no rol da assistente virtual: ela reconhece a urgência e passa para a equipe.";

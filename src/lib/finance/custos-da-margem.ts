@@ -77,3 +77,31 @@ export function custosDosItensAceitos(
     proportionalPercent: c.proportionalPercent,
   };
 }
+
+/**
+ * AP84 (decisão do dono, 10/11/2026) — NA NEGOCIAÇÃO, a hora de cadeira da
+ * margem é a da SEQUÊNCIA montada, não a soma dos itens.
+ *
+ * Quem junta sessões e ajusta o tempo muda o total do tratamento (no relato
+ * OC-00007 os itens somavam 9h15 e a sequência dava 7h15). A tela já mostrava
+ * o total pela sequência (`totaisDoTratamento`); a margem ainda contava pelos
+ * itens e saía menor do que a real.
+ *
+ * Recebe as sessões de `project_option_sessions` (o tempo já vem com o ajuste
+ * da sequência) e devolve os minutos POR ITEM. Item sem sessão na sequência
+ * não entra no retorno: para ele vale o planejado do item, como antes.
+ *
+ * ⚠️ A Precificação NÃO usa isto: lá não existe sequência.
+ */
+export function minutosPelaSequencia(
+  sessoes: readonly { item_id: string; planned_minutes: number | null }[] | null | undefined
+): Record<string, number> {
+  const porItem: Record<string, number> = {};
+  for (const s of sessoes ?? []) {
+    if (!s.item_id) continue;
+    porItem[s.item_id] = (porItem[s.item_id] ?? 0) + Math.max(0, Number(s.planned_minutes ?? 0));
+  }
+  // Sequência sem tempo nenhum para o item não diz nada: fica o do item.
+  for (const id of Object.keys(porItem)) if (porItem[id] <= 0) delete porItem[id];
+  return porItem;
+}

@@ -50,6 +50,7 @@ export function AgendaConfigEditor({
   staff,
   openDays,
   lunch,
+  lunchInherited = false,
   networkLunch,
 }: {
   clinicId: string;
@@ -78,6 +79,8 @@ export function AgendaConfigEditor({
     isPast: boolean;
   }[];
   lunch: { enabled: boolean; start: string; end: string };
+  /** AP98: a unidade não definiu o almoço — vale o da rede. */
+  lunchInherited?: boolean;
   /** H4.8: padrão de almoço da rede (herdado quando a unidade não personaliza). */
   networkLunch?: { enabled: boolean; start: string; end: string };
 }) {
@@ -105,6 +108,7 @@ export function AgendaConfigEditor({
   const [releaseNote, setReleaseNote] = useState("");
 
   // Horário de almoço (GR4).
+  const [lunchHerdado, setLunchHerdado] = useState(lunchInherited);
   const [lunchEnabled, setLunchEnabled] = useState(lunch.enabled);
   const [lunchStart, setLunchStart] = useState(lunch.start);
   const [lunchEnd, setLunchEnd] = useState(lunch.end);
@@ -741,15 +745,31 @@ export function AgendaConfigEditor({
           <CardTitle className="text-base">Horário de almoço</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={lunchEnabled}
-              onChange={(e) => setLunchEnabled(e.target.checked)}
-            />
-            Fechar a agenda no horário de almoço
-          </label>
-          {lunchEnabled && (
+          {networkLunch && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={lunchHerdado}
+                onChange={(e) => setLunchHerdado(e.target.checked)}
+              />
+              Seguir o padrão da rede (
+              {networkLunch.enabled
+                ? `almoço ${networkLunch.start}–${networkLunch.end}`
+                : "sem horário de almoço"}
+              )
+            </label>
+          )}
+          {!lunchHerdado && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={lunchEnabled}
+                onChange={(e) => setLunchEnabled(e.target.checked)}
+              />
+              Fechar a agenda no horário de almoço
+            </label>
+          )}
+          {!lunchHerdado && lunchEnabled && (
             <div className="flex flex-wrap items-end gap-2">
               <div>
                 <Label htmlFor="lunchStart">Início</Label>
@@ -795,8 +815,10 @@ export function AgendaConfigEditor({
                   ? `almoço ${networkLunch.start}–${networkLunch.end}`
                   : "sem horário de almoço"}
               </span>
-              . A configuração acima vale só para esta unidade (personaliza o
-              padrão da rede).
+              .{" "}
+              {lunchHerdado
+                ? "Esta unidade segue o padrão: se a rede mudar o almoço, aqui muda junto."
+                : "A configuração acima vale só para esta unidade (personaliza o padrão da rede)."}
             </p>
           )}
           <Button
@@ -809,6 +831,7 @@ export function AgendaConfigEditor({
                     enabled: lunchEnabled,
                     start: lunchStart,
                     end: lunchEnd,
+                    herdar: lunchHerdado,
                   }),
                 "Horário de almoço salvo."
               )

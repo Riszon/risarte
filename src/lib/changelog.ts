@@ -62,6 +62,70 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.414.0",
+    data: "2026-11-10",
+    migracao: "0383",
+    titulo: "Decisões do dono: almoço da rede, comissão em massa em R$, margem pela sequência e mais",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Agenda → Configuração: a unidade que não definiu o próprio almoço passa a seguir o almoço da rede, mesmo tendo horário de funcionamento próprio. O cartão \"Horário de almoço\" ganhou a opção \"Seguir o padrão da rede\"; desmarque para ter almoço próprio ou para ficar sem almoço.",
+        papeis: ["unit_manager", "receptionist", "sdr"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Precificação → Comissão em massa: informe o valor em R$ OU o percentual (não os dois). O que fica gravado é sempre o valor em R$ — o percentual é calculado sobre o preço padrão de cada procedimento, como no cadastro.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Negociação: o quadro \"Margem da venda\" conta a hora de cadeira pelo tempo da sequência de sessões montada (o mesmo total que a tela mostra), e não mais pela soma dos itens. A margem aparecia menor do que é quando sessões eram juntadas.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ortodontia: dar baixa com desconto de pontualidade numa mensalidade de um mês já fechado não dá mais erro. A receita do mês fechado continua cheia e o desconto aparece como \"Descontos concedidos\" no mês do pagamento.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Risartanos: a função Financeiro da Franqueadora trabalha sempre com todas as unidades. A escolha \"Específicas\" deixou de ser oferecida para ela.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Procedimentos: as consultas de urgência não podem mais ser marcadas como \"a assistente virtual pode oferecer\". A assistente reconhece a urgência e passa para a equipe.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Certificação: quatro itens da missão que a função não conseguia cumprir foram acertados. \"Avaliações enviadas ao Planejamento\" e \"Reavaliações concluídas\" contam o que o Coordenador faz no Cockpit de Avaliação; \"Informações complementares\" passou do Planner para o Coordenador; \"Pedidos enviados ao fornecedor\" passou do Comprador para o Gerente; e \"Consentimentos\" saiu da Recepção.",
+        papeis: ["clinical_coordinator", "planner_dentist", "purchaser", "unit_manager", "receptionist"],
+        manual: "Quando você cumpre a missão",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Empresarial → Importar Excel: titulares e dependentes entram juntos, de uma vez — se algo for recusado, nada fica pela metade. E a planilha passa a respeitar a quantidade de dependentes do contrato, como o cadastro um a um.",
+        papeis: ["rislife_consultant", "unit_manager"],
+        manual: "2. Início rápido",
+      },
+    ],
+  },
+  {
     versao: "0.413.0",
     data: "2026-11-10",
     // Sem migração do CORE: a desta entrega é da Rita (3006, RITA_MIGRATION).

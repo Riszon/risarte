@@ -237,10 +237,11 @@ describe("⚠️ régua: a action só grava depois da conferência limpa", () =>
   const fim = acao.indexOf("\nexport ", ini + 1);
   const corpo = acao.slice(ini, fim < 0 ? undefined : fim);
 
-  it("conferirPlanilha vem ANTES de qualquer upsert, e erro devolve a lista", () => {
+  it("conferirPlanilha vem ANTES de qualquer gravação, e erro devolve a lista", () => {
     const confere = corpo.indexOf("conferirPlanilha(");
     const recusa = corpo.indexOf("linhasComErro: conferida.erros");
-    const grava = corpo.indexOf(".upsert(");
+    // AP111 (1042): a gravação é a função do banco, as duas abas juntas.
+    const grava = corpo.indexOf('db.rpc("importar_titulares"');
     expect(confere).toBeGreaterThan(-1);
     expect(recusa).toBeGreaterThan(confere);
     expect(grava).toBeGreaterThan(recusa);

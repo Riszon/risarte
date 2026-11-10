@@ -1167,6 +1167,16 @@ na planilha ou já na empresa), do CPF do dependente e do parentesco.
 > reduza a lista"*. Gere e aceite um **termo de inclusão**, ou tire gente da
 > planilha, e importe de novo.
 
+> **E a quantidade de DEPENDENTES do contrato** *(desde a 0.100.0)*: se os
+> dependentes novos da planilha não couberem, a importação inteira é
+> recusada — *"A planilha tem 8 dependente(s) novo(s); a empresa já tem 48
+> ativo(s) e o contrato fechou 50 (2 vaga(s))…"*. É a mesma conta do cadastro
+> um a um (seção 11).
+
+> **Titulares e dependentes entram juntos** *(desde a 0.100.0)*: as duas abas
+> são gravadas de uma vez. Se qualquer coisa for recusada, nada fica pela
+> metade — nem os titulares.
+
 > Reimportar a mesma planilha não duplica ninguém: quem já estava aparece
 > como *"já estava(m) cadastrado(s)"* na mensagem de sucesso.
 
@@ -1703,6 +1713,7 @@ daquela empresa.
 |---|---|---|
 | *"Esta empresa já tem N titular(es) ativos, e o contrato fechou N"* | A trava da quantidade contratada | Gere e aceite um termo de inclusão (seção 11) |
 | *"A planilha tem N titular(es) novo(s) e a empresa tem só M vaga(s); renegocie o limite ou reduza a lista"* | A mesma trava, na importação por planilha — nada foi gravado | Termo de inclusão (seção 11) ou uma planilha menor; importe de novo |
+| *"A planilha tem N dependente(s) novo(s); a empresa já tem M ativo(s) e o contrato fechou X…"* | O teto de dependentes do contrato, na importação por planilha — nada foi gravado | Termo de inclusão (seção 11) ou uma planilha com menos dependentes; importe de novo |
 | *"A planilha não foi importada: N linha(s) com problema. Nada foi gravado"* + a lista de linhas | Linha com CPF incompleto, sem nome, sem telefone, CPF repetido ou dependente sem titular | Corrija as linhas apontadas (a linha 1 é o cabeçalho) e escolha o arquivo de novo (seção 9) |
 | *"Os N titular(es) novo(s) foram gravados, mas os dependentes não"* | A aba Titulares entrou; a aba Dependentes falhou na gravação | Importe de novo só a aba Dependentes — os titulares não duplicam |
 | *"O termo TI-… foi gerado SEM valor"* | A regra do excedente não foi combinada | Ajuste a proposta (seção 6.6) e gere outro |

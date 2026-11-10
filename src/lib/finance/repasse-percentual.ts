@@ -100,3 +100,40 @@ export function textoDosPercentuais(
   if (doMinimo !== null) partes.push(`${textoDoPercentual(doMinimo)} ${rotulos.minimo}`);
   return partes.length > 0 ? partes.join(" · ") : null;
 }
+
+/**
+ * AP77 — A COMISSÃO EM MASSA grava em R$, como o cadastro (0.352.0).
+ *
+ * O painel da Precificação recebe o valor OU o percentual. Com valor, todos os
+ * procedimentos do escopo ficam com ele. Com percentual, cada procedimento
+ * recebe o percentual sobre o PRÓPRIO preço padrão — a mesma conta do
+ * cadastro (`repasseParaGravar`); só o procedimento sem preço guarda o
+ * percentual, porque não há como converter.
+ *
+ * Valor e percentual juntos são recusados: o repasse paga só o valor, e o
+ * percentual ficaria gravado sem efeito (era o "10% + R$ 50,00" da lista).
+ */
+export const RECUSA_DA_COMISSAO_EM_MASSA =
+  "Informe a comissão em R$ OU em % — não os dois. O que fica gravado é sempre o valor em R$.";
+
+export function comissaoEmMassa(
+  pedido: { valorCents: number | null; percent: number | null },
+  precoCents: number
+): { valorCents: number; percent: number; texto: string } {
+  const gravar = repasseParaGravar({
+    valorCents: pedido.valorCents ?? 0,
+    percent: pedido.valorCents != null ? 0 : (pedido.percent ?? 0),
+    precoCents,
+  });
+  const reais = (c: number) =>
+    (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  let texto: string;
+  if (pedido.valorCents != null) {
+    texto = reais(gravar.valorCents);
+  } else if (gravar.percent > 0) {
+    texto = `${textoDoPercentual(gravar.percent)} (procedimento sem preço padrão: ficou em percentual)`;
+  } else {
+    texto = `${reais(gravar.valorCents)} (${textoDoPercentual(pedido.percent ?? 0)} do preço padrão)`;
+  }
+  return { ...gravar, texto };
+}

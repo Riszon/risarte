@@ -396,6 +396,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (lote das decisões) — PC Administrador (core 0.413.0 → 0.414.0, migrações 0379 a 0383; Empresarial 0.99.2 → 0.100.0, migração 1042)**
+
+- **AP111, AP16, AP67, AP77, AP84, AP98, AP128, AP132 e AP134** (bloco
+  0.414.0 no ESTADO; as decisões do dono estão em cada item do backlog).
+- ⚠️ **Função nova = `revoke … from … anon` na própria migração** (régua
+  `lote-das-decisoes-novembro.test.ts`, vale para as quatro faixas).
+- ⚠️ **`lunch_enabled` nulo = a unidade segue o almoço da rede** (0381). Não
+  gravar almoço de unidade por `upsert`.
+- ⚠️ Ao recriar `ortho_charge_ledger`, levar o ramo do mês fechado (0382).
+- ⏳ **0379, 0380, 0381, 0382, 0383 e 1042 só no treino.** O dono aplica na
+  produção uma por vez. Não visto na tela.
+
 **10/11/2026 (Rita — Fase 0A.7a) — PC Administrador (core 0.412.0 → 0.413.0, sem migração do core; Rita 0.6.0 → 0.7.0, migração 3006)**
 
 - **A tela "O que a Rita sabe" — ver e ligar/desligar** (bloco 0.413.0 no

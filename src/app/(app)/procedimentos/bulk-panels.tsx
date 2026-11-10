@@ -270,7 +270,7 @@ export function CommissionPanel({
               />
             </div>
             <div>
-              <Label>Comissão fixa (R$)</Label>
+              <Label>ou comissão em R$</Label>
               <Input
                 value={fixed}
                 onChange={(e) => setFixed(e.target.value)}
@@ -291,12 +291,14 @@ export function CommissionPanel({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Deixe um dos campos em branco para não alterá-lo. Ex.: só o “%” muda a
-            comissão percentual e mantém a fixa.
+            Preencha <strong>um</strong> dos dois. O que fica gravado é sempre o valor em R$:
+            o “%” é calculado sobre o preço padrão de cada procedimento (como no cadastro).
           </p>
           <Button
             size="sm"
-            disabled={(!percent.trim() && !fixed.trim()) || isPending}
+            disabled={
+              (!percent.trim() && !fixed.trim()) || (!!percent.trim() && !!fixed.trim()) || isPending
+            }
             onClick={() =>
               run(
                 () =>

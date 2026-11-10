@@ -17,6 +17,8 @@ import {
   resumoDaRita,
   type PapelDaRita,
   type RitaDoProcedimento as Rita,
+  podeEntrarNoRol,
+  RECUSA_DA_URGENCIA_NO_ROL,
 } from "@/lib/rita-procedimento";
 import { salvarRitaDoProcedimento } from "./rita-actions";
 
@@ -63,17 +65,25 @@ export function RitaDoProcedimento({
       </div>
       {aberto && (
         <div className="mt-2 space-y-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={v.canOffer} onChange={(e) => setV((x) => ({ ...x, canOffer: e.target.checked }))} />
-            A assistente virtual pode oferecer este procedimento
-          </label>
+          {podeEntrarNoRol(v.role) ? (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={v.canOffer} onChange={(e) => setV((x) => ({ ...x, canOffer: e.target.checked }))} />
+              A assistente virtual pode oferecer este procedimento
+            </label>
+          ) : (
+            <p className="text-sm">{RECUSA_DA_URGENCIA_NO_ROL}</p>
+          )}
           <div>
             <Label htmlFor={`rita-papel-${procedureId}`}>Papel</Label>
             <select
               id={`rita-papel-${procedureId}`}
               className="h-9 w-full rounded-md border bg-background px-2 text-sm"
               value={v.role ?? ""}
-              onChange={(e) => setV((x) => ({ ...x, role: (e.target.value || null) as PapelDaRita | null }))}
+              onChange={(e) => {
+                const role = (e.target.value || null) as PapelDaRita | null;
+                // AP132: ao virar urgência, sai do rol.
+                setV((x) => ({ ...x, role, canOffer: podeEntrarNoRol(role) ? x.canOffer : false }));
+              }}
             >
               <option value="">Nenhum (procedimento comum)</option>
               {PAPEIS_DA_RITA.map((p) => (

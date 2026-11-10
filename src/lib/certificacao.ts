@@ -151,7 +151,8 @@ export const INDICADORES = [
     nivel: "essencial",
     origem: "client_consents.recorded_by",
     quando: "granted_at",
-    papeis: ["receptionist", "clinical_coordinator"],
+    // AP134: o botão é do bloco clínico (`requireCoordinator`); a Recepção não o tem.
+    papeis: ["clinical_coordinator"],
   },
   {
     chave: "edicoes_cliente",
@@ -201,24 +202,29 @@ export const INDICADORES = [
   // ===========================================================================
   {
     chave: "avaliacoes",
-    rotulo: "Avaliações concluídas",
+    rotulo: "Avaliações enviadas ao Planejamento",
     ajuda:
-      "Avaliações que ela abriu E fechou (Fase 2). Avaliação deixada aberta não conta.",
-    onde: "Ficha do cliente → Avaliação → Concluir",
+      "Clientes que ela enviou ao Centro de Planejamento depois de avaliar (Fase 2 → Fase 3). Avaliação que ficou sem enviar não conta. Inclui o envio feito depois de uma reavaliação.",
+    onde: "Cockpit de Avaliação → Enviar ao Centro de Planejamento",
     nivel: "essencial",
-    origem: "clinical_evaluations.closed_by + kind=avaliacao",
-    quando: "closed_at",
+    // AP134: `clinical_evaluations.closed_by` só é gravado ao ABRIR outra
+    // avaliação ou pelo Planner — nenhum botão do Coordenador o grava. O que
+    // ele faz e fica com o nome dele é a passagem para o Planejamento.
+    origem: "journey_phase_history.moved_by + phase=planning_center",
+    quando: "entered_at",
     papeis: ["clinical_coordinator"],
   },
   {
     chave: "reavaliacoes",
     rotulo: "Reavaliações concluídas",
-    ajuda: "Reavaliações fechadas por ela (Fase 6), depois do tratamento andar.",
-    onde: "Ficha do cliente → Reavaliação → Concluir",
+    ajuda:
+      "Clientes que ela levou para o Acompanhamento (Fase 6 → Fase 7) ao concluir a reavaliação sem precisar de plano novo. ⚠️ O histórico não separa: se ela mover alguém para o Acompanhamento à mão, também conta.",
+    onde: "Cockpit de Avaliação → Concluir a reavaliação",
     nivel: "complementar",
     dependeDeOutro: true,
-    origem: "clinical_evaluations.closed_by + kind=reavaliacao",
-    quando: "closed_at",
+    // AP134: "Concluir a reavaliação" move a fase e não grava `closed_by`.
+    origem: "journey_phase_history.moved_by + phase=follow_up",
+    quando: "entered_at",
     papeis: ["clinical_coordinator"],
   },
   {
@@ -297,7 +303,7 @@ export const INDICADORES = [
   {
     chave: "desfechos_atendimento",
     rotulo: "Desfechos de atendimento registrados",
-    ajuda: "O que aconteceu na consulta: compareceu, faltou, foi remarcado.",
+    ajuda: "O registro do que foi feito em cada sessão, na hora de concluir o atendimento.",
     onde: "Atendimento → coluna Em atendimento → Concluir → O que foi feito hoje? → Concluir atendimento",
     nivel: "complementar",
     origem: "attendance_session_outcomes.recorded_by",
@@ -307,7 +313,7 @@ export const INDICADORES = [
   {
     chave: "solicitacoes_clinicas",
     rotulo: "Solicitações clínicas",
-    ajuda: "Pedidos de exame, encaminhamento ou parecer feitos por ela.",
+    ajuda: "Pedidos que ela mandou ao Coordenador pela ficha: sugerir reavaliação ou pedir revisão do plano.",
     onde: "Ficha do cliente → aba Pedidos → Sugerir reavaliação ou Pedir revisão do plano → Enviar ao coordenador",
     nivel: "complementar",
     origem: "clinical_requests.requested_by",
@@ -366,14 +372,15 @@ export const INDICADORES = [
   },
   {
     chave: "complementos_planejamento",
-    rotulo: "Complementos de planejamento",
+    rotulo: "Informações complementares enviadas ao Planner",
     ajuda:
-      "Pedidos de informação que faltava (uma foto, um exame) abertos por ela em vez de planejar no escuro.",
-    onde: "Planejamento → Pedir complemento",
+      "Informação que faltava (uma foto, um exame, uma observação) que ela acrescentou depois de o caso já estar no Planejamento.",
+    onde: "Ficha do cliente → aba Clínico → Informações complementares",
     nivel: "complementar",
     origem: "planning_supplements.created_by",
     quando: "created_at",
-    papeis: ["planner_dentist"],
+    // AP134: quem tem o botão é o Coordenador; o Planner só lê.
+    papeis: ["clinical_coordinator"],
   },
 
   // ===========================================================================
@@ -762,8 +769,8 @@ export const INDICADORES = [
   },
   {
     chave: "agenda_configurada",
-    rotulo: "Fechamentos e aberturas de agenda",
-    ajuda: "Feriados, folgas e dias extras que ela configurou na agenda da unidade.",
+    rotulo: "Fechamentos de agenda",
+    ajuda: "Feriados, folgas e bloqueios que ela registrou na agenda da unidade.",
     onde: "Agenda → Fechar agenda",
     nivel: "complementar",
     origem: "agenda_closures.created_by",
@@ -917,13 +924,15 @@ export const INDICADORES = [
   {
     chave: "pedidos_enviados",
     rotulo: "Pedidos enviados ao fornecedor",
-    ajuda: "Pedidos gerados por ela depois de a unidade aprovar o rateio.",
-    onde: "Compras → Pedidos",
+    ajuda: "Pedidos que ela gerou ao aprovar o rateio da rodada de compras.",
+    onde: "Compras → Aprovar → Gerar pedidos",
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "purchase_orders.created_by",
     quando: "created_at",
-    papeis: ["purchaser"],
+    // AP134: quem gera o pedido é quem aprova (`can_decide_purchase`, 0294:
+    // Gerente, Admin, Financeiro da Franqueadora) — o Comprador não tem o botão.
+    papeis: ["unit_manager"],
   },
   {
     chave: "vinculos_fornecedor",

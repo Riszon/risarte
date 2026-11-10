@@ -17,6 +17,10 @@ import { isTreino } from "@/lib/environment";
 import { SOMENTE_CONSULTA_NO_TREINO } from "@/lib/espelho";
 import { agendarEspelho } from "@/lib/espelho-treino";
 import {
+  escopoAceitoPelaFuncao,
+  RECUSA_DO_ESCOPO_DO_FINANCEIRO,
+} from "@/lib/finance/escopo";
+import {
   bloquearNoTreino,
   liberarNoTreino,
   sincronizarSenhaNoTreino,
@@ -94,7 +98,8 @@ async function saveUnitScope(
   unitIds: string[] | undefined
 ): Promise<void> {
   if (!FRANCHISOR_ROLES.includes(role)) return;
-  const effectiveScope: UnitScope = scope ?? "all";
+  // AP67: quem chama já recusou; aqui é a segunda trava (a terceira é o banco).
+  const effectiveScope: UnitScope = escopoAceitoPelaFuncao(role, scope) ? (scope ?? "all") : "all";
   const supabase = await createClient();
 
   await supabase
@@ -171,6 +176,8 @@ function parseAssignments(raw: string): RoleAssignment[] | null {
     for (const item of parsed) {
       if (!item.clinicId || !USER_ROLES.includes(item.role)) return null;
       if (item.unitScope && !UNIT_SCOPES.includes(item.unitScope)) return null;
+      // AP67: Financeiro da Franqueadora só com "Todas".
+      if (!escopoAceitoPelaFuncao(item.role, item.unitScope)) return null;
       // One role per clinic.
       if (seenClinics.has(item.clinicId)) return null;
       seenClinics.add(item.clinicId);
@@ -729,6 +736,9 @@ export async function addUserRole(
   if (!USER_ROLES.includes(role)) {
     return { ok: false, error: "Função inválida." };
   }
+  if (!escopoAceitoPelaFuncao(role, unitScope)) {
+    return { ok: false, error: RECUSA_DO_ESCOPO_DO_FINANCEIRO };
+  }
 
   const envError = await validateRoleEnvironments([{ clinicId, role }]);
   if (envError) return { ok: false, error: envError };
@@ -789,6 +799,9 @@ export async function updateRoleScope(
     .eq("id", roleRowId)
     .single();
   if (!row) return { ok: false, error: "Função não encontrada." };
+  if (!escopoAceitoPelaFuncao(row.role as UserRole, unitScope)) {
+    return { ok: false, error: RECUSA_DO_ESCOPO_DO_FINANCEIRO };
+  }
 
   await saveUnitScope(roleRowId, row.role as UserRole, unitScope, unitIds);
 

@@ -53,6 +53,7 @@ import {
   type RoleAssignment,
 } from "./acesso-actions";
 import { linkStaffUser, unlinkStaffUser } from "./actions";
+import { soAceitaTodasAsUnidades } from "@/lib/finance/escopo";
 import { UnitAccessControl } from "./unit-access-control";
 import { EnviarAcesso } from "./enviar-acesso";
 
@@ -905,6 +906,14 @@ function CriarAcesso({
           const tipo = tipoDa(patch.clinicId) ?? "franchise_unit";
           const permitidas = rolesForClinicType(tipo);
           if (!permitidas.includes(proxima.role)) proxima.role = permitidas[0];
+        }
+        // AP67: ao escolher o Financeiro da Franqueadora, o escopo volta a "Todas".
+        if (soAceitaTodasAsUnidades(proxima.role)) {
+          proxima.unitScope = "all";
+          proxima.unitIds = [];
+        }
+        if (patch.clinicId) {
+          const tipo = tipoDa(patch.clinicId) ?? "franchise_unit";
           if (tipo === "franchisor") {
             proxima.unitScope = proxima.unitScope ?? "all";
             proxima.unitIds = proxima.unitIds ?? [];
@@ -1036,6 +1045,7 @@ function CriarAcesso({
                   units={clinicas.filter((c) => c.type === "franchise_unit")}
                   scope={f.unitScope ?? "all"}
                   unitIds={f.unitIds ?? []}
+                  soTodas={soAceitaTodasAsUnidades(f.role)}
                   onChange={(scope, unitIds) =>
                     atualizar(i, { unitScope: scope, unitIds })
                   }
@@ -1281,6 +1291,7 @@ function EscopoDaFuncao({
     <div className="space-y-2">
       <UnitAccessControl
         idPrefix={`escopo-${funcao.id}`}
+        soTodas={soAceitaTodasAsUnidades(funcao.role)}
         units={unidades}
         scope={scope}
         unitIds={unitIds}

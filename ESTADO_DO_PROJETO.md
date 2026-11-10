@@ -2,6 +2,43 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧭 0.414.0 — LOTE DAS DECISÕES DO DONO (10/11/2026; migrações 0379–0383; Empresarial 0.100.0 / 1042)
+>
+> Pedido do dono: resolver todos os itens abertos, alta → média → baixa. As
+> decisões foram perguntadas e gravadas em cada item do backlog.
+> ⏳ **As seis migrações estão SÓ NO TREINO.** O dono aplica na produção uma
+> por vez (independentes). O código já no ar tolera a falta de cada uma.
+> - **1042 (AP111)** `empresarial.importar_titulares`: as duas abas da
+>   planilha numa transação (`security invoker` — valem as regras das
+>   tabelas) + o teto de DEPENDENTES pelas mesmas funções do cadastro um a
+>   um. Sem a 1042 a ação usa o caminho antigo (`gravarEmDuasEtapas`).
+> - **0379 (AP16)** 118 funções deixam de executar sem login (gerada do
+>   catálogo do treino; 159 → 41 abertas; ficam 31 que as regras das tabelas
+>   chamam e 10 ajudantes puros). ⚠️ **Régua nova: função NOVA tem de ter
+>   `revoke … from … anon` na própria migração** (reprova a entrega).
+> - **0380 (AP67)** Financeiro da Franqueadora só com escopo "Todas": CHECK
+>   em `user_clinic_roles_all` + ação + tela (`escopoAceitoPelaFuncao`).
+> - **0381 (AP98)** ⚠️ `clinic_agenda_settings.lunch_enabled` aceita NULO =
+>   "segue o almoço da rede". As unidades com `false` viram NULO **uma vez**
+>   (a migração não repete). `resolveAgendaSettings` decide o almoço à parte.
+>   `saveLunchBreak` não usa mais upsert (criava a linha com o horário padrão
+>   do banco): cria copiando o horário da rede.
+> - **0382 (AP128)** ⚠️ `ortho_charge_ledger`: mensalidade de mês FECHADO
+>   paga com desconto não muda de valor; o desconto vira lançamento
+>   `ortho_charge_discount` na 1.9.02 (saída quitada, caixa na data do
+>   pagamento; competência nunca em mês fechado). Mês aberto: como antes.
+> - **0383 (AP132)** CHECK `procedures_rita_urgency_not_offered`; as urgências
+>   marcadas voltam a ficar fora do rol.
+> - **Sem migração:** AP77 (`comissaoEmMassa`: a comissão em massa grava R$),
+>   AP84 (`minutosPelaSequencia`: a margem da NEGOCIAÇÃO usa a sequência; a
+>   Precificação não), AP134 (certificação: `avaliacoes`/`reavaliacoes` contam
+>   `journey_phase_history.moved_by`; complementos → Coordenador; pedidos →
+>   Gerente; consentimentos sem a Recepção).
+> - Fechados por decisão, sem código: AP61 (confirmado), AP127 (fica como está).
+> - Ensaios no treino (transação desfeita): 1042 13/13; 0382 12/12. Régua
+>   `lote-das-decisoes-novembro.test.ts` 23/23 quebrando. EV-313.
+>   **Não visto na tela.**
+
 > ## 🤖 0.413.0 — RITA 0A.7a: A TELA "O QUE A RITA SABE" (10/11/2026; Rita 0.7.0, migração 3006)
 >
 > Sem migração do core. Menu **Assistente virtual** (`/rita` e

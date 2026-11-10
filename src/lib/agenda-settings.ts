@@ -51,6 +51,22 @@ export function hhmm(time: string): string {
   return (time ?? "").slice(0, 5);
 }
 
+/**
+ * AP98 (0381, decisão do dono em 10/11/2026) — o ALMOÇO cai da unidade para a
+ * rede CAMPO A CAMPO. `lunch_enabled` NULO na linha da unidade = "a unidade
+ * não definiu o almoço": vale o da rede. `true`/`false` = a unidade decidiu
+ * (almoço próprio / sem almoço), e aí valem os horários dela.
+ *
+ * Antes a cascata era pela linha inteira: bastava a unidade ter horário
+ * próprio para perder o almoço da rede — e a tela da rede dizia que "cada
+ * unidade herda automaticamente".
+ */
+export function unidadeHerdaOAlmoco(rows: AgendaSettingRow[], clinicId: string | null): boolean {
+  if (!clinicId) return false;
+  const override = rows.find((r) => r.clinic_id === clinicId);
+  return !override || override.lunch_enabled == null;
+}
+
 /** Effective settings for a clinic: unit override > network default > code default. */
 export function resolveAgendaSettings(
   rows: AgendaSettingRow[],
@@ -62,6 +78,8 @@ export function resolveAgendaSettings(
   const network = rows.find((r) => r.clinic_id === null);
   const row = override ?? network;
   if (!row) return AGENDA_DEFAULTS;
+  // AP98: o almoço é decidido à parte — o da unidade só quando ela definiu.
+  const almoco = override && override.lunch_enabled != null ? override : network;
   return {
     openTime: hhmm(row.open_time) || AGENDA_DEFAULTS.openTime,
     closeTime: hhmm(row.close_time) || AGENDA_DEFAULTS.closeTime,
@@ -70,9 +88,9 @@ export function resolveAgendaSettings(
         ? row.weekdays
         : AGENDA_DEFAULTS.weekdays,
     chairs: row.chairs ?? AGENDA_DEFAULTS.chairs,
-    lunchEnabled: row.lunch_enabled ?? AGENDA_DEFAULTS.lunchEnabled,
-    lunchStart: hhmm(row.lunch_start ?? "") || AGENDA_DEFAULTS.lunchStart,
-    lunchEnd: hhmm(row.lunch_end ?? "") || AGENDA_DEFAULTS.lunchEnd,
+    lunchEnabled: almoco?.lunch_enabled ?? AGENDA_DEFAULTS.lunchEnabled,
+    lunchStart: hhmm(almoco?.lunch_start ?? "") || AGENDA_DEFAULTS.lunchStart,
+    lunchEnd: hhmm(almoco?.lunch_end ?? "") || AGENDA_DEFAULTS.lunchEnd,
     waitingAlertMinutes:
       row.waiting_alert_minutes ??
       network?.waiting_alert_minutes ??

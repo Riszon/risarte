@@ -31,3 +31,29 @@ export function unidadesDoEscopoFinanceiro<T extends ClinicaDaLista>(
   const ja = new Set(jaNaLista);
   return todas.filter((c) => c.type === "franchise_unit" && c.is_active !== false && escopo.has(c.id) && !ja.has(c.id));
 }
+
+/**
+ * AP67 (0380, decisão do dono em 10/11/2026) — o Financeiro da Franqueadora
+ * aceita SÓ o escopo "Todas".
+ *
+ * O banco dá a essa função o financeiro de todas as unidades
+ * (`is_finance_franchisor()`, usada em mais de 130 regras), seja qual for o
+ * escopo. Em vez de reescrever as regras, o dono decidiu proibir o escopo
+ * restrito: a tela não oferece, a ação recusa e o banco tem uma trava
+ * (`user_clinic_roles_finance_scope_all`). Assim a tela nunca promete um
+ * limite que o banco não cumpre.
+ */
+export const FUNCOES_SO_COM_TODAS_AS_UNIDADES: readonly UserRole[] = ["finance_franchisor"];
+
+export function soAceitaTodasAsUnidades(role: UserRole): boolean {
+  return FUNCOES_SO_COM_TODAS_AS_UNIDADES.includes(role);
+}
+
+/** O escopo pedido serve para esta função? (`undefined` = o padrão, "Todas".) */
+export function escopoAceitoPelaFuncao(role: UserRole, scope: string | null | undefined): boolean {
+  if (!soAceitaTodasAsUnidades(role)) return true;
+  return scope == null || scope === "all";
+}
+
+export const RECUSA_DO_ESCOPO_DO_FINANCEIRO =
+  "O Financeiro da Franqueadora trabalha sempre com todas as unidades. Para limitar a algumas unidades, use uma função da própria unidade.";

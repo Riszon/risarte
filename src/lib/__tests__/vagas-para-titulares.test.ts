@@ -199,7 +199,8 @@ describe("⚠️ régua: os dois caminhos perguntam à MESMA conta", () => {
   it("a importação pede vaga para os CPFs NOVOS, e ANTES de gravar", () => {
     const corpo = corpoDe("importEmployees");
     const pergunta = corpo.indexOf("vagasParaTitulares(db, companyId, conferida.cpfsNovos.length)");
-    const grava = corpo.indexOf(".upsert(");
+    // AP111 (1042): a gravação é a função do banco, as duas abas juntas.
+    const grava = corpo.indexOf('db.rpc("importar_titulares"');
     expect(pergunta).toBeGreaterThan(-1);
     expect(grava).toBeGreaterThan(-1);
     expect(pergunta).toBeLessThan(grava);

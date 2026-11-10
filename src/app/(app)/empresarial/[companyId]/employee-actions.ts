@@ -12,6 +12,7 @@ import { recusaDoDependente, vagasDisponiveis } from "@/lib/empresarial/excedent
 import { vagasParaTitulares } from "@/lib/empresarial/vagas";
 import {
   conferirPlanilha,
+  recusaDaImportacao,
   resumoDaRecusa,
   type DependenteDaPlanilha,
   type LinhaComErro,
@@ -519,6 +520,99 @@ export type EmployeeImportRow = LinhaDaPlanilha;
 /** I5b: dependentes vêm na 2ª aba da planilha, ligados pelo CPF do titular. */
 export type DependentImportRow = DependenteDaPlanilha;
 
+/** A 1042 ainda não rodou neste banco (a API não acha a função). */
+function funcaoDaImportacaoAusente(e: { code?: string; message?: string }): boolean {
+  return e.code === "PGRST202" || /could not find the function|schema cache/i.test(e.message ?? "");
+}
+
+type GravacaoAntiga =
+  | { ok: true; inserted: number; dependentsInserted: number }
+  | { ok: false; recusa: ImportResult };
+
+/**
+ * O CAMINHO DE ANTES DA 1042: duas gravações pela API, sem transação e sem o
+ * teto de dependentes. Só roda no banco em que a função ainda não existe.
+ * Se a segunda gravação falhar, a resposta diz exatamente isso (os titulares
+ * entraram, os dependentes não) em vez de "importado com sucesso".
+ */
+async function gravarEmDuasEtapas(
+  db: Awaited<ReturnType<typeof empresarialDb>>,
+  companyId: string,
+  conferida: ReturnType<typeof conferirPlanilha>
+): Promise<GravacaoAntiga> {
+  const payload = conferida.titulares.map((t) => ({
+    company_id: companyId,
+    cpf: t.cpfFormatado,
+    full_name: t.fullName,
+    phone: t.phone,
+    email: t.email,
+    // O plano vem dos dependentes importados (gatilho da 1002), não da coluna.
+    dependent_plan: "NONE",
+  }));
+  // upsert por (company_id, cpf) — reimportar não duplica.
+  const { error } = await db
+    .from("employees")
+    .upsert(payload, { onConflict: "company_id,cpf", ignoreDuplicates: true });
+  if (error) {
+    console.error("importEmployees failed:", error.message);
+    return {
+      ok: false,
+      recusa: { ok: false, error: "Não foi possível importar a planilha. Nada foi gravado." },
+    };
+  }
+  const inserted = conferida.cpfsNovos.length;
+  const pelaMetade = (motivo: string): GravacaoAntiga => ({
+    ok: false,
+    recusa: { ok: false, error: motivo, inserted, jaCadastrados: conferida.jaCadastrados },
+  });
+
+  let dependentsInserted = 0;
+  if (conferida.dependentes.length > 0) {
+    const holderCpfs = [...new Set(conferida.dependentes.map((d) => formatCpf(d.holderCpf)))];
+    const holders = await lerPorLotes<{ id: string; cpf: string }>(
+      holderCpfs,
+      (lote, de, ate) =>
+        db
+          .from("employees")
+          .select("id, cpf")
+          .eq("company_id", companyId)
+          .in("cpf", lote)
+          .range(de, ate)
+    );
+    if (!holders.ok) {
+      console.error("importEmployees holders failed:", holders.error.message);
+      return pelaMetade(
+        `Os ${inserted} titular(es) novo(s) foram gravados, mas não foi possível ler os titulares para ligar os dependentes. Importe de novo só a aba Dependentes.`
+      );
+    }
+    const idByCpf = new Map(holders.linhas.map((h) => [h.cpf.replace(/\D/g, ""), h.id]));
+    const depPayload = conferida.dependentes.map((d) => ({
+      employee_id: idByCpf.get(d.holderCpf) ?? null,
+      cpf: d.cpfFormatado,
+      full_name: d.fullName,
+      phone: d.phone,
+      relationship: d.relationship,
+    }));
+    const semTitular = depPayload.filter((d) => d.employee_id === null).length;
+    if (semTitular > 0) {
+      return pelaMetade(
+        `Os ${inserted} titular(es) novo(s) foram gravados, mas ${semTitular} dependente(s) ficaram sem titular na empresa. Importe de novo só a aba Dependentes.`
+      );
+    }
+    const { error: depErr } = await db
+      .from("dependents")
+      .upsert(depPayload, { onConflict: "employee_id,cpf", ignoreDuplicates: true });
+    if (depErr) {
+      console.error("importEmployees dependents failed:", depErr.message);
+      return pelaMetade(
+        `Os ${inserted} titular(es) novo(s) foram gravados, mas os dependentes não. Importe de novo só a aba Dependentes.`
+      );
+    }
+    dependentsInserted = depPayload.length;
+  }
+  return { ok: true, inserted, dependentsInserted };
+}
+
 export type ImportResult = ActionResult & {
   inserted?: number;
   dependentsInserted?: number;
@@ -541,10 +635,12 @@ export type ImportResult = ActionResult & {
  * a tela, e o RH fica sem saber quem ficou de fora. Recusar inteiro é menos
  * cômodo e muito mais seguro (decisão do dono, 03/11/2026).
  *
- * Limite declarado: titulares e dependentes são DUAS gravações. A conferência
- * acontece toda antes da primeira; se a segunda falhar por erro do banco, a
- * resposta diz exatamente isso (os titulares entraram, os dependentes não) em
- * vez de "importado com sucesso".
+ * AP111 (1042): as duas abas são gravadas JUNTAS, por uma função do banco
+ * (`importar_titulares`), numa transação só — e é ela que confere o teto de
+ * DEPENDENTES do contrato. Qualquer recusa desfaz tudo.
+ *
+ * Enquanto a 1042 não rodou num banco, vale o caminho antigo
+ * (`gravarEmDuasEtapas`): duas gravações, sem o teto de dependentes.
  */
 export async function importEmployees(
   companyId: string,
@@ -605,82 +701,36 @@ export async function importEmployees(
     if (!vagas.ok) return { ok: false, error: vagas.motivo };
   }
 
-  const payload = conferida.titulares.map((t) => ({
-    company_id: companyId,
-    cpf: t.cpfFormatado,
-    full_name: t.fullName,
-    phone: t.phone,
-    email: t.email,
-    // O plano vem dos dependentes importados (gatilho da 1002), não da coluna.
-    dependent_plan: "NONE",
-  }));
-
-  // upsert por (company_id, cpf) — reimportar não duplica.
-  const { error } = await db
-    .from("employees")
-    .upsert(payload, { onConflict: "company_id,cpf", ignoreDuplicates: true });
-  if (error) {
-    console.error("importEmployees failed:", error.message);
-    return { ok: false, error: "Não foi possível importar a planilha. Nada foi gravado." };
-  }
-  const inserted = conferida.cpfsNovos.length;
-
-  // I5b: dependentes da 2ª aba — ligados ao titular pelo CPF dele. Todos já
-  // conferidos: o titular está na planilha (acabou de entrar) ou na empresa.
-  let dependentsInserted = 0;
-  if (conferida.dependentes.length > 0) {
-    const holderCpfs = [...new Set(conferida.dependentes.map((d) => formatCpf(d.holderCpf)))];
-    const holders = await lerPorLotes<{ id: string; cpf: string }>(
-      holderCpfs,
-      (lote, de, ate) =>
-        db
-          .from("employees")
-          .select("id, cpf")
-          .eq("company_id", companyId)
-          .in("cpf", lote)
-          .range(de, ate)
-    );
-    if (!holders.ok) {
-      console.error("importEmployees holders failed:", holders.error.message);
-      return {
-        ok: false,
-        error: `Os ${inserted} titular(es) novo(s) foram gravados, mas não foi possível ler os titulares para ligar os dependentes. Importe de novo só a aba Dependentes.`,
-        inserted,
-        jaCadastrados: conferida.jaCadastrados,
-      };
-    }
-    const idByCpf = new Map(holders.linhas.map((h) => [h.cpf.replace(/\D/g, ""), h.id]));
-    const depPayload = conferida.dependentes.map((d) => ({
-      employee_id: idByCpf.get(d.holderCpf) ?? null,
+  let inserted: number;
+  let dependentsInserted: number;
+  const juntas = await db.rpc("importar_titulares", {
+    p_company_id: companyId,
+    p_titulares: conferida.titulares.map((t) => ({
+      cpf: t.cpfFormatado,
+      full_name: t.fullName,
+      phone: t.phone,
+      email: t.email,
+    })),
+    p_dependentes: conferida.dependentes.map((d) => ({
+      holder_cpf: formatCpf(d.holderCpf),
       cpf: d.cpfFormatado,
       full_name: d.fullName,
       phone: d.phone,
       relationship: d.relationship,
-    }));
-    // Conferido antes; se um titular sumiu entre a conferência e a gravação,
-    // a resposta diz, em vez de gravar dependente sem titular.
-    const semTitular = depPayload.filter((d) => d.employee_id === null).length;
-    if (semTitular > 0) {
-      return {
-        ok: false,
-        error: `Os ${inserted} titular(es) novo(s) foram gravados, mas ${semTitular} dependente(s) ficaram sem titular na empresa. Importe de novo só a aba Dependentes.`,
-        inserted,
-        jaCadastrados: conferida.jaCadastrados,
-      };
-    }
-    const { error: depErr } = await db
-      .from("dependents")
-      .upsert(depPayload, { onConflict: "employee_id,cpf", ignoreDuplicates: true });
-    if (depErr) {
-      console.error("importEmployees dependents failed:", depErr.message);
-      return {
-        ok: false,
-        error: `Os ${inserted} titular(es) novo(s) foram gravados, mas os dependentes não. Importe de novo só a aba Dependentes.`,
-        inserted,
-        jaCadastrados: conferida.jaCadastrados,
-      };
-    }
-    dependentsInserted = depPayload.length;
+    })),
+  });
+  if (!juntas.error) {
+    const gravado = (juntas.data ?? {}) as { titulares?: number; dependentes?: number };
+    inserted = Number(gravado.titulares ?? 0);
+    dependentsInserted = Number(gravado.dependentes ?? 0);
+  } else if (funcaoDaImportacaoAusente(juntas.error)) {
+    const antigo = await gravarEmDuasEtapas(db, companyId, conferida);
+    if (!antigo.ok) return antigo.recusa;
+    inserted = antigo.inserted;
+    dependentsInserted = antigo.dependentsInserted;
+  } else {
+    console.error("importEmployees failed:", juntas.error.message);
+    return { ok: false, error: recusaDaImportacao(juntas.error.message) };
   }
 
   await logAudit({
@@ -688,7 +738,7 @@ export async function importEmployees(
     entityType: "empresarial_employee_import",
     entityId: companyId,
     details: {
-      rows: payload.length,
+      rows: conferida.titulares.length,
       inserted,
       already: conferida.jaCadastrados,
       dependents: dependentsInserted,

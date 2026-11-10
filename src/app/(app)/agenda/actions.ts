@@ -2259,26 +2259,60 @@ export async function updateSpecialDay(
 /** Saves the unit's lunch break (Gerente/Admin). */
 export async function saveLunchBreak(
   clinicId: string,
-  input: { enabled: boolean; start: string; end: string }
+  input: { enabled: boolean; start: string; end: string; herdar?: boolean }
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   if (!hasRoleInClinic(session, clinicId, ["unit_manager"])) {
     return { ok: false, error: "Apenas a Gerente (ou Admin) configura o almoço." };
   }
-  if (input.enabled && timeToMinutes(input.end) <= timeToMinutes(input.start)) {
+  const herdar = input.herdar === true;
+  if (!herdar && input.enabled && timeToMinutes(input.end) <= timeToMinutes(input.start)) {
     return { ok: false, error: "O fim do almoço deve ser depois do início." };
   }
   const supabase = await createClient();
-  const { error } = await supabase.from("clinic_agenda_settings").upsert(
-    {
-      clinic_id: clinicId,
-      lunch_enabled: input.enabled,
-      lunch_start: input.start,
-      lunch_end: input.end,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "clinic_id" }
-  );
+  // AP98: `lunch_enabled` nulo = a unidade segue o almoço da rede.
+  const almoco = herdar
+    ? { lunch_enabled: null }
+    : { lunch_enabled: input.enabled, lunch_start: input.start, lunch_end: input.end };
+
+  // A unidade já tem linha própria? Sem ela, criar uma só com o almoço faria o
+  // HORÁRIO dela virar o padrão do banco (08–18) em vez do da rede: a linha
+  // nasce com o horário que a rede tem agora, e nada muda além do almoço.
+  const { data: linhas, error: erroDeLeitura } = await supabase
+    .from("clinic_agenda_settings")
+    .select("clinic_id, open_time, close_time, weekdays, chairs")
+    .or(`clinic_id.eq.${clinicId},clinic_id.is.null`)
+    .returns<
+      { clinic_id: string | null; open_time: string; close_time: string; weekdays: number[]; chairs: number }[]
+    >();
+  if (erroDeLeitura) {
+    console.error("saveLunchBreak (leitura) failed:", erroDeLeitura.message);
+    return { ok: false, error: "Não foi possível salvar o horário de almoço." };
+  }
+  const propria = (linhas ?? []).find((l) => l.clinic_id === clinicId);
+  const rede = (linhas ?? []).find((l) => l.clinic_id === null);
+  if (!propria && herdar) {
+    // Sem linha própria a unidade já herda tudo: não há o que gravar.
+    return { ok: true };
+  }
+  const { error } = propria
+    ? await supabase
+        .from("clinic_agenda_settings")
+        .update({ ...almoco, updated_at: new Date().toISOString() })
+        .eq("clinic_id", clinicId)
+    : await supabase.from("clinic_agenda_settings").insert({
+        clinic_id: clinicId,
+        ...(rede
+          ? {
+              open_time: rede.open_time,
+              close_time: rede.close_time,
+              weekdays: rede.weekdays,
+              chairs: rede.chairs,
+            }
+          : {}),
+        ...almoco,
+        updated_at: new Date().toISOString(),
+      });
   if (error) {
     console.error("saveLunchBreak failed:", error.message);
     return { ok: false, error: "Não foi possível salvar o horário de almoço." };

@@ -22,6 +22,7 @@ import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
 import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
 import { carregarCustosDaMargem } from "@/lib/finance/custos-da-margem-db";
 import type { CustosDaMargem } from "@/lib/finance/custos-da-margem";
+import { minutosPelaSequencia } from "@/lib/finance/custos-da-margem";
 import { planoDaNegociacao, type OdontoDaApresentacao } from "@/lib/odontograma/aceite";
 import { carregarPresente } from "@/lib/indica/presente-db";
 import type { PresenteDaNegociacao } from "@/lib/indica/presente";
@@ -631,7 +632,19 @@ export async function loadNegotiationBlock(
   // FIN5: quanto cada opção custa em repasse — base do alerta de margem.
   const payoutByOption: Record<string, number> = {};
   const payoutByItem: Record<string, Record<string, number>> = {};
+  // AP84: os minutos de cadeira de cada item pela SEQUÊNCIA montada. Erro ou
+  // sequência que a pessoa não pode ler = sem linha: vale o planejado do item.
+  const minutosDaSequencia: Record<string, number> = {};
   for (const o of options) {
+    const sequencia = await supabase.rpc("project_option_sessions", { p_option_id: o.id });
+    if (!sequencia.error && Array.isArray(sequencia.data)) {
+      Object.assign(
+        minutosDaSequencia,
+        minutosPelaSequencia(
+          sequencia.data as { item_id: string; planned_minutes: number | null }[]
+        )
+      );
+    }
     const { data } = await supabase.rpc("estimated_option_payout", {
       p_option_id: o.id,
       p_clinic_id: clinicId,
@@ -657,8 +670,9 @@ export async function loadNegotiationBlock(
     p_clinic: clinicId,
   });
 
-  // A margem com os custos da Precificação: cadeira (minutos planejados do
-  // item; sem eles, os do cadastro × quantidade), material e laboratório.
+  // A margem com os custos da Precificação: cadeira (AP84: os minutos da
+  // SEQUÊNCIA montada; sem ela, os planejados do item; sem eles, os do
+  // cadastro × quantidade), material e laboratório.
   const custosDaMargem = await carregarCustosDaMargem(
     supabase,
     clinicId,
@@ -667,7 +681,7 @@ export async function loadNegotiationBlock(
         itemId: i.id,
         procedureId: i.procedure_id,
         quantidade: i.quantity,
-        minutosPlanejados: i.planned_total_minutes,
+        minutosPlanejados: minutosDaSequencia[i.id] ?? i.planned_total_minutes,
       }))
     )
   );

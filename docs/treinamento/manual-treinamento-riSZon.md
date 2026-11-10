@@ -556,9 +556,11 @@ pelo seletor apaga a faixa. Os **Recebíveis** abrem sem filtro de data (lá a
 data filtra pelo vencimento, e esconderia o atrasado). O mesmo botão está nas
 telas **Recebíveis da rede** e **Consolidado**.
 
-O Financeiro da Franqueadora com escopo **Específicas** vê todas as unidades
-nas abas (o número vem do banco), mas só tem o **Abrir na unidade** nas do
-escopo dele.
+O **Financeiro da Franqueadora trabalha sempre com todas as unidades**
+*(desde a 0.414.0)*. Em Risartanos, a escolha **Específicas** deixou de ser
+oferecida para essa função — o sistema sempre deu a ela o financeiro de todas
+as unidades, e a tela prometia um limite que não existia. Para limitar alguém
+a algumas unidades, use uma função da própria unidade.
 
 **A barra de abas encolheu.** As telas de todo dia ficaram à mostra (Painel,
 DRE, Fluxo de caixa, Recebíveis, Contas a pagar, Conciliação) e o resto entrou
@@ -1776,6 +1778,12 @@ assiduidade.
     sozinho (a tela mostra o líquido antes de confirmar); depois do
     vencimento, vale o valor cheio. A DRE e o fluxo de caixa valem o
     líquido; desfeita a baixa, o cheio volta.
+    **Mensalidade de um mês já fechado** *(desde a 0.414.0)*: a baixa com
+    desconto passa (antes dava erro). A receita do mês fechado fica cheia,
+    como estava quando fechou, e o desconto entra em **Descontos concedidos**
+    (1.9.02) no mês do pagamento — o caixa mostra o valor que entrou de
+    verdade. Se o mês do pagamento também já estiver fechado, o desconto entra
+    no dia em que a baixa foi lançada.
 15. **Suspender (Q5: nunca automático).** Lote terminou e o paciente não
     assumiu as próximas mensalidades, ou outro motivo da unidade: o Gerente
     ou o Coordenador clica **Suspender** e escreve o motivo. As manutenções
@@ -3194,7 +3202,17 @@ paciente vê**. **Só o Admin Master muda** (botão **Alterar**); o Planner vê.
 assistente nunca informa preço de tratamento — só o da avaliação e o da
 consulta. Já vêm marcadas a **Consulta odontológica inicial** (avaliação de
 quem é novo) e a **Consulta odontológica** (quem já é cliente); as duas
-**urgências** ela reconhece e passa para a equipe.
+**urgências** ela reconhece e passa para a equipe. **Urgência nunca entra no
+rol** *(desde a 0.414.0)*: com o papel "Urgência", a caixa "pode oferecer"
+some e o sistema recusa a combinação.
+
+**Comissão em massa** *(Precificação; desde a 0.414.0)*. Preencha **um** dos
+dois campos: o valor em R$ **ou** o percentual. O que fica gravado é sempre o
+valor em R$, como no cadastro do procedimento: o percentual é calculado sobre
+o **preço padrão de cada procedimento** do escopo (10% num procedimento de
+R$ 400,00 grava R$ 40,00; num de R$ 150,00, R$ 15,00). Só o procedimento sem
+preço padrão guarda o percentual. O histórico de cada procedimento diz o
+valor gravado e de qual percentual ele veio.
 
 **Grupos de procedimentos** (versão 0.350.0). Em **Procedimentos → Grupos**,
 o Planner e o Admin Master montam os grupos que o plano oferece no botão
@@ -3532,7 +3550,7 @@ vez só** e **só no primeiro tratamento** (não vale no plano complementar).
 **O quadro "Margem da venda"** (embaixo do resumo da negociação e na venda
 direta) mostra quanto sobra para a clínica no preço negociado. Desde a versão
 0.359.0 ele conta **tudo o que a Precificação conta**: o repasse do dentista,
-a **hora de cadeira** (a hora clínica calculada da unidade, desde a 0.362.0, pelos minutos planejados de cada item), o **material e o
+a **hora de cadeira** (a hora clínica calculada da unidade, desde a 0.362.0, pelos minutos planejados de cada item — na negociação, desde a 0.414.0, pelos minutos da **sequência de sessões montada**, o mesmo total que a tela mostra), o **material e o
 laboratório** dos kits e o **imposto + taxa média** sobre o preço — por isso o
 desconto corta também o imposto. Na compra parcial, só os itens aceitos
 entram *(desde a 0.412.0, isso vale também para o repasse do dentista: o
@@ -3725,6 +3743,14 @@ público, **link do mapa**, ponto de referência, estacionamento,
 acessibilidade, WhatsApp da unidade, idade mínima para atender criança e as
 cidades e bairros atendidos) — ficam com o Admin Master, em **Administração →
 Clínicas → Dados públicos**.
+
+**O almoço: o da rede vale para quem não definiu o seu** *(desde a 0.414.0)*.
+No cartão **Horário de almoço** da unidade, a caixa **Seguir o padrão da
+rede** mostra o almoço que a franqueadora definiu. Marcada, a unidade segue a
+rede — se a rede mudar o almoço, a unidade muda junto, mesmo tendo horário de
+funcionamento próprio. Desmarcada, a unidade escolhe: **Fechar a agenda no
+horário de almoço** (com o horário dela) ou deixar sem almoço. Antes, bastava
+a unidade ter horário próprio para não seguir o almoço da rede.
 
 #### Planejamento anual: quantas horas a unidade pode trabalhar — e quantas trabalhou
 

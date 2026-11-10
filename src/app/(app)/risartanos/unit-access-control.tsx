@@ -13,13 +13,27 @@ export function UnitAccessControl({
   unitIds,
   onChange,
   idPrefix,
+  soTodas = false,
 }: {
   units: { id: string; name: string }[];
   scope: UnitScope;
   unitIds: string[];
   onChange: (scope: UnitScope, unitIds: string[]) => void;
   idPrefix: string;
+  /** AP67: a função só aceita "Todas" (Financeiro da Franqueadora). */
+  soTodas?: boolean;
 }) {
+  if (soTodas) {
+    return (
+      <div className="space-y-1 rounded-md border bg-muted/30 p-2">
+        <Label className="text-xs">Acesso às unidades franqueadas</Label>
+        <p className="text-sm">
+          {UNIT_SCOPE_LABELS.all} — o Financeiro da Franqueadora trabalha sempre com todas as
+          unidades.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-2 rounded-md border bg-muted/30 p-2">
       <Label className="text-xs">Acesso às unidades franqueadas</Label>

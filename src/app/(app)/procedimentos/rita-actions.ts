@@ -8,7 +8,12 @@
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { PAPEIS_DA_RITA, type PapelDaRita } from "@/lib/rita-procedimento";
+import {
+  PAPEIS_DA_RITA,
+  podeEntrarNoRol,
+  RECUSA_DA_URGENCIA_NO_ROL,
+  type PapelDaRita,
+} from "@/lib/rita-procedimento";
 
 export type Resultado = { ok: boolean; error?: string };
 
@@ -23,6 +28,9 @@ export async function salvarRitaDoProcedimento(
   if (entrada.role !== null && !PAPEIS_DA_RITA.includes(entrada.role)) {
     return { ok: false, error: "Papel inválido." };
   }
+  if (entrada.canOffer && !podeEntrarNoRol(entrada.role)) {
+    return { ok: false, error: RECUSA_DA_URGENCIA_NO_ROL };
+  }
   const nome = entrada.patientName.trim();
   if (nome && (nome.length < 2 || nome.length > 120)) {
     return { ok: false, error: "O nome para o paciente deve ter entre 2 e 120 caracteres." };
@@ -36,6 +44,9 @@ export async function salvarRitaDoProcedimento(
   if (error) {
     if (error.code === "23505") {
       return { ok: false, error: "Já existe outro procedimento com esse papel (só pode haver um de cada avaliação)." };
+    }
+    if (error.message?.includes("procedures_rita_urgency_not_offered")) {
+      return { ok: false, error: RECUSA_DA_URGENCIA_NO_ROL };
     }
     if (error.message?.includes("RITA_FIELDS_ADMIN_ONLY")) {
       return { ok: false, error: "Só o Admin Master decide o que a assistente virtual oferece." };

@@ -17,7 +17,11 @@ import {
 } from "@/lib/vigencia-do-preco";
 import { logAudit } from "@/lib/audit";
 import { formatBRL, formatSessions, parseBRLToCents } from "@/lib/pricing";
-import { repasseParaGravar } from "@/lib/finance/repasse-percentual";
+import {
+  comissaoEmMassa,
+  RECUSA_DA_COMISSAO_EM_MASSA,
+  repasseParaGravar,
+} from "@/lib/finance/repasse-percentual";
 import { METHODOLOGY_PILLARS, type MethodologyPillar } from "@/lib/journey";
 import {
   mensagemDaSugestao,
@@ -706,11 +710,15 @@ export async function setCommissionBulk(input: {
     fixedCents = c;
   }
   if (percent === null && fixedCents === null) {
-    return { ok: false, error: "Informe a comissão (% e/ou R$) a aplicar." };
+    return { ok: false, error: "Informe a comissão (R$ ou %) a aplicar." };
+  }
+  // AP77: como no cadastro, o que fica gravado é o valor em R$.
+  if (percent !== null && fixedCents !== null) {
+    return { ok: false, error: RECUSA_DA_COMISSAO_EM_MASSA };
   }
 
   const supabase = await createClient();
-  let query = supabase.from("procedures").select("id");
+  let query = supabase.from("procedures").select("id, default_price_cents");
   if (input.scope === "specialty") {
     if (!input.specialty) return { ok: false, error: "Escolha a especialidade." };
     query = query.eq("specialty", input.specialty);
@@ -723,48 +731,41 @@ export async function setCommissionBulk(input: {
     }
     query = query.in("id", input.ids);
   }
-  const { data: procs } = await query.returns<{ id: string }[]>();
-  if (!procs || procs.length === 0) {
-    return { ok: false, error: "Nenhum procedimento no escopo selecionado." };
-  }
-
-  const ids = procs.map((p) => p.id);
-  // 0364: a comissão mora na irmã. O que não foi informado (% ou R$) fica
-  // como está em cada procedimento.
-  const { data: atuais, error: erroDeLeitura } = await supabase
-    .from("procedure_commissions")
-    .select("procedure_id, commission_percent, commission_fixed_cents")
-    .in("procedure_id", ids)
-    .returns<{ procedure_id: string; commission_percent: number; commission_fixed_cents: number }[]>();
+  const { data: procs, error: erroDeLeitura } = await query.returns<
+    { id: string; default_price_cents: number | null }[]
+  >();
   if (erroDeLeitura) {
     console.error("setCommissionBulk (leitura) failed:", erroDeLeitura.message);
     return { ok: false, error: "Não foi possível aplicar a comissão." };
   }
-  const porId = new Map((atuais ?? []).map((c) => [c.procedure_id, c]));
+  if (!procs || procs.length === 0) {
+    return { ok: false, error: "Nenhum procedimento no escopo selecionado." };
+  }
+
+  // 0364: a comissão mora na irmã. AP77: o % vira R$ sobre o preço padrão de
+  // CADA procedimento (`comissaoEmMassa`); os dois nunca ficam juntos.
+  const calculadas = procs.map((p) => ({
+    id: p.id,
+    ...comissaoEmMassa({ valorCents: fixedCents, percent }, p.default_price_cents ?? 0),
+  }));
   const erroDaComissao = await gravarComissao(
     supabase,
-    ids.map((id) => {
-      const atual = porId.get(id) ?? { commission_percent: 0, commission_fixed_cents: 0 };
-      return {
-        procedure_id: id,
-        commission_percent: percent ?? atual.commission_percent,
-        commission_fixed_cents: fixedCents ?? atual.commission_fixed_cents,
-      };
-    })
+    calculadas.map((c) => ({
+      procedure_id: c.id,
+      commission_percent: c.percent,
+      commission_fixed_cents: c.valorCents,
+    }))
   );
   if (erroDaComissao) {
     return { ok: false, error: "Não foi possível aplicar a comissão." };
   }
 
-  const parts: string[] = [];
-  if (percent !== null) parts.push(`${input.percent!.trim()}%`);
-  if (fixedCents !== null) parts.push(formatBRL(fixedCents));
-  const label = `Comissão definida em massa: ${parts.join(" + ")}.`;
+  const ids = calculadas.map((c) => c.id);
   await supabase.from("procedure_changes").insert(
-    ids.map((id) => ({
-      procedure_id: id,
+    calculadas.map((c) => ({
+      procedure_id: c.id,
       changed_by: session.userId,
-      description: label,
+      description: `Comissão definida em massa: ${c.texto}.`,
     }))
   );
   await logAudit({

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import {
   resolveAgendaSettings,
+  unidadeHerdaOAlmoco,
   type AgendaSettingRow,
 } from "@/lib/agenda-settings";
 import { mapRoom, sortRooms, type RoomRow } from "@/lib/rooms";
@@ -244,6 +245,7 @@ export default async function AgendaConfigPage() {
           start: values.lunchStart,
           end: values.lunchEnd,
         }}
+        lunchInherited={unidadeHerdaOAlmoco(settingRows ?? [], clinic.id)}
         networkLunch={{
           enabled: networkDefault.lunchEnabled,
           start: networkDefault.lunchStart,

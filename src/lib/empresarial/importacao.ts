@@ -190,3 +190,34 @@ export function resumoDaRecusa(erros: readonly LinhaComErro[]): string {
     `Nada foi gravado — corrija a planilha e importe de novo.`
   );
 }
+
+/**
+ * AP111 (1042) — a recusa da função `importar_titulares`, em português.
+ *
+ * A função grava as duas abas numa transação e recusa com um código seguido
+ * dos números (`DEPENDENT_LIMIT:limite:ativos:novos`). Qualquer recusa desfaz
+ * tudo: por isso toda frase termina em "Nada foi gravado".
+ */
+export function recusaDaImportacao(mensagem: string | null | undefined): string {
+  const m = String(mensagem ?? "");
+  const limite = m.match(/DEPENDENT_(LIMIT|MAX):(\d+):(-?\d+):(\d+)/);
+  if (limite) {
+    const [, tipo, teto, ativos, novos] = limite;
+    const vagas = Math.max(0, Number(teto) - Number(ativos));
+    const origem =
+      tipo === "LIMIT"
+        ? `o contrato fechou ${teto}`
+        : `o máximo combinado na proposta é ${teto}`;
+    return (
+      `A planilha tem ${novos} dependente(s) novo(s); a empresa já tem ${ativos} ativo(s) e ${origem} ` +
+      `(${vagas} vaga(s)). Gere um termo de inclusão ou reduza a lista. Nada foi gravado.`
+    );
+  }
+  if (/HOLDER_NOT_FOUND/.test(m)) {
+    return (
+      "Há dependente(s) na planilha cujo titular não está na empresa. " +
+      "Confira o CPF do titular na aba Dependentes. Nada foi gravado."
+    );
+  }
+  return "Não foi possível importar a planilha. Nada foi gravado.";
+}

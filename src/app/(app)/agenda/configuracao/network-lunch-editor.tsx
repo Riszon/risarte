@@ -77,8 +77,9 @@ export function NetworkLunchEditor({
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          Este é o padrão de toda a rede. Cada unidade herda automaticamente, mas
-          pode personalizar o próprio horário de almoço na configuração dela.
+          Este é o padrão de toda a rede. A unidade que não definiu o próprio almoço
+          segue este — mesmo tendo horário de funcionamento próprio. Cada unidade pode
+          personalizar o almoço na configuração dela.
         </p>
         <Button size="sm" disabled={isPending} onClick={save}>
           {isPending ? "Salvando..." : "Salvar padrão da rede"}
