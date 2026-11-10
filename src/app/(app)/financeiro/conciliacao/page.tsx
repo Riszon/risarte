@@ -59,7 +59,7 @@ export default async function ReconciliationPage() {
       supabase
         .from("bank_transactions")
         .select(
-          "id, bank_account_id, posted_at, amount_cents, description, fit_id, status, matched_entry_id, ignore_reason, matcher:profiles!bank_transactions_matched_by_fkey ( full_name )"
+          "id, bank_account_id, posted_at, amount_cents, description, fit_id, status, matched_entry_id, matched_at, ignore_reason, matcher:profiles!bank_transactions_matched_by_fkey ( full_name )"
         )
         .eq("clinic_id", clinicId)
         .order("posted_at")
@@ -69,7 +69,7 @@ export default async function ReconciliationPage() {
     supabase
       .from("bank_statement_imports")
       .select(
-        "id, bank_account_id, file_name, format, period_start, period_end, inserted_count, duplicate_count, created_at, reverted_at, author:profiles!bank_statement_imports_created_by_fkey ( full_name )"
+        "id, bank_account_id, file_name, format, period_start, period_end, inserted_count, duplicate_count, created_at, reverted_at, author:profiles!bank_statement_imports_created_by_fkey ( full_name ), reverter:profiles!bank_statement_imports_reverted_by_fkey ( full_name )"
       )
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false }),
@@ -124,7 +124,7 @@ export default async function ReconciliationPage() {
   // AP51: a conta de cada lançamento e a principal nascem na 0317 — lidas À
   // PARTE, para a tela abrir igual nos bancos que ainda não a receberam (sem
   // elas, tudo conta como da principal: o comportamento de antes).
-  const [contaDosLancamentos, principais] = await Promise.all([
+  const [contaDosLancamentos, principais, autoriaDasLinhas] = await Promise.all([
     lerTodasAsPaginas<{ id: string; bank_account_id: string | null }>((de, ate) =>
       supabase
         .from("financial_entries")
@@ -137,6 +137,19 @@ export default async function ReconciliationPage() {
         .range(de, ate)
     ),
     supabase.from("bank_accounts").select("id, is_default").eq("clinic_id", clinicId),
+    // 0372 — quem ignorou e quem desfez. À PARTE: sem a 0372 as colunas não
+    // existem, esta leitura falha sozinha e a tela abre como antes.
+    lerTodasAsPaginas<Record<string, unknown>>((de, ate) =>
+      supabase
+        .from("bank_transactions")
+        .select(
+          "id, ignored_at, undone_at, ignorer:profiles!bank_transactions_ignored_by_fkey ( full_name ), undoer:profiles!bank_transactions_undone_by_fkey ( full_name )"
+        )
+        .eq("clinic_id", clinicId)
+        .or("ignored_at.not.is.null,undone_at.not.is.null")
+        .order("id")
+        .range(de, ate)
+    ),
   ]);
   const contaDe = new Map(
     (contaDosLancamentos.ok ? contaDosLancamentos.linhas : []).map((r) => [r.id, r.bank_account_id])
@@ -167,6 +180,10 @@ export default async function ReconciliationPage() {
     isDefault: principal.has(a.id as string),
   }));
 
+  const autoria = new Map(
+    (autoriaDasLinhas.ok ? autoriaDasLinhas.linhas : []).map((r) => [r.id as string, r])
+  );
+
   const transactions: BankTxRow[] = (
     (txRows ?? []) as unknown as Record<string, unknown>[]
   ).map((t) => ({
@@ -180,6 +197,11 @@ export default async function ReconciliationPage() {
     matchedEntryId: (t.matched_entry_id as string | null) ?? null,
     ignoreReason: (t.ignore_reason as string | null) ?? null,
     matchedByName: person(t.matcher as PersonEmbed),
+    matchedAt: (t.matched_at as string | null) ?? null,
+    ignoredByName: person((autoria.get(t.id as string)?.ignorer ?? null) as PersonEmbed),
+    ignoredAt: (autoria.get(t.id as string)?.ignored_at as string | null) ?? null,
+    undoneByName: person((autoria.get(t.id as string)?.undoer ?? null) as PersonEmbed),
+    undoneAt: (autoria.get(t.id as string)?.undone_at as string | null) ?? null,
   }));
 
   const imports: ImportRow[] = (
@@ -196,6 +218,7 @@ export default async function ReconciliationPage() {
     createdAt: i.created_at as string,
     byName: person(i.author as PersonEmbed),
     revertedAt: (i.reverted_at as string | null) ?? null,
+    revertedByName: person(i.reverter as PersonEmbed),
   }));
 
   // No razão o valor é positivo e o sinal vem da direção; aqui viramos para o

@@ -131,8 +131,9 @@ describe("a tela da conciliação", () => {
   });
 
   it("lê o extrato e os lançamentos INTEIROS, em páginas, e avisa se falhar", () => {
-    // Extrato, lançamentos e (OC-00110) as contas a pagar em aberto.
-    expect(pagina.match(/lerTodasAsPaginas<Record<string, unknown>>\(\(de, ate\) =>/g)).toHaveLength(3);
+    // Extrato, lançamentos, (OC-00110) as contas a pagar em aberto e (0372)
+    // quem ignorou/desfez — esta última À PARTE, sem derrubar a tela.
+    expect(pagina.match(/lerTodasAsPaginas<Record<string, unknown>>\(\(de, ate\) =>/g)).toHaveLength(4);
     // O envelope sem o .range() leria a mesma primeira página para sempre: a
     // página tem de ir até o fim de cada leitura.
     for (const tabela of ["bank_transactions", "financial_entries", "payables"]) {

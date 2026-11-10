@@ -12,6 +12,9 @@ export type DreEntry = {
   sourceType: string;
   description: string;
   costCenterName: string;
+  /** 0372 — quem lançou e quando. */
+  createdAt?: string | null;
+  createdByName?: string | null;
 };
 
 /**
@@ -57,6 +60,9 @@ export async function loadDreEntries(input: {
         source_type: string;
         description: string | null;
         cost_center_name: string | null;
+        // 0372 — sem a migração no banco, estes dois não vêm (ficam nulos).
+        created_at?: string | null;
+        created_by_name?: string | null;
       }[]
     ).map((e) => ({
       id: e.entry_id,
@@ -66,6 +72,8 @@ export async function loadDreEntries(input: {
       sourceType: e.source_type,
       description: e.description ?? "",
       costCenterName: e.cost_center_name ?? "",
+      createdAt: e.created_at ?? null,
+      createdByName: e.created_by_name ?? null,
     })),
   };
 }

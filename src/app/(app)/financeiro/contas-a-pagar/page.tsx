@@ -45,18 +45,19 @@ export default async function PayablesPage() {
     { data: ruleRows },
     { data: recurrenceRows },
     { data: discountRows },
+    { data: cancelRows },
   ] = await Promise.all([
     supabase
       .from("payables")
       .select(
-        "id, clinic_id, supplier_id, account_code, cost_center_id, description, document_number, accrual_date, due_date, amount_cents, paid_amount_cents, paid_fee_cents, paid_interest_cents, status, approval_mode, requires_approval, approval_note, cancel_reason, notes, recurrence_id, stock_purchase_id, created_by, supplier:suppliers ( name ), account:chart_of_accounts!payables_account_code_fkey ( name ), center:cost_centers ( name ), author:profiles!payables_created_by_fkey ( full_name ), approver:profiles!payables_approved_by_fkey ( full_name )"
+        "id, clinic_id, supplier_id, account_code, cost_center_id, description, document_number, accrual_date, due_date, amount_cents, paid_amount_cents, paid_fee_cents, paid_interest_cents, status, approval_mode, requires_approval, approval_note, cancel_reason, notes, recurrence_id, stock_purchase_id, network_fee, created_by, created_at, approved_at, supplier:suppliers ( name ), account:chart_of_accounts!payables_account_code_fkey ( name ), center:cost_centers ( name ), author:profiles!payables_created_by_fkey ( full_name ), approver:profiles!payables_approved_by_fkey ( full_name )"
       )
       .eq("clinic_id", clinicId)
       .order("due_date"),
     supabase
       .from("payable_payments")
       .select(
-        "id, payable_id, amount_cents, fee_cents, interest_cents, paid_at, payment_method, reference, reversed, reversal_of, reversal_reason, author:profiles!payable_payments_created_by_fkey ( full_name )"
+        "id, payable_id, amount_cents, fee_cents, interest_cents, paid_at, payment_method, reference, reversed, reversal_of, reversal_reason, created_at, author:profiles!payable_payments_created_by_fkey ( full_name )"
       )
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false }),
@@ -90,6 +91,13 @@ export default async function PayablesPage() {
     // porque o percentual passa pela cascata e pelas campanhas: recalcular na
     // tela seria uma segunda régua para o mesmo número.
     supabase.rpc("payable_discounts", { p_clinic_id: clinicId }),
+    // 0372 — quem cancelou. Lido À PARTE: sem a 0372 no banco a coluna não
+    // existe, esta leitura falha sozinha e a lista abre como antes.
+    supabase
+      .from("payables")
+      .select("id, cancelled_at, canceller:profiles!payables_cancelled_by_fkey ( full_name )")
+      .eq("clinic_id", clinicId)
+      .eq("status", "cancelada"),
   ]);
 
   type Embed = { name: string } | { name: string }[] | null;
@@ -101,6 +109,16 @@ export default async function PayablesPage() {
     | null;
   const person = (v: PersonEmbed): string | null =>
     Array.isArray(v) ? (v[0]?.full_name ?? null) : (v?.full_name ?? null);
+
+  const cancelamentos = new Map(
+    ((cancelRows ?? []) as unknown as Record<string, unknown>[]).map((r) => [
+      r.id as string,
+      {
+        nome: person(r.canceller as PersonEmbed),
+        quando: (r.cancelled_at as string | null) ?? null,
+      },
+    ])
+  );
 
   const payables: Payable[] = (
     (payableRows ?? []) as unknown as Record<string, unknown>[]
@@ -130,6 +148,11 @@ export default async function PayablesPage() {
     cancelReason: (r.cancel_reason as string | null) ?? null,
     createdByName: person(r.author as PersonEmbed),
     createdById: (r.created_by as string | null) ?? null,
+    createdAt: (r.created_at as string | null) ?? null,
+    approvedAt: (r.approved_at as string | null) ?? null,
+    cancelledByName: cancelamentos.get(r.id as string)?.nome ?? null,
+    cancelledAt: cancelamentos.get(r.id as string)?.quando ?? null,
+    automatic: Boolean(r.network_fee),
     notes: (r.notes as string | null) ?? null,
     recurrenceId: (r.recurrence_id as string | null) ?? null,
   }));
@@ -149,6 +172,7 @@ export default async function PayablesPage() {
     reversalOf: (r.reversal_of as string | null) ?? null,
     reversalReason: (r.reversal_reason as string | null) ?? null,
     byName: person(r.author as PersonEmbed),
+    createdAt: (r.created_at as string | null) ?? null,
   }));
 
   const paymentEntries: PayablePaymentEntry[] = payments.map((p) => ({

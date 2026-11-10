@@ -21,6 +21,10 @@ const AMBIGUOS: { origem: string; destino: string }[] = [
   { origem: "v_indicacoes", destino: "profiles" },
   // Indica +Risos (2007): apuração ganhou criado_por, além de aprovado_por.
   { origem: "apuracoes", destino: "profiles" },
+  // 0372: a linha do extrato ganhou ignored_by e undone_by, além de matched_by.
+  { origem: "bank_transactions", destino: "profiles" },
+  // payables já tinha created_by e approved_by; a 0372 deu cancelled_by.
+  { origem: "payables", destino: "profiles" },
 ];
 
 function arquivos(dir: string): string[] {

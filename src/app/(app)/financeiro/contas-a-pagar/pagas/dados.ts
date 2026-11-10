@@ -54,7 +54,7 @@ export async function carregarRelatorioDeContasPagas(params: Filtros): Promise<C
     supabase
       .from("payable_payments")
       .select(
-        "id, paid_at, amount_cents, fee_cents, interest_cents, discount_cents, payment_method, payable:payables!payable_payments_payable_id_fkey ( description, document_number, account_code, due_date, supplier:suppliers ( name ), account:chart_of_accounts!payables_account_code_fkey ( name ) )"
+        "id, paid_at, amount_cents, fee_cents, interest_cents, discount_cents, payment_method, payer:profiles!payable_payments_created_by_fkey ( full_name ), payable:payables!payable_payments_payable_id_fkey ( description, document_number, account_code, due_date, network_fee, supplier:suppliers ( name ), account:chart_of_accounts!payables_account_code_fkey ( name ), author:profiles!payables_created_by_fkey ( full_name ) )"
       )
       .eq("clinic_id", unidade.id)
       // Estorno não é pagamento: sai o original (marcado) e o contra-lançamento.
@@ -95,8 +95,10 @@ export async function carregarRelatorioDeContasPagas(params: Filtros): Promise<C
     document_number: string | null;
     account_code: string;
     due_date: string | null;
+    network_fee: string | null;
     supplier: Embed<{ name: string }>;
     account: Embed<{ name: string }>;
+    author: Embed<{ full_name: string }>;
   };
   const pagamentos: PagamentoDeConta[] = lidos.linhas.map((p) => {
     const conta = um(p.payable as Embed<Conta>);
@@ -113,6 +115,9 @@ export async function carregarRelatorioDeContasPagas(params: Filtros): Promise<C
       discountCents: Number(p.discount_cents ?? 0),
       paymentMethod: (p.payment_method as string | null) ?? null,
       reconciled: conciliados.has(p.id as string),
+      launchedByName: um(conta?.author ?? null)?.full_name ?? null,
+      launchedAutomatically: Boolean(conta?.network_fee),
+      paidByName: um(p.payer as Embed<{ full_name: string }>)?.full_name ?? null,
     };
   });
 

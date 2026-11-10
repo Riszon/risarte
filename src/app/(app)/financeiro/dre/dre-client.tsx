@@ -17,6 +17,7 @@ import {
   type Dre,
 } from "@/lib/finance/dre";
 import { loadDreEntries, type DreEntry } from "./actions";
+import { origemAutomatica, textoDoAto } from "@/lib/finance/quem-fez";
 
 function fmtDate(iso: string): string {
   if (!iso) return "";
@@ -348,6 +349,14 @@ export function DreView({
                                         · em aberto
                                       </span>
                                     )}
+                                    <span className="block text-[10px] text-muted-foreground">
+                                      {textoDoAto({
+                                        rotulo: "Lançado",
+                                        nome: e.createdByName ?? null,
+                                        quando: e.createdAt,
+                                        automatico: origemAutomatica(e.sourceType),
+                                      })}
+                                    </span>
                                   </span>
                                   <span className="tabular-nums">
                                     {formatBRL(e.amountCents)}

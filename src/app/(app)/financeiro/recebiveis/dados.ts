@@ -7,6 +7,7 @@ import {
 } from "@/lib/finance/receivables";
 import { todayInBrazil, addDaysIso, monthRangeOf } from "@/lib/dates";
 import { daysApart, groupByAging, type AgingBand } from "@/lib/finance/aging";
+import { lerPorLotes } from "@/lib/paginar";
 
 /**
  * OS RECEBÍVEIS DA UNIDADE (relato OC-00005).
@@ -228,4 +229,69 @@ export async function carregarRecebiveis(
 /** O primeiro dia fora da janela de 90 dias — usado no texto da antecipação. */
 export function limiteDaAntecipacao(): string {
   return addDaysIso(todayInBrazil(), 90);
+}
+
+/**
+ * 0372 — QUEM LANÇOU E QUEM DEU A ÚLTIMA BAIXA de cada parcela da lista
+ * (pedido do dono, 09/11/2026). Lido À PARTE de `carregarRecebiveis` (que o
+ * relatório e a lista de inadimplentes também usam): uma falha aqui deixa a
+ * coluna sem nome, nunca a lista sem parcela.
+ */
+export type AutoriaDaParcela = {
+  lancadaPor: string | null;
+  lancadaEm: string | null;
+  baixaPor: string | null;
+  baixaEm: string | null;
+};
+
+export async function autoriaDasParcelas(
+  supabase: SupabaseClient,
+  linhas: Pick<LinhaRecebivel, "id" | "status">[]
+): Promise<Map<string, AutoriaDaParcela>> {
+  type Pessoa = { full_name: string } | { full_name: string }[] | null;
+  const nome = (v: Pessoa) => (Array.isArray(v) ? (v[0]?.full_name ?? null) : (v?.full_name ?? null));
+  const ids = linhas.map((l) => l.id);
+  const comBaixa = linhas.filter((l) => l.status === "parcial").map((l) => l.id);
+
+  const [parcelas, baixas] = await Promise.all([
+    lerPorLotes<Record<string, unknown>>(ids, (lote, de, ate) =>
+      supabase
+        .from("payment_installments")
+        .select("id, created_at, author:profiles!payment_installments_created_by_fkey ( full_name )")
+        .in("id", lote)
+        .order("id")
+        .range(de, ate)
+    ),
+    lerPorLotes<Record<string, unknown>>(comBaixa, (lote, de, ate) =>
+      supabase
+        .from("payment_receipts")
+        .select("installment_id, created_at, author:profiles!payment_receipts_created_by_fkey ( full_name )")
+        .in("installment_id", lote)
+        .eq("reversed", false)
+        .is("reversal_of", null)
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(de, ate)
+    ),
+  ]);
+  if (!parcelas.ok) console.error("recebíveis — autoria:", parcelas.error.message);
+  if (!baixas.ok) console.error("recebíveis — baixas:", baixas.error.message);
+
+  const mapa = new Map<string, AutoriaDaParcela>();
+  for (const p of parcelas.ok ? parcelas.linhas : []) {
+    mapa.set(p.id as string, {
+      lancadaPor: nome(p.author as Pessoa),
+      lancadaEm: (p.created_at as string | null) ?? null,
+      baixaPor: null,
+      baixaEm: null,
+    });
+  }
+  for (const b of baixas.ok ? baixas.linhas : []) {
+    const atual = mapa.get(b.installment_id as string);
+    // A primeira que chega é a mais recente (ordem decrescente).
+    if (!atual || atual.baixaEm) continue;
+    atual.baixaPor = nome(b.author as Pessoa);
+    atual.baixaEm = (b.created_at as string | null) ?? null;
+  }
+  return mapa;
 }

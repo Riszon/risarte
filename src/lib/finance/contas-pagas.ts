@@ -13,6 +13,7 @@ import { formatBrDate, formatBrDateTime } from "@/lib/dates";
 import { fileName } from "@/lib/print";
 import { rotuloDaForma } from "@/lib/finance/formas-de-pagar";
 import type { RelatorioPronto } from "@/lib/finance/relatorio";
+import { autorDoAto } from "@/lib/finance/quem-fez";
 
 export type PagamentoDeConta = {
   paidAt: string;
@@ -30,6 +31,10 @@ export type PagamentoDeConta = {
   paymentMethod: string | null;
   /** O pagamento já foi casado com uma linha do extrato na Conciliação. */
   reconciled: boolean;
+  /** 0372 — quem lançou a conta e quem registrou este pagamento (a baixa). */
+  launchedByName?: string | null;
+  launchedAutomatically?: boolean;
+  paidByName?: string | null;
 };
 
 /** Saiu do caixa: o valor mais multa e juros. O desconto não é dinheiro. */
@@ -89,6 +94,8 @@ export function relatorioDeContasPagas(input: {
       { chave: "desconto", titulo: "Desconto", tipo: "dinheiro", somar: true, largura: 12 },
       { chave: "total", titulo: "Total pago", tipo: "dinheiro", somar: true, largura: 14 },
       { chave: "banco", titulo: "Banco", tipo: "texto", largura: 14 },
+      { chave: "lancadaPor", titulo: "Lançada por", tipo: "texto", largura: 18 },
+      { chave: "baixaPor", titulo: "Baixa por", tipo: "texto", largura: 18 },
     ],
     linhas: pagamentos.map((p) => ({
       pagoEm: p.paidAt,
@@ -103,12 +110,15 @@ export function relatorioDeContasPagas(input: {
       desconto: p.discountCents > 0 ? p.discountCents : null,
       total: totalPago(p),
       banco: p.reconciled ? "Conciliado" : "Não conciliado",
+      lancadaPor: autorDoAto(p.launchedByName, p.launchedAutomatically),
+      baixaPor: autorDoAto(p.paidByName),
     })),
     notas: [
       "O período é pela DATA DO PAGAMENTO, não pelo vencimento — a tela de Contas a pagar filtra pelo vencimento, que responde outra pergunta.",
       "Cada linha é um pagamento: conta paga em duas vezes aparece duas vezes. Pagamento estornado não entra.",
       "Total pago = valor + multa e juros: é o que saiu do caixa. O desconto por pontualidade abate a conta, mas não é dinheiro saindo.",
       "Banco \"Conciliado\" = o pagamento já foi casado com a linha do extrato na Conciliação. \"Não conciliado\" ainda não foi conferido com o banco.",
+      "\"Lançada por\" é quem lançou a conta; \"Baixa por\" é quem registrou este pagamento. \"autor não registrado\" = feito antes de o sistema guardar o autor.",
       "Na DRE, a despesa entra pela competência da conta (quando ela foi lançada), não pela data do pagamento.",
     ],
     nomeDoArquivo: fileName("risarte", "contas-pagas", input.unidade),

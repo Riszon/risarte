@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.406.0",
+    data: "2026-11-09",
+    migracao: "0372",
+    titulo: "Financeiro: quem lançou e quem deu baixa, no próprio lançamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Em Contas a pagar cada conta diz quem a lançou, e quem autorizou, recusou ou cancelou, com data e hora. O botão do relógio mostra quem deu cada baixa e o histórico completo do lançamento (o que mudou, antes → depois).",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na Conciliação cada linha do extrato diz quem conciliou, quem ignorou ou quem desfez, e quando; as importações dizem quem importou e quem desfez. Cada linha tem o seu Histórico.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Recebíveis ganhou a coluna Lançada / baixa (quem lançou a parcela e quem deu a última baixa); o relatório de contas pagas ganhou Lançada por e Baixa por; o detalhe da DRE e do Fluxo de caixa diz quem lançou; o Fechamento diz quem reabriu o mês.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "2.4. Recebíveis e inadimplência",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "\"pelo sistema\" quer dizer que o lançamento nasceu de uma rotina (taxas da rede, PPR+, Empresarial); \"autor não registrado\" é lançamento antigo, de antes de o sistema guardar quem fez.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.405.0",
     data: "2026-11-09",
     migracao: "0371",

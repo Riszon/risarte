@@ -396,6 +396,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/11/2026 (quem lançou) — PC Administrador (core 0.405.0 → 0.406.0, migração 0372)**
+
+- **Financeiro: quem lançou e quem deu baixa no próprio lançamento** (bloco
+  0.406.0 no ESTADO; manual 2.3/2.4; EV-305). ⚠️ **Texto de autoria =
+  `quem-fez.ts`**; histórico de um lançamento = porta `finance_history`.
+  ⚠️ Ao recriar `cancel_payable`, `ignore_bank_transaction` ou
+  `unreconcile_bank_transaction`, levar `cancelled_*`/`ignored_*`/`undone_*`
+  (régua `financeiro-quem-fez.test.ts`).
+- ⏳ **0372 não aplicada em nenhum banco** (a permissão automática barrou o
+  `migrar:teste`); a tela abre igual sem ela. **Não visto na tela.** AP129
+  (Ortodontia/Empresarial) no backlog.
+
 **09/11/2026 (fornecedores) — PC Administrador (core 0.404.0 → 0.405.0, migração 0371)**
 
 - **Fornecedores: ficha completa, onde vale, tipos editáveis e histórico**

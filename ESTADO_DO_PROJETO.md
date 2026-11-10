@@ -1,6 +1,33 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.405.0** · Última migração: **0371** (0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.406.0** · Última migração: **0372** (0372 ainda não aplicada em nenhum banco; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🚚 0.406.0 / 0372 — FINANCEIRO: QUEM LANÇOU E QUEM DEU BAIXA (09/11/2026)
+>
+> Pedido do dono: "todo registro de baixa, lançamento de contas a pagar,
+> recebimento etc. deve ficar registrado no próprio lançamento; deve ter como
+> ver quem lançou". Levantamento: quase todo ato JÁ gravava autor e hora
+> (faltava mostrar); três não gravavam no próprio registro (cancelar conta,
+> ignorar linha do extrato, desfazer conciliação — este APAGAVA quem casou).
+> Decisões do dono (recomendações): nome curto na lista, linha completa +
+> Histórico no detalhe; sem autor = "pelo sistema" (rotina) ou "autor não
+> registrado" (antigo), e os antigos preenchidos pela auditoria; Histórico
+> para quem vê o Financeiro da unidade; Ortodontia e Empresarial depois.
+> - ⚠️ **Ao recriar `cancel_payable`, `ignore_bank_transaction` ou
+>   `unreconcile_bank_transaction`, levar a gravação de `cancelled_*`,
+>   `ignored_*`, `undone_*`** (régua `financeiro-quem-fez.test.ts`).
+> - ⚠️ **Texto de autoria = `src/lib/finance/quem-fez.ts`** (`textoDoAto`,
+>   `origemAutomatica`). Origem nova de rotina no razão entra em
+>   `ORIGENS_AUTOMATICAS`.
+> - ⚠️ **Histórico de um lançamento = porta `finance_history(tipo, id)`**
+>   (janela de `audit_changes`); o componente é
+>   `financeiro/historico-do-lancamento.tsx`.
+> - ⚠️ `bank_transactions` e `payables` agora têm várias ligações para
+>   `profiles`: embed sempre com o nome da FK (régua `embed-ambiguo.test.ts`).
+> - As colunas novas são lidas À PARTE: sem a 0372, as telas abrem como antes
+>   (sem o nome de quem cancelou/ignorou/desfez; o Histórico avisa).
+> - ⏳ **0372 NÃO aplicada no treino** (a permissão automática barrou o
+>   `migrar:teste`) e **não vista na tela**. Manual 2.3/2.4, EV-305.
 
 > ## 🚚 0.405.0 / 0371 — FORNECEDORES: FICHA, ONDE VALE, TIPOS E HISTÓRICO (09/11/2026)
 >

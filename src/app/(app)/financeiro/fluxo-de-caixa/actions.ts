@@ -11,6 +11,8 @@ export type CashDetailRow = {
   amountCents: number;
   description: string;
   sourceType: string;
+  /** 0372 — quem registrou o movimento (ou lançou a conta, no previsto). */
+  createdByName?: string | null;
 };
 
 /**
@@ -51,6 +53,8 @@ export async function loadCashDetail(input: {
         amount_cents: number;
         description: string | null;
         source_type: string;
+        // 0372 — sem a migração no banco, não vem (fica nulo).
+        created_by_name?: string | null;
       }[]
     ).map((r) => ({
       refDate: r.ref_date,
@@ -59,6 +63,7 @@ export async function loadCashDetail(input: {
       amountCents: Number(r.amount_cents ?? 0),
       description: r.description ?? "",
       sourceType: r.source_type,
+      createdByName: r.created_by_name ?? null,
     })),
   };
 }

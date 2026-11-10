@@ -17,6 +17,7 @@ import {
   type CashTotals,
 } from "@/lib/finance/cash-flow";
 import { loadCashDetail, type CashDetailRow } from "./actions";
+import { autorDoAto, origemAutomatica, PELO_SISTEMA } from "@/lib/finance/quem-fez";
 
 const selectClass =
   "h-8 rounded-md border border-input bg-background px-2 text-xs";
@@ -342,6 +343,15 @@ export function CashFlowView({
                               {r.kind === "previsto" && (
                                 <span className="ml-1 text-amber-700">
                                   · previsto
+                                </span>
+                              )}
+                              {r.sourceType !== "installment_expected" && (
+                                <span className="ml-1 text-muted-foreground">
+                                  · {r.kind === "previsto" ? "lançada" : "registrado"}{" "}
+                                  {autorDoAto(r.createdByName, origemAutomatica(r.sourceType)) ===
+                                  PELO_SISTEMA
+                                    ? PELO_SISTEMA
+                                    : `por ${autorDoAto(r.createdByName)}`}
                                 </span>
                               )}
                             </span>

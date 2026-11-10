@@ -70,6 +70,8 @@ import {
   type RecurrenceRow,
 } from "./recurrences-dialog";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
+import { linhaDeAtos, nomeCurto, textoDoAto } from "@/lib/finance/quem-fez";
+import { HistoricoDoLancamento } from "../historico-do-lancamento";
 
 export type PaymentRow = {
   id: string;
@@ -84,6 +86,8 @@ export type PaymentRow = {
   reversalOf: string | null;
   reversalReason: string | null;
   byName: string | null;
+  /** 0372 — quando a baixa foi REGISTRADA (o `paidAt` é a data informada). */
+  createdAt?: string | null;
 };
 
 const STATUS_STYLE: Record<PayableStatus, string> = {
@@ -628,6 +632,7 @@ export function PayablesBoard({
                       {v.accountCode} {v.accountName}
                       {v.costCenterName && ` · ${v.costCenterName}`}
                       {v.documentNumber && ` · NF ${v.documentNumber}`}
+                      {` · lançada por ${nomeCurto(v.createdByName, v.automatic)}`}
                     </span>
                     {v.isOverdue && (
                       <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-destructive">
@@ -643,15 +648,24 @@ export function PayablesBoard({
                         {formatBRL(v.amountCents)}
                       </span>
                     )}
-                    {v.cancelReason && (
+                    {v.status === "cancelada" && (
                       <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                        Cancelada: {v.cancelReason}
+                        {textoDoAto({
+                          rotulo: "Cancelada",
+                          nome: v.cancelledByName ?? null,
+                          quando: v.cancelledAt,
+                        })}
+                        {v.cancelReason && `: ${v.cancelReason}`}
                       </span>
                     )}
-                    {v.approvalNote && (
+                    {v.approvedByName && v.status !== "aguardando_autorizacao" && (
                       <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                        {v.approvedByName && `${v.approvedByName}: `}
-                        {v.approvalNote}
+                        {textoDoAto({
+                          rotulo: v.status === "recusada" ? "Recusada" : "Autorizada",
+                          nome: v.approvedByName,
+                          quando: v.approvedAt,
+                        })}
+                        {v.approvalNote && `: ${v.approvalNote}`}
                       </span>
                     )}
                   </span>
@@ -738,23 +752,38 @@ export function PayablesBoard({
                           <X className="size-3.5" />
                         </Button>
                       )}
-                    {hist.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8"
-                        onClick={() =>
-                          setHistoryId(historyId === v.id ? null : v.id)
-                        }
-                      >
-                        <History className="size-3.5" />
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8"
+                      title="Quem lançou, quem pagou e o histórico"
+                      onClick={() =>
+                        setHistoryId(historyId === v.id ? null : v.id)
+                      }
+                    >
+                      <History className="size-3.5" />
+                    </Button>
                   </div>
                 </div>
 
                 {historyId === v.id && (
-                  <ul className="mt-2 space-y-1 border-t pt-2 text-xs">
+                  <div className="mt-2 border-t pt-2">
+                  <p className="mb-1 text-[11px] text-muted-foreground">
+                    {linhaDeAtos([
+                      {
+                        rotulo: "Lançada",
+                        nome: v.createdByName,
+                        quando: v.createdAt,
+                        automatico: v.automatic,
+                      },
+                    ])}
+                  </p>
+                  {hist.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum pagamento registrado.
+                    </p>
+                  )}
+                  <ul className="space-y-1 text-xs">
                     {hist.map((p) => (
                       <li
                         key={p.id}
@@ -769,7 +798,16 @@ export function PayablesBoard({
                           {p.paymentMethod &&
                             ` · ${METHODS.find((m) => m.value === p.paymentMethod)?.label ?? p.paymentMethod}`}
                           {p.reference && ` · ${p.reference}`}
-                          {p.byName && ` · ${p.byName}`}
+                          {` · ${p.reversalOf ? "estornado" : "baixa"} por ${nomeCurto(p.byName)}`}
+                          {p.createdAt && (
+                            <span className="block text-[11px] text-muted-foreground">
+                              {textoDoAto({
+                                rotulo: "Registrado",
+                                nome: p.byName,
+                                quando: p.createdAt,
+                              })}
+                            </span>
+                          )}
                           {(p.feeCents > 0 || p.interestCents > 0) && (
                             <span className="block text-[11px]">
                               principal {formatBRL(p.amountCents)}
@@ -816,6 +854,8 @@ export function PayablesBoard({
                       </li>
                     ))}
                   </ul>
+                  <HistoricoDoLancamento tipo="payable" id={v.id} />
+                  </div>
                 )}
               </div>
             );

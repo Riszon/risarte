@@ -187,8 +187,10 @@ export function ClosingView({
 
               {target?.reopenReason && (
                 <p className="text-[11px] text-muted-foreground">
-                  Já foi reaberto em {fmtWhen(target.reopenedAt)} — motivo
-                  registrado: &quot;{target.reopenReason}&quot;
+                  Já foi reaberto
+                  {target.reopenedByName && ` por ${target.reopenedByName}`} em{" "}
+                  {fmtWhen(target.reopenedAt)} — motivo registrado: &quot;
+                  {target.reopenReason}&quot;
                 </p>
               )}
 
@@ -223,6 +225,14 @@ export function ClosingView({
             </div>
           ) : (
             <>
+              {target?.reopenedAt && (
+                <p className="text-[11px] text-muted-foreground">
+                  Reaberto
+                  {target.reopenedByName && ` por ${target.reopenedByName}`} em{" "}
+                  {fmtWhen(target.reopenedAt)}
+                  {target.reopenReason && ` — motivo: "${target.reopenReason}"`}
+                </p>
+              )}
               {/* -- A CONFERÊNCIA ---------------------------------------- */}
               {checklist.length === 0 ? (
                 <p className="flex items-center gap-2 text-sm text-emerald-800">

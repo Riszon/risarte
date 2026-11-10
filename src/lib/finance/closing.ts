@@ -24,6 +24,8 @@ export type MonthStatus = {
   closedByName: string | null;
   reopenedAt: string | null;
   reopenReason: string | null;
+  /** 0372 — quem reabriu (sem a migração no banco, fica nulo). */
+  reopenedByName?: string | null;
   entries: number;
 };
 

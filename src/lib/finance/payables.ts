@@ -134,6 +134,13 @@ export type Payable = {
   cancelReason: string | null;
   createdByName: string | null;
   createdById: string | null;
+  /** 0372 — quando foi lançada, autorizada/recusada e cancelada, e por quem. */
+  createdAt?: string | null;
+  approvedAt?: string | null;
+  cancelledByName?: string | null;
+  cancelledAt?: string | null;
+  /** Lançada por rotina (taxa da rede): sem pessoa é o esperado. */
+  automatic?: boolean;
   notes: string | null;
   recurrenceId: string | null;
   /** A compra (nota) de onde a conta veio — junta as parcelas dela (OC-00109). */

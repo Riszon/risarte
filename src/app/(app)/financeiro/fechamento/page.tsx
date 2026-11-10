@@ -74,6 +74,7 @@ export default async function ClosingPage(
       reopened_at: string | null;
       reopen_reason: string | null;
       entries: number;
+      reopened_by_name?: string | null;
     }[]
   ).map((m) => ({
     month: Number(m.month),
@@ -82,6 +83,7 @@ export default async function ClosingPage(
     closedByName: m.closed_by_name,
     reopenedAt: m.reopened_at,
     reopenReason: m.reopen_reason,
+    reopenedByName: m.reopened_by_name ?? null,
     entries: Number(m.entries ?? 0),
   }));
 

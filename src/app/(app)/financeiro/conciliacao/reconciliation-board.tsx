@@ -63,6 +63,8 @@ import {
   type ContaDaUnidade,
 } from "@/lib/finance/conta-do-dinheiro";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
+import { textoDoAto } from "@/lib/finance/quem-fez";
+import { HistoricoDoLancamento } from "../historico-do-lancamento";
 
 export type ImportRow = {
   id: string;
@@ -76,6 +78,7 @@ export type ImportRow = {
   createdAt: string;
   byName: string | null;
   revertedAt: string | null;
+  revertedByName?: string | null;
 };
 
 export type BankAccountRow = {
@@ -103,6 +106,12 @@ export type BankTxRow = {
   matchedEntryId: string | null;
   ignoreReason: string | null;
   matchedByName: string | null;
+  /** 0372 — quando foi casada; quem ignorou; quem desfez por último. */
+  matchedAt?: string | null;
+  ignoredByName?: string | null;
+  ignoredAt?: string | null;
+  undoneByName?: string | null;
+  undoneAt?: string | null;
 };
 
 const STATUS_STYLE: Record<ReconciliationStatus, string> = {
@@ -661,8 +670,9 @@ export function ReconciliationBoard({
                     {imp.insertedCount} importado(s)
                     {imp.duplicateCount > 0 &&
                       ` · ${imp.duplicateCount} já existiam`}
-                    {imp.byName && ` · ${imp.byName}`}
-                    {imp.revertedAt && " · desfeita"}
+                    {` · ${textoDoAto({ rotulo: "importado", nome: imp.byName, quando: imp.createdAt })}`}
+                    {imp.revertedAt &&
+                      ` · ${textoDoAto({ rotulo: "desfeita", nome: imp.revertedByName ?? null, quando: imp.revertedAt })}`}
                   </span>
                 </span>
                 {canReconcile && !imp.revertedAt && (
@@ -839,12 +849,34 @@ export function ReconciliationBoard({
                       <span className="block text-[11px] text-emerald-800">
                         casado com: {matched.description} ({matched.accountCode}
                         , {fmtDate(matched.cashDate)})
-                        {t.matchedByName && ` · ${t.matchedByName}`}
                       </span>
                     )}
-                    {t.ignoreReason && (
+                    {t.status === "conciliado" && (
                       <span className="block text-[11px] text-muted-foreground">
-                        Ignorada: {t.ignoreReason}
+                        {textoDoAto({
+                          rotulo: "Conciliada",
+                          nome: t.matchedByName,
+                          quando: t.matchedAt,
+                        })}
+                      </span>
+                    )}
+                    {t.status === "ignorado" && (
+                      <span className="block text-[11px] text-muted-foreground">
+                        {textoDoAto({
+                          rotulo: "Ignorada",
+                          nome: t.ignoredByName ?? null,
+                          quando: t.ignoredAt,
+                        })}
+                        {t.ignoreReason && `: ${t.ignoreReason}`}
+                      </span>
+                    )}
+                    {t.status === "pendente" && t.undoneAt && (
+                      <span className="block text-[11px] text-muted-foreground">
+                        {textoDoAto({
+                          rotulo: "Conciliação desfeita",
+                          nome: t.undoneByName ?? null,
+                          quando: t.undoneAt,
+                        })}
                       </span>
                     )}
                     {t.status === "pendente" && contas.length > 0 && (
@@ -860,6 +892,11 @@ export function ReconciliationBoard({
                         lançar.
                       </span>
                     )}
+                    <HistoricoDoLancamento
+                      tipo="bank_transaction"
+                      id={t.id}
+                      rotulo="Histórico"
+                    />
                   </span>
 
                   <Badge

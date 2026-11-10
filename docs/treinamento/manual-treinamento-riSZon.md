@@ -352,6 +352,32 @@ alteração — quem, quando, e o campo **antes → depois** — e quando ele pa
 valer ou deixou de valer numa unidade. Vê o histórico quem vê o fornecedor. O
 registro automático começou em 09/10/2026: o que aconteceu antes não aparece.
 
+#### Quem lançou e quem deu baixa *(desde a 0.406.0)*
+
+Todo lançamento do Financeiro diz **quem fez e quando**, no próprio
+lançamento:
+
+| Onde | O que aparece |
+|---|---|
+| **Contas a pagar** | Na linha: *"lançada por Fulano"*. Autorizada, recusada ou cancelada: *"Cancelada por Beltrano em 09/11/2026 às 14:32: motivo"*. O botão do **relógio** abre quem lançou, cada pagamento (com quem deu a baixa e quando foi registrada) e o **Histórico completo** |
+| **Relatório de contas pagas** (PDF e planilha) | Colunas **Lançada por** e **Baixa por** |
+| **Recebíveis → Visão geral** | Coluna **Lançada / baixa**: quem lançou a parcela e quem deu a última baixa, com o **Histórico** |
+| **Conciliação** | *"Conciliada por…"*, *"Ignorada por…"*, *"Conciliação desfeita por…"* (data e hora), o **Histórico** de cada linha do extrato e, nas importações, quem importou e quem desfez |
+| **DRE e Fluxo de caixa** (ao abrir uma linha) | Quem lançou cada lançamento |
+| **Fechamento** | Quem fechou e **quem reabriu** o mês |
+
+- **"pelo sistema"** = o lançamento nasceu de uma rotina (taxas da rede,
+  mensalidade do PPR+, cobranças do Empresarial), sem pessoa.
+- **"autor não registrado"** = o lançamento é de antes de o sistema guardar
+  quem fez. Cancelamentos e linhas ignoradas ou desfeitas desde 09/10/2026
+  foram recuperados da auditoria.
+- **Histórico completo** = tudo o que mudou no lançamento: quem, quando e o
+  campo **antes → depois**. Vê o histórico quem vê o Financeiro da unidade. O
+  registro automático começou em 09/10/2026: o que aconteceu antes não
+  aparece.
+- As mensalidades da **Ortodontia** e as cobranças do **Empresarial** ficam
+  nas telas delas e ainda não mostram quem deu a baixa.
+
 #### As mensalidades no Financeiro e as taxas da rede *(desde a 0.404.0, AP69)*
 
 - **A mensalidade do PPR+ entra no Financeiro da unidade**, na linha
@@ -545,7 +571,9 @@ A terceira aba é a mesma tela que fica em **Rede → Recebíveis da rede**; ela
 ganhou um atalho aqui porque é aqui que a pergunta aparece.
 
 **No alto da visão geral:** quanto há a receber, quanto já venceu, a **taxa de
-inadimplência** e quanto foi recebido no mês.
+inadimplência** e quanto foi recebido no mês. Na tabela, a coluna **Lançada /
+baixa** diz quem lançou cada parcela e quem deu a última baixa (ver *Quem
+lançou e quem deu baixa*, na seção 2.3).
 
 > ⚠️ **O quadro "Vencido" mostra só o principal**, sem multa e juros. É de
 > propósito: a taxa de inadimplência divide o vencido pelo que há a receber, e

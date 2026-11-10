@@ -12,7 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import type { AgingBand } from "@/lib/finance/aging";
-import { carregarRecebiveis, type LinhaRecebivel } from "./dados";
+import { autoriaDasParcelas, carregarRecebiveis, type LinhaRecebivel } from "./dados";
+import { textoDoAto } from "@/lib/finance/quem-fez";
+import { HistoricoDoLancamento } from "../historico-do-lancamento";
 import { AbasDeRecebiveis } from "./abas";
 import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
 import { dataDoFiltro, noPeriodo } from "@/lib/finance/collection";
@@ -139,6 +141,7 @@ export default async function RecebiveisPage(
     )
     // O período olha o VENCIMENTO (a data efetiva). Ver OC-00009.
     .filter((l) => noPeriodo(l.dataEfetiva, de, ate));
+  const autoria = await autoriaDasParcelas(supabase, visiveis);
 
 
   const acimaDoLimite =
@@ -332,6 +335,7 @@ export default async function RecebiveisPage(
               <th className="px-2 py-2 text-right font-medium">Falta</th>
               <th className="px-2 py-2 text-right font-medium">Com multa e juros</th>
               <th className="px-2 py-2 font-medium">Situação</th>
+              <th className="px-2 py-2 font-medium">Lançada / baixa</th>
             </tr>
           </thead>
           <tbody>
@@ -371,11 +375,28 @@ export default async function RecebiveisPage(
                     ? `${l.daysLate} dia(s) em atraso`
                     : "Em dia"}
                 </td>
+                <td className="px-2 py-2 text-[11px] text-muted-foreground">
+                  {textoDoAto({
+                    rotulo: "Lançada",
+                    nome: autoria.get(l.id)?.lancadaPor ?? null,
+                    quando: autoria.get(l.id)?.lancadaEm,
+                  })}
+                  {autoria.get(l.id)?.baixaEm && (
+                    <span className="block">
+                      {textoDoAto({
+                        rotulo: "Última baixa",
+                        nome: autoria.get(l.id)?.baixaPor ?? null,
+                        quando: autoria.get(l.id)?.baixaEm,
+                      })}
+                    </span>
+                  )}
+                  <HistoricoDoLancamento tipo="installment" id={l.id} rotulo="Histórico" />
+                </td>
               </tr>
             ))}
             {visiveis.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="py-8 text-center text-muted-foreground">
                   {linhas.length === 0
                     ? "Nenhuma cobrança em aberto nesta unidade."
                     : "Nenhuma cobrança com esse filtro."}
