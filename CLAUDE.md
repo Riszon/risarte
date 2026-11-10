@@ -411,7 +411,7 @@ Syncthing se comportarem de forma estranha.**
   telas; parar a tarefa NÃO matou o `next dev` (porta 3100 segurava a
   `.next-test`). Encerrar pelo processo da porta 3100 e apagar a pasta.
 - `test:rita` 142/142 e quebrando; visto na tela no treino (Admin de teste).
-  ⏳ **3006 a rodar na produção pelo dono.**
+  ✅ **3006 aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada).**
 
 **10/11/2026 (lote das migrações) — PC Administrador (core 0.411.0 → 0.412.0, migrações 0375 a 0378)**
 

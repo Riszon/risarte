@@ -21,7 +21,7 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.4 Unidade, horários, feriados** | ✅ concluída: código, treino e produção (09/11/2026) | core **0368**, rita **3003** |
 | **0A.5 Avaliação como dado** | ✅ concluída: código, treino e produção (09/11/2026) | core **0369**, rita **3004** |
 | **0A.6 Escalonamento e avisos** | ✅ concluída: código, treino e produção (10/11/2026) | **3005** |
-| **0A.7a "O que a Rita sabe" — ver e ligar/desligar** | código e treino (10/11/2026); ⏳ produção | **3006** |
+| **0A.7a "O que a Rita sabe" — ver e ligar/desligar** | código, treino e produção (10/11/2026) | **3006** |
 | 0A.7b "O que a Rita sabe" — editar pela tela | próxima | — |
 
 ## 0A.1 — Identidade e auditoria (Rita 0.1.0, 04/11/2026)
@@ -333,8 +333,7 @@ schema não abre nada que a função não abra.
 **Provas:** `test:rita` **142/142**; quebrando a guarda da `screen_unit` caem 2.
 Régua `rita-tela.test.ts` (11) provada quebrando (2 reprovam).
 
-**Na produção:** ⏳ **3006 a rodar pelo dono.** Antes dela a tela abre e diz
-"não foi possível ler" (a lista) — nada quebra.
+**Na produção:** ✅ **3006 aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada).**
 
 ## Regras para as próximas entregas
 
