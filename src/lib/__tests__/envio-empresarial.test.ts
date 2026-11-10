@@ -124,7 +124,7 @@ describe("os dois selos do fechamento", () => {
     // amarração. É a regra de ouro do projeto.
     expect(
       faltaParaFechar({ contractSignedAt: "2026-09-14", implantationPaidAt: null })
-    ).toEqual(["boleto da implantação pago"]);
+    ).toEqual(["1º pagamento (implantação) registrado"]);
     expect(
       faltaParaFechar({ contractSignedAt: null, implantationPaidAt: "2026-09-14" })
     ).toEqual(["contrato assinado"]);
@@ -133,7 +133,7 @@ describe("os dois selos do fechamento", () => {
   it("nenhum dos dois: lista os dois", () => {
     expect(
       faltaParaFechar({ contractSignedAt: null, implantationPaidAt: null })
-    ).toEqual(["contrato assinado", "boleto da implantação pago"]);
+    ).toEqual(["contrato assinado", "1º pagamento (implantação) registrado"]);
   });
 
   it("os dois verdes fecham", () => {

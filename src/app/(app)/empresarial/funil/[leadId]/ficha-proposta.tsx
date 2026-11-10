@@ -129,6 +129,7 @@ export function FichaDaProposta({
   unidades,
   unidadePrincipal,
   unidadesDaParceria,
+  travada = false,
 }: {
   leadId: string;
   cnpj: string | null;
@@ -180,6 +181,8 @@ export function FichaDaProposta({
   unidades: Unidade[];
   unidadePrincipal: string | null;
   unidadesDaParceria: string[];
+  /** 1041: contrato assinado — a proposta só se lê. */
+  travada?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -424,7 +427,13 @@ export function FichaDaProposta({
             COLUNA, não a janela. É o conserto de raiz do amontoado — um
             `sm:grid-cols-4` continuava valendo por causa do tamanho da tela,
             mesmo quando a coluna tinha 650px e os quatro campos não cabiam. */}
-        <div className="@container min-w-0 space-y-4">
+        {/* 1041: CONTRATO ASSINADO = SÓ LEITURA. O banco já recusa salvar
+            (PROPOSAL_LOCKED); o fieldset só poupa a pessoa de tentar. A trilha
+            e a simulação ficam livres: ler e conferir continua valendo. */}
+        <fieldset
+          disabled={travada}
+          className="@container min-w-0 space-y-4 disabled:opacity-80"
+        >
           <form onSubmit={onSubmit} className="space-y-4">
             <PainelDoPasso visivel={passo === "precos"}>
         <Secao titulo="Como a proposta será montada">
@@ -876,7 +885,7 @@ export function FichaDaProposta({
               />
             )}
           </PainelDoPasso>
-        </div>
+        </fieldset>
 
         {/* ⚠️ A CONTA FICA GRUDADA NA TELA (xl), ao lado de qualquer passo.
             Ela é a resposta de toda decisão de preço: longe da pergunta, a

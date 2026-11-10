@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionContext } from "@/lib/auth";
 import { empresarialDb } from "@/lib/empresarial/db";
+import { formatBrDate } from "@/lib/dates";
 import {
   canViewEmpresarial,
   isProgramManager,
@@ -42,10 +43,12 @@ export default async function TextoDoContratoPage({
   const db = await empresarialDb();
   const { data: lead } = await db
     .from("commercial_leads")
-    .select("id, company_name")
+    .select("id, company_name, contract_signed_at")
     .eq("id", leadId)
-    .maybeSingle<{ id: string; company_name: string }>();
+    .maybeSingle<{ id: string; company_name: string; contract_signed_at: string | null }>();
   if (!lead) notFound();
+  // 1041: assinado, o texto só se lê (o banco também recusa salvar).
+  const assinadoEm = lead.contract_signed_at;
 
   const modelos = await lerModelosDoContrato(db, leadId);
   const modelo = modelos.daEmpresa ?? modelos.daRede;
@@ -61,7 +64,7 @@ export default async function TextoDoContratoPage({
         >
           ← Voltar ao contrato
         </Button>
-        {modelos.daEmpresa && <VoltarAoModelo leadId={leadId} />}
+        {modelos.daEmpresa && !assinadoEm && <VoltarAoModelo leadId={leadId} />}
       </div>
 
       <div>
@@ -75,6 +78,14 @@ export default async function TextoDoContratoPage({
         </p>
       </div>
 
+      {assinadoEm && (
+        <p className="rounded-md border border-emerald-600/40 bg-emerald-600/5 p-3 text-sm">
+          <strong>Contrato assinado em {formatBrDate(assinadoEm)} — travado.</strong>{" "}
+          Para alterar, use <strong>Alterar proposta e contrato</strong> na ficha
+          da empresa (Admin ou gestor do programa).
+        </p>
+      )}
+
       {modelos.erro || !modelo ? (
         <p className="rounded-md border border-amber-500/50 bg-amber-500/10 p-4 text-sm">
           {modelos.erro
@@ -82,6 +93,7 @@ export default async function TextoDoContratoPage({
             : "Ainda não há modelo de contrato cadastrado para a rede."}
         </p>
       ) : (
+        <fieldset disabled={Boolean(assinadoEm)} className="min-w-0 disabled:opacity-80">
         <EditorDoContrato
           // Refaz o editor quando o texto SALVO muda (depois de salvar).
           key={JSON.stringify(modelo)}
@@ -90,6 +102,7 @@ export default async function TextoDoContratoPage({
           rotuloDoSalvar="Salvar o texto desta empresa"
           mensagemDeSucesso="Texto do contrato desta empresa salvo."
         />
+        </fieldset>
       )}
     </div>
   );

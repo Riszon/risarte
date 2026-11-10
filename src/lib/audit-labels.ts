@@ -271,6 +271,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   empresarial_lead_meeting: "Reunião (Empresarial)",
   empresarial_lead_dispatch: "Envio da proposta",
   empresarial_lead_closing_review: "Revisão de fechamento",
+  empresarial_lead_reopening: "Proposta destravada para alteração",
+  empresarial_lead_payment: "1º pagamento registrado no funil",
   empresarial_proposal: "Proposta (Empresarial)",
   empresarial_proposal_template: "Modelo de proposta",
   empresarial_contract_template: "Modelo de contrato",

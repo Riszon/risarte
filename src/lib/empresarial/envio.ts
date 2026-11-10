@@ -89,7 +89,7 @@ export type Selos = {
 export function faltaParaFechar(selos: Selos): string[] {
   const falta: string[] = [];
   if (!selos.contractSignedAt) falta.push("contrato assinado");
-  if (!selos.implantationPaidAt) falta.push("boleto da implantação pago");
+  if (!selos.implantationPaidAt) falta.push("1º pagamento (implantação) registrado");
   return falta;
 }
 

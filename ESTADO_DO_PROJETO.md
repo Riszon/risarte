@@ -61,6 +61,44 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.406.0** · Última migraç
 >   `suppliers_for_clinic` e `supplier_history` recusam com "permission
 >   denied") antes do push.
 
+> ## 💼 EMPRESARIAL 0.99.0 / 1041 — PROPOSTA TRAVADA DEPOIS DA ASSINATURA, 1º PAGAMENTO NAS COBRANÇAS E A EMPRESA A UM CLIQUE (09/11/2026)
+>
+> Pedido do dono: assinado, a proposta não muda; um recurso para alterar; o
+> pagamento do funil ligado ao financeiro da empresa; acesso à empresa pelo
+> funil. Decisões: destrava o Admin e o gestor (`is_program_manager`), com
+> motivo; com empresa criada, a reassinatura vai para o cadastro (botão do
+> gestor); o consultor registra o 1º pagamento.
+> - ⚠️ **A trava é do banco:** `guard_lead_proposal` (BEFORE) nas 7 tabelas da
+>   proposta (`lead_qualification`, `lead_price_tiers`, `lead_benefits`,
+>   `lead_perks`, `lead_clinics`, e `proposal_templates`/`contract_templates`
+>   com lead) recusa `PROPOSAL_LOCKED` com `contract_signed_at`. Tabela nova
+>   da proposta entra na lista. Apagar o lead (cascata) passa.
+> - ⚠️ **`contract_signed_at` só volta a nulo pela porta
+>   `reopen_lead_proposal`** (gatilho `commercial_leads_guard_signatures`;
+>   registro em `lead_proposal_reopenings`). Reassinado com empresa: o app
+>   leva tudo (`atualizarEmpresaComProposta`, irmã de
+>   `copiarPropostaParaEmpresa` — mudou uma, olhe a outra) e marca
+>   `mark_reopening_applied`.
+> - ⚠️ **`settle_billing` virou PORTA sobre `_settle_billing_raw`** — a
+>   conta da baixa mora na crua. `post_lead_implantation` cria a cobrança de
+>   Implantação JÁ PAGA (`origin_lead_id`, uma viva por lead) e roda na
+>   criação da empresa ou na hora, se ela existe. Lançado, o funil não muda
+>   o pagamento (`IMPLANTATION_IN_FINANCE`). A implantação segue fora do
+>   razão (1040).
+> - O selo virou "1º pagamento (implantação)" com data, valor e forma; o
+>   antigo sem valor pede "Informar o valor". Atalhos da empresa no alto da
+>   ficha; "Ver empresa" no cartão também em Implantação.
+> - Ensaio no treino 21/21 em transação desfeita; réguas
+>   `alteracao-da-proposta.test.ts` provadas quebrando. Visto na tela no
+>   treino só lendo (nada gravado). **Não visto:** destravar, reassinar e
+>   levar para a empresa pela tela; registrar pagamento pela tela.
+>   Manual do Empresarial 7.1, 7.2 e Envio e selos.
+> - ⏳ **1041 só no treino:** o dono roda na produção ANTES do push (o app
+>   grava colunas novas). Produção tinha 0 leads com selo.
+>
+> (0.98.1, sem migração: link "Gerar CPF de teste" nos CPFs do Empresarial,
+> só no treino.)
+
 > ## 💼 EMPRESARIAL 0.98.0 / 1040 — O EMPRESARIAL NO RAZÃO DA FRANQUEADORA (AP69, etapa 2; 09/11/2026)
 >
 > Decisões do dono no AP69: a mensalidade paga entra INTEIRA como receita da

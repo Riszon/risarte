@@ -295,6 +295,20 @@ function LeadCard({
         </Link>
       )}
 
+      {/* 1041 (dono, 09/11/2026): depois do fechamento, a empresa a um clique
+          do funil — também em Implantação, não só em Ganho. */}
+      {lead.stage !== "CLOSED_WON" && lead.companyId && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2 h-7 w-full text-xs"
+          nativeButton={false}
+          render={<Link href={`/empresarial/${lead.companyId}`} />}
+        >
+          Ver empresa
+        </Button>
+      )}
+
       {lead.stage === "CLOSED_WON" ? (
         <div className="mt-2 space-y-1">
           {lead.companyId ? (

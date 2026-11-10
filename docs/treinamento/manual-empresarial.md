@@ -302,6 +302,31 @@ o pagamento. **Quando os dois ficam verdes, a empresa vai para Fechamento
 assinado **e** pagamento confirmado. O selo do contrato **se marca sozinho**
 quando o contrato enviado pela assinatura digital fica assinado por todos
 (6.10.1); o botão manual continua para o contrato assinado fora do sistema.
+Depois de assinado, o selo do contrato **não tem mais Desfazer**: desfazer a
+assinatura é **Alterar proposta e contrato** (seção 7.1).
+
+**1º pagamento (implantação)** — o segundo selo. Não é mais uma caixinha:
+informe a **data**, o **valor pago** e a **forma** (boleto, Pix, cartão,
+transferência ou dinheiro) e clique em **Registrar**. O valor já vem sugerido
+pela proposta. O cartão diz onde o pagamento está:
+
+- **Empresa ainda não criada** — *Vai para as cobranças da empresa quando ela
+  for criada*. Ao **Criar empresa**, a cobrança de **Implantação** nasce
+  **já paga** na aba de cobranças dela.
+- **Empresa já criada** — registrar lança na hora: *Nas cobranças da empresa:
+  paga · ver cobranças*.
+- **Empresa criada e pagamento ainda fora das cobranças** (marcado antes desta
+  regra, ou o lançamento falhou) — botão **Lançar nas cobranças da empresa**.
+  Se o pagamento foi marcado no tempo da caixinha, sem valor, o cartão pede
+  **Informar o valor** primeiro.
+
+> **Enquanto não foi para as cobranças**, o registro pode ser **corrigido** ou
+> **desfeito** aqui. **Depois, só o Financeiro desfaz**, estornando a
+> cobrança nas cobranças da empresa — o funil não muda um pagamento que já
+> está no financeiro (o banco recusa).
+
+> **A implantação continua fora do razão da Franqueadora** (ela é da RisLife,
+> decisão de 09/11/2026): aparece nas cobranças da empresa, não na DRE.
 
 **Contrato por assinatura digital** — cartão entre o envio e os selos, com o
 botão **Enviar para assinatura** (a mesma janela da tela do contrato, 6.10.1)
@@ -316,7 +341,7 @@ leva a empresa para Follow-up.
 O que a aba mostra depende de onde a empresa está:
 
 - **Ainda em negociação** — *O que falta para fechar*: os dois selos (contrato
-  assinado e boleto da implantação pago), o que falta, e o botão **Marcar em
+  assinado e 1º pagamento registrado), o que falta, e o botão **Marcar em
   Envio e selos**, que leva à aba onde eles são marcados. Embaixo, **O negócio
   não vai acontecer?**: escreva o motivo e marque como perdido.
 
@@ -930,8 +955,8 @@ Regras da assinatura da empresa:
 - **Prazo:** 15 dias (o configurado para empresas em *Assinaturas →
   Configurações*).
 - **Quando todos assinam, o selo "Contrato assinado" se marca sozinho** na
-  aba *Envio e selos*, com uma anotação no histórico do lead. Com o boleto da
-  implantação já pago, o cartão vai para Fechamento (ganho), como sempre. O
+  aba *Envio e selos*, com uma anotação no histórico do lead. Com o 1º pagamento
+  (implantação) já registrado, o cartão vai para Fechamento (ganho), como sempre. O
   selo que já estava marcado à mão não muda.
 - **O Consultor RisLife** só envia e só vê os pacotes das empresas e dos leads
   em que é o responsável. Isso vale no banco, não só na tela.
@@ -955,8 +980,9 @@ da rede. **Voltar ao modelo da rede** desfaz a personalização.
 
 **O caminho é um só, e nesta ordem:**
 
-1. **Os dois selos** — na aba *Envio e selos* da ficha, marque **Contrato
-   assinado** e **Boleto da implantação pago**. Com a empresa em *Proposta
+1. **Os dois selos** — na aba *Envio e selos* da ficha: **Contrato
+   assinado** e o **1º pagamento (implantação)** registrado com data, valor e
+   forma. Com a empresa em *Proposta
    enviada* ou *Follow-up*, ela passa **sozinha** para *Fechamento (ganho)*.
 2. **Criar empresa** — na aba *Fechamento* da ficha (ou no card).
 3. **A conferência do consultor** — na aba *Fechamento*. Confirmada com "está
@@ -972,9 +998,9 @@ da rede. **Voltar ao modelo da rede** desfaz a personalização.
 > selos ficam marcados e ela não fecha. Fecha ao chegar em *Proposta enviada*
 > — registre o envio da proposta.
 
-> **Desmarcou um selo de uma empresa ganha?** Sem cadastro criado, ela volta
-> para *Follow-up*. Com o cadastro já criado, o selo é desmarcado e a fase
-> não muda (o fato fica registrado no Histórico).
+> **Desfez o pagamento de uma empresa ganha?** Sem cadastro criado, ela volta
+> para *Follow-up*. Com o cadastro criado, o pagamento já está nas cobranças
+> e só o Financeiro desfaz, estornando lá.
 
 > **Empresas que já estavam em Fechamento ou Implantação antes desta regra**
 > continuam onde estão. A ficha de uma ganha sem selos pede os selos antes de
@@ -1002,6 +1028,45 @@ Na aba **Histórico** fica a anotação do fechamento. **Se ela disser que algo
 não foi copiado, confira aquilo no cadastro** — é um aviso, não um detalhe.
 
 ---
+
+### 7.1. Depois de assinado: proposta travada e como alterar
+
+**Com o contrato assinado, a proposta e o contrato travam.** No alto da ficha
+aparece *Contrato assinado em dd/mm — proposta travada*; as abas
+*Levantamento* e *Proposta*, a tela do contrato e o texto do contrato ficam
+**só para leitura**. A trava é do banco: nenhum caminho salva por cima.
+
+**Precisa mudar?** O **Admin** e o **gestor do programa** veem o botão
+**Alterar proposta e contrato** (o consultor vê *Peça ao gestor do
+programa*):
+
+1. Escreva o **motivo** (pelo menos 10 letras) e clique em **Destravar**. O
+   motivo fica no Histórico, com o nome de quem destravou.
+2. A assinatura é desfeita (o contrato assinado antes **continua guardado**
+   nos pacotes de assinatura) e o alto da ficha diz *Proposta e contrato em
+   alteração*, com o motivo.
+3. Ajuste a proposta e o contrato e **envie o contrato para assinar de
+   novo**. Assinado, a proposta trava outra vez.
+4. **Se a empresa já foi criada**, aparece *A proposta alterada foi assinada
+   de novo* com o botão **Levar as alterações para a empresa** (Admin e
+   gestor). Ele atualiza no cadastro os preços de adesão, as faixas, os
+   benefícios, as unidades, as outras vantagens, a quantidade contratada, a
+   regra do excedente, as carências e o vencimento.
+
+> **O que NÃO muda ao levar para a empresa:** cobranças já geradas (o mês
+> cobrado é fato — a próxima já sai com o valor novo), CNPJ, nome fantasia,
+> observações e "quantos colaboradores a empresa tem", que são da ficha da
+> empresa. Benefício que saiu da proposta sai da empresa; o uso já registrado
+> continua no histórico.
+
+> **Destravar uma empresa ganha que ainda não tem cadastro** faz ela voltar
+> para *Follow-up* até a nova assinatura — é a regra dos dois selos.
+
+### 7.2. A empresa a um clique do funil
+
+Assim que o cadastro existe, o alto da ficha mostra **Abrir a empresa** e os
+atalhos **Titulares**, **Cobranças** e **Contratos**, em qualquer fase. No
+quadro do funil, o cartão mostra **Ver empresa** também em *Implantação*.
 
 ## 8. O cadastro da empresa
 

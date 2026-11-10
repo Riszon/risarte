@@ -91,3 +91,19 @@ export function valorNoFunil(
 ): number | null {
   return valorDaPropostaCents ?? estimadoCents ?? null;
 }
+
+/**
+ * O 1º PAGAMENTO (IMPLANTAÇÃO) QUE A PROPOSTA DIZ — a sugestão do valor no
+ * registro do pagamento do funil (1041). Mesma guarda da mensalidade: sem
+ * preço gravado, não sugere nada.
+ */
+export function implantacaoDaPropostaGravada(
+  q: PropostaGravada | null | undefined,
+  faixas: readonly FaixaDePreco[]
+): number | null {
+  if (!q) return null;
+  const fixo = q.billing_basis === "FIXED_PER_COMPANY";
+  if ((fixo ? q.fixed_monthly_cents : q.holder_fee_cents) == null) return null;
+  const { implantacaoCents } = contaDaPropostaGravada(q, faixas);
+  return implantacaoCents > 0 ? implantacaoCents : null;
+}

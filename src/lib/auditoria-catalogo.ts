@@ -245,6 +245,7 @@ export const TABELAS: Record<string, string> = {
   "empresarial.lead_clinics": "Lead — unidade",
   "empresarial.lead_perks": "Vantagem da proposta",
   "empresarial.lead_closing_reviews": "Revisão de fechamento",
+  "empresarial.lead_proposal_reopenings": "Proposta destravada para alteração",
   "empresarial.lead_contact_attempts": "Tentativa de contato",
   "empresarial.lead_dispatches": "Envio da proposta",
   "empresarial.lead_implementation_steps": "Passo da implantação",

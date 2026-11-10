@@ -58,7 +58,7 @@ export function FechamentoEmAberto({
 
           <ul className="grid gap-2 sm:grid-cols-2">
             <Selo rotulo="Contrato assinado" em={contractSignedAt} />
-            <Selo rotulo="Boleto da implantação pago" em={implantationPaidAt} />
+            <Selo rotulo="1º pagamento (implantação)" em={implantationPaidAt} />
           </ul>
 
           <div className="flex flex-wrap items-center justify-between gap-2">

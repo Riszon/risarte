@@ -200,7 +200,7 @@ export function proximoPasso(d: DadosDoProximoPasso): ProximoPasso {
       return {
         tom: "agir",
         titulo: "Confirmar o pagamento da implantação",
-        detalhe: "O contrato já foi assinado; falta o boleto da implantação pago.",
+        detalhe: "O contrato já foi assinado; falta o 1º pagamento (implantação) registrado.",
         aba: "envio",
       };
     case "CLOSED_WON":

@@ -9,7 +9,7 @@ import {
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
 import { Button } from "@/components/ui/button";
-import { todayInBrazil } from "@/lib/dates";
+import { formatBrDate, todayInBrazil } from "@/lib/dates";
 import {
   paraQuemVale,
   rotuloDaCarencia,
@@ -101,6 +101,13 @@ export default async function ContratoPage({
 
   // A MESMA leitura que vira o PDF de assinatura (ZS5): ver o carregador.
   const carregado = await carregarContratoDoLead(leadId);
+  // 1041: assinado, o contrato só se lê (o banco também recusa salvar).
+  const { data: selo } = await (await empresarialDb())
+    .from("commercial_leads")
+    .select("contract_signed_at")
+    .eq("id", leadId)
+    .maybeSingle<{ contract_signed_at: string | null }>();
+  const assinadoEm = selo?.contract_signed_at ?? null;
   if (!carregado.ok && carregado.motivo === "lead") notFound();
   if (!carregado.ok && carregado.motivo === "modelo") {
     // Sem o modelo não há contrato a mostrar — e a tela diz POR QUÊ, em vez de
@@ -194,7 +201,11 @@ export default async function ContratoPage({
               nativeButton={false}
               render={<Link href={`/empresarial/funil/${leadId}/contrato/texto`} />}
             >
-              {modelos.daEmpresa ? "Editar o texto desta empresa" : "Personalizar o texto"}
+              {assinadoEm
+                ? "Ver o texto"
+                : modelos.daEmpresa
+                  ? "Editar o texto desta empresa"
+                  : "Personalizar o texto"}
             </Button>
             <BotaoImprimir
               tipo="contrato"
@@ -207,6 +218,14 @@ export default async function ContratoPage({
             />
           </div>
         </div>
+
+        {assinadoEm && (
+        <p className="rounded-md border border-emerald-600/40 bg-emerald-600/5 p-3 text-sm">
+          <strong>Contrato assinado em {formatBrDate(assinadoEm)} — travado.</strong>{" "}
+          Para alterar, use <strong>Alterar proposta e contrato</strong> na ficha
+          da empresa (Admin ou gestor do programa).
+        </p>
+        )}
 
         <div className="space-y-3 rounded-lg border p-4">
           <div>
@@ -268,7 +287,7 @@ export default async function ContratoPage({
             <summary className="cursor-pointer text-sm font-medium">
               Endereço da sede, RG e dia de vencimento
             </summary>
-            <div className="pt-3">
+            <fieldset disabled={Boolean(assinadoEm)} className="min-w-0 pt-3 disabled:opacity-80">
               <DadosDoContrato
                 leadId={leadId}
                 endereco={q?.address ?? null}
@@ -279,7 +298,7 @@ export default async function ContratoPage({
                   q && "responsible_gender" in q ? lerGenero(q.responsible_gender) : undefined
                 }
               />
-            </div>
+            </fieldset>
           </details>
         </div>
 

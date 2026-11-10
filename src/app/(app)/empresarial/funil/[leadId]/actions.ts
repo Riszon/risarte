@@ -16,7 +16,22 @@ import {
   PAYMENT_MODELS,
   type DispatchItem,
 } from "@/lib/empresarial/constants";
-import { BILLING_BASES, INTEREST_LEVELS } from "@/lib/empresarial/proposta";
+import {
+  BILLING_BASES,
+  INTEREST_LEVELS,
+  camposDaEmpresa,
+  type QualificacaoDoLead,
+} from "@/lib/empresarial/proposta";
+import {
+  FORMA_DA_IMPLANTACAO_ROTULO,
+  camposComerciaisDaEmpresa,
+  lerPagamentoDaImplantacao,
+  recusaDaAlteracao,
+} from "@/lib/empresarial/alteracao-da-proposta";
+import { atualizarEmpresaComProposta } from "@/lib/empresarial/fechamento";
+import { recusaDoBanco } from "@/lib/empresarial/funnel";
+import { instantFromBrazil, todayInBrazil } from "@/lib/dates";
+import { formatBRL } from "@/lib/pricing";
 import { COMPANY_CATEGORIES } from "@/lib/empresarial/documents";
 import {
   IMPLEMENTATION_STEPS,
@@ -587,6 +602,11 @@ export async function setLeadSeal(
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  // 1041: o pagamento não é mais caixinha — tem data, valor e forma, e vai
+  // para as cobranças da empresa (`registerImplantationPayment`).
+  if (seal === "implantation") {
+    return { ok: false, error: "Registre o pagamento com data, valor e forma." };
+  }
 
   const coluna =
     seal === "contract" ? "contract_signed_at" : "implantation_paid_at";
@@ -597,7 +617,7 @@ export async function setLeadSeal(
     .eq("id", leadId);
   if (error) {
     console.error("setLeadSeal failed:", error.message);
-    return { ok: false, error: "Não foi possível marcar." };
+    return { ok: false, error: recusaDaAlteracao(error.message) ?? "Não foi possível marcar." };
   }
 
   await db.from("commercial_lead_activities").insert({
@@ -1358,5 +1378,250 @@ export async function resetContractText(leadId: string): Promise<ActionResult> {
     details: { voltou_ao_modelo_da_rede: true },
   });
   revalidatePath(`/empresarial/funil/${leadId}/contrato`);
+  return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// 1041 — PROPOSTA TRAVADA DEPOIS DA ASSINATURA, E O 1º PAGAMENTO NO FUNIL
+// -----------------------------------------------------------------------------
+
+/**
+ * Destrava a proposta e o contrato para uma alteração (Admin e gestor do
+ * programa, com motivo). A assinatura é desfeita; o contrato assinado antes
+ * continua guardado nos pacotes de assinatura. Quem decide é a porta do banco.
+ */
+export async function reopenProposal(leadId: string, motivo: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  const db = await empresarialDb();
+  const { error } = await db.rpc("reopen_lead_proposal", {
+    p_lead_id: leadId,
+    p_reason: motivo,
+  });
+  if (error) {
+    console.error("reopenProposal failed:", error.message);
+    return { ok: false, error: recusaDaAlteracao(error.message) ?? "Não foi possível destravar." };
+  }
+  await logAudit({ action: "update", entityType: "empresarial_lead_reopening", entityId: leadId });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  revalidatePath(`/empresarial/funil/${leadId}/contrato`);
+  revalidatePath("/empresarial/funil");
+  return { ok: true };
+}
+
+/**
+ * Leva a proposta reassinada para o cadastro da empresa (decisão do dono:
+ * "atualiza ao reassinar"). Botão do gestor: alguém confere antes de mudar o
+ * que a empresa paga.
+ */
+export async function applyProposalToCompany(leadId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  const db = await empresarialDb();
+
+  const [{ data: lead }, { data: reab }, { data: qual, error: eQual }, { data: faixas, error: eFaixas }] =
+    await Promise.all([
+      db
+        .from("commercial_leads")
+        .select("company_name, cnpj, company_id, contract_signed_at")
+        .eq("id", leadId)
+        .maybeSingle<{
+          company_name: string;
+          cnpj: string | null;
+          company_id: string | null;
+          contract_signed_at: string | null;
+        }>(),
+      db
+        .from("lead_proposal_reopenings")
+        .select("id, reopened_at, applied_to_company_at")
+        .eq("lead_id", leadId)
+        .order("reopened_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ id: string; reopened_at: string; applied_to_company_at: string | null }>(),
+      db.from("lead_qualification").select("*").eq("lead_id", leadId).maybeSingle<QualificacaoDoLead>(),
+      db
+        .from("lead_price_tiers")
+        .select("min_quantity, price_cents")
+        .eq("lead_id", leadId)
+        .returns<{ min_quantity: number; price_cents: number }[]>(),
+    ]);
+  if (!lead?.company_id) return { ok: false, error: "A empresa ainda não foi criada." };
+  if (!reab || reab.applied_to_company_at) {
+    return { ok: false, error: "Não há alteração esperando para ir à empresa." };
+  }
+  if (
+    !lead.contract_signed_at ||
+    new Date(lead.contract_signed_at).getTime() < new Date(reab.reopened_at).getTime()
+  ) {
+    return { ok: false, error: "O contrato alterado ainda não foi assinado de novo." };
+  }
+  if (eQual || eFaixas) return { ok: false, error: "Não foi possível ler a proposta." };
+
+  const campos = camposDaEmpresa(
+    qual,
+    { company_name: lead.company_name, cnpj: (lead.cnpj ?? "").replace(/\D/g, "") },
+    (faixas ?? []).map((f) => ({ minQuantity: f.min_quantity, priceCents: f.price_cents }))
+  );
+  const empresa = {
+    ...camposComerciaisDaEmpresa(campos),
+    min_adhesions: qual?.min_adhesions ?? null,
+    max_adhesions: qual?.max_adhesions ?? null,
+    adhesion_limit_target: qual?.adhesion_limit_target ?? null,
+    main_clinic_id: qual?.main_clinic_id ?? null,
+    contracted_holders: qual?.employee_count ?? null,
+    contracted_dependents: qual?.includes_dependents ? (qual?.dependents_estimate ?? null) : null,
+    excess_mode: qual?.excess_mode ?? null,
+    excess_fixed_cents: qual?.excess_fixed_cents ?? null,
+    excess_holder_fee_cents: qual?.excess_holder_fee_cents ?? null,
+    excess_dependent_fee_cents: qual?.excess_dependent_fee_cents ?? null,
+  };
+
+  const { naoCopiado } = await atualizarEmpresaComProposta(
+    db,
+    leadId,
+    lead.company_id,
+    empresa,
+    qual as unknown as Record<string, unknown> | null
+  );
+  if (naoCopiado.length > 0) {
+    // Não marca como levada: o gestor tenta de novo depois de ver o motivo.
+    return {
+      ok: false,
+      error: `Parte foi atualizada, mas não consegui levar: ${naoCopiado.join(", ")}. Tente de novo; se repetir, avise o suporte.`,
+    };
+  }
+  const { error } = await db.rpc("mark_reopening_applied", { p_reopening_id: reab.id });
+  if (error) {
+    console.error("applyProposalToCompany (marca) failed:", error.message);
+    return {
+      ok: false,
+      error: recusaDaAlteracao(error.message) ?? "A empresa foi atualizada, mas não consegui registrar.",
+    };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_company",
+    entityId: lead.company_id,
+    details: { from_lead_reopening: reab.id },
+  });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  revalidatePath(`/empresarial/${lead.company_id}`);
+  return { ok: true };
+}
+
+/**
+ * Registra o 1º pagamento (implantação) no funil: data, valor e forma. Com a
+ * empresa já criada, ele vira na hora a cobrança de Implantação PAGA nas
+ * cobranças dela (porta `post_lead_implantation`); sem a empresa, isso
+ * acontece quando ela for criada. É o selo do pagamento.
+ */
+export async function registerImplantationPayment(
+  leadId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  const lido = lerPagamentoDaImplantacao(
+    {
+      data: texto(formData, "data"),
+      valorCents: centavos(formData, "valor"),
+      forma: texto(formData, "forma"),
+    },
+    todayInBrazil()
+  );
+  if (!lido.ok) return { ok: false, error: lido.erro };
+
+  const db = await empresarialDb();
+  const { data: lead, error: eUpd } = await db
+    .from("commercial_leads")
+    .update({
+      // Meio-dia no Brasil: a data não muda de dia em fuso nenhum.
+      implantation_paid_at: instantFromBrazil(lido.data, "12:00").toISOString(),
+      implantation_paid_cents: lido.valorCents,
+      implantation_payment_method: lido.forma,
+      implantation_paid_by: session.userId,
+    })
+    .eq("id", leadId)
+    .select("company_id")
+    .maybeSingle<{ company_id: string | null }>();
+  if (eUpd || !lead) {
+    console.error("registerImplantationPayment failed:", eUpd?.message);
+    return {
+      ok: false,
+      error:
+        recusaDaAlteracao(eUpd?.message) ??
+        recusaDoBanco(eUpd?.message) ??
+        "Não foi possível registrar o pagamento.",
+    };
+  }
+  await db.from("commercial_lead_activities").insert({
+    lead_id: leadId,
+    author_id: session.userId,
+    kind: "NOTE",
+    note: `1º pagamento (implantação) registrado: ${formatBRL(lido.valorCents)} por ${FORMA_DA_IMPLANTACAO_ROTULO[
+      lido.forma
+    ].toLowerCase()} em ${lido.data.split("-").reverse().join("/")}.`,
+  });
+
+  let aviso: string | undefined;
+  if (lead.company_id) {
+    const { error } = await db.rpc("post_lead_implantation", { p_lead_id: leadId });
+    if (error) {
+      console.error("post_lead_implantation failed:", error.message);
+      aviso = `O pagamento foi registrado, mas não entrou nas cobranças da empresa (${
+        recusaDaAlteracao(error.message) ?? "erro ao gravar"
+      }). Use "Lançar nas cobranças da empresa".`;
+    }
+    revalidatePath(`/empresarial/${lead.company_id}`);
+  }
+  await logAudit({ action: "update", entityType: "empresarial_lead_payment", entityId: leadId });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  revalidatePath("/empresarial/funil");
+  return aviso ? { ok: false, error: aviso } : { ok: true };
+}
+
+/** Lança nas cobranças da empresa um pagamento já registrado no funil. */
+export async function postImplantationToCompany(leadId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  const db = await empresarialDb();
+  const { error } = await db.rpc("post_lead_implantation", { p_lead_id: leadId });
+  if (error) {
+    console.error("postImplantationToCompany failed:", error.message);
+    return { ok: false, error: recusaDaAlteracao(error.message) ?? "Não foi possível lançar." };
+  }
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  return { ok: true };
+}
+
+/** Desfaz o registro — só enquanto ele não foi para as cobranças (o banco confere). */
+export async function clearImplantationPayment(leadId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  const db = await empresarialDb();
+  const { error } = await db
+    .from("commercial_leads")
+    .update({
+      implantation_paid_at: null,
+      implantation_paid_cents: null,
+      implantation_payment_method: null,
+      implantation_paid_by: null,
+    })
+    .eq("id", leadId);
+  if (error) {
+    console.error("clearImplantationPayment failed:", error.message);
+    return {
+      ok: false,
+      error: recusaDaAlteracao(error.message) ?? recusaDoBanco(error.message) ?? "Não foi possível desfazer.",
+    };
+  }
+  await db.from("commercial_lead_activities").insert({
+    lead_id: leadId,
+    author_id: session.userId,
+    kind: "NOTE",
+    note: "1º pagamento (implantação): registro desfeito.",
+  });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  revalidatePath("/empresarial/funil");
   return { ok: true };
 }

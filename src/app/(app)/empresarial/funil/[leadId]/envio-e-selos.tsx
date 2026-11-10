@@ -25,6 +25,10 @@ import {
 } from "@/lib/empresarial/envio";
 import { formatBrDate, formatBrTime } from "@/lib/dates";
 import { registerDispatch, setLeadSeal } from "./actions";
+import {
+  PagamentoDaImplantacao,
+  type PagamentoDaImplantacaoView,
+} from "./pagamento-da-implantacao";
 
 export type EnvioView = {
   id: string;
@@ -45,6 +49,8 @@ export function EnvioESelos({
   contractSignedAt,
   implantationPaidAt,
   assinatura,
+  pagamento,
+  hoje,
 }: {
   leadId: string;
   empresa: string;
@@ -56,6 +62,10 @@ export function EnvioESelos({
   implantationPaidAt: string | null;
   /** ZS5: o bloco da assinatura digital do contrato (envio + pacotes), montado no servidor. */
   assinatura?: ReactNode;
+  /** 1041: o 1º pagamento, com data, valor e forma. */
+  pagamento: PagamentoDaImplantacaoView;
+  /** "YYYY-MM-DD" no Brasil. */
+  hoje: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -93,7 +103,7 @@ export function EnvioESelos({
     });
   }
 
-  function marcar(seal: "contract" | "implantation", marcado: boolean) {
+  function marcar(seal: "contract", marcado: boolean) {
     startTransition(async () => {
       const r = await setLeadSeal(leadId, seal, marcado);
       if (r.ok) {
@@ -263,19 +273,17 @@ export function EnvioESelos({
             </p>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2">
+            {/* 1041: assinado, o selo não se desfaz aqui — só por "Alterar
+                proposta e contrato", com o motivo (o banco também recusa). */}
             <Selo
               rotulo="Contrato assinado"
               em={contractSignedAt}
               disabled={isPending}
+              podeDesfazer={false}
               onChange={(v) => marcar("contract", v)}
             />
-            <Selo
-              rotulo="Boleto da implantação pago"
-              em={implantationPaidAt}
-              disabled={isPending}
-              onChange={(v) => marcar("implantation", v)}
-            />
+            <PagamentoDaImplantacao leadId={leadId} hoje={hoje} v={pagamento} />
           </div>
 
           {falta.length > 0 ? (
@@ -299,11 +307,13 @@ function Selo({
   rotulo,
   em,
   disabled,
+  podeDesfazer = true,
   onChange,
 }: {
   rotulo: string;
   em: string | null;
   disabled: boolean;
+  podeDesfazer?: boolean;
   onChange: (marcado: boolean) => void;
 }) {
   const marcado = Boolean(em);
@@ -329,6 +339,7 @@ function Selo({
             <Check className="mr-0.5 size-3" />
             Feito
           </Badge>
+          {podeDesfazer && (
           <Button
             variant="ghost"
             size="sm"
@@ -338,6 +349,7 @@ function Selo({
           >
             Desfazer
           </Button>
+          )}
         </div>
       ) : (
         <Button

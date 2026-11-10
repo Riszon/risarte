@@ -145,3 +145,173 @@ export async function copiarPropostaParaEmpresa(
 
   return { naoCopiado };
 }
+
+/**
+ * A PROPOSTA REASSINADA VAI PARA A EMPRESA (1041, decisão do dono 09/11/2026).
+ *
+ * Mesmo caminho de `copiarPropostaParaEmpresa`, mas sobre um cadastro que já
+ * existe: o que a empresa assinou de novo passa a valer. Cobranças já geradas
+ * NÃO mudam (o mês cobrado é fato); a próxima já sai com os valores novos.
+ *
+ * ⚠️ NÃO MEXE em CNPJ, nome fantasia, observações e "quantos colaboradores a
+ * empresa tem": são da ficha da empresa, editáveis lá, e a proposta não manda
+ * neles depois do fechamento.
+ *
+ * Benefício que saiu da proposta sai da empresa; o uso já registrado fica (a
+ * ligação com o benefício vira nula, o procedimento continua no histórico).
+ */
+export async function atualizarEmpresaComProposta(
+  db: Db,
+  leadId: string,
+  companyId: string,
+  empresa: Record<string, unknown>,
+  qual: Record<string, unknown> | null
+): Promise<{ naoCopiado: string[] }> {
+  const naoCopiado: string[] = [];
+  const n = (chave: string): number | null => {
+    const v = qual?.[chave];
+    return typeof v === "number" ? v : null;
+  };
+
+  // 0) Os campos comerciais do cadastro.
+  {
+    const { error } = await db.from("companies").update(empresa).eq("id", companyId);
+    if (error) {
+      console.error("reassinatura (cadastro):", error.message);
+      naoCopiado.push("os dados comerciais do cadastro");
+    }
+  }
+
+  // 1) Os preços de adesão (uma linha por empresa).
+  if (qual) {
+    const { error } = await db.from("adhesion_pricing").upsert(
+      {
+        company_id: companyId,
+        holder_fee_cents: n("holder_fee_cents") ?? DEFAULT_ADHESION_PRICING.holderFeeCents,
+        dependent_individual_fee_cents:
+          n("dependent_fee_cents") ?? DEFAULT_ADHESION_PRICING.dependentIndividualFeeCents,
+        dependent_family_fee_cents:
+          n("dependent_family_fee_cents") ?? DEFAULT_ADHESION_PRICING.dependentFamilyFeeCents,
+        dependent_family_extra_fee_cents:
+          n("dependent_family_extra_fee_cents") ??
+          DEFAULT_ADHESION_PRICING.dependentFamilyExtraFeeCents,
+        dependent_family_size: n("dependent_family_size") ?? 3,
+        dependent_mode:
+          qual.dependent_mode === "PER_DEPENDENT" ? "PER_DEPENDENT" : "FAMILY_PACKAGE",
+      },
+      { onConflict: "company_id" }
+    );
+    if (error) {
+      console.error("reassinatura (preços):", error.message);
+      naoCopiado.push("os preços de adesão");
+    }
+  }
+
+  // 2) As faixas: as da proposta substituem as da empresa.
+  {
+    const { data: faixas, error: eLer } = await db
+      .from("lead_price_tiers")
+      .select("min_quantity, price_cents")
+      .eq("lead_id", leadId);
+    const { error: eApagar } = eLer
+      ? { error: eLer }
+      : await db.from("company_price_tiers").delete().eq("company_id", companyId);
+    const { error: eGravar } =
+      eLer || eApagar || !faixas?.length
+        ? { error: null }
+        : await db.from("company_price_tiers").insert(
+            faixas.map((f) => ({
+              company_id: companyId,
+              min_quantity: f.min_quantity,
+              price_cents: f.price_cents,
+            }))
+          );
+    if (eLer || eApagar || eGravar) {
+      console.error("reassinatura (faixas):", (eLer ?? eApagar ?? eGravar)?.message);
+      naoCopiado.push("as faixas de preço");
+    }
+  }
+
+  // 3) As unidades da parceria.
+  {
+    const { data: unidades, error: eLer } = await db
+      .from("lead_clinics")
+      .select("clinic_id")
+      .eq("lead_id", leadId);
+    const { error: eApagar } = eLer
+      ? { error: eLer }
+      : await db.from("company_clinics").delete().eq("company_id", companyId);
+    const { error: eGravar } =
+      eLer || eApagar || !unidades?.length
+        ? { error: null }
+        : await db
+            .from("company_clinics")
+            .insert(unidades.map((u) => ({ company_id: companyId, clinic_id: u.clinic_id })));
+    if (eLer || eApagar || eGravar) {
+      console.error("reassinatura (unidades):", (eLer ?? eApagar ?? eGravar)?.message);
+      naoCopiado.push("as unidades da parceria");
+    }
+  }
+
+  // 4) Os benefícios: atualiza pelo procedimento; o que saiu da proposta sai.
+  {
+    const { data: beneficios, error: eLer } = await db
+      .from("lead_benefits")
+      .select(
+        "procedure_id, benefit_type, benefit_value, usage_limit_count, usage_period_months, grace_period_months, max_installments, for_holder, for_dependent, clinic_ids"
+      )
+      .eq("lead_id", leadId);
+    let erro = eLer;
+    if (!erro && beneficios?.length) {
+      ({ error: erro } = await db
+        .from("procedure_benefits")
+        .upsert(
+          beneficios.map((b) => ({ company_id: companyId, ...b })),
+          { onConflict: "company_id,procedure_id" }
+        ));
+    }
+    if (!erro) {
+      const manter = (beneficios ?? []).map((b) => b.procedure_id as string);
+      let q = db.from("procedure_benefits").delete().eq("company_id", companyId);
+      if (manter.length) q = q.not("procedure_id", "in", `(${manter.join(",")})`);
+      ({ error: erro } = await q);
+    }
+    if (erro) {
+      console.error("reassinatura (benefícios):", erro.message);
+      naoCopiado.push("os benefícios");
+    }
+  }
+
+  // 5) As outras vantagens vindas desta proposta.
+  {
+    const vantagens = await carregarVantagensDaProposta(db, leadId);
+    if (vantagens === null) {
+      naoCopiado.push("as outras vantagens");
+    } else {
+      const { error: eApagar } = await db
+        .from("company_perks")
+        .delete()
+        .eq("company_id", companyId)
+        .eq("origin_lead_id", leadId);
+      const { error: eGravar } =
+        eApagar || vantagens.length === 0
+          ? { error: null }
+          : await db.from("company_perks").insert(
+              vantagens.map((v, i) => ({
+                company_id: companyId,
+                perk_id: v.perkId,
+                name: v.nome,
+                detail: v.detalhe ?? v.descricao,
+                origin_lead_id: leadId,
+                sort_order: i,
+              }))
+            );
+      if (eApagar || eGravar) {
+        console.error("reassinatura (vantagens):", (eApagar ?? eGravar)?.message);
+        naoCopiado.push("as outras vantagens");
+      }
+    }
+  }
+
+  return { naoCopiado };
+}

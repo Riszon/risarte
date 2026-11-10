@@ -38,13 +38,13 @@ const selada: DadosDoFechamento = {
 describe("o que impede a passagem de fase", () => {
   it("GANHO exige os DOIS selos — um só não fecha", () => {
     expect(impedimentoDaFase("CLOSED_WON", nada)).toContain(
-      "contrato assinado e boleto da implantação pago"
+      "contrato assinado e 1º pagamento (implantação) registrado"
     );
     const soContrato = impedimentoDaFase("CLOSED_WON", {
       ...nada,
       contractSignedAt: "2026-10-01T12:00:00Z",
     });
-    expect(soContrato).toContain("Falta: boleto da implantação pago.");
+    expect(soContrato).toContain("Falta: 1º pagamento (implantação) registrado.");
     expect(soContrato).not.toContain("Falta: contrato");
     const soPagamento = impedimentoDaFase("CLOSED_WON", {
       ...nada,

@@ -16,7 +16,17 @@ import {
   mensagemDoPedido,
   pendenciasDoPedido,
 } from "@/lib/empresarial/pedido-de-informacoes";
-import { valorDaPropostaGravada } from "@/lib/empresarial/valor-da-proposta";
+import {
+  implantacaoDaPropostaGravada,
+  valorDaPropostaGravada,
+} from "@/lib/empresarial/valor-da-proposta";
+import {
+  propostaTravada,
+  situacaoDaProposta,
+  type FormaDaImplantacao,
+} from "@/lib/empresarial/alteracao-da-proposta";
+import { AvisoDaProposta } from "./alteracao-da-proposta";
+import { AtalhosDaEmpresa } from "./atalhos-da-empresa";
 import { createClient } from "@/lib/supabase/server";
 import type {
   DispatchChannel,
@@ -558,6 +568,44 @@ export default async function FichaDoLeadPage({
       .map((v) => ({ perkId: v.perk_id, detail: v.detail })),
   }));
 
+  // 1041: o 1º pagamento com valor, a última alteração da proposta e a
+  // cobrança que o pagamento gerou. Leituras À PARTE: sem a 1041 no banco as
+  // colunas e a tabela não existem, e a ficha abre como antes.
+  const [{ data: pagamentoRow }, { data: reaberturaRow }, { data: cobrancaRow }] =
+    await Promise.all([
+      db
+        .from("commercial_leads")
+        .select("implantation_paid_cents, implantation_payment_method, implantation_paid_by")
+        .eq("id", leadId)
+        .maybeSingle<{
+          implantation_paid_cents: number | null;
+          implantation_payment_method: FormaDaImplantacao | null;
+          implantation_paid_by: string | null;
+        }>(),
+      db
+        .from("lead_proposal_reopenings")
+        .select("id, reason, reopened_at, reopened_by, previous_signed_at, applied_to_company_at")
+        .eq("lead_id", leadId)
+        .order("reopened_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{
+          id: string;
+          reason: string;
+          reopened_at: string;
+          reopened_by: string | null;
+          previous_signed_at: string;
+          applied_to_company_at: string | null;
+        }>(),
+      db
+        .from("adhesion_billing")
+        .select("status, paid_at")
+        .eq("origin_lead_id", leadId)
+        .eq("billing_type", "IMPLANTATION")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ status: string; paid_at: string | null }>(),
+    ]);
+
   // Nomes de quem enviou e do consultor responsável.
   const userIds = [
     ...new Set(
@@ -568,6 +616,8 @@ export default async function FichaDoLeadPage({
         ...(stepRows ?? []).map((s) => s.done_by),
         ...(actRows ?? []).map((a) => a.author_id),
         ...(attemptRows ?? []).map((a) => a.author_id),
+        pagamentoRow?.implantation_paid_by ?? null,
+        reaberturaRow?.reopened_by ?? null,
       ].filter((x): x is string => Boolean(x))
     ),
   ];
@@ -687,6 +737,35 @@ export default async function FichaDoLeadPage({
     isInitial: h.is_initial,
   }));
   const nome = (id: string | null) => (id ? nomePorId.get(id) ?? null : null);
+
+  // 1041: a proposta travada depois da assinatura, e o 1º pagamento.
+  const situacaoDaPropostaAgora = situacaoDaProposta({
+    contractSignedAt: lead.contract_signed_at,
+    companyId: lead.company_id,
+    ultima: reaberturaRow
+      ? {
+          id: reaberturaRow.id,
+          motivo: reaberturaRow.reason,
+          reabertaEm: reaberturaRow.reopened_at,
+          reabertaPor: nome(reaberturaRow.reopened_by),
+          assinadaAntesEm: reaberturaRow.previous_signed_at,
+          levadaParaEmpresaEm: reaberturaRow.applied_to_company_at,
+        }
+      : null,
+  });
+  const faixasDaProposta = (faixasRows ?? []).map((f) => ({
+    minQuantity: f.min_quantity,
+    priceCents: f.price_cents,
+  }));
+  const pagamentoDaImplantacao = {
+    pagoEm: lead.implantation_paid_at,
+    valorCents: pagamentoRow?.implantation_paid_cents ?? null,
+    forma: pagamentoRow?.implantation_payment_method ?? null,
+    registradoPor: nome(pagamentoRow?.implantation_paid_by ?? null),
+    sugeridoCents: implantacaoDaPropostaGravada(qual, faixasDaProposta),
+    companyId: lead.company_id,
+    cobranca: cobrancaRow ? { status: cobrancaRow.status, pagaEm: cobrancaRow.paid_at } : null,
+  };
 
   // 09/11/2026: o que pedir à empresa pelo WhatsApp — a régua da proposta e
   // do contrato, mais os campos que só o contrato usa.
@@ -818,7 +897,13 @@ export default async function FichaDoLeadPage({
       agora: aberta === "levantamento",
       painel: (
         <div className={LARGURA_DE_LEITURA}>
-          <FichaDoLead leadId={lead.id} qualificacao={view} />
+          {/* 1041: o levantamento mora na mesma linha da proposta, e trava junto. */}
+          <fieldset
+            disabled={propostaTravada(situacaoDaPropostaAgora)}
+            className="min-w-0 disabled:opacity-80"
+          >
+            <FichaDoLead leadId={lead.id} qualificacao={view} />
+          </fieldset>
         </div>
       ),
     },
@@ -865,6 +950,7 @@ export default async function FichaDoLeadPage({
           condicoes={condicoes}
           precoPadrao={precoPadrao}
           pedidoDeInformacoes={pedidoDeInformacoes}
+          travada={propostaTravada(situacaoDaPropostaAgora)}
           fidelidade={
             // Sem a coluna (migração 1037 pendente) ou sem levantamento, o
             // bloco não aparece — e salvar não grava onde não existe.
@@ -928,6 +1014,8 @@ export default async function FichaDoLeadPage({
           envios={envios}
           contractSignedAt={lead.contract_signed_at}
           implantationPaidAt={lead.implantation_paid_at}
+          pagamento={pagamentoDaImplantacao}
+          hoje={todayInBrazil()}
           assinatura={
             <AssinaturasDaEmpresa
               companyId={lead.company_id}
@@ -1011,6 +1099,17 @@ export default async function FichaDoLeadPage({
       />
 
       <ResumoDaEmpresa lead={leadView} acao={acao} />
+
+      {lead.company_id && (
+        <AtalhosDaEmpresa companyId={lead.company_id} stage={lead.stage} />
+      )}
+
+      <AvisoDaProposta
+        leadId={lead.id}
+        situacao={situacaoDaPropostaAgora}
+        podeDestravar={isProgramManager(session)}
+        temEmpresa={Boolean(lead.company_id)}
+      />
 
       {/* As abas montam os formulários todos de uma vez e escondem os
           inativos — aninhar <form> dentro de <form> não funciona, e

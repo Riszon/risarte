@@ -387,7 +387,7 @@ export async function convertLeadToCompany(
   const { data: lead } = await db
     .from("commercial_leads")
     .select(
-      "company_name, cnpj, consultant_id, company_id, contract_signed_at, implantation_paid_at"
+      "company_name, cnpj, consultant_id, company_id, contract_signed_at, implantation_paid_at, implantation_paid_cents"
     )
     .eq("id", leadId)
     .maybeSingle();
@@ -512,6 +512,20 @@ export async function convertLeadToCompany(
       companyId: company.id,
       error: `A empresa foi criada, mas o cartão do funil NÃO foi ligado a ela (${recusaDoBanco(erroDoVinculo.message) ?? "erro ao gravar"}). Avise o suporte antes de seguir.`,
     };
+  }
+  // 1041: o 1º pagamento registrado no funil vira a cobrança de Implantação
+  // JÁ PAGA da empresa. Selo antigo (caixinha, sem valor) não tem o que lançar:
+  // o funil pede o valor depois.
+  if (lead.implantation_paid_cents) {
+    const { error: erroDoPagamento } = await db.rpc("post_lead_implantation", {
+      p_lead_id: leadId,
+    });
+    if (erroDoPagamento) {
+      console.error("convertLeadToCompany (pagamento) failed:", erroDoPagamento.message);
+      naoCopiado.push(
+        "o 1º pagamento para as cobranças (use \"Lançar nas cobranças da empresa\" no funil)"
+      );
+    }
   }
   await db.from("commercial_lead_activities").insert({
     lead_id: leadId,
