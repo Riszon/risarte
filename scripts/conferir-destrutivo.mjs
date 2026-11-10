@@ -70,6 +70,16 @@ const JA_CONFERIDAS = new Map([
     "1000_empresarial_usage_from_closing.sql",
     "remove uso de benefício duplicado, que dobraria a economia no extrato",
   ],
+  // Lidas em 10/11/2026 (AP83/AP88). As duas rodaram nos dois bancos em
+  // 28/10/2026, antes de alguém ver que faltava a declaração.
+  [
+    "0331_ortodontia_contencao_baixa_faltas.sql",
+    "tira da matriz a baixa da Ortodontia da Recepção e do Franqueado (decisão O2 do dono): duas linhas de permissão, nenhum dado de paciente",
+  ],
+  [
+    "0332_ortodontia_tela_do_ortodontista.sql",
+    "derruba seis colunas de valores de ortho_cases DEPOIS de copiá-las para ortho_case_terms, no mesmo arquivo",
+  ],
 ]);
 
 const alvo = process.argv[2];

@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
+import { startOfDayInBrazil, todayInBrazil } from "@/lib/dates";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { canWorkOnCompanies } from "@/lib/empresarial/access";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -191,8 +192,8 @@ export default async function PainelPage() {
     mrr += total;
   }
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  // O mês é o do calendário brasileiro (AP109), não o do relógio do servidor.
+  const monthStart = startOfDayInBrazil(`${todayInBrazil().slice(0, 7)}-01`);
   let savedTotal = 0;
   let savedMonth = 0;
   const savedByCompany = new Map<string, number>();

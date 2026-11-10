@@ -64,6 +64,22 @@ export const TYPE_PROVIDER_ROLES: Record<AppointmentType, UserRole[]> = {
   redo: ["dentist"],
 };
 
+/**
+ * AP56 — as funções de UMA pessoa atendem aquele tipo de compromisso?
+ *
+ * A janela de agendamento só oferece quem pode (`TYPE_PROVIDER_ROLES`), mas
+ * um pedido montado à mão mandava qualquer pessoa como profissional do horário
+ * — e o profissional do horário registra chegada e chama o paciente. O
+ * servidor pergunta aqui antes de gravar.
+ */
+export function funcoesAtendemOTipo(
+  type: AppointmentType,
+  roles: readonly UserRole[]
+): boolean {
+  const permitidas = TYPE_PROVIDER_ROLES[type];
+  return roles.some((r) => permitidas.includes(r));
+}
+
 export type StaffOption = {
   userId: string;
   name: string;

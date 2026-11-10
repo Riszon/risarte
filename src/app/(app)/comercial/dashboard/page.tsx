@@ -19,7 +19,13 @@ import {
 } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { instantFromBrazil, BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  instantFromBrazil,
+  startOfDayInBrazil,
+  startOfTodayInBrazil,
+  todayInBrazil,
+  BRAZIL_TIME_ZONE,
+} from "@/lib/dates";
 import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { RisarteMark } from "@/components/risarte-logo";
@@ -55,14 +61,14 @@ function periodStart(p: Period, de?: string): string | null {
   // O período escolhido é de DIAS brasileiros: sem a conversão explícita, no
   // servidor em UTC o filtro começava às 21h do dia anterior.
   if (p === "custom") return de ? instantFromBrazil(de, "00:00").toISOString() : null;
-  if (p === "hoje")
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  if (p === "hoje") return startOfTodayInBrazil().toISOString();
   if (p === "semana") {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
     return d.toISOString();
   }
-  if (p === "mes") return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  if (p === "mes")
+    return startOfDayInBrazil(`${todayInBrazil().slice(0, 7)}-01`).toISOString();
   return null;
 }
 /** Fim do período (só no período escolhido) — inclui o dia inteiro do "até". */

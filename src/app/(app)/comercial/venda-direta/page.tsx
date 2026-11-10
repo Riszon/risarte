@@ -5,6 +5,7 @@ import { ArrowLeft, Store } from "lucide-react";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { startOfDayInBrazil, startOfTodayInBrazil, todayInBrazil } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
@@ -42,16 +43,14 @@ const PERIOD_LABELS: Record<Period, string> = {
 
 function periodStart(period: Period): string | null {
   const now = new Date();
-  if (period === "hoje") {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  }
+  if (period === "hoje") return startOfTodayInBrazil().toISOString();
   if (period === "semana") {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
     return d.toISOString();
   }
   if (period === "mes") {
-    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    return startOfDayInBrazil(`${todayInBrazil().slice(0, 7)}-01`).toISOString();
   }
   return null;
 }

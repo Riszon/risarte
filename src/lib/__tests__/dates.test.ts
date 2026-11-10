@@ -140,7 +140,8 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
       // 1. A HORA VEM DE VARIÁVEL: é relógio de parede virando instante.
       //    Sempre errado fora do fuso do Brasil.
       nome: "hora montada a partir de variável",
-      padrao: /new Date\(`[^`]*T\$\{/,
+      // `\s*`: partido em linhas a forma escapava (AP109, o "Ver agenda").
+      padrao: /new Date\(\s*`[^`]*T\$\{/,
     },
     {
       // 2. MEIA-NOITE VIRANDO INSTANTE (`.toISOString()` / `.getTime()`): é
@@ -188,18 +189,9 @@ describe("nenhum horário de negócio é lido no fuso da máquina", () => {
       //    `startOfDayInBrazil`/`startOfDayOf` para a fronteira do dia.
       nome: "data civil montada com o relógio da máquina (`new Date(x.getFullYear(), …)`)",
       padrao: /new Date\(\s*[\w$.]+\.getFullYear\(\)\s*,/,
-      // ⚠️ DÉBITOS CONHECIDOS (04/11/2026, AP109): os lugares que já tinham a
-      // forma quando a régua nasceu. Ficam aqui para a régua valer para o
-      // código NOVO sem exigir cinco correções fora de escopo; cada um sai da
-      // lista quando for corrigido — e a régua reprova se um deles sumir sem
-      // ter saído daqui (lista velha é lista que ninguém lê).
-      debitos: [
-        "src/app/(app)/agenda/actions.ts", // getMonthAgendaPeek (o "Ver agenda")
-        "src/app/(app)/comercial/dashboard/page.tsx",
-        "src/app/(app)/comercial/venda-direta/page.tsx",
-        "src/app/(app)/empresarial/painel/page.tsx",
-        "src/app/(app)/ppr/painel/page.tsx",
-      ],
+      // Os cinco débitos conhecidos do AP109 foram quitados em 10/11/2026: a
+      // lista ficou vazia, e a régua vale para todo arquivo.
+      debitos: [] as string[],
     },
   ];
 

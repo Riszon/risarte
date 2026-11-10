@@ -152,6 +152,10 @@ async function main() {
     () => rede
   );
   const U = recepcao.clinic_id;
+  // AP32: as indicações que JÁ estavam gravadas no treino antes desta prova
+  // (alguém usando o módulo à mão). A apuração da seção 16-I mede a unidade
+  // inteira; sem separar o que é do treino, o resultado dependia do dia.
+  const jaGravadas = (await q("select id from indica.indicacoes where unidade_id = $1", [U])).map((r) => r.id);
   ok(gerente.clinic_id === U, "gerente e recepção de teste são da mesma unidade");
   ok(franqueado.clinic_id !== U, "franqueado de teste é de OUTRA unidade");
 
@@ -1194,13 +1198,28 @@ async function main() {
     "update indica.indicacoes set fechou_em = now() - interval '5 days', registrada_em = now() - interval '6 days' where id = any($1)",
     [[i16f, i16g]]
   );
+  // AP32: a trava de qualidade conta TODA indicação da unidade registrada no
+  // período — inclusive as que já estavam gravadas no treino. Com 6 delas sem
+  // comparecimento dentro dos últimos 10 dias, o comparecimento caía a 25%, a
+  // faixa não saía e três conferências falhavam (foi o que aconteceu de
+  // 29/09 a 09/10/2026 e sumiu sozinho quando elas envelheceram). O cenário
+  // desta prova é só o que a prova criou: as do treino saem do período, só
+  // nesta transação.
+  await bastidor(
+    `update indica.indicacoes set registrada_em = registrada_em - interval '10 days'
+      where id = any($1)
+        and registrada_em >= (current_date - 10)::timestamp at time zone 'America/Sao_Paulo'
+        and registrada_em < current_date::timestamp at time zone 'America/Sao_Paulo'`,
+    [jaGravadas]
+  );
   await como(gerente.id);
   const metaPassada = await novaMeta("current_date - 10", "current_date - 1", 50);
   const apFinal = (await um("select indica.apurar_meta($1, 'final') as id", [metaPassada])).id;
   const ap2 = await um("select * from indica.apuracoes where id = $1", [apFinal]);
   ok(Number(ap2.valor_apurado) >= 2 && ap2.comparecimento_ok === true && ap2.faixa_atingida === "Meta teste"
       && ap2.indicacoes_contadas.includes(i16f) && ap2.indicacoes_contadas.includes(i16g),
-    "apuração final: 2 conversões do período, comparecimento 100%, faixa atingida, indicações listadas");
+    "apuração final: 2 conversões do período, comparecimento 100%, faixa atingida, indicações listadas",
+    `apurado ${ap2.valor_apurado}, comparecimento ${ap2.taxa_comparecimento}% (ok=${ap2.comparecimento_ok}), faixa ${ap2.faixa_atingida}`);
   await falha("select indica.apurar_meta($1, 'final')", [metaPassada], "apuracoes_final_uq", "só uma apuração final por meta");
   await sistema();
   await falha("update indica.apuracoes set valor_apurado = 99 where id = $1", [apFinal], "INDICA_FORA_DO_MOTOR",

@@ -108,7 +108,13 @@ const FIXTURE_SOURCES = {
   indicacao: () => admin.schema("indica").from("indicacoes").select("id").limit(1),
   embaixador: () => admin.schema("indica").from("embaixadores").select("id").limit(1),
   campanha: () => admin.schema("indica").from("campanhas").select("id").limit(1),
-  apuracaoMeta: () => admin.schema("indica").from("apuracoes").select("id").limit(1),
+  // AP31: a tela é o "Relatório para a folha" e só abre apuração FINAL — a
+  // provisória é só uma linha da lista da Equipe, sem página própria (a tela
+  // responde 404 para ela, de propósito). Pegar qualquer apuração acusava
+  // "rota quebrada" quando o banco só tinha provisória. Sem nenhuma final, a
+  // rota cai em "NÃO conferida por falta de registro" — nunca em OK.
+  apuracaoMeta: () =>
+    admin.schema("indica").from("apuracoes").select("id").eq("tipo", "final").limit(1),
   pprPlan: () => admin.from("ppr_plans").select("id").limit(1),
   signatureTemplate: () => admin.from("signature_templates").select("id").limit(1),
   signaturePackage: () => admin.from("signature_packages").select("id").not("sent_at", "is", null).limit(1),

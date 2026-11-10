@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { contarPendentesDoTreino } from "@/app/(app)/relatos-treino-actions";
 import { cn } from "@/lib/utils";
+import { SEM_CONTAGEM, somarContagens } from "@/lib/contagem";
 import { APP_VERSION } from "@/lib/version";
 import { moduloDaTela } from "@/lib/system-reports";
 import { MAXIMO_POR_ENVIO, nomeDaCaptura } from "@/lib/anexos-de-relato";
@@ -92,9 +93,12 @@ function novoRascunho(origem: string): Rascunho {
  * cada navegação. Ela não entra no tempo de abrir tela nenhuma, que foi o custo
  * que o dia 08/09/2026 inteiro foi gasto reduzindo.
  *
- * Banco ainda sem a 0252: a função não existe, o `rpc` devolve erro e o número
- * fica em zero. Ícone sem indicador é a mesma coisa de antes desta entrega; um
- * erro na tela por causa de migração pendente não seria.
+ * ⚠️ CONTAGEM QUE FALHA NÃO É ZERO (AP11). Se uma das duas partes (a daqui ou
+ * a do treino) não responde, o número mostrado é só o que deu para contar e a
+ * boia diz isso: um "—" discreto no ícone quando não se sabe de nenhum, e a
+ * frase no painel. Antes a falha virava zero e o Admin lia "Nenhum relato
+ * esperando por você" com a fila cheia. Nada disso derruba a barra: é só
+ * texto.
  */
 export function ReportNavItem({
   temUnidade,
@@ -107,6 +111,8 @@ export function ReportNavItem({
   const pathname = usePathname();
   const router = useRouter();
   const [pendentes, setPendentes] = useState(0);
+  // Alguma das partes da contagem falhou: `pendentes` é só o que se sabe.
+  const [incompleta, setIncompleta] = useState(false);
   const [aberto, setAberto] = useState(false);
   const [rascunho, setRascunho] = useState<Rascunho | null>(null);
   // Durante a captura o painel (ou a barra) fica INVISÍVEL, não fechado:
@@ -120,22 +126,25 @@ export function ReportNavItem({
   const consultar = useCallback(async () => {
     // O número junta OS DOIS AMBIENTES (19/09/2026): o daqui vem do banco,
     // pela sessão de quem está logado; o do treino vem pelo servidor, que é
-    // quem tem a chave de lá. Falha no treino vira 0, nunca uma barra quebrada.
+    // quem tem a chave de lá. Falha de um lado vira "não consegui contar"
+    // (`null`), nunca zero e nunca uma barra quebrada.
     const supabase = createClient();
     const [local, treino] = await Promise.all([
       supabase.rpc("system_reports_pending"),
-      contarPendentesDoTreino().catch(() => 0),
+      contarPendentesDoTreino().catch(() => null),
     ]);
-    const daqui = typeof local.data === "number" ? local.data : 0;
-    return daqui + treino;
+    const daqui = !local.error && typeof local.data === "number" ? local.data : null;
+    return somarContagens([daqui, treino]);
   }, []);
 
   useEffect(() => {
     let cancelado = false;
 
     const atualizar = async () => {
-      const n = await consultar();
-      if (!cancelado) setPendentes(n);
+      const r = await consultar();
+      if (cancelado) return;
+      setPendentes(r.total);
+      setIncompleta(r.incompleta);
     };
 
     atualizar();
@@ -258,18 +267,33 @@ export function ReportNavItem({
           {pendentes > 99 ? "99+" : pendentes}
         </span>
       )}
+      {pendentes === 0 && incompleta && (
+        <span
+          aria-hidden
+          className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-medium text-muted-foreground"
+        >
+          {SEM_CONTAGEM}
+        </span>
+      )}
     </>
   );
   const classeDoIcone =
     "relative grid size-9 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground";
 
-  const aviso = isAdminMaster
+  const avisoDoNumero = isAdminMaster
     ? pendentes === 0
       ? "Nenhum relato esperando por você."
       : `${pendentes === 1 ? "1 relato espera" : `${pendentes} relatos esperam`} por você.`
     : pendentes === 0
       ? "Acompanhe seus relatos e as respostas."
       : `Você tem ${pendentes === 1 ? "1 resposta nova" : `${pendentes} respostas novas`}.`;
+  // AP11: com a contagem incompleta, "nenhum" seria mentira; e um número
+  // parcial precisa dizer que é parcial.
+  const aviso = !incompleta
+    ? avisoDoNumero
+    : pendentes === 0
+      ? "Não foi possível contar os relatos agora."
+      : `${avisoDoNumero} Pode haver mais: parte da contagem falhou.`;
 
   const prints = rascunho?.anexos.filter((a) => a.kind === "captura").length ?? 0;
   const cheio = (rascunho?.anexos.length ?? 0) >= MAXIMO_POR_ENVIO;

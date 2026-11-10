@@ -183,6 +183,12 @@ significa e o caminho para resolver. Eles mudam conforme a sua função:
 > "3 esperando", ao abrir você encontra três. Cada contagem usa a mesma régua da
 > tela de destino, nunca uma conta separada.
 
+> **Cartão com um traço (—)** *(desde a 0.410.0)*. Se o sistema não conseguiu
+> contar aquele assunto naquele momento, o cartão aparece com um traço no lugar
+> do número e a frase **"Não foi possível contar agora. Abra para conferir."**
+> Ele não diz zero: abra a tela para ver se há algo esperando. O mesmo vale
+> para as etapas **Aprovar** e **Receber** de Compras e para a boia de relatos.
+
 **Minhas metas.** Quem participa de alguma meta ativa vê, no alto, um cartão
 para cada uma (até quatro), com a barra da equipe e — na meta individual — a
 **sua** barra ("Você"). Ver [seção 2.7](#27-metas-smart).
@@ -1497,6 +1503,11 @@ Em **Metas → Resultados**: as metas **encerradas** num período (padrão: os
 | Clientes reativados | Atendidos no período depois de mais tempo sem atendimento que os "dias sem atendimento" da Administração | A unidade (só coletiva) |
 | Certificações concluídas | Certificados emitidos pelo portão de certificação | A pessoa certificada |
 | Relatos e sugestões enviados | Relatos e sugestões registrados — use para incentivar quem nunca relatou, não para competir | Quem relatou |
+
+**O Painel do PPR+ conta igual** *(desde a 0.410.0)*: "entrou" no período é a
+adesão **ativada** (contrato + 1º pagamento) — a criada e ainda não ativada
+aparece só em "aguardando ativação" —, e a transferência de unidade não conta
+como entrada nem como saída. O painel e a meta mostram o mesmo número.
 
 **Ortodontia, PPR+ e a receita bruta** (versão 0.398.0, migração 0365). A
 lista do passo S ganhou os grupos **Ortodontia** e **PPR+** (adesões,
@@ -3079,8 +3090,8 @@ fica no alto do cockpit, mostra **Configurado** ou **Pendente** e vale para o
 
 **Cuidados:** o sistema exige procedimentos lançados em cada opção para enviar;
 plano de tratamento **não tem acréscimo** (o preço vem do orçamento aprovado);
-depois de aprovado o plano fica em leitura — há **Reabrir para edição**, que
-exige nova aprovação.
+depois de enviado ou aprovado o plano fica em leitura — para mudar, use
+**Criar nova versão**, que passa por nova aprovação.
 
 **Procedimento que não está no catálogo — sugira à rede.** Desde a versão
 0.330.0 o Planner não cadastra procedimento e não lança item livre: o

@@ -11,6 +11,7 @@ import {
 } from "@/lib/journey";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { contarEtapasDaCompra } from "./compras/trilha-dados";
+import { contagemDaTela } from "@/lib/contagem";
 import { startOfTodayInBrazil } from "@/lib/dates";
 import { resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certificacao";
 import { guardarProgresso, medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
@@ -60,6 +61,13 @@ export async function equipeDaMissao(
  *    regra da trilha de Compras: um "0" pendurado em todo cartão vira ruído, e
  *    em duas semanas ninguém olha mais para os que NÃO são zero.
  *
+ *    ⚠️ **MAS "NÃO CONSEGUI CONTAR" NÃO É ZERO (AP11).** Contagem que falha
+ *    (erro, ou `count: null` sem erro) vira `numero: null`, e ESSE cartão
+ *    aparece, com "—" e "Não foi possível contar agora." Antes virava zero, o
+ *    cartão sumia e a tela dizia "Nada esperando por você agora" com trabalho
+ *    parado. Zero só é zero quando o banco respondeu zero, ou quando a
+ *    consulta nem foi feita porque o cartão não é do papel da pessoa.
+ *
  * 2. **O NÚMERO DA HOME É O MESMO DA TELA PARA ONDE ELE LEVA.** Cada contagem
  *    aqui usa a régua que a tela de destino já usa — `isSlaExceeded` do kanban,
  *    `contarEtapasDaCompra` das cinco telas de compra, `replenishment_list` do
@@ -83,7 +91,8 @@ export type Tom = "atencao" | "normal";
 export type Pendencia = {
   /** Identificador estável — a chave da lista e o que os testes prendem. */
   chave: string;
-  numero: number;
+  /** `null` = a contagem falhou: a tela mostra "—", nunca zero (AP11). */
+  numero: number | null;
   titulo: string;
   /** Uma linha dizendo o que fazer com aquele número. */
   linha: string;
@@ -135,11 +144,17 @@ function papeisAqui(session: SessionContext): Set<UserRole> {
 async function contarPrazoEstourado(
   supabase: SupabaseClient,
   clinicId: string
-): Promise<number> {
-  const { data: slaRows } = await supabase
+): Promise<number | null> {
+  const { data: slaRows, error: erroDoSla } = await supabase
     .from("sla_settings")
     .select("id, clinic_id, sla_key, hours, amount, unit, total_minutes")
     .returns<SlaSettingRow[]>();
+  // Sem os prazos lidos, "nenhum prazo configurado" e "não consegui ler os
+  // prazos" dariam o mesmo zero. Só o primeiro é zero (AP11).
+  if (erroDoSla) {
+    console.error("inicio — prazos:", erroDoSla.code);
+    return null;
+  }
 
   const sla = resolveSla(slaRows ?? [], clinicId);
 
@@ -150,7 +165,7 @@ async function contarPrazoEstourado(
     Date.now() - peneira.olderThanMinutes * 60 * 1000
   ).toISOString();
 
-  const { data: clientes } = await supabase
+  const { data: clientes, error: erroDosClientes } = await supabase
     .from("clients")
     .select("journey_phase, journey_status, phase_entered_at")
     .eq("clinic_id", clinicId)
@@ -158,6 +173,10 @@ async function contarPrazoEstourado(
     .in("journey_phase", peneira.phases)
     .lt("phase_entered_at", corte)
     .returns<ClienteDaJornada[]>();
+  if (erroDosClientes) {
+    console.error("inicio — prazo estourado:", erroDosClientes.code);
+    return null;
+  }
 
   return (clientes ?? []).filter((c) => {
     const chave = PHASE_SLA_KEY[c.journey_phase];
@@ -340,8 +359,10 @@ export async function montarPendencias(
   ]);
 
   const lista: Pendencia[] = [];
+  // Zero não aparece; "não consegui contar" (`null`) APARECE — é o que impede
+  // a tela de dizer "nada esperando" quando só não deu para contar.
   const juntar = (p: Pendencia) => {
-    if (p.numero > 0) lista.push(p);
+    if (p.numero === null || p.numero > 0) lista.push(p);
   };
 
   // A ordem aqui é a ordem na tela, e ela é deliberada: primeiro quem está
@@ -349,7 +370,7 @@ export async function montarPendencias(
   // em fila. Alfabética ou por módulo diria que tudo pesa igual.
   juntar({
     chave: "esperando",
-    numero: esperando?.count ?? 0,
+    numero: contagemDaTela(esperando),
     titulo: "Esperando na unidade",
     linha: "Fizeram check-in e ainda não foram concluídos.",
     href: "/atendimento",
@@ -358,7 +379,9 @@ export async function montarPendencias(
 
   juntar({
     chave: "prazo",
-    numero: typeof prazoEstourado === "number" ? prazoEstourado : 0,
+    // Consulta não pedida (o cartão não é do papel) = zero por construção;
+    // pedida, o `null` da função é "não consegui contar" e segue como `null`.
+    numero: gestao || coordenador ? prazoEstourado : 0,
     titulo: "Com prazo estourado",
     linha: "Casos que passaram do prazo combinado para a fase em que estão.",
     href: "/jornada",
@@ -367,7 +390,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "aprovacao",
-    numero: aguardandoAprovacao?.count ?? 0,
+    numero: contagemDaTela(aguardandoAprovacao),
     titulo: "Planos aguardando sua aprovação",
     linha: "O Planner enviou e o caso não anda até você decidir.",
     // AP25 (OC-00092): apontava para `/planejamento`, que é só do Planner — o
@@ -380,7 +403,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "followups",
-    numero: followupsVencidos?.count ?? 0,
+    numero: contagemDaTela(followupsVencidos),
     titulo: "Follow-ups vencidos",
     linha: "Passou da data de retorno que você combinou com o cliente.",
     href: "/comercial",
@@ -389,7 +412,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "minhas-de-hoje",
-    numero: minhasDeHoje?.count ?? 0,
+    numero: contagemDaTela(minhasDeHoje),
     titulo: "Seus atendimentos de hoje",
     linha: "O que está na sua cadeira hoje, na ordem do dia.",
     href: "/meu-dia",
@@ -398,7 +421,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "agenda-hoje",
-    numero: agendaHoje?.count ?? 0,
+    numero: contagemDaTela(agendaHoje),
     titulo: "Agendamentos de hoje",
     linha: "Ainda por atender nesta unidade.",
     href: "/agenda",
@@ -407,7 +430,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "planejamento",
-    numero: filaPlanejamento?.count ?? 0,
+    numero: contagemDaTela(filaPlanejamento),
     titulo: "Casos no Centro de Planejamento",
     linha: "A fila do núcleo do sistema, na ordem de prioridade.",
     href: "/planejamento",
@@ -416,7 +439,9 @@ export async function montarPendencias(
 
   juntar({
     chave: "compras-aprovar",
-    numero: compras?.aguardandoAprovacao ?? 0,
+    // Sem `compras` a consulta não foi pedida (zero por construção); com ela,
+    // `null` é a contagem que falhou e segue como `null`.
+    numero: compras ? compras.aguardandoAprovacao : 0,
     titulo: "Compras aguardando sua aprovação",
     linha: "Sem a sua aprovação o pedido não nasce — e quem paga é a unidade.",
     href: "/compras/aprovar",
@@ -425,7 +450,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "compras-receber",
-    numero: compras?.entregasAbertas ?? 0,
+    numero: compras ? compras.entregasAbertas : 0,
     titulo: "Entregas a receber",
     linha: "Pedidos em aberto esperando a conferência da nota.",
     href: "/compras/receber",
@@ -434,7 +459,13 @@ export async function montarPendencias(
 
   juntar({
     chave: "reposicao",
-    numero: Array.isArray(reposicao?.data) ? reposicao.data.length : 0,
+    // Não pedida = zero por construção. Pedida e com erro (ou sem lista) =
+    // não consegui contar.
+    numero: !reposicao
+      ? 0
+      : reposicao.error || !Array.isArray(reposicao.data)
+        ? null
+        : reposicao.data.length,
     titulo: "Itens abaixo do mínimo",
     linha: "O Estoque já montou a lista de reposição para você.",
     href: "/estoque",
@@ -443,7 +474,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "requisicoes",
-    numero: requisicoesEsperando?.count ?? 0,
+    numero: contagemDaTela(requisicoesEsperando),
     titulo: "Listas das unidades esperando",
     linha: "Requisições enviadas que ainda não entraram numa rodada.",
     href: "/compras/rodadas",
@@ -452,7 +483,7 @@ export async function montarPendencias(
 
   juntar({
     chave: "rodadas",
-    numero: rodadasAbertas?.count ?? 0,
+    numero: contagemDaTela(rodadasAbertas),
     titulo: "Rodadas de negociação abertas",
     linha: "Cotações em andamento na mesa da Franqueadora.",
     href: "/compras/rodadas",

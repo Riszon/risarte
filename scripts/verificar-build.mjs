@@ -59,4 +59,19 @@ if (tipos.status !== 0) {
   process.exit(tipos.status ?? 1);
 }
 console.log("\nTipos conferidos (projeto inteiro, testes inclusive).");
+
+// ⚠️ MIGRAÇÃO QUE APAGA DADO SEM DECLARAR (AP88, 10/11/2026). A régua existia
+// desde 11/09 e não estava em portão nenhum: a 0331 e a 0332 passaram com sete
+// comandos sem o `-- DESTRUTIVO:`. Régua que ninguém roda não reprova ninguém.
+const destrutivo = spawnSync("node", ["scripts/conferir-destrutivo.mjs"], {
+  stdio: "inherit",
+  shell: true,
+});
+if (destrutivo.status !== 0) {
+  console.error(
+    "\nHá migração que apaga dado SEM a declaração `-- DESTRUTIVO:`." +
+      " Declare o motivo antes de publicar."
+  );
+  process.exit(destrutivo.status ?? 1);
+}
 process.exit(0);

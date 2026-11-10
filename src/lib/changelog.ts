@@ -62,6 +62,63 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.410.0",
+    data: "2026-11-10",
+    migracao: null,
+    titulo: "Lote de correções do backlog: contagens que não mentem, agenda, Riso+ e certificação",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "No Início, em Compras e na boia de relatos: quando o sistema não consegue contar o que espera por você, o cartão mostra um traço (—) e a frase \"Não foi possível contar agora\", em vez de um zero que parecia \"nada pendente\".",
+        papeis: "todos",
+        manual: "2.2. A tela de Início",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O \"Ver agenda\" do agendamento conta os dias e os horários livres pelo calendário do Brasil. Os painéis do Comercial, da Venda direta, do Empresarial e do PPR+ passam a começar \"hoje\" e \"este mês\" à meia-noite daqui (antes, três horas antes).",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A agenda recusa gravar um agendamento cujo profissional responsável não tem a função daquele tipo de compromisso na unidade. A janela já só oferecia quem pode; agora o servidor confere também.",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Painel do PPR+: \"entrou\" passa a contar a adesão ATIVADA (contrato + 1º pagamento) no período, e a transferência de unidade não conta como entrada nem como saída. É a mesma regra das Metas.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor", "commercial_consultant"],
+        manual: "2.7. Metas (SMART)",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Certificação: 59 itens da missão tiveram o \"onde fazer\" reescrito com o nome real do menu, da aba e do botão de hoje (por exemplo: Estoque → Inventário → Abrir contagem).",
+        papeis: "todos",
+        manual: "Quando você cumpre a missão",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "No plano de tratamento, a primeira opção criada já nasce como a principal (estrela). Para trocar, marque outra como principal.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Administração → Permissões: \"voltar ao padrão\" não desliga mais a entrada de estoque e a requisição de compra da ASB, da TSB e do Coordenador.",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+    ],
+  },
+  {
     versao: "0.409.0",
     data: "2026-11-10",
     migracao: "0374",

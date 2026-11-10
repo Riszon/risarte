@@ -31,7 +31,15 @@ import { toIsoDate } from "@/lib/agenda-view";
 // sem fuso aqui: no servidor da Vercel (UTC) isso nasce 3 horas atrás, e a
 // agenda passa a recusar remarcação dizendo "horário no passado". Ver o
 // comentário grande em `src/lib/dates.ts`.
-import { formatInBrazil, instantFromBrazil, startOfDayInBrazil, weekdayOf } from "@/lib/dates";
+import {
+  addDaysIso,
+  formatInBrazil,
+  instantFromBrazil,
+  isoDateIn,
+  monthRangeOf,
+  startOfDayInBrazil,
+  weekdayOf,
+} from "@/lib/dates";
 import {
   missingClientFields,
   missingSummary,
@@ -123,7 +131,10 @@ function canEditAppointment(
   );
   return isSdr && createdBy === session.userId;
 }
+import { ROLE_LABELS } from "@/lib/roles";
 import {
+  TYPE_PROVIDER_ROLES,
+  funcoesAtendemOTipo,
   APPOINTMENT_STATUSES,
   APPOINTMENT_TYPES,
   type AppointmentStatus,
@@ -638,6 +649,48 @@ async function checkAgendaRules(
   return { warn };
 }
 
+/**
+ * AP56 — o profissional escolhido tem, NESTA unidade, uma função que atende
+ * aquele tipo? Devolve a frase da recusa, ou null quando pode.
+ *
+ * Lê pelas mesmas duas fontes da janela (a equipe da unidade e os Consultores
+ * com acesso — o papel comercial mora na Franqueadora). Não conseguiu ler =
+ * recusa: guarda que não consegue conferir fecha, não abre.
+ */
+async function recusaDoProfissional(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicId: string,
+  type: AppointmentType,
+  providerUserId: string
+): Promise<string | null> {
+  const naoConferiu =
+    "Não foi possível conferir o profissional escolhido. Tente de novo.";
+  const { data: equipe, error } = await supabase.rpc("unit_scheduling_staff", {
+    p_clinic_id: clinicId,
+  });
+  if (error) return naoConferiu;
+  const funcoes = ((equipe ?? []) as { user_id: string; role: UserRole }[])
+    .filter((r) => r.user_id === providerUserId)
+    .map((r) => r.role);
+  if (TYPE_PROVIDER_ROLES[type].includes("commercial_consultant")) {
+    const { data: consultores, error: erroDosConsultores } = await supabase.rpc(
+      "providers_with_access",
+      { p_clinic_id: clinicId, p_role: "commercial_consultant" }
+    );
+    if (erroDosConsultores) return naoConferiu;
+    if (
+      ((consultores ?? []) as { user_id: string }[]).some(
+        (c) => c.user_id === providerUserId
+      )
+    ) {
+      funcoes.push("commercial_consultant");
+    }
+  }
+  if (funcoesAtendemOTipo(type, funcoes)) return null;
+  const quem = TYPE_PROVIDER_ROLES[type].map((r) => ROLE_LABELS[r]).join(" ou ");
+  return `O profissional escolhido não atende este tipo de compromisso nesta unidade. Escolha ${quem}.`;
+}
+
 export async function createAppointment(
   formData: FormData
 ): Promise<ActionResult> {
@@ -669,6 +722,14 @@ export async function createAppointment(
   if (rule.block) return { ok: false, error: rule.block };
 
   const supabase = await createClient();
+
+  const recusa = await recusaDoProfissional(
+    supabase,
+    clinicId,
+    parsed.values.type,
+    parsed.values.provider_user_id ?? ""
+  );
+  if (recusa) return { ok: false, error: recusa };
 
   // I4: cadastro incompleto não é agendado. A barreira de verdade é aqui, no
   // servidor — o aviso no formulário é só conforto. Vale para todos os
@@ -1068,6 +1129,21 @@ export async function updateAppointment(
     appointmentId
   );
   if (rule.block) return { ok: false, error: rule.block };
+
+  // AP56: só quando o profissional ou o tipo MUDAM — remarcar o horário de um
+  // agendamento antigo não pode ser barrado porque a pessoa mudou de função.
+  if (
+    parsed.values.provider_user_id !== existing.provider_user_id ||
+    parsed.values.type !== existing.type
+  ) {
+    const recusa = await recusaDoProfissional(
+      supabase,
+      existing.clinic_id,
+      parsed.values.type,
+      parsed.values.provider_user_id ?? ""
+    );
+    if (recusa) return { ok: false, error: recusa };
+  }
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
 
@@ -2501,10 +2577,13 @@ export async function getMonthAgendaPeek(params: {
   const durationMin = Math.max(15, params.durationMin || 60);
   const ref = new Date(params.monthRefIso);
   if (!clinicId || Number.isNaN(ref.getTime())) return {};
-  const monthStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
-  const monthEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
-  const startIso = monthStart.toISOString();
-  const endIso = monthEnd.toISOString();
+  // O mês é o do CALENDÁRIO BRASILEIRO (AP109): montar o dia com o relógio da
+  // máquina errava um dia no servidor em UTC, como no AP104.
+  const mes = monthRangeOf(isoDateIn(ref));
+  const monthStartIsoDate = mes.from;
+  const monthEndIsoDate = addDaysIso(mes.to, 1);
+  const startIso = startOfDayInBrazil(monthStartIsoDate).toISOString();
+  const endIso = startOfDayInBrazil(monthEndIsoDate).toISOString();
 
   const supabase = await createClient();
   const [
@@ -2539,22 +2618,22 @@ export async function getMonthAgendaPeek(params: {
       .from("agenda_open_days")
       .select("date, start_time, end_time")
       .eq("clinic_id", clinicId)
-      .gte("date", toIsoDate(monthStart))
-      .lt("date", toIsoDate(monthEnd)),
+      .gte("date", monthStartIsoDate)
+      .lt("date", monthEndIsoDate),
     supabase
       .from("clinic_holiday_decisions")
       .select("holiday_date, will_attend")
       .eq("clinic_id", clinicId)
-      .gte("holiday_date", toIsoDate(monthStart))
-      .lt("holiday_date", toIsoDate(monthEnd)),
+      .gte("holiday_date", monthStartIsoDate)
+      .lt("holiday_date", monthEndIsoDate),
     supabase
       .from("agenda_plan_items")
       .select(
         "id, type, starts_date, ends_date, title, note, agenda_plan_item_people ( user_id )"
       )
       .eq("clinic_id", clinicId)
-      .lte("starts_date", toIsoDate(monthEnd))
-      .gte("ends_date", toIsoDate(monthStart)),
+      .lte("starts_date", monthEndIsoDate)
+      .gte("ends_date", monthStartIsoDate),
   ]);
 
   const cfg = resolveAgendaSettings(settingRows ?? [], clinicId);
@@ -2592,24 +2671,19 @@ export async function getMonthAgendaPeek(params: {
   const lunchStart = cfg.lunchEnabled ? timeToMinutes(cfg.lunchStart) : -1;
   const lunchEnd = cfg.lunchEnabled ? timeToMinutes(cfg.lunchEnd) : -1;
   const nowMs = Date.now();
-  const daysInMonth = new Date(
-    ref.getFullYear(),
-    ref.getMonth() + 1,
-    0
-  ).getDate();
+  const daysInMonth = Number(mes.to.slice(8, 10));
 
   const out: Record<string, PeekDay> = {};
   for (let d = 1; d <= daysInMonth; d++) {
-    const day = new Date(ref.getFullYear(), ref.getMonth(), d);
-    const dateOnly = toIsoDate(day);
+    const dateOnly = `${mes.from.slice(0, 8)}${String(d).padStart(2, "0")}`;
     const count = appts.filter(
-      (a) => toIsoDate(new Date(a.starts_at)) === dateOnly
+      (a) => isoDateIn(new Date(a.starts_at)) === dateOnly
     ).length;
 
     const holiday = holidayOn(dateOnly);
     const hd = holidayDecision.get(dateOnly);
     const special = openDayHours.get(dateOnly);
-    const isWeekdayOpen = cfg.weekdays.includes(day.getDay());
+    const isWeekdayOpen = cfg.weekdays.includes(weekdayOf(dateOnly));
     const dayPlanItems = planItems.filter(
       (i) => i.startsDate <= dateOnly && i.endsDate >= dateOnly
     );
@@ -2672,8 +2746,9 @@ export async function getMonthAgendaPeek(params: {
           ) {
             continue;
           }
-          const startMs = new Date(
-            `${dateOnly}T${minutesToHHMM(m)}:00`
+          const startMs = instantFromBrazil(
+            dateOnly,
+            minutesToHHMM(m)
           ).getTime();
           const endMs = startMs + durationMin * 60_000;
           if (startMs < nowMs) continue;

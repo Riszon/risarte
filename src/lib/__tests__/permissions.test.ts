@@ -68,7 +68,8 @@ describe("matriz de permissões", () => {
     "modulo.financeiro": ["finance_franchisor", "unit_manager", "franchisee"],
     "acao.financeiro.configurar_rede": ["finance_franchisor"],
     "acao.compras.negociar": ["purchaser"],
-    "acao.compras.requisitar": ["unit_manager"],
+    // AP106: os mesmos de `can_request_purchase` (0296 e 0351).
+    "acao.compras.requisitar": ["unit_manager", "clinical_coordinator", "asb", "tsb"],
     "acao.compras.aprovar": ["unit_manager", "finance_franchisor"],
     "menu.planejamento": ["planner_dentist"],
     "menu.procedimentos": ["planner_dentist"],

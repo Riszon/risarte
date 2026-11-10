@@ -2,6 +2,34 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.409.0** (a 0.408.0 não teve migração do core; Rita 0.6.0 / **3005**, aplicada no treino e na produção em 10/11/2026) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧹 0.410.0 — LOTE DO BACKLOG SEM MIGRAÇÃO (10/11/2026; Empresarial 0.99.1)
+>
+> Pedido do dono: resolver o que não pede decisão dele nem migração. 16 itens.
+> - **AP11** contagem que falha vira traço, não zero (`contagemDaTela`,
+>   `somarContagens` em `contagem.ts`; régua `contagem-nas-telas.test.ts`, lista
+>   fechada de 5 arquivos — tela nova que conte pendência entra nela).
+> - **AP109** "Ver agenda" e 4 painéis pelo calendário brasileiro; a lista de
+>   débitos da 4ª forma de `dates.test.ts` ficou VAZIA e a 1ª forma pega
+>   `new Date(` partido em linhas.
+> - ⚠️ **AP56** `recusaDoProfissional` (agenda/actions.ts): criar e editar
+>   conferem a função do profissional (só quando profissional ou tipo mudam, na
+>   edição). **O banco continua sem essa guarda** — pedido direto à API passa;
+>   fechar exige migração (item novo no backlog).
+> - **AP70** painel do PPR+: nova = `activated_at` e sem `transferred_from_id`
+>   (a regra da 0319). **AP85** primeira opção nasce principal (as 2 antigas da
+>   produção se acertam marcando a estrela). **AP106** padrão de fábrica.
+> - **AP57** 59 de 87 textos "onde" da certificação corrigidos; 4 itens
+>   parecem impossíveis para a função (itens novos no backlog).
+> - **AP40** `npm run servidor:treino` (limpa a `.next-test` antes e depois;
+>   recusa a produção). **AP83/AP88** 0331 e 0332 conferidas e registradas; a
+>   régua do destrutivo entrou no `npm run verificar`.
+> - **AP31/AP32** (Indica): a varredura escolhe só apuração FINAL; o
+>   `test:indica` não depende mais das indicações gravadas no treino (246/246).
+> - **AP38**, **AP72** (só o código; a tabela fica), **AP76**, **AP78**
+>   (`CampoDeBusca`), **AP86** (`grid-cols-1` no `DialogContent`).
+> - EV-309. Visto na tela (servidor local de teste): busca, "Ver agenda",
+>   Início, Painel do PPR+. **Não visto:** o traço, a recusa do profissional.
+
 > ## 🚚 0.409.0 / 0374 — A PROPOSTA DE PAGAMENTO MORA NA NEGOCIAÇÃO (AP130 + AP131, 10/11/2026)
 >
 > Continuação da 0.407.0 (CBE-00001). O "Salvar negociação" criava cobranças

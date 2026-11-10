@@ -11,10 +11,11 @@ import { pendentesNoTreino } from "@/lib/relatos-do-treino";
  * roda no servidor da produção, que tem a chave, e devolve só um número.
  *
  * Dentro do treino devolve 0: lá o número é o de casa, e o treino não alcança
- * a produção. Falha (rede, migração) também devolve 0 — o número da boia não
- * pode derrubar a barra de cima de todas as telas.
+ * a produção. Falha (rede, migração) devolve `null` — "não consegui contar"
+ * (AP11), que a boia mostra como "—" em vez de zero. Continua sem derrubar a
+ * barra de cima de todas as telas: nada aqui lança.
  */
-export async function contarPendentesDoTreino(): Promise<number> {
+export async function contarPendentesDoTreino(): Promise<number | null> {
   try {
     const session = await getSessionContext();
     return await pendentesNoTreino({
@@ -22,6 +23,6 @@ export async function contarPendentesDoTreino(): Promise<number> {
       isAdminMaster: session.isAdminMaster,
     });
   } catch {
-    return 0;
+    return null;
   }
 }

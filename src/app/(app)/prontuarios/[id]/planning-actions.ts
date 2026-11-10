@@ -447,8 +447,14 @@ export async function addPlanOption(
     .select("id", { count: "exact", head: true })
     .eq("plan_id", planId);
 
+  const jaExistem = contagemConfirmada({ count, error: erroDaOrdem });
+  // AP85: a PRIMEIRA opção do plano nasce principal. Plano de uma opção só
+  // ficava sem principal, e as telas que procuram "a principal" não achavam
+  // nada. Só quando a contagem CONFIRMOU zero — na dúvida, vale o que veio.
+  const principal = input.isPrimary || jaExistem === 0;
+
   // Only one primary option per plan.
-  if (input.isPrimary) {
+  if (principal) {
     await supabase
       .from("treatment_plan_options")
       .update({ is_primary: false })
@@ -458,11 +464,11 @@ export async function addPlanOption(
   const { error } = await supabase.from("treatment_plan_options").insert({
     plan_id: planId,
     clinic_id: ctx.clinicId,
-    is_primary: input.isPrimary,
+    is_primary: principal,
     title,
     description: input.description.trim() || null,
     // Só a posição na lista: zero é aceitável se a contagem falhar (AP11).
-    sort_order: contagemConfirmada({ count, error: erroDaOrdem }) ?? 0,
+    sort_order: jaExistem ?? 0,
   });
   if (error) {
     console.error("addPlanOption failed:", error.message);

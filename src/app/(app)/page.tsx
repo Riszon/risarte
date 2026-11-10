@@ -33,6 +33,7 @@ import { EquipeDaCertificacao } from "@/components/equipe-da-certificacao";
 import { MinhasCertificacoes } from "@/components/medalhas-de-certificacao";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { NAO_FOI_POSSIVEL_CONTAR, SEM_CONTAGEM } from "@/lib/contagem";
 import { ROLE_LABELS } from "@/lib/roles";
 import { ROTULO_DO_MOTIVO } from "@/lib/acesso-por-unidade";
 import { canViewMetas } from "@/lib/metas/access";
@@ -109,12 +110,16 @@ function initialsOf(name: string): string {
  */
 function CartaoDePendencia({ p }: { p: Pendencia }) {
   const atencao = p.tom === "atencao";
+  // AP11: a contagem falhou. O cartão continua (é o que avisa que pode haver
+  // trabalho ali), mas sem número inventado e sem o destaque de "atenção" —
+  // destaque é para o que se sabe que espera.
+  const semContagem = p.numero === null;
   return (
     <Link
       href={p.href}
       className={cn(
         "group flex flex-col rounded-xl border p-4 transition hover:shadow-sm",
-        atencao
+        atencao && !semContagem
           ? "border-gold/40 bg-gold/5 hover:border-gold"
           : "bg-card hover:border-primary/40"
       )}
@@ -123,17 +128,30 @@ function CartaoDePendencia({ p }: { p: Pendencia }) {
         <span
           className={cn(
             "text-3xl font-semibold tabular-nums leading-none",
-            atencao ? "text-gold-tinta" : "text-primary"
+            semContagem
+              ? "text-muted-foreground"
+              : atencao
+                ? "text-gold-tinta"
+                : "text-primary"
           )}
         >
-          {p.numero}
+          {semContagem ? (
+            <>
+              <span aria-hidden>{SEM_CONTAGEM}</span>
+              <span className="sr-only">{NAO_FOI_POSSIVEL_CONTAR}</span>
+            </>
+          ) : (
+            p.numero
+          )}
         </span>
         <span className="min-w-0 flex-1 text-sm font-semibold leading-snug">
           {p.titulo}
         </span>
       </div>
       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-        {p.linha}
+        {semContagem
+          ? `${NAO_FOI_POSSIVEL_CONTAR} Abra para conferir.`
+          : p.linha}
       </p>
       <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
         Abrir

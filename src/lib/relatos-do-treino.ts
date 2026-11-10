@@ -1,6 +1,7 @@
 import "server-only";
 import { clienteDoTreino, treinoConfigurado } from "@/lib/treino";
 import { isTreino } from "@/lib/environment";
+import { contagemConfirmada } from "@/lib/contagem";
 import {
   COLUNAS_DO_RELATO,
   carregarAnexos,
@@ -100,11 +101,17 @@ export async function carregarRelatosDoTreino(entrada: {
   };
 }
 
-/** Quantos relatos do treino esperam o suporte (para o número da boia). */
+/**
+ * Quantos relatos do treino esperam o suporte (para o número da boia).
+ *
+ * ⚠️ `null` = NÃO CONSEGUI CONTAR (AP11): erro, ou `count: null` sem erro.
+ * Os três `return 0` do começo são zero POR CONSTRUÇÃO — daqui não se olha o
+ * treino, não há chave de lá, ou a pessoa não existe lá: não há o que contar.
+ */
 export async function pendentesNoTreino(entrada: {
   prodUserId: string;
   isAdminMaster: boolean;
-}): Promise<number> {
+}): Promise<number | null> {
   if (!podeOlharOTreino()) return 0;
   const treino = clienteDoTreino();
   if (!treino) return 0;
@@ -114,11 +121,8 @@ export async function pendentesNoTreino(entrada: {
       .from("system_reports")
       .select("*", { head: true, count: "exact" })
       .in("status", ["aberto", "em_analise"]);
-    if (error) {
-      console.error("pendentes no treino (admin):", error.code);
-      return 0;
-    }
-    return count ?? 0;
+    if (error) console.error("pendentes no treino (admin):", error.code);
+    return contagemConfirmada({ count, error });
   }
 
   // Para quem relatou, o número é "respostas que você ainda não leu".
@@ -130,11 +134,8 @@ export async function pendentesNoTreino(entrada: {
     .eq("reporter_id", meuIdLa)
     .not("answer", "is", null)
     .is("reporter_seen_answer_at", null);
-  if (error) {
-    console.error("pendentes no treino (relator):", error.code);
-    return 0;
-  }
-  return count ?? 0;
+  if (error) console.error("pendentes no treino (relator):", error.code);
+  return contagemConfirmada({ count, error });
 }
 
 // -----------------------------------------------------------------------------

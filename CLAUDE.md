@@ -396,6 +396,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (lote do backlog) — PC Administrador (core 0.409.0 → 0.410.0, sem migração; Empresarial 0.99.0 → 0.99.1)**
+
+- **16 itens do backlog resolvidos sem migração** (bloco 0.410.0 no ESTADO).
+  ⚠️ **Servidor local de teste = `npm run servidor:treino`** (limpa a
+  `.next-test` sozinho; não usar mais roteiro da pasta temporária).
+  ⚠️ **Tela que conta pendência usa `contagemDaTela`** (nulo = não contou;
+  nunca `count ?? 0`). ⚠️ **`npm run verificar` agora roda o
+  `check:destrutivo`.** ⚠️ Agenda: a função do profissional é conferida só
+  no servidor do app (`recusaDoProfissional`); o banco não confere.
+- Sem migração; publicado. Não visto na tela: o cartão com traço e a recusa
+  do profissional.
+
 **10/11/2026 (AP130/AP131) — PC Administrador (core 0.408.0 → 0.409.0, migração 0374)**
 
 - **A proposta de pagamento mora na negociação; a cobrança nasce no aceite**

@@ -8,6 +8,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NAO_FOI_POSSIVEL_CONTAR, SEM_CONTAGEM } from "@/lib/contagem";
 
 /**
  * O CAMINHO DE UMA COMPRA — as etapas, no lugar dos quatro links soltos.
@@ -47,7 +48,11 @@ type Etapa = {
   icone: LucideIcon;
   titulo: string;
   linha: string;
-  /** Quantos itens esperam nesta etapa. `null` quando não se conta. */
+  /**
+   * Quantos itens esperam nesta etapa. Ausente = etapa que não se conta.
+   * `null` = a contagem FALHOU (AP11): a etapa mostra "—" e diz que não
+   * conseguiu contar, em vez de parecer vazia.
+   */
   esperando?: number | null;
   atual?: boolean;
 };
@@ -82,10 +87,24 @@ function Cartao({ etapa }: { etapa: Etapa }) {
             {esperando}
           </span>
         )}
+        {esperando === null && (
+          <span
+            title={NAO_FOI_POSSIVEL_CONTAR}
+            className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground"
+          >
+            <span aria-hidden>{SEM_CONTAGEM}</span>
+            <span className="sr-only">{NAO_FOI_POSSIVEL_CONTAR}</span>
+          </span>
+        )}
       </div>
       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
         {linha}
       </p>
+      {esperando === null && (
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          {NAO_FOI_POSSIVEL_CONTAR} Abra a etapa para conferir.
+        </p>
+      )}
       {atual && (
         <p className="mt-2 text-[11px] font-medium uppercase tracking-wider text-primary">
           Você está aqui
@@ -155,8 +174,9 @@ export function TrilhaDaCompra({
 }: {
   /** Em que ponto do caminho esta tela está. */
   atual: EtapaAtual;
-  aguardandoAprovacao: number;
-  entregasAbertas: number;
+  /** `null` = a contagem falhou (ver `contarEtapasDaCompra`). */
+  aguardandoAprovacao: number | null;
+  entregasAbertas: number | null;
   podeVerMesa: boolean;
 }) {
   const etapas: Etapa[] = [
@@ -198,7 +218,7 @@ export function TrilhaDaCompra({
           a aprovação em Receber. Uma faixa com o botão não depende de alguém
           notar um número pequeno — e some na própria tela de aprovar, onde
           seria só eco. */}
-      {aguardandoAprovacao > 0 && atual !== "aprovar" && (
+      {aguardandoAprovacao !== null && aguardandoAprovacao > 0 && atual !== "aprovar" && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gold/50 bg-gold/10 px-4 py-3">
           <ThumbsUp className="size-4 shrink-0 text-gold-tinta" />
           <p className="min-w-0 flex-1 text-sm">

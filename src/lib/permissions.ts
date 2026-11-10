@@ -327,7 +327,10 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Ações — Estoque",
     descricao: "Dar entrada em mercadoria e aplicar contagem.",
     dependeDoBanco: true,
-    padrao: ["finance_franchisor", "unit_manager"],
+    // AP106: a ASB (0296) e a TSB (0351) dão entrada e contam — o banco
+    // (`can_post_stock_entry`) já deixa. Sem elas aqui, "voltar ao padrão"
+    // desligava as duas e a missão delas ficava com itens impossíveis.
+    padrao: ["finance_franchisor", "unit_manager", "asb", "tsb"],
   },
   {
     id: "acao.estoque.consumir",
@@ -351,7 +354,8 @@ export const CAPACIDADES: Capability[] = [
     grupo: "Ações — Compras",
     descricao: "Montar a lista do que falta na unidade.",
     dependeDoBanco: true,
-    padrao: ["unit_manager"],
+    // AP106: os mesmos de `can_request_purchase` (0296 e 0351).
+    padrao: ["unit_manager", "clinical_coordinator", "asb", "tsb"],
   },
   {
     // OC-00102: aprovar tinha carona em "Criar requisição", que não está

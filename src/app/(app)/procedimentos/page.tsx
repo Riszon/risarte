@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Calculator, Layers, Tag } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Input } from "@/components/ui/input";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 import { FilterForm } from "@/components/filter-form";
 import {
   METHODOLOGY_PILLARS,
@@ -580,10 +580,9 @@ export default async function ProceduresPage(
       </div>
 
       <FilterForm className="flex flex-wrap items-center gap-2">
-        <Input
-          type="search"
+        <CampoDeBusca
           name="q"
-          defaultValue={search}
+          valorDoEndereco={search}
           placeholder="Buscar por nome, TUSS ou código..."
           className="max-w-xs"
           list="proc-suggestions"

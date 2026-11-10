@@ -33,12 +33,14 @@ import {
   startOfTodayInBrazil,
   todayInBrazil,
 } from "@/lib/dates";
+import { addMonths } from "@/lib/payments";
 
 export const metadata: Metadata = { title: "Painel do PPR+" };
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-const monthKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
-const monthLabel = (d: Date) => `${MONTHS[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
+/** "2026-11-01" → "nov/26" — data civil, sem passar por fuso. */
+const monthLabel = (iso: string) =>
+  `${MONTHS[Number(iso.slice(5, 7)) - 1]}/${iso.slice(2, 4)}`;
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE });
 const fmtDateTime = (s: string) =>
   new Date(s).toLocaleString("pt-BR", { timeZone: BRAZIL_TIME_ZONE,
@@ -192,7 +194,7 @@ export default async function PprDashboardPage(
   let memQuery = supabase
     .from("ppr_memberships")
     .select(
-      "id, clinic_id, plan_id, status, monthly_cents, created_at, activated_at, cancelled_at, holder_client_id, plan:ppr_plans ( name ), holder:clients!ppr_memberships_holder_client_id_fkey ( id, full_name, code ), clinic:clinics!ppr_memberships_clinic_id_fkey ( name )"
+      "id, clinic_id, plan_id, status, monthly_cents, created_at, activated_at, cancelled_at, transferred_from_id, holder_client_id, plan:ppr_plans ( name ), holder:clients!ppr_memberships_holder_client_id_fkey ( id, full_name, code ), clinic:clinics!ppr_memberships_clinic_id_fkey ( name )"
     );
   if (clinicFilter) memQuery = memQuery.eq("clinic_id", clinicFilter);
   const { data: memRows } = await memQuery;
@@ -206,6 +208,7 @@ export default async function PprDashboardPage(
     monthly_cents: number;
     created_at: string;
     activated_at: string | null;
+    transferred_from_id: string | null;
     cancelled_at: string | null;
     holder_client_id: string;
     plan: Named | Named[] | null;
@@ -225,8 +228,23 @@ export default async function PprDashboardPage(
   const waiting = memberships.filter((m) => m.status === "aguardando_ativacao");
   const now = new Date();
   // Movimento do PERÍODO escolhido (os cartões de estoque continuam sendo "hoje").
-  const newInPeriod = memberships.filter((m) => inPeriod(m.created_at));
-  const cancelledInPeriod = memberships.filter((m) => inPeriod(m.cancelled_at));
+  // ⚠️ ADESÃO NOVA = ATIVADA (AP70). A adesão vale com contrato + 1º pagamento
+  // (`activated_at`); a criada e nunca ativada não é venda. E a transferência
+  // cria outra linha (`transferred_from_id`): não é adesão nova nem
+  // cancelamento. É a MESMA regra do indicador das Metas (0319) — o painel e
+  // a meta não podem dizer números diferentes do mesmo mês.
+  const transferidas = new Set(
+    memberships.map((m) => m.transferred_from_id).filter((x): x is string => !!x)
+  );
+  const adesaoNova = (m: { transferred_from_id: string | null }) =>
+    !m.transferred_from_id;
+  const saiuDeVerdade = (m: { id: string }) => !transferidas.has(m.id);
+  const newInPeriod = memberships.filter(
+    (m) => adesaoNova(m) && inPeriod(m.activated_at)
+  );
+  const cancelledInPeriod = memberships.filter(
+    (m) => saiuDeVerdade(m) && inPeriod(m.cancelled_at)
+  );
 
   const mrr = active.reduce((s, m) => s + m.monthly_cents, 0);
   const ticket = active.length > 0 ? Math.round(mrr / active.length) : 0;
@@ -309,15 +327,25 @@ export default async function PprDashboardPage(
   }
 
   // Crescimento dos últimos 6 meses: adesões criadas e receita acumulada.
-  const months: { key: string; label: string; date: Date }[] = [];
+  // Meses do CALENDÁRIO BRASILEIRO (AP109): a fronteira montada com o relógio
+  // do servidor (UTC) começava o mês às 21h do dia anterior.
+  const esteMes = `${todayInBrazil().slice(0, 7)}-01`;
+  const months: { label: string; date: Date; end: Date }[] = [];
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ key: monthKey(d), label: monthLabel(d), date: d });
+    const inicio = addMonths(esteMes, -i);
+    months.push({
+      label: monthLabel(inicio),
+      date: startOfDayInBrazil(inicio),
+      end: startOfDayInBrazil(addMonths(inicio, 1)),
+    });
   }
   const growth = months.map((m) => {
-    const end = new Date(m.date.getFullYear(), m.date.getMonth() + 1, 1);
+    const end = m.end;
+    // Adesão NOVA = ativada (contrato + 1º pagamento), e transferência não
+    // conta — a mesma regra do indicador das Metas (AP70).
     const created = memberships.filter((x) => {
-      const d = new Date(x.created_at);
+      if (!adesaoNova(x) || !x.activated_at) return false;
+      const d = new Date(x.activated_at);
       return d >= m.date && d < end;
     }).length;
     // Vivas no fim daquele mês (não canceladas até lá).
@@ -506,7 +534,7 @@ export default async function PprDashboardPage(
 
   const movementItems: PprDrillItem[] = [
     ...newInPeriod.map((m) => ({
-      ...memItem(m, `Entrou em ${fmtDate(m.created_at)}`),
+      ...memItem(m, `Ativou em ${fmtDate(m.activated_at ?? m.created_at)}`),
       key: `novo-${m.id}`,
       badge: "Entrou",
       badgeTone: "emerald" as const,
@@ -629,8 +657,8 @@ export default async function PprDashboardPage(
         row.active += 1;
         row.mrr += m.monthly_cents;
       }
-      if (inPeriod(m.cancelled_at)) row.cancelled += 1;
-      if (inPeriod(m.created_at)) row.novos += 1;
+      if (saiuDeVerdade(m) && inPeriod(m.cancelled_at)) row.cancelled += 1;
+      if (adesaoNova(m) && inPeriod(m.activated_at)) row.novos += 1;
     }
     const clinicOfMembership = new Map(memberships.map((m) => [m.id, m.clinic_id]));
     for (const b of beneficiaries) {

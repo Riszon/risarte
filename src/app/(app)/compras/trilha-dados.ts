@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { contagemConfirmada } from "@/lib/contagem";
 
 /**
  * O QUE ESPERA POR VOCÊ EM CADA ETAPA DA COMPRA.
@@ -15,11 +16,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  *
  * As duas contagens usam `head: true` — o banco devolve só o número, sem trazer
  * uma linha sequer.
+ *
+ * ⚠️ `null` = NÃO CONSEGUI CONTAR (AP11). Pedindo só a contagem, uma falha
+ * volta `count: null`, às vezes sem erro nenhum. Antes isso virava zero, e a
+ * trilha (e o Início) diziam que não havia nada para aprovar com itens
+ * parados. Agora a etapa mostra "—" e a frase "Não foi possível contar agora."
  */
 export async function contarEtapasDaCompra(
   supabase: SupabaseClient,
   clinicId: string
-): Promise<{ aguardandoAprovacao: number; entregasAbertas: number }> {
+): Promise<{ aguardandoAprovacao: number | null; entregasAbertas: number | null }> {
   const [aprovacoes, entregas] = await Promise.all([
     supabase
       .from("purchase_allocations")
@@ -34,7 +40,7 @@ export async function contarEtapasDaCompra(
   ]);
 
   return {
-    aguardandoAprovacao: aprovacoes.count ?? 0,
-    entregasAbertas: entregas.count ?? 0,
+    aguardandoAprovacao: contagemConfirmada(aprovacoes),
+    entregasAbertas: contagemConfirmada(entregas),
   };
 }

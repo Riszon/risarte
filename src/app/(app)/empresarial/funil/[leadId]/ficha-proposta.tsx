@@ -253,6 +253,22 @@ export function FichaDaProposta({
   );
   const [legalName, setLegalName] = useState(qualificacao.legalName ?? "");
   const [respName, setRespName] = useState(qualificacao.responsibleName ?? "");
+  // AP38: os dois começam com a SUGESTÃO do cadastro do lead (nome da empresa
+  // e contato). O "Editar dados" mora na mesma tela: se a sugestão mudar e a
+  // pessoa ainda não tiver mexido no campo, ele acompanha. Campo já digitado
+  // não é tocado.
+  const sugestaoDaRazao = qualificacao.legalName ?? "";
+  const sugestaoDeQuemAssina = qualificacao.responsibleName ?? "";
+  const [razaoSugerida, setRazaoSugerida] = useState(sugestaoDaRazao);
+  const [assinaSugerido, setAssinaSugerido] = useState(sugestaoDeQuemAssina);
+  if (sugestaoDaRazao !== razaoSugerida) {
+    if (legalName === razaoSugerida) setLegalName(sugestaoDaRazao);
+    setRazaoSugerida(sugestaoDaRazao);
+  }
+  if (sugestaoDeQuemAssina !== assinaSugerido) {
+    if (respName === assinaSugerido) setRespName(sugestaoDeQuemAssina);
+    setAssinaSugerido(sugestaoDeQuemAssina);
+  }
   const [respCpf, setRespCpf] = useState(qualificacao.responsibleCpf ?? "");
   const [respEmail, setRespEmail] = useState(qualificacao.responsibleEmail ?? "");
 

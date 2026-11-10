@@ -21,6 +21,7 @@
     "test:e2e": "node scripts/limpar-build-teste.mjs && playwright test",
     "reset:teste": "node scripts/reset-test.mjs",
     "seed:teste": "node scripts/seed-test.mjs",
+    "servidor:treino": "node scripts/servidor-treino.mjs",
     "treino:equipe-de-teste": "node scripts/treino-equipe-de-teste.mjs",
     "senhas:treino": "node scripts/senhas-treino.mjs",
     "migrar:teste": "node scripts/apply-migrations.mjs",
