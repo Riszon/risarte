@@ -403,7 +403,8 @@ Syncthing se comportarem de forma estranha.**
   `_direct_sale_set_conditions_raw`** (0386). ⚠️ **A semana da agenda
   começa no domingo** (`startOfWeek`). ⚠️ Função de UMA pessoa na tela =
   `rotuloDaFuncao(role, gênero)`.
-- ⏳ **0386 só no treino.** Não visto na tela.
+- ✅ **0386 aplicada nos dois bancos** (o dono, 10/11/2026; conferido de
+  fora). Não visto na tela.
 
 **10/11/2026 (quem deu a baixa) — PC Administrador (core 0.414.0 → 0.415.0, migrações 0384 e 0385; Empresarial 0.100.0 → 0.101.0, migração 1043)**
 

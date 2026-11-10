@@ -5,8 +5,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## 📏 0.416.0 — PREÇO DENTRO DA FAIXA, AGENDA NO DOMINGO E A FUNÇÃO NO GÊNERO (10/11/2026; migração 0386)
 >
 > Terceira entrega do pedido "resolver todos os itens abertos".
-> ⏳ **0386 SÓ NO TREINO.** O código tolera a falta dela (a venda direta
-> salva como antes; o preço da unidade é conferido também pelo app).
+> ✅ **0386 APLICADA nos dois bancos** (o dono, 10/11/2026; conferido de fora:
+> porta, crua e regra da faixa recusam sem login; a produção tem 0
+> procedimentos com preço máximo). AP79 fechado.
 > - **AP79 (0386)** ⚠️ `direct_sale_set_conditions` virou PORTA sobre
 >   `_direct_sale_set_conditions_raw` (a conta das condições mora na crua);
 >   a porta confere a faixa de cada procedimento (`_direct_sale_price_violations`:
