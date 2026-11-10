@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { HandCoins } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
@@ -157,6 +158,11 @@ export default async function PayoutsPage(
           clínica. A apuração nasce quando o procedimento é concluído e usa a
           tabela vigente <strong>naquela data</strong>: reajustar depois não
           reescreve o que já foi produzido.
+        </p>
+        <p className="mt-1 text-sm">
+          <Link href="/financeiro/repasses/relatorios" className="underline">
+            Ver os relatórios de repasse desta unidade →
+          </Link>
         </p>
       </div>
 

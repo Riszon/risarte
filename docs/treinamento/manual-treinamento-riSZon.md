@@ -3813,6 +3813,57 @@ motivo escrito**. Vale para todos os meses, não só o que está na tela.
 - Repasse que já entrou em **fechamento** não é alterado nem apagado, e uma
   sessão que já tem repasse não pode ser apagada.
 
+#### Relatórios de repasse (desde a 0.419.0)
+
+Em **Financeiro → Análise → Relatórios de repasse** fica a lista do que vai ser
+pago a cada dentista. **Um relatório por dentista, por unidade** — quem atende
+em duas unidades tem um relatório em cada uma.
+
+**Quem faz o quê.** Quem **gera e ajusta** é o **Financeiro da Franqueadora**
+(ele escolhe a unidade em *Trabalhar na clínica*). O **Gerente** e o
+**franqueado** acompanham os relatórios da própria unidade. O dentista ainda
+não vê o relatório nesta versão.
+
+**Gerar.** Escolha o **mês do relatório**. O quadro mostra, por dentista,
+quantos procedimentos com valor estão esperando e quanto somam. Entra tudo o
+que foi finalizado **até o último dia do mês escolhido** e ainda não está em
+relatório — inclusive o que ficou de meses anteriores. **Gerar relatório** faz
+o de um dentista; **Gerar o de todos os dentistas**, o da unidade inteira.
+
+- Procedimento apurado com **R$ 0,00 não entra**: a linha avisa quantos
+  ficaram de fora. Resolva em Repasses → Pendências e gere de novo.
+- Cada dentista tem **um rascunho por vez**. Gerar de novo **completa** o
+  rascunho com o que apareceu depois; nada é duplicado.
+- **Um procedimento só entra em um relatório por vez.** O sistema recusa
+  qualquer tentativa de colocá-lo em dois.
+
+**O relatório aberto** mostra o número (RP-000001), o dentista, a unidade, o
+mês, o **nível do dentista** na hora da geração e, para cada procedimento:
+**data de finalização, procedimento, cliente e valor**. O link **ver
+atendimento** abre o prontuário do cliente — só para quem já tem acesso a
+prontuário; o relatório não dá esse acesso. **Imprimir / salvar em PDF** usa a
+impressão do navegador.
+
+**Excluir um procedimento do relatório** (só no rascunho): **Excluir** → escolha
+o tipo → escreva o **motivo** (obrigatório) → **Confirmar**.
+
+| Tipo | O que acontece |
+|---|---|
+| **Adiar** | Sai deste relatório e **volta no próximo**. |
+| **Não pagar** | Fica fora de **todos** os relatórios. Aparece no quadro *Fora de vez — "não pagar"*, na lista de relatórios, até alguém clicar **Voltar a pagar** e escrever o motivo. |
+
+**Devolver ao relatório** desfaz a exclusão enquanto o relatório é rascunho.
+**Cancelar o rascunho** (com motivo) solta os procedimentos para um novo
+relatório; o que estava em "não pagar" continua em "não pagar".
+
+**Quem fez o quê**, no fim da tela, é a linha do tempo do relatório: gerado,
+adiado, não pagar, devolvido, cancelado — com a pessoa e a hora.
+
+> **Ainda não está nesta versão:** enviar ao Gerente para aprovar, a aprovação
+> do dentista e o pagamento pelo relatório. Até lá, o **Fechar o mês** de
+> Repasses continua funcionando, e **não leva** o que está em relatório nem o
+> que está em "não pagar".
+
 #### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
 
 Em **Agenda → Configurar agenda**, dois cartões novos no fim da página:

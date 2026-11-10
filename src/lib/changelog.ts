@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.419.0",
+    data: "2026-11-10",
+    migracao: "0390",
+    titulo: "Repasse dos dentistas, etapa 2: o relatório de repasse",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Relatórios de repasse: um relatório por dentista e por unidade, com a data de finalização, o procedimento, o cliente e o valor de cada um, e o nível do dentista. Dá para gerar o de um dentista ou o de todos de uma vez.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No relatório, um procedimento pode ser excluído com motivo obrigatório: adiar (volta no próximo relatório) ou não pagar (fica fora até alguém reverter, com motivo). Fica registrado quem fez e quando.",
+        papeis: ["finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Quem gera e ajusta o relatório de repasse é o Financeiro da Franqueadora. O Gerente e o franqueado acompanham os relatórios da própria unidade. Um procedimento só entra em um relatório por vez, e o que saiu com R$ 0,00 não entra.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O botão Fechar o mês, em Repasses, deixa de levar o procedimento que está em um relatório de repasse ou marcado como não pagar.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.418.0",
     data: "2026-11-10",
     migracao: "0389",

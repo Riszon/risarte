@@ -77,10 +77,32 @@ conseguimos gerar nenhum repasse até agora".
 | Etapa | O quê | Situação |
 |---|---|---|
 | 1 | **Destravar e proteger:** recalcular o que saiu zerado, pendências com o motivo, "em andamento", marca "Sem repasse", travas no banco (linha fechada imutável, sessão com repasse não se apaga, fim da escrita direta). | ✅ 0.417.0, migração 0387 |
-| 2 | **Relatório de repasse:** um por dentista e por unidade, com o detalhe por procedimento; gerar um ou todos; excluir com motivo. Um procedimento só entra em um relatório. | a fazer |
+| 2 | **Relatório de repasse:** um por dentista e por unidade, com o detalhe por procedimento; gerar um ou todos; excluir com motivo. Um procedimento só entra em um relatório. | ✅ migração 0390 |
 | 3 | **Aprovações:** Gerente (um por vez, só a equipe dele; Coordenador quando não há Gerente), depois o Dentista na tela "Meus repasses"; reprovar com formulário; avisos a cada passo; prazo de 5 dias úteis. | a fazer |
 | 4 | **Pagamento:** só o aprovado pelos dois vira conta a pagar, ligada aos procedimentos; parcial; vencimento no dia 15; estorno por falha do dentista como linha negativa. Sai o "Fechar o mês" antigo. | a fazer |
 | 5 | **Visões:** histórico da unidade, consolidado da rede, gráfico de produção e ganho por dentista. | a fazer |
+
+## Etapa 2 — decisões do dono (10/11/2026, as quatro como recomendado)
+
+- **R1.** Procedimento apurado com R$ 0,00 **não entra** no relatório: fica
+  nas pendências, e a tela de geração avisa quantos ficaram de fora.
+- **R2.** O relatório do mês pega tudo o que foi finalizado **até o último dia
+  do mês escolhido** e ainda não entrou em relatório (atrasados inclusive).
+- **R3.** O relatório mostra o nome do cliente; o link abre o prontuário e só
+  funciona para quem já tem acesso a ele. O repasse não dá acesso a prontuário.
+- **R4.** Imprimir pelo navegador (salva em PDF). PDF próprio fica para depois.
+
+**Como ficou (0390):** `payout_reports` (um por dentista e unidade, número
+`RP-000001`, nível do dentista na geração), `payout_report_items` (valor
+congelado; excluído com motivo: `adiar` ou `nao_pagar`), `payout_report_events`
+(linha do tempo) e `provider_payouts.withheld` (o "não pagar"). Um rascunho por
+dentista e unidade; gerar de novo completa o rascunho. O "Fechar o mês" antigo
+passou a ignorar o que está em relatório e o que está em "não pagar". Telas:
+Financeiro → Relatórios de repasse (`/financeiro/repasses/relatorios`).
+
+**Para a Etapa 3:** o `status` do relatório hoje é só `rascunho`/`cancelado`;
+o envio ao Gerente, a aprovação um a um, o "Meus repasses" do dentista e a
+exclusão pelo Gerente entram ali. O dentista ainda **não lê** estas tabelas.
 
 ## O que a Etapa 4 precisa resolver do fechamento antigo
 

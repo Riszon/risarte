@@ -2,6 +2,42 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 📄 0.419.0 — REPASSE DOS DENTISTAS, ETAPA 2: O RELATÓRIO DE REPASSE (10/11/2026; migração 0390)
+>
+> Segunda das 5 etapas (`docs/Financeiro/REPASSE-PLANO.md`, com as decisões
+> R1–R4 do dono). ✅ **0390 aplicada no treino** (`migrar:teste`) **e na
+> produção** (o dono informou em 10/11/2026; não conferido de fora). **Não
+> visto na tela.**
+> - **Tabelas:** `payout_reports` (um por dentista e unidade; `RP-000001`;
+>   nível do dentista na geração; `status` rascunho/cancelado),
+>   `payout_report_items` (valor congelado; `status` incluido/excluido;
+>   `exclusion_kind` adiar/nao_pagar; `active`), `payout_report_events`
+>   (linha do tempo; fora da auditoria genérica) e `provider_payouts.withheld`.
+> - ⚠️ **A trava contra pagar 2×:** índice único
+>   `payout_report_items_one_active` (`payout_id` onde `active`). Excluir e
+>   cancelar põem `active = false`. Um rascunho por dentista e unidade
+>   (`payout_reports_one_draft`); gerar de novo COMPLETA o rascunho.
+> - ⚠️ **O adiado não volta para o mesmo rascunho** (a geração pula o que já
+>   tem item naquele relatório); volta quando houver outro relatório.
+> - **Quem:** `can_manage_payout_reports()` = Admin Master ou Financeiro da
+>   Franqueadora (decisão 1). Gerente e franqueado LEEM pela regra
+>   `finance_visible_clinic_ids`. **Nenhuma regra de escrita** nas três
+>   tabelas: só as funções. **O dentista ainda não lê** (Etapa 3).
+> - **Funções:** `payout_report_generate`, `_exclude_item`, `_restore_item`,
+>   `_cancel`, `payout_release_withheld`; leituras `payout_report_candidates`,
+>   `_list`, `_items_detail` (traz o cliente), `_history`,
+>   `payout_withheld_list`.
+> - ⚠️ **`close_payout_month` foi recriado** (corpo da 0209 + filtro): não leva
+>   linha em relatório ativo nem em "não pagar"; o gatilho
+>   `provider_payouts_report_guard` recusa (PAYOUT_IN_REPORT) quem tentar por
+>   fora. Sai de vez na Etapa 4.
+> - Capacidade `acao.financeiro.repasse.relatorio` (semeada: Financeiro da
+>   Franqueadora); `canManagePayoutReports` segue o banco. R1: zerado não
+>   entra. R2: pega até o fim do mês, atrasados inclusive. R3: o link abre o
+>   prontuário só para quem já tem acesso. R4: imprimir pelo navegador.
+> - Ensaio no treino 38/38 (`scripts/repasse-ensaio-0390.mjs --confirmar`).
+>   EV-318.
+>
 > ## 🩺 0.418.0 — RELATOS DA EQUIPE, LOTE 1 (10/11/2026; migrações 0388 e 0389)
 >
 > Relatos do TREINO triados com o dono (sessão "Relatos riSZon"): 5 defeitos.

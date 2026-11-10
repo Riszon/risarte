@@ -326,6 +326,15 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["finance_franchisor", "unit_manager"],
   },
   {
+    id: "acao.financeiro.repasse.relatorio",
+    rotulo: "Montar o relatório de repasse",
+    grupo: "Ações — Financeiro",
+    descricao:
+      "Gerar o relatório de repasse dos dentistas, excluir procedimento com motivo e cancelar o rascunho. O banco só aceita o Financeiro da Franqueadora (e o Admin Master).",
+    dependeDoBanco: true,
+    padrao: ["finance_franchisor"],
+  },
+  {
     id: "acao.financeiro.configurar_rede",
     rotulo: "Configurar o financeiro da REDE",
     grupo: "Ações — Financeiro",

@@ -72,5 +72,19 @@ export function canEditFinanceNetwork(session: SessionContext): boolean {
   return canConfigureFinanceNetwork(session) && bancoAceitaGravarNaRede(session);
 }
 
+/**
+ * Repasse, Etapa 2 (0390; decisão 1 do dono): quem MONTA o relatório de
+ * repasse — gera, exclui com motivo, cancela. O banco só aceita o Admin
+ * Master e o Financeiro da Franqueadora (`can_manage_payout_reports`); a
+ * matriz pode desligar, mas ligar para outra função não muda o banco.
+ * O Gerente e o franqueado LEEM os relatórios da própria unidade.
+ */
+export function canManagePayoutReports(session: SessionContext): boolean {
+  return (
+    bancoAceitaGravarNaRede(session) &&
+    pode(session, "acao.financeiro.repasse.relatorio")
+  );
+}
+
 /** A frase de quem faz, para a tela de quem só consulta. */
 export const QUEM_GRAVA_NA_REDE = "o Admin Master ou o Financeiro da Franqueadora";

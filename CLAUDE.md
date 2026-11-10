@@ -396,6 +396,24 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (repasse, etapa 2) — PC Administrador (core 0.418.0 → 0.419.0, migração 0390)**
+
+- **Relatório de repasse** (bloco 0.419.0 no ESTADO; decisões R1–R4 em
+  `docs/Financeiro/REPASSE-PLANO.md`). **A próxima é a Etapa 3 (aprovações
+  do Gerente e do Dentista)**, com plano e OK do dono antes.
+- ⚠️ **A trava contra pagar 2× é o índice `payout_report_items_one_active`**:
+  todo caminho novo que tire um procedimento de um relatório tem de pôr
+  `active = false`, e nenhum pode pôr `true` sem passar por ele.
+- ⚠️ **`payout_reports.status` só tem `rascunho` e `cancelado`**: a Etapa 3
+  amplia o `check`. As funções de ajuste recusam fora do rascunho
+  (REPORT_NOT_DRAFT) — rever quando o Gerente puder excluir.
+- ⚠️ **`close_payout_month` foi recriado na 0390** (não leva o que está em
+  relatório nem em "não pagar"). Mexer nele = partir da 0390, não da 0209.
+- ⚠️ As três tabelas do relatório **não têm regra de escrita** e o dentista
+  **não lê** nenhuma delas ainda.
+- ✅ **0390 aplicada no treino e na produção** (o dono informou em
+  10/11/2026; não conferido de fora).
+
 **10/11/2026 (relatos, lote 1) — PC Administrador (core 0.417.0 → 0.418.0, migrações 0388 e 0389)**
 
 - **Relatos tratados pelo banco** (sessão "Relatos riSZon", pedido do dono):
