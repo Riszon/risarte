@@ -20,8 +20,8 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.3 Consentimento e descadastro** | ✅ concluída: código, treino e produção (09/11/2026) | **3002** |
 | **0A.4 Unidade, horários, feriados** | ✅ concluída: código, treino e produção (09/11/2026) | core **0368**, rita **3003** |
 | **0A.5 Avaliação como dado** | ✅ concluída: código, treino e produção (09/11/2026) | core **0369**, rita **3004** |
-| 0A.6 Escalonamento e avisos | próxima | 3005 |
-| 0A.7 "O que a Rita sabe" | — | — |
+| **0A.6 Escalonamento e avisos** | ✅ código e treino (10/11/2026); ⏳ produção | **3005** |
+| 0A.7 "O que a Rita sabe" | próxima | — |
 
 ## 0A.1 — Identidade e auditoria (Rita 0.1.0, 04/11/2026)
 
@@ -252,6 +252,49 @@ rascunho de campanha vale; Gerente aprova texto) caem 2, 1 e 2. Régua
 `rita-procedimento.test.ts`. Visto na tela (Admin e Planner de teste).
 
 **Na produção:** ✅ **0369 e 3004 aplicadas pelo dono em 09/11/2026**; conferido de fora (4 consultas marcadas, 4 políticas aprovadas, 60 minutos na rede).
+
+## 0A.6 — Escalonamento, avisos e o registro (Rita 0.6.0, 10/11/2026)
+
+**Rotas (`rita.escalation_routes`, cascata — a linha da unidade vale
+inteira).** Quem recebe a transferência em **horário comercial** (padrão:
+Recepção), quem recebe o **alerta de prazo** (padrão: Gerente, em 15 min) e
+quando sobe ao **Admin Master** (padrão da rede: 60 min; nulo = não sobe), e
+uma **pessoa de reserva**. Decisão 28: **fora do horário não há rota** — o
+pedido espera a abertura. Gravar = `rita.save_escalation_route` (Admin em
+qualquer escopo; Gerente só na própria unidade; a reserva tem de ser pessoa
+ativa com função na unidade). Leitura interna = `rita._route(unidade)`.
+**Ainda sem tela** (0A.7). Os alertas de prazo em si só existem quando houver
+conversa (0B).
+
+**O portão não tem mais pendentes.** "Quem recebe as transferências" passa
+quando há alguém ativo com um dos papéis da rota NA unidade ou a reserva ativa.
+A pausa automática vigia também a rota e, ao desativar uma pessoa, toda
+unidade onde ela tem função (antes só o Coordenador).
+
+**Avisos (`rita._notify`, interna).** "Rita: …" no sino, uma linha por pessoa
+(ativa, só `kind = 'person'`, nunca quem fez), link obrigatório `/rita…` (o
+app classifica pelo link: categoria **Assistente virtual**), trava contra
+repetir por chave em `rita.notices`. Hoje avisam: a **pausa automática**
+(Gerente + Admin; o aviso falhar nunca desfaz a pausa), **desligar** pela tela
+(Gerente + Admin, menos quem clicou) e **ligar** (Gerente). O link leva a
+`/rita/<unidade>`, tela da 0A.7.
+
+**Registro (`rita.actions`, só cresce).** Preenchido por **gatilhos** nas
+tabelas da Rita (`settings`, `escalation_routes`, `consent_texts`,
+`contact_consents`, `opt_outs`, `evaluation_fee_campaigns`) — diferença do
+plano, que falava em "toda função grava": assim todo caminho registra,
+inclusive os que vierem. Quem: pessoa, Rita (`rita.actor`) ou sistema. **Sem
+telefone e sem texto de mensagem.** Alterar, apagar e esvaziar são recusados
+(`RITA_ACTIONS_APPEND_ONLY`); ninguém logado lê direto (a 0A.7 lê por função).
+Fora da auditoria 0288 (ele mesmo é a trilha), como `rita.notices`.
+
+**Provas:** `test:rita` **119/119**; quebrando (portão sempre aceita; avisa
+quem clicou; registro aceita alteração) caem 4, 1 e 1. Régua
+`rita-escalonamento.test.ts` provada quebrando (2 reprovam). ⚠️ Achado ao
+testar: um Admin pôs as **urgências no rol** pela tela no treino — **AP132**,
+aguardando o dono.
+
+**Na produção:** ⏳ 3005 a aplicar pelo dono.
 
 ## Regras para as próximas entregas
 

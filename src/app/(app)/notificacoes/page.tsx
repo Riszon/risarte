@@ -99,6 +99,7 @@ export default async function NotificationsPage(
     compras: 0,
     ortodontia: 0,
     assinaturas: 0,
+    rita: 0,
     outras: 0,
   };
   for (const n of all) counts[categorizeNotification(n.title, n.link)] += 1;

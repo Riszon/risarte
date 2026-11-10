@@ -1,6 +1,24 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.407.0** · Última migração: **0373** (0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 10/11/2026 · Versão do sistema: **0.408.0** (sem migração do core; Rita 0.6.0 / **3005**, aplicada no treino, a aplicar na produção) · Última migração: **0373** (0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🚚 0.408.0 — AVISOS DA ASSISTENTE VIRTUAL NO SINO (Rita 0A.6, 3005, 10/11/2026)
+>
+> Fase 0A.6 da Rita (estado completo em `docs/sdr/ESTADO.md`). O core só
+> ganhou a categoria **Assistente virtual** nas Notificações
+> (`src/lib/notifications.ts`, pelo LINK `/rita…`; ícone na lista); o resto é
+> do schema `rita`: rotas de transferência, `rita._notify` (avisos "Rita: …"
+> com trava contra repetir), `rita.actions` (registro que só cresce, por
+> gatilho) e o portão sem pendentes.
+> - ⚠️ **Aviso da Rita nasce por `rita._notify`** (interna; link obrigatório
+>   `/rita…`, só pessoas ativas, nunca quem fez). Régua
+>   `rita-escalonamento.test.ts`.
+> - ⚠️ **A pausa automática agora avisa** o Gerente e o Admin; o aviso falhar
+>   nunca desfaz a pausa.
+> - ✅ `test:rita` 119/119 no treino (transação desfeita) e quebrando; 3005
+>   aplicada no treino. ⏳ Produção: o dono roda a 3005. Não visto na tela (a
+>   Rita está desligada; nenhum aviso existe). Achado **AP132** (urgência no
+>   rol pela tela, treino). Manual "A barra de cima", EV-307.
 
 > ## 🚚 0.407.0 / 0373 — VENDA SÓ CONTA DEPOIS DO CONTRATO ASSINADO (09/11/2026)
 >

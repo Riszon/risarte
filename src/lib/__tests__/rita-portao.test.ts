@@ -35,7 +35,12 @@ function ultimaDefinicao(nome: string): string {
 
 describe("Rita 0A.2 — ligar e desligar", () => {
   const corpo = ultimaDefinicao("rita.set_enabled");
-  const ligar = corpo.slice(corpo.indexOf("if p_enabled then"), corpo.indexOf("else\n    -- DESLIGAR"));
+  // Desde a 0A.6 o trecho de ligar termina avisando o Gerente (`rita._notify`
+  // com o papel unit_manager como DESTINATÁRIO): a regra mede só a guarda.
+  const blocoLigar = corpo.slice(corpo.indexOf("if p_enabled then"), corpo.indexOf("else\n    -- DESLIGAR"));
+  const ligar = blocoLigar.includes("perform rita._notify")
+    ? blocoLigar.slice(0, blocoLigar.indexOf("perform rita._notify"))
+    : blocoLigar;
   const desligar = corpo.slice(corpo.indexOf("-- DESLIGAR"));
 
   it("é ato de pessoa: sem login, recusa", () => {

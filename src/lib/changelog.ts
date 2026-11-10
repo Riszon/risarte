@@ -62,6 +62,22 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.408.0",
+    data: "2026-11-10",
+    // Sem migração do CORE: a desta entrega é da Rita (3005, RITA_MIGRATION).
+    migracao: null,
+    titulo: "Avisos da assistente virtual no sino",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "As Notificações ganharam a categoria Assistente virtual, para os avisos que começam com \"Rita:\": quando a assistente for ligada numa unidade, o Gerente e o Admin Master ficam sabendo se ela parar sozinha (e o que falta), for desligada ou ligada. Hoje ela está desligada em toda a rede, então os avisos ainda não aparecem.",
+        papeis: ["unit_manager"],
+        manual: "A barra de cima",
+      },
+    ],
+  },
+  {
     versao: "0.407.0",
     data: "2026-11-09",
     migracao: "0373",

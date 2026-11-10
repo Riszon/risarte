@@ -548,6 +548,17 @@ Syncthing se comportarem de forma estranha.**
 - Visto na tela no treino (ASS-000062). Sem migração; publicado (push
   2c2d475d).
 
+**10/11/2026 (Rita — Fase 0A.6) — PC Administrador (core 0.407.0 → 0.408.0, sem migração do core; Rita 0.5.0 → 0.6.0, migração 3005)**
+
+- **Escalonamento, avisos e o registro da Rita** (bloco 0.408.0 no ESTADO;
+  Rita em `docs/sdr/ESTADO.md`). O portão ficou **sem pendentes**.
+- ⚠️ **Aviso da Rita = `rita._notify`** (interna; link `/rita…` obrigatório;
+  o sino classifica pelo link). Nunca avisa quem fez.
+- ⚠️ **`rita.actions` só cresce e é preenchido por gatilho** nas tabelas da
+  Rita: tabela nova da Rita entra na lista do `rita_log` (3005). Sem telefone.
+- `test:rita` 119/119 e quebrando. AP132 (urgência no rol, treino) aguarda o
+  dono. ⏳ **3005 a aplicar na produção.**
+
 **09/11/2026 (Rita — Fase 0A.5) — PC Administrador (core 0.403.0 → 0.403.1, migração 0369; Rita 0.4.0 → 0.5.0, migração 3004)**
 
 - **A avaliação como dado** (bloco 0.403.1 no ESTADO; Rita em

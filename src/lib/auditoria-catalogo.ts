@@ -280,6 +280,7 @@ export const TABELAS: Record<string, string> = {
   "rita.contact_consents": "Rita: consentimento de contato",
   "rita.opt_outs": "Rita: descadastro (não quer mais receber)",
   "rita.evaluation_fee_campaigns": "Rita: campanha de isenção da avaliação",
+  "rita.escalation_routes": "Rita: rota de transferência para a equipe",
 };
 
 /** As três áreas, para o filtro e para o selo ao lado do registro. */

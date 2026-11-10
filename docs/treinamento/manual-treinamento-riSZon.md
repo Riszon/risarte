@@ -1972,6 +1972,24 @@ coisa, quem manda é este.
 > não têm aba: elas ficam no painel **Precisa de atenção**, no topo do
 > prontuário, acima das abas (seção 2.9).
 
+> **Avisos da assistente virtual** (desde a versão 0.408.0). Os avisos que
+> começam com **"Rita:"** são da assistente de atendimento pelo WhatsApp que
+> está sendo preparada, e ficam na categoria **Assistente virtual** das
+> Notificações. Hoje a Rita está desligada em toda a rede, então eles ainda não
+> aparecem. Quando ela for ligada numa unidade:
+>
+> - **"Rita: pausada em …"** — a assistente parou sozinha porque sumiu um dado
+>   de que ela precisa (o link do mapa, o horário, a avaliação, ou ninguém
+>   ativo para receber as transferências). O aviso diz o que falta. Recebem o
+>   **Gerente da unidade** e o **Admin Master**.
+> - **"Rita: desligada em …"** — alguém desligou pela tela, com o motivo.
+>   Recebem o Gerente e o Admin Master (menos quem desligou).
+> - **"Rita: ligada em …"** — o Admin Master ligou a assistente na unidade;
+>   recebe o Gerente.
+>
+> O **Abrir** desses avisos leva à tela da assistente, que ainda está sendo
+> feita. Até lá, o aviso só informa.
+
 > **Por que o triângulo não tem número.** O que é urgente já chega pelo sino: os
 > alertas do financeiro disparam notificação. O triângulo é para consultar a
 > lista completa quando você quiser. (Contar tudo o que ele mostra sairia caro e

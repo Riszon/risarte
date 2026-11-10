@@ -389,6 +389,12 @@ try {
   if ((await q("select 1 from public.user_clinic_roles_all u join public.profiles p on p.id = u.user_id where u.clinic_id = $1 and u.role = 'clinical_coordinator' and p.is_active", [X])).length === 0) {
     await q("insert into public.user_clinic_roles_all (user_id, clinic_id, role) values ($1, $2, 'clinical_coordinator')", [fora, X]);
   }
+  // Desde a 0A.6 as transferências são conferidas: o Gerente vira a reserva
+  // da rota da unidade na simulação (a seção 0A.6 mede a regra de verdade).
+  if ((await um("select to_regclass('rita.escalation_routes') t")).t) {
+    await q(`insert into rita.escalation_routes (clinic_id, fallback_profile_id) values ($1, $2)
+             on conflict on constraint escalation_routes_clinic_key do update set fallback_profile_id = $2`, [X, ger.user_id]);
+  }
   await q("update public.clinic_public_info set maps_url = null where clinic_id = $1", [X]);
   let g = await um("select ok from rita._gaps($1) where item = 'maps'", [X]);
   ok(g.ok === false, "sem link do mapa → item 'maps' falta");
@@ -417,6 +423,9 @@ try {
   await como(null);
   // Desfaz o "rede toda fechada" da seção anterior (tudo na mesma transação).
   await q("update public.clinic_weekday_hours set closed = false, open_time = '08:00', close_time = '18:00' where clinic_id is null and weekday between 1 and 5");
+  // ⚠️ No treino, um Admin pôs as urgências no rol pela tela (10/11/2026,
+  // AP132): a conferência da semente parte do que a 0369 gravou.
+  await q("update public.procedures set rita_can_offer = false where rita_role = 'urgency'");
   const marcas = await q("select name, rita_role, rita_can_offer from public.procedures where rita_role is not null order by rita_role, name");
   const m = (nome) => marcas.find((x) => x.name.trim() === nome);
   ok(
@@ -523,6 +532,112 @@ try {
   await q("insert into public.clinic_procedure_availability (clinic_id, procedure_id, offered) values ($1, $2, false)", [X, aval]);
   st = await um("select enabled, paused_reason from rita.settings where clinic_id = $1", [X]);
   ok(st.enabled === false && /avaliação/.test(st.paused_reason ?? ""), "unidade deixa de fazer a avaliação → pausa sozinha", JSON.stringify(st));
+  await q("delete from public.clinic_procedure_availability where clinic_id = $1", [X]);
+
+  // =========================================================== 0A.6 (3005)
+  console.log("\n0A.6 — escalonamento, avisos e o registro da Rita");
+  await como(null);
+  const rotaRede = await um("select * from rita.escalation_routes where clinic_id is null");
+  ok(
+    rotaRede && rotaRede.business_hours_roles === "{receptionist}" && rotaRede.sla_alert_roles === "{unit_manager}" &&
+      rotaRede.sla_alert_after_minutes === 15 && rotaRede.sla_escalate_to_admin_after_minutes === 60,
+    "decisão 28: a rede nasce com Recepção, alerta ao Gerente em 15 min e ao Admin em 60",
+    JSON.stringify(rotaRede)
+  );
+  const nItens = (await um("select count(*)::int n from rita._gaps($1)", [X])).n;
+  const pend6 = await q("select item from rita._pending_items()");
+  ok(pend6.length === 0 && nItens === 10, "nenhum item pendente: os 10 do portão são conferidos", `${pend6.length} pendentes, ${nItens} itens`);
+
+  // Ninguém recebe: sem a rota da unidade e sem Recepção ativa
+  await q("delete from rita.escalation_routes where clinic_id = $1", [X]);
+  await q("update rita.settings set enabled = false where clinic_id = $1", [X]);
+  await q("delete from public.user_clinic_roles_all where clinic_id = $1 and role = 'receptionist'", [X]);
+  let gT = await um("select ok, detalhe from rita._gaps($1) where item = 'transferencias'", [X]);
+  ok(gT.ok === false && /rota rede/.test(gT.detalhe ?? ""), "sem Recepção ativa e sem reserva: 'transferências' falta", JSON.stringify(gT));
+
+  // Gravar a rota: quem pode e quem não
+  const salvar = "select rita.save_escalation_route($1, '{receptionist}', '{unit_manager}', 20, 90, $2)";
+  await como(null);
+  ok(/NOT_ALLOWED/.test((await erroDe(salvar, [X, null])) ?? ""), "sem login, ninguém grava a rota");
+  await como(ger.user_id);
+  ok(/NOT_ALLOWED/.test((await erroDe(salvar, [Y, null])) ?? ""), "Gerente não grava a rota de outra unidade");
+  ok(/NOT_ALLOWED/.test((await erroDe(salvar, [null, null])) ?? ""), "Gerente não grava a rota da rede");
+  ok(/FALLBACK_NOT_IN_CLINIC/.test((await erroDe(salvar, [X, fora])) ?? ""), "reserva tem de ter função na unidade");
+  ok(/escalation_routes_admin_minutes/.test((await erroDe("select rita.save_escalation_route($1, '{receptionist}', '{unit_manager}', 30, 10, null)", [X])) ?? ""), "subir ao Admin antes do alerta ao Gerente é recusado");
+  ok((await erroDe(salvar, [X, ger.user_id])) === null, "Gerente grava a rota da unidade dele, com ele de reserva");
+  await como(null);
+  gT = await um("select ok from rita._gaps($1) where item = 'transferencias'", [X]);
+  ok(gT.ok === true, "com a reserva ativa: 'transferências' completo");
+  const aRota = await um("select actor_kind, actor_id, payload from rita.actions where kind = 'rota' and clinic_id = $1 order by id desc limit 1", [X]);
+  ok(aRota?.actor_kind === "pessoa" && aRota.actor_id === ger.user_id && aRota.payload.alerta_minutos === 20, "registro: rota alterada pelo Gerente", JSON.stringify(aRota));
+
+  // A pausa automática avisa o Gerente e os Admins
+  const faltam6 = await q("select item from rita._gaps($1) where not ok", [X]);
+  if (faltam6.length) naoMedi("a unidade não ficou completa para a prova da pausa: " + JSON.stringify(faltam6));
+  await q("update rita.settings set enabled = true where clinic_id = $1", [X]);
+  const antes = (await um("select coalesce(max(id), 0) id from rita.actions")).id;
+  // Só os avisos DESTA pausa (as seções anteriores também pausaram a unidade).
+  const avisosAntes = (await q("select user_id from public.notifications where clinic_id = $1 and title like 'Rita: pausada em %'", [X])).map((a) => a.user_id);
+  await q("update rita.escalation_routes set fallback_profile_id = null where clinic_id = $1", [X]);
+  st = await um("select enabled, paused_reason from rita.settings where clinic_id = $1", [X]);
+  ok(st.enabled === false && /transferências/.test(st.paused_reason ?? ""), "reserva tirada e ninguém na Recepção → pausa sozinha", JSON.stringify(st));
+  const esperados = (await um(`
+    select count(distinct u)::int n from (
+      select r.user_id u from public.user_clinic_roles_all r join public.profiles p on p.id = r.user_id
+       where r.clinic_id = $1 and r.role = 'unit_manager' and p.is_active and p.kind = 'person'
+      union
+      select id from public.profiles where is_admin_master and is_active and kind = 'person') t`, [X])).n;
+  const todos = await q("select user_id from public.notifications where clinic_id = $1 and title like 'Rita: pausada em %' and link = $2", [X, `/rita/${X}`]);
+  const avisos = todos.filter((a) => { const i = avisosAntes.indexOf(a.user_id); if (i >= 0) { avisosAntes.splice(i, 1); return false; } return true; });
+  ok(avisos.length === esperados && esperados > 0 && avisos.some((a) => a.user_id === ger.user_id) && avisos.some((a) => a.user_id === admin),
+     `aviso da pausa: Gerente(s) e Admin(s), um cada (${esperados})`, `${avisos.length} avisos`);
+  ok(!avisos.some((a) => a.user_id === rita), "a Rita não recebe aviso");
+  const aPausa = await um("select kind, actor_kind from rita.actions where id > $1 and clinic_id = $2 and kind = 'pausada'", [antes, X]);
+  ok(aPausa?.actor_kind === "sistema", "registro: pausada sozinha, pelo sistema", JSON.stringify(aPausa));
+  const nov = await um("select recipients from rita.notices where clinic_id = $1 and kind = 'pausa' order by id desc limit 1", [X]);
+  ok(nov?.recipients === esperados, "a trava do aviso guarda quantos receberam", JSON.stringify(nov));
+
+  // _notify: a trava contra repetir, o link e quem pode chamar
+  await como("servico");
+  const chave = `ensaio:${Date.now()}`;
+  const env1 = (await um("select rita._notify($1, 'ensaio', '{unit_manager}', 'Ensaio', 'Corpo', $2, $3) n", [X, `/rita/${X}`, chave])).n;
+  const env2 = (await um("select rita._notify($1, 'ensaio', '{unit_manager}', 'Ensaio', 'Corpo', $2, $3) n", [X, `/rita/${X}`, chave])).n;
+  const nGer = (await um(`select count(*)::int n from public.user_clinic_roles_all r join public.profiles p on p.id = r.user_id
+                           where r.clinic_id = $1 and r.role = 'unit_manager' and p.is_active and p.kind = 'person'`, [X])).n;
+  ok(env1 === nGer && env1 > 0 && env2 === 0, `_notify para os Gerentes: ${nGer} avisos; a mesma chave não repete`, `${env1} e ${env2}`);
+  const tit = await um("select title from public.notifications where title like 'Rita: Ensaio' limit 1");
+  ok(tit?.title === "Rita: Ensaio", "o título ganha o 'Rita: '");
+  ok(/RITA_NOTICE_LINK/.test((await erroDe("select rita._notify($1, 'ensaio', '{unit_manager}', 'x', 'y', '/clientes/1')", [X])) ?? ""), "link fora de /rita é recusado");
+  ok(/permission denied/.test((await comoLogado(ger.user_id, "select rita._notify($1, 'x', '{unit_manager}', 'x', 'y', '/rita')", [X])) ?? ""), "logado, ninguém chama o _notify direto");
+  await db.query("savepoint anon");
+  let eAnon;
+  try {
+    await db.query("set local role anon");
+    await db.query("select rita._notify(null, 'x', '{}', 'x', 'y', '/rita')");
+  } catch (e) {
+    eAnon = e.message;
+  }
+  await db.query("rollback to savepoint anon");
+  await db.query("reset role");
+  ok(/permission denied/.test(eAnon ?? ""), "sem login, o _notify recusa");
+
+  // Desligar pela tela avisa os outros, nunca quem clicou
+  await q("update public.clinic_public_info set maps_url = coalesce(maps_url, 'https://maps.example/ensaio') where clinic_id = $1", [X]);
+  await q("update rita.settings set enabled = true where clinic_id = $1", [X]); // estava ligada
+  await como(ger.user_id);
+  await q("select rita.set_enabled($1, false, 'Ensaio do pânico')", [X]);
+  await como(null);
+  const desl = await q("select user_id from public.notifications where clinic_id = $1 and title like 'Rita: desligada em %'", [X]);
+  ok(desl.some((a) => a.user_id === admin) && !desl.some((a) => a.user_id === ger.user_id), "Gerente desligou: o Admin é avisado, o Gerente não", `${desl.length} avisos`);
+  const aDesl = await um("select actor_kind, actor_id, summary from rita.actions where clinic_id = $1 and kind = 'desligada' order by id desc limit 1", [X]);
+  ok(aDesl?.actor_id === ger.user_id && /pânico/.test(aDesl.summary), "registro: desligada pelo Gerente, com o motivo", JSON.stringify(aDesl));
+
+  // O registro só cresce e não guarda telefone
+  ok(/RITA_ACTIONS_APPEND_ONLY/.test((await erroDe("update rita.actions set summary = 'x' where id = (select max(id) from rita.actions)")) ?? ""), "rita.actions recusa alteração");
+  ok(/RITA_ACTIONS_APPEND_ONLY/.test((await erroDe("delete from rita.actions where id = (select max(id) from rita.actions)")) ?? ""), "rita.actions recusa apagar");
+  ok(/permission denied/.test((await comoLogado(admin, "select count(*) from rita.actions")) ?? ""), "nem o Admin lê o registro direto (só por função, na 0A.7)");
+  const comFone = (await um("select count(*)::int n from rita.actions where payload::text ~ '\\+55' or summary ~ '\\+55'")).n;
+  ok(comFone === 0, "nenhum telefone no registro", String(comFone));
 } catch (e) {
   falhas.push(e.message);
   console.log(`\n  ✘ ${e.message}`);

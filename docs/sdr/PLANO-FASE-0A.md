@@ -123,6 +123,13 @@ Tudo no `public`, porque é dado da unidade que outras telas vão ler.
 
 ### 0A.6 — Escalonamento, avisos e o registro da Rita (rita **3004**)
 
+> ✅ **Feita em 10/11/2026 como rita 3005** (Rita 0.6.0, core 0.408.0).
+> Diferenças: `rita.actions` é preenchido por GATILHOS nas tabelas da Rita
+> (não por cada função), para todo caminho registrar; `sla_alert_after_minutes`
+> entrou ao lado do `sla_escalate_to_admin_after_minutes`; a reserva tem de ter
+> função na unidade; `rita.falhas` já existia (3001). O portão ficou sem
+> pendentes. Detalhe em `docs/sdr/ESTADO.md`.
+
 - `rita.escalation_routes (clinic_id null|uuid, business_hours_roles user_role[] default '{receptionist}', sla_alert_roles user_role[] default '{unit_manager}', sla_escalate_to_admin_after_minutes int, fallback_profile_id)` — decisão 28: **fora do horário não há rota**: a mensagem de urgência (0A.2) vai ao paciente e o pedido fica na fila para a abertura; por isso não há `after_hours_roles`.
 - `rita.notices (clinic_id, kind, dedupe_key, created_at)` + `rita._notify(p_clinic, p_roles user_role[], p_title, p_body, p_link, p_dedupe_key)` (interna, `revoke … from public, anon, authenticated`): resolve destinatários por `user_clinic_roles_all` + `profiles.is_active` (molde `_ortho_recipients`, 0336), insere em `public.notifications` uma linha por pessoa, título "Rita: …", link `/rita/...`; `src/lib/notifications.ts` ganha a categoria `rita` pelo link.
 - `rita.actions (id, clinic_id, kind, subject_kind, subject_id, summary, payload jsonb, created_at)` **append-only** (gatilho que recusa update/delete, como `indicacao_eventos`), fora da auditoria 0288 ("registro técnico"). Toda função `rita.*` de escrita grava aqui. É o `log_interaction` do kickoff, sem o conteúdo das mensagens (isso é da 0B).

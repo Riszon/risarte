@@ -30,6 +30,10 @@ export const NOTIFICATION_CATEGORIES = [
   // de assinar", recusa, expiração; ZS6: consumo do plano). Pelo LINK
   // (`/assinaturas/...`), como Metas, Compras e Ortodontia.
   { key: "assinaturas", label: "Assinaturas" },
+  // Rita 0A.6 (3005): "Rita: pausada em …", "Rita: desligada em …" e os
+  // avisos da assistente virtual que virão. Pelo LINK (`/rita…`): a função
+  // `rita._notify` recusa aviso com outro link.
+  { key: "rita", label: "Assistente virtual" },
   { key: "outras", label: "Outras" },
 ] as const;
 
@@ -56,6 +60,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   compras: "bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300",
   ortodontia: "bg-gold/20 text-gold-tinta",
   assinaturas: "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-300",
+  rita: "bg-cyan-100 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300",
   outras: "bg-muted text-muted-foreground",
 };
 
@@ -75,6 +80,7 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   compras: "bg-orange-500",
   ortodontia: "bg-gold",
   assinaturas: "bg-indigo-500",
+  rita: "bg-cyan-500",
   outras: "bg-muted-foreground",
 };
 
@@ -182,6 +188,7 @@ export function categorizeNotification(title: string, link?: string | null): Not
   if ((link ?? "").startsWith("/compras")) return "compras";
   if ((link ?? "").startsWith("/ortodontia")) return "ortodontia";
   if ((link ?? "").startsWith("/assinaturas")) return "assinaturas";
+  if (/^\/rita(\/|$)/.test(link ?? "")) return "rita";
   const t = (title ?? "").toLowerCase();
   if (t.includes("aniversari")) return "aniversario";
   // Programa de Prevenção Riso+ — antes do "comercial" genérico.
