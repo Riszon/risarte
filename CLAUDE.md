@@ -396,6 +396,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (AP130/AP131) — PC Administrador (core 0.408.0 → 0.409.0, migração 0374)**
+
+- **A proposta de pagamento mora na negociação; a cobrança nasce no aceite**
+  (bloco 0.409.0 no ESTADO). ⚠️ Ao recriar `save_payment_schedule`, levar o
+  ramo da proposta; parcelamento na tela = `parcelamentoDaNegociacao`.
+  ⚠️ "Aprovado" = contrato assinado (dono); o Coordenador **libera**.
+- ✅ 0374 aplicada no treino. ⏳ **Produção: aguarda o OK do dono.** Não visto
+  na tela. A 0.408.0 é da Rita (commit dela à parte).
+
 **09/11/2026 (proposta travada) — PC Administrador (Empresarial 0.98.1 → 0.99.0, migração 1041)**
 
 - **Proposta travada depois da assinatura, 1º pagamento nas cobranças e a

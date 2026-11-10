@@ -47,7 +47,7 @@ const SITUATIONS = [
   { key: "aguardando_planejamento", label: "Aguardando planejamento" },
   { key: "aguardando_aprovacao", label: "Aguardando aprovação" },
   { key: "em_revisao", label: "Em revisão" },
-  { key: "aprovados", label: "Aprovados" },
+  { key: "aprovados", label: "Liberados" },
   { key: "enviados_comercial", label: "Enviados ao Comercial" },
 ] as const;
 type SituationKey = (typeof SITUATIONS)[number]["key"];

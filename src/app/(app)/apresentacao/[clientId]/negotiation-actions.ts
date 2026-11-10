@@ -293,6 +293,14 @@ export async function acceptNegotiation(
     const m = error.message;
     if (m.includes("AWAITING_AUTHORIZATION"))
       return { ok: false, error: "Aguardando a autorização do Gerente da unidade." };
+    // 0374: as cobranças nascem da proposta no aceite; se o valor mudou depois
+    // do último "Salvar negociação", o parcelamento não fecha com ele.
+    if (m.includes("SCHEDULE_TOTAL_MISMATCH"))
+      return {
+        ok: false,
+        error:
+          "O parcelamento salvo não soma o valor final. Clique em Salvar negociação e tente de novo.",
+      };
     if (m.includes("NEEDS_AUTHORIZATION"))
       return { ok: false, error: "Negociação fora da regra — precisa da autorização do Gerente." };
     if (m.includes("PARTIAL_REASON_REQUIRED"))

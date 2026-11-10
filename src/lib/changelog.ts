@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.409.0",
+    data: "2026-11-10",
+    migracao: "0374",
+    titulo: "A proposta de pagamento fica na negociação; a cobrança nasce no aceite",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Salvar a negociação não cria mais cobranças: o parcelamento fica guardado na própria negociação como proposta. As cobranças nascem no \"Cliente aceitou\". Assim, uma negociação ainda aberta não aparece em Recebíveis, no Fluxo de caixa, nos painéis, nas Metas nem como atraso.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor", "commercial_consultant", "commercial_assistant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O plano liberado pelo Coordenador passa a dizer \"Liberado para apresentar\" (antes: \"Aprovado\"). Aprovado pelo cliente é o contrato assinado — só então a opção mostra \"Comprada pelo cliente\".",
+        papeis: "todos",
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.408.0",
     data: "2026-11-10",
     // Sem migração do CORE: a desta entrega é da Rita (3005, RITA_MIGRATION).

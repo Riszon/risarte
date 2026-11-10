@@ -3488,7 +3488,7 @@ export default async function ClientDetailPage(
             {planSummary ? (
               <details className="rounded-lg border p-3">
                 <summary className="cursor-pointer text-sm font-semibold">
-                  Plano aprovado (resumo)
+                  Plano liberado para apresentar (resumo)
                   <span className="ml-1 text-xs font-normal text-muted-foreground">
                     — diagnóstico, objetivos e procedimentos por etapa, sem valores
                   </span>

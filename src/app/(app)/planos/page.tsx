@@ -40,7 +40,7 @@ const SITUATION_LABELS: Record<Situation, string> = {
   em_planejamento: "Em planejamento",
   replanejamento: "Replanejamento (Comercial)",
   aguardando_aprovacao: "Aguardando aprovação",
-  aprovado: "Aprovado — no Centro",
+  aprovado: "Liberado — no Centro",
   fase_comercial: "Fase comercial",
   aguardando_inicio: "Aguardando iniciar",
   em_tratamento: "Em tratamento",

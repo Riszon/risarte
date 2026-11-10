@@ -2821,9 +2821,16 @@ Por qualquer um deles, o prontuário do cliente abre **direto na aba Plano**.
    fim de cada opção ficam o campo **Considerações** e os botões **Aprovar opção**
    e **Reprovar opção**.
 3. Decida **todas** as opções — cada uma precisa da sua decisão.
-4. Com todas decididas e **pelo menos uma aprovada**, o plano fica aprovado e
-   o Planner envia ao Comercial. Se **todas** forem reprovadas, volta ao
-   Planner para revisão.
+4. Com todas decididas e **pelo menos uma aprovada**, o plano fica
+   **Liberado para apresentar** e o Planner envia ao Comercial. Se **todas**
+   forem reprovadas, volta ao Planner para revisão.
+
+> **"Liberado" não é "vendido"** *(desde a 0.409.0)*. O selo do plano diz
+> **Liberado para apresentar** (antes dizia "Aprovado") e o de cada opção,
+> **Liberada para apresentar**: o Coordenador liberou o plano para o Comercial
+> apresentar. **Aprovado pelo cliente é o contrato assinado** — só então a
+> opção ganha o selo **Comprada pelo cliente** (ver a seção 6.5). O botão do
+> Coordenador continua se chamando **Aprovar opção**.
 
 > **Reprovar exige considerações escritas** — o sistema não deixa reprovar em
 > branco (migração 0042). É o que orienta o Planner a corrigir.
@@ -3003,7 +3010,7 @@ Planejamento**.
    todas as opções. ⚠️ **O preço de cada item congela
    no envio**, pelo preço do catálogo daquele dia (se houve reajuste durante
    o planejamento, vale o do dia do envio).
-10. Aprovado, **Enviar ao Comercial**.
+10. Liberado (o selo diz **Liberado para apresentar**), **Enviar ao Comercial**.
 
 **Plano enviado ou aprovado não se edita** (desde a 0.336.0 o banco recusa
 por qualquer caminho; o antigo "Reabrir para edição" saiu). Para mudar:
@@ -3436,24 +3443,31 @@ pacotes e documentos* vê um aviso no lugar das listas.
 > **A regra de ouro:** só é venda com os dois. O banco recusa receber dinheiro
 > de venda não fechada.
 
-**Salvar a negociação não é vender** *(desde a 0.407.0)*. O **Salvar
-negociação** grava o plano de pagamento **proposto** (as parcelas que aparecem
-em **Cobranças**). Enquanto a negociação está aberta — em negociação, em
-follow-up, esperando o cliente decidir — essas parcelas são só a proposta:
+**Salvar a negociação não é vender** *(desde a 0.407.0; cobrança no aceite desde a 0.409.0)*.
+O **Salvar negociação** guarda o parcelamento **proposto** (o que aparece em
+**Cobranças**, no painel) **dentro da negociação**. Enquanto ela está aberta —
+em negociação, em follow-up, esperando o cliente decidir — ele é só a proposta:
 
-- **não entram na DRE** como receita (a receita entra **no dia em que a venda
-  fecha**, com contrato assinado e pagamento confirmado, e no mês desse dia);
-- **não aparecem** na aba **Financeiro** da ficha do cliente e **não ficam
-  "em atraso"**, mesmo que a data da 1ª parcela passe;
+- **nenhuma cobrança existe ainda**: nada aparece em **Recebíveis**, no
+  **Fluxo de caixa**, nos painéis, nas Metas nem na aba **Financeiro** da ficha,
+  e nada fica "em atraso", mesmo que a data da 1ª parcela passe;
+- **não entra na DRE** como receita;
 - a opção do plano **não** ganha o selo **Comprada pelo cliente**.
 
-Pode salvar a negociação quantas vezes precisar: refazer o parcelamento **não
-soma a venda de novo** em lugar nenhum.
+Pode salvar quantas vezes precisar: refazer o parcelamento **não soma a venda
+de novo** em lugar nenhum. O **orçamento impresso** mostra a proposta.
 
-Depois do **Cliente aceitou**, as parcelas passam a aparecer no Financeiro da
-ficha (é delas que sai a cobrança emitida antes da assinatura) e a opção do
-plano mostra **Aceita — aguardando assinatura**. Só com a venda fechada ela
-vira **Comprada pelo cliente**.
+**No "Cliente aceitou" as cobranças nascem**, a partir da proposta salva: elas
+passam a aparecer no Financeiro (é delas que sai a cobrança emitida antes da
+assinatura) e a opção do plano mostra **Aceita — aguardando assinatura**. Se o
+valor mudou depois do último salvar, o aceite avisa *"O parcelamento salvo não
+soma o valor final"*: clique em **Salvar negociação** e aceite de novo. Se o
+cliente pedir para mudar depois do aceite, salvar a negociação de novo devolve as
+cobranças (sem dinheiro recebido) para a proposta, até o novo aceite.
+
+**A receita entra na DRE só com a venda fechada** (contrato assinado e
+pagamento confirmado), no mês do fechamento — e só então a opção vira
+**Comprada pelo cliente**.
 
 **Depois do fechamento, quem agenda é a Recepção.** O cliente passa sozinho
 para a fase **Início de Tratamento** na Jornada, e a Recepção recebe o aviso

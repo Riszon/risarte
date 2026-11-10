@@ -16,7 +16,9 @@ export type TreatmentPlanStatus = (typeof TREATMENT_PLAN_STATUSES)[number];
 export const PLAN_STATUS_LABELS: Record<TreatmentPlanStatus, string> = {
   draft: "Rascunho",
   submitted: "Aguardando aprovação",
-  approved: "Aprovado",
+  // 10/11/2026 (dono): "aprovado" é o cliente que ASSINOU o contrato. O
+  // Coordenador LIBERA o plano para ser apresentado — não é venda.
+  approved: "Liberado para apresentar",
   returned: "Devolvido para revisão",
 };
 
@@ -61,7 +63,7 @@ export const PLAN_STAGE_LABELS: Record<PlanTimelineStage, string> = {
   replanejamento: "Replanejamento (devolvido pelo Comercial)",
   aguardando_aprovacao: "Aguardando aprovação do Coordenador",
   em_revisao: "Em revisão",
-  aprovado_coordenador: "Aprovado pelo Coordenador",
+  aprovado_coordenador: "Liberado pelo Coordenador",
   aguardando_apresentacao: "Aguardando apresentação",
   apresentado: "Apresentado ao cliente",
   aceito: "Aceito pelo cliente",
@@ -145,7 +147,7 @@ export type OptionReviewStatus = (typeof OPTION_REVIEW_STATUSES)[number];
 
 export const OPTION_REVIEW_LABELS: Record<OptionReviewStatus, string> = {
   pending: "Aguardando avaliação",
-  approved: "Aprovada",
+  approved: "Liberada para apresentar",
   rejected: "Reprovada",
 };
 

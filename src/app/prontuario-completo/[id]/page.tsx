@@ -53,7 +53,7 @@ const ROTULO_DA_MIDIA: Record<string, string> = {
 const ROTULO_DO_PLANO: Record<string, string> = {
   draft: "Rascunho",
   submitted: "Enviado para aprovação",
-  approved: "Aprovado",
+  approved: "Liberado para apresentar",
   rejected: "Reprovado",
   returned: "Devolvido",
 };

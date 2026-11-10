@@ -14,6 +14,10 @@ import { projectOptionSessions } from "../../prontuarios/[id]/planning-actions";
 import { loadClientPrograms } from "@/lib/programs";
 import { applyBenefit } from "@/lib/empresarial/pricing";
 import type { ScheduleEntry } from "@/lib/payments";
+import {
+  parcelamentoDaNegociacao,
+  type LinhaDeCobranca,
+} from "@/lib/proposta-de-pagamento";
 import { carregarOdontoDaApresentacao } from "@/lib/odontograma/carregar";
 import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
 import { carregarCustosDaMargem } from "@/lib/finance/custos-da-margem-db";
@@ -392,20 +396,25 @@ export async function loadNegotiationBlock(
   }));
 
   const n = negRows?.[0];
-  // J1: cobranças (entrada + parcelas) já salvas para esta negociação.
+  // J1: o parcelamento da negociação. 0374: com a negociação aberta ele é só a
+  // PROPOSTA (`proposed_schedule`); as cobranças nascem no aceite. Proposta
+  // lida À PARTE: sem a 0374 a coluna não existe e vale só o das cobranças.
   let schedule: ScheduleEntry[] = [];
   if (n) {
-    const { data: instRows } = await supabase
-      .from("payment_installments")
-      .select("seq, kind, due_date, amount_cents")
-      .eq("negotiation_id", n.id)
-      .order("seq");
-    schedule = (instRows ?? []).map((r) => ({
-      seq: r.seq as number,
-      kind: (r.kind as ScheduleEntry["kind"]) ?? "parcela",
-      dueDate: r.due_date as string,
-      amountCents: r.amount_cents as number,
-    }));
+    const [{ data: instRows }, { data: propRow }] = await Promise.all([
+      supabase
+        .from("payment_installments")
+        .select("seq, kind, due_date, amount_cents, status")
+        .eq("negotiation_id", n.id)
+        .order("seq")
+        .returns<LinhaDeCobranca[]>(),
+      supabase
+        .from("plan_negotiations")
+        .select("proposed_schedule")
+        .eq("id", n.id)
+        .maybeSingle<{ proposed_schedule: unknown }>(),
+    ]);
+    schedule = parcelamentoDaNegociacao(instRows ?? [], propRow?.proposed_schedule ?? null);
   }
   const negotiation: NegotiationData | null = n
     ? {

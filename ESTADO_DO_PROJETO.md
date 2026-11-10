@@ -1,6 +1,33 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 10/11/2026 · Versão do sistema: **0.408.0** (sem migração do core; Rita 0.6.0 / **3005**, aplicada no treino, a aplicar na produção) · Última migração: **0373** (0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 10/11/2026 · Versão do sistema: **0.409.0** (a 0.408.0 não teve migração do core; Rita 0.6.0 / **3005**, aplicada no treino, a aplicar na produção) · Última migração: **0374** (0374 aplicada no treino, NÃO na produção — aguarda o OK do dono; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🚚 0.409.0 / 0374 — A PROPOSTA DE PAGAMENTO MORA NA NEGOCIAÇÃO (AP130 + AP131, 10/11/2026)
+>
+> Continuação da 0.407.0 (CBE-00001). O "Salvar negociação" criava cobranças
+> de verdade com a negociação aberta; elas contavam em 12 lugares (Recebíveis,
+> inadimplentes, relatório, Fluxo de caixa, painéis, Recebíveis da rede, alerta
+> diário, Fechamento, Metas). Decisões do dono: a proposta mora na negociação e
+> a cobrança nasce no "Cliente aceitou" (AP131); "aprovado" é o contrato
+> assinado, e o rótulo do Coordenador vira "Liberado para apresentar".
+> - ⚠️ **`plan_negotiations.proposed_schedule`** guarda a proposta. Com a
+>   negociação aberta, `save_payment_schedule` grava SÓ ela e sai (régua
+>   `proposta-de-pagamento.test.ts`); ao recriar a função, levar o ramo.
+> - ⚠️ **Gatilho `plan_negotiations_schedule_on_status`**: virou "aceita" →
+>   `_materialize_negotiation_schedule` (soma ≠ valor final recusa o aceite,
+>   `SCHEDULE_TOTAL_MISMATCH`); saiu de "aceita" para negociar → volta à
+>   proposta (sem dinheiro). Vale para qualquer caminho do aceite.
+> - ⚠️ **Quem mostra o parcelamento usa `parcelamentoDaNegociacao`**
+>   (`src/lib/proposta-de-pagamento.ts`): cockpit e orçamento impresso. A
+>   proposta é lida À PARTE (a tela abre igual sem a 0374).
+> - Rótulos: `PLAN_STATUS_LABELS.approved`, `OPTION_REVIEW_LABELS.approved`,
+>   `PLAN_STAGE_LABELS.aprovado_coordenador` (régua: não dizem "aprovad").
+> - Acerto dos dados (DESTRUTIVO declarado): cobranças "em aberto" de negociação
+>   não aceita e venda não fechada, sem dinheiro, viram a proposta e saem.
+> - ✅ Ensaio 12/12 (`scripts/proposta-ensaio-0374.mjs`) e reprovando nas 4
+>   quebras; régua provada quebrando (5); 0374 aplicada no treino (2×);
+>   test:indica 246/246. ⏳ **Produção: aguarda o OK do dono.** Não visto na
+>   tela. Manual 6.2/6.5, EV-308.
 
 > ## 🚚 0.408.0 — AVISOS DA ASSISTENTE VIRTUAL NO SINO (Rita 0A.6, 3005, 10/11/2026)
 >

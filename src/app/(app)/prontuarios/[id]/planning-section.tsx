@@ -1325,7 +1325,7 @@ export function PlanningSection({
           <div className="space-y-2 border-t pt-3">
             <p className="flex items-center gap-2 text-sm text-emerald-700">
               <Check className="size-4 shrink-0" />
-              Plano aprovado pelo Coordenador. Você pode enviar ao Comercial.
+              Plano liberado pelo Coordenador. Você pode enviar ao Comercial.
             </p>
             <Button
               disabled={isPending}

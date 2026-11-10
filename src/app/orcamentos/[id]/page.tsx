@@ -20,6 +20,7 @@ import { LinhasDoPacote } from "@/components/linhas-do-pacote";
 import { pacoteDosItens } from "@/lib/procedimentos/grupos-db";
 import { pacotesDaOpcao } from "@/lib/procedimentos/grupos";
 import { condicoesOrtodonticas } from "@/lib/ortodontia/proposta";
+import { parcelamentoDaNegociacao, type LinhaDeCobranca } from "@/lib/proposta-de-pagamento";
 
 export const metadata: Metadata = { title: "Orçamento" };
 
@@ -86,7 +87,7 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
       | null
   );
 
-  const [{ data: opt }, { data: itemRows }, { data: negItems }, { data: parcelas }, { data: plano }, validade, odonto] =
+  const [{ data: opt }, { data: itemRows }, { data: negItems }, { data: cobrancasRows }, { data: plano }, validade, odonto, { data: propRow }] =
     await Promise.all([
       supabase.from("treatment_plan_options").select("title").eq("id", n.option_id as string).maybeSingle(),
       supabase
@@ -100,14 +101,19 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
         .eq("negotiation_id", id),
       supabase
         .from("payment_installments")
-        .select("seq, kind, due_date, amount_cents")
+        .select("seq, kind, due_date, amount_cents, status")
         .eq("negotiation_id", id)
-        .order("seq"),
+        .order("seq")
+        .returns<LinhaDeCobranca[]>(),
       supabase.from("treatment_plans").select("version_no").eq("id", n.plan_id as string).maybeSingle(),
       // G2: consulta à parte — sem a 0313 a coluna não existe e vale o padrão (15).
       supabase.from("commercial_rules").select("clinic_id, budget_validity_days"),
       carregarOdontoDaApresentacao(n.client_id as string, client?.birth_date ?? null),
+      // 0374: com a negociação aberta o parcelamento é a PROPOSTA guardada nela.
+      // Lida à parte: sem a 0374 a coluna não existe e vale só o das cobranças.
+      supabase.from("plan_negotiations").select("proposed_schedule").eq("id", id).maybeSingle<{ proposed_schedule: unknown }>(),
     ]);
+  const parcelas = parcelamentoDaNegociacao(cobrancasRows ?? [], propRow?.proposed_schedule ?? null);
 
   const quemNegociou = (n.consultant_id ?? n.created_by) as string | null;
   const { data: consultor } = quemNegociou
@@ -353,14 +359,14 @@ export default async function OrcamentoPage(props: { params: Promise<{ id: strin
         ) : (
           <p className="text-xs">Forma de pagamento ainda não definida.</p>
         )}
-        {(parcelas ?? []).length > 0 && (
+        {parcelas.length > 0 && (
           <table className="mt-2 w-full text-xs">
             <tbody>
-              {(parcelas ?? []).map((p) => (
-                <tr key={p.seq as number} className="border-b">
+              {parcelas.map((p) => (
+                <tr key={p.seq} className="border-b">
                   <td className="py-0.5">{p.kind === "entrada" ? "Entrada" : `Parcela ${p.seq}`}</td>
-                  <td className="py-0.5">vencimento {diaBr(String(p.due_date).slice(0, 10))}</td>
-                  <td className="py-0.5 text-right tabular-nums">{formatBRL(Number(p.amount_cents ?? 0))}</td>
+                  <td className="py-0.5">vencimento {diaBr(p.dueDate)}</td>
+                  <td className="py-0.5 text-right tabular-nums">{formatBRL(p.amountCents)}</td>
                 </tr>
               ))}
             </tbody>
