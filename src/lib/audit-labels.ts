@@ -41,6 +41,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   ortho_maintenance: "Manutenção ortodôntica",
   ortho_charge: "Mensalidade ortodôntica",
   ortho_settings: "Configuração da Ortodontia",
+  // Rita 0A.7a: ligar/desligar a assistente virtual pela tela.
+  rita_settings: "Assistente virtual (ligar/desligar)",
   ortho_dashboard: "Painel da Ortodontia",
   clinical_evaluation_ortho_indication: "Indicação de ortodontia na avaliação",
   treatment_plan_ortho: "Proposta ortodôntica da opção do plano",

@@ -138,6 +138,14 @@ Tudo no `public`, porque é dado da unidade que outras telas vão ler.
 
 ### 0A.7 — Tela "O que a Rita sabe" (sem migração; permissão semeada na 3004)
 
+> **Dividida pelo dono em 10/11/2026.** **0A.7a** (ver e ligar/desligar) feita
+> como rita **3006** (Rita 0.7.0): a migração existiu, sim — a tela lê por duas
+> funções de leitura com guarda (`rita.screen_units`, `rita.screen_unit`), e a
+> permissão `modulo.rita` não tinha sido semeada na 3004; entrou na 3006. O
+> schema `rita` foi exposto na API nos dois projetos (opção A do dono). O modo
+> só aparece. **0A.7b** (editar pela tela) a seguir. Detalhe em
+> `docs/sdr/ESTADO.md`.
+
 - `src/app/(app)/rita/page.tsx` (lista de unidades com o estado: desligada / pronta para ligar / ligada / pausada) e `rita/[clinicId]/page.tsx`: cartões por tema (Unidade, Horários e feriados, Avaliação, Consentimento, Escalonamento), cada item com o valor que a Rita vai dizer, **a lacuna em destaque** e "alterado em … por …" (lido de `audit_changes` pela porta `rita.v_last_change(table, row)`, só Admin; para o Gerente, `updated_at`). Interruptor com a regra DA6 e o motivo da pausa.
 - Capacidade `modulo.rita` em `permissions.ts` (padrão: Admin passa sempre; `unit_manager` e `franchisor_staff`), semeada na 3004; `NOME_DA_TELA` (régua "tela nova precisa de nome"); `ajuda-das-telas.ts` com os passos; `ESTADO`/manual/changelog.
 - **Prova:** `check:telas` (Admin na Franqueadora e na unidade, Gerente, Recepção barrada); tela aberta no treino mostrando as lacunas reais das 4 unidades.

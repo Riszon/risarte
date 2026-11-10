@@ -43,6 +43,7 @@ import {
   ShieldCheck,
   Smile,
   SmilePlus,
+  Bot,
   Contact,
   ChevronsUpDown,
   type LucideIcon,
@@ -110,6 +111,8 @@ type Props = {
   canViewOrtho?: boolean;
   /** 0340: Assinaturas digitais (ZapSign). Opcional: só o layout informa. */
   canViewAssinaturas?: boolean;
+  /** Rita 0A.7 (3006): "O que a Rita sabe". Opcional: só o layout informa. */
+  canViewRita?: boolean;
   /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
   canViewFinance: boolean;
   /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
@@ -219,6 +222,15 @@ const ASSINATURAS_ITEM = {
   icon: FileSignature,
 };
 
+// Rita 0A.7 (3006): a assistente virtual do WhatsApp — o que ela sabe de cada
+// unidade, o que falta para ligar e o interruptor. Quem vê é a matriz
+// (`modulo.rita`).
+const RITA_ITEM = {
+  href: "/rita",
+  label: "Assistente virtual",
+  icon: Bot,
+};
+
 // 0318: Metas SMART (rede e unidades). Fica perto do Início de propósito:
 // a meta só estimula se a equipe a vê todo dia.
 const METAS_ITEM = {
@@ -309,6 +321,7 @@ export function AppSidebar({
   canViewMetas = false,
   canViewOrtho = false,
   canViewAssinaturas = false,
+  canViewRita = false,
   canViewFinance,
   canViewStock,
   canViewPurchases,
@@ -431,6 +444,9 @@ export function AppSidebar({
   }
   if (canViewIndica) {
     navItems = [...navItems, INDICA_ITEM];
+  }
+  if (canViewRita) {
+    navItems = [...navItems, RITA_ITEM];
   }
   if (canViewStock) {
     navItems = [...navItems, STOCK_ITEM];

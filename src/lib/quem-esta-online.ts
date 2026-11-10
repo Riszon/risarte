@@ -218,6 +218,7 @@ export const NOME_DA_TELA: Record<string, string> = {
   prontuarios: "Prontuários",
   relatorios: "Relatórios",
   risartanos: "Risartanos",
+  rita: "Assistente virtual",
   sistema: "Sistema",
 };
 

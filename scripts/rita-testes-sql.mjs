@@ -638,6 +638,59 @@ try {
   ok(/permission denied/.test((await comoLogado(admin, "select count(*) from rita.actions")) ?? ""), "nem o Admin lê o registro direto (só por função, na 0A.7)");
   const comFone = (await um("select count(*)::int n from rita.actions where payload::text ~ '\\+55' or summary ~ '\\+55'")).n;
   ok(comFone === 0, "nenhum telefone no registro", String(comFone));
+
+  // ------------------------------------------- 0A.7a — a leitura da tela (3006)
+  console.log("\n0A.7a — a leitura da tela \"O que a Rita sabe\"");
+  if (!Y) naoMedi("não há uma segunda unidade para provar o escopo");
+  await como(null);
+  ok(/NOT_ALLOWED/.test((await erroDe("select * from rita.screen_units()")) ?? ""), "sem login, a lista recusa");
+  ok(/NOT_ALLOWED/.test((await erroDe("select rita.screen_unit($1)", [X])) ?? ""), "sem login, a unidade recusa");
+  await db.query("savepoint anon7");
+  let eAnon7;
+  try {
+    await db.query("set local role anon");
+    await db.query("select rita.screen_unit($1)", [X]);
+  } catch (e) {
+    eAnon7 = e.message;
+  }
+  await db.query("rollback to savepoint anon7");
+  await db.query("reset role");
+  ok(/permission denied/.test(eAnon7 ?? ""), "sem login (anon), a função nem abre");
+  ok(/permission denied/.test((await comoLogado(ger.user_id, "select rita._can_read_unit($1)", [X])) ?? ""), "a guarda interna não é chamável por quem loga");
+  ok((await comoLogado(ger.user_id, "select rita.screen_unit($1)", [X])) === null, "logado (papel authenticated), o Gerente lê a unidade dele");
+
+  await como(ger.user_id);
+  const listaGer = await q("select * from rita.screen_units()");
+  ok(listaGer.some((u) => u.clinic_id === X), "a lista do Gerente tem a unidade dele");
+  const verY = (await q("select clinic_id from public.user_full_access_clinic_ids() clinic_id")).some((r) => r.clinic_id === Y);
+  ok(verY || !listaGer.some((u) => u.clinic_id === Y), "a lista do Gerente não tem unidade que ele não enxerga");
+  if (!verY) ok(/NOT_ALLOWED/.test((await erroDe("select rita.screen_unit($1)", [Y])) ?? ""), "o Gerente não lê a unidade de outro");
+  const tela = (await um("select rita.screen_unit($1) j", [X])).j;
+  const nGaps = (await um("select count(*)::int n from rita._gaps($1)", [X])).n;
+  const nFalta = (await um("select count(*)::int n from rita._gaps($1) where not ok", [X])).n;
+  ok(Array.isArray(tela.gaps) && tela.gaps.length === nGaps && nGaps > 0, `o portão da tela = o da Rita (${nGaps} itens)`);
+  ok(listaGer.find((u) => u.clinic_id === X)?.gaps === nFalta, `a lista conta as lacunas (${nFalta})`);
+  const linhaX = listaGer.find((u) => u.clinic_id === X);
+  ok(linhaX?.enabled === false && linhaX.paused_auto === false && tela.settings?.paused_by, "desligada pelo Gerente: não conta como pausa automática, e diz quem", JSON.stringify(linhaX));
+  await q("update rita.settings set paused_by = null where clinic_id = $1", [X]);
+  ok((await um("select paused_auto from rita.screen_units() where clinic_id = $1", [X]))?.paused_auto === true, "sem pessoa no desligar: pausa automática");
+  ok(Array.isArray(tela.hours) && tela.hours.length === 7, "os 7 dias da semana");
+  const nCat = (await um("select count(*)::int n from rita.catalog($1)", [X])).n;
+  ok((tela.catalog ?? []).length === nCat, `o catálogo da tela = o da Rita (${nCat})`);
+  ok(tela.route && ["rede", "unidade"].includes(tela.route.scope), "a rota vem com o escopo", JSON.stringify(tela.route?.scope));
+  ok(tela.fee && "price_cents" in tela.fee, "o valor da avaliação vem");
+  ok(tela.effective_mode === (await um("select rita.effective_mode($1) m", [X])).m, "o modo da tela = o da Rita");
+  ok(Array.isArray(tela.actions) && tela.actions.length > 0 && tela.actions.length <= 30, `o registro vem (${tela.actions?.length ?? 0}, no máximo 30)`);
+  ok(!JSON.stringify(tela.actions).includes("+55"), "nenhum telefone no registro da tela");
+  ok(tela.actions.every((a, i, arr) => i === 0 || arr[i - 1].created_at >= a.created_at), "o registro vem do mais novo para o mais velho");
+
+  await como(admin);
+  const listaAdm = await q("select * from rita.screen_units()");
+  ok(listaAdm.some((u) => u.clinic_id === X) && listaAdm.some((u) => u.clinic_id === Y), "o Admin vê todas as unidades");
+  const nFranq = (await um("select count(*)::int n from public.clinics where type = 'franchisor'")).n;
+  const franqIds = (await q("select id from public.clinics where type = 'franchisor'")).map((r) => r.id);
+  ok(nFranq === 0 || !listaAdm.some((u) => franqIds.includes(u.clinic_id)), "a Franqueadora não entra na lista (não atende paciente)");
+  ok(/NOT_FOUND|NOT_ALLOWED/.test((await erroDe("select rita.screen_unit(gen_random_uuid())")) ?? ""), "unidade inexistente: recusa, nada vazio");
 } catch (e) {
   falhas.push(e.message);
   console.log(`\n  ✘ ${e.message}`);

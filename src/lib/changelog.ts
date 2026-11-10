@@ -62,6 +62,22 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.413.0",
+    data: "2026-11-10",
+    // Sem migração do CORE: a desta entrega é da Rita (3006, RITA_MIGRATION).
+    migracao: null,
+    titulo: "Assistente virtual: o que a Rita sabe de cada unidade",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novo menu Assistente virtual: unidade por unidade, o que a Rita (a assistente do WhatsApp que está sendo preparada) vai dizer — endereço, horários, feriados, o valor da avaliação, para quem ela passa o atendimento — e, em destaque, o que ainda falta para ela poder ser ligada. O Gerente vê a da unidade dele e pode desligá-la; ligar é só do Admin Master. Hoje ela está desligada em toda a rede e ainda não fala com ninguém.",
+        papeis: ["unit_manager", "franchisor_staff"],
+        manual: "13f. A assistente virtual (Rita)",
+      },
+    ],
+  },
+  {
     versao: "0.412.0",
     data: "2026-11-10",
     migracao: "0378",

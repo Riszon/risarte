@@ -248,6 +248,43 @@ export const AJUDAS: AjudaDaTela[] = [
     ],
     manual: { secao: "13d. Para o Admin Master: assinaturas digitais (ZapSign)" },
   },
+  {
+    rota: "/rita",
+    titulo: "Assistente virtual — as unidades",
+    paraQue:
+      "Ver, unidade por unidade, se a Rita (a assistente do WhatsApp que está sendo preparada) está ligada e quanto falta para ela poder ser ligada.",
+    quem:
+      "Abrem: o Admin Master, o Gerente (só a unidade dele) e a Franqueadora/Rede. Ligar a rede ou uma unidade é só do Admin Master.",
+    passos: [
+      "No alto, a rede: com ela desligada, nenhuma unidade liga. O Admin Master usa o botão **Ligar** (ou **Desligar**) ao lado.",
+      "Cada unidade mostra a situação: Ligada, Pausada sozinha (sumiu um dado de que ela precisa), Pronta para ligar ou Desligada, e quantos itens faltam.",
+      "Clique numa unidade para ver o que a Rita vai dizer e o que falta.",
+    ],
+    atencao: [
+      "Hoje a Rita não fala com ninguém: ela ainda não tem o canal do WhatsApp. Ligar agora não manda mensagem.",
+    ],
+    manual: { secao: "13f. A assistente virtual (Rita)" },
+  },
+  {
+    rota: "/rita/[clinicId]",
+    titulo: "Assistente virtual — o que a Rita sabe da unidade",
+    paraQue:
+      "Conferir o que a Rita vai dizer sobre a unidade (endereço, horários, feriados, avaliação, para quem ela passa o atendimento) e o que falta para ligar.",
+    quem:
+      "Abrem: o Admin Master, o Gerente da unidade e a Franqueadora/Rede. Ligar é só do Admin Master; desligar, do Admin ou do Gerente da unidade.",
+    passos: [
+      "Veja o cartão Falta para ligar: cada item com o triângulo diz o que fazer.",
+      "Nos cartões de baixo, o que estiver como \"Não cadastrado\" é o que a Rita não teria como responder. Cada cartão diz onde aquilo se muda.",
+      "Para parar a Rita na unidade, clique em **Desligar** e escreva o motivo: quem precisa saber recebe o aviso no sino.",
+      "O Admin Master vê o botão **Ligar** quando a rede está ligada e nada falta.",
+    ],
+    atencao: [
+      "Para a Rita, feriado sem decisão da unidade conta como fechado.",
+      "A Rita nunca informa preço de tratamento: só o da avaliação e o da consulta.",
+      "Editar a regra de transferência, a duração, a oferta e os textos por esta tela vem na próxima etapa.",
+    ],
+    manual: { secao: "13f. A assistente virtual (Rita)" },
+  },
 ];
 
 function casa(rota: string, caminho: string): boolean {

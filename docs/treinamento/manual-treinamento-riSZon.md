@@ -37,6 +37,7 @@
 13. [Perguntas frequentes](#13-perguntas-frequentes)
 13b. [Para o Admin Master: alterar permissões](#13b-para-o-admin-master-alterar-permissões)
 13c. [Para o Admin Master: a Auditoria](#13c-para-o-admin-master-a-auditoria)
+13f. [A assistente virtual (Rita)](#13f-a-assistente-virtual-rita)
 14. [Checklists](#14-checklists)
 15. [Novidades, problemas e alertas](#15-novidades-problemas-e-alertas) — inclui o **relógio**
 
@@ -2002,8 +2003,8 @@ coisa, quem manda é este.
 > - **"Rita: ligada em …"** — o Admin Master ligou a assistente na unidade;
 >   recebe o Gerente.
 >
-> O **Abrir** desses avisos leva à tela da assistente, que ainda está sendo
-> feita. Até lá, o aviso só informa.
+> O **Abrir** desses avisos leva à tela da assistente, **Assistente virtual**
+> (seção 13f), na unidade do aviso.
 
 > **Por que o triângulo não tem número.** O que é urgente já chega pelo sino: os
 > alertas do financeiro disparam notificação. O triângulo é para consultar a
@@ -5436,6 +5437,73 @@ usam.
 
 **No treino** a lista é uma cópia de ensaio, com um aviso no alto. A lista de
 verdade é a da produção.
+
+## 13f. A assistente virtual (Rita)
+
+*(desde a versão 0.413.0)*
+
+**Onde:** menu **Assistente virtual**. Abrem: o **Admin Master**, o **Gerente
+da unidade** (só a unidade dele) e a **Franqueadora/Rede**. As outras funções
+não veem o menu.
+
+**Para que serve:** a Rita é a assistente de atendimento pelo WhatsApp que
+está sendo preparada. **Hoje ela está desligada em toda a rede e não fala com
+ninguém.** Esta tela mostra, antes de ela existir de verdade, **o que ela vai
+dizer** de cada unidade e **o que ainda falta** para ela poder ser ligada.
+
+**A primeira tela** tem a **rede** (ligada ou desligada) e a lista das
+unidades, cada uma com a situação:
+
+- **Ligada** — ela está ligada na unidade;
+- **Pausada sozinha** — ela parou porque sumiu um dado de que precisa (o
+  motivo aparece ao lado); o Gerente e o Admin recebem o aviso no sino;
+- **Pronta para ligar** — nada falta; só ninguém ligou ainda;
+- **Desligada** — alguém desligou, ou ainda falta algo (a linha diz quantos
+  itens faltam).
+
+**Clique numa unidade** para ver:
+
+1. **Situação** — ligada ou não, desde quando e por quem, e o motivo da pausa.
+2. **Falta para ligar** — a lista do que a Rita confere. O que falta aparece
+   com o triângulo e diz o que fazer (ex.: "Falta rua, número, bairro… no
+   cadastro da unidade").
+3. **A unidade** — nome para o paciente, endereço, ponto de referência, link do
+   mapa, estacionamento, acessibilidade, WhatsApp e idade mínima de criança. O
+   que estiver em branco aparece como **"Não cadastrado"**, em destaque. Muda-se
+   em **Administração → Unidades**, aba **Dados públicos**.
+4. **Horários e feriados** — o horário de cada dia e os feriados fechados nos
+   próximos 45 dias. **Para a Rita, feriado sem decisão da unidade conta como
+   fechado.** Muda-se em **Agenda → Configuração**.
+5. **A avaliação** — se a unidade oferece, o valor, a duração, a campanha de
+   isenção ativa e quem não paga. Embaixo, **o que a Rita pode oferecer** ali.
+   **A Rita nunca informa preço de tratamento.**
+6. **Quando a Rita passa para a equipe** — quem recebe em horário comercial,
+   quem é avisado se ninguém responder e em quantos minutos, quando sobe ao
+   Admin Master e a pessoa de reserva. Fora do horário não há transferência: o
+   pedido fica para a abertura.
+7. **O que aconteceu com a Rita** — as 30 ações mais recentes (ligada,
+   desligada, pausada, regras alteradas), com quem fez. Sem telefone e sem
+   conversa de paciente.
+
+**Ligar e desligar:**
+
+- **Ligar** a rede ou uma unidade é **só do Admin Master**. O botão **Ligar**
+  da unidade só aparece quando a rede está ligada e **nada falta**. Ligar a
+  rede não liga nenhuma unidade.
+- **Desligar** uma unidade: o **Admin Master** ou o **Gerente da unidade**. O
+  motivo é obrigatório; quem precisa saber recebe o aviso no sino (quem
+  desligou, não).
+
+**O modo** (Sombra ou Ativa) aparece na Situação, mas **não se muda por esta
+tela**: enquanto a Rita não tem o canal do WhatsApp, mudar o modo não teria
+efeito nenhum.
+
+**Ainda não dá para editar por aqui** a regra de transferência, a duração da
+avaliação, o que cada unidade oferece e os textos ao paciente: isso vem na
+próxima etapa. Enquanto isso, cada item diz onde ele se muda hoje.
+
+**Se aparecer "Falta liberar a área rita no Supabase":** o ambiente ainda não
+foi preparado para a assistente. Avise o administrador.
 
 ## 14. Checklists
 

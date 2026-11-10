@@ -21,7 +21,8 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.4 Unidade, horários, feriados** | ✅ concluída: código, treino e produção (09/11/2026) | core **0368**, rita **3003** |
 | **0A.5 Avaliação como dado** | ✅ concluída: código, treino e produção (09/11/2026) | core **0369**, rita **3004** |
 | **0A.6 Escalonamento e avisos** | ✅ concluída: código, treino e produção (10/11/2026) | **3005** |
-| 0A.7 "O que a Rita sabe" | próxima | — |
+| **0A.7a "O que a Rita sabe" — ver e ligar/desligar** | código e treino (10/11/2026); ⏳ produção | **3006** |
+| 0A.7b "O que a Rita sabe" — editar pela tela | próxima | — |
 
 ## 0A.1 — Identidade e auditoria (Rita 0.1.0, 04/11/2026)
 
@@ -296,6 +297,45 @@ aguardando o dono.
 
 **Na produção:** ✅ **3005 aplicada pelo dono em 10/11/2026**; conferido de fora: as tabelas técnicas `rita.actions` e `rita.notices` estão fora da auditoria, nenhuma tabela ficou sem auditoria, 0 avisos com link `/rita`. ⚠️ O schema `rita` não é exposto pela API: as funções e as rotas não dão para ler de fora (só por `test:rita` no treino).
 
+## 0A.7a — A tela "O que a Rita sabe" (Rita 0.7.0, 10/11/2026)
+
+**A 0A.7 foi dividida pelo dono (10/11/2026):** 0A.7a = VER e ligar/desligar;
+0A.7b = editar pela tela (rota, duração, oferta por unidade, textos ao
+paciente com Gerente propõe/Admin aprova, campanhas).
+
+**Decisão do dono (10/11/2026): opção A** — o schema `rita` entrou em
+**Exposed schemas** nos DOIS projetos (conferido de fora no mesmo dia: o treino
+responde "permission denied for schema rita" a quem não tem login; a produção
+responde "função não encontrada" para a `screen_units` antes da 3006 — ou
+seja, a API enxerga o schema). As funções continuam fechadas uma a uma; expor o
+schema não abre nada que a função não abra.
+
+- **3006:** `rita.screen_units()` (lista com o estado e quantas lacunas;
+  `paused_auto` separa "pausada sozinha" de "desligada por alguém") e
+  `rita.screen_unit(p_clinic)` (jsonb montado pelas MESMAS funções que a Rita
+  usa — `_gaps`, `weekday_hours`, `unit_day`, `catalog`, `evaluation_fee`,
+  `_route` — e as 30 ações mais recentes de `rita.actions`, sem o `payload`).
+  Guarda interna `rita._can_read_unit`: pessoa logada; Admin qualquer
+  unidade; os demais, `user_full_access_clinic_ids()`. A 3006 também semeia
+  `modulo.rita` (Gerente e Franqueadora/Rede) na matriz.
+- **Tela:** `/rita` (a rede com o interruptor do Admin; a lista de unidades com
+  o estado) e `/rita/[clinicId]` (situação e interruptor, o que falta, a
+  unidade, horários e feriados dos próximos 45 dias, a avaliação e o rol, a
+  rota de transferência, o registro). Regras em `src/lib/rita-tela.ts`; ligar
+  e desligar em `src/app/(app)/rita/actions.ts` (pela `rita.set_enabled`).
+  Menu **Assistente virtual**. ⚠️ **O modo (sombra/ativa) só aparece; não se
+  muda pela tela** — de propósito, para nenhuma unidade ficar "ativa" esperando
+  a 0B e começar a responder no dia em que o canal subir.
+- **Visto na tela** no treino (servidor local, Admin de teste): as 4 unidades,
+  Cambé com as 3 lacunas reais (endereço, agenda, "o que a avaliação inclui"),
+  a janela de ligar a rede (cancelada; nada gravado).
+
+**Provas:** `test:rita` **142/142**; quebrando a guarda da `screen_unit` caem 2.
+Régua `rita-tela.test.ts` (11) provada quebrando (2 reprovam).
+
+**Na produção:** ⏳ **3006 a rodar pelo dono.** Antes dela a tela abre e diz
+"não foi possível ler" (a lista) — nada quebra.
+
 ## Regras para as próximas entregas
 
 - **Rodar `npm run test:rita`** em toda entrega da Rita e acrescentar a seção
@@ -307,6 +347,6 @@ aguardando o dono.
 - Função `rita.*`: `security definer`, `set search_path = ''`,
   `revoke execute … from public, anon, authenticated`, `grant … to service_role`,
   e confere `rita.enabled(unidade)` antes de agir (DA4, a partir da 0A.2).
-- A API só enxerga o schema `rita` depois de ele entrar em **Exposed schemas**
-  no painel do Supabase — necessário só quando um processo chamar `rita.*` pela
-  API (0B). Até lá, não expor.
+- O schema `rita` está em **Exposed schemas** nos dois projetos (decisão do
+  dono, 10/11/2026). Por isso **toda função nova leva o `revoke … from public,
+  anon, authenticated`** e só abre o que precisa: a API enxerga o schema.

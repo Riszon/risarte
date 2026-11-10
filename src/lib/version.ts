@@ -6,7 +6,7 @@
 // CLAUDE.md). Cada agente edita SÓ as suas duas linhas — nunca as do outro.
 
 // Core (MVP / riSZon) — faixa de migração 0106+ (0–999).
-export const APP_VERSION = "0.412.0";
+export const APP_VERSION = "0.413.0";
 export const LATEST_MIGRATION = "0378";
 
 // Risarte Empresarial (B2B) — faixa de migração 1000+.
@@ -19,5 +19,5 @@ export const INDICA_MIGRATION = "2011";
 
 // Rita (assistente virtual de SDR) — schema `rita`, faixa de migração 3000+.
 // Estado em `docs/sdr/ESTADO.md`.
-export const RITA_VERSION = "0.6.0";
-export const RITA_MIGRATION = "3005";
+export const RITA_VERSION = "0.7.0";
+export const RITA_MIGRATION = "3006";

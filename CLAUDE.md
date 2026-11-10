@@ -396,6 +396,23 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (Rita — Fase 0A.7a) — PC Administrador (core 0.412.0 → 0.413.0, sem migração do core; Rita 0.6.0 → 0.7.0, migração 3006)**
+
+- **A tela "O que a Rita sabe" — ver e ligar/desligar** (bloco 0.413.0 no
+  ESTADO; Rita em `docs/sdr/ESTADO.md`; manual 13f). A 0A.7 foi dividida
+  pelo dono: a 0A.7b (editar pela tela) vem depois.
+- ⚠️ **O schema `rita` está EXPOSTO na API nos dois projetos** (opção A do
+  dono, conferido de fora). A tela lê por `supabase.schema("rita").rpc(...)`;
+  toda função nova da Rita leva o `revoke … from public, anon, authenticated`.
+- ⚠️ **Tela da Rita lê por `rita.screen_unit`/`screen_units`** (3006,
+  guarda `_can_read_unit`), montadas pelas MESMAS funções que a Rita usa (DA7).
+  Leitura nova da tela entra lá, não em tabela direto.
+- ⚠️ **`servidor:treino` encheu o disco C: (0 MB)** no meio da varredura das
+  telas; parar a tarefa NÃO matou o `next dev` (porta 3100 segurava a
+  `.next-test`). Encerrar pelo processo da porta 3100 e apagar a pasta.
+- `test:rita` 142/142 e quebrando; visto na tela no treino (Admin de teste).
+  ⏳ **3006 a rodar na produção pelo dono.**
+
 **10/11/2026 (lote das migrações) — PC Administrador (core 0.411.0 → 0.412.0, migrações 0375 a 0378)**
 
 - **AP71, AP81, AP126 e AP133** (bloco 0.412.0 no ESTADO). ⚠️ **Ao mudar

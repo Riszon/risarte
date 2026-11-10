@@ -8,6 +8,7 @@ import { canViewPpr } from "@/lib/ppr/access";
 import { canViewIndica } from "@/lib/indica/access";
 import { canViewMetas } from "@/lib/metas/access";
 import { canViewOrtho } from "@/lib/ortodontia/access";
+import { podeVerRita } from "@/lib/rita-tela";
 import { canViewSignatures } from "@/lib/signatures/access";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/setup-notice";
@@ -175,6 +176,7 @@ export default async function AppLayout({
         canViewMetas={canViewMetas(session)}
         canViewOrtho={canViewOrtho(session)}
         canViewAssinaturas={canViewSignatures(session)}
+        canViewRita={podeVerRita(session)}
         clinics={session.clinics.map(({ id, name, type }) => ({
           id,
           name,

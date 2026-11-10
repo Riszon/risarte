@@ -237,6 +237,19 @@ export const CAPACIDADES: Capability[] = [
     ],
   },
   {
+    // Rita 0A.7 (3006) — "O que a Rita sabe": a assistente virtual de cada
+    // unidade, o que ela vai dizer e o que falta para ligar. O BANCO
+    // (`rita.screen_unit`) só entrega as unidades que a pessoa enxerga;
+    // ligar é só do Admin Master, desligar também do Gerente da unidade.
+    id: "modulo.rita",
+    rotulo: "Assistente virtual (Rita)",
+    grupo: "Módulos",
+    descricao:
+      "O que a Rita sabe de cada unidade, o que falta para ligar e o registro do que ela fez. O Gerente pode desligar a da unidade dele.",
+    dependeDoBanco: true,
+    padrao: ["unit_manager", "franchisor_staff"],
+  },
+  {
     // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
     // cada um enxerga (as que cria, as das unidades que gere, e aquelas em
     // que participa).
