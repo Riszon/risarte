@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💡 0.421.0 — SUGESTÕES DA EQUIPE, LOTE 3 (10/11/2026; sem migração)
+> ## 💡 0.421.0 — SUGESTÕES DA EQUIPE, LOTE 3 (10/11/2026; migração 0392)
 >
 > Relatos do TREINO, sugestões aprovadas pelo dono (sessão "Relatos riSZon").
 > Feito num WORKTREE à parte (`C:/Users/Administrador/wt-relatos`, branch
@@ -17,8 +17,16 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **OC-00170:** tipo Reavaliação na agenda para a Fase 3 (`appointmentTypeOptions`).
 >   O check-in não muda a fase (0032 só move Reavaliação a partir da Fase 7) — decisão do dono.
 > - **OC-00139:** títulos das áreas do estoque (`TITULO_DA_SECAO`).
-> - ⏳ **OC-00171 (exigir o papel assinado ao marcar o contrato à mão):**
->   aprovado pelo dono; plano antes de codar (mexe no fechamento).
+> - **OC-00171 — contrato à mão só com o papel** (plano aprovado pelo dono).
+>   **0392:** pasta privada `contratos-papel` (`<negociação>/<uuid>.<ext>`),
+>   colunas `commercial_sales.contract_paper_*`, `commercial_mark_paper_contract`
+>   (grava o papel e chama `_commercial_close_step_raw` numa transação) e a
+>   TRAVA em gatilho `commercial_sales_paper_guard` (manual sem papel →
+>   PAPER_REQUIRED, por qualquer caminho). Tela: janela `papel-do-contrato.tsx`
+>   no Fechamento, link "Ver o papel assinado" e a lista na aba Documentos
+>   (`contratos-no-papel.tsx`). Colunas novas lidas À PARTE. Ensaio no treino
+>   (desfeito) 8/8; régua `contrato-no-papel.test.ts`. ✅ 0392 no treino;
+>   ⏳ falta a produção.
 > ## ✅ 0.420.0 — REPASSE DOS DENTISTAS, ETAPA 3: AS APROVAÇÕES (10/11/2026; migração 0391)
 >
 > Terceira das 5 etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões A1–A6

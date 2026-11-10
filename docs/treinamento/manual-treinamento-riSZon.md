@@ -3553,9 +3553,15 @@ data. A Negociação fica só para leitura. Até a 0.417.0 a faixa dizia "Ainda
 não salva" e "Depois do aceite" para uma venda fechada, e parecia que o
 cliente tinha pulado etapas.
 
-> **Marcar "Contrato assinado" à mão fecha a venda igual à assinatura
-> digital** — é para o contrato assinado **no papel**. Só marque com o papel
-> assinado em mãos.
+> **Marcar "Contrato assinado" à mão exige o papel** (desde a 0.421.0, relato
+> OC-00171; decisão do dono). É para o contrato assinado **no papel**: ao
+> marcar, abre a janela **Contrato assinado no papel** — escolha a **foto ou o
+> PDF** do contrato assinado (até 10 MB) e clique **Anexar e marcar como
+> assinado**. Sem o arquivo, o sistema responde *"Para marcar o contrato à
+> mão, anexe a foto ou o PDF do contrato assinado"* e não marca. O papel fica
+> em **Ver o papel assinado**, no Fechamento, e na aba **Documentos** do
+> paciente (**Contratos assinados no papel**). Desmarcar continua livre. Pela
+> assinatura digital, o contrato continua marcando sozinho.
 
 **O resumo da apresentação é obrigatório para o aceite** (0.382.0): sem ele,
 o **aceite do cliente não é registrado** — o sistema responde *"Escreva o

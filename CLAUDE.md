@@ -436,7 +436,7 @@ Syncthing se comportarem de forma estranha.**
 - ✅ **0390 aplicada no treino e na produção** (o dono informou em
   10/11/2026; não conferido de fora).
 
-**10/11/2026 (relatos, lote 3) — PC Administrador (core 0.419.0 → 0.421.0, sem migração; worktree `wt-relatos`)**
+**10/11/2026 (relatos, lote 3) — PC Administrador (core 0.419.0 → 0.421.0, migração 0392; worktree `wt-relatos`)**
 
 - **Sugestões aprovadas pelo dono** (bloco 0.421.0 no ESTADO): fila "A
   apresentar" (`fila-a-apresentar.ts`), sequência no fim do plano
@@ -446,7 +446,10 @@ Syncthing se comportarem de forma estranha.**
   dele, `answer_system_report_como`); itens novos do Backlog ligados aos
   relatos (`backlog_link_report`). No treino, 19 apresentações presas foram
   concluídas com autorização do dono (OC-00175).
-- ⏳ **OC-00171** (papel assinado obrigatório na marcação à mão): plano antes.
+- ⚠️ **Contrato à mão só com papel** (OC-00171, 0392): a trava é o gatilho
+  `commercial_sales_paper_guard`. Caminho novo que marque contrato com origem
+  `manual` tem de gravar `contract_paper_path` antes (use
+  `commercial_mark_paper_contract`). ⏳ 0392 só no treino.
 **10/11/2026 (relatos, lote 1) — PC Administrador (core 0.417.0 → 0.418.0, migrações 0388 e 0389)**
 
 - **Relatos tratados pelo banco** (sessão "Relatos riSZon", pedido do dono):

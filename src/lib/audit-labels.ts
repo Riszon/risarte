@@ -113,6 +113,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   commercial_followup_attempt: "Tentativa de follow-up",
   commercial_followup_start: "Início de follow-up",
   commercial_sale: "Venda",
+  commercial_sale_paper: "Contrato assinado no papel",
   plan_negotiation: "Negociação",
   plan_negotiation_accept: "Negociação aceita",
   plan_negotiation_review: "Negociação avaliada pela unidade",

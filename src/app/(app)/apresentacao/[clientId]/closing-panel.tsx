@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -25,6 +25,7 @@ import {
   type PaymentMethod,
 } from "@/lib/commercial";
 import { markClosingStep } from "./closing-actions";
+import { AnexarPapelDoContrato, VerPapelDoContrato } from "./papel-do-contrato";
 import { EnviarParaAssinaturaDialog } from "@/app/(app)/assinaturas/enviar-dialog";
 
 export type ClosingSummary = {
@@ -70,6 +71,9 @@ export function ClosingPanel({
     /** ZS3 (0343): 'manual' | 'assinatura_digital' | null, e quando. */
     contractSignedSource?: string | null;
     contractSignedAt?: string | null;
+    /** OC-00171 (0392): o papel assinado anexado (marcação à mão). */
+    hasPaper?: boolean;
+    contractPaperName?: string | null;
     /** 0202: cobrança gerada — informativo, não conclui a venda. */
     paymentIssued?: boolean;
     paymentConfirmed: boolean;
@@ -87,6 +91,7 @@ export function ClosingPanel({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [papelAberto, setPapelAberto] = useState(false);
   const signed = sale?.contractSigned ?? false;
   const issued = sale?.paymentIssued ?? false;
   const paid = sale?.paymentConfirmed ?? false;
@@ -214,6 +219,9 @@ export function ClosingPanel({
                 ? `Contrato assinado pela assinatura digital${sale.contractSignedAt ? ` em ${formatBrDate(sale.contractSignedAt)}` : ""}.`
                 : `Contrato marcado como assinado no papel (à mão)${sale?.contractSignedAt ? ` em ${formatBrDate(sale.contractSignedAt)}` : ""}.`}
             </p>
+            {sale?.hasPaper && (
+              <VerPapelDoContrato negotiationId={negotiationId} nome={sale.contractPaperName} />
+            )}
             {/* 0207: cancelar tratamento saiu daqui e foi para o PRONTUÁRIO,
                 aba Plano — quem cancela é o Gerente, e apresentação é passado
                 quando o paciente já está em tratamento. */}
@@ -258,11 +266,12 @@ export function ClosingPanel({
                     ? `Marcado pela assinatura digital${sale.contractSignedAt ? ` em ${formatBrDate(sale.contractSignedAt)}` : ""}.`
                     : contrato?.esperando && !signed
                       ? `Envio digital ${contrato.numero} em andamento: marca sozinho quando todos assinarem. Marque à mão só se o contrato foi assinado no papel.`
-                      : "Marque quando o contrato estiver assinado no papel. Pela assinatura digital, marca sozinho quando todos assinam."
+                      : "Assinado no papel? Marque e anexe a foto ou o PDF do contrato assinado. Pela assinatura digital, marca sozinho quando todos assinam."
                 }
                 done={signed}
                 disabled={!canClose || isPending}
-                onToggle={(v) => toggle("contract", v)}
+                // OC-00171 (0392): marcar à mão abre a janela do papel assinado.
+                onToggle={(v) => (v ? setPapelAberto(true) : toggle("contract", false))}
               />
               <StepToggle
                 icon={<Receipt className="size-4" />}
@@ -281,6 +290,15 @@ export function ClosingPanel({
                 onToggle={(v) => toggle("payment_confirmed", v)}
               />
             </div>
+            {signed && sale?.hasPaper && sale?.contractSignedSource !== "assinatura_digital" && (
+              <VerPapelDoContrato negotiationId={negotiationId} nome={sale.contractPaperName} />
+            )}
+            <AnexarPapelDoContrato
+              open={papelAberto}
+              onOpenChange={setPapelAberto}
+              clientId={clientId}
+              negotiationId={negotiationId}
+            />
             {!canClose && (
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Lock className="size-3.5" />

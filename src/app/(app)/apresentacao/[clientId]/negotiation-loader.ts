@@ -36,6 +36,9 @@ export type SaleData = {
   /** ZS3 (0343): 'manual' | 'assinatura_digital' | null, e quando. */
   contractSignedSource: string | null;
   contractSignedAt: string | null;
+  /** OC-00171 (0392): o papel assinado anexado na marcação à mão. */
+  hasPaper: boolean;
+  contractPaperName: string | null;
   /** 0202: cobrança gerada — informativo; quem conclui é o pagamento. */
   paymentIssued: boolean;
   paymentConfirmed: boolean;
@@ -562,10 +565,23 @@ export async function loadNegotiationBlock(
         contractSigned: saleRow.contract_signed as boolean,
         contractSignedSource: (saleRow.contract_signed_source as string | null) ?? null,
         contractSignedAt: (saleRow.contract_signed_at as string | null) ?? null,
+        hasPaper: false,
+        contractPaperName: null,
         paymentIssued: Boolean(saleRow.payment_issued),
         paymentConfirmed: saleRow.payment_confirmed as boolean,
         closedAt: (saleRow.closed_at as string | null) ?? null,
       };
+      // OC-00171: as colunas da 0392 À PARTE — sem a migração no banco, a
+      // leitura acima não quebra e a tela só não mostra o papel.
+      const { data: papel } = await supabase
+        .from("commercial_sales")
+        .select("contract_paper_path, contract_paper_name")
+        .eq("negotiation_id", n.id)
+        .maybeSingle<{ contract_paper_path: string | null; contract_paper_name: string | null }>();
+      if (papel?.contract_paper_path) {
+        sale.hasPaper = true;
+        sale.contractPaperName = papel.contract_paper_name ?? null;
+      }
     }
   }
 

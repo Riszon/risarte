@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 export type ClosingResult = {
   ok: boolean;
@@ -107,6 +108,12 @@ export async function markClosingStep(
         ok: false,
         error: "Venda já concluída — não é possível alterar o fechamento.",
       };
+    // OC-00171 (0392): à mão, só com o papel assinado anexado.
+    if (m.includes("PAPER_REQUIRED"))
+      return {
+        ok: false,
+        error: "Para marcar o contrato à mão, anexe a foto ou o PDF do contrato assinado.",
+      };
     console.error("commercial_close_step failed:", m);
     return { ok: false, error: "Não foi possível registrar o fechamento." };
   }
@@ -124,4 +131,72 @@ export async function markClosingStep(
     revalidatePath("/ortodontia/casos");
   }
   return { ok: true, closed, orthoCaseId };
+}
+
+/**
+ * OC-00171 (0392): o contrato assinado NO PAPEL só se marca com o papel
+ * anexado. A tela envia o arquivo à pasta `contratos-papel`
+ * (`<negociação>/<uuid>.<ext>`) e chama esta ação, que grava o papel e marca o
+ * contrato numa transação só (`commercial_mark_paper_contract`).
+ */
+export async function markPaperContract(
+  clientId: string,
+  negotiationId: string,
+  path: string,
+  fileName: string
+): Promise<ClosingResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("commercial_mark_paper_contract", {
+    p_negotiation_id: negotiationId,
+    p_path: path,
+    p_name: fileName,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("NOT_ALLOWED")) return { ok: false, error: "Você não tem permissão para o fechamento." };
+    if (m.includes("NOT_ACCEPTED"))
+      return { ok: false, error: "A negociação precisa estar aceita pelo cliente antes do fechamento." };
+    if (m.includes("ALREADY_CLOSED"))
+      return { ok: false, error: "Venda já concluída — não é possível alterar o fechamento." };
+    if (m.includes("FILE_NOT_FOUND"))
+      return { ok: false, error: "O arquivo do contrato não chegou. Envie de novo." };
+    if (error.code === "PGRST202")
+      return { ok: false, error: "O banco ainda não recebeu a atualização 0392. Avise o administrador." };
+    console.error("commercial_mark_paper_contract failed:", m);
+    return { ok: false, error: "Não foi possível registrar o contrato." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "commercial_sale_paper",
+    entityId: negotiationId,
+  });
+  revalidatePath(`/apresentacao/${clientId}`);
+  revalidatePath(`/comercial/${clientId}`);
+  revalidatePath(`/prontuarios/${clientId}`);
+  revalidatePath("/comercial");
+  revalidatePath("/jornada");
+  const closed = Boolean((data as { closed?: boolean } | null)?.closed);
+  const orthoCaseId = ((data as { ortho_case_id?: string | null } | null)?.ortho_case_id as string | null) ?? null;
+  return { ok: true, closed, orthoCaseId };
+}
+
+/** OC-00171: link temporário (5 min) para ver o papel assinado — a regra da pasta decide quem vê. */
+export async function linkDoPapelAssinado(
+  negotiationId: string
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data: venda } = await supabase
+    .from("commercial_sales")
+    .select("contract_paper_path")
+    .eq("negotiation_id", negotiationId)
+    .maybeSingle<{ contract_paper_path: string | null }>();
+  if (!venda?.contract_paper_path) return { ok: false, error: "Nenhum papel anexado a esta venda." };
+  const { data, error } = await supabase.storage
+    .from("contratos-papel")
+    .createSignedUrl(venda.contract_paper_path, 300);
+  if (error || !data?.signedUrl) return { ok: false, error: "Não foi possível abrir o arquivo agora." };
+  await logAudit({ action: "view", entityType: "commercial_sale_paper", entityId: negotiationId });
+  return { ok: true, url: data.signedUrl };
 }

@@ -64,9 +64,16 @@ export const CHANGELOG: Versao[] = [
   {
     versao: "0.421.0",
     data: "2026-11-10",
-    migracao: null,
-    titulo: "Sugestões da equipe: a fila A apresentar por data, a sequência no fim do plano, a reavaliação no Planejamento e títulos do estoque",
+    migracao: "0392",
+    titulo: "Sugestões da equipe: contrato no papel só com o papel anexado, a fila A apresentar por data, a sequência no fim do plano, a reavaliação no Planejamento e títulos do estoque",
     mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "Fechamento da venda: para marcar Contrato assinado à mão (contrato assinado no papel), é preciso anexar a foto ou o PDF do contrato assinado. Sem o arquivo, o sistema não marca. O papel fica na aba Documentos do paciente e no Fechamento. Pela assinatura digital, nada muda. (OC-00171)",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
       {
         tipo: "melhoria",
         texto:

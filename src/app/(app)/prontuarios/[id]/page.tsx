@@ -146,6 +146,7 @@ import {
 import { PlanEditorSwitcher } from "./plan-editor-switcher";
 import { loadClientPlans } from "./plan-loader";
 import { planosPelaPorta } from "./planos-pela-porta";
+import { ContratosNoPapel } from "./contratos-no-papel";
 import { carregarSequencias } from "./sequencias-loader";
 import { planoQueAbre } from "@/lib/sequencia-do-plano";
 import { SequenciaSomenteLeitura } from "../../planejamento/[clientId]/session-join-planner";
@@ -3678,6 +3679,8 @@ export default async function ClientDetailPage(
                   canSend={canSendSignature}
                 />
               )}
+              {/* OC-00171 (0392): o papel assinado anexado no fechamento. */}
+              <ContratosNoPapel clientId={client.id} />
               {canViewDocuments && (
                 <DocumentsSection
                   clientId={client.id}
