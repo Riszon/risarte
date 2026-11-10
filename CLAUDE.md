@@ -396,6 +396,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (lote das migrações) — PC Administrador (core 0.411.0 → 0.412.0, migrações 0375 a 0378)**
+
+- **AP71, AP81, AP126 e AP133** (bloco 0.412.0 no ESTADO). ⚠️ **Ao mudar
+  `TYPE_PROVIDER_ROLES`, mudar `_provider_serves_type` (0378) junto** (régua).
+  ⚠️ `swap_appointment_provider` é porta sobre `_swap_appointment_provider_raw`.
+  ⚠️ Ao recriar `build_purchase_request`, levar a trava e o reaproveitamento.
+- ⏳ **0375, 0376, 0377 e 0378 só no treino.** O dono aplica na produção uma
+  por vez (independentes; qualquer ordem). O código tolera a falta de cada uma.
+- ⚠️ **A sessão da Rita trabalhava nesta pasta ao mesmo tempo** (3006,
+  `permissions.ts`, `rita-testes-sql.mjs` sem commit): commitei só os meus
+  arquivos. O `migrar:teste` dela aplicou a 0375–0377 no treino antes do meu.
+- Ensaio no treino 26/26. Não visto na tela.
+
 **10/11/2026 (AP136/AP137) — PC Administrador (core 0.410.0 → 0.411.0, sem migração; Empresarial 0.99.1 → 0.99.2)**
 
 - **O traço no lugar do zero nas telas que tinham sobrado e o `CampoDeBusca`

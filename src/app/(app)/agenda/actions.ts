@@ -649,6 +649,10 @@ async function checkAgendaRules(
   return { warn };
 }
 
+/** A frase da recusa do BANCO (0378, `PROVIDER_ROLE_MISMATCH`). */
+const PROFISSIONAL_NAO_ATENDE =
+  "O profissional escolhido não atende este tipo de compromisso nesta unidade. Escolha outro profissional.";
+
 /**
  * AP56 — o profissional escolhido tem, NESTA unidade, uma função que atende
  * aquele tipo? Devolve a frase da recusa, ou null quando pode.
@@ -777,6 +781,10 @@ export async function createAppointment(
         error:
           "Este profissional já tem um agendamento neste horário. Escolha outro horário (ou use Urgência/Emergência para encaixe).",
       };
+    }
+    // 0378 (AP133): o banco confere a função do profissional do horário.
+    if (error.message.includes("PROVIDER_ROLE_MISMATCH")) {
+      return { ok: false, error: PROFISSIONAL_NAO_ATENDE };
     }
     // 0362 (AP103): a sala agora também é conferida no banco.
     if (error.message.includes("ROOM_TIME_CONFLICT")) {
@@ -1249,6 +1257,10 @@ export async function updateAppointment(
           "Este profissional já tem um agendamento neste horário. Escolha outro horário (ou use Urgência/Emergência para encaixe).",
       };
     }
+    // 0378 (AP133): o banco confere a função do profissional do horário.
+    if (error.message.includes("PROVIDER_ROLE_MISMATCH")) {
+      return { ok: false, error: PROFISSIONAL_NAO_ATENDE };
+    }
     // 0362 (AP103): a sala agora também é conferida no banco.
     if (error.message.includes("ROOM_TIME_CONFLICT")) {
       return {
@@ -1669,6 +1681,10 @@ export async function swapAppointmentProvider(
     }
     if (error.message.includes("SAME_PROVIDER")) {
       return { ok: false, error: "Escolha um profissional diferente do atual." };
+    }
+    // 0378 (AP133): a troca confere o novo profissional pela mesma regra.
+    if (error.message.includes("PROVIDER_ROLE_MISMATCH")) {
+      return { ok: false, error: PROFISSIONAL_NAO_ATENDE };
     }
     if (error.message.includes("NOT_SWAPPABLE")) {
       return {

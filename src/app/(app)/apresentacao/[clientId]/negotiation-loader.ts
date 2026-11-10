@@ -100,6 +100,12 @@ export type NegotiationBlock = {
   scheduleLocked: boolean;
   /** FIN5: repasse estimado por opção + margem mínima da unidade. */
   payoutByOption: Record<string, number>;
+  /**
+   * AP81 (0376): o repasse item a item, por opção — a tela soma só os itens
+   * aceitos. Opção ausente aqui = não deu para ler (banco sem a 0376): vale o
+   * total de `payoutByOption`.
+   */
+  payoutByItem: Record<string, Record<string, number>>;
   minMarginPercent: number | null;
   /**
    * Os custos da unidade para a margem (pedido do dono, 27/10/2026: a mesma
@@ -624,12 +630,28 @@ export async function loadNegotiationBlock(
 
   // FIN5: quanto cada opção custa em repasse — base do alerta de margem.
   const payoutByOption: Record<string, number> = {};
+  const payoutByItem: Record<string, Record<string, number>> = {};
   for (const o of options) {
     const { data } = await supabase.rpc("estimated_option_payout", {
       p_option_id: o.id,
       p_clinic_id: clinicId,
     });
     payoutByOption[o.id] = Number(data ?? 0);
+    // AP81: o mesmo repasse, item a item. Erro (função ausente, leitura que
+    // falhou) NÃO vira "zero de repasse": a opção fica de fora e a tela usa o
+    // total acima.
+    const porItem = await supabase.rpc("estimated_option_payout_by_item", {
+      p_option_id: o.id,
+      p_clinic_id: clinicId,
+    });
+    if (!porItem.error && Array.isArray(porItem.data)) {
+      payoutByItem[o.id] = Object.fromEntries(
+        (porItem.data as { item_id: string; payout_cents: number }[]).map((r) => [
+          r.item_id,
+          Number(r.payout_cents ?? 0),
+        ])
+      );
+    }
   }
   const { data: minMargin } = await supabase.rpc("min_margin_percent", {
     p_clinic: clinicId,
@@ -656,6 +678,7 @@ export async function loadNegotiationBlock(
     negotiation,
     odonto,
     payoutByOption,
+    payoutByItem,
     minMarginPercent: minMargin === null ? null : Number(minMargin),
     custosDaMargem,
     // J4b/J5: MESMA regra da venda direta — o PPR+ amplia teto/parcelas e as

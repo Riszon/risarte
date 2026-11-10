@@ -2,6 +2,35 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.409.0** (a 0.408.0 não teve migração do core; Rita 0.6.0 / **3005**, aplicada no treino e na produção em 10/11/2026) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧱 0.412.0 — LOTE DAS MIGRAÇÕES 0375–0378 (10/11/2026)
+>
+> Pedido do dono: os itens que pedem migração e não pedem decisão dele.
+> ⏳ **As quatro estão aplicadas SÓ NO TREINO.** O dono aplica na produção uma
+> por vez, em qualquer ordem (são independentes). O código já no ar funciona
+> como antes enquanto cada uma não roda.
+> - **0375 (AP71)** `build_purchase_request` reaproveita o rascunho VAZIO do
+>   mesmo tipo e tem trava por unidade. Lista vazia continua podendo existir
+>   (é nela que se acrescenta linha à mão). ⚠️ Ao recriar a função, levar a
+>   trava e a procura (régua).
+> - **0376 (AP81)** `estimated_option_payout_by_item`: a margem soma só o
+>   repasse dos itens aceitos (`repasseDosItensAceitos`). Sem a 0376 a tela
+>   usa o total de sempre.
+> - **0377 (AP126)** feriados nacionais de 2030 a 2045 em `public.holidays`,
+>   gerados por `nationalHolidays()`. A régua reprova quando faltarem menos de
+>   3 anos de semente.
+> - ⚠️ **0378 (AP133)** `_provider_serves_type` é o ESPELHO de
+>   `TYPE_PROVIDER_ROLES` (régua compara). Gatilho
+>   `appointments_provider_role_guard` vale só para a API (`security invoker`
+>   + `current_user`); funções do banco passam. `swap_appointment_provider`
+>   virou PORTA sobre `_swap_appointment_provider_raw` (a conta da troca mora
+>   na crua).
+> - Ensaio no treino 26/26 (transação desfeita); réguas 11/11 quebrando.
+>   EV-311. **Não visto na tela.**
+> - **Ficaram de fora, com motivo no backlog:** AP67 (o item subestimava: a
+>   função é usada em mais de 130 regras), AP128 (como o desconto aparece na
+>   DRE é decisão do dono), AP16 (depende do AP17), AP102 (Fase 1 da Rita),
+>   AP111 (o próprio item pede decisão), AP135 (aguarda o dono).
+
 > ## 🧹 0.411.0 — AP136 E AP137 (10/11/2026; Empresarial 0.99.2; sem migração)
 >
 > - **AP136** as telas que ainda faziam `count ?? 0`: sino (guarda o último

@@ -46,7 +46,11 @@ import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
 import { MarginAlert } from "@/components/commercial/margin-alert";
-import { custosDosItensAceitos, type CustosDaMargem } from "@/lib/finance/custos-da-margem";
+import {
+  custosDosItensAceitos,
+  repasseDosItensAceitos,
+  type CustosDaMargem,
+} from "@/lib/finance/custos-da-margem";
 import {
   PaymentFields,
   type PayMode,
@@ -174,6 +178,7 @@ export function NegotiationPanel({
   scheduleLocked = false,
   programConditions = null,
   payoutByOption = {},
+  payoutByItem = {},
   custosDaMargem = null,
   minMarginPercent = null,
   odonto = null,
@@ -199,6 +204,8 @@ export function NegotiationPanel({
   canAuthorize: boolean;
   /** FIN5: repasse estimado por opção + margem mínima (alerta de margem). */
   payoutByOption?: Record<string, number>;
+  /** AP81: repasse item a item, por opção (ausente = usa o total). */
+  payoutByItem?: Record<string, Record<string, number>>;
   /** A mesma conta da Precificação (cadeira, material, imposto + taxa). */
   custosDaMargem?: CustosDaMargem | null;
   minMarginPercent?: number | null;
@@ -1246,7 +1253,12 @@ export function NegotiationPanel({
               margem da clínica. O consultor precisa ver isso ENQUANTO negocia. */}
           <MarginAlert
             priceCents={finalCents}
-            payoutCents={payoutByOption[option.id] ?? 0}
+            // AP81: só o repasse dos itens ACEITOS, como os outros custos.
+            payoutCents={repasseDosItensAceitos(
+              payoutByItem[option.id],
+              option.items.filter((i) => !excluded.has(i.id)).map((i) => i.id),
+              payoutByOption[option.id] ?? 0
+            )}
             // Só os itens ACEITOS (compra parcial tira o custo do que saiu).
             custos={custosDosItensAceitos(
               custosDaMargem,

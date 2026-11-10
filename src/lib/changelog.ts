@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.412.0",
+    data: "2026-11-10",
+    migracao: "0378",
+    titulo: "Lista de compras, margem da compra parcial e o profissional do agendamento conferido no banco",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Compras → Pedir: \"Gerar lista de compras\" não cria mais uma lista nova quando a unidade já tem uma lista em Rascunho vazia do mesmo tipo — ela reaproveita essa. Clique duplo não gera duas listas.",
+        papeis: ["unit_manager", "clinical_coordinator", "asb", "tsb"],
+        manual: "Fluxo 5 — Compras: pedir, negociar, aprovar e receber",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Negociação com compra parcial: o quadro \"Margem da venda\" deixa de contar o repasse do dentista dos itens que o cliente tirou. A margem aparecia menor do que é.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Agenda e Atendimento: trocar o profissional de um agendamento (inclusive a troca de última hora) por alguém que não atende aquele tipo de compromisso na unidade é recusado, com a mensagem \"O profissional escolhido não atende este tipo de compromisso nesta unidade\".",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.411.0",
     data: "2026-11-10",
     titulo: "Contagens que não mentem nas outras telas e campos de busca sem aviso",

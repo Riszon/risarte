@@ -2645,6 +2645,13 @@ trabalha. **Duração estimada:** 60 minutos.
 4. **O sistema recusa** horário fora do funcionamento da unidade, dia fechado ou
    sala lotada — exceto urgência/emergência.
 
+> **O profissional precisa atender aquele tipo de compromisso** *(desde a
+> 0.412.0, conferido também pelo banco)*. A janela só oferece quem pode; se,
+> ao trocar o profissional — inclusive na **troca de última hora** do
+> Atendimento —, a pessoa escolhida não tiver na unidade a função daquele
+> tipo, aparece **"O profissional escolhido não atende este tipo de
+> compromisso nesta unidade"** e nada é alterado.
+
 > **Sala ocupada é recusada pelo próprio banco** (desde a versão 0.396.0): se
 > duas pessoas tentarem marcar a mesma sala, o mesmo profissional ou o mesmo
 > cliente no mesmo instante, só a primeira entra; a segunda vê **"Esta sala já
@@ -3527,7 +3534,8 @@ direta) mostra quanto sobra para a clínica no preço negociado. Desde a versão
 a **hora de cadeira** (a hora clínica calculada da unidade, desde a 0.362.0, pelos minutos planejados de cada item), o **material e o
 laboratório** dos kits e o **imposto + taxa média** sobre o preço — por isso o
 desconto corta também o imposto. Na compra parcial, só os itens aceitos
-entram. Abaixo da **margem mínima** da unidade o quadro fica amarelo; com
+entram *(desde a 0.412.0, isso vale também para o repasse do dentista: o
+repasse dos itens que o cliente tirou não entra mais na conta)*. Abaixo da **margem mínima** da unidade o quadro fica amarelo; com
 prejuízo, vermelho. É aviso, não bloqueio. Se aparecer *"Não consegui ler os
 custos da unidade"*, a margem mostrada conta só o repasse — a real é menor.
 
@@ -4172,6 +4180,12 @@ recebe a sua parte. Por isso **quem aprova é quem paga**.
 | 2. Negociar | **Mesa de negociação** | Comprador, Financeiro da Franqueadora, Admin | **Abrir rodada** com as listas recebidas → **Incluir na cotação** os fornecedores com o preço de cada um → escolher o fornecedor de cada item → **Fechar rodada** |
 | 3. Aprovar | Compras → **Aprovar** | Gerente da unidade (e o Admin). Na compra da **própria Franqueadora**: o **Financeiro da Franqueadora** | **Aprovar** ou **Recusar** cada item (recusar pede o motivo) → **Gerar pedidos** (um por fornecedor) |
 | 4. Receber | Compras → **Receber** | Gerente da unidade, Financeiro da Franqueadora, Admin — **não** o Coordenador, a ASB nem a TSB: receber cria a conta a pagar | Quando a entrega chega, conferir pela nota → **Registrar entrega**: o material entra no estoque e a conta a pagar nasce sozinha |
+
+> **Lista vazia é reaproveitada** *(desde a 0.412.0)*. Se a unidade já tem uma
+> lista em **Rascunho** sem nenhum item, do mesmo tipo (compra local ou não),
+> o **Gerar lista de compras** devolve essa mesma lista em vez de criar outra
+> — com o que estiver abaixo do mínimo naquele momento. Lista que já tem item
+> não é mexida: gerar de novo cria uma lista nova, como sempre.
 
 **Cada lista diz quem pediu e em que pé está.** Em Compras → **Pedir**, logo
 abaixo do código, aparece *"Pedida por Fulana, Gerente de Unidade · Risarte

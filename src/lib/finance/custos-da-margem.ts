@@ -33,6 +33,28 @@ export function minutosDoItem(
 }
 
 /**
+ * AP81 — o REPASSE dos itens aceitos.
+ *
+ * O repasse vinha só como total da opção (`estimated_option_payout`): na
+ * compra parcial o preço perdia os itens que o cliente tirou, mas o repasse
+ * deles continuava na conta e a margem aparecia menor do que é. Desde a 0376
+ * o banco devolve o repasse POR ITEM, e aqui somam só os aceitos.
+ *
+ * `porItem` nulo = o banco ainda não tem a 0376 (ou a leitura falhou): vale o
+ * total da opção, como antes — o erro fica para o lado conservador.
+ */
+export function repasseDosItensAceitos(
+  porItem: Record<string, number> | null | undefined,
+  itensAceitos: readonly string[],
+  totalDaOpcao: number
+): number {
+  if (!porItem) return totalDaOpcao;
+  let soma = 0;
+  for (const id of itensAceitos) soma += porItem[id] ?? 0;
+  return soma;
+}
+
+/**
  * Os custos dos itens escolhidos (na negociação: os ACEITOS — a compra parcial
  * tira o custo do que saiu). Nulo = os custos não foram lidos.
  */
