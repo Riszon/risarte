@@ -132,8 +132,11 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.407.0** · Última migraç
 >   treino só lendo (nada gravado). **Não visto:** destravar, reassinar e
 >   levar para a empresa pela tela; registrar pagamento pela tela.
 >   Manual do Empresarial 7.1, 7.2 e Envio e selos.
-> - ⏳ **1041 só no treino:** o dono roda na produção ANTES do push (o app
->   grava colunas novas). Produção tinha 0 leads com selo.
+> - ✅ **1041 aplicada na produção** (o dono, 09/11/2026; conferido de fora:
+>   sem login as 4 portas recusam com "permission denied" (uma função
+>   inexistente, de controle, responde "não encontrada") e as reaberturas não
+>   entregam nada; colunas novas respondem; 0 leads assinados, 0 com
+>   pagamento, 0 reaberturas). O código foi ao ar pelo push da sessão do core.
 >
 > (0.98.1, sem migração: link "Gerar CPF de teste" nos CPFs do Empresarial,
 > só no treino.)

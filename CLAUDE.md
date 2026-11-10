@@ -396,6 +396,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/11/2026 (proposta travada) — PC Administrador (Empresarial 0.98.1 → 0.99.0, migração 1041)**
+
+- **Proposta travada depois da assinatura, 1º pagamento nas cobranças e a
+  empresa a um clique do funil** (bloco "EMPRESARIAL 0.99.0" no ESTADO;
+  manual do Empresarial 7.1/7.2). ⚠️ **A trava é do banco** (`guard_lead_proposal`
+  em 7 tabelas, `guard_lead_signatures`); destravar = `reopen_lead_proposal`
+  (Admin/gestor, com motivo). ⚠️ **`settle_billing` virou porta sobre
+  `_settle_billing_raw`**: a conta da baixa mora na crua.
+- ✅ **1041 aplicada na produção** (o dono, 09/11/2026; conferido de fora).
+  O código subiu no push da sessão do core. **Não visto na tela:** destravar,
+  reassinar, levar para a empresa, registrar pagamento.
+
 **09/11/2026 (receita em dobro) — PC Administrador (core 0.406.0 → 0.407.0, migração 0373)**
 
 - **Venda só conta depois do contrato assinado** (bloco 0.407.0 no ESTADO;
