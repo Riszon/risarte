@@ -145,6 +145,7 @@ import {
 } from "@/lib/clinical";
 import { PlanEditorSwitcher } from "./plan-editor-switcher";
 import { loadClientPlans } from "./plan-loader";
+import { planosPelaPorta } from "./planos-pela-porta";
 import { carregarSequencias } from "./sequencias-loader";
 import { planoQueAbre } from "@/lib/sequencia-do-plano";
 import { SequenciaSomenteLeitura } from "../../planejamento/[clientId]/session-join-planner";
@@ -1662,8 +1663,13 @@ export default async function ClientDetailPage(
         "id, starts_at, attendance, status, called_at, checked_in_at, provider_user_id, called_by, provider:profiles!appointments_provider_user_id_fkey ( full_name ), room:clinic_rooms ( name )"
       )
       .eq("client_id", id)
-      .gte("starts_at", dayStart.toISOString())
-      .lt("starts_at", dayEnd.toISOString())
+      // OC-00172: o atendimento EM ANDAMENTO vale de qualquer dia (a recepção
+      // pode iniciar hoje o horário marcado para amanhã — o Atendimento já
+      // mostra assim desde o OC-00091); sem isso o Desenvolvimento Clínico
+      // não abria as sessões para dar baixa.
+      .or(
+        `and(starts_at.gte."${dayStart.toISOString()}",starts_at.lt."${dayEnd.toISOString()}"),attendance.eq.in_service`
+      )
       .not("status", "in", "(cancelled,no_show)")
       .order("starts_at")
       .returns<
@@ -2006,9 +2012,18 @@ export default async function ClientDetailPage(
         }[]
       >();
 
+    // OC-00172 (0388): o DENTISTA não lê os itens do plano pela regra da
+    // tabela — a leitura acima volta vazia para ele, e a aba mostrava 0/0 com
+    // as sessões ali. Sem plano legível e com sessões, lê pela porta do banco
+    // (sem preço; mesmo portão do odontograma).
+    const planosLidos =
+      (planOptRows ?? []).length === 0 && (procSessRows ?? []).length > 0
+        ? await planosPelaPorta(supabase, id)
+        : (planOptRows ?? []);
+
     // AP64 (0358): o complemento entra depois de VENDIDO (negociação aceita),
     // com o nome dele; antes disso ele aparece só no próprio plano.
-    const planosDosProcedimentos = (planOptRows ?? []).filter(
+    const planosDosProcedimentos = planosLidos.filter(
       (pl) => !pl.complement_of_plan_id || commercialByPlan[pl.id]?.status === "aceita"
     );
     let numeroDoPlano = 0;

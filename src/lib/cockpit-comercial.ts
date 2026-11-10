@@ -158,9 +158,12 @@ export function etapasDoCockpit(e: EntradaDoCockpit): Etapa[] {
 /** A frase do "Próximo passo", no alto do cockpit. */
 export function proximoPasso(e: EntradaDoCockpit): string {
   const status = e.negociacao?.status ?? null;
-  if (!e.naFaseComercial) return "O cliente não está na Conversão Comercial — a negociação abre quando o caso chegar ao Comercial.";
+  // OC-00171: a venda fechada vem ANTES da fase — depois do fechamento o
+  // cliente já saiu da Conversão Comercial, e a frase dizia que a negociação
+  // "abre quando o caso chegar ao Comercial".
   if (status === "cancelada") return "Venda cancelada. O termo de cancelamento está no prontuário.";
   if (e.venda?.closedAt) return "Venda concluída! A recepção foi acionada para iniciar o tratamento.";
+  if (!e.naFaseComercial) return "O cliente não está na Conversão Comercial — a negociação abre quando o caso chegar ao Comercial.";
   if (status === "aceita") {
     const signed = e.venda?.contractSigned ?? false;
     if (!signed && !e.temResumo) return "Escreva o resumo da apresentação: sem ele o contrato não pode ser enviado.";
@@ -190,9 +193,10 @@ export function proximoPasso(e: EntradaDoCockpit): string {
 export function abaInicial(e: EntradaDoCockpit, pedida?: string | null): AbaDoCockpit {
   if (pedida && (ABAS_DO_COCKPIT as string[]).includes(pedida)) return pedida as AbaDoCockpit;
   const status = e.negociacao?.status ?? null;
+  // OC-00171: venda fechada abre no Fechamento (o que foi feito), em qualquer fase.
+  if (e.venda?.closedAt || status === "cancelada") return "fechamento";
   if (!e.naFaseComercial) return "apresentacao";
   if (status === "aceita") return e.temResumo || e.venda?.contractSigned ? "fechamento" : "apresentacao";
-  if (status === "cancelada") return "fechamento";
   if (status !== null) return "negociacao";
   return "apresentacao";
 }

@@ -298,11 +298,17 @@ function SequenciaDoPlano({
               )}
             </span>
             {configuradaAtiva ? (
+              // OC-00157: confirmar NÃO tranca — dá para arrastar e juntar até
+              // enviar ao Coordenador (a trava é a do plano enviado). A frase
+              // diz isso, para ninguém achar que travou.
               <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
                 Sequência confirmada
                 {confirmadaEm(opcao)
                   ? ` em ${new Date(confirmadaEm(opcao)!).toLocaleDateString("pt-BR", { timeZone: BRAZIL_TIME_ZONE })}`
                   : ""}
+                <span className="block font-normal text-muted-foreground">
+                  Ainda dá para ajustar até enviar ao Coordenador.
+                </span>
               </span>
             ) : (
               <Button size="sm" disabled={confirmando} onClick={() => confirmar(opcao.id)}>

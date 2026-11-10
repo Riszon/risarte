@@ -396,6 +396,27 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (relatos, lote 1) — PC Administrador (core 0.417.0 → 0.418.0, migrações 0388 e 0389)**
+
+- **Relatos tratados pelo banco** (sessão "Relatos riSZon", pedido do dono):
+  a equipe relata quase tudo no **TREINO** (`system_reports` em
+  `.env.test.local`); triagem dos 28 abertos com o dono; lote 1 = 5 defeitos
+  (bloco 0.418.0 no ESTADO). Lotes 2 (respostas) e 3 (sugestões) pendentes.
+- ⚠️ **O dentista NÃO lê os itens do plano** (de novo): leitura nova de
+  procedimento para o dentista usa `client_approved_plan_items` (0388) ou
+  `odontogram_sessions` (0314), nunca `treatment_plan_option_items` direto.
+- ⚠️ **Ao recriar `commercial_set_stage`, levar o trecho da 0389** (iniciar
+  pega primeiro o agendamento com o cliente em espera, de qualquer dia).
+  Regra do dono: a recepção registra a chegada também da apresentação online.
+- ⚠️ **Script `node -e '…'` com SQL dentro: as aspas simples do SQL fecham a
+  aspa do shell** e somem caladas — a 0389 nasceu assim e quebrou o
+  `commercial_set_stage` do treino por minutos (o ensaio pegou). SQL vai em
+  arquivo, nunca dentro de `node -e '…'`.
+- ⏳ **0388 e 0389 aplicadas só no treino**; falta o dono rodar na produção.
+- Sobrou, de um script meu, o arquivo `/tmp_fn.sql` na raiz do Git Bash (um
+  trecho da 0063, sem uso): a remoção foi barrada pela trava de segurança;
+  pode apagar à mão.
+
 **10/11/2026 (repasse, etapa 1) — PC Administrador (core 0.416.0 → 0.417.0, migração 0387)**
 
 - **Repasse dos dentistas refeito em 5 etapas** (pedido do dono). Plano e as

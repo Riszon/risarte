@@ -205,6 +205,15 @@ export function ClosingPanel({
                 </p>
               </div>
             </div>
+            {/* OC-00171: de que jeito o contrato foi dado como assinado — a
+                marcação à mão (papel) e a assinatura digital fecham a venda
+                igual, e quem olha depois precisa saber qual foi. */}
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <FileSignature className="size-3.5 shrink-0" />
+              {sale?.contractSignedSource === "assinatura_digital"
+                ? `Contrato assinado pela assinatura digital${sale.contractSignedAt ? ` em ${formatBrDate(sale.contractSignedAt)}` : ""}.`
+                : `Contrato marcado como assinado no papel (à mão)${sale?.contractSignedAt ? ` em ${formatBrDate(sale.contractSignedAt)}` : ""}.`}
+            </p>
             {/* 0207: cancelar tratamento saiu daqui e foi para o PRONTUÁRIO,
                 aba Plano — quem cancela é o Gerente, e apresentação é passado
                 quando o paciente já está em tratamento. */}

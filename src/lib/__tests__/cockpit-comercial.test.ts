@@ -110,6 +110,27 @@ describe("o caminho da venda no cockpit", () => {
     expect(etapas[3].situacao).toBe("agora");
   });
 
+  it("OC-00171: venda fechada com o cliente já no Início de Tratamento mostra o que foi feito", () => {
+    // O cliente do relato: contrato marcado à mão, pagamento confirmado, e a
+    // venda moveu o cliente para a Fase 5. A faixa dizia "Ainda não salva".
+    const e: EntradaDoCockpit = {
+      naFaseComercial: false,
+      temResumo: true,
+      negociacao: { status: "aceita" },
+      venda: { contractSigned: true, paymentConfirmed: true, closedAt: "2026-11-09T21:49:34Z" },
+      contrato: null,
+    };
+    const etapas = etapasDoCockpit(e);
+    expect(etapas[1].detalhe).toBe("Aceita pelo cliente");
+    expect(etapas[2].detalhe).toBe("Assinado");
+    expect(etapas.every((x) => x.situacao === "feito")).toBe(true);
+    expect(proximoPasso(e)).toMatch(/venda concluída/i);
+    expect(abaInicial(e)).toBe("fechamento");
+    // A tela carrega a negociação fora da fase comercial (régua).
+    const tela = ler("src", "app", "(app)", "comercial", "[clientId]", "page.tsx");
+    expect(tela).toMatch(/inCommercialPhase \|\| depoisDoComercial\s*\?\s*loadNegotiationBlock/);
+  });
+
   it("a aba pedida no endereço vence; uma inválida é ignorada", () => {
     const e = { ...base, temResumo: true, negociacao: { status: "aceita" as const } };
     expect(abaInicial(e, "cliente")).toBe("cliente");

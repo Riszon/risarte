@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.418.0",
+    data: "2026-11-10",
+    migracao: "0389",
+    titulo: "Relatos da equipe: o dentista vê os procedimentos, a apresentação online fora da recepção e a venda fechada no cockpit",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O dentista volta a ver, na ficha do cliente, a lista de procedimentos em Sessões & Procedimentos — antes ela aparecia vazia (0/0) para todo dentista, com o tempo de cadeira preenchido ao lado. (OC-00172, OC-00173)",
+        papeis: ["dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Quando a recepção inicia hoje um horário marcado para outro dia, o Desenvolvimento Clínico do dentista mostra os procedimentos daquele atendimento para dar baixa. (OC-00172)",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Apresentação comercial: a recepção continua registrando a chegada. Quando o consultor inicia a apresentação no funil, o cliente que chegou passa para Em atendimento — também quando a chegada foi num agendamento de outro dia, que antes ficava Em espera para sempre — e, quando ele finaliza, para Concluído. O que ficar em A chegar ou Em espera é apresentação que não aconteceu: reagende e converse com o Comercial. (OC-00146)",
+        papeis: ["receptionist", "unit_manager", "commercial_consultant"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Cockpit do Consultor: com a venda fechada, a faixa de etapas mostra a negociação aceita, o contrato e o pagamento como feitos (antes dizia Ainda não salva e Depois do aceite), e o Fechamento diz se o contrato foi assinado no papel (marcado à mão) ou pela assinatura digital. (OC-00171)",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Plano de tratamento: a opção sem procedimento (por exemplo, só com a proposta ortodôntica) ganhou um aviso que diz o que fazer — incluir o procedimento de Ortodontia; e a sequência confirmada avisa que ainda dá para ajustar até enviar ao Coordenador. (OC-00152, OC-00157)",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+    ],
+  },
+  {
     versao: "0.417.0",
     data: "2026-11-10",
     migracao: "0387",

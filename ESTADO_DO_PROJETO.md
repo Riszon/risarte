@@ -2,6 +2,45 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🩺 0.418.0 — RELATOS DA EQUIPE, LOTE 1 (10/11/2026; migrações 0388 e 0389)
+>
+> Relatos do TREINO triados com o dono (sessão "Relatos riSZon"): 5 defeitos.
+> ✅ **0388 e 0389 aplicadas no treino.** ⏳ **Falta o dono rodar as duas na
+> produção** (nesta ordem; só criam/recriam função, não mexem em dado).
+> **Não visto na tela.**
+> - **OC-00172/00173 — o dentista não via os procedimentos** (0/0 em Sessões &
+>   Procedimentos, para TODO dentista). A lista lia `treatment_plans` → opções
+>   → itens, e a regra dessas tabelas exclui o dentista (0353). **0388:**
+>   `client_approved_plan_items(p_client)` (`security definer`, portão
+>   `can_view_odontogram`, SEM preço); a ficha usa quando a leitura direta vem
+>   vazia e há sessões (`planos-pela-porta.ts`). Ensaio (transação desfeita)
+>   com a dentista do relato: 0 → 12 itens; sem função na unidade 0; sem
+>   login recusa.
+> - **OC-00172 (2ª causa):** o atendimento de hoje na ficha só pegava
+>   `starts_at` de hoje; agora também o `attendance = in_service` de qualquer
+>   dia (mesma regra do Atendimento desde o OC-00091).
+> - **OC-00146 — apresentação presa em "Em espera".** Regra do dono
+>   (10/11/2026): a recepção REGISTRA A CHEGADA (também da online); iniciar no
+>   funil → Em atendimento; finalizar → Concluído; o que sobra em A chegar/Em
+>   espera é apresentação que não aconteceu. Defeito lido no treino: 27 de 37
+>   apresentações passadas em aberto tinham chegada E início no funil — o
+>   início (`commercial_set_stage`, 0293) só procurava agendamento a ±1 dia.
+>   **0389:** ao iniciar, primeiro o agendamento com o cliente `waiting`, de
+>   qualquer dia. ⚠️ Ao recriar `commercial_set_stage`, levar esse trecho.
+>   Ensaio (desfeito): agendamento de 05/11 → in_service → done. Os 27 presos
+>   do treino ficaram como estão.
+> - **OC-00171 — cockpit dizia "Ainda não salva" com a venda fechada.** O
+>   fechamento foi pelo caminho normal (contrato marcado à mão, permitido).
+>   O cockpit agora lê a negociação/venda também depois da Fase 4
+>   (`depoisDoComercial`, só leitura), `proximoPasso`/`abaInicial` olham a
+>   venda fechada antes da fase, e o Fechamento diz se o contrato foi
+>   digital ou marcado à mão. Régua em `cockpit-comercial.test.ts`.
+> - **OC-00152 / OC-00157 — textos do plano:** aviso da opção sem
+>   procedimento ("inclua o procedimento de Ortodontia") e "ainda dá para
+>   ajustar até enviar" na sequência confirmada (confirmar nunca trancou).
+> - Achado de passagem, no treino: o Consultor de teste tem um atendimento
+>   `in_service` de 24/10 que o deixa "ocupado" para chamar outro (não mexi).
+>
 > ## 💸 0.417.0 — REPASSE DOS DENTISTAS, ETAPA 1: DESTRAVAR E PROTEGER (10/11/2026; migração 0387)
 >
 > Pedido do dono: refazer o repasse de ponta a ponta. Plano em 5 etapas e as

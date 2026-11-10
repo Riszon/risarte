@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   Briefcase,
+  CheckCircle2,
   FileText,
   Layers,
   MessageCircle,
@@ -41,6 +42,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 import {
+  JOURNEY_PHASES,
   PHASE_COLORS,
   PILLAR_LABELS,
   type JourneyPhase,
@@ -129,6 +131,13 @@ export default async function CommercialCockpitPage(
   const modoComplemento =
     complemento && complemento.status === "approved" && phase === "treatment_start" ? complemento : null;
   const inCommercialPhase = phase === "commercial_conversion" || modoComplemento != null;
+  // OC-00171: depois da Conversão Comercial (Fase 5 em diante) a venda JÁ
+  // aconteceu — o cockpit lê a negociação e a venda para MOSTRAR o que foi
+  // feito (só leitura). Sem isso a faixa dizia "Ainda não salva" e "Depois do
+  // aceite" para uma venda fechada, e parecia que o cliente pulou etapas.
+  const depoisDoComercial =
+    !inCommercialPhase &&
+    JOURNEY_PHASES.indexOf(phase) > JOURNEY_PHASES.indexOf("commercial_conversion");
   // Fora do modo complemento: os complementos aprovados deste cliente, para o
   // Consultor achar o caminho (C4 também os põe no quadro).
   const { data: complementosAbertos } = modoComplemento
@@ -153,7 +162,9 @@ export default async function CommercialCockpitPage(
       // AP64 (C1): no modo complemento, a apresentação é a DELE.
       lerApresentacao(supabase, clientId, modoComplemento?.id ?? null),
       loadClientPlans(clientId),
-      inCommercialPhase ? loadNegotiationBlock(clientId, clinicId, modoComplemento?.id ?? null) : null,
+      inCommercialPhase || depoisDoComercial
+        ? loadNegotiationBlock(clientId, clinicId, modoComplemento?.id ?? null)
+        : null,
       supabase
         .from("plan_quality_reviews")
         .select("status, plan:treatment_plans ( client_id )")
@@ -580,7 +591,17 @@ export default async function CommercialCockpitPage(
               />
             </>
           ),
-          negociacao: !inCommercialPhase ? (
+          negociacao: depoisDoComercial && negociacao ? (
+            // OC-00171: a venda já aconteceu — a negociação não se edita mais.
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm">
+              <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+              {negociacao.status === "aceita"
+                ? "Negociação aceita pelo cliente — a venda já foi feita. O resumo das condições está na aba Fechamento."
+                : negociacao.status === "cancelada"
+                  ? "Venda cancelada. O termo de cancelamento está no prontuário."
+                  : "O cliente já saiu da Conversão Comercial — a negociação não se edita mais por aqui."}
+            </div>
+          ) : !inCommercialPhase ? (
             <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
               <TriangleAlert className="size-4 shrink-0" />
               O cliente não está na Conversão Comercial (Fase 4) — a negociação fica
@@ -637,7 +658,7 @@ export default async function CommercialCockpitPage(
                   assinatura={canSendSignatures(session, clinicId) ? { clinicId } : null}
                   contrato={contratoDoFechamento}
                   resumoFaltando={!temResumo}
-                  canClose={canClose}
+                  canClose={canClose && !depoisDoComercial}
                   negotiationCancelled={negotiationBlock.negotiation.status === "cancelada"}
                   summary={{
                     finalCents: negotiationBlock.negotiation.finalCents,

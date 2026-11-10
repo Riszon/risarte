@@ -2754,6 +2754,17 @@ tratamento"** (a venda fechou) e **"Agendar apresentação comercial"**.
 > fundo** continua dizendo a situação, como antes: azul é agendado, verde é
 > confirmado.
 
+> **A apresentação comercial anda sozinha depois da chegada** (versão 0.418.0,
+> relato OC-00146; regra do dono, 10/11/2026). Você **registra a chegada**
+> também da apresentação online (o cliente pode vir à clínica e o consultor
+> entrar por vídeo). Quando o consultor **inicia** a apresentação no funil, o
+> cartão vai para **Em atendimento**; quando ele **finaliza** (apresentado,
+> venda concluída, follow-up, cancelado ou perdido), vai para **Concluídos**.
+> Vale também quando a chegada foi num agendamento de **outro dia** — antes,
+> esse caso ficava **Em espera** para sempre. **O que ficar em "A chegar" ou
+> "Em espera" é apresentação que não aconteceu:** reagende e converse com o
+> Comercial para entender o que houve.
+
 **Tarefa 4 — Atender o pedido do Comercial**
 
 Quando o Consultor não consegue realizar a apresentação (o cliente não
@@ -3104,6 +3115,15 @@ fica no alto do cockpit, mostra **Configurado** ou **Pendente** e vale para o
   sugerida esteja boa. **Sem isso o plano não vai para o Coordenador.** Se entrar
   ou sair um procedimento, ou mudar a quantidade ou o número de sessões, a opção
   volta a ficar **Pendente**.
+- **Confirmar não tranca** (relato OC-00157): depois de confirmada, a
+  sequência ainda se arruma — arrastar, juntar e separar — até você **enviar
+  ao Coordenador**. Desde a 0.418.0 a própria tela diz isso ao lado de
+  "Sequência confirmada".
+- **Opção sem procedimento não tem sequência** (relato OC-00152): a proposta
+  ortodôntica é um anexo da opção, não um procedimento. Uma opção só com ela
+  não abre **Atendimentos e sequência** e trava o envio — inclua o
+  procedimento de **Ortodontia** nela. Desde a 0.418.0 o aviso perto do botão
+  de envio diz exatamente isso.
 - **Depois de enviar, a sequência tranca**, como o resto do plano. Para mudar,
   crie uma nova versão: ela leva os atendimentos e a sequência junto, e você
   confirma de novo.
@@ -3352,6 +3372,19 @@ Seu menu é diferente: **não tem Jornada**, e tem **Meu Dia** e **Minha Agenda*
 > **O botão de concluir só libera depois da anotação.** Não é travamento: é a
 > regra de que atendimento sem registro não encerra.
 
+**Os procedimentos do cliente na ficha (desde a 0.418.0, relatos
+OC-00172/OC-00173).** Na aba **Sessões & Procedimentos** você vê a lista dos
+procedimentos do plano aprovado, com as sessões de cada um — **sem os
+valores**, que continuam fora da sua função. Até a 0.417.0 a lista aparecia
+**vazia (0/0)** para o dentista, com o tempo de cadeira preenchido ao lado: era
+defeito, não falta de venda.
+
+**Atendimento iniciado antes do dia marcado.** Se a recepção registrou a
+chegada e você chamou hoje um paciente cujo horário era de **outro dia**, o
+**Desenvolvimento Clínico** mostra os procedimentos **daquele atendimento**
+para dar baixa (o cartão do Atendimento diz "Marcado para …"). Até a 0.417.0
+a ficha procurava só o atendimento com data de hoje e não mostrava nada.
+
 **O que acontece automaticamente ao concluir:** o material do kit **baixa do
 estoque** e, quando a sessão concluída é a **última do procedimento**, o
 repasse do procedimento é apurado. Você não digita nada disso.
@@ -3467,6 +3500,19 @@ dela. Abaixo, quatro abas:
 O cockpit **abre sozinho na aba da vez**: na Negociação enquanto você negocia,
 no Fechamento depois do aceite. O que você digitou numa aba **não se perde**
 ao trocar de aba, mas só fica gravado quando você salva.
+
+**Depois da venda fechada** (desde a 0.418.0, relato OC-00171), o cliente já
+está no Início de Tratamento e o cockpit **mostra o que foi feito**: a faixa
+marca a negociação aceita, o contrato e o pagamento como feitos, abre no
+**Fechamento** com "Venda concluída!" e diz **de que jeito o contrato foi dado
+como assinado** — pela assinatura digital ou **marcado à mão** (papel), com a
+data. A Negociação fica só para leitura. Até a 0.417.0 a faixa dizia "Ainda
+não salva" e "Depois do aceite" para uma venda fechada, e parecia que o
+cliente tinha pulado etapas.
+
+> **Marcar "Contrato assinado" à mão fecha a venda igual à assinatura
+> digital** — é para o contrato assinado **no papel**. Só marque com o papel
+> assinado em mãos.
 
 **O resumo da apresentação é obrigatório para o aceite** (0.382.0): sem ele,
 o **aceite do cliente não é registrado** — o sistema responde *"Escreva o

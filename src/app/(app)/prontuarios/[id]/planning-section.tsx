@@ -1226,11 +1226,27 @@ export function PlanningSection({
               </p>
             )}
             {/* OC-00010: o banco recusa o envio; a tela avisa antes do clique. */}
-            {options.some((o) => !o.sequenceConfirmedAt) && montaAqui && (
+            {/* OC-00152: opção SEM procedimento não tem atendimentos — o cartão
+                da sequência nem aparece para ela. A proposta ortodôntica é um
+                anexo da opção, não um procedimento: o aviso manda incluir o
+                procedimento, não abrir um cartão que não existe. */}
+            {options.some((o) => o.items.length === 0) && montaAqui && (
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                Sem procedimento lançado:{" "}
+                {options.filter((o) => o.items.length === 0).map((o) => o.title).join(", ")}.
+                Inclua ao menos um procedimento nesta opção (na proposta
+                ortodôntica, o procedimento de <strong>Ortodontia</strong>): só
+                então aparecem os atendimentos e a sequência.
+              </p>
+            )}
+            {options.some((o) => o.items.length > 0 && !o.sequenceConfirmedAt) && montaAqui && (
               <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
                 Falta confirmar os atendimentos e a sequência de:{" "}
-                {options.filter((o) => !o.sequenceConfirmedAt).map((o) => o.title).join(", ")}. Abra{" "}
-                <strong>Atendimentos e sequência</strong> no Cockpit de Planejamento.
+                {options
+                  .filter((o) => o.items.length > 0 && !o.sequenceConfirmedAt)
+                  .map((o) => o.title)
+                  .join(", ")}
+                . Abra <strong>Atendimentos e sequência</strong> no Cockpit de Planejamento.
               </p>
             )}
             {(!canSubmit || !pillarChoice) && montaAqui && (
