@@ -405,9 +405,11 @@ Syncthing se comportarem de forma estranha.**
   `supplierToPayload` juntos (régua).
 - ✅ **0371 aplicada na produção** (o dono, 09/11/2026; conferido de fora:
   19 tipos, RisLife da Franqueadora "só Franqueadora" e a de Cambé listada
-  em Cambé, telefone só dígitos; sem login as 3 portas recusam) antes do push. Pendente
-  com o dono: juntar ou não a RisLife duplicada (mesmo CNPJ na Franqueadora e
-  em Cambé).
+  em Cambé, telefone só dígitos; sem login as 3 portas recusam) antes do push.
+- ✅ **RisLife em cadastro único** (decisão do dono, 09/11/2026): ficou a da
+  Franqueadora, valendo em todas as unidades; a de Cambé (sem nenhum uso)
+  foi apagada na produção pela chave de serviço (a trilha registra como
+  "Sistema").
 
 **09/11/2026 (AP69, etapa 2) — PC Administrador (Empresarial 0.97.0 → 0.98.0, migração 1040)**
 

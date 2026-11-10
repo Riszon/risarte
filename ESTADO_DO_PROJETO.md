@@ -10,7 +10,8 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.405.0** · Última migraç
 > unidades dele; os existentes ficam como estavam (Franqueadora → "só
 > Franqueadora"; unidade → "unidades escolhidas: ela"); histórico para quem vê
 > o fornecedor. A RisLife duplicada (mesmo CNPJ na Franqueadora e em Cambé, na
-> produção) NÃO foi juntada — decisão do dono pendente.
+> produção) virou UMA (decisão do dono, 09/11/2026): ficou a da Franqueadora,
+> valendo em todas as unidades; a de Cambé, sem nenhum uso, foi apagada.
 > - ⚠️ **Onde o fornecedor vale = `scope` + `supplier_clinics`**; `clinic_id`
 >   passou a ser só "onde foi cadastrado". Tela nova que liste fornecedores
 >   usa `fornecedoresDaUnidade` (`src/lib/fornecedores-db.ts`, sobre
