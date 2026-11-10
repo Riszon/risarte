@@ -14,12 +14,17 @@ import { formatBRL } from "@/lib/pricing";
 import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr } from "@/lib/dates";
 import {
   REPORT_STATUS_LABEL,
+  nextStepText,
   reasonError,
   totalReady,
   type Candidate,
   type Report,
 } from "@/lib/finance/payout-report";
-import { generatePayoutReports, releaseWithheldPayout } from "./actions";
+import {
+  generatePayoutReports,
+  releaseWithheldPayout,
+  sendAllDraftReports,
+} from "./actions";
 
 export type WithheldRow = {
   payoutId: string;
@@ -69,6 +74,26 @@ export function ReportsBoard({
           n === 0
             ? "Nada novo para entrar em relatório."
             : `${n} relatório${n === 1 ? "" : "s"} gerado${n === 1 ? "" : "s"} ou completado${n === 1 ? "" : "s"}.`
+        );
+      }
+      router.refresh();
+    });
+  }
+
+  const rascunhosComItens = reports.filter(
+    (r) => r.status === "rascunho" && r.itemCount > 0
+  ).length;
+
+  function sendAll() {
+    startTransition(async () => {
+      const r = await sendAllDraftReports({ clinicId });
+      if (!r.ok) toast.error(r.error ?? "Algo deu errado.");
+      else {
+        const n = r.count ?? 0;
+        toast.success(
+          n === 0
+            ? "Nenhum rascunho para enviar."
+            : `${n} relatório${n === 1 ? "" : "s"} enviado${n === 1 ? "" : "s"} para aprovação.`
         );
       }
       router.refresh();
@@ -223,12 +248,24 @@ export function ReportsBoard({
       {/* -- OS RELATÓRIOS DA UNIDADE ---------------------------------------- */}
       <Card>
         <CardContent className="space-y-3 p-4">
-          <h2 className="font-medium">
-            Relatórios da unidade{" "}
-            <span className="text-xs font-normal text-muted-foreground">
-              ({reports.length})
-            </span>
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-medium">
+              Relatórios da unidade{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({reports.length})
+              </span>
+            </h2>
+            {canManage && rascunhosComItens > 0 && (
+              <Button size="sm" disabled={isPending} onClick={sendAll}>
+                Enviar os {rascunhosComItens} rascunho
+                {rascunhosComItens === 1 ? "" : "s"} para aprovação
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Enviar pode ser de uma vez. Aprovar é sempre um relatório por vez,
+            por quem responde pela equipe e depois pelo dentista.
+          </p>
           {reports.length === 0 ? (
             <p className="py-4 text-center text-xs text-muted-foreground">
               Nenhum relatório gerado ainda.
@@ -257,6 +294,18 @@ export function ReportsBoard({
                         · gerado em {formatBrDateTime(r.createdAt)}
                         {r.createdByName ? ` por ${r.createdByName}` : ""}
                       </p>
+                      {!["rascunho", "cancelado"].includes(r.status) && (
+                        <p className="text-xs text-muted-foreground">
+                          {nextStepText(r)}
+                          {r.financeCount > 0 && canManage && (
+                            <strong className="ml-1 text-foreground">
+                              {r.financeCount} procedimento
+                              {r.financeCount === 1 ? "" : "s"} esperando a sua
+                              decisão.
+                            </strong>
+                          )}
+                        </p>
+                      )}
                     </div>
                     <span className="flex items-center gap-2">
                       <strong className="tabular-nums">

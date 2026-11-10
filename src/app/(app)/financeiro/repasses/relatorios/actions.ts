@@ -7,10 +7,12 @@ import { logAudit } from "@/lib/audit";
 import { todayInBrazil } from "@/lib/dates";
 import { canManagePayoutReports } from "@/lib/finance/access";
 import {
+  correctionError,
   monthError,
   reasonError,
   reportErrorText,
   type ExclusionKind,
+  type FinanceAction,
 } from "@/lib/finance/payout-report";
 
 // Repasse, Etapa 2 (0390). Toda regra mora no banco; a guarda daqui é só para
@@ -23,7 +25,132 @@ const NEGADO = "Só o Financeiro da Franqueadora monta o relatório de repasse."
 function refresh(reportId?: string) {
   revalidatePath("/financeiro/repasses");
   revalidatePath("/financeiro/repasses/relatorios");
-  if (reportId) revalidatePath(`/financeiro/repasses/relatorios/${reportId}`);
+  revalidatePath("/repasses");
+  if (reportId) {
+    revalidatePath(`/financeiro/repasses/relatorios/${reportId}`);
+    revalidatePath(`/repasses/${reportId}`);
+  }
+}
+
+/**
+ * 0391 — envia UM rascunho para aprovação. O banco decide quem aprova (o
+ * Gerente; o Coordenador quando a unidade não tem Gerente; o Financeiro
+ * quando o relatório é do próprio aprovador) e avisa pelo sino.
+ */
+export async function sendPayoutReport(input: {
+  reportId: string;
+}): Promise<ReportResult & { approver?: string }> {
+  const session = await getSessionContext();
+  if (!canManagePayoutReports(session)) return { ok: false, error: NEGADO };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("payout_report_send", {
+    p_report_id: input.reportId,
+  });
+  if (error) {
+    console.error("payout_report_send failed:", error.message);
+    return { ok: false, error: reportErrorText(error.message) };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "payout_report",
+    entityId: input.reportId,
+  });
+  refresh(input.reportId);
+  return { ok: true, approver: (data as string) ?? undefined };
+}
+
+/**
+ * 0391 — envia todos os rascunhos da unidade, um a um. Enviar pode ser de
+ * uma vez (pedido do dono); APROVAR nunca é.
+ */
+export async function sendAllDraftReports(input: {
+  clinicId: string;
+}): Promise<ReportResult> {
+  const session = await getSessionContext();
+  if (!canManagePayoutReports(session)) return { ok: false, error: NEGADO };
+  const supabase = await createClient();
+  const { data: rascunhos, error: erroLista } = await supabase
+    .from("payout_reports")
+    .select("id, item_count")
+    .eq("clinic_id", input.clinicId)
+    .eq("status", "rascunho");
+  if (erroLista) {
+    console.error("sendAllDraftReports list failed:", erroLista.message);
+    return { ok: false, error: "Não foi possível ler os rascunhos." };
+  }
+  let enviados = 0;
+  let falhas = 0;
+  for (const r of rascunhos ?? []) {
+    if (Number(r.item_count ?? 0) === 0) continue;
+    const { error } = await supabase.rpc("payout_report_send", {
+      p_report_id: r.id as string,
+    });
+    if (error) {
+      console.error("payout_report_send failed:", error.message);
+      falhas++;
+    } else enviados++;
+  }
+  await logAudit({
+    action: "update",
+    entityType: "payout_report",
+    entityId: input.clinicId,
+    clinicId: input.clinicId,
+  });
+  refresh();
+  if (falhas > 0) {
+    return {
+      ok: false,
+      count: enviados,
+      error: `${enviados} enviado(s) e ${falhas} com erro. Abra os que ficaram em rascunho.`,
+    };
+  }
+  return { ok: true, count: enviados };
+}
+
+/**
+ * 0391 — a DECISÃO FINAL do Financeiro sobre uma linha contestada duas vezes
+ * (ou encaminhada pelo aprovador): manter, corrigir o valor ou excluir.
+ */
+export async function decideContestedItem(input: {
+  reportId: string;
+  itemId: string;
+  action: FinanceAction;
+  reason: string;
+  newAmountCents: number | null;
+  currentAmountCents: number;
+  exclusionKind: ExclusionKind | null;
+}): Promise<ReportResult> {
+  const session = await getSessionContext();
+  if (!canManagePayoutReports(session)) return { ok: false, error: NEGADO };
+  const erro = reasonError(input.reason);
+  if (erro) return { ok: false, error: erro };
+  if (input.action === "corrigir") {
+    const e = correctionError(input.newAmountCents, input.currentAmountCents);
+    if (e) return { ok: false, error: e };
+  }
+  if (input.action === "excluir" && !input.exclusionKind) {
+    return { ok: false, error: "Escolha adiar ou não pagar." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payout_report_finance_decide", {
+    p_item_id: input.itemId,
+    p_action: input.action,
+    p_reason: input.reason.trim(),
+    p_new_amount_cents:
+      input.action === "corrigir" ? Math.round(input.newAmountCents ?? 0) : null,
+    p_exclusion_kind: input.action === "excluir" ? input.exclusionKind : null,
+  });
+  if (error) {
+    console.error("payout_report_finance_decide failed:", error.message);
+    return { ok: false, error: reportErrorText(error.message) };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "payout_report",
+    entityId: input.reportId,
+  });
+  refresh(input.reportId);
+  return { ok: true };
 }
 
 /** Gera (ou completa) o relatório de um dentista, ou de todos os da unidade. */

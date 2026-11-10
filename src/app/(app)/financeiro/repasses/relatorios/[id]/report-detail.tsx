@@ -11,23 +11,40 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { formatBRL } from "@/lib/pricing";
+import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr } from "@/lib/dates";
 import {
+  APPROVER_LABEL,
+  CONTEST_LABEL,
   EXCLUSION_HELP,
   EXCLUSION_LABEL,
+  FINANCE_ACTION_LABEL,
   REPORT_STATUS_LABEL,
+  REVIEW_LABEL,
+  correctionError,
   eventLabel,
+  nextStepText,
   reasonError,
   type ExclusionKind,
+  type FinanceAction,
+  type ManagerAction,
   type Report,
   type ReportItem,
 } from "@/lib/finance/payout-report";
 import {
   cancelPayoutReport,
+  decideContestedItem,
   excludeReportItem,
   restoreReportItem,
+  sendPayoutReport,
 } from "../actions";
+import {
+  answerContest,
+  approvePayoutReport,
+  approverExcludeItem,
+  approverRestoreItem,
+  returnPayoutReport,
+} from "@/app/(app)/repasses/actions";
 
 export type HistoryRow = {
   at: string;
@@ -37,28 +54,55 @@ export type HistoryRow = {
   procedureName: string | null;
 };
 
+type Resultado = { ok: boolean; error?: string };
+
+/**
+ * UM relatório de repasse, para quem cuida dele: o Financeiro da Franqueadora
+ * (monta, envia, decide a contestação que chegou a ele) e o APROVADOR (confere,
+ * exclui com motivo, aprova e envia ao dentista, responde à contestação).
+ *
+ * O que cada um pode vem do banco, relatório a relatório (`canManage`,
+ * `canApprove`); a tela só mostra o botão a quem o banco vai aceitar.
+ * O dentista NÃO usa esta tela: ele tem "Meus repasses", sem o registro
+ * interno.
+ */
 export function ReportDetail({
   report,
   items,
   history,
   canManage,
+  canApprove,
+  backHref,
   loadFailed,
 }: {
   report: Report;
   items: ReportItem[];
   history: HistoryRow[];
+  /** Financeiro da Franqueadora / Admin Master. */
   canManage: boolean;
+  /** É o aprovador DESTE relatório. */
+  canApprove: boolean;
+  backHref: string;
   loadFailed: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const isDraft = report.status === "rascunho";
-  const canEdit = canManage && isDraft;
 
-  // Um formulário de motivo aberto por vez: de um item, ou do cancelamento.
+  const isDraft = report.status === "rascunho";
+  const withApprover = report.status === "com_gerente";
+  // Ajustar as linhas: o Financeiro no rascunho; o aprovador na vez dele.
+  const financeAdjusts = canManage && isDraft;
+  const approverAdjusts = canApprove && withApprover;
+  const canAdjust = financeAdjusts || approverAdjusts;
+  const canAnswer = canApprove && report.status === "em_contestacao";
+
+  // Um formulário aberto por vez.
   const [open, setOpen] = useState<string | null>(null);
   const [kind, setKind] = useState<ExclusionKind>("adiar");
   const [reason, setReason] = useState("");
+  const [answer, setAnswer] = useState<ManagerAction>("manter");
+  const [decision, setDecision] = useState<FinanceAction>("manter");
+  const [amount, setAmount] = useState("");
 
   const incluidos = items.filter((i) => i.status === "incluido");
   const excluidos = items.filter((i) => i.status === "excluido");
@@ -67,12 +111,12 @@ export function ReportDetail({
     setOpen(id);
     setKind("adiar");
     setReason("");
+    setAnswer("manter");
+    setDecision("manter");
+    setAmount("");
   }
 
-  function run(
-    fn: () => Promise<{ ok: boolean; error?: string }>,
-    sucesso: string
-  ) {
+  function run(fn: () => Promise<Resultado>, sucesso: string) {
     startTransition(async () => {
       const r = await fn();
       if (!r.ok) toast.error(r.error ?? "Algo deu errado.");
@@ -85,28 +129,78 @@ export function ReportDetail({
     });
   }
 
-  function excluir(itemId: string) {
+  function comMotivo(fn: () => Promise<Resultado>, sucesso: string) {
     const erro = reasonError(reason);
     if (erro) return void toast.error(erro);
-    run(
-      () => excludeReportItem({ reportId: report.id, itemId, kind, reason }),
+    run(fn, sucesso);
+  }
+
+  function excluir(itemId: string) {
+    const entrada = { reportId: report.id, itemId, kind, reason };
+    comMotivo(
+      () => (financeAdjusts ? excludeReportItem(entrada) : approverExcludeItem(entrada)),
       kind === "adiar"
         ? "Procedimento adiado para o próximo relatório."
         : "Procedimento marcado como não pagar."
     );
   }
 
-  function cancelar() {
-    const erro = reasonError(reason);
-    if (erro) return void toast.error(erro);
+  function devolverItem(itemId: string) {
+    const entrada = { reportId: report.id, itemId };
     run(
-      () => cancelPayoutReport({ reportId: report.id, reason }),
-      "Relatório cancelado. Os procedimentos voltaram a poder entrar em outro."
+      () => (financeAdjusts ? restoreReportItem(entrada) : approverRestoreItem(entrada)),
+      "Procedimento devolvido ao relatório."
+    );
+  }
+
+  function responder(itemId: string) {
+    comMotivo(
+      () =>
+        answerContest({
+          reportId: report.id,
+          itemId,
+          action: answer,
+          text: reason,
+          exclusionKind: answer === "excluir" ? kind : null,
+        }),
+      answer === "manter"
+        ? "Resposta enviada ao dentista."
+        : answer === "financeiro"
+          ? "Pedido enviado ao Financeiro."
+          : "Procedimento excluído do relatório."
+    );
+  }
+
+  function decidir(item: ReportItem) {
+    const novo = decision === "corrigir" ? parseBRLToCents(amount) : null;
+    if (decision === "corrigir") {
+      const e = correctionError(novo, item.amountCents);
+      if (e) return void toast.error(e);
+    }
+    comMotivo(
+      () =>
+        decideContestedItem({
+          reportId: report.id,
+          itemId: item.itemId,
+          action: decision,
+          reason,
+          newAmountCents: novo,
+          currentAmountCents: item.amountCents,
+          exclusionKind: decision === "excluir" ? kind : null,
+        }),
+      "Decisão registrada."
     );
   }
 
   return (
     <div className={cn("space-y-5", isPending && "opacity-70")}>
+      <Link
+        href={backHref}
+        className="inline-flex text-sm text-muted-foreground hover:text-foreground print:hidden"
+      >
+        ← Voltar
+      </Link>
+
       {/* -- CABEÇALHO ------------------------------------------------------- */}
       <Card>
         <CardContent className="space-y-3 p-4">
@@ -123,6 +217,12 @@ export function ReportDetail({
               <p className="text-xs text-muted-foreground">
                 Gerado em {formatBrDateTime(report.createdAt)}
                 {report.createdByName ? ` por ${report.createdByName}` : ""}
+                {report.sentAt
+                  ? ` · enviado em ${formatBrDateTime(report.sentAt)}${report.sentByName ? ` por ${report.sentByName}` : ""}`
+                  : ""}
+                {report.managerAt
+                  ? ` · aprovado em ${formatBrDateTime(report.managerAt)}${report.managerByName ? ` por ${report.managerByName}` : ""}`
+                  : ""}
               </p>
             </div>
             <div className="text-right">
@@ -134,9 +234,21 @@ export function ReportDetail({
               </p>
               <p className="text-xs text-muted-foreground">
                 {report.itemCount} procedimento{report.itemCount === 1 ? "" : "s"}
+                {report.releasedCents > 0 &&
+                  report.releasedCents !== report.totalCents &&
+                  ` · ${formatBRL(report.releasedCents)} já liberado`}
               </p>
             </div>
           </div>
+
+          <p className="rounded-lg border bg-muted/40 p-2 text-sm">
+            {nextStepText(report)}
+            {report.approverKind && !["aprovado", "cancelado"].includes(report.status) && (
+              <span className="block text-xs text-muted-foreground">
+                Aprovador: {APPROVER_LABEL[report.approverKind] ?? report.approverKind}
+              </span>
+            )}
+          </p>
 
           {report.status === "cancelado" && (
             <p className="rounded-lg border bg-muted/40 p-2 text-sm">
@@ -147,29 +259,68 @@ export function ReportDetail({
             </p>
           )}
 
+          {report.missingNote && (
+            <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+              <strong>O dentista avisou que falta procedimento:</strong>{" "}
+              {report.missingNote}
+              <span className="block text-xs">
+                Se proceder, ele entra no próximo relatório (este não é reaberto).
+              </span>
+            </p>
+          )}
+
           <div className="flex flex-wrap gap-2 print:hidden">
+            {financeAdjusts && report.itemCount > 0 && (
+              <Button
+                size="sm"
+                disabled={isPending}
+                onClick={() =>
+                  run(
+                    () => sendPayoutReport({ reportId: report.id }),
+                    "Relatório enviado para aprovação."
+                  )
+                }
+              >
+                Enviar para aprovação
+              </Button>
+            )}
+            {approverAdjusts && report.itemCount > 0 && (
+              <Button
+                size="sm"
+                disabled={isPending}
+                onClick={() =>
+                  run(
+                    () => approvePayoutReport({ reportId: report.id }),
+                    "Aprovado. O dentista foi avisado."
+                  )
+                }
+              >
+                Aprovar e enviar ao dentista
+              </Button>
+            )}
+            {approverAdjusts && open !== "devolver" && (
+              <Button size="sm" variant="outline" disabled={isPending} onClick={() => abrir("devolver")}>
+                Devolver ao Financeiro
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => window.print()}>
               <Printer className="mr-1 size-3.5" />
               Imprimir / salvar em PDF
             </Button>
-            {canEdit && open !== "cancelar" && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={isPending}
-                onClick={() => abrir("cancelar")}
-              >
+            {financeAdjusts && open !== "cancelar" && (
+              <Button size="sm" variant="outline" disabled={isPending} onClick={() => abrir("cancelar")}>
                 Cancelar o rascunho
               </Button>
             )}
           </div>
 
-          {open === "cancelar" && (
+          {(open === "cancelar" || open === "devolver") && (
             <div className="flex flex-wrap items-end gap-2 rounded-lg border bg-muted/30 p-2 print:hidden">
               <label className="block min-w-0 flex-1">
                 <Label className="text-[11px]">
-                  Por que cancelar este relatório? Os procedimentos voltam a
-                  poder entrar em outro.
+                  {open === "cancelar"
+                    ? "Por que cancelar este relatório? Os procedimentos voltam a poder entrar em outro."
+                    : "Por que devolver ao Financeiro? Ele volta a rascunho."}
                 </Label>
                 <Input
                   className="h-8"
@@ -178,8 +329,22 @@ export function ReportDetail({
                   placeholder="Motivo (obrigatório)"
                 />
               </label>
-              <Button size="sm" disabled={isPending} onClick={cancelar}>
-                Confirmar cancelamento
+              <Button
+                size="sm"
+                disabled={isPending}
+                onClick={() =>
+                  open === "cancelar"
+                    ? comMotivo(
+                        () => cancelPayoutReport({ reportId: report.id, reason }),
+                        "Relatório cancelado."
+                      )
+                    : comMotivo(
+                        () => returnPayoutReport({ reportId: report.id, reason }),
+                        "Relatório devolvido ao Financeiro."
+                      )
+                }
+              >
+                Confirmar
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setOpen(null)}>
                 Desistir
@@ -187,10 +352,10 @@ export function ReportDetail({
             </div>
           )}
 
-          {isDraft && !canManage && (
+          {approverAdjusts && (
             <p className="text-xs text-muted-foreground print:hidden">
-              Rascunho do Financeiro da Franqueadora. O ajuste e o envio são
-              feitos por ele.
+              Confira cada procedimento. Para tirar um, use <strong>Excluir</strong>{" "}
+              e escreva o motivo. Cada relatório é aprovado separadamente.
             </p>
           )}
         </CardContent>
@@ -223,22 +388,145 @@ export function ReportDetail({
                   </tr>
                 </thead>
                 <tbody>
-                  {incluidos.map((i) => (
-                    <ItemRow
-                      key={i.itemId}
-                      item={i}
-                      canEdit={canEdit}
-                      isPending={isPending}
-                      open={open === i.itemId}
-                      kind={kind}
-                      reason={reason}
-                      onOpen={() => abrir(i.itemId)}
-                      onClose={() => setOpen(null)}
-                      onKind={setKind}
-                      onReason={setReason}
-                      onConfirm={() => excluir(i.itemId)}
-                    />
-                  ))}
+                  {incluidos.map((i) => {
+                    const podeResponder = canAnswer && i.reviewState === "contestado";
+                    const podeDecidir = canManage && i.reviewState === "no_financeiro";
+                    const aberto = open === i.itemId;
+                    return (
+                      <ItemRows key={i.itemId} item={i}>
+                        <td className="py-1.5 text-right print:hidden">
+                          {!aberto && canAdjust && (
+                            <Button size="sm" variant="ghost" disabled={isPending} onClick={() => abrir(i.itemId)}>
+                              Excluir
+                            </Button>
+                          )}
+                          {!aberto && podeResponder && (
+                            <Button size="sm" variant="outline" disabled={isPending} onClick={() => abrir(i.itemId)}>
+                              Responder
+                            </Button>
+                          )}
+                          {!aberto && podeDecidir && (
+                            <Button size="sm" variant="outline" disabled={isPending} onClick={() => abrir(i.itemId)}>
+                              Decidir
+                            </Button>
+                          )}
+                        </td>
+                        {aberto && (
+                          <div className="space-y-2 rounded-lg border bg-muted/30 p-2">
+                            {canAdjust && (
+                              <KindRadios name={`ex-${i.itemId}`} kind={kind} onKind={setKind} />
+                            )}
+
+                            {podeResponder && (
+                              <div className="space-y-2 text-sm">
+                                {(
+                                  [
+                                    ["manter", "Manter", "O procedimento volta ao dentista com a sua resposta."],
+                                    ["excluir", "Excluir do relatório", "O dentista tem razão: o procedimento sai deste relatório."],
+                                    ["financeiro", "Pedir a decisão do Financeiro", "Para corrigir o valor ou quando você não pode resolver."],
+                                  ] as [ManagerAction, string, string][]
+                                ).map(([a, titulo, ajuda]) => (
+                                  <label key={a} className="flex items-start gap-2">
+                                    <input
+                                      type="radio"
+                                      name={`resp-${i.itemId}`}
+                                      className="mt-1"
+                                      checked={answer === a}
+                                      onChange={() => setAnswer(a)}
+                                    />
+                                    <span>
+                                      <span className="font-medium">{titulo}</span>
+                                      <span className="block text-[11px] text-muted-foreground">{ajuda}</span>
+                                    </span>
+                                  </label>
+                                ))}
+                                {answer === "excluir" && (
+                                  <KindRadios name={`rk-${i.itemId}`} kind={kind} onKind={setKind} />
+                                )}
+                              </div>
+                            )}
+
+                            {podeDecidir && (
+                              <div className="space-y-2 text-sm">
+                                {(
+                                  [
+                                    ["manter", "Manter o valor", "Libera para pagar pelo valor que está."],
+                                    ["corrigir", "Corrigir o valor", "Grava o valor novo (o antigo fica guardado) e libera para pagar."],
+                                    ["excluir", "Excluir do relatório", "O procedimento sai deste relatório."],
+                                  ] as [FinanceAction, string, string][]
+                                ).map(([a, titulo, ajuda]) => (
+                                  <label key={a} className="flex items-start gap-2">
+                                    <input
+                                      type="radio"
+                                      name={`dec-${i.itemId}`}
+                                      className="mt-1"
+                                      checked={decision === a}
+                                      onChange={() => setDecision(a)}
+                                    />
+                                    <span>
+                                      <span className="font-medium">{titulo}</span>
+                                      <span className="block text-[11px] text-muted-foreground">{ajuda}</span>
+                                    </span>
+                                  </label>
+                                ))}
+                                {decision === "corrigir" && (
+                                  <label className="block max-w-xs">
+                                    <Label className="text-[11px]">
+                                      Valor corrigido (hoje: {formatBRL(i.amountCents)})
+                                    </Label>
+                                    <Input
+                                      className="h-8"
+                                      inputMode="decimal"
+                                      value={amount}
+                                      onChange={(e) => setAmount(e.target.value)}
+                                      placeholder="0,00"
+                                    />
+                                  </label>
+                                )}
+                                {decision === "excluir" && (
+                                  <KindRadios name={`dk-${i.itemId}`} kind={kind} onKind={setKind} />
+                                )}
+                                <p className="text-[11px] text-muted-foreground">
+                                  Esta é a decisão final sobre este procedimento.
+                                </p>
+                              </div>
+                            )}
+
+                            <div className="flex flex-wrap items-end gap-2">
+                              <label className="block min-w-0 flex-1">
+                                <Label className="text-[11px]">
+                                  {podeResponder && answer === "manter"
+                                    ? "Sua resposta ao dentista (obrigatória)"
+                                    : "Motivo (obrigatório)"}
+                                </Label>
+                                <Input
+                                  className="h-8"
+                                  value={reason}
+                                  onChange={(e) => setReason(e.target.value)}
+                                />
+                              </label>
+                              <Button
+                                size="sm"
+                                disabled={isPending}
+                                onClick={() =>
+                                  podeDecidir
+                                    ? decidir(i)
+                                    : podeResponder
+                                      ? responder(i.itemId)
+                                      : excluir(i.itemId)
+                                }
+                              >
+                                Confirmar
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setOpen(null)}>
+                                Desistir
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </ItemRows>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="border-t font-medium">
@@ -269,10 +557,7 @@ export function ReportDetail({
             </h2>
             <ul className="divide-y divide-dashed rounded-lg border text-sm">
               {excluidos.map((i) => (
-                <li
-                  key={i.itemId}
-                  className="flex flex-wrap items-start justify-between gap-2 p-2"
-                >
+                <li key={i.itemId} className="flex flex-wrap items-start justify-between gap-2 p-2">
                   <div className="min-w-0 flex-1">
                     <p>
                       <span className="font-medium">{i.procedureName}</span>
@@ -287,26 +572,20 @@ export function ReportDetail({
                       </strong>
                       {" — "}
                       {i.exclusionReason}
-                      {i.excludedByName ? ` (${i.excludedByName}` : ""}
-                      {i.excludedAt
-                        ? `${i.excludedByName ? ", " : " ("}${formatBrDateTime(i.excludedAt)})`
-                        : i.excludedByName
-                          ? ")"
-                          : ""}
+                      {" ("}
+                      {[i.excludedByName, i.excludedAt ? formatBrDateTime(i.excludedAt) : null]
+                        .filter(Boolean)
+                        .join(", ") || "sem registro de autor"}
+                      {")"}
                     </p>
                   </div>
-                  {canEdit && (
+                  {canAdjust && (
                     <Button
                       size="sm"
                       variant="outline"
                       className="print:hidden"
                       disabled={isPending}
-                      onClick={() =>
-                        run(
-                          () => restoreReportItem({ reportId: report.id, itemId: i.itemId }),
-                          "Procedimento devolvido ao relatório."
-                        )
-                      }
+                      onClick={() => devolverItem(i.itemId)}
                     >
                       Devolver ao relatório
                     </Button>
@@ -332,7 +611,7 @@ export function ReportDetail({
                   {h.procedureName ? ` — ${h.procedureName}` : ""}
                   <span className="ml-2 text-xs text-muted-foreground">
                     {formatBrDateTime(h.at)}
-                    {h.actorName ? ` · ${h.actorName}` : ""}
+                    {h.actorName ? ` · ${h.actorName}` : " · sistema"}
                   </span>
                   {h.note && (
                     <span className="block text-xs text-muted-foreground">{h.note}</span>
@@ -347,37 +626,56 @@ export function ReportDetail({
   );
 }
 
-function ItemRow({
-  item,
-  canEdit,
-  isPending,
-  open,
+function KindRadios({
+  name,
   kind,
-  reason,
-  onOpen,
-  onClose,
   onKind,
-  onReason,
-  onConfirm,
 }: {
-  item: ReportItem;
-  canEdit: boolean;
-  isPending: boolean;
-  open: boolean;
+  name: string;
   kind: ExclusionKind;
-  reason: string;
-  onOpen: () => void;
-  onClose: () => void;
   onKind: (k: ExclusionKind) => void;
-  onReason: (r: string) => void;
-  onConfirm: () => void;
 }) {
   return (
+    <div className="flex flex-wrap gap-4 text-sm">
+      {(["adiar", "nao_pagar"] as ExclusionKind[]).map((k) => (
+        <label key={k} className="flex items-start gap-2">
+          <input
+            type="radio"
+            name={name}
+            className="mt-1"
+            checked={kind === k}
+            onChange={() => onKind(k)}
+          />
+          <span>
+            <span className="font-medium">{k === "adiar" ? "Adiar" : "Não pagar"}</span>
+            <span className="block text-[11px] text-muted-foreground">
+              {EXCLUSION_HELP[k]}
+            </span>
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A linha do procedimento, a conversa dela (contestação, resposta, decisão) e,
+ * quando há, o formulário aberto. `children` = [célula de ações, formulário].
+ */
+function ItemRows({
+  item,
+  children,
+}: {
+  item: ReportItem;
+  children: [React.ReactNode, React.ReactNode];
+}) {
+  const [acoes, formulario] = children;
+  const temConversa =
+    item.contestText || item.managerResponse || item.financeAction || item.reviewState;
+  return (
     <>
-      <tr className="border-b border-dashed align-top last:border-0">
-        <td className="py-1.5 pr-2 whitespace-nowrap">
-          {formatIsoDateBr(item.finishedOn)}
-        </td>
+      <tr className="align-top">
+        <td className="py-1.5 pr-2 whitespace-nowrap">{formatIsoDateBr(item.finishedOn)}</td>
         <td className="py-1.5 pr-2">
           {item.procedureName}
           {item.origin === "ortodontia" && (
@@ -400,61 +698,56 @@ function ItemRow({
         </td>
         <td className="py-1.5 pr-2 text-right tabular-nums">
           {formatBRL(item.amountCents)}
-        </td>
-        <td className="py-1.5 text-right print:hidden">
-          {canEdit && !open && (
-            <Button size="sm" variant="ghost" disabled={isPending} onClick={onOpen}>
-              Excluir
-            </Button>
+          {item.originalAmountCents !== null && (
+            <span className="block text-[11px] text-muted-foreground line-through">
+              {formatBRL(item.originalAmountCents)}
+            </span>
           )}
         </td>
+        {acoes}
       </tr>
-      {open && (
-        <tr className="print:hidden">
-          <td colSpan={5} className="pb-2">
-            <div className="space-y-2 rounded-lg border bg-muted/30 p-2">
-              <div className="flex flex-wrap gap-4 text-sm">
-                {(["adiar", "nao_pagar"] as ExclusionKind[]).map((k) => (
-                  <label key={k} className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name={`tipo-${item.itemId}`}
-                      className="mt-1"
-                      checked={kind === k}
-                      onChange={() => onKind(k)}
-                    />
-                    <span>
-                      <span className="font-medium">
-                        {k === "adiar" ? "Adiar" : "Não pagar"}
-                      </span>
-                      <span className="block text-[11px] text-muted-foreground">
-                        {EXCLUSION_HELP[k]}
-                      </span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-end gap-2">
-                <label className="block min-w-0 flex-1">
-                  <Label className="text-[11px]">Motivo (obrigatório)</Label>
-                  <Input
-                    className="h-8"
-                    value={reason}
-                    onChange={(e) => onReason(e.target.value)}
-                    placeholder="Por que este procedimento sai do relatório?"
-                  />
-                </label>
-                <Button size="sm" disabled={isPending} onClick={onConfirm}>
-                  Confirmar
-                </Button>
-                <Button size="sm" variant="ghost" onClick={onClose}>
-                  Desistir
-                </Button>
-              </div>
-            </div>
+      {temConversa && (
+        <tr>
+          <td colSpan={5} className="pb-1.5 text-xs text-muted-foreground">
+            {item.reviewState && (
+              <Badge variant="outline" className="mr-2 text-[10px]">
+                {REVIEW_LABEL[item.reviewState]}
+              </Badge>
+            )}
+            {item.contestText && (
+              <span className="block">
+                <strong>
+                  Dentista contestou
+                  {item.contestRound > 1 ? ` (${item.contestRound}ª vez)` : ""}:
+                </strong>{" "}
+                {item.contestKind ? `${CONTEST_LABEL[item.contestKind]} — ` : ""}
+                {item.contestText}
+              </span>
+            )}
+            {item.managerResponse && (
+              <span className="block">
+                <strong>Resposta do aprovador:</strong> {item.managerResponse}
+              </span>
+            )}
+            {item.financeAction && (
+              <span className="block">
+                <strong>{FINANCE_ACTION_LABEL[item.financeAction]}:</strong>{" "}
+                {item.financeReason}
+              </span>
+            )}
           </td>
         </tr>
       )}
+      {formulario && (
+        <tr className="print:hidden">
+          <td colSpan={5} className="pb-2">
+            {formulario}
+          </td>
+        </tr>
+      )}
+      <tr aria-hidden>
+        <td colSpan={5} className="border-b border-dashed p-0" />
+      </tr>
     </>
   );
 }

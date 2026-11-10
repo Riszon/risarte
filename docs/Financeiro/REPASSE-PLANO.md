@@ -78,7 +78,7 @@ conseguimos gerar nenhum repasse até agora".
 |---|---|---|
 | 1 | **Destravar e proteger:** recalcular o que saiu zerado, pendências com o motivo, "em andamento", marca "Sem repasse", travas no banco (linha fechada imutável, sessão com repasse não se apaga, fim da escrita direta). | ✅ 0.417.0, migração 0387 |
 | 2 | **Relatório de repasse:** um por dentista e por unidade, com o detalhe por procedimento; gerar um ou todos; excluir com motivo. Um procedimento só entra em um relatório. | ✅ migração 0390 |
-| 3 | **Aprovações:** Gerente (um por vez, só a equipe dele; Coordenador quando não há Gerente), depois o Dentista na tela "Meus repasses"; reprovar com formulário; avisos a cada passo; prazo de 5 dias úteis. | a fazer |
+| 3 | **Aprovações:** Gerente (um por vez, só a equipe dele; Coordenador quando não há Gerente), depois o Dentista na tela "Meus repasses"; reprovar com formulário; avisos a cada passo; prazo de 5 dias úteis. | ✅ migração 0391 |
 | 4 | **Pagamento:** só o aprovado pelos dois vira conta a pagar, ligada aos procedimentos; parcial; vencimento no dia 15; estorno por falha do dentista como linha negativa. Sai o "Fechar o mês" antigo. | a fazer |
 | 5 | **Visões:** histórico da unidade, consolidado da rede, gráfico de produção e ganho por dentista. | a fazer |
 
@@ -103,6 +103,34 @@ Financeiro → Relatórios de repasse (`/financeiro/repasses/relatorios`).
 **Para a Etapa 3:** o `status` do relatório hoje é só `rascunho`/`cancelado`;
 o envio ao Gerente, a aprovação um a um, o "Meus repasses" do dentista e a
 exclusão pelo Gerente entram ali. O dentista ainda **não lê** estas tabelas.
+
+## Etapa 3 — decisões do dono (10/11/2026, as seis como recomendado)
+
+- **A1.** O Gerente pode **devolver** o relatório ao Financeiro, com motivo.
+- **A2.** Só o **Financeiro da Franqueadora** corrige o valor de uma linha, com
+  motivo e com o valor antigo guardado. O Gerente pede; não altera.
+- **A3.** O dentista contesta por linha, com motivo da lista (valor diferente
+  do combinado / não fui eu que fiz / outro) e texto obrigatório.
+- **A4.** "Está faltando procedimento" é um pedido no mesmo formulário; se
+  proceder, entra no **próximo** relatório (o atual não é reaberto).
+- **A5.** Avisos pelo **sino** do sistema.
+- **A6.** Uma resposta do aprovador; se o dentista contestar a **mesma linha**
+  de novo, ela vai ao Financeiro da Franqueadora, que decide.
+
+**Como ficou (0391):** o relatório passa por rascunho → com o aprovador → com
+o dentista → aprovado, com os desvios de contestação e de decisão do
+Financeiro. Cada linha tem o seu estado e a marca **liberada para pagar**
+(`released`) — a aprovação parcial. Telas: menu **Repasses** (`/repasses`).
+
+**Para a Etapa 4:** pagar o que está `released` e ainda não foi pago, ligado
+às linhas; vencimento no dia 15; o estorno por falha do dentista como linha
+negativa; e a saída do "Fechar o mês" antigo. Hoje **nada** marca uma linha
+como paga — a trava contra pagar duas vezes, no pagamento, nasce ali.
+
+**Achado para o dono:** em Cambé e Londrina (sem Gerente, um Coordenador cada),
+o relatório **do próprio Coordenador** precisa ser aprovado pelo Financeiro da
+Franqueadora, e por uma pessoa diferente da que enviou. Com um só Financeiro,
+quem aprova é o Admin Master.
 
 ## O que a Etapa 4 precisa resolver do fechamento antigo
 

@@ -2,6 +2,57 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## ✅ 0.420.0 — REPASSE DOS DENTISTAS, ETAPA 3: AS APROVAÇÕES (10/11/2026; migração 0391)
+>
+> Terceira das 5 etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões A1–A6
+> do dono). ✅ **0391 aplicada no treino** (`migrar:teste`) **e na produção**
+> (o dono informou em 10/11/2026; não conferido de fora). **Não visto na
+> tela.**
+> - **`payout_reports.status`:** rascunho → com_gerente → com_dentista →
+>   aprovado; desvios: em_contestacao (com o aprovador), em_desempate (com o
+>   Financeiro), cancelado; "devolver" volta a rascunho. Depois de enviado ao
+>   dentista, a situação é DERIVADA das linhas por `_payout_report_sync`.
+> - **`payout_report_items.review_state`:** pendente → aprovado | contestado
+>   → pendente | no_financeiro. ⚠️ **`released` = liberada para pagar** (o
+>   dentista aprovou, ou o Financeiro decidiu): é a APROVAÇÃO PARCIAL, e é o
+>   que a Etapa 4 tem de pagar — não o relatório "aprovado".
+> - ⚠️ **Quem aprova** (`_payout_report_approvers`): os Gerentes da unidade;
+>   sem Gerente, os Coordenadores; sempre MENOS o dentista do relatório. Lista
+>   vazia = aprova o Financeiro, e `can_approve_payout_report` recusa quem
+>   ENVIOU (`sent_by`). Lê `user_clinic_roles_all` (a função da pessoa, não a
+>   janela da tranca).
+> - ⚠️ **Não existe aprovação em lote**: `payout_report_manager_approve(uuid)`.
+>   Enviar em lote existe (`sendAllDraftReports` chama `payout_report_send`
+>   um a um).
+> - **O dentista não tem regra de leitura nas tabelas**: lê por
+>   `my_payout_reports` / `my_payout_report_detail` (só linhas incluídas, sem
+>   o registro interno). `payout_report_viewer` diz à tela o que a pessoa é
+>   naquele relatório; o dentista dele cai SEMPRE na visão do dentista.
+> - **Leituras recriadas** (`payout_report_list`, `_items_detail`,
+>   `_history`): guarda `_payout_report_can_read` (financeiro da unidade OU
+>   aprovador, este só depois de enviado). O Coordenador não vê o Financeiro.
+> - **Ajuste das linhas** (`payout_report_exclude_item` / `_restore_item`,
+>   recriadas): Financeiro no rascunho, aprovador em com_gerente
+>   (`_payout_report_can_adjust`). Valor só muda em
+>   `payout_report_finance_decide` ('corrigir'; `original_amount_cents`).
+> - **A6:** 2ª contestação da mesma linha (`contest_round >= 1`) vai direto a
+>   no_financeiro. **A4:** "falta procedimento" = `missing_note`, não reabre.
+> - **Prazo:** `dentist_due_on` = 5 dias úteis (`_payout_add_business_days`:
+>   fora fim de semana e feriado NACIONAL). `payout_report_deadline_run`
+>   (pg_cron `risarte-payout-reports-daily`, 05:20) lembra no 3º dia útil e
+>   avisa o aprovador no vencimento. NUNCA aprova.
+> - **Avisos** pelo sino (`_payout_report_notify`, sem dado de paciente, nunca
+>   para quem fez a ação). Link do dentista e do aprovador: `/repasses/<id>`;
+>   do Financeiro: `/financeiro/repasses/relatorios/<id>`.
+> - Telas: menu **Repasses** (dentista, coordenador, planner, gerente);
+>   `report-detail.tsx` serve o Financeiro e o aprovador (`canManage`,
+>   `canApprove` vêm do banco). Sem capacidade nova na matriz: quem aprova é
+>   regra de função, decidida pelo dono.
+> - Ensaio no treino 43/43 (`scripts/repasse-ensaio-0391.mjs --confirmar`).
+>   ⚠️ Em ensaio que finge ser usuário: ao voltar ao superusuário, APAGAR
+>   `request.jwt.claims` — o espelho do treino (0260) barra gravação de função
+>   olhando a reivindicação, não o papel. EV-319.
+>
 > ## 📄 0.419.0 — REPASSE DOS DENTISTAS, ETAPA 2: O RELATÓRIO DE REPASSE (10/11/2026; migração 0390)
 >
 > Segunda das 5 etapas (`docs/Financeiro/REPASSE-PLANO.md`, com as decisões

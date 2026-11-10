@@ -3362,6 +3362,30 @@ recebe o aviso com o seu motivo — sem ele, o caso volta igual.
 
 Seu menu é diferente: **não tem Jornada**, e tem **Meu Dia** e **Minha Agenda**.
 
+**Meus repasses** *(desde a 0.420.0)*. No menu **Repasses** você confere o que
+vai receber. Cada unidade em que você atende tem o seu relatório. Ele aparece
+quando quem responde pela equipe conferiu e enviou — o sino avisa.
+
+1. Abra o relatório: o seu **nível** na unidade e, para cada procedimento, a
+   **data de finalização**, o **procedimento**, o **cliente**, o **valor** e o
+   link **ver atendimento**.
+2. Está tudo certo? **Aprovar tudo** → **Confirmar e enviar**.
+3. Algo errado? Marque **Contestar** na linha, escolha o motivo (*valor
+   diferente do combinado*, *não fui eu que fiz* ou *outro*) e **explique** — é
+   obrigatório. Depois **Enviar minha resposta**.
+4. **O que você não contestar fica aprovado** e liberado para pagamento, mesmo
+   com outra linha em discussão. A tela mostra quantos e quanto antes de você
+   confirmar; depois de enviar, não dá para desfazer.
+5. Faltou um procedimento? Escreva em **Está faltando algum procedimento neste
+   relatório?**. Se proceder, ele entra no seu próximo relatório.
+
+- **Prazo: 5 dias úteis.** Você recebe um lembrete no 3º. O sistema **não
+  aprova por você**: sem a sua resposta, o pagamento não é liberado.
+- A resposta à sua contestação aparece na própria linha. Se discordar e
+  **contestar de novo**, a decisão final passa a ser do Financeiro da
+  Franqueadora.
+- Você só vê os **seus** relatórios.
+
 1. **Meu Dia** → seus atendimentos.
 2. **Atendimento** → **Chamar**.
 3. Ficha do paciente → aba **Desenvolvimento Clínico** → descreva o que foi
@@ -3859,10 +3883,74 @@ relatório; o que estava em "não pagar" continua em "não pagar".
 **Quem fez o quê**, no fim da tela, é a linha do tempo do relatório: gerado,
 adiado, não pagar, devolvido, cancelado — com a pessoa e a hora.
 
-> **Ainda não está nesta versão:** enviar ao Gerente para aprovar, a aprovação
-> do dentista e o pagamento pelo relatório. Até lá, o **Fechar o mês** de
-> Repasses continua funcionando, e **não leva** o que está em relatório nem o
-> que está em "não pagar".
+#### A aprovação do repasse: quem responde pela equipe e o dentista (desde a 0.420.0)
+
+O relatório de repasse só fica liberado para pagar depois de **duas
+aprovações**: a de quem responde pela equipe e a do dentista. Tudo acontece
+dentro do sistema e fica registrado.
+
+**O caminho.**
+
+| Etapa | Quem age | O que faz |
+|---|---|---|
+| **Rascunho** | Financeiro da Franqueadora | **Enviar para aprovação** (no relatório) ou **Enviar os rascunhos para aprovação** (todos da unidade, na lista). |
+| **Com o aprovador** | Gerente — ou o Coordenador clínico, na unidade sem Gerente | Confere, tira procedimento com motivo se precisar, e **Aprovar e enviar ao dentista**; ou **Devolver ao Financeiro**, com motivo. |
+| **Com o dentista** | O dentista | Aprova ou contesta cada procedimento, em **Repasses → Meus repasses**. |
+| **Em contestação** | O aprovador | **Responder** a cada linha contestada. |
+| **Com o Financeiro (decisão)** | Financeiro da Franqueadora | **Decidir**: manter, corrigir o valor ou excluir. É a decisão final. |
+| **Aprovado** | — | Liberado para pagar. |
+
+**Quem aprova no lugar do Gerente.** Unidade **com** Gerente: o Gerente.
+Unidade **sem** Gerente: o Coordenador clínico. **Ninguém aprova o próprio
+relatório**: quando o relatório é de quem aprovaria (o Coordenador que também
+atende), a conferência passa ao **Financeiro da Franqueadora** — e tem de ser
+uma pessoa **diferente da que enviou** o relatório (outro Financeiro ou o
+Admin Master). O relatório mostra, no alto, quem é o aprovador.
+
+**Para o aprovador (menu Repasses → Para eu aprovar).** A lista mostra os
+relatórios da sua equipe; os que esperam você vêm primeiro, marcados
+**Conferir** ou **Responder contestação**. O sino avisa quando chega um.
+
+- **Um relatório por vez.** Não existe aprovar vários de uma vez.
+- Para tirar um procedimento: **Excluir** → **Adiar** (volta no próximo
+  relatório) ou **Não pagar** (fica fora até o Financeiro reverter) → motivo.
+- **Você não altera valor.** Se o valor está errado, na contestação escolha
+  **Pedir a decisão do Financeiro** e explique.
+- Depois de enviado ao dentista, o relatório não é mais ajustado.
+
+**Responder a uma contestação.** Em cada linha contestada aparece o motivo do
+dentista. **Responder** → escolha:
+
+| Resposta | O que acontece |
+|---|---|
+| **Manter** | Volta ao dentista com a sua resposta (obrigatória). O prazo dele recomeça. |
+| **Excluir do relatório** | O dentista tem razão: o procedimento sai (adiar ou não pagar), com motivo. |
+| **Pedir a decisão do Financeiro** | Vai ao Financeiro da Franqueadora, que decide — é o caminho para corrigir valor. |
+
+Se o dentista **contestar de novo a mesma linha**, ela vai direto ao
+Financeiro da Franqueadora.
+
+**"O dentista avisou que falta procedimento".** O aviso aparece no alto do
+relatório. O relatório **não é reaberto**: se o procedimento procede, ele entra
+no próximo relatório do dentista.
+
+**Para o Financeiro da Franqueadora.** Na lista de relatórios, a linha diz de
+quem é a vez e quantos procedimentos **esperam a sua decisão**. Em **Decidir**:
+**Manter o valor**, **Corrigir o valor** (o valor antigo fica guardado e
+aparece riscado) ou **Excluir do relatório**. Sempre com motivo. Depois de
+enviado, o Financeiro não mexe mais nas linhas — só decide o que chegar a ele.
+
+**O prazo do dentista: 5 dias úteis** (sábado, domingo e feriado nacional não
+contam). No 3º dia útil o dentista recebe um lembrete; vencido o prazo, o
+aprovador é avisado. **O sistema nunca aprova sozinho.**
+
+**A parte aprovada já pode ser paga.** Quando o dentista contesta só algumas
+linhas, as outras ficam **liberadas para pagar** enquanto a discussão continua.
+O relatório mostra quanto já está liberado.
+
+> **Ainda não está nesta versão:** o pagamento pelo relatório. Até lá, o
+> **Fechar o mês** de Repasses continua funcionando, e **não leva** o que está
+> em relatório nem o que está em "não pagar".
 
 #### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
 

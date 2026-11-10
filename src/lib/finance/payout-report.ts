@@ -4,12 +4,70 @@
 // com motivo, quem pode). Aqui ficam os tipos, os rótulos e as frases dos
 // erros — o que a pessoa lê.
 
-export type ReportStatus = "rascunho" | "cancelado";
+export type ReportStatus =
+  | "rascunho"
+  | "com_gerente"
+  | "com_dentista"
+  | "em_contestacao"
+  | "em_desempate"
+  | "aprovado"
+  | "cancelado";
 export type ExclusionKind = "adiar" | "nao_pagar";
 
 export const REPORT_STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho",
+  com_gerente: "Com o aprovador",
+  com_dentista: "Com o dentista",
+  em_contestacao: "Em contestação",
+  em_desempate: "Com o Financeiro (decisão)",
+  aprovado: "Aprovado — liberado para pagar",
   cancelado: "Cancelado",
+};
+
+/** A mesma situação, dita para o dentista (sem o vocabulário interno). */
+export const MY_STATUS_LABEL: Record<string, string> = {
+  com_dentista: "Esperando a sua resposta",
+  em_contestacao: "Sua contestação está em análise",
+  em_desempate: "Em decisão do Financeiro",
+  aprovado: "Aprovado",
+};
+
+/** Quem está no lugar do aprovador (0391, decisão 4 do dono). */
+export const APPROVER_LABEL: Record<string, string> = {
+  gerente: "Gerente da unidade",
+  coordenador: "Coordenador clínico (unidade sem Gerente)",
+  financeiro: "Financeiro da Franqueadora (relatório do próprio aprovador)",
+};
+
+export type ContestKind = "valor" | "nao_fui_eu" | "outro";
+export const CONTEST_KINDS: ContestKind[] = ["valor", "nao_fui_eu", "outro"];
+export const CONTEST_LABEL: Record<ContestKind, string> = {
+  valor: "Valor diferente do combinado",
+  nao_fui_eu: "Não fui eu que fiz",
+  outro: "Outro motivo",
+};
+
+export type ReviewState = "pendente" | "aprovado" | "contestado" | "no_financeiro";
+export const REVIEW_LABEL: Record<ReviewState, string> = {
+  pendente: "Esperando o dentista",
+  aprovado: "Liberado para pagar",
+  contestado: "Contestado — com o aprovador",
+  no_financeiro: "Em decisão do Financeiro",
+};
+/** As mesmas, ditas para o dentista. */
+export const MY_REVIEW_LABEL: Record<ReviewState, string> = {
+  pendente: "Esperando a sua resposta",
+  aprovado: "Aprovado",
+  contestado: "Contestado — em análise",
+  no_financeiro: "Em decisão do Financeiro",
+};
+
+export type ManagerAction = "manter" | "excluir" | "financeiro";
+export type FinanceAction = "manter" | "corrigir" | "excluir";
+export const FINANCE_ACTION_LABEL: Record<FinanceAction, string> = {
+  manter: "Financeiro manteve o valor",
+  corrigir: "Financeiro corrigiu o valor",
+  excluir: "Financeiro excluiu",
 };
 
 export const EXCLUSION_LABEL: Record<ExclusionKind, string> = {
@@ -80,6 +138,18 @@ export type Report = {
   cancelledAt: string | null;
   cancelledByName: string | null;
   cancelReason: string | null;
+  approverKind: string | null;
+  sentAt: string | null;
+  sentByName: string | null;
+  managerAt: string | null;
+  managerByName: string | null;
+  dentistDueOn: string | null;
+  dentistRespondedAt: string | null;
+  approvedAt: string | null;
+  releasedCents: number;
+  contestedCount: number;
+  financeCount: number;
+  missingNote: string | null;
 };
 
 export type ReportDb = {
@@ -100,6 +170,18 @@ export type ReportDb = {
   cancelled_at: string | null;
   cancelled_by_name: string | null;
   cancel_reason: string | null;
+  approver_kind?: string | null;
+  sent_at?: string | null;
+  sent_by_name?: string | null;
+  manager_at?: string | null;
+  manager_by_name?: string | null;
+  dentist_due_on?: string | null;
+  dentist_responded_at?: string | null;
+  approved_at?: string | null;
+  released_cents?: number | string | null;
+  contested_count?: number | null;
+  finance_count?: number | null;
+  missing_note?: string | null;
 };
 
 export function reportFromDb(r: ReportDb): Report {
@@ -121,6 +203,18 @@ export function reportFromDb(r: ReportDb): Report {
     cancelledAt: r.cancelled_at,
     cancelledByName: r.cancelled_by_name,
     cancelReason: r.cancel_reason,
+    approverKind: r.approver_kind ?? null,
+    sentAt: r.sent_at ?? null,
+    sentByName: r.sent_by_name ?? null,
+    managerAt: r.manager_at ?? null,
+    managerByName: r.manager_by_name ?? null,
+    dentistDueOn: r.dentist_due_on ?? null,
+    dentistRespondedAt: r.dentist_responded_at ?? null,
+    approvedAt: r.approved_at ?? null,
+    releasedCents: Number(r.released_cents ?? 0),
+    contestedCount: Number(r.contested_count ?? 0),
+    financeCount: Number(r.finance_count ?? 0),
+    missingNote: r.missing_note ?? null,
   };
 }
 
@@ -140,6 +234,15 @@ export type ReportItem = {
   exclusionReason: string | null;
   excludedByName: string | null;
   excludedAt: string | null;
+  reviewState: ReviewState | null;
+  released: boolean;
+  contestKind: ContestKind | null;
+  contestText: string | null;
+  contestRound: number;
+  managerResponse: string | null;
+  financeAction: FinanceAction | null;
+  financeReason: string | null;
+  originalAmountCents: number | null;
 };
 
 export type ReportItemDb = {
@@ -157,7 +260,53 @@ export type ReportItemDb = {
   exclusion_reason: string | null;
   excluded_by_name: string | null;
   excluded_at: string | null;
+  review_state?: string | null;
+  released?: boolean | null;
+  contest_kind?: string | null;
+  contest_text?: string | null;
+  contest_round?: number | null;
+  manager_response?: string | null;
+  finance_action?: string | null;
+  finance_reason?: string | null;
+  original_amount_cents?: number | string | null;
 };
+
+const REVIEW_STATES: ReviewState[] = ["pendente", "aprovado", "contestado", "no_financeiro"];
+const FINANCE_ACTIONS: FinanceAction[] = ["manter", "corrigir", "excluir"];
+
+/** A conversa de uma linha (contestação, resposta, decisão), lida do banco. */
+export function reviewFromDb(r: {
+  review_state?: string | null;
+  released?: boolean | null;
+  contest_kind?: string | null;
+  contest_text?: string | null;
+  contest_round?: number | null;
+  manager_response?: string | null;
+  finance_action?: string | null;
+  finance_reason?: string | null;
+  original_amount_cents?: number | string | null;
+}) {
+  return {
+    reviewState: REVIEW_STATES.includes(r.review_state as ReviewState)
+      ? (r.review_state as ReviewState)
+      : null,
+    released: Boolean(r.released),
+    contestKind: CONTEST_KINDS.includes(r.contest_kind as ContestKind)
+      ? (r.contest_kind as ContestKind)
+      : null,
+    contestText: r.contest_text ?? null,
+    contestRound: Number(r.contest_round ?? 0),
+    managerResponse: r.manager_response ?? null,
+    financeAction: FINANCE_ACTIONS.includes(r.finance_action as FinanceAction)
+      ? (r.finance_action as FinanceAction)
+      : null,
+    financeReason: r.finance_reason ?? null,
+    originalAmountCents:
+      r.original_amount_cents === null || r.original_amount_cents === undefined
+        ? null
+        : Number(r.original_amount_cents),
+  };
+}
 
 export function reportItemFromDb(r: ReportItemDb): ReportItem {
   return {
@@ -178,6 +327,7 @@ export function reportItemFromDb(r: ReportItemDb): ReportItem {
     exclusionReason: r.exclusion_reason,
     excludedByName: r.excluded_by_name,
     excludedAt: r.excluded_at,
+    ...reviewFromDb(r),
   };
 }
 
@@ -190,6 +340,22 @@ export const EVENT_LABEL: Record<string, string> = {
   item_devolvido: "Procedimento devolvido ao relatório",
   cancelado: "Relatório cancelado",
   nao_pagar_revertido: "Não pagar revertido",
+  enviado_para_aprovacao: "Enviado para aprovação",
+  devolvido_ao_financeiro: "Devolvido ao Financeiro",
+  enviado_ao_dentista: "Aprovado e enviado ao dentista",
+  dentista_respondeu: "O dentista respondeu",
+  contestado: "Procedimento contestado pelo dentista",
+  contestado_de_novo: "Procedimento contestado de novo (vai ao Financeiro)",
+  faltando_procedimento: "O dentista avisou que falta procedimento",
+  resposta_mantem: "Aprovador manteve e respondeu ao dentista",
+  pedido_ao_financeiro: "Aprovador pediu a decisão do Financeiro",
+  financeiro_manteve: "Financeiro manteve o valor",
+  financeiro_corrigiu: "Financeiro corrigiu o valor",
+  em_contestacao: "Relatório em contestação",
+  em_desempate: "Relatório com o Financeiro para decisão",
+  voltou_ao_dentista: "Voltou ao dentista",
+  aprovado: "Relatório aprovado — liberado para pagar",
+  prazo_vencido: "Prazo do dentista vencido",
 };
 
 export function eventLabel(action: string): string {
@@ -226,17 +392,174 @@ export function totalReady(cands: Candidate[]): {
   };
 }
 
+/** O que o dentista vê de um relatório dele (0391). */
+export type MyReport = {
+  id: string;
+  code: string;
+  clinicName: string;
+  periodMonth: string;
+  levelName: string | null;
+  status: string;
+  totalCents: number;
+  itemCount: number;
+  releasedCents: number;
+  pendingCount: number;
+  dentistDueOn: string | null;
+  managerAt: string | null;
+  approvedAt: string | null;
+};
+
+export type MyReportDb = {
+  id: string;
+  code: string;
+  clinic_name: string;
+  period_month: string;
+  level_name: string | null;
+  status: string;
+  total_cents: number | string;
+  item_count: number;
+  released_cents: number | string;
+  pending_count: number;
+  dentist_due_on: string | null;
+  manager_at: string | null;
+  approved_at: string | null;
+};
+
+export function myReportFromDb(r: MyReportDb): MyReport {
+  return {
+    id: r.id,
+    code: r.code,
+    clinicName: r.clinic_name,
+    periodMonth: r.period_month,
+    levelName: r.level_name,
+    status: r.status,
+    totalCents: Number(r.total_cents ?? 0),
+    itemCount: Number(r.item_count ?? 0),
+    releasedCents: Number(r.released_cents ?? 0),
+    pendingCount: Number(r.pending_count ?? 0),
+    dentistDueOn: r.dentist_due_on,
+    managerAt: r.manager_at,
+    approvedAt: r.approved_at,
+  };
+}
+
+export type MyItem = ReturnType<typeof reviewFromDb> & {
+  itemId: string;
+  finishedOn: string;
+  procedureName: string;
+  clientId: string | null;
+  clientName: string | null;
+  amountCents: number;
+};
+
+export type MyItemDb = Parameters<typeof reviewFromDb>[0] & {
+  item_id: string;
+  finished_on: string;
+  procedure_name: string | null;
+  client_id: string | null;
+  client_name: string | null;
+  amount_cents: number | string;
+};
+
+export function myItemFromDb(r: MyItemDb): MyItem {
+  return {
+    itemId: r.item_id,
+    finishedOn: r.finished_on,
+    procedureName: r.procedure_name ?? "Procedimento",
+    clientId: r.client_id,
+    clientName: r.client_name,
+    amountCents: Number(r.amount_cents ?? 0),
+    ...reviewFromDb(r),
+  };
+}
+
+/** Uma contestação do dentista, como vai ao banco. */
+export type ContestInput = { itemId: string; kind: ContestKind; text: string };
+
+/**
+ * Confere a resposta do dentista antes de ir ao banco: cada contestação com
+ * motivo da lista e texto, e o aviso de "faltando" (quando vem) com texto.
+ */
+export function dentistResponseError(
+  contests: ContestInput[],
+  missing: string
+): string | null {
+  for (const c of contests) {
+    if (!CONTEST_KINDS.includes(c.kind)) return "Escolha o motivo da contestação.";
+    if (c.text.trim().length < MIN_REASON) {
+      return `Explique cada contestação (pelo menos ${MIN_REASON} letras).`;
+    }
+  }
+  const m = missing.trim();
+  if (m.length > 0 && m.length < MIN_REASON) {
+    return `Descreva o procedimento que está faltando (pelo menos ${MIN_REASON} letras).`;
+  }
+  return null;
+}
+
+/** O valor novo de uma correção do Financeiro: maior que zero e diferente. */
+export function correctionError(
+  newCents: number | null,
+  currentCents: number
+): string | null {
+  if (newCents === null || !Number.isFinite(newCents) || newCents <= 0) {
+    return "Informe o valor corrigido.";
+  }
+  if (newCents === currentCents) return "O valor corrigido é igual ao atual.";
+  return null;
+}
+
+/** O que falta acontecer neste relatório, numa frase. */
+export function nextStepText(r: {
+  status: string;
+  approverKind: string | null;
+  dentistDueOn: string | null;
+}): string {
+  switch (r.status) {
+    case "rascunho":
+      return "Confira e envie para aprovação.";
+    case "com_gerente":
+      return `Esperando a conferência: ${APPROVER_LABEL[r.approverKind ?? ""] ?? "aprovador"}.`;
+    case "com_dentista":
+      return r.dentistDueOn
+        ? `Esperando a resposta do dentista até ${r.dentistDueOn.slice(8, 10)}/${r.dentistDueOn.slice(5, 7)}/${r.dentistDueOn.slice(0, 4)}.`
+        : "Esperando a resposta do dentista.";
+    case "em_contestacao":
+      return "O dentista contestou: o aprovador precisa responder.";
+    case "em_desempate":
+      return "Esperando a decisão do Financeiro da Franqueadora.";
+    case "aprovado":
+      return "Aprovado pelo aprovador e pelo dentista. Liberado para pagar.";
+    case "cancelado":
+      return "Cancelado.";
+    default:
+      return "";
+  }
+}
+
 /** Os erros do banco, em português. */
 export function reportErrorText(message: string): string {
   const m = message;
+  if (m.includes("WRONG_STAGE")) {
+    return "Este relatório não está mais nesta etapa. Atualize a tela.";
+  }
+  if (m.includes("EMPTY_REPORT")) {
+    return "O relatório não tem nenhum procedimento incluído.";
+  }
+  if (m.includes("INVALID_ITEM")) {
+    return "Um dos procedimentos não pode mais ser contestado. Atualize a tela.";
+  }
+  if (m.includes("INVALID_AMOUNT")) {
+    return "Informe um valor corrigido, maior que zero e diferente do atual.";
+  }
   if (m.includes("NOT_ALLOWED")) {
-    return "Só o Financeiro da Franqueadora monta o relatório de repasse.";
+    return "Você não pode fazer isto neste relatório.";
   }
   if (m.includes("REASON_REQUIRED")) {
     return `Escreva o motivo (pelo menos ${MIN_REASON} letras).`;
   }
   if (m.includes("REPORT_NOT_DRAFT")) {
-    return "Este relatório não é mais rascunho e não pode ser ajustado.";
+    return "Este relatório já saiu desta etapa e não pode mais ser ajustado.";
   }
   if (m.includes("ALREADY_EXCLUDED")) return "Este procedimento já foi excluído.";
   if (m.includes("NOT_EXCLUDED")) return "Este procedimento não está excluído.";

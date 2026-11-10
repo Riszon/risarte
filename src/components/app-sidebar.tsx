@@ -29,6 +29,7 @@ import {
   Home,
   Boxes,
   Landmark,
+  HandCoins,
   ShoppingCart,
   LogOut,
   MessagesSquare,
@@ -151,6 +152,18 @@ const NAV_ITEMS: NavItem[] = [
 
 // H4.6 B1: painel do dia do Dentista (executor).
 const MEU_DIA_ITEM = { href: "/meu-dia", label: "Meu Dia", icon: Stethoscope };
+// 0391: Repasses — "Meus repasses" (o dentista aprova ou contesta o relatório
+// dele) e "Para eu aprovar" (o Gerente; o Coordenador na unidade sem Gerente).
+// Fica FORA do Financeiro de propósito: dentista e coordenador não entram lá.
+// Quem aparece aqui é regra de TELA; o que cada um vê e faz é decidido pelo
+// banco, relatório a relatório.
+const REPASSES_ITEM = { href: "/repasses", label: "Repasses", icon: HandCoins };
+const PAPEIS_COM_REPASSES = [
+  "dentist",
+  "clinical_coordinator",
+  "planner_dentist",
+  "unit_manager",
+];
 // H4.6 E3: agenda consolidada de todas as unidades do dentista.
 const MINHA_AGENDA_ITEM = {
   href: "/minha-agenda",
@@ -409,6 +422,10 @@ export function AppSidebar({
   }
   if (canViewMetas) {
     navItems = [navItems[0], METAS_ITEM, ...navItems.slice(1)];
+  }
+  // 0391: quem atende ou aprova repasse na unidade ativa.
+  if (activeClinicRoles.some((r) => PAPEIS_COM_REPASSES.includes(r))) {
+    navItems = [...navItems, REPASSES_ITEM];
   }
   if (!dentistOnly && canViewComercial) {
     navItems = [...navItems, COMERCIAL_ITEM];

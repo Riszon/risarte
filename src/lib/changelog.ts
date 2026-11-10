@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.420.0",
+    data: "2026-11-10",
+    migracao: "0391",
+    titulo: "Repasse dos dentistas, etapa 3: a aprovação de quem responde pela equipe e do dentista",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Menu Repasses → Meus repasses: o dentista confere o relatório de repasse dele (um por unidade) e aprova ou contesta cada procedimento. O que ele não contestar fica aprovado e liberado para pagamento; contestar exige motivo e explicação.",
+        papeis: ["dentist", "clinical_coordinator", "planner_dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Menu Repasses → Para eu aprovar: o Gerente confere os relatórios de repasse da equipe, um por vez, pode tirar um procedimento com motivo, devolver ao Financeiro ou aprovar e enviar ao dentista. Na unidade sem Gerente, quem confere é o Coordenador clínico.",
+        papeis: ["unit_manager", "clinical_coordinator"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Relatórios de repasse: o Financeiro da Franqueadora envia o rascunho para aprovação (um ou todos de uma vez) e dá a decisão final quando o dentista contesta duas vezes o mesmo procedimento — manter, corrigir o valor ou excluir, sempre com motivo.",
+        papeis: ["finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O dentista tem 5 dias úteis para responder ao relatório. O sistema lembra no 3º dia e avisa quem aprova quando o prazo vence, mas nunca aprova sozinho: sem a resposta do dentista, o pagamento não é liberado.",
+        papeis: ["dentist", "clinical_coordinator", "planner_dentist", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Ninguém aprova o próprio relatório de repasse. Quando o relatório é de quem aprovaria (o Coordenador que também atende), a conferência passa ao Financeiro da Franqueadora — e não pode ser a mesma pessoa que enviou o relatório.",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.419.0",
     data: "2026-11-10",
     migracao: "0390",

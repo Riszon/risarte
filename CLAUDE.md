@@ -396,6 +396,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (repasse, etapa 3) — PC Administrador (core 0.419.0 → 0.420.0, migração 0391)**
+
+- **Aprovações do repasse** (bloco 0.420.0 no ESTADO; decisões A1–A6 em
+  `docs/Financeiro/REPASSE-PLANO.md`). **A próxima é a Etapa 4 (pagamento)**,
+  com plano e OK do dono antes.
+- ⚠️ **A Etapa 4 paga `payout_report_items.released`**, não o relatório
+  "aprovado": a aprovação é parcial, por procedimento.
+- ⚠️ **Não criar aprovação em lote** (pedido do dono) — nem função com lista,
+  nem botão. Enviar em lote pode.
+- ⚠️ **Ninguém aprova o próprio relatório, e o Financeiro que enviou não
+  aprova** (`can_approve_payout_report`). Produção hoje: Cambé e Londrina sem
+  Gerente, 1 Coordenador cada — o relatório do Coordenador precisa de um 2º
+  Financeiro ou do Admin Master para aprovar.
+- ⚠️ **O dentista lê só por `my_payout_*`**; nenhuma regra de leitura para
+  ele nas tabelas. Não expor `payout_report_events` nem exclusões a ele.
+- ⚠️ `payout_report_list`, `_items_detail`, `_history`, `_exclude_item` e
+  `_restore_item` foram RECRIADAS na 0391: partir dela.
+- ⚠️ Ensaio que finge ser usuário no treino: apagar `request.jwt.claims` ao
+  voltar ao superusuário (espelho, 0260).
+- ✅ **0391 aplicada no treino e na produção** (o dono informou em
+  10/11/2026; não conferido de fora).
+
 **10/11/2026 (repasse, etapa 2) — PC Administrador (core 0.418.0 → 0.419.0, migração 0390)**
 
 - **Relatório de repasse** (bloco 0.419.0 no ESTADO; decisões R1–R4 em
