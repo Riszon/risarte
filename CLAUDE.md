@@ -412,7 +412,10 @@ Syncthing se comportarem de forma estranha.**
   aspa do shell** e somem caladas — a 0389 nasceu assim e quebrou o
   `commercial_set_stage` do treino por minutos (o ensaio pegou). SQL vai em
   arquivo, nunca dentro de `node -e '…'`.
-- ⏳ **0388 e 0389 aplicadas só no treino**; falta o dono rodar na produção.
+- ✅ **0388 e 0389 aplicadas nos dois bancos** (o dono rodou na produção em
+  10/11/2026, nessa ordem; conferido de fora: sem login as duas recusam com
+  "permission denied", a de controle responde "não encontrada"; a chave de
+  serviço acha a 0388 e lê vazio).
 - Sobrou, de um script meu, o arquivo `/tmp_fn.sql` na raiz do Git Bash (um
   trecho da 0063, sem uso): a remoção foi barrada pela trava de segurança;
   pode apagar à mão.

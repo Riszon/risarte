@@ -5,9 +5,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## 🩺 0.418.0 — RELATOS DA EQUIPE, LOTE 1 (10/11/2026; migrações 0388 e 0389)
 >
 > Relatos do TREINO triados com o dono (sessão "Relatos riSZon"): 5 defeitos.
-> ✅ **0388 e 0389 aplicadas no treino.** ⏳ **Falta o dono rodar as duas na
-> produção** (nesta ordem; só criam/recriam função, não mexem em dado).
-> **Não visto na tela.**
+> ✅ **0388 e 0389 aplicadas nos dois bancos** (treino por mim; produção pelo
+> dono em 10/11/2026; conferido de fora: sem login recusam). **Não visto na
+> tela.**
 > - **OC-00172/00173 — o dentista não via os procedimentos** (0/0 em Sessões &
 >   Procedimentos, para TODO dentista). A lista lia `treatment_plans` → opções
 >   → itens, e a regra dessas tabelas exclui o dentista (0353). **0388:**
