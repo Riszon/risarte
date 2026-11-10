@@ -11,7 +11,7 @@ import {
   senhaSugerida,
   situacaoDeAcesso,
 } from "@/lib/risartanos";
-import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+import { ROLE_LABELS, rotuloDaFuncaoPrevista, type UserRole } from "@/lib/roles";
 import { CONTRACT_LABELS, type ContractType } from "@/lib/staff";
 import {
   alcanceDoUsuario,
@@ -141,10 +141,8 @@ export default async function FichaDoRisartanoPage(
   crypto.getRandomValues(sorteio);
 
   const funcaoPrevista = (staff.roleTitle ?? null) as UserRole | null;
-  const funcaoRotulo =
-    funcaoPrevista && funcaoPrevista in ROLE_LABELS
-      ? ROLE_LABELS[funcaoPrevista]
-      : staff.roleTitle;
+  // AP115: no gênero da ficha.
+  const funcaoRotulo = rotuloDaFuncaoPrevista(staff.roleTitle, staff.gender);
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
@@ -269,6 +267,7 @@ export default async function FichaDoRisartanoPage(
           <AcessoDoRisartano
             staffId={staff.id}
             staffNome={staff.preferredName || staff.fullName}
+            staffGenero={staff.gender}
             staffEmail={staff.email}
             staffAtivo={staff.isActive}
             unidadeDoCadastro={{

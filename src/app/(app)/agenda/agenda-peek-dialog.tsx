@@ -12,11 +12,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { startOfWeek, toIsoDate } from "@/lib/agenda-view";
+import { DIAS_DA_SEMANA_DA_AGENDA, startOfWeek, toIsoDate } from "@/lib/agenda-view";
 import { getMonthAgendaPeek, type PeekDay } from "./actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
-const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+// AP117: a semana da agenda começa no domingo (mesma ordem de `startOfWeek`).
+const WEEKDAYS = DIAS_DA_SEMANA_DA_AGENDA;
 
 // H3.2: cor de fundo por estado do dia.
 const STATE_CELL: Record<PeekDay["state"], string> = {

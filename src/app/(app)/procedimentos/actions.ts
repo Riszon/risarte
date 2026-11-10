@@ -14,6 +14,8 @@ import {
   mensagemDaVigencia,
   quandoVale,
   RECADO_DA_DATA,
+  acimaDoMaximo,
+  recusaDoMaximo,
 } from "@/lib/vigencia-do-preco";
 import { logAudit } from "@/lib/audit";
 import { formatBRL, formatSessions, parseBRLToCents } from "@/lib/pricing";
@@ -119,6 +121,10 @@ function parseProcedure(
   if (max === "invalid") return { error: "Preço máximo inválido." };
   if (min !== null && max !== null && min > max) {
     return { error: "O preço mínimo não pode ser maior que o máximo." };
+  }
+  // AP79 (0386): o preço padrão não passa do máximo (o banco também recusa).
+  if (acimaDoMaximo(def, max)) {
+    return { error: recusaDoMaximo(max as number) };
   }
   const fixed = input.commissionFixed.trim()
     ? parseBRLToCents(input.commissionFixed)
@@ -1086,6 +1092,21 @@ export async function setUnitPrice(
   if (quando === "passado" || quando === "invalida") {
     return { ok: false, error: RECADO_DA_DATA[quando] };
   }
+  // AP79 (0386): o preço da unidade não passa do máximo da rede. O banco
+  // confere de novo; aqui a mensagem sai antes de qualquer gravação.
+  if (price.trim() !== "") {
+    const centsDaFaixa = parseBRLToCents(price);
+    if (centsDaFaixa !== null) {
+      const { data: faixa } = await supabase
+        .from("procedures")
+        .select("max_price_cents")
+        .eq("id", procedureId)
+        .maybeSingle<{ max_price_cents: number | null }>();
+      if (faixa && acimaDoMaximo(centsDaFaixa, faixa.max_price_cents)) {
+        return { ok: false, error: recusaDoMaximo(faixa.max_price_cents as number) };
+      }
+    }
+  }
   if (quando === "futuro") {
     if (price.trim() === "") {
       return { ok: false, error: "Para a unidade voltar ao preço da rede, use a data de hoje." };
@@ -1136,7 +1157,7 @@ export async function setUnitPrice(
   );
   if (error) {
     console.error("setUnitPrice failed:", error.message);
-    return { ok: false, error: "Não foi possível salvar o preço da unidade." };
+    return { ok: false, error: mensagemDaVigencia(error.message) ?? "Não foi possível salvar o preço da unidade." };
   }
   refreshCatalog();
   return { ok: true };

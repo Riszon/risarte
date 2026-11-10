@@ -396,6 +396,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (preço na faixa) — PC Administrador (core 0.415.0 → 0.416.0, migração 0386)**
+
+- **AP79, AP117, AP115 e AP120** (bloco 0.416.0 no ESTADO).
+  ⚠️ **`direct_sale_set_conditions` é porta sobre
+  `_direct_sale_set_conditions_raw`** (0386). ⚠️ **A semana da agenda
+  começa no domingo** (`startOfWeek`). ⚠️ Função de UMA pessoa na tela =
+  `rotuloDaFuncao(role, gênero)`.
+- ⏳ **0386 só no treino.** Não visto na tela.
+
 **10/11/2026 (quem deu a baixa) — PC Administrador (core 0.414.0 → 0.415.0, migrações 0384 e 0385; Empresarial 0.100.0 → 0.101.0, migração 1043)**
 
 - **AP129 e AP135** (bloco 0.415.0 no ESTADO). ⚠️ **Texto de quem deu a

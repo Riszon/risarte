@@ -94,3 +94,43 @@ export function isRoleAllowedForClinicType(
 ): boolean {
   return rolesForClinicType(type).includes(role);
 }
+
+/**
+ * AP115 (pedido do dono em 10/11/2026) — A FUNÇÃO NO GÊNERO DA PESSOA.
+ *
+ * Onde a tela fala de UMA pessoa (a ficha do Risartano, as funções dela, o
+ * "Meu cadastro"), o rótulo segue o gênero da ficha (`staff_members.gender`):
+ * "Coordenadora Clínica", "Consultora Comercial". Sem gênero, ou "outro" /
+ * "prefiro não informar", vale o rótulo de sempre (`ROLE_LABELS`).
+ *
+ * Onde a tela fala da FUNÇÃO (filtros, matriz de permissões, listas de
+ * funções), continua `ROLE_LABELS` — ali não há pessoa.
+ */
+const ROLE_LABELS_FEMININO: Partial<Record<UserRole, string>> = {
+  sdr: "Encantadora (SDR)",
+  clinical_coordinator: "Coordenadora Clínica",
+  commercial_consultant: "Consultora Comercial",
+  franchisee: "Franqueada",
+  rislife_consultant: "Consultora Comercial Empresarial (RisLife)",
+  purchaser: "Compradora da Franqueadora",
+};
+
+const ROLE_LABELS_MASCULINO: Partial<Record<UserRole, string>> = {
+  sdr: "Encantador (SDR)",
+  tsb: "TSB (Técnico em Saúde Bucal)",
+};
+
+export function rotuloDaFuncao(role: UserRole, genero: string | null | undefined): string {
+  if (genero === "female") return ROLE_LABELS_FEMININO[role] ?? ROLE_LABELS[role];
+  if (genero === "male") return ROLE_LABELS_MASCULINO[role] ?? ROLE_LABELS[role];
+  return ROLE_LABELS[role];
+}
+
+/** O mesmo, para a função PREVISTA da ficha (texto livre que pode não ser uma função). */
+export function rotuloDaFuncaoPrevista(
+  roleTitle: string | null | undefined,
+  genero: string | null | undefined
+): string | null {
+  if (!roleTitle) return null;
+  return roleTitle in ROLE_LABELS ? rotuloDaFuncao(roleTitle as UserRole, genero) : roleTitle;
+}

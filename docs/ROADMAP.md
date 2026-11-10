@@ -299,7 +299,7 @@ antes).
 
 ## GRUPO 4 — módulos novos (H4.1 em diante; H4.4 ✅)
 
-- [~] **H4.1 Risartanos [G] 🗄️** — cadastro do colaborador. Acesso: Admin +
+- [x] **H4.1 Risartanos [G] 🗄️ COMPLETO** — cadastro do colaborador. Acesso: Admin +
       Gerente + Franqueadora (RH).
   - [x] **Lote 1 — módulo base** ✅ (07/07, v0.13.0, migração 0076) — tabela
         `staff_members` (+ código automático `RIS-0000`, RLS), tela `/risartanos`
@@ -401,7 +401,7 @@ antes).
         Planner; painel "Propostas pendentes" em `/procedimentos` com
         Aprovar/Recusar; RLS tira do Planner a escrita direta do protocolo.
 - [x] **H4.4 Tela de Planos de Tratamento** ✅ (v0.11.1).
-- [ ] **H4.5 Cockpit 2.0 [G] 🗄️** — redesign; etapas + sessões; sugerir
+- [x] **H4.5 Cockpit 2.0 [G] 🗄️ COMPLETO** — redesign; etapas + sessões; sugerir
       profissional; juntar sessões; tempo por/entre sessões; previsão de
       término; alertas/lembretes por sessão e do plano.
   - [x] **Lote 1 — Etapas do tratamento** ✅ (v0.19.0, migração 0087) — o Planner

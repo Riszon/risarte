@@ -32,6 +32,7 @@ import {
 import {
   FRANCHISOR_ROLES,
   ROLE_LABELS,
+  rotuloDaFuncao,
   UNIT_SCOPE_LABELS,
   rolesForClinicType,
   type ClinicType,
@@ -79,6 +80,7 @@ type Clinica = { id: string; name: string; type: ClinicType };
 export function AcessoDoRisartano({
   staffId,
   staffNome,
+  staffGenero = null,
   staffEmail,
   staffAtivo,
   unidadeDoCadastro,
@@ -102,6 +104,8 @@ export function AcessoDoRisartano({
   /** null quando é um login sem cadastro de Risartano. */
   staffId: string | null;
   staffNome: string;
+  /** AP115: o gênero da ficha, para dizer a função da pessoa ("Coordenadora"). */
+  staffGenero?: string | null;
   staffEmail: string | null;
   staffAtivo: boolean;
   /** A unidade do cadastro — dar função FORA dela pede autorização na hora. */
@@ -345,7 +349,7 @@ export function AcessoDoRisartano({
               <div>
                 <p className="text-sm font-medium">{f.clinicName}</p>
                 <p className="text-xs text-muted-foreground">
-                  {ROLE_LABELS[f.role]}
+                  {rotuloDaFuncao(f.role, staffGenero)}
                   {FRANCHISOR_ROLES.includes(f.role) &&
                     ` · ${UNIT_SCOPE_LABELS[f.unitScope ?? "all"]}`}
                 </p>

@@ -729,6 +729,13 @@ e *Usuários (acesso)* (o login). Quem quisesse saber **se alguém que saiu aind
 entra no sistema** precisava abrir as duas e comparar de cabeça. Agora é uma só:
 **Risartanos**.
 
+**A função no gênero da pessoa** *(desde a 0.416.0)*. Na ficha do Risartano
+e em **Meu cadastro**, a função segue o **gênero** preenchido na ficha:
+*Coordenadora Clínica*, *Consultora Comercial*, *Encantadora (SDR)*. Ficha sem
+gênero (ou "Outro" / "Prefiro não informar") mostra o nome de sempre. Nos
+filtros e na matriz de permissões, onde se fala da função e não de alguém, o
+nome não muda.
+
 **A lista.** Cada linha é uma pessoa: foto, código (`RIS-000001`), unidades com
 a função em cada uma, regime e, à direita, o **selo do acesso**:
 
@@ -2070,7 +2077,7 @@ Além da jornada, o sistema tem módulos que aparecem no menu conforme a funçã
 
 | Módulo | Rota | O que resolve |
 |---|---|---|
-| Agenda | `/agenda` | Marcar e acompanhar horários, por dia/semana/mês |
+| Agenda | `/agenda` | Marcar e acompanhar horários, por dia/semana/mês (a semana começa no domingo, desde a 0.416.0) |
 | Atendimento | `/atendimento` | Chegada, chamada e conclusão do atendimento do dia |
 | Prontuários | `/prontuarios` | A ficha completa do paciente |
 | Centro de Planejamento | `/planejamento` | Fila de casos a planejar, com prazo |
@@ -3196,6 +3203,16 @@ do teto. Duas regras:
 - O procedimento lançado por um **grupo com preço de pacote ou com mínimo
   próprio** segue a regra do grupo, não a do procedimento. Grupo sem desconto
   e sem mínimo não muda nada: vale o mínimo do procedimento.
+
+**O preço dentro da faixa** *(desde a 0.416.0)*. O **preço máximo** do
+procedimento passou a valer: o preço padrão, o preço da unidade e o preço
+agendado não podem passar dele (*"O preço passa do máximo do procedimento…"*).
+Na **venda direta**, ao salvar as condições, o desconto que deixa um
+procedimento abaixo do **mínimo** — ou o acréscimo que passa do **máximo** — é
+recusado com o nome do procedimento e os valores. Como na negociação, vale o
+menor entre o mínimo e o preço da unidade (a unidade com preço próprio abaixo
+do mínimo já decidiu aquele preço). A negociação não aceita acréscimo, então
+nela o máximo só depende do preço da unidade.
 
 **Assistente virtual no procedimento** (versão 0.403.1). Na lista, a
 etiqueta **Assistente virtual** marca o que a futura assistente de atendimento

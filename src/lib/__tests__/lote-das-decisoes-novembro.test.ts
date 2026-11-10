@@ -19,6 +19,10 @@ import {
 import { comissaoEmMassa } from "@/lib/finance/repasse-percentual";
 import { textoDaBaixa } from "@/lib/finance/quem-fez";
 import { podeEntrarNoRol } from "@/lib/rita-procedimento";
+import { acimaDoMaximo, mensagemDaVigencia } from "@/lib/vigencia-do-preco";
+import { agendaRange, DIAS_DA_SEMANA_DA_AGENDA, isoWeek } from "@/lib/agenda-view";
+import { instantFromBrazil } from "@/lib/dates";
+import { ROLE_LABELS, rotuloDaFuncao, rotuloDaFuncaoPrevista } from "@/lib/roles";
 
 const ler = (caminho: string) => readFileSync(caminho, "utf8").replace(/\r\n/g, "\n");
 const MIG = "supabase/migrations";
@@ -422,5 +426,90 @@ describe("AP135 — a anamnese antiga só é apagada se estiver vazia", () => {
       "drop table if exists public.clinical_anamnesis;",
     ]);
     expect(cru.match(/^-- DESTRUTIVO: /gm)?.length).toBe(2);
+  });
+});
+
+describe("AP79 — o preço dentro da faixa do procedimento", () => {
+  const sql = semComentario(migracao("0386_"));
+
+  it("a venda direta confere a faixa ANTES da conta das condições, e a crua não responde à API", () => {
+    const porta = sql.slice(sql.indexOf("create or replace function public.direct_sale_set_conditions("));
+    const confere = porta.indexOf("public._direct_sale_price_violations(");
+    const recusa = porta.indexOf("raise exception 'PRICE_OUT_OF_RANGE:%'");
+    const grava = porta.indexOf("perform public._direct_sale_set_conditions_raw(");
+    expect(confere).toBeGreaterThan(0);
+    expect(recusa).toBeGreaterThan(confere);
+    expect(grava).toBeGreaterThan(recusa);
+    // Quem pode fechar a venda é conferido; a conferência não pode estar desligada.
+    expect(porta).toContain("if v_clinic is not null and v_closed is null and public.direct_sale_can_close(v_clinic) then");
+    expect(sql).toMatch(/revoke execute on function public\._direct_sale_set_conditions_raw\([^)]*\) from public, anon, authenticated;/);
+  });
+
+  it("piso e teto seguem a PM2 (o preço da unidade já decidido não trava)", () => {
+    expect(sql).toContain("sum(quantity * least(min_price_cents, unit_price_cents))");
+    expect(sql).toContain("sum(quantity * greatest(max_price_cents, unit_price_cents))");
+    expect(sql).toContain("where piso is not null and cobrado < piso");
+    expect(sql).toContain("where teto is not null and cobrado > teto");
+  });
+
+  it("os preços do cadastro e da unidade não passam do máximo (só pela API; a rotina passa)", () => {
+    expect(sql).toMatch(/if v_max is not null and new\.price_cents > v_max then\s+raise exception 'PRICE_ABOVE_MAX:%'/);
+    expect(sql).toMatch(/new\.default_price_cents > new\.max_price_cents then\s+raise exception 'PRICE_ABOVE_MAX:%'/);
+    expect(sql.match(/if current_user <> 'authenticated'/g)?.length).toBe(2);
+    expect(acimaDoMaximo(12001, 12000)).toBe(true);
+    expect(acimaDoMaximo(12000, 12000)).toBe(false);
+    expect(acimaDoMaximo(99999, null)).toBe(false);
+    expect(mensagemDaVigencia("PRICE_ABOVE_MAX:12000")).toContain("R$");
+  });
+
+  it("a tela traduz a recusa da venda direta e confere o preço da unidade antes de gravar", () => {
+    expect(ler("src/app/(app)/comercial/venda-direta/actions.ts")).toContain(String.raw`/PRICE_OUT_OF_RANGE:([\s\S]*)$/`);
+    const acao = ler("src/app/(app)/procedimentos/actions.ts");
+    const i = acao.indexOf("export async function setUnitPrice");
+    const corpo = acao.slice(i, acao.indexOf("\nexport ", i + 10));
+    expect(corpo.indexOf("acimaDoMaximo(")).toBeGreaterThan(0);
+    expect(corpo.indexOf("acimaDoMaximo(")).toBeLessThan(corpo.indexOf('if (quando === "futuro")'));
+  });
+});
+
+describe("AP117 — a semana da agenda começa no domingo", () => {
+  it("de domingo a sábado, com o número ISO contado pela segunda", () => {
+    const sabado = agendaRange("semana", instantFromBrazil("2026-11-14", "10:00"));
+    expect(sabado.start.toISOString()).toBe("2026-11-08T03:00:00.000Z");
+    expect(sabado.end.toISOString()).toBe("2026-11-15T03:00:00.000Z");
+    const domingo = agendaRange("semana", instantFromBrazil("2026-11-15", "10:00"));
+    expect(domingo.start.toISOString()).toBe("2026-11-15T03:00:00.000Z");
+    expect(domingo.weekNumber).toBe(sabado.weekNumber! + 1);
+    // O número é o ISO da SEGUNDA da semana (09/11), não o do domingo (08/11).
+    expect(sabado.weekNumber).toBe(isoWeek(instantFromBrazil("2026-11-09", "12:00")));
+    expect(sabado.weekNumber).not.toBe(isoWeek(instantFromBrazil("2026-11-08", "12:00")));
+  });
+
+  it("as colunas do mês e da janela seguem a mesma ordem", () => {
+    expect(DIAS_DA_SEMANA_DA_AGENDA[0]).toBe("Dom");
+    for (const p of ["src/app/(app)/agenda/month-grid.tsx", "src/app/(app)/agenda/agenda-peek-dialog.tsx"]) {
+      expect(ler(p), p).toContain("const WEEKDAYS = DIAS_DA_SEMANA_DA_AGENDA;");
+    }
+  });
+});
+
+describe("AP115 — a função no gênero da pessoa", () => {
+  it("feminino, masculino e o de sempre", () => {
+    expect(rotuloDaFuncao("clinical_coordinator", "female")).toBe("Coordenadora Clínica");
+    expect(rotuloDaFuncao("clinical_coordinator", "male")).toBe("Coordenador Clínico");
+    expect(rotuloDaFuncao("commercial_consultant", "female")).toBe("Consultora Comercial");
+    expect(rotuloDaFuncao("tsb", "male")).toBe("TSB (Técnico em Saúde Bucal)");
+    expect(rotuloDaFuncao("receptionist", "female")).toBe(ROLE_LABELS.receptionist);
+    for (const g of [null, undefined, "other", "undisclosed"]) {
+      expect(rotuloDaFuncao("clinical_coordinator", g)).toBe(ROLE_LABELS.clinical_coordinator);
+    }
+    expect(rotuloDaFuncaoPrevista("Auxiliar de limpeza", "female")).toBe("Auxiliar de limpeza");
+    expect(rotuloDaFuncaoPrevista(null, "female")).toBeNull();
+  });
+
+  it("as telas que falam de UMA pessoa usam o gênero da ficha", () => {
+    expect(ler("src/app/(app)/risartanos/acesso.tsx")).toContain("{rotuloDaFuncao(f.role, staffGenero)}");
+    expect(ler("src/app/(app)/risartanos/[codigo]/page.tsx")).toContain("staffGenero={staff.gender}");
+    expect(ler("src/app/(app)/perfil/meu-cadastro.tsx")).toContain("rotuloDaFuncaoPrevista(ficha.role_title, ficha.gender)");
   });
 });

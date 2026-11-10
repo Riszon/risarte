@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { TEXTO_COMERCIAL, ehComercial } from "@/components/marca-comercial";
-import { agendaHref, startOfWeek, toIsoDate } from "@/lib/agenda-view";
+import { agendaHref, DIAS_DA_SEMANA_DA_AGENDA, startOfWeek, toIsoDate } from "@/lib/agenda-view";
 import { APPOINTMENT_TYPE_LABELS } from "@/lib/appointments";
 import type { AgendaAppointment } from "./week-grid";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
-const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+// AP117: a semana da agenda começa no domingo (mesma ordem de `startOfWeek`).
+const WEEKDAYS = DIAS_DA_SEMANA_DA_AGENDA;
 
 /** Month calendar (B1): one cell per day with the day's appointments; clicking
  * a day opens that day's view. Read-only — scheduling/editing is done in the

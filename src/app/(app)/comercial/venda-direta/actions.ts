@@ -205,6 +205,14 @@ export async function setDirectSaleConditions(
       };
     if (m.includes("ALREADY_CLOSED"))
       return { ok: false, error: "Venda já concluída." };
+    // AP79 (0386): o banco confere a faixa de cada procedimento e devolve a
+    // lista já em português ("Fulano abaixo do mínimo: R$ … (mínimo R$ …)").
+    const faixa = m.match(/PRICE_OUT_OF_RANGE:([\s\S]*)$/);
+    if (faixa)
+      return {
+        ok: false,
+        error: `Fora da faixa de preço do procedimento — ${faixa[1].trim()}. Ajuste o desconto ou o acréscimo.`,
+      };
     console.error("direct_sale_set_conditions failed:", m);
     return { ok: false, error: "Não foi possível salvar as condições." };
   }

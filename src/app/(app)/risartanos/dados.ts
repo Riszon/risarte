@@ -5,6 +5,7 @@ import { isTreino } from "@/lib/environment";
 import { lerPorLotes, lerTodasAsPaginas } from "@/lib/paginar";
 import {
   ROLE_LABELS,
+  rotuloDaFuncaoPrevista,
   type ClinicType,
   type UnitScope,
   type UserRole,
@@ -524,10 +525,8 @@ function pessoaDoCadastro(
       gerida:
         (session.isAdminMaster && !isTreino()) || alcance.gerirIds.has(u.clinicId),
     })),
-    funcaoPrevista:
-      r.role_title && r.role_title in ROLE_LABELS
-        ? ROLE_LABELS[r.role_title as UserRole]
-        : r.role_title,
+    // AP115: no gênero da ficha.
+    funcaoPrevista: rotuloDaFuncaoPrevista(r.role_title, r.gender),
     regime: r.contract_type,
     ativo: r.is_active,
     temAcesso,

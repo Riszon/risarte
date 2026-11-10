@@ -38,12 +38,21 @@ export function toIsoDate(d: Date): string {
   return isoDateIn(d);
 }
 
-/** Monday as the first day of the week — em dias brasileiros. */
+/**
+ * A semana da agenda começa no DOMINGO (AP117, pedido do dono em 10/11/2026;
+ * antes, segunda). Vale para a grade da semana, a do mês e a janela "Ver
+ * agenda" — as três usam esta função, então mudam juntas.
+ * Os dias em que a unidade não atende e não têm agendamento continuam
+ * escondidos na semana (G5, `week-grid.tsx`).
+ */
 export function startOfWeek(date: Date): Date {
   const iso = isoDateIn(date);
   const dia = weekdayOf(iso); // 0 = domingo
-  return startOfDayInBrazil(addDaysIso(iso, dia === 0 ? -6 : 1 - dia));
+  return startOfDayInBrazil(addDaysIso(iso, -dia));
 }
+
+/** Os rótulos das colunas, na ordem da semana da agenda (domingo primeiro). */
+export const DIAS_DA_SEMANA_DA_AGENDA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const;
 
 /** Total de semanas ISO no ano (52 ou 53). 28/dez está sempre na última semana. */
 export function isoWeeksInYear(year: number): number {
@@ -120,7 +129,7 @@ export function agendaRange(view: AgendaView, ref: Date): AgendaRange {
       weekNumber: null,
     };
   }
-  // semana
+  // semana (desde a AP117, de domingo a sábado; o nome `segunda` ficou)
   const segunda = isoDateIn(startOfWeek(ref));
   const start = meiaNoite(segunda);
   const end = meiaNoite(addDaysIso(segunda, 7));
@@ -140,7 +149,9 @@ export function agendaRange(view: AgendaView, ref: Date): AgendaRange {
       day: "2-digit",
       month: "short",
     })}`,
-    weekNumber: isoWeek(start),
+    // O número da semana é o ISO (que começa na segunda): conta-se pela
+    // segunda-feira desta semana, senão o domingo levaria o número da anterior.
+    weekNumber: isoWeek(meiaNoite(addDaysIso(segunda, 1))),
   };
 }
 

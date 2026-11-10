@@ -72,6 +72,23 @@ export function mensagemDaVigencia(erro: string): string | null {
     ["PRICE_HISTORY_IMMUTABLE", "O histórico de preço não pode ser alterado."],
     ["NOT_ALLOWED", "Só o Admin Master mexe no preço."],
   ];
+  // AP79 (0386): o preço não passa do máximo da rede.
+  const acima = erro.match(/PRICE_ABOVE_MAX:(\d+)/);
+  if (acima) return recusaDoMaximo(Number(acima[1]));
   for (const [k, v] of mapa) if (erro.includes(k)) return v;
   return null;
+}
+
+/**
+ * AP79 (0386, decisão do dono em 10/11/2026) — nenhum preço do procedimento
+ * passa do MÁXIMO da rede: nem o padrão, nem o da unidade, nem o agendado.
+ */
+export function recusaDoMaximo(maximoCents: number): string {
+  const reais = (maximoCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return `O preço passa do máximo do procedimento (${reais}). Ajuste o preço ou, se for o caso, o máximo na faixa da rede.`;
+}
+
+/** Preço acima do máximo? `null` = sem máximo, nada a conferir. */
+export function acimaDoMaximo(precoCents: number, maximoCents: number | null): boolean {
+  return maximoCents !== null && precoCents > maximoCents;
 }

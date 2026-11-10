@@ -412,11 +412,17 @@ describe("a janela da agenda é o dia brasileiro", () => {
     expect(r.end.toISOString()).toBe("2026-09-06T03:00:00.000Z");
   });
 
-  it("a semana começa na segunda brasileira", () => {
-    // 05/09/2026 é sábado; a segunda daquela semana é 31/08.
+  it("a semana começa no domingo brasileiro (AP117)", () => {
+    // 05/09/2026 é sábado; o domingo daquela semana é 30/08.
     const r = agendaRange("semana", refDoDia);
-    expect(r.start.toISOString()).toBe("2026-08-31T03:00:00.000Z");
-    expect(r.end.toISOString()).toBe("2026-09-07T03:00:00.000Z");
+    expect(r.start.toISOString()).toBe("2026-08-30T03:00:00.000Z");
+    expect(r.end.toISOString()).toBe("2026-09-06T03:00:00.000Z");
+    // O número da semana segue o ISO (pela segunda, 31/08 = semana 36).
+    expect(r.weekNumber).toBe(36);
+    // O próprio domingo abre a semana dele, não a anterior.
+    const domingo = agendaRange("semana", instantFromBrazil("2026-09-06", "09:00"));
+    expect(domingo.start.toISOString()).toBe("2026-09-06T03:00:00.000Z");
+    expect(domingo.weekNumber).toBe(37);
   });
 
   it("o mês começa no dia 1 brasileiro e fecha no dia 1 seguinte", () => {

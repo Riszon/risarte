@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatBrDate } from "@/lib/dates";
-import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+import { rotuloDaFuncaoPrevista } from "@/lib/roles";
 import {
   CONTRACT_LABELS,
   GENDER_LABELS,
@@ -115,10 +115,8 @@ export async function MeuCadastro({
     fotoUrl = data?.signedUrl ?? null;
   }
 
-  const funcao =
-    ficha.role_title && ficha.role_title in ROLE_LABELS
-      ? ROLE_LABELS[ficha.role_title as UserRole]
-      : ficha.role_title;
+  // AP115: no gênero da ficha.
+  const funcao = rotuloDaFuncaoPrevista(ficha.role_title, ficha.gender);
 
   const endereco = [
     [ficha.address, ficha.address_number].filter(Boolean).join(", "),

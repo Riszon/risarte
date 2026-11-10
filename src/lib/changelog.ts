@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.416.0",
+    data: "2026-11-10",
+    migracao: "0386",
+    titulo: "Preço dentro da faixa, agenda começando no domingo e a função no gênero da pessoa",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Venda direta: o desconto que deixa um procedimento abaixo do preço mínimo, ou o acréscimo que passa do máximo, é recusado ao salvar as condições — a mensagem diz qual procedimento e quanto.",
+        papeis: ["receptionist", "sdr", "clinical_coordinator", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Procedimentos: o preço padrão, o preço da unidade e o preço agendado não podem passar do preço máximo do procedimento.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Agenda: a semana começa no domingo (vistas Semana e Mês e a janela \"Ver agenda\"). Os dias em que a unidade não atende continuam escondidos na semana quando não têm agendamento.",
+        papeis: "todos",
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Risartanos e Meu cadastro: a função da pessoa aparece no gênero da ficha (\"Coordenadora Clínica\", \"Consultora Comercial\"). Sem gênero na ficha, fica como antes.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.415.0",
     data: "2026-11-10",
     migracao: "0385",

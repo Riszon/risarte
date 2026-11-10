@@ -2,6 +2,32 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 📏 0.416.0 — PREÇO DENTRO DA FAIXA, AGENDA NO DOMINGO E A FUNÇÃO NO GÊNERO (10/11/2026; migração 0386)
+>
+> Terceira entrega do pedido "resolver todos os itens abertos".
+> ⏳ **0386 SÓ NO TREINO.** O código tolera a falta dela (a venda direta
+> salva como antes; o preço da unidade é conferido também pelo app).
+> - **AP79 (0386)** ⚠️ `direct_sale_set_conditions` virou PORTA sobre
+>   `_direct_sale_set_conditions_raw` (a conta das condições mora na crua);
+>   a porta confere a faixa de cada procedimento (`_direct_sale_price_violations`:
+>   piso = menor entre mínimo e preço, teto = maior entre máximo e preço;
+>   desconto e acréscimo repartidos pelo valor de cada item) e recusa
+>   `PRICE_OUT_OF_RANGE`. Preço padrão, da unidade e agendado acima do máximo:
+>   `PRICE_ABOVE_MAX` (gatilhos só para a API). A negociação não aceita
+>   acréscimo (0205), então o máximo nela depende só do preço da unidade.
+> - **AP117** `startOfWeek` (`agenda-view.ts`) começa no DOMINGO; o número da
+>   semana continua ISO (contado pela segunda). Grade da semana, do mês e
+>   "Ver agenda" mudam juntas. Esconder o fim de semana sem agendamento já
+>   existia (G5). ⚠️ "Minha agenda", "Meu dia" e o Atendimento têm contas
+>   próprias de semana e NÃO mudaram.
+> - **AP115** `rotuloDaFuncao(role, gênero)` (`roles.ts`): só onde a tela fala
+>   de UMA pessoa (ficha do Risartano, funções por unidade, Meu cadastro).
+>   Filtros e matriz continuam `ROLE_LABELS`.
+> - **AP120** a lista H4 do `ROADMAP.md` tinha duas caixas velhas (H4.1 e
+>   H4.5, ambas completas): marcadas. O `docs/BACKLOG.md` está congelado.
+> - Achado de passagem: **AP139** (a venda direta grava o preço que a tela
+>   manda). Ensaio no treino 12/12. EV-315. **Não visto na tela.**
+
 > ## 🧾 0.415.0 — QUEM DEU A BAIXA E A ANAMNESE ANTIGA (10/11/2026; migrações 0384, 0385; Empresarial 0.101.0 / 1043)
 >
 > Segunda entrega do pedido "resolver todos os itens abertos".
