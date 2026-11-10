@@ -6,7 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canManageOrtho, canSettleOrtho, canViewOrtho, canViewOrthoDashboard, canViewOrthoMoney } from "@/lib/ortodontia/access";
 import { resolveOrthoScope } from "@/lib/ortodontia/escopo";
-import { loadCases, loadChargesByClinic } from "@/lib/ortodontia/db";
+import { loadCases, loadChargePayers, loadChargesByClinic } from "@/lib/ortodontia/db";
 import { chargeStatusToday } from "@/lib/ortodontia/regras";
 import {
   ORTHO_CHARGE_KIND_LABELS,
@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatBRL } from "@/lib/pricing";
 import { formatIsoDateBr, formatIsoMonthBr, todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { textoDaBaixa } from "@/lib/finance/quem-fez";
 import { OrthoBillingToolbar, OrthoChargeRow } from "./billing-client";
 
 export const metadata: Metadata = { title: "Ortodontia — Mensalidades" };
@@ -62,6 +63,11 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
     loadCases(supabase, { clinicIds: scope.clinicIds }),
   ]);
   const charges = chargesRead.ok ? chargesRead.linhas : [];
+  // AP129: quem deu a baixa (só das pagas).
+  const quemBaixou = await loadChargePayers(
+    supabase,
+    charges.filter((c) => c.status === "paga").map((c) => c.id)
+  );
   const caseById = new Map((casesRead.ok ? casesRead.linhas : []).map((c) => [c.id, c]));
 
   const abertas = charges.filter((c) => chargeStatusToday(c, today) === "em_aberto");
@@ -166,6 +172,9 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
                         <span className="ml-1 text-[11px] text-muted-foreground">{ORTHO_PAYMENT_METHOD_LABELS[ch.payment_method as OrthoPaymentMethod] ?? ch.payment_method}</span>
                       )}
                       {ch.status === "paga" && (ch.paid_on || ch.paid_at) && <span className="ml-1 text-[11px] text-muted-foreground">em {formatIsoDateBr((ch.paid_on ?? ch.paid_at ?? "").slice(0, 10))}</span>}
+                      {ch.status === "paga" && textoDaBaixa(quemBaixou, ch.id, ch.paid_at) && (
+                        <span className="block text-[11px] text-muted-foreground">{textoDaBaixa(quemBaixou, ch.id, ch.paid_at)}</span>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-right">
                       {canSettle && ch.status !== "cancelada" && (

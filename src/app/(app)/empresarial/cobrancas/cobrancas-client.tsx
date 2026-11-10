@@ -43,6 +43,8 @@ export type LinhaDeCobranca = {
   status: BillingStatus;
   vencimento: string | null;
   pagoEm: string | null;
+  /** AP129 (1043): "Baixa por Fulano em …"; nulo = não paga ou nome não lido. */
+  baixa: string | null;
   descricao: string | null;
 };
 
@@ -347,6 +349,9 @@ export function TabelaDeCobrancas({
                         ? BILLING_STATUS_LABELS.OVERDUE
                         : BILLING_STATUS_LABELS[l.status]}
                     </Badge>
+                    {l.baixa && (
+                      <span className="block text-[11px] text-muted-foreground">{l.baixa}</span>
+                    )}
                   </td>
                   {/* ESTORNAR — só onde há baixa a desfazer (relato OC-00058).
                       Fora da linha paga o botão não aparece: oferecer um

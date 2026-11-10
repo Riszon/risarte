@@ -17,6 +17,7 @@ import {
   soAceitaTodasAsUnidades,
 } from "@/lib/finance/escopo";
 import { comissaoEmMassa } from "@/lib/finance/repasse-percentual";
+import { textoDaBaixa } from "@/lib/finance/quem-fez";
 import { podeEntrarNoRol } from "@/lib/rita-procedimento";
 
 const ler = (caminho: string) => readFileSync(caminho, "utf8").replace(/\r\n/g, "\n");
@@ -359,5 +360,67 @@ describe("AP134 — a missão só cobra o que a função consegue fazer", () => 
     expect(item("complementos_planejamento").papeis).toEqual(["clinical_coordinator"]);
     expect(item("pedidos_enviados").papeis).toEqual(["unit_manager"]);
     expect(item("consentimentos").papeis).toEqual(["clinical_coordinator"]);
+  });
+});
+
+describe("AP129 — quem deu a baixa na mensalidade (Ortodontia) e na cobrança (Empresarial)", () => {
+  it("o texto é o do Financeiro; sem ter lido os nomes, a tela não afirma nada", () => {
+    expect(textoDaBaixa({ a: "Maria Souza" }, "a", null)).toBe("Baixa por Maria Souza");
+    expect(textoDaBaixa({ a: "Maria Souza" }, "a", "2026-11-10T15:00:00Z")).toMatch(
+      /^Baixa por Maria Souza em 10\/11\/2026 às 12:00$/
+    );
+    expect(textoDaBaixa({}, "a", null)).toBe("Baixa por autor não registrado");
+    expect(textoDaBaixa({}, "a", null, true)).toBe("Baixa pelo sistema");
+    // Nomes não lidos (migração ausente, erro) ≠ "autor não registrado".
+    expect(textoDaBaixa(null, "a", null)).toBeNull();
+  });
+
+  it("os nomes vêm de funções com a régua de quem vê o dinheiro, fechadas sem login", () => {
+    const orto = semComentario(migracao("0385_"));
+    expect(orto).toContain("and public.ortho_can_see_money(c.clinic_id)");
+    expect(orto).toMatch(/revoke execute on function public\.ortho_charge_authors\(uuid\[\]\) from public, anon, authenticated/);
+    const emp = semComentario(migracao("1043_"));
+    expect(emp).toContain("b.company_id in (select empresarial.accessible_company_ids())");
+    expect(emp).toMatch(/revoke execute on function empresarial\.billing_settlers\(uuid\[\]\) from public, anon, authenticated/);
+  });
+
+  it("o carimbo do Empresarial entra ao virar PAGA e sai quando deixa de estar", () => {
+    const emp = semComentario(migracao("1043_"));
+    expect(emp).toMatch(/if new\.status = 'PAID' then[\s\S]*?new\.paid_by := coalesce\(new\.paid_by, \(select auth\.uid\(\)\)\);[\s\S]*?else\s+new\.paid_by := null;/);
+    expect(emp).toMatch(/before insert or update of status on empresarial\.adhesion_billing/);
+  });
+
+  it("as três telas mostram a baixa, e o Empresarial não chama de \"pelo sistema\" o que não sabe", () => {
+    expect(ler("src/app/(app)/ortodontia/mensalidades/page.tsx")).toContain(
+      '{ch.status === "paga" && textoDaBaixa(quemBaixou, ch.id, ch.paid_at) && ('
+    );
+    expect(ler("src/app/(app)/ortodontia/casos/[id]/page.tsx")).toContain(
+      '{ch.status === "paga" && textoDaBaixa(quemBaixou, ch.id, ch.paid_at) && ('
+    );
+    const emp = ler("src/app/(app)/empresarial/cobrancas/page.tsx");
+    expect(emp).toContain('db.rpc("billing_settlers"');
+    expect(emp).toMatch(/r\.status === "PAID" && quemBaixou\?\.\[r\.id\]/);
+  });
+});
+
+describe("AP135 — a anamnese antiga só é apagada se estiver vazia", () => {
+  const cru = migracao("0384_");
+  const sql = semComentario(cru);
+
+  it("a migração confere as duas tabelas e PARA antes de apagar se houver uma linha", () => {
+    const trava = sql.indexOf("raise exception 'ANAMNESE_ANTIGA_COM_DADO");
+    const apaga = sql.indexOf("drop table if exists");
+    expect(trava).toBeGreaterThan(0);
+    expect(apaga).toBeGreaterThan(trava);
+    expect(sql).toMatch(/if v_n > 0 or v_m > 0 then/);
+  });
+
+  it("cada comando que apaga está declarado, e só as duas tabelas antigas caem", () => {
+    const drops = sql.match(/drop table[^;]*;/g) ?? [];
+    expect(drops.map((d) => d.replace(/\s+/g, " "))).toEqual([
+      "drop table if exists public.clinical_anamnesis_revisions;",
+      "drop table if exists public.clinical_anamnesis;",
+    ]);
+    expect(cru.match(/^-- DESTRUTIVO: /gm)?.length).toBe(2);
   });
 });

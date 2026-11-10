@@ -73,3 +73,23 @@ export const ORIGENS_AUTOMATICAS = new Set([
 export function origemAutomatica(sourceType: string | null | undefined): boolean {
   return ORIGENS_AUTOMATICAS.has(sourceType ?? "");
 }
+
+/**
+ * AP129 — QUEM DEU A BAIXA numa mensalidade (Ortodontia) ou cobrança
+ * (Empresarial), no mesmo texto do Financeiro.
+ *
+ * `nomes` nulo = a tela não conseguiu ler os nomes (a migração ainda não
+ * rodou neste banco, ou a leitura falhou): não diz nada, em vez de afirmar
+ * "autor não registrado" sobre algo que não leu.
+ * `semPessoa` = a baixa pode vir de rotina (webhook do banco): sem nome é
+ * "pelo sistema".
+ */
+export function textoDaBaixa(
+  nomes: Record<string, string | null> | null,
+  id: string,
+  quando: string | null,
+  semPessoa = false
+): string | null {
+  if (!nomes) return null;
+  return textoDoAto({ rotulo: "Baixa", nome: nomes[id] ?? null, quando, automatico: semPessoa });
+}

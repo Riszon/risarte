@@ -584,7 +584,7 @@ export async function editClinicalNote(
 
 // AP72 (10/11/2026): a anamnese antiga de 4 campos (`saveAnamnesis`) saiu —
 // nenhuma tela a chamava desde as fichas (`saveAnamnesisFill`). A tabela
-// `clinical_anamnesis` continua no banco, sem quem grave nela.
+// `clinical_anamnesis`, vazia, é apagada pela 0384 (AP135).
 
 /**
  * Fase 3 — inicia uma NOVA rodada de avaliação/reavaliação. Fecha a rodada

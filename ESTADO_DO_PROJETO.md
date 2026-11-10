@@ -2,6 +2,26 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧾 0.415.0 — QUEM DEU A BAIXA E A ANAMNESE ANTIGA (10/11/2026; migrações 0384, 0385; Empresarial 0.101.0 / 1043)
+>
+> Segunda entrega do pedido "resolver todos os itens abertos".
+> ⏳ **0384, 0385 e 1043 SÓ NO TREINO.** O dono aplica na produção.
+> - **AP129** — Ortodontia: `ortho_charge_authors` (0385, régua
+>   `ortho_can_see_money`). Empresarial: coluna `adhesion_billing.paid_by`,
+>   gatilho `adhesion_billing_stamp_payer` (carimba ao virar PAGA, por
+>   qualquer caminho; sai quando deixa de estar) e `billing_settlers` (1043).
+>   ⚠️ Texto único: `textoDaBaixa` (`quem-fez.ts`); nomes não lidos = a tela
+>   não afirma nada. No Empresarial, cobrança paga sem nome não mostra o
+>   texto (não dá para separar "antiga" de "webhook").
+> - **AP135 (0384, DESTRUTIVO declarado)** apaga `clinical_anamnesis` e
+>   `clinical_anamnesis_revisions`. Produção lida em 10/11/2026 (só leitura):
+>   0 linhas nas duas. A migração confere de novo e PARA se houver uma linha.
+> - Ensaio no treino 9/9 (transação desfeita); régua 8/8 quebrando. EV-314.
+>   **Não visto na tela.**
+> - **Ficaram para a próxima rodada (abertos no backlog):** AP79 (travar
+>   mínimo na venda direta e máximo), AP117, AP115, AP112, AP74, AP75, AP92,
+>   AP68, AP82, AP120 e o resto do AP16 (guarda por unidade para logados).
+
 > ## 🧭 0.414.0 — LOTE DAS DECISÕES DO DONO (10/11/2026; migrações 0379–0383; Empresarial 0.100.0 / 1042)
 >
 > Pedido do dono: resolver todos os itens abertos, alta → média → baixa. As

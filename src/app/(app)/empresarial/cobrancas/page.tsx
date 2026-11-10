@@ -17,6 +17,7 @@ import {
 } from "@/lib/empresarial/constants";
 import { TabelaDeCobrancas, type LinhaDeCobranca } from "./cobrancas-client";
 import { CampoDeBusca } from "@/components/campo-de-busca";
+import { textoDaBaixa } from "@/lib/finance/quem-fez";
 
 export const metadata: Metadata = { title: "Cobranças do programa" };
 
@@ -101,6 +102,22 @@ export default async function CobrancasPage(
 
   const { data } = await q.returns<LinhaBruta[]>();
 
+  // AP129 (1043): quem deu a baixa, pela função do banco (a regra de
+  // `profiles` só mostra colegas). Erro ou função ausente = sem o texto.
+  const pagas = (data ?? []).filter((r) => r.status === "PAID").map((r) => r.id);
+  let quemBaixou: Record<string, string | null> | null = pagas.length === 0 ? {} : null;
+  if (pagas.length > 0) {
+    const nomes = await db.rpc("billing_settlers", { p_ids: pagas });
+    if (!nomes.error && Array.isArray(nomes.data)) {
+      quemBaixou = Object.fromEntries(
+        (nomes.data as { billing_id: string; paid_by_name: string | null }[]).map((n) => [
+          n.billing_id,
+          n.paid_by_name,
+        ])
+      );
+    }
+  }
+
   const todas: LinhaDeCobranca[] = (data ?? []).map((r) => ({
     id: r.id,
     companyId: r.company_id,
@@ -111,6 +128,12 @@ export default async function CobrancasPage(
     status: r.status,
     vencimento: r.due_date,
     pagoEm: r.paid_at,
+    // Sem nome gravado (baixa antiga, de antes da 1043, ou vinda do banco
+    // pelo webhook) a tela não afirma nada: não dá para saber qual das duas.
+    baixa:
+      r.status === "PAID" && quemBaixou?.[r.id]
+        ? textoDaBaixa(quemBaixou, r.id, r.paid_at)
+        : null,
     descricao: r.description,
   }));
 

@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.415.0",
+    data: "2026-11-10",
+    migracao: "0385",
+    titulo: "Quem deu a baixa nas mensalidades da Ortodontia e nas cobranças do Empresarial",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Ortodontia → Mensalidades e ficha do caso: a mensalidade paga mostra quem deu a baixa e quando (\"Baixa por Fulano em 10/11/2026 às 14:32\").",
+        papeis: ["unit_manager", "finance_franchisor", "receptionist", "franchisee"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Empresarial → Cobranças: a cobrança paga mostra quem deu a baixa e quando. Vale para as baixas feitas daqui para frente; nas antigas o sistema não guardou o nome.",
+        papeis: ["finance_franchisor", "rislife_consultant", "unit_manager"],
+        manual: "2.3. A porta do Financeiro",
+      },
+    ],
+  },
+  {
     versao: "0.414.0",
     data: "2026-11-10",
     migracao: "0383",

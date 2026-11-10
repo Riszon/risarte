@@ -42,6 +42,7 @@ import {
   loadOrthoProcedures,
   loadOrthodontistOptions,
   loadReferralsMadeBy,
+  loadChargePayers,
 } from "@/lib/ortodontia/db";
 import {
   ATTENTION_LABELS,
@@ -76,6 +77,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBRL } from "@/lib/pricing";
 import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr, todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { textoDaBaixa } from "@/lib/finance/quem-fez";
 import { OrthoChargeRow } from "../../mensalidades/billing-client";
 import { AddMaintenance, CaseStatusActions, EditCaseDialog, EvolutionDialog, MaintenanceRowActions } from "./caso-client";
 import { BatchActions } from "./lote-client";
@@ -132,6 +134,11 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
   ]);
   const maintenances = (maintRead.ok ? maintRead.linhas : []).sort((a, b) => a.seq - b.seq);
   const charges = chargesRead.ok ? chargesRead.linhas : [];
+  // AP129: quem deu a baixa (só das pagas).
+  const quemBaixou = await loadChargePayers(
+    supabase,
+    charges.filter((ch) => ch.status === "paga").map((ch) => ch.id)
+  );
   // R8 (0335): o lote de mensalidades que vale hoje, e o valor sugerido para o próximo (Q2).
   const lote = activeBatch(batchesByCase.get(c.id));
   const sugestao = suggestedRenewalAmount(lote?.amount_cents ?? c.monthly_fee_cents, c.start_date, today, settings?.annual_adjustment_percent ?? 0);
@@ -468,7 +475,12 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
                               <span className="block text-[10px] text-emerald-700">pago {formatBRL(ch.paid_amount_cents ?? ch.amount_cents - ch.discount_cents)} (pontualidade)</span>
                             )}
                           </td>
-                          <td className="px-3 py-1.5"><span className={cn("rounded-full border px-2 py-0.5 text-[11px]", CHARGE_TONE[s])}>{ORTHO_CHARGE_STATUS_LABELS[s]}</span></td>
+                          <td className="px-3 py-1.5">
+                            <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", CHARGE_TONE[s])}>{ORTHO_CHARGE_STATUS_LABELS[s]}</span>
+                            {ch.status === "paga" && textoDaBaixa(quemBaixou, ch.id, ch.paid_at) && (
+                              <span className="block text-[11px] text-muted-foreground">{textoDaBaixa(quemBaixou, ch.id, ch.paid_at)}</span>
+                            )}
+                          </td>
                           <td className="px-3 py-1.5 text-right">{canSettle && ch.status !== "cancelada" && <OrthoChargeRow chargeId={ch.id} paid={ch.status === "paga"} canCancel={canManage} dueDate={ch.due_date} amountCents={ch.amount_cents} punctualityPercent={ch.kind === "mensalidade" ? (lote?.punctuality_discount_percent ?? c.punctuality_discount_percent) : 0} today={today} />}</td>
                         </tr>
                       );

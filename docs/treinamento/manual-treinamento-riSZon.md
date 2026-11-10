@@ -1784,6 +1784,10 @@ assiduidade.
     (1.9.02) no mês do pagamento — o caixa mostra o valor que entrou de
     verdade. Se o mês do pagamento também já estiver fechado, o desconto entra
     no dia em que a baixa foi lançada.
+    **Quem deu a baixa** *(desde a 0.415.0)*: na lista de Mensalidades e na
+    ficha do caso, a mensalidade paga mostra *"Baixa por Fulano em 10/11/2026
+    às 14:32"*. Mensalidade paga antes de o sistema guardar o nome aparece
+    como *"autor não registrado"*.
 15. **Suspender (Q5: nunca automático).** Lote terminou e o paciente não
     assumiu as próximas mensalidades, ou outro motivo da unidade: o Gerente
     ou o Coordenador clica **Suspender** e escreve o motivo. As manutenções

@@ -640,3 +640,27 @@ export function groupByCase<T extends { case_id: string }>(rows: T[]): Map<strin
   }
   return m;
 }
+
+/**
+ * AP129 (0385): quem deu a baixa em cada mensalidade. Pela função do banco —
+ * a regra de `profiles` só mostra colegas da unidade, e quem dá a baixa pode
+ * ser o Financeiro da Franqueadora. Nulo = não deu para ler (função ausente
+ * ou erro): a tela não mostra o texto.
+ */
+export async function loadChargePayers(
+  supabase: SupabaseClient,
+  chargeIds: string[]
+): Promise<Record<string, string | null> | null> {
+  if (chargeIds.length === 0) return {};
+  const nomes: Record<string, string | null> = {};
+  for (let i = 0; i < chargeIds.length; i += 200) {
+    const { data, error } = await supabase.rpc("ortho_charge_authors", {
+      p_ids: chargeIds.slice(i, i + 200),
+    });
+    if (error || !Array.isArray(data)) return null;
+    for (const r of data as { charge_id: string; paid_by_name: string | null }[]) {
+      nomes[r.charge_id] = r.paid_by_name;
+    }
+  }
+  return nomes;
+}

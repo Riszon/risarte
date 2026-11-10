@@ -1495,6 +1495,11 @@ Quando uma **mensalidade** é paga, ela entra no **Financeiro da Franqueadora**
   estorno e a exclusão são recusados com esse aviso: reabra o mês antes. Uma
   baixa de mês já fechado entra no mês aberto.
 
+**Quem deu a baixa** *(desde a 0.101.0)*. Em **Cobranças**, a cobrança paga
+mostra embaixo da situação *"Baixa por Fulano em 10/11/2026 às 14:32"*. Vale
+para as baixas feitas daqui para frente: nas antigas, e nas que o banco avisa
+sozinho, o sistema não tem um nome para mostrar e a linha fica sem o texto.
+
 ### Estornar uma baixa
 
 Baixa errada acontece; o que não pode é ficar sem saída. Na linha **Paga**,

@@ -396,6 +396,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (quem deu a baixa) — PC Administrador (core 0.414.0 → 0.415.0, migrações 0384 e 0385; Empresarial 0.100.0 → 0.101.0, migração 1043)**
+
+- **AP129 e AP135** (bloco 0.415.0 no ESTADO). ⚠️ **Texto de quem deu a
+  baixa = `textoDaBaixa`**; os nomes vêm das funções do banco, não de
+  `profiles`. ⚠️ A 0384 apaga duas tabelas vazias (declarada; para se houver
+  dado).
+- ⏳ **0384, 0385 e 1043 só no treino** (com as seis da 0.414.0: nove ao
+  todo). Não visto na tela.
+- ⚠️ `tsc` reprovou por um `.next/types` gerado em 27/10 (rotas antigas):
+  com o servidor local desligado, tirar a pasta `.next/types` resolve.
+
 **10/11/2026 (lote das decisões) — PC Administrador (core 0.413.0 → 0.414.0, migrações 0379 a 0383; Empresarial 0.99.2 → 0.100.0, migração 1042)**
 
 - **AP111, AP16, AP67, AP77, AP84, AP98, AP128, AP132 e AP134** (bloco
