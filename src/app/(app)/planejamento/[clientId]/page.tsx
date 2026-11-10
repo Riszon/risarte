@@ -99,6 +99,8 @@ export default async function PlanningCockpitPage(
   props: PageProps<"/planejamento/[clientId]">
 ) {
   const session = await getSessionContext();
+  // OC-00154: o botão do fim da página da ficha pede a janela da sequência.
+  const abrirSequencia = (await props.searchParams).abrir === "sequencia";
   const isPlanner =
     session.isAdminMaster ||
     Object.values(session.rolesByClinic).some((roles) =>
@@ -772,6 +774,7 @@ export default async function PlanningCockpitPage(
           podeDefinir={podeDefinir}
           providerOptions={providerOptions}
           regioes={odontograma?.regioes ?? []}
+          abrirAoCarregar={abrirSequencia}
         />
         <PopupCard
           label="Evidências"

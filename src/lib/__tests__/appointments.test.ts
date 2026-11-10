@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   APPOINTMENT_TYPES,
@@ -59,6 +61,15 @@ describe("appointmentTypeOptions", () => {
       expect(opts).toContain("revision");
       expect(opts).toContain("redo");
     }
+  });
+
+  it("OC-00170: no Centro de Planejamento dá para agendar Reavaliação (o cliente fica no Planejamento)", () => {
+    const opts = appointmentTypeOptions("planning_center");
+    expect(opts[0]).toBe("commercial_presentation");
+    expect(opts).toContain("reevaluation");
+    // A fase não muda na chegada: a 0032 só move Reavaliação a partir da Fase 7.
+    const sql = readFileSync(join(process.cwd(), "supabase", "migrations", "0032_checkin_provider.sql"), "utf8");
+    expect(sql).not.toMatch(/planning_center.*reevaluation/);
   });
 
   it("não repete o tipo automático quando ele já é excepcional (Acompanhamento)", () => {

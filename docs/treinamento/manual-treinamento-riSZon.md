@@ -2665,6 +2665,13 @@ trabalha. **Duração estimada:** 60 minutos.
 4. **O sistema recusa** horário fora do funcionamento da unidade, dia fechado ou
    sala lotada — exceto urgência/emergência.
 
+> **Reavaliação para quem está no Centro de Planejamento** (desde a 0.421.0,
+> relato OC-00170). Quando falta algo para o Planner montar o plano (foto,
+> raio-X…), agende o tipo **Reavaliação** com o Coordenador. Na chegada, o
+> cliente **continua no Centro de Planejamento** — a reavaliação só serve para
+> o Coordenador complementar o que falta. O tipo automático da fase continua
+> sendo a Apresentação Comercial.
+
 > **O profissional precisa atender aquele tipo de compromisso** *(desde a
 > 0.412.0, conferido também pelo banco)*. A janela só oferece quem pode; se,
 > ao trocar o profissional — inclusive na **troca de última hora** do
@@ -3115,6 +3122,10 @@ fica no alto do cockpit, mostra **Configurado** ou **Pendente** e vale para o
   sugerida esteja boa. **Sem isso o plano não vai para o Coordenador.** Se entrar
   ou sair um procedimento, ou mudar a quantidade ou o número de sessões, a opção
   volta a ficar **Pendente**.
+- **Botão no fim da página** (desde a 0.421.0, relato OC-00154): perto do
+  botão de envio, **Abrir Atendimentos e sequência** abre a janela sem subir a
+  página. Na ficha do cliente, ele leva ao Cockpit de Planejamento com a
+  janela já aberta.
 - **Confirmar não tranca** (relato OC-00157): depois de confirmada, a
   sequência ainda se arruma — arrastar, juntar e separar — até você **enviar
   ao Coordenador**. Desde a 0.418.0 a própria tela diz isso ao lado de
@@ -3464,7 +3475,15 @@ banco deixava, quando ninguém tinha chamado — corrigido).
 
 **Tarefa 1 — Enquanto a apresentação ainda não aconteceu**
 
-Na coluna **A apresentar**, cada cartão mostra:
+Na coluna **A apresentar** (desde a 0.421.0, relato OC-00169), quem **já
+chegou** à clínica vem **em cima**, pela hora da chegada; depois, os que têm
+apresentação marcada, da **mais próxima** para a mais distante; por último,
+quem está **sem agendamento**. Os filtros no alto da coluna — **Todos · Hoje ·
+Próximos 3 dias · Sem agendamento** — mostram só o que você pede ("Hoje" e
+"Próximos 3 dias" incluem quem já está na clínica). O quadro se atualiza
+sozinho a cada 45 segundos.
+
+Cada cartão mostra:
 
 - **quando é a apresentação** e com quem — ou, em **vermelho**, *"Sem
   apresentação marcada"*, que é o caso que trava o funil;

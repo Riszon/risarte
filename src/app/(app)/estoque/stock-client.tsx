@@ -272,7 +272,7 @@ function StockCount({
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
           <div>
-            <h2 className="flex items-center gap-1 font-medium">
+            <h2 className={cn(TITULO_DA_SECAO, "flex items-center gap-1.5")}>
               <ClipboardList className="size-4 text-primary" />
               Inventário
             </h2>
@@ -314,7 +314,7 @@ function StockCount({
     <Card className="border-primary/40">
       <CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="flex items-center gap-1 font-medium">
+          <h2 className={cn(TITULO_DA_SECAO, "flex items-center gap-1.5")}>
             <ClipboardList className="size-4 text-primary" />
             Inventário de {fmtDate(openCount.countDate)}
           </h2>
@@ -457,6 +457,14 @@ function StockCount({
     </Card>
   );
 }
+
+
+/**
+ * OC-00139 (ASB, 27/10/2026): "deixar mais à mostra o título de cada função,
+ * como os ajustes no estoque ou o saldo". Os títulos das áreas da tela eram do
+ * tamanho do texto comum e se perdiam no meio dos campos.
+ */
+const TITULO_DA_SECAO = "border-b pb-1.5 text-base font-semibold text-primary";
 
 export function StockManager({
   clinicId,
@@ -808,7 +816,7 @@ export function StockManager({
         <Card>
           <CardContent className="space-y-3 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-medium">Nota de compra</h2>
+              <h2 className={TITULO_DA_SECAO}>Nota de compra</h2>
               <Button
                 size="sm"
                 variant={purchase ? "outline" : "default"}
@@ -1270,7 +1278,7 @@ export function StockManager({
         <Card>
           <CardContent className="space-y-2 p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="flex items-center gap-1 font-medium">
+              <h2 className={cn(TITULO_DA_SECAO, "flex items-center gap-1.5")}>
                 <ShoppingCart className="size-4 text-primary" />
                 Repor ({replenishment.length})
               </h2>
@@ -1402,7 +1410,7 @@ export function StockManager({
       {canConsume && (
         <Card>
           <CardContent className="space-y-3 p-4">
-            <h2 className="font-medium">Lançar movimento</h2>
+            <h2 className={TITULO_DA_SECAO}>Lançar movimento</h2>
             <div className="grid gap-2 sm:grid-cols-6">
               <label className="block sm:col-span-3">
                 <Label className="text-[11px]">Item</Label>
@@ -1610,7 +1618,7 @@ export function StockManager({
       <Card>
         <CardContent className="space-y-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-medium">Saldo ({shown.length})</h2>
+            <h2 className={TITULO_DA_SECAO}>Saldo ({shown.length})</h2>
             <div className="flex items-center gap-2">
               {canManageCatalog ? (
                 <Button
@@ -2142,7 +2150,7 @@ export function StockManager({
       <Card>
         <CardContent className="space-y-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-medium">Kits ({kits.length})</h2>
+            <h2 className={TITULO_DA_SECAO}>Kits ({kits.length})</h2>
             {canManage && (
               <Button
                 size="sm"
@@ -2590,7 +2598,7 @@ export function StockManager({
       {/* -- MOVIMENTOS --------------------------------------------------- */}
       <Card>
         <CardContent className="space-y-2 p-4">
-          <h2 className="font-medium">Últimos movimentos</h2>
+          <h2 className={TITULO_DA_SECAO}>Últimos movimentos</h2>
           {movements.length === 0 ? (
             <p className="py-2 text-xs text-muted-foreground">
               Nenhum movimento registrado nesta unidade.

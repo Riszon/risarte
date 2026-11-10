@@ -105,6 +105,7 @@ function paraPacote(it: BudgetItem): ItemComPacote {
 }
 import { moveClientPhase } from "../../jornada/actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { pedirAbrirSequencia } from "@/lib/abrir-sequencia";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { BotaoSugerirProcedimento } from "../../procedimentos/sugestoes";
 import { Odontograma } from "@/components/odontograma/odontograma";
@@ -1248,6 +1249,22 @@ export function PlanningSection({
                   .join(", ")}
                 . Abra <strong>Atendimentos e sequência</strong> no Cockpit de Planejamento.
               </p>
+            )}
+            {/* OC-00154: a sequência é a última coisa do plano — o botão fica
+                aqui embaixo, sem precisar subir a página inteira. No cockpit
+                ele abre a janela; na ficha, leva ao cockpit já com ela aberta. */}
+            {options.some((o) => o.items.length > 0) && montaAqui && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => {
+                  if (!pedirAbrirSequencia()) router.push(`/planejamento/${clientId}?abrir=sequencia`);
+                }}
+              >
+                Abrir Atendimentos e sequência
+              </Button>
             )}
             {(!canSubmit || !pillarChoice) && montaAqui && (
               <p className="text-xs text-muted-foreground">

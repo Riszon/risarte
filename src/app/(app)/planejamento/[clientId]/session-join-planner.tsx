@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { GutBadge } from "@/components/gut-badge";
 import { PopupCard } from "@/components/popup-card";
+import { EVENTO_ABRIR_SEQUENCIA } from "@/lib/abrir-sequencia";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { rotuloDoLocal } from "@/lib/odontograma/plano";
@@ -92,12 +93,15 @@ export function CartaoDaSequencia({
   podeDefinir,
   providerOptions,
   regioes,
+  abrirAoCarregar = false,
 }: {
   plans: TreatmentPlan[];
   sequencias: SequenciasPorPlano;
   podeDefinir: boolean;
   providerOptions: Profissional[];
   regioes: Regiao[];
+  /** OC-00154: o endereço pediu a janela aberta (`?abrir=sequencia`). */
+  abrirAoCarregar?: boolean;
 }) {
   const planoId = usePlanoSelecionado()?.planoId ?? null;
   const plano = plans.find((p) => p.id === planoId);
@@ -113,6 +117,7 @@ export function CartaoDaSequencia({
       podeDefinir={podeDefinir}
       providerOptions={providerOptions}
       regioes={regioes}
+      abrirAoCarregar={abrirAoCarregar}
     />
   );
 }
@@ -129,12 +134,14 @@ function SequenciaDoPlano({
   podeDefinir,
   providerOptions,
   regioes,
+  abrirAoCarregar,
 }: {
   opcoes: OpcaoDaSequencia[];
   editavel: boolean;
   podeDefinir: boolean;
   providerOptions: Profissional[];
   regioes: Regiao[];
+  abrirAoCarregar: boolean;
 }) {
   const router = useRouter();
   const canEdit = podeDefinir && editavel;
@@ -235,6 +242,8 @@ function SequenciaDoPlano({
       icon={<Link2 className="size-4" />}
       badge={<SeloDaSituacao configurada={tudoConfigurado} />}
       wide
+      abrirComEvento={EVENTO_ABRIR_SEQUENCIA}
+      abertoAoCarregar={abrirAoCarregar}
     >
       <div className="space-y-3">
         {opcoes.length > 1 && (

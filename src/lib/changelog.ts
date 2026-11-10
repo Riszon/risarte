@@ -62,6 +62,41 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.421.0",
+    data: "2026-11-10",
+    migracao: null,
+    titulo: "Sugestões da equipe: a fila A apresentar por data, a sequência no fim do plano, a reavaliação no Planejamento e títulos do estoque",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Comercial: a coluna A apresentar põe em cima quem já chegou à clínica, depois as apresentações da mais próxima para a mais distante, e por último quem está sem agendamento; e ganhou os filtros Hoje, Próximos 3 dias e Sem agendamento. (OC-00169)",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Plano de tratamento: o botão Abrir Atendimentos e sequência fica também no fim da página, perto do envio — não precisa mais subir a página inteira. (OC-00154)",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Agenda: para o cliente no Centro de Planejamento, dá para agendar uma Reavaliação com o Coordenador quando falta algo para montar o plano (foto, raio-X). O cliente continua no Planejamento. (OC-00170)",
+        papeis: ["receptionist", "clinical_coordinator", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Estoque: os títulos de cada área da tela (Lançar movimento, Saldo, Kits, Últimos movimentos…) ficaram maiores e destacados. (OC-00139)",
+        papeis: ["asb", "tsb", "unit_manager"],
+      },
+    ],
+  },
+  {
     versao: "0.420.0",
     data: "2026-11-10",
     migracao: "0391",

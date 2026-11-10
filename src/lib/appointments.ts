@@ -146,6 +146,12 @@ export function appointmentTypeOptions(
   // movido para cá) tem caminho de volta: agenda Reavaliação → o check-in leva à
   // Fase 6 → o Coordenador avalia → Planejamento → novo plano → Comercial.
   if (phase === "follow_up") options.push("reevaluation");
+  // OC-00170 (recepção, 09/11/2026; decisão do dono, 10/11/2026): no Centro
+  // de Planejamento pode faltar algo para montar o plano (foto, raio-X…) e o
+  // cliente volta para o Coordenador complementar. O cliente CONTINUA no
+  // Planejamento: o check-in da reavaliação só muda a fase a partir da Fase 7
+  // (0032), e aqui não muda nada.
+  if (phase === "planning_center") options.push("reevaluation");
   for (const t of EXCEPTIONAL_TYPES) {
     if (!options.includes(t)) options.push(t);
   }

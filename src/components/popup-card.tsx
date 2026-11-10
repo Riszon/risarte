@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import {
   Dialog,
@@ -22,6 +23,8 @@ export function PopupCard({
   dialogTitle,
   wide = false,
   disabled = false,
+  abrirComEvento,
+  abertoAoCarregar = false,
   children,
 }: {
   label: string;
@@ -32,10 +35,26 @@ export function PopupCard({
   /** Pop-up mais largo (para conteúdos densos, ex.: Atendimentos). */
   wide?: boolean;
   disabled?: boolean;
+  /** OC-00154: abre também por um evento da janela (ex.: botão no fim da página).
+   *  Quem abre marca `detail.atendido = true`. */
+  abrirComEvento?: string;
+  /** Abre ao carregar (ex.: o endereço pediu esta janela). */
+  abertoAoCarregar?: boolean;
   children: React.ReactNode;
 }) {
+  const [aberto, setAberto] = useState(abertoAoCarregar && !disabled);
+  useEffect(() => {
+    if (!abrirComEvento || disabled) return;
+    const abrir = (e: Event) => {
+      const detail = (e as CustomEvent<{ atendido?: boolean }>).detail;
+      if (detail) detail.atendido = true;
+      setAberto(true);
+    };
+    window.addEventListener(abrirComEvento, abrir);
+    return () => window.removeEventListener(abrirComEvento, abrir);
+  }, [abrirComEvento, disabled]);
   return (
-    <Dialog>
+    <Dialog open={aberto} onOpenChange={(o) => setAberto(o)}>
       <DialogTrigger
         render={
           <button

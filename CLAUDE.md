@@ -436,6 +436,17 @@ Syncthing se comportarem de forma estranha.**
 - ✅ **0390 aplicada no treino e na produção** (o dono informou em
   10/11/2026; não conferido de fora).
 
+**10/11/2026 (relatos, lote 3) — PC Administrador (core 0.419.0 → 0.421.0, sem migração; worktree `wt-relatos`)**
+
+- **Sugestões aprovadas pelo dono** (bloco 0.421.0 no ESTADO): fila "A
+  apresentar" (`fila-a-apresentar.ts`), sequência no fim do plano
+  (`abrir-sequencia.ts` + `PopupCard.abrirComEvento`), Reavaliação na Fase 3,
+  títulos do estoque. A 0.420.0 é da Etapa 3 do repasse (outra sessão).
+- ⚠️ **Lote 2 e Lote 3 dos relatos respondidos no treino** pelo dono (em nome
+  dele, `answer_system_report_como`); itens novos do Backlog ligados aos
+  relatos (`backlog_link_report`). No treino, 19 apresentações presas foram
+  concluídas com autorização do dono (OC-00175).
+- ⏳ **OC-00171** (papel assinado obrigatório na marcação à mão): plano antes.
 **10/11/2026 (relatos, lote 1) — PC Administrador (core 0.417.0 → 0.418.0, migrações 0388 e 0389)**
 
 - **Relatos tratados pelo banco** (sessão "Relatos riSZon", pedido do dono):

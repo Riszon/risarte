@@ -58,6 +58,13 @@ import {
   transferFollowup,
 } from "./actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import {
+  FILTROS_DA_FILA,
+  ROTULO_DO_FILTRO,
+  filtrarFila,
+  ordenarFila,
+  type FiltroDaFila,
+} from "@/lib/fila-a-apresentar";
 
 export type BoardCard = {
   clientId: string;
@@ -143,6 +150,8 @@ export function CommercialKanban({
   /** Histórico aberto e filtrado por situação (null = todas). */
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<HistoryColumn | null>(null);
+  // OC-00169: filtro da coluna "A apresentar" (a ordem é sempre a da fila).
+  const [filtroDaFila, setFiltroDaFila] = useState<FiltroDaFila>("todos");
 
   function move(card: BoardCard, stage: Parameters<typeof setCardStage>[1]) {
     startTransition(async () => {
@@ -256,7 +265,10 @@ export function CommercialKanban({
 
       <div className="flex h-full min-w-max gap-3">
         {BOARD_COLUMNS.map((col: BoardColumn) => {
-          const colCards = cards.filter((c) => c.column === col);
+          const doCol = cards.filter((c) => c.column === col);
+          // OC-00169: "A apresentar" por data, quem chegou em cima, com filtro.
+          const colCards =
+            col === "a_apresentar" ? ordenarFila(filtrarFila(doCol, filtroDaFila)) : doCol;
           const color = COMMERCIAL_COLUMN_COLORS[col];
           return (
             <div
@@ -272,6 +284,25 @@ export function CommercialKanban({
                   {colCards.length}
                 </span>
               </div>
+              {col === "a_apresentar" && (
+                <div className="flex flex-wrap gap-1 border-b bg-background/50 px-2 py-1.5">
+                  {FILTROS_DA_FILA.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setFiltroDaFila(f)}
+                      aria-pressed={filtroDaFila === f}
+                      className={
+                        filtroDaFila === f
+                          ? "rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground"
+                          : "rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted/70"
+                      }
+                    >
+                      {ROTULO_DO_FILTRO[f]}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
                 {colCards.map((card) => (
                   <BoardCardView
