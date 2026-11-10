@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 10/11/2026 · Versão do sistema: **0.409.0** (a 0.408.0 não teve migração do core; Rita 0.6.0 / **3005**, aplicada no treino, a aplicar na produção) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 10/11/2026 · Versão do sistema: **0.409.0** (a 0.408.0 não teve migração do core; Rita 0.6.0 / **3005**, aplicada no treino e na produção em 10/11/2026) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 🚚 0.409.0 / 0374 — A PROPOSTA DE PAGAMENTO MORA NA NEGOCIAÇÃO (AP130 + AP131, 10/11/2026)
 >
@@ -44,7 +44,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.409.0** (a 0.408.0 não te
 > - ⚠️ **A pausa automática agora avisa** o Gerente e o Admin; o aviso falhar
 >   nunca desfaz a pausa.
 > - ✅ `test:rita` 119/119 no treino (transação desfeita) e quebrando; 3005
->   aplicada no treino. ⏳ Produção: o dono roda a 3005. Não visto na tela (a
+>   aplicada no treino e na produção (o dono, 10/11/2026; conferido de fora: as tabelas técnicas `rita.actions` e `rita.notices` estão fora da auditoria, nenhuma tabela ficou sem auditoria, 0 avisos com link `/rita`). Não visto na tela (a
 >   Rita está desligada; nenhum aviso existe). Achado **AP132** (urgência no
 >   rol pela tela, treino). Manual "A barra de cima", EV-307.
 

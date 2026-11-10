@@ -567,7 +567,8 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **`rita.actions` só cresce e é preenchido por gatilho** nas tabelas da
   Rita: tabela nova da Rita entra na lista do `rita_log` (3005). Sem telefone.
 - `test:rita` 119/119 e quebrando. AP132 (urgência no rol, treino) aguarda o
-  dono. ⏳ **3005 a aplicar na produção.**
+  dono. ✅ **3005 aplicada na produção pelo dono em 10/11/2026** (conferido
+  de fora pelo que o schema `public` mostra; o `rita` não é exposto pela API).
 
 **09/11/2026 (Rita — Fase 0A.5) — PC Administrador (core 0.403.0 → 0.403.1, migração 0369; Rita 0.4.0 → 0.5.0, migração 3004)**
 

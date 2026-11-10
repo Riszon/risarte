@@ -20,7 +20,7 @@ O produto e as decisões do dono ficam em `DECISOES_RITA.md`; o plano, em
 | **0A.3 Consentimento e descadastro** | ✅ concluída: código, treino e produção (09/11/2026) | **3002** |
 | **0A.4 Unidade, horários, feriados** | ✅ concluída: código, treino e produção (09/11/2026) | core **0368**, rita **3003** |
 | **0A.5 Avaliação como dado** | ✅ concluída: código, treino e produção (09/11/2026) | core **0369**, rita **3004** |
-| **0A.6 Escalonamento e avisos** | ✅ código e treino (10/11/2026); ⏳ produção | **3005** |
+| **0A.6 Escalonamento e avisos** | ✅ concluída: código, treino e produção (10/11/2026) | **3005** |
 | 0A.7 "O que a Rita sabe" | próxima | — |
 
 ## 0A.1 — Identidade e auditoria (Rita 0.1.0, 04/11/2026)
@@ -294,7 +294,7 @@ quem clicou; registro aceita alteração) caem 4, 1 e 1. Régua
 testar: um Admin pôs as **urgências no rol** pela tela no treino — **AP132**,
 aguardando o dono.
 
-**Na produção:** ⏳ 3005 a aplicar pelo dono.
+**Na produção:** ✅ **3005 aplicada pelo dono em 10/11/2026**; conferido de fora: as tabelas técnicas `rita.actions` e `rita.notices` estão fora da auditoria, nenhuma tabela ficou sem auditoria, 0 avisos com link `/rita`. ⚠️ O schema `rita` não é exposto pela API: as funções e as rotas não dão para ler de fora (só por `test:rita` no treino).
 
 ## Regras para as próximas entregas
 
