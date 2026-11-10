@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { FilterForm } from "@/components/filter-form";
-import { Input } from "@/components/ui/input";
 import { Novidades } from "@/components/novidades";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 import {
   TIPO_ROTULO,
   anosDasNovidades,
@@ -82,9 +82,9 @@ export default async function NovidadesPage(
       </header>
 
       <FilterForm className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-        <Input
+        <CampoDeBusca
           name="busca"
-          defaultValue={busca}
+          valorDoEndereco={busca}
           placeholder="Procurar por palavra (ex.: agenda, senha, estoque)"
           aria-label="Procurar nas novidades"
         />

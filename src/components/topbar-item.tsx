@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { SEM_CONTAGEM } from "@/lib/contagem";
 
 /**
  * Um ícone da barra de cima.
@@ -20,6 +21,7 @@ export function TopbarItem({
   label,
   icon,
   badge,
+  semContagem,
   destaque,
 }: {
   href: string;
@@ -39,6 +41,11 @@ export function TopbarItem({
   icon: ReactNode;
   /** Número no canto. `0` ou ausente não desenha nada. */
   badge?: number;
+  /**
+   * A contagem falhou (AP136). Sem número conhecido, o canto mostra um traço
+   * em vez de ficar vazio — vazio se lê como "nada novo".
+   */
+  semContagem?: boolean;
   /** Para o que pede atenção (alertas), sem gritar. */
   destaque?: boolean;
 }) {
@@ -53,6 +60,11 @@ export function TopbarItem({
     >
       {icon}
       <span className="sr-only">{label}</span>
+      {semContagem && !(badge !== undefined && badge > 0) && (
+        <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-medium text-muted-foreground">
+          {SEM_CONTAGEM}
+        </span>
+      )}
       {badge !== undefined && badge > 0 && (
         <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium tabular-nums text-gold-foreground">
           {badge > 99 ? "99+" : badge}

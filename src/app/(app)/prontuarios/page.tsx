@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { PhaseBadge } from "@/components/phase-badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import {
   Table,
@@ -42,6 +41,7 @@ import { SharedClientsList, type SharedEntry } from "./shared-clients-list";
 import { notifyUnitBirthdays } from "./actions";
 import { daysLate } from "@/lib/finance/late-fees";
 import { todayInBrazil } from "@/lib/dates";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Prontuários" };
 
@@ -653,10 +653,10 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
       {tab === "ativos" && (
         <>
           <FilterForm className="flex max-w-xl flex-wrap gap-2">
-            <Input
+            <CampoDeBusca
               type="search"
               name="q"
-              defaultValue={query}
+              valorDoEndereco={query}
               placeholder="Buscar por nome..."
               className="max-w-xs"
             />

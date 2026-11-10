@@ -195,6 +195,7 @@ import {
   startOfTodayInBrazil,
   todayInBrazil,
 } from "@/lib/dates";
+import { contagemConfirmada } from "@/lib/contagem";
 
 export const metadata: Metadata = { title: "Prontuário do cliente" };
 
@@ -2619,13 +2620,20 @@ export default async function ClientDetailPage(
       "unit_manager",
     ]));
   let hasApprovedPlan = plans.some((p) => p.status === "approved");
+  let planoAprovadoNaoConferido = false;
   if (plans.length === 0 && canPresent) {
-    const { count } = await supabase
-      .from("treatment_plans")
-      .select("id", { count: "exact", head: true })
-      .eq("client_id", client.id)
-      .eq("status", "approved");
-    hasApprovedPlan = (count ?? 0) > 0;
+    const aprovados = contagemConfirmada(
+      await supabase
+        .from("treatment_plans")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", client.id)
+        .eq("status", "approved")
+    );
+    hasApprovedPlan = (aprovados ?? 0) > 0;
+    // AP136: não deu para conferir ≠ "não tem plano aprovado". O atalho da
+    // apresentação aparece (a tela de destino confere de novo); o envio para
+    // assinatura continua exigindo a confirmação.
+    planoAprovadoNaoConferido = aprovados === null;
   }
 
   // -- Odontograma (OD1): quem vê = quem lida com o caso clínico ou o
@@ -2791,7 +2799,7 @@ export default async function ClientDetailPage(
             </div>
 
             {(canScheduleFromFicha ||
-              (hasApprovedPlan && canPresent) ||
+              ((hasApprovedPlan || planoAprovadoNaoConferido) && canPresent) ||
               directSale.canLaunch ||
               (pprOffer.canSell && !pprOffer.membership) ||
               podeIndicarNaFicha ||
@@ -2842,7 +2850,7 @@ export default async function ClientDetailPage(
                     trigger={<Button size="sm">Novo agendamento</Button>}
                   />
                 )}
-                {hasApprovedPlan && canPresent && (
+                {(hasApprovedPlan || planoAprovadoNaoConferido) && canPresent && (
                   <Button
                     size="sm"
                     variant="outline"

@@ -18,6 +18,9 @@ import {
  * contam o que espera por alguém (Início, trilha de Compras, boia de relatos).
  * Varrer toda tela reprovaria contadores de enfeite e a régua viraria ruído.
  * Tela nova que conte pendência entra aqui.
+ *
+ * AP136: entraram o sino, o Chat, o prontuário, o painel do Financeiro, as
+ * duas telas da assinatura digital e a rotina de e-mails.
  */
 const ARQUIVOS = [
   "src/app/(app)/inicio-dados.ts",
@@ -25,6 +28,14 @@ const ARQUIVOS = [
   "src/app/(app)/relatos-treino-actions.ts",
   "src/lib/relatos-do-treino.ts",
   "src/components/report-nav-item.tsx",
+  // AP136 (10/11/2026): as telas que tinham sobrado.
+  "src/components/notification-nav-item.tsx",
+  "src/app/(app)/chat/page.tsx",
+  "src/app/(app)/prontuarios/[id]/page.tsx",
+  "src/app/(app)/financeiro/painel-dados.ts",
+  "src/app/(app)/assinaturas/configuracoes/page.tsx",
+  "src/lib/signatures/painel-dados.ts",
+  "src/lib/signatures/rotina-horaria.ts",
 ];
 
 // `count ?? 0`, `x.count ?? 0`, `x?.count ?? 0`, `(count ?? 0)` e o parente
@@ -137,5 +148,60 @@ describe("o que a tela escreve", () => {
     const trilha = readFileSync(join(process.cwd(), "src/app/(app)/compras/trilha.tsx"), "utf8");
     expect(trilha).toContain("{esperando === null && (");
     expect(trilha).toContain("{SEM_CONTAGEM}");
+  });
+});
+
+describe("AP136 — as telas que tinham sobrado", () => {
+  const ler = (arq: string) => readFileSync(join(process.cwd(), arq), "utf8");
+
+  it("o sino não zera quando a contagem falha: guarda o último número e marca", () => {
+    const sino = ler("src/components/notification-nav-item.tsx");
+    expect(sino).toContain("setSemContagem(n === null);");
+    expect(sino).toContain("if (n !== null) setUnread(n);");
+    expect(sino).toContain("semContagem={semContagem}");
+    expect(ler("src/components/topbar-item.tsx")).toContain("{SEM_CONTAGEM}");
+  });
+
+  it("o Chat mostra o traço no lugar de 'N offline' quando não contou", () => {
+    expect(ler("src/app/(app)/chat/page.tsx")).toContain("totalUsers = contagemConfirmada(");
+    expect(ler("src/app/(app)/chat/chat-hub.tsx")).toContain("totalUsers === null ? SEM_CONTAGEM");
+  });
+
+  it("o painel do Financeiro mostra o cartão da autorização com o traço", () => {
+    const fin = ler("src/app/(app)/financeiro/painel-dados.ts");
+    expect(fin).toContain("if (aguardando === null || aguardando > 0) {");
+    expect(fin).toContain("valor: aguardando === null ? SEM_CONTAGEM : String(aguardando),");
+  });
+
+  it("o prontuário não esconde o atalho da apresentação por contagem que falhou", () => {
+    const p = ler("src/app/(app)/prontuarios/[id]/page.tsx");
+    expect(p).toContain("planoAprovadoNaoConferido = aprovados === null;");
+    expect(p).toContain("{(hasApprovedPlan || planoAprovadoNaoConferido) && canPresent && (");
+    // O envio para assinatura NÃO afrouxa: continua exigindo a confirmação.
+    expect(p).toContain("{canSendSignature && hasApprovedPlan && (");
+  });
+
+  it("a assinatura digital mostra o traço no consumo e na fila", () => {
+    expect(ler("src/app/(app)/assinaturas/configuracoes/page.tsx")).toContain(
+      "{contagemConfirmada(usados) ?? SEM_CONTAGEM} documento(s)"
+    );
+    expect(ler("src/lib/signatures/painel-dados.ts")).toContain("usadosNoMes: contagemConfirmada(usados),");
+    expect(ler("src/app/(app)/assinaturas/page.tsx")).toContain("opcoes.usadosNoMes ?? SEM_CONTAGEM");
+  });
+
+  it("⚠️ a rotina de e-mails não trata fila que não contou como fila vazia", () => {
+    const r = ler("src/lib/signatures/rotina-horaria.ts");
+    // Sai só com a fila CONFIRMADA em zero; `null` segue e registra o erro.
+    expect(r).toContain('if (stats.email !== "ligado" || stats.emailsNaFila === 0) return;');
+    expect(r).toContain('stats.erros.push("fila: não foi possível contar os e-mails pendentes")');
+    expect(r).not.toContain("!stats.emailsNaFila");
+  });
+
+  it("⚠️ a Ortodontia do Início devolve null quando a leitura falha", () => {
+    const d = ler("src/app/(app)/inicio-dados.ts");
+    expect(d).toContain("if (error || !casos) return null;");
+    expect(d).toContain("if (erroDaAgenda || !agendados) return null;");
+    expect(d).toContain("numero: ortodontiaSemInstalacao,");
+    expect(d).not.toContain('typeof ortodontiaSemInstalacao === "number"');
   });
 });

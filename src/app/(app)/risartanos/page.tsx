@@ -8,7 +8,6 @@ import { FilterForm } from "@/components/filter-form";
 import { AvisoSomenteConsulta } from "@/components/aviso-somente-consulta";
 import { AvisoEspelhoPendente } from "@/components/aviso-espelho-pendente";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   CONTRACT_LABELS,
   CONTRACT_TYPES,
@@ -29,6 +28,7 @@ import { ROLE_LABELS } from "@/lib/roles";
 import { MedalhasDeCertificacao } from "@/components/medalhas-de-certificacao";
 import { alcanceDoUsuario, carregarEquipe, podeVerEquipe } from "./dados";
 import { SeloDeAcesso, SeloDeUnidade } from "./selos";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Risartanos" };
 
@@ -158,9 +158,9 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
       </nav>
 
       <FilterForm className="flex flex-wrap items-center gap-2">
-        <Input
+        <CampoDeBusca
           name="busca"
-          defaultValue={filtros.busca}
+          valorDoEndereco={filtros.busca}
           placeholder="Buscar por nome, e-mail, CPF ou código..."
           className="h-9 w-full sm:w-72"
         />

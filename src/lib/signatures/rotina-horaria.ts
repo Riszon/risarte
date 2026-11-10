@@ -5,6 +5,7 @@ import { isEmailConfigured, sendEmail } from "@/lib/notify/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getDocument, isZapsignConfigured, isZapsignFake, zapsignEnv } from "@/lib/zapsign";
 import { eventosDaConferencia } from "./conferencia";
+import { contagemConfirmada } from "@/lib/contagem";
 import { BUCKET } from "./send";
 import { aplicarWebhook, guardarAssinado } from "./webhook-apply";
 
@@ -37,7 +38,8 @@ export type RotinaHorariaStats = {
   pdfsBuscados: number;
   emailsEnviados: number;
   emailsComErro: number;
-  emailsNaFila: number;
+  /** `null` = a fila não pôde ser contada (AP136); o motivo vai em `erros`. */
+  emailsNaFila: number | null;
   zapsign: "ligada" | "falsa" | "sem token";
   email: "ligado" | "sem configuração";
   erros: string[];
@@ -159,9 +161,14 @@ async function buscarPdfsPendentes(admin: SupabaseClient, fetchImpl: typeof fetc
 }
 
 async function mandarFila(admin: SupabaseClient, stats: RotinaHorariaStats) {
-  const { count } = await admin.from("signature_outbox").select("id", { count: "exact", head: true }).eq("status", "pending");
-  stats.emailsNaFila = count ?? 0;
-  if (stats.email !== "ligado" || !stats.emailsNaFila) return;
+  // AP136: fila que não deu para contar NÃO é fila vazia. Antes virava zero e
+  // a rotina saía sem mandar nada e sem dizer por quê. Agora registra o erro e
+  // segue: a leitura da fila, logo abaixo, é quem decide se há o que mandar.
+  stats.emailsNaFila = contagemConfirmada(
+    await admin.from("signature_outbox").select("id", { count: "exact", head: true }).eq("status", "pending")
+  );
+  if (stats.emailsNaFila === null) stats.erros.push("fila: não foi possível contar os e-mails pendentes");
+  if (stats.email !== "ligado" || stats.emailsNaFila === 0) return;
 
   const { data: fila, error } = await admin
     .from("signature_outbox")
@@ -194,8 +201,10 @@ async function mandarFila(admin: SupabaseClient, stats: RotinaHorariaStats) {
       stats.emailsComErro++;
     }
   }
-  const { count: resta } = await admin.from("signature_outbox").select("id", { count: "exact", head: true }).eq("status", "pending");
-  stats.emailsNaFila = resta ?? 0;
+  stats.emailsNaFila = contagemConfirmada(
+    await admin.from("signature_outbox").select("id", { count: "exact", head: true }).eq("status", "pending")
+  );
+  if (stats.emailsNaFila === null) stats.erros.push("fila: não foi possível contar o que restou");
 }
 
 async function marcarFalha(admin: SupabaseClient, id: number, tentativas: number, erro: string) {

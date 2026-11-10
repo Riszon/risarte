@@ -20,6 +20,11 @@ import {
   type UnitPanelRow,
 } from "@/lib/finance/network-panel";
 import { todayInBrazil, addDaysIso, monthRangeOf } from "@/lib/dates";
+import {
+  NAO_FOI_POSSIVEL_CONTAR,
+  SEM_CONTAGEM,
+  contagemConfirmada,
+} from "@/lib/contagem";
 
 /**
  * O PAINEL DO FINANCEIRO — a tela que faltava na porta do módulo.
@@ -303,12 +308,17 @@ export async function montarPendenciasFinanceiras(
     });
   }
 
-  if ((autorizacao.count ?? 0) > 0) {
+  // AP136: contagem que falhou não some — vira o cartão com o traço.
+  const aguardando = contagemConfirmada(autorizacao);
+  if (aguardando === null || aguardando > 0) {
     lista.push({
       chave: "autorizacao",
-      valor: String(autorizacao.count),
+      valor: aguardando === null ? SEM_CONTAGEM : String(aguardando),
       titulo: "Contas aguardando autorização",
-      linha: "Não são pagas antes da decisão de quem tem alçada.",
+      linha:
+        aguardando === null
+          ? `${NAO_FOI_POSSIVEL_CONTAR} Abra para conferir.`
+          : "Não são pagas antes da decisão de quem tem alçada.",
       href: "/financeiro/contas-a-pagar",
       tom: "atencao",
     });

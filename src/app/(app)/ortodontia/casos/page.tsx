@@ -13,11 +13,11 @@ import { ORTHO_STATUS_TONE } from "@/components/ortodontia/ortho-client-card";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { formatBRL } from "@/lib/pricing";
 import { formatIsoDateBr, todayInBrazil } from "@/lib/dates";
 import { atendeABusca } from "@/lib/busca";
 import { cn } from "@/lib/utils";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Ortodontia — Casos" };
 
@@ -72,7 +72,7 @@ export default async function OrtoCasosPage(props: PageProps<"/ortodontia/casos"
       </CabecalhoDeModulo>
 
       <FilterForm className="flex flex-wrap items-center gap-2 text-sm">
-        <Input name="busca" defaultValue={busca} placeholder="Buscar paciente, código ou ortodontista… (Enter)" className="h-9 w-72" />
+        <CampoDeBusca name="busca" valorDoEndereco={busca} placeholder="Buscar paciente, código ou ortodontista… (Enter)" className="h-9 w-72" />
         {scope.canSeeNetwork && (
           <select name="unidade" defaultValue={pick("unidade") ?? (scope.clinicId ?? "all")} className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm">
             <option value="all">Rede toda</option>

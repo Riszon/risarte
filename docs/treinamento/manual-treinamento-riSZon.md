@@ -188,6 +188,10 @@ significa e o caminho para resolver. Eles mudam conforme a sua função:
 > do número e a frase **"Não foi possível contar agora. Abra para conferir."**
 > Ele não diz zero: abra a tela para ver se há algo esperando. O mesmo vale
 > para as etapas **Aprovar** e **Receber** de Compras e para a boia de relatos.
+> *Desde a 0.411.0* vale também para o **sino** (fica o último número
+> conhecido; sem número, aparece o traço), para o cartão **Contas aguardando
+> autorização** do Financeiro, para o "offline" do Chat e para o consumo e a
+> fila de e-mails da assinatura digital.
 
 **Minhas metas.** Quem participa de alguma meta ativa vê, no alto, um cartão
 para cada uma (até quatro), com a barra da equipe e — na meta individual — a

@@ -75,6 +75,7 @@ import {
   type ChatPerson,
 } from "./actions";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { SEM_CONTAGEM } from "@/lib/contagem";
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "✅", "🔥"];
 
@@ -212,7 +213,7 @@ export function ChatHub({
   initialChannels: ChatChannel[];
   colleagues: ChatColleague[];
   isAdmin: boolean;
-  totalUsers: number;
+  totalUsers: number | null;
   canMessageUnits: boolean;
   /** Ids bloqueados no chat (só o Admin recebe a lista, para gerenciar). */
   initialBlockedIds?: string[];
@@ -820,7 +821,7 @@ export function ChatHub({
             {" · "}
             <span className="text-amber-600">{awayCount} ausentes</span>
             {" · "}
-            {Math.max(0, totalUsers - presence.size)} offline
+            {totalUsers === null ? SEM_CONTAGEM : Math.max(0, totalUsers - presence.size)} offline
           </div>
         )}
 

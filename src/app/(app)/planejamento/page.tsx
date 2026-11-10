@@ -15,7 +15,6 @@ import {
 } from "@/lib/dates";
 import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import { PresentationCountdown } from "@/components/presentation-countdown";
 import {
@@ -27,6 +26,7 @@ import {
   type MethodologyPillar,
 } from "@/lib/journey";
 import { type TreatmentPlanStatus } from "@/lib/planning";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Centro de Planejamento" };
 
@@ -384,9 +384,9 @@ export default async function PlanningCenterPage(
         </select>
         {periodo === "periodo" && (
           <>
-            <Input type="date" name="de" defaultValue={de} className="w-auto" />
+            <CampoDeBusca type="date" name="de" valorDoEndereco={de} className="w-auto" />
             <span className="text-sm text-muted-foreground">até</span>
-            <Input type="date" name="ate" defaultValue={ate} className="w-auto" />
+            <CampoDeBusca type="date" name="ate" valorDoEndereco={ate} className="w-auto" />
           </>
         )}
         {(unitOptions ?? []).length > 1 && (

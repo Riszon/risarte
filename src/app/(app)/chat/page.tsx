@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Ban, MessagesSquare } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { contagemConfirmada } from "@/lib/contagem";
 import {
   amIChatBlocked,
   listBlockedChatUsers,
@@ -40,14 +41,16 @@ export default async function ChatPage() {
   ]);
 
   // Total de usuários (só para a contagem online/offline do Admin).
-  let totalUsers = 0;
+  // AP136: `null` = não deu para contar (a tela mostra um traço, não zero).
+  let totalUsers: number | null = 0;
   if (session.isAdminMaster) {
     const supabase = await createClient();
-    const { count } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .neq("kind", "agent"); // 0365: a assistente virtual não conta como pessoa
-    totalUsers = count ?? 0;
+    totalUsers = contagemConfirmada(
+      await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .neq("kind", "agent") // 0365: a assistente virtual não conta como pessoa
+    );
   }
 
   // R4: Admin/franqueadora pode enviar para uma unidade específica.

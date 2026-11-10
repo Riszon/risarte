@@ -11,7 +11,6 @@ import { FilterForm } from "@/components/filter-form";
 import { Badge } from "@/components/ui/badge";
 import { PhaseBadge } from "@/components/phase-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   STATUS_LABELS,
@@ -20,6 +19,7 @@ import {
 } from "@/lib/journey";
 import type { TreatmentPlanStatus } from "@/lib/planning";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Planos de Tratamento" };
 
@@ -565,9 +565,9 @@ export default async function PlansPage(props: PageProps<"/planos">) {
 
       <FilterForm className="flex flex-wrap items-center gap-2">
         {situacao && <input type="hidden" name="situacao" value={situacao} />}
-        <Input
+        <CampoDeBusca
           name="busca"
-          defaultValue={busca}
+          valorDoEndereco={busca}
           placeholder="Buscar cliente pelo nome..."
           className="h-9 w-64"
         />

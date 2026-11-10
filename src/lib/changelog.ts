@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.411.0",
+    data: "2026-11-10",
+    titulo: "Contagens que não mentem nas outras telas e campos de busca sem aviso",
+    migracao: null,
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O sino, o cartão \"Contas aguardando autorização\" do Financeiro, o Chat e as telas da assinatura digital mostram um traço (—) quando o sistema não consegue contar, em vez de um zero. No Início, o cartão da Ortodontia sem horário de instalação faz o mesmo.",
+        papeis: "todos",
+        manual: "2.2. A tela de Início",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Os campos de busca e de data dos filtros (Clientes, Planos, Risartanos, Novidades, Ortodontia, Recebíveis, Relatórios, Planejamento e Empresarial) mantêm o texto e o foco depois de buscar. Os campos de busca ganharam o \"x\" de limpar.",
+        papeis: "todos",
+        manual: "2.2. A tela de Início",
+      },
+    ],
+  },
+  {
     versao: "0.410.0",
     data: "2026-11-10",
     migracao: null,

@@ -396,6 +396,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (AP136/AP137) — PC Administrador (core 0.410.0 → 0.411.0, sem migração; Empresarial 0.99.1 → 0.99.2)**
+
+- **O traço no lugar do zero nas telas que tinham sobrado e o `CampoDeBusca`
+  em 12 telas** (bloco 0.411.0 no ESTADO). ⚠️ **Campo do Base UI (`<Input>`)
+  dentro de `FilterForm` com valor do endereço = `CampoDeBusca`** (serve
+  para data também; régua). ⚠️ `emailsNaFila` da rotina da assinatura pode
+  ser `null`.
+- Sem migração; publicado. Visto na tela (servidor local de teste): as
+  buscas e a data. Não visto: o traço (exige a contagem falhar).
+
 **10/11/2026 (lote do backlog) — PC Administrador (core 0.409.0 → 0.410.0, sem migração; Empresarial 0.99.0 → 0.99.1)**
 
 - **16 itens do backlog resolvidos sem migração** (bloco 0.410.0 no ESTADO).

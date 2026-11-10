@@ -8,7 +8,6 @@ import { isAsaasConfigured } from "@/lib/empresarial/asaas";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { formatBRL } from "@/lib/pricing";
 import { todayInBrazil } from "@/lib/dates";
 import {
@@ -17,6 +16,7 @@ import {
   type BillingType,
 } from "@/lib/empresarial/constants";
 import { TabelaDeCobrancas, type LinhaDeCobranca } from "./cobrancas-client";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Cobranças do programa" };
 
@@ -225,15 +225,15 @@ export default async function CobrancasPage(
         </label>
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Vence de</span>
-          <Input type="date" name="de" defaultValue={de} />
+          <CampoDeBusca type="date" name="de" valorDoEndereco={de} />
         </label>
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">até</span>
-          <Input type="date" name="ate" defaultValue={ate} />
+          <CampoDeBusca type="date" name="ate" valorDoEndereco={ate} />
         </label>
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Empresa</span>
-          <Input name="busca" defaultValue={busca} placeholder="Nome da empresa" />
+          <CampoDeBusca name="busca" valorDoEndereco={busca} placeholder="Nome da empresa" />
         </label>
       </FilterForm>
 

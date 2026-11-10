@@ -6,6 +6,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatBrDateTime, formatInBrazil } from "@/lib/dates";
+import { SEM_CONTAGEM, contagemConfirmada } from "@/lib/contagem";
 import { isEmailConfigured } from "@/lib/notify/email";
 import { canConfigureSignatures } from "@/lib/signatures/access";
 import { loadSignatureSettings } from "@/lib/signatures/settings";
@@ -118,6 +119,8 @@ async function RotinasStatus({ limite }: { limite: number | null }) {
   const h = horaria.data;
   const n = (v: unknown) => (typeof v === "number" ? v : 0);
   const emailLigado = isEmailConfigured();
+  // AP136: contagem que falhou vira traço, não zero.
+  const desistidos = contagemConfirmada(comErro);
 
   return (
     <div className="space-y-2 rounded-xl border px-4 py-3 text-sm">
@@ -150,13 +153,14 @@ async function RotinasStatus({ limite }: { limite: number | null }) {
             )}
           </li>
           <li>
-            <span className="font-medium text-foreground">Consumo do mês ({mes})</span>: {usados.count ?? 0} documento(s)
+            <span className="font-medium text-foreground">Consumo do mês ({mes})</span>: {contagemConfirmada(usados) ?? SEM_CONTAGEM} documento(s)
             {limite ? ` de ${limite} do plano` : " — sem limite cadastrado, não há alerta"}.
           </li>
           <li>
             <span className="font-medium text-foreground">E-mails</span>:{" "}
             {emailLigado ? "envio ligado." : <span className="text-amber-800 dark:text-amber-200">envio NÃO configurado (Resend) — os e-mails ficam na fila até configurar.</span>}{" "}
-            {naFila.count ?? 0} na fila{(comErro.count ?? 0) > 0 ? `, ${comErro.count} desistido(s) depois de 3 tentativas` : ""}.
+            {contagemConfirmada(naFila) ?? SEM_CONTAGEM} na fila
+            {desistidos === null ? ", desistidos: não foi possível contar agora" : desistidos > 0 ? `, ${desistidos} desistido(s) depois de 3 tentativas` : ""}.
           </li>
         </ul>
       )}

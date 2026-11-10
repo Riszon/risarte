@@ -9,9 +9,9 @@ import { loadEffectiveSettings, loadOrthoProcedures, loadOrthodontistOptions } f
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { todayInBrazil } from "@/lib/dates";
 import { NovoCasoForm } from "./novo-caso-form";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Ortodontia — Novo caso" };
 
@@ -83,7 +83,7 @@ export default async function OrtoNovoCasoPage(props: PageProps<"/ortodontia/cas
         <CabecalhoDeModulo chapeu="Ortodontia" icone={UserPlus} titulo="Caso legado" descricao={`Passo 1 de 2 — escolha o paciente de ${session.activeClinic?.name} que já estava em tratamento ortodôntico antes do sistema.`} voltar={{ href: "/ortodontia", rotulo: "Painel" }} />
         <FilterForm className="flex items-center gap-2">
           <Search className="size-4 text-muted-foreground" />
-          <Input name="busca" defaultValue={busca} placeholder="Nome ou código do paciente (Enter para procurar)" autoFocus />
+          <CampoDeBusca name="busca" valorDoEndereco={busca} placeholder="Nome ou código do paciente (Enter para procurar)" autoFocus />
         </FilterForm>
         {busca.length >= 2 && (
           <Card>

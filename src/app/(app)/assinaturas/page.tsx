@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { BarChart3, FileSignature, FileStack, PenLine, Settings } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { formatIsoDateBr, todayInBrazil } from "@/lib/dates";
+import { NAO_FOI_POSSIVEL_CONTAR, SEM_CONTAGEM } from "@/lib/contagem";
 import { canConfigureSignatures, canViewSignatures } from "@/lib/signatures/access";
 import { calcularIndicadores, linhasDaLista, textoDoTempo } from "@/lib/signatures/indicadores";
 import {
@@ -149,8 +150,8 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
         />
         <Info
           rotulo={`Plano da ZapSign (${hoje.slice(5, 7)}/${hoje.slice(0, 4)})`}
-          valor={opcoes.limiteDoPlano ? `${opcoes.usadosNoMes} de ${opcoes.limiteDoPlano}` : String(opcoes.usadosNoMes)}
-          detalhe={opcoes.limiteDoPlano ? "documentos usados no mês" : "documentos no mês · sem limite cadastrado"}
+          valor={opcoes.limiteDoPlano ? `${opcoes.usadosNoMes ?? SEM_CONTAGEM} de ${opcoes.limiteDoPlano}` : String(opcoes.usadosNoMes ?? SEM_CONTAGEM)}
+          detalhe={opcoes.usadosNoMes === null ? NAO_FOI_POSSIVEL_CONTAR : opcoes.limiteDoPlano ? "documentos usados no mês" : "documentos no mês · sem limite cadastrado"}
         />
       </div>
 

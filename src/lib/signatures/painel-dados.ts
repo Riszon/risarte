@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SessionContext } from "@/lib/auth";
 import { addDaysIso, monthRangeOf, todayInBrazil } from "@/lib/dates";
+import { contagemConfirmada } from "@/lib/contagem";
 import { lerTodasAsPaginas } from "@/lib/paginar";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canViewSignatureNetworkDashboard, canViewSignatureUnitDashboard } from "./access";
@@ -138,7 +139,8 @@ export type OpcoesDosFiltros = {
   remetentes: { id: string; nome: string }[];
   faixas: number[];
   limiteDoPlano: number | null;
-  usadosNoMes: number;
+  /** `null` = não foi possível contar (AP136); a tela mostra um traço. */
+  usadosNoMes: number | null;
 };
 
 export async function lerOpcoes(
@@ -164,6 +166,6 @@ export async function lerOpcoes(
     remetentes: [...remetentes].map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
     faixas: (settings.data?.waiting_buckets_days as number[] | null) ?? [2, 5, 7],
     limiteDoPlano: (settings.data?.zapsign_monthly_limit as number | null) ?? null,
-    usadosNoMes: usados.count ?? 0,
+    usadosNoMes: contagemConfirmada(usados),
   };
 }

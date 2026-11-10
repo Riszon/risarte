@@ -9,7 +9,6 @@ import { formatBRL } from "@/lib/pricing";
 import { formatBrDate, todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import {
   cobertura,
@@ -22,6 +21,7 @@ import { AbasDeRecebiveis } from "../abas";
 import { carregarFilaDeCobranca } from "./dados";
 import { ListaDeCobranca } from "./lista";
 import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Inadimplentes" };
 
@@ -180,11 +180,11 @@ export default async function InadimplentesPage(
           <span className="mb-1 block text-muted-foreground">
             Vencimento de
           </span>
-          <Input type="date" name="de" defaultValue={de ?? ""} />
+          <CampoDeBusca type="date" name="de" valorDoEndereco={de ?? ""} />
         </label>
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">até</span>
-          <Input type="date" name="ate" defaultValue={ate ?? ""} />
+          <CampoDeBusca type="date" name="ate" valorDoEndereco={ate ?? ""} />
         </label>
       </FilterForm>
 

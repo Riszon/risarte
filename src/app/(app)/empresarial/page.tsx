@@ -24,7 +24,6 @@ import { CabecalhoDeModulo, BOTAO_NO_CABECALHO } from "@/components/cabecalho-mo
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { formatCnpj } from "@/lib/masks";
 import {
   COMPANY_STATUSES,
@@ -36,6 +35,7 @@ import {
 import type { Company } from "@/lib/empresarial/types";
 import type { BillingModel, CompanyCategory } from "@/lib/empresarial/documents";
 import { CompanyFormDialog } from "./company-form-dialog";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Risarte Empresarial" };
 
@@ -314,9 +314,9 @@ export default async function EmpresarialPage(props: {
       </div>
 
       <FilterForm className="flex flex-wrap items-center gap-2">
-        <Input
+        <CampoDeBusca
           name="busca"
-          defaultValue={busca}
+          valorDoEndereco={busca}
           placeholder="Buscar por nome ou CNPJ..."
           className="h-9 w-64"
         />

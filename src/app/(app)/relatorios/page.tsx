@@ -20,7 +20,6 @@ import {
   weekdayOf,
 } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -40,6 +39,7 @@ import {
 import { phaseTintStyle } from "@/components/phase-badge";
 import type { TreatmentPlanStatus } from "@/lib/planning";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Relatórios" };
 
@@ -397,9 +397,9 @@ export default async function ReportsPage(props: PageProps<"/relatorios">) {
         </select>
         {periodo === "periodo" && (
           <>
-            <Input type="date" name="de" defaultValue={de} className="w-auto" />
+            <CampoDeBusca type="date" name="de" valorDoEndereco={de} className="w-auto" />
             <span className="text-sm text-muted-foreground">até</span>
-            <Input type="date" name="ate" defaultValue={ate} className="w-auto" />
+            <CampoDeBusca type="date" name="ate" valorDoEndereco={ate} className="w-auto" />
           </>
         )}
         <select name="unidade" defaultValue={unidade} className={selectClass}>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { TopbarItem } from "@/components/topbar-item";
+import { contagemConfirmada } from "@/lib/contagem";
 
 /**
  * O sino da barra de cima, com o contador de não lidas.
@@ -17,17 +18,24 @@ import { TopbarItem } from "@/components/topbar-item";
 export function NotificationNavItem() {
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
+  const [semContagem, setSemContagem] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     let cancelled = false;
 
     async function fetchCount() {
-      const { count } = await supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .is("read_at", null);
-      if (!cancelled) setUnread(count ?? 0);
+      const n = contagemConfirmada(
+        await supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .is("read_at", null)
+      );
+      if (cancelled) return;
+      // AP136: contagem que falhou NÃO zera o sino. Fica o último número que
+      // se sabe, com a marca de que não deu para conferir.
+      setSemContagem(n === null);
+      if (n !== null) setUnread(n);
     }
 
     fetchCount();
@@ -41,9 +49,10 @@ export function NotificationNavItem() {
   return (
     <TopbarItem
       href="/notificacoes"
-      label="Notificações"
+      label={semContagem ? "Notificações (não foi possível contar agora)" : "Notificações"}
       icon={<Bell className="size-[18px]" />}
       badge={unread}
+      semContagem={semContagem}
     />
   );
 }

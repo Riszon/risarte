@@ -9,7 +9,6 @@ import { formatBRL } from "@/lib/pricing";
 import { todayInBrazil, formatBrDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { FilterForm } from "@/components/filter-form";
 import type { AgingBand } from "@/lib/finance/aging";
 import { autoriaDasParcelas, carregarRecebiveis, type LinhaRecebivel } from "./dados";
@@ -18,6 +17,7 @@ import { HistoricoDoLancamento } from "../historico-do-lancamento";
 import { AbasDeRecebiveis } from "./abas";
 import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
 import { dataDoFiltro, noPeriodo } from "@/lib/finance/collection";
+import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Recebíveis e inadimplência" };
 
@@ -314,15 +314,15 @@ export default async function RecebiveisPage(
         </label>
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Cliente</span>
-          <Input name="cliente" defaultValue={busca} placeholder="Nome do cliente" />
+          <CampoDeBusca name="cliente" valorDoEndereco={busca} placeholder="Nome do cliente" />
         </label>
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Vencimento de</span>
-          <Input type="date" name="de" defaultValue={de ?? ""} />
+          <CampoDeBusca type="date" name="de" valorDoEndereco={de ?? ""} />
         </label>
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">até</span>
-          <Input type="date" name="ate" defaultValue={ate ?? ""} />
+          <CampoDeBusca type="date" name="ate" valorDoEndereco={ate ?? ""} />
         </label>
       </FilterForm>
 

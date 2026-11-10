@@ -2,6 +2,25 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.409.0** (a 0.408.0 não teve migração do core; Rita 0.6.0 / **3005**, aplicada no treino e na produção em 10/11/2026) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧹 0.411.0 — AP136 E AP137 (10/11/2026; Empresarial 0.99.2; sem migração)
+>
+> - **AP136** as telas que ainda faziam `count ?? 0`: sino (guarda o último
+>   número e marca `semContagem`), Chat, prontuário (o atalho da apresentação
+>   aparece quando não deu para conferir; o envio para assinatura NÃO
+>   afrouxa), painel do Financeiro (cartão com traço), as duas telas da
+>   assinatura digital e `contarOrtodontiaSemInstalacao` (devolve `null`; a
+>   tolerância "sem a 0329 → zero" saiu).
+> - ⚠️ **Rotina de e-mails da assinatura** (`rotina-horaria.ts`): fila que não
+>   deu para contar não é fila vazia — registra em `erros` e segue para a
+>   leitura da fila. `emailsNaFila` pode ser `null`.
+> - **AP137** 19 campos (`<Input defaultValue>` de busca e de data) em 12
+>   telas com `FilterForm` viraram `CampoDeBusca`. Régua
+>   `campo-vindo-do-endereco.test.ts` varre toda tela com `FilterForm`. O
+>   `<input>` nativo (Auditoria, pacotes de assinatura, Indica) não solta o
+>   aviso e ficou como está.
+> - A régua `contagem-nas-telas.test.ts` passou de 5 para 12 arquivos.
+> - EV-310.
+
 > ## 🧹 0.410.0 — LOTE DO BACKLOG SEM MIGRAÇÃO (10/11/2026; Empresarial 0.99.1)
 >
 > Pedido do dono: resolver o que não pede decisão dele nem migração. 16 itens.
