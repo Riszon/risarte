@@ -404,9 +404,11 @@ Syncthing se comportarem de forma estranha.**
   ⚠️ Ao recriar `cancel_payable`, `ignore_bank_transaction` ou
   `unreconcile_bank_transaction`, levar `cancelled_*`/`ignored_*`/`undone_*`
   (régua `financeiro-quem-fez.test.ts`).
-- ⏳ **0372 não aplicada em nenhum banco** (a permissão automática barrou o
-  `migrar:teste`); a tela abre igual sem ela. **Não visto na tela.** AP129
-  (Ortodontia/Empresarial) no backlog.
+- ✅ **0372 aplicada nos dois bancos** (produção pelo dono em 09/11/2026,
+  conferido de fora: sem login as portas recusam; treino por
+  `migrar:teste --ate 0372`, ensaio 22/22 desfeito). Telas abertas no
+  servidor local de teste (Admin de teste); o Histórico não foi clicado.
+  AP129 (Ortodontia/Empresarial) no backlog.
 
 **09/11/2026 (fornecedores) — PC Administrador (core 0.404.0 → 0.405.0, migração 0371)**
 

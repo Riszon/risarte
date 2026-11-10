@@ -26,8 +26,16 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.406.0** · Última migraç
 >   `profiles`: embed sempre com o nome da FK (régua `embed-ambiguo.test.ts`).
 > - As colunas novas são lidas À PARTE: sem a 0372, as telas abrem como antes
 >   (sem o nome de quem cancelou/ignorou/desfez; o Histórico avisa).
-> - ⏳ **0372 NÃO aplicada no treino** (a permissão automática barrou o
->   `migrar:teste`) e **não vista na tela**. Manual 2.3/2.4, EV-305.
+> - ✅ **0372 aplicada nos dois bancos** (produção pelo dono em 09/11/2026;
+>   treino por `migrar:teste --ate 0372`). Ensaio em transação desfeita
+>   **22/22** (`scripts/financeiro-ensaio-0372.mjs`: reaplicar, colunas,
+>   retornos, sem login recusa, cancelar/ignorar/desfazer gravam quem e
+>   quando como o Admin de teste, o histórico mostra, os antigos voltam pela
+>   auditoria). Produção conferida de fora: sem login as 5 portas recusam
+>   ("permission denied"; a de controle, "não encontrada") e as colunas novas
+>   respondem. Telas abertas pelo servidor local de teste como o Admin de
+>   teste (7 do Financeiro, sem erro; "lançada por …" em Contas a pagar).
+>   **Não clicado:** o botão Histórico no navegador. Manual 2.3/2.4, EV-305.
 
 > ## 🚚 0.405.0 / 0371 — FORNECEDORES: FICHA, ONDE VALE, TIPOS E HISTÓRICO (09/11/2026)
 >
