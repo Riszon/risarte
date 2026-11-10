@@ -419,8 +419,9 @@ Syncthing se comportarem de forma estranha.**
   `TYPE_PROVIDER_ROLES`, mudar `_provider_serves_type` (0378) junto** (régua).
   ⚠️ `swap_appointment_provider` é porta sobre `_swap_appointment_provider_raw`.
   ⚠️ Ao recriar `build_purchase_request`, levar a trava e o reaproveitamento.
-- ⏳ **0375, 0376, 0377 e 0378 só no treino.** O dono aplica na produção uma
-  por vez (independentes; qualquer ordem). O código tolera a falta de cada uma.
+- ✅ **0375, 0376, 0377 e 0378 aplicadas nos dois bancos** (o dono rodou na
+  produção em 10/11/2026, uma por vez; conferido de fora: as funções da 0376
+  e da 0378 existem e recusam sem login).
 - ⚠️ **A sessão da Rita trabalhava nesta pasta ao mesmo tempo** (3006,
   `permissions.ts`, `rita-testes-sql.mjs` sem commit): commitei só os meus
   arquivos. O `migrar:teste` dela aplicou a 0375–0377 no treino antes do meu.

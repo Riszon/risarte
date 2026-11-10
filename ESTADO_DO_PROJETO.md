@@ -26,9 +26,11 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## 🧱 0.412.0 — LOTE DAS MIGRAÇÕES 0375–0378 (10/11/2026)
 >
 > Pedido do dono: os itens que pedem migração e não pedem decisão dele.
-> ⏳ **As quatro estão aplicadas SÓ NO TREINO.** O dono aplica na produção uma
-> por vez, em qualquer ordem (são independentes). O código já no ar funciona
-> como antes enquanto cada uma não roda.
+> ✅ **As quatro APLICADAS nos dois bancos** (o dono rodou na produção em
+> 10/11/2026, uma por vez, depois do push 693a0e4a; conferido de fora: sem
+> login a função da 0376 e a porta, a original e a regra da 0378 recusam com
+> "permission denied" — uma função inexistente, de controle, responde "não
+> encontrada"). AP71, AP81, AP126 e AP133 fechados.
 > - **0375 (AP71)** `build_purchase_request` reaproveita o rascunho VAZIO do
 >   mesmo tipo e tem trava por unidade. Lista vazia continua podendo existir
 >   (é nela que se acrescenta linha à mão). ⚠️ Ao recriar a função, levar a
