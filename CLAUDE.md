@@ -402,7 +402,8 @@ Syncthing se comportarem de forma estranha.**
   (bloco 0.409.0 no ESTADO). ⚠️ Ao recriar `save_payment_schedule`, levar o
   ramo da proposta; parcelamento na tela = `parcelamentoDaNegociacao`.
   ⚠️ "Aprovado" = contrato assinado (dono); o Coordenador **libera**.
-- ✅ 0374 aplicada no treino. ⏳ **Produção: aguarda o OK do dono.** Não visto
+- ✅ 0374 aplicada no treino e na produção (o dono, 10/11/2026, depois do push
+  f0b54688; não conferido de fora). Não visto
   na tela. A 0.408.0 é da Rita (commit dela à parte).
 
 **09/11/2026 (proposta travada) — PC Administrador (Empresarial 0.98.1 → 0.99.0, migração 1041)**
