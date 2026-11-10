@@ -396,6 +396,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (relatos, lote 3) — PC Administrador (core 0.420.0 → 0.421.0, migração 0392; worktree `wt-relatos`)**
+
+- **Sugestões aprovadas pelo dono** (bloco 0.421.0 no ESTADO): fila "A
+  apresentar" (`fila-a-apresentar.ts`), sequência no fim do plano
+  (`abrir-sequencia.ts` + `PopupCard.abrirComEvento`), Reavaliação na Fase 3,
+  títulos do estoque. A 0.419.0 e a 0.420.0 são do repasse (outra sessão).
+- ⚠️ **Lote 2 e Lote 3 dos relatos respondidos no treino** pelo dono (em nome
+  dele, `answer_system_report_como`); itens novos do Backlog ligados aos
+  relatos (`backlog_link_report`). No treino, 19 apresentações presas foram
+  concluídas com autorização do dono (OC-00175).
+- ⚠️ **Contrato à mão só com papel** (OC-00171, 0392): a trava é o gatilho
+  `commercial_sales_paper_guard`. Caminho novo que marque contrato com origem
+  `manual` tem de gravar `contract_paper_path` antes (use
+  `commercial_mark_paper_contract`). ⏳ 0392 só no treino.
 **10/11/2026 (repasse, etapa 3) — PC Administrador (core 0.419.0 → 0.420.0, migração 0391)**
 
 - **Aprovações do repasse** (bloco 0.420.0 no ESTADO; decisões A1–A6 em
@@ -436,20 +450,6 @@ Syncthing se comportarem de forma estranha.**
 - ✅ **0390 aplicada no treino e na produção** (o dono informou em
   10/11/2026; não conferido de fora).
 
-**10/11/2026 (relatos, lote 3) — PC Administrador (core 0.419.0 → 0.421.0, migração 0392; worktree `wt-relatos`)**
-
-- **Sugestões aprovadas pelo dono** (bloco 0.421.0 no ESTADO): fila "A
-  apresentar" (`fila-a-apresentar.ts`), sequência no fim do plano
-  (`abrir-sequencia.ts` + `PopupCard.abrirComEvento`), Reavaliação na Fase 3,
-  títulos do estoque. A 0.420.0 é da Etapa 3 do repasse (outra sessão).
-- ⚠️ **Lote 2 e Lote 3 dos relatos respondidos no treino** pelo dono (em nome
-  dele, `answer_system_report_como`); itens novos do Backlog ligados aos
-  relatos (`backlog_link_report`). No treino, 19 apresentações presas foram
-  concluídas com autorização do dono (OC-00175).
-- ⚠️ **Contrato à mão só com papel** (OC-00171, 0392): a trava é o gatilho
-  `commercial_sales_paper_guard`. Caminho novo que marque contrato com origem
-  `manual` tem de gravar `contract_paper_path` antes (use
-  `commercial_mark_paper_contract`). ⏳ 0392 só no treino.
 **10/11/2026 (relatos, lote 1) — PC Administrador (core 0.417.0 → 0.418.0, migrações 0388 e 0389)**
 
 - **Relatos tratados pelo banco** (sessão "Relatos riSZon", pedido do dono):
