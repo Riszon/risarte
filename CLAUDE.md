@@ -396,6 +396,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**10/11/2026 (repasse, etapa 1) — PC Administrador (core 0.416.0 → 0.417.0, migração 0387)**
+
+- **Repasse dos dentistas refeito em 5 etapas** (pedido do dono). Plano e as
+  **14 decisões dele** em `docs/Financeiro/REPASSE-PLANO.md` — ler antes de
+  mexer em repasse. Etapa 1 entregue (bloco 0.417.0 no ESTADO); **a próxima é
+  a Etapa 2 (relatório de repasse)**, com plano e OK do dono antes.
+- ⚠️ **`provider_payouts` não tem mais regra de escrita:** só as funções
+  gravam. Linha com `closing_id` é imutável (`provider_payouts_lock`), e a
+  sessão com repasse não se apaga (`on delete restrict`).
+- ⚠️ **Repasse com valor fica congelado; só o R$ 0,00 recalcula**
+  (`payout_recalculate`), pela tabela na data do procedimento.
+- ⚠️ **"Sem repasse" = `procedure_commissions.no_payout`**; `payout_rate_for`
+  não devolve nada para ele (estimativa e margem também passam a ver zero).
+- ⚠️ **Não existe "financeiro da unidade":** só o Financeiro da Franqueadora e
+  o Gerente (que lança dinheiro na unidade). Decisão 1: a Franqueadora gera e
+  paga, o Gerente aprova.
+- ✅ Decisão 10 fecha a pendência da AP61: recebe quem concluiu a última sessão.
+- ✅ **0387 aplicada no treino e na produção** (o dono informou em
+  10/11/2026; não conferido de fora). A leitura
+  da produção por script foi barrada nesta sessão: o dono rodou
+  `docs/Financeiro/REPASSE-CONSULTAS.sql` no SQL Editor.
+
 **10/11/2026 (preço na faixa) — PC Administrador (core 0.415.0 → 0.416.0, migração 0386)**
 
 - **AP79, AP117, AP115 e AP120** (bloco 0.416.0 no ESTADO).

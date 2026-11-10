@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { canPostFinance, canViewFinance } from "@/lib/finance/access";
 import { todayInBrazil } from "@/lib/dates";
 import { PayoutManager } from "./payout-manager";
+import { PayoutWatchlist } from "./payout-watchlist";
+import { watchRowFromDb, type WatchDbRow, type WatchRow } from "@/lib/finance/payout-watchlist";
 
 export default async function PayoutsPage(
   props: PageProps<"/financeiro/repasses">
@@ -56,7 +58,7 @@ export default async function PayoutsPage(
     supabase
       .from("provider_payouts")
       .select(
-        "id, provider_id, procedure_name, accrual_date, amount_cents, closing_id"
+        "id, provider_id, procedure_name, accrual_date, amount_cents, closing_id, no_payout"
       )
       .eq("clinic_id", clinicId)
       .gte("accrual_date", monthStart)
@@ -100,6 +102,17 @@ export default async function PayoutsPage(
     };
   }
 
+  // 0387 — as pendências da unidade (todos os meses), com o motivo. A função
+  // tem a própria guarda; se recusar, a tela segue sem o quadro.
+  const { data: watchData, error: watchError } = await supabase.rpc(
+    "payout_watchlist",
+    { p_clinic_id: clinicId }
+  );
+  if (watchError) console.error("payout_watchlist failed:", watchError.message);
+  const watchRows = ((watchData ?? []) as WatchDbRow[])
+    .map(watchRowFromDb)
+    .filter((r): r is WatchRow => r !== null);
+
   // Dentistas da unidade + o nível de carreira de cada um.
   const { data: staffRows } = await supabase
     .from("user_clinic_roles")
@@ -119,7 +132,8 @@ export default async function PayoutsPage(
   });
   const nameById = new Map(providers.map((p) => [p.id, p.name]));
 
-  const lines = (payoutRows ?? []).map((r) => ({
+  // Procedimento marcado "sem repasse" (0387) não é linha de apuração.
+  const lines = (payoutRows ?? []).filter((r) => !r.no_payout).map((r) => ({
     id: r.id as string,
     providerId: r.provider_id as string,
     providerName: nameById.get(r.provider_id as string) ?? "—",
@@ -145,6 +159,12 @@ export default async function PayoutsPage(
           reescreve o que já foi produzido.
         </p>
       </div>
+
+      <PayoutWatchlist
+        clinicId={clinicId}
+        rows={watchRows}
+        canEdit={canPostFinance(session, clinicId)}
+      />
 
       <PayoutManager
         clinicId={clinicId}

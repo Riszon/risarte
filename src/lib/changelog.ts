@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.417.0",
+    data: "2026-11-10",
+    migracao: "0387",
+    titulo: "Repasse dos dentistas, etapa 1: pendências com o motivo, recalcular o que saiu zerado e travas",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Repasses ganhou o quadro Pendências do repasse: o que saiu com R$ 0,00 (e por quê), os procedimentos de várias sessões que ainda estão em andamento e as sessões concluídas sem procedimento do catálogo.",
+        papeis: ["unit_manager", "finance_franchisor", "franchisee"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Repasse que saiu com R$ 0,00 pode ser recalculado depois de definir o nível do dentista ou o valor na tabela — um por vez ou todos de uma vez. Fica registrado quem recalculou. Repasse que já tem valor continua congelado.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Procedimentos: a caixa Sem repasse marca o procedimento que não paga o dentista de propósito (a consulta de avaliação, por exemplo). Ele deixa de aparecer como pendência.",
+        papeis: ["planner_dentist"],
+        manual: "6.3. Dentista Planner",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Repasse que já entrou em fechamento não pode mais ser alterado nem apagado, e uma sessão que já tem repasse não pode ser apagada.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.416.0",
     data: "2026-11-10",
     migracao: "0386",

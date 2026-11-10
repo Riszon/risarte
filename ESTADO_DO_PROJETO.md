@@ -2,6 +2,37 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💸 0.417.0 — REPASSE DOS DENTISTAS, ETAPA 1: DESTRAVAR E PROTEGER (10/11/2026; migração 0387)
+>
+> Pedido do dono: refazer o repasse de ponta a ponta. Plano em 5 etapas e as
+> 14 decisões dele em `docs/Financeiro/REPASSE-PLANO.md`. Esta é a primeira.
+> ✅ **0387 aplicada no treino** (`migrar:teste`) **e na produção** (o dono
+> informou em 10/11/2026; não conferido de fora). **Não visto na tela.**
+> - **Por que não saía repasse:** produção sem nenhuma sessão de tratamento
+>   (os testes são no treino); no treino, os 11 repasses nasceram com R$ 0,00
+>   (nível do dentista e tabela definidos DEPOIS da conclusão; o valor é
+>   congelado) e o "Fechar o mês" recusa soma zero.
+> - **0387:** `payout_recalculate` / `payout_recalculate_zeros` (só linha
+>   zerada e fora de fechamento; tabela na data do procedimento × `units`;
+>   grava quem e quando + `audit_logs`); `payout_watchlist` (zerado com
+>   motivo `recalculavel`/`sem_nivel`/`sem_valor`, `em_andamento`,
+>   `sem_procedimento`, `sem_profissional`); `procedure_commissions.no_payout`
+>   ("Sem repasse": `payout_rate_for` não devolve nada e a linha nasce
+>   marcada pelo gatilho `provider_payouts_mark_no_payout`).
+> - ⚠️ **Travas:** linha com `closing_id` não muda nem some
+>   (`provider_payouts_lock`, PAYOUT_LOCKED); a ligação com a sessão virou
+>   `on delete restrict`; **a regra de escrita de `provider_payouts` saiu** —
+>   só as funções gravam. Migração futura que precise mexer em linha fechada
+>   tem de passar pelo gatilho de propósito.
+> - ⚠️ `accrue_session_payout` é o corpo da 0352 + a coluna `units` (a régua
+>   `repasse-por-procedimento.test.ts` continua valendo). `payout_rate_for`
+>   é o corpo da 0364 + a saída do "sem repasse".
+> - Tela: quadro **Pendências do repasse** em Financeiro › Repasses
+>   (`payout-watchlist.tsx`, frases em `src/lib/finance/payout-watchlist.ts`)
+>   e a caixa **Sem repasse** no cadastro do procedimento.
+> - O "Fechar o mês" antigo continua até a Etapa 4 (defeitos dele listados no
+>   plano). Ensaio no treino 31/31 (`scripts/repasse-ensaio-0387.mjs --confirmar`). EV-316.
+>
 > ## 📏 0.416.0 — PREÇO DENTRO DA FAIXA, AGENDA NO DOMINGO E A FUNÇÃO NO GÊNERO (10/11/2026; migração 0386)
 >
 > Terceira entrega do pedido "resolver todos os itens abertos".

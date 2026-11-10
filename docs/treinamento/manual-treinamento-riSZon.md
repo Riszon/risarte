@@ -3185,6 +3185,13 @@ o mesmo e o percentual muda** — um reajuste de preço não aumenta o repasse d
 ninguém sem alguém decidir. Sem preço padrão, o campo de percentual fica
 apagado (não há sobre o que calcular).
 
+**Procedimento "Sem repasse"** *(desde a 0.417.0)*. No formulário, embaixo do
+repasse, a caixa **Sem repasse** marca o procedimento que **não paga o
+dentista de propósito** (a consulta de avaliação, por exemplo). Marcado, ele
+não aparece como pendência em Financeiro → Repasses nem entra no relatório de
+repasse, e os valores do cadastro e os por nível deixam de valer para ele. Na
+lista, a linha Repasse mostra *sem repasse*. Só o Admin Master grava.
+
 **O repasse também sobre o preço mínimo** (versão 0.355.0). Quando o
 procedimento tem **Preço mínimo**, a linha mostra os dois percentuais — por
 exemplo, *R$ 7,50 (5% do preço · 6,82% no mínimo)* — e cada nível também
@@ -3738,6 +3745,27 @@ auditoria ou por ordem judicial: ficha do paciente → aba **Linha do tempo** �
 > **Cuidado central:** no financeiro **nada se apaga**. Lançamento liquidado
 > gera um **contra-lançamento** com motivo. Conferir antes de salvar vale mais
 > aqui do que em qualquer outra tela.
+
+#### Repasses: as pendências e o "Recalcular" (desde a 0.417.0)
+
+Em **Financeiro → Repasses**, o primeiro quadro é **Pendências do repasse**:
+tudo o que foi feito na unidade e ainda não virou repasse com valor, **com o
+motivo escrito**. Vale para todos os meses, não só o que está na tela.
+
+| O que aparece | O que quer dizer | O que fazer |
+|---|---|---|
+| **Apurados com R$ 0,00** — "A tabela já tem valor…" | O procedimento foi concluído antes de o nível do dentista ou o valor da tabela existirem. | **Recalcular** (na linha) ou **Recalcular os zerados que já têm valor** (todos de uma vez). |
+| **Apurados com R$ 0,00** — "O dentista está sem nível…" | Falta o nível de carreira do dentista na unidade. | Definir o nível em **Nível no plano de carreira**, na mesma tela, e recalcular. |
+| **Apurados com R$ 0,00** — "Não há valor de repasse…" | O nível do dentista não tem valor para aquele procedimento **na data em que ele foi feito**. | Cadastrar o valor com **início até a data do procedimento** e recalcular; ou marcar o procedimento como **Sem repasse** no cadastro. |
+| **Em andamento** | Procedimento de várias sessões: mostra quantas foram concluídas. | Nada: entra sozinho quando a última sessão terminar. |
+| **Concluídos sem procedimento do catálogo** | Item antigo do plano, escrito em texto livre. O sistema não sabe quanto pagar. | Avisar o Planner; não gera repasse sozinho. |
+
+- **Recalcular só existe para o que saiu com R$ 0,00.** Repasse que já tem
+  valor fica congelado: mudar a tabela depois não reescreve o que foi feito.
+- O recálculo usa a tabela que vale **na data do procedimento** e fica
+  registrado (quem e quando).
+- Repasse que já entrou em **fechamento** não é alterado nem apagado, e uma
+  sessão que já tem repasse não pode ser apagada.
 
 #### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
 

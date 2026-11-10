@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { payoutRateErrors } from "@/lib/finance/payout";
+import { recalculateErrorText } from "@/lib/finance/payout-watchlist";
 
 export type PayoutResult = { ok: boolean; error?: string };
 
@@ -151,6 +152,53 @@ export async function closePayoutMonth(input: {
   });
   refresh();
   return { ok: true };
+}
+
+/**
+ * 0387 — recalcula UM repasse que saiu com R$ 0,00 (o nível do dentista ou o
+ * valor da tabela chegaram depois da conclusão). A regra mora no banco: só
+ * linha zerada e fora de fechamento, pela tabela que vale na data do
+ * procedimento; valor diferente de zero continua congelado.
+ */
+export async function recalculatePayout(input: {
+  payoutId: string;
+}): Promise<PayoutResult & { amountCents?: number }> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("payout_recalculate", {
+    p_payout_id: input.payoutId,
+  });
+  if (error) {
+    console.error("payout_recalculate failed:", error.message);
+    return { ok: false, error: recalculateErrorText(error.message) };
+  }
+  refresh();
+  return { ok: true, amountCents: Number(data ?? 0) };
+}
+
+/** 0387 — recalcula todos os zerados da unidade que já têm valor na tabela. */
+export async function recalculateZeroPayouts(input: {
+  clinicId: string;
+}): Promise<PayoutResult & { fixed?: number }> {
+  await getSessionContext();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("payout_recalculate_zeros", {
+    p_clinic_id: input.clinicId,
+  });
+  if (error) {
+    console.error("payout_recalculate_zeros failed:", error.message);
+    return { ok: false, error: recalculateErrorText(error.message) };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "provider_payout",
+    entityId: input.clinicId,
+    clinicId: input.clinicId,
+  });
+  refresh();
+  return { ok: true, fixed: Number(data ?? 0) };
 }
 
 /**

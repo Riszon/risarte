@@ -53,6 +53,8 @@ export type ProcedureInput = {
   maxPrice: string;
   commissionPercent: string;
   commissionFixed: string;
+  /** 0387: o procedimento não paga repasse, de propósito. Ausente = não mexe. */
+  noPayout?: boolean;
   estimatedMinutes: string;
   /** Venda direta (§7.3): autorizado + quem pode lançar. */
   directSale: boolean;
@@ -192,7 +194,7 @@ function separarComissao(values: ParsedProcedure): {
 /** Grava o repasse de um ou mais procedimentos na irmã (upsert). */
 async function gravarComissao(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  linhas: { procedure_id: string; commission_percent: number; commission_fixed_cents: number }[]
+  linhas: { procedure_id: string; commission_percent: number; commission_fixed_cents: number; no_payout?: boolean }[]
 ): Promise<string | null> {
   if (linhas.length === 0) return null;
   const { error } = await supabase
@@ -206,6 +208,11 @@ async function gravarComissao(
     return "O procedimento foi salvo, mas a comissão NÃO foi gravada.";
   }
   return null;
+}
+
+/** 0387: a marca "sem repasse" só vai ao banco quando o formulário a trouxe. */
+function semRepasseDe(input: ProcedureInput): { no_payout?: boolean } {
+  return input.noPayout === undefined ? {} : { no_payout: input.noPayout };
 }
 
 async function logChange(
@@ -242,7 +249,9 @@ export async function addProcedure(
     console.error("addProcedure failed:", error?.message);
     return { ok: false, error: "Não foi possível adicionar o procedimento." };
   }
-  const erroDaComissao = await gravarComissao(supabase, [{ procedure_id: data.id, ...comissao }]);
+  const erroDaComissao = await gravarComissao(supabase, [
+    { procedure_id: data.id, ...comissao, ...semRepasseDe(input) },
+  ]);
   if (erroDaComissao) return { ok: false, error: erroDaComissao };
   await logChange(data.id, session.userId, "Procedimento criado.");
   await logAudit({
@@ -298,7 +307,7 @@ export async function editProcedure(
       .single(),
     supabase
       .from("procedure_commissions")
-      .select("commission_percent, commission_fixed_cents")
+      .select("commission_percent, commission_fixed_cents, no_payout")
       .eq("procedure_id", id)
       .maybeSingle(),
   ]);
@@ -323,11 +332,19 @@ export async function editProcedure(
     console.error("editProcedure failed:", error.message);
     return { ok: false, error: "Não foi possível salvar o procedimento." };
   }
-  const erroDaComissao = await gravarComissao(supabase, [{ procedure_id: id, ...comissao }]);
+  const erroDaComissao = await gravarComissao(supabase, [
+    { procedure_id: id, ...comissao, ...semRepasseDe(input) },
+  ]);
   if (erroDaComissao) return { ok: false, error: erroDaComissao };
 
   // History: which labelled fields changed (no need to record values).
   const changed: string[] = [];
+  if (
+    input.noPayout !== undefined &&
+    input.noPayout !== Boolean(oldComissao?.no_payout)
+  ) {
+    changed.push("Sem repasse");
+  }
   if (old) {
     for (const key of Object.keys(parsed.values) as (keyof ParsedProcedure)[]) {
       if (String(old[key] ?? "") !== String(parsed.values[key] ?? "")) {

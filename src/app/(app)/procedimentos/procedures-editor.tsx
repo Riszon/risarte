@@ -111,6 +111,7 @@ function centsToInput(cents: number): string {
  * Agora mostra o que vale de verdade.
  */
 function commissionLabel(p: Procedure): string {
+  if (p.noPayout) return "sem repasse";
   const fixo = p.commissionFixedCents ?? 0;
   const pct = p.commissionPercent ?? 0;
   // O repasse em R$ (gravado, ou o percentual antigo convertido pelo preço).
@@ -134,6 +135,7 @@ const EMPTY: ProcedureInput = {
   maxPrice: "",
   commissionPercent: "",
   commissionFixed: "",
+  noPayout: false,
   estimatedMinutes: "",
   directSale: false,
   directSaleReception: false,
@@ -172,6 +174,7 @@ function toInput(p: Procedure): ProcedureInput {
     minPrice: p.minPriceCents != null ? centsToInput(p.minPriceCents) : "",
     maxPrice: p.maxPriceCents != null ? centsToInput(p.maxPriceCents) : "",
     ...repasseNoFormulario(p),
+    noPayout: p.noPayout ?? false,
     estimatedMinutes: p.estimatedMinutes != null ? String(p.estimatedMinutes) : "",
     directSale: p.directSale ?? false,
     directSaleReception: p.directSaleReception ?? false,
@@ -337,6 +340,24 @@ function ProcedureFields({
             Defina o preço padrão para ele virar valor em R$.
           </p>
         )}
+        {/* 0387 (decisão do dono): procedimento que NÃO paga, de propósito. */}
+        <label className="mt-2 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={value.noPayout ?? false}
+            onChange={(e) => onChange({ noPayout: e.target.checked })}
+          />
+          <span>
+            <span className="font-medium">Sem repasse</span>
+            <span className="block text-[11px] text-muted-foreground">
+              Este procedimento não paga o dentista, de propósito (a consulta de
+              avaliação, por exemplo). Ele não aparece como pendência nem entra
+              no relatório de repasse, e os valores acima e os por nível deixam
+              de valer enquanto estiver marcado.
+            </span>
+          </span>
+        </label>
       </div>
 
       {/* Venda direta na unidade (docs/COMERCIAL.md §7.3). */}

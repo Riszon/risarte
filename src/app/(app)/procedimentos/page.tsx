@@ -25,7 +25,12 @@ import type { PapelDaRita, RitaDoProcedimento } from "@/lib/rita-procedimento";
 
 export const metadata: Metadata = { title: "Procedimentos" };
 
-type ComissaoRow = { commission_percent: number; commission_fixed_cents: number };
+type ComissaoRow = {
+  commission_percent: number;
+  commission_fixed_cents: number;
+  /** 0387: não paga repasse, de propósito. */
+  no_payout?: boolean | null;
+};
 /** O embed de uma ligação 1:1 pode vir como objeto ou como lista de um. */
 function comissaoDe(row: ProcedureRow): ComissaoRow {
   const c = Array.isArray(row.procedure_commissions)
@@ -91,7 +96,7 @@ export default async function ProceduresPage(
   let query = supabase
     .from("procedures")
     .select(
-      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, pillar, estimated_minutes, is_active, direct_sale, direct_sale_reception, direct_sale_sdr, procedure_commissions ( commission_percent, commission_fixed_cents )"
+      "id, code, tuss_code, name, specialty, default_price_cents, min_price_cents, max_price_cents, pillar, estimated_minutes, is_active, direct_sale, direct_sale_reception, direct_sale_sdr, procedure_commissions ( commission_percent, commission_fixed_cents, no_payout )"
     )
     .order("specialty", { nullsFirst: true })
     .order("name")
@@ -162,6 +167,7 @@ export default async function ProceduresPage(
     maxPriceCents: p.max_price_cents,
     commissionPercent: comissaoDe(p).commission_percent,
     commissionFixedCents: comissaoDe(p).commission_fixed_cents,
+    noPayout: Boolean(comissaoDe(p).no_payout),
     pillar: p.pillar,
     estimatedMinutes: p.estimated_minutes,
     isActive: p.is_active,

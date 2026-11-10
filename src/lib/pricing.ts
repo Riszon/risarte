@@ -21,6 +21,8 @@ export type Procedure = {
    */
   commissionPercent?: number;
   commissionFixedCents?: number;
+  /** 0387: o procedimento não paga repasse ao dentista, de propósito. */
+  noPayout?: boolean;
   pillar: MethodologyPillar | null;
   /** Estimated execution time in minutes (null = not set). */
   estimatedMinutes: number | null;
