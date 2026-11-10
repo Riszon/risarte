@@ -396,6 +396,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**09/11/2026 (receita em dobro) — PC Administrador (core 0.406.0 → 0.407.0, migração 0373)**
+
+- **Venda só conta depois do contrato assinado** (bloco 0.407.0 no ESTADO;
+  relato do dono, CBE-00001 de Cambé: receita em dobro de uma negociação
+  aberta). ⚠️ **Receita de cobrança só por `post_installment_accrual`, com a
+  trava `installment_sale_closed_on`**; cobrança apagada cancela a receita;
+  ao recriar `sync_installment_accrual_status`, levar a trava (régua
+  `receita-so-com-venda-fechada.test.ts`). ⚠️ Selo e cobranças da ficha =
+  `src/lib/venda-fechada.ts`.
+- ✅ 0373 aplicada no treino. ⏳ **Produção: aguarda o OK do dono** (antes,
+  `docs/Financeiro/0373-CONSULTAS.sql`, só leitura). A consulta à produção foi
+  barrada pela permissão automática: o caso foi provado pelo código e no
+  treino, não lido lá. Não visto na tela.
+
 **09/11/2026 (quem lançou) — PC Administrador (core 0.405.0 → 0.406.0, migração 0372)**
 
 - **Financeiro: quem lançou e quem deu baixa no próprio lançamento** (bloco

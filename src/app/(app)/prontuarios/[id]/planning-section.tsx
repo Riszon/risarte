@@ -28,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { seloDaVenda } from "@/lib/venda-fechada";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -346,7 +347,7 @@ export function PlanningSection({
   /** Situação comercial por plano: código da venda + status (0208). */
   commercialByPlan?: Record<
     string,
-    { code: string | null; status: string; optionId: string | null }
+    { code: string | null; status: string; optionId: string | null; closed?: boolean }
   >;
   /** H4.5 Pedido 1: profissionais da unidade do cliente (para o Planner indicar). */
   providerOptions?: { id: string; name: string }[];
@@ -889,20 +890,30 @@ export function PlanningSection({
                               três opções aprovadas, sem esta marca é preciso
                               deduzir — e deduzir dinheiro dá errado. O código
                               da venda vem junto porque é ele que rastreia. */}
-                          {commercial?.optionId === o.id && (
-                            <Badge
-                              className={
-                                commercial.status === "cancelada"
-                                  ? "border-destructive bg-destructive/10 text-[10px] text-destructive"
-                                  : "bg-emerald-600 text-[10px] text-white"
-                              }
-                            >
-                              {commercial.status === "cancelada"
-                                ? "Comprada — cancelada"
-                                : "Comprada pelo cliente"}
-                              {commercial.code ? ` · ${commercial.code}` : ""}
-                            </Badge>
-                          )}
+                          {/* 0373: "Comprada" só com a venda FECHADA (contrato
+                              assinado) — regra única em `seloDaVenda`. */}
+                          {commercial?.optionId === o.id &&
+                            (() => {
+                              const selo = seloDaVenda({
+                                status: commercial.status,
+                                closed: commercial.closed === true,
+                              });
+                              if (!selo) return null;
+                              return (
+                                <Badge
+                                  className={
+                                    selo.tom === "cancelada"
+                                      ? "border-destructive bg-destructive/10 text-[10px] text-destructive"
+                                      : selo.tom === "aguardando"
+                                        ? "border-amber-500 bg-amber-50 text-[10px] text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                                        : "bg-emerald-600 text-[10px] text-white"
+                                  }
+                                >
+                                  {selo.texto}
+                                  {commercial.code ? ` · ${commercial.code}` : ""}
+                                </Badge>
+                              );
+                            })()}
                           {o.isPrimary && (
                             <Badge className="bg-gold text-gold-foreground text-[10px]">
                               Plano principal

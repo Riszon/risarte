@@ -88,7 +88,7 @@ export function PlanEditorSwitcher({
   /** Situação comercial por plano: código da venda + status (0208). */
   commercialByPlan?: Record<
     string,
-    { code: string | null; status: string; optionId: string | null }
+    { code: string | null; status: string; optionId: string | null; closed?: boolean }
   >;
   providerOptions?: { id: string; name: string }[];
   programActive?: boolean;

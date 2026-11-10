@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.407.0",
+    data: "2026-11-09",
+    migracao: "0373",
+    titulo: "Venda só conta depois do contrato assinado",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Salvar a negociação não lança mais a venda na DRE: a receita entra no dia em que a venda fecha (contrato assinado e pagamento confirmado). Salvar a negociação de novo também não soma a venda outra vez — antes ela podia aparecer em dobro.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor", "commercial_consultant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na ficha do cliente, as parcelas de uma negociação ainda aberta não aparecem mais como cobranças nem ficam \"em atraso\"; e a opção do plano só mostra \"Comprada pelo cliente\" com a venda fechada (antes disso: \"Aceita — aguardando assinatura\").",
+        papeis: "todos",
+        manual: "6.5. Consultor Comercial",
+      },
+    ],
+  },
+  {
     versao: "0.406.0",
     data: "2026-11-09",
     migracao: "0372",

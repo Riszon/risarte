@@ -3418,6 +3418,25 @@ pacotes e documentos* vê um aviso no lugar das listas.
 > **A regra de ouro:** só é venda com os dois. O banco recusa receber dinheiro
 > de venda não fechada.
 
+**Salvar a negociação não é vender** *(desde a 0.407.0)*. O **Salvar
+negociação** grava o plano de pagamento **proposto** (as parcelas que aparecem
+em **Cobranças**). Enquanto a negociação está aberta — em negociação, em
+follow-up, esperando o cliente decidir — essas parcelas são só a proposta:
+
+- **não entram na DRE** como receita (a receita entra **no dia em que a venda
+  fecha**, com contrato assinado e pagamento confirmado, e no mês desse dia);
+- **não aparecem** na aba **Financeiro** da ficha do cliente e **não ficam
+  "em atraso"**, mesmo que a data da 1ª parcela passe;
+- a opção do plano **não** ganha o selo **Comprada pelo cliente**.
+
+Pode salvar a negociação quantas vezes precisar: refazer o parcelamento **não
+soma a venda de novo** em lugar nenhum.
+
+Depois do **Cliente aceitou**, as parcelas passam a aparecer no Financeiro da
+ficha (é delas que sai a cobrança emitida antes da assinatura) e a opção do
+plano mostra **Aceita — aguardando assinatura**. Só com a venda fechada ela
+vira **Comprada pelo cliente**.
+
 **Depois do fechamento, quem agenda é a Recepção.** O cliente passa sozinho
 para a fase **Início de Tratamento** na Jornada, e a Recepção recebe o aviso
 **"Fechamento! Iniciar tratamento"**, que fica na tela dela até o início ser

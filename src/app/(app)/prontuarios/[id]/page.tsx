@@ -664,11 +664,20 @@ export default async function ClientDetailPage(
   // 0208: o cabecalho de cada plano mostra o codigo da venda e se foi cancelado.
   const { data: allNegRows } = await supabase
     .from("plan_negotiations")
-    .select("plan_id, option_id, code, status")
+    .select("id, plan_id, option_id, code, status")
     .eq("client_id", client.id);
+  // 0373: "Comprada pelo cliente" só com a venda FECHADA (contrato assinado).
+  const { data: vendasFechadasRows } = await supabase
+    .from("commercial_sales")
+    .select("negotiation_id")
+    .eq("client_id", client.id)
+    .not("closed_at", "is", null);
+  const negociacoesFechadas = new Set(
+    ((vendasFechadasRows ?? []) as { negotiation_id: string }[]).map((v) => v.negotiation_id)
+  );
   const commercialByPlan: Record<
     string,
-    { code: string | null; status: string; optionId: string | null }
+    { code: string | null; status: string; optionId: string | null; closed: boolean }
   > = {};
   for (const n of allNegRows ?? []) {
     if (n.plan_id) {
@@ -676,6 +685,7 @@ export default async function ClientDetailPage(
         code: (n.code as string | null) ?? null,
         status: n.status as string,
         optionId: (n.option_id as string | null) ?? null,
+        closed: negociacoesFechadas.has(n.id as string),
       };
     }
   }

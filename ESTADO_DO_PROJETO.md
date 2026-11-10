@@ -1,6 +1,35 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.406.0** · Última migração: **0372** (0372 ainda não aplicada em nenhum banco; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.407.0** · Última migração: **0373** (0373 aplicada no treino, NÃO na produção — aguarda o OK do dono; 0372 ainda não aplicada em nenhum banco; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+
+> ## 🚚 0.407.0 / 0373 — VENDA SÓ CONTA DEPOIS DO CONTRATO ASSINADO (09/11/2026)
+>
+> Relato do dono (ERRO GRAVE, produção): CBE-00001 de Cambé com a negociação
+> ABERTA (follow-up) tinha 8 cobranças, a 1ª "em atraso", o selo "Comprada
+> pelo cliente" e a DRE de novembro com R$ 7.951,10 = 2 × R$ 3.975,55.
+> Causas (confirmadas no código e reproduzidas no treino; NÃO lidas na produção
+> — a permissão automática barrou a consulta):
+> 1. a receita de competência nascia com a COBRANÇA (gatilho da 0187), e o
+>    "Salvar negociação" grava as cobranças (J4b) — sem perguntar se a venda
+>    fechou; 2. `save_payment_schedule` apaga e recria as cobranças, e a receita
+>    das apagadas ficava aberta (razão imutável, sem FK) → cada novo salvar
+>    somava a venda de novo; 3. o selo lia só a situação da negociação.
+> - ⚠️ **Receita de cobrança só pela porta `post_installment_accrual`, que exige
+>   `installment_sale_closed_on` não nulo.** Ao recriar, levar a trava (régua
+>   `receita-so-com-venda-fechada.test.ts`, que também reprova outra função
+>   lançando `installment_accrual` por fora). Fechar a venda (`closed_at`) lança
+>   pelos gatilhos `*_post_accruals_*`, com a competência do fechamento.
+> - ⚠️ **Cobrança apagada cancela a própria receita** (`payment_installments_cancel_accrual`).
+> - ⚠️ **Ao recriar `sync_installment_accrual_status`, levar a trava da venda fechada.**
+> - Tela: `src/lib/venda-fechada.ts` (`seloDaVenda`, `cobrancaEhSoProposta`).
+>   A ficha do cliente não mostra cobranças de negociação aberta (aceita mostra:
+>   a equipe emite a cobrança antes da assinatura).
+> - Acerto dos dados na própria 0373: só STATUS (`cancelled`), nada apagado;
+>   mês fechado fica de fora. Consultas só-leitura para medir antes:
+>   `docs/Financeiro/0373-CONSULTAS.sql`.
+> - ✅ Ensaio 13/13 (`scripts/receita-ensaio-0373.mjs`) e reprovando nas 4
+>   quebras; réguas provadas quebrando; 0373 aplicada no treino (2×).
+>   ⏳ **Produção: aguarda o OK do dono.** Não visto na tela. Manual 6.5, EV-306.
 
 > ## 🚚 0.406.0 / 0372 — FINANCEIRO: QUEM LANÇOU E QUEM DEU BAIXA (09/11/2026)
 >

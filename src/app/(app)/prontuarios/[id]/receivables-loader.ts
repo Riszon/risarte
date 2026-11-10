@@ -8,6 +8,7 @@ import {
   type AcquirerScope,
 } from "@/lib/finance/acquirers";
 import { todayInBrazil } from "@/lib/dates";
+import { cobrancaEhSoProposta } from "@/lib/venda-fechada";
 
 /** FIN4b.2 — o boleto que já foi gerado (e o que ele custou na emissão). */
 export type BoletoIssue = { issuedAt: string; feeCents: number };
@@ -152,7 +153,7 @@ export async function loadClientReceivables(
     period?.end ??
     `${pm === 12 ? py + 1 : py}-${String(pm === 12 ? 1 : pm + 1).padStart(2, "0")}-01`;
 
-  const { data: instRows } = await supabase
+  const { data: todasAsCobrancas } = await supabase
     .from("payment_installments")
     .select(
       "id, clinic_id, seq, kind, due_date, amount_cents, benefit_discount_cents, paid_amount_cents, paid_benefit_cents, paid_fee_cents, paid_interest_cents, status, payment_method, late_fee_percent, monthly_interest_percent, grace_days, was_overdue, negotiation_id, direct_sale_id, renegotiation_id, renegotiated_by_id, boleto_issued_at, boleto_fee_cents, acquirer_id"
@@ -160,6 +161,10 @@ export async function loadClientReceivables(
     .eq("client_id", clientId)
     .order("due_date")
     .returns<InstallmentRow[]>();
+  // 0373: cobrança de negociação ainda ABERTA é só a proposta de pagamento —
+  // não é cobrança, não atrasa (CBE-00001: 8 parcelas e "1 em atraso" com a
+  // cliente ainda decidindo com o marido).
+  const instRows = await semAsPropostas(supabase, todasAsCobrancas ?? []);
 
   const renegotiations = await loadRenegotiations(supabase, clientId);
   const sales = await loadSaleSummaries(supabase, instRows ?? []);
@@ -544,6 +549,55 @@ async function loadSaleSummaries(
   }
 
   return out;
+}
+
+/**
+ * 0373: tira as cobranças que são só a PROPOSTA de uma negociação aberta
+ * (`cobrancaEhSoProposta`). Se a leitura da situação falhar, mostra tudo —
+ * esconder por falta de leitura sumiria com cobrança de verdade.
+ */
+async function semAsPropostas(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  rows: InstallmentRow[]
+): Promise<InstallmentRow[]> {
+  const negIds = [
+    ...new Set(
+      rows
+        .filter((r) => r.negotiation_id && !r.renegotiation_id && !r.direct_sale_id)
+        .map((r) => r.negotiation_id as string)
+    ),
+  ];
+  if (negIds.length === 0) return rows;
+  const [{ data: negs, error: e1 }, { data: vendas, error: e2 }] = await Promise.all([
+    supabase
+      .from("plan_negotiations")
+      .select("id, status")
+      .in("id", negIds)
+      .returns<{ id: string; status: string }[]>(),
+    supabase
+      .from("commercial_sales")
+      .select("negotiation_id, closed_at")
+      .in("negotiation_id", negIds)
+      .returns<{ negotiation_id: string; closed_at: string | null }[]>(),
+  ]);
+  if (e1 || e2) return rows;
+  const status = new Map((negs ?? []).map((n) => [n.id, n.status]));
+  const fechada = new Set(
+    (vendas ?? []).filter((v) => v.closed_at).map((v) => v.negotiation_id)
+  );
+  return rows.filter(
+    (r) =>
+      !cobrancaEhSoProposta({
+        origin: r.renegotiation_id
+          ? "renegotiation"
+          : r.direct_sale_id
+            ? "direct_sale"
+            : "negotiation",
+        negotiationStatus: r.negotiation_id ? (status.get(r.negotiation_id) ?? null) : null,
+        saleClosed: r.negotiation_id ? fechada.has(r.negotiation_id) : false,
+        paidAmountCents: r.paid_amount_cents ?? 0,
+      })
+  );
 }
 
 /** Cascata rede → unidade, como no resto do sistema. */
