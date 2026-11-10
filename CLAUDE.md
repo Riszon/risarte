@@ -402,8 +402,8 @@ Syncthing se comportarem de forma estranha.**
   baixa = `textoDaBaixa`**; os nomes vêm das funções do banco, não de
   `profiles`. ⚠️ A 0384 apaga duas tabelas vazias (declarada; para se houver
   dado).
-- ⏳ **0384, 0385 e 1043 só no treino** (com as seis da 0.414.0: nove ao
-  todo). Não visto na tela.
+- ✅ **0384, 0385 e 1043 aplicadas nos dois bancos** (o dono, 10/11/2026;
+  conferido de fora). Não visto na tela.
 - ⚠️ `tsc` reprovou por um `.next/types` gerado em 27/10 (rotas antigas):
   com o servidor local desligado, tirar a pasta `.next/types` resolve.
 
@@ -416,8 +416,8 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **`lunch_enabled` nulo = a unidade segue o almoço da rede** (0381). Não
   gravar almoço de unidade por `upsert`.
 - ⚠️ Ao recriar `ortho_charge_ledger`, levar o ramo do mês fechado (0382).
-- ⏳ **0379, 0380, 0381, 0382, 0383 e 1042 só no treino.** O dono aplica na
-  produção uma por vez. Não visto na tela.
+- ✅ **0379, 0380, 0381, 0382, 0383 e 1042 aplicadas nos dois bancos** (o
+  dono, 10/11/2026; conferido de fora o que dá). Não visto na tela.
 
 **10/11/2026 (Rita — Fase 0A.7a) — PC Administrador (core 0.412.0 → 0.413.0, sem migração do core; Rita 0.6.0 → 0.7.0, migração 3006)**
 

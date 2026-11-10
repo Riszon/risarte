@@ -5,7 +5,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## 🧾 0.415.0 — QUEM DEU A BAIXA E A ANAMNESE ANTIGA (10/11/2026; migrações 0384, 0385; Empresarial 0.101.0 / 1043)
 >
 > Segunda entrega do pedido "resolver todos os itens abertos".
-> ⏳ **0384, 0385 e 1043 SÓ NO TREINO.** O dono aplica na produção.
+> ✅ **0384, 0385 e 1043 APLICADAS nos dois bancos** (o dono, 10/11/2026;
+> conferido de fora: as tabelas da anamnese antiga não existem mais, as
+> duas funções novas recusam sem login, a coluna `paid_by` existe).
 > - **AP129** — Ortodontia: `ortho_charge_authors` (0385, régua
 >   `ortho_can_see_money`). Empresarial: coluna `adhesion_billing.paid_by`,
 >   gatilho `adhesion_billing_stamp_payer` (carimba ao virar PAGA, por
@@ -26,8 +28,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >
 > Pedido do dono: resolver todos os itens abertos, alta → média → baixa. As
 > decisões foram perguntadas e gravadas em cada item do backlog.
-> ⏳ **As seis migrações estão SÓ NO TREINO.** O dono aplica na produção uma
-> por vez (independentes). O código já no ar tolera a falta de cada uma.
+> ✅ **As seis APLICADAS nos dois bancos** (o dono rodou na produção em
+> 10/11/2026, uma por vez, depois do push 2df2a0d2; conferido de fora: as
+> funções da 0379 e da 1042 recusam sem login, as urgências estão fora do
+> rol; 0380, 0381 e 0382 pelo relato do dono). Os nove itens fechados.
 > - **1042 (AP111)** `empresarial.importar_titulares`: as duas abas da
 >   planilha numa transação (`security invoker` — valem as regras das
 >   tabelas) + o teto de DEPENDENTES pelas mesmas funções do cadastro um a
