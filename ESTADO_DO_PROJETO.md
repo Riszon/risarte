@@ -1,6 +1,6 @@
 # Estado do Projeto — Risarte Odontologia (MVP RIZON)
 
-_Atualizado em: 09/11/2026 · Versão do sistema: **0.407.0** · Última migração: **0373** (0373 aplicada no treino, NÃO na produção — aguarda o OK do dono; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
+_Atualizado em: 09/11/2026 · Versão do sistema: **0.407.0** · Última migração: **0373** (0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
 > ## 🚚 0.407.0 / 0373 — VENDA SÓ CONTA DEPOIS DO CONTRATO ASSINADO (09/11/2026)
 >
@@ -29,7 +29,9 @@ _Atualizado em: 09/11/2026 · Versão do sistema: **0.407.0** · Última migraç
 >   `docs/Financeiro/0373-CONSULTAS.sql`.
 > - ✅ Ensaio 13/13 (`scripts/receita-ensaio-0373.mjs`) e reprovando nas 4
 >   quebras; réguas provadas quebrando; 0373 aplicada no treino (2×).
->   ⏳ **Produção: aguarda o OK do dono.** Não visto na tela. Manual 6.5, EV-306.
+>   ✅ **0373 aplicada na produção** (o dono informou em 09/11/2026; não
+>   conferido de fora — a consulta foi barrada e os gatilhos não respondem pela
+>   API). Não visto na tela. Manual 6.5, EV-306.
 
 > ## 🚚 0.406.0 / 0372 — FINANCEIRO: QUEM LANÇOU E QUEM DEU BAIXA (09/11/2026)
 >

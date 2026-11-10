@@ -405,8 +405,8 @@ Syncthing se comportarem de forma estranha.**
   ao recriar `sync_installment_accrual_status`, levar a trava (régua
   `receita-so-com-venda-fechada.test.ts`). ⚠️ Selo e cobranças da ficha =
   `src/lib/venda-fechada.ts`.
-- ✅ 0373 aplicada no treino. ⏳ **Produção: aguarda o OK do dono** (antes,
-  `docs/Financeiro/0373-CONSULTAS.sql`, só leitura). A consulta à produção foi
+- ✅ 0373 aplicada no treino e na produção (o dono informou em 09/11/2026;
+  não conferido de fora). Consultas de leitura: `docs/Financeiro/0373-CONSULTAS.sql`. A consulta à produção foi
   barrada pela permissão automática: o caso foi provado pelo código e no
   treino, não lido lá. Não visto na tela.
 
