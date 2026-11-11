@@ -1,5 +1,7 @@
 import "server-only";
 
+import { segredoConfere } from "@/lib/segredo-de-webhook";
+
 /**
  * A GUARDA DAS ROTINAS DA VERCEL (`/api/cron/*`, plano ZS0 §4.5).
  *
@@ -13,5 +15,6 @@ export function isCronRequestAuthorized(request: Request): boolean {
   const secret = (process.env.CRON_SECRET ?? "").trim();
   if (!secret) return false;
   const header = request.headers.get("authorization") ?? "";
-  return header === `Bearer ${secret}`;
+  // AP158 (item 5): comparação em tempo constante, como o webhook (AP99).
+  return segredoConfere(header, `Bearer ${secret}`);
 }

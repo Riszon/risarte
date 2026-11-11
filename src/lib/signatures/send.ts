@@ -389,7 +389,7 @@ export async function gerarPdfDoPacote(input: {
     }
     await admin.from("signature_events").insert({ package_id: packageId, event_type: "pdf_generated", actor_user_id: input.actorUserId, payload: { pages: merged.pageCount, bytes: merged.bytes.byteLength } });
 
-    const signed = await admin.storage.from(BUCKET).createSignedUrl(path, 600);
+    const signed = await admin.storage.from(BUCKET).createSignedUrl(path, 60); // AP158 (item 9): 60 s, como o resto do módulo (o visualizador baixa o PDF inteiro de uma vez)
     if (signed.error || !signed.data) throw new Error(`STORAGE_URL: ${signed.error?.message}`);
 
     return { ok: true, previewUrl: signed.data.signedUrl, pageCount: merged.pageCount };
@@ -401,6 +401,11 @@ export async function gerarPdfDoPacote(input: {
     if (msg === "PACKAGE_TOO_LARGE") return { ok: false, error: "O pacote passou de 10 MB (limite da ZapSign). Tire algum anexo ou divida em dois envios." };
     return { ok: false, error: "Não foi possível montar o PDF do pacote. Tente de novo; se repetir, avise o suporte." };
   }
+}
+
+/** O mês do consumo do plano da ZapSign ("2026-11"), no relógio de Brasília. */
+export function mesDoConsumo(quando: Date): string {
+  return formatInBrazil(quando, { year: "numeric", month: "2-digit" }).split("/").reverse().join("-");
 }
 
 /** A criação pode ter acontecido mesmo sem resposta (tempo esgotado, rede, 5xx). */
@@ -544,7 +549,7 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
         sent_by: input.session.userId,
         zapsign_doc_token: doc.token,
         zapsign_open_id: doc.open_id ?? null,
-        plan_month: formatInBrazil(now, { year: "numeric", month: "2-digit" }).split("/").reverse().join("-"),
+        plan_month: mesDoConsumo(now),
         channel_used: fake ? "fake" : "zapsign",
       })
       .eq("id", pkg.id)
@@ -595,6 +600,10 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
     // vivo ficava sem registro no riSZon).
     let cancelado: boolean | null = null;
     if (docToken) {
+      // AP158 (item 4): a ZapSign cobra o documento AO CRIAR, mesmo cancelado
+      // logo depois. Antes o mês do consumo só era gravado no sucesso, e o
+      // alerta de 80%/100% contava a menos.
+      await admin.from("signature_packages").update({ plan_month: mesDoConsumo(new Date()) }).eq("id", pkg.id).eq("status", "draft");
       try {
         if (fake) await refuseDocumentFake();
         else await refuseDocument({ doc_token: docToken, rejected_reason: "riSZon: falha ao concluir o envio", notify_signer: false });

@@ -88,13 +88,24 @@ function sleep(ms: number): Promise<void> {
   return ms <= 0 ? Promise.resolve() : new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * AP158 (item 12): o texto de erro da ZapSign pode repetir o que mandamos
+ * (CPF, e-mail, telefone). Antes de ir para o log, e-mails e sequências de 8+
+ * dígitos (com ou sem pontuação) viram "***".
+ */
+export function semDadoPessoal(texto: string): string {
+  return texto
+    .replace(/[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]+/g, "***")
+    .replace(/\+?\d[\d.\-\s()/]{6,}\d/g, (m) => (m.replace(/\D/g, "").length >= 8 ? "***" : m));
+}
+
 /** Um trecho curto do corpo de erro — sem dado pessoal (só a mensagem/código). */
 function shortDetail(body: unknown): string | null {
-  if (!body || typeof body !== "object") return typeof body === "string" ? body.slice(0, 200) : null;
+  if (!body || typeof body !== "object") return typeof body === "string" ? semDadoPessoal(body).slice(0, 200) : null;
   const o = body as Record<string, unknown>;
   const candidate = o.error ?? o.detail ?? o.message ?? o.code;
-  if (typeof candidate === "string") return candidate.slice(0, 200);
-  if (Array.isArray(candidate)) return candidate.map(String).join("; ").slice(0, 200);
+  if (typeof candidate === "string") return semDadoPessoal(candidate).slice(0, 200);
+  if (Array.isArray(candidate)) return semDadoPessoal(candidate.map(String).join("; ")).slice(0, 200);
   return null;
 }
 

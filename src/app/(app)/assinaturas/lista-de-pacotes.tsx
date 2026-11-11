@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { formatBrDate, formatBrDateTime } from "@/lib/dates";
-import { getSessionContext } from "@/lib/auth";
-import { permissoesDoPacote } from "@/lib/signatures/access";
+import { permissoesPorUnidade } from "@/lib/signatures/acesso-no-banco";
+
+const SEM_PERMISSAO = { view: false, download: false, send: false, cancel: false };
 import { acoesPermitidas } from "@/lib/signatures/actions-permitidas";
 import { PACKAGE_STATUS_CLASS, PACKAGE_STATUS_LABEL, SIGNER_STATUS_LABEL, STAGE_LABEL, isWaiting } from "@/lib/signatures/status";
 import type { PackageStage, PackageStatus, SignerStatus } from "@/lib/signatures/types";
@@ -54,12 +55,16 @@ export async function ListaDePacotes({
     return <p className="py-2 text-center text-sm text-muted-foreground">{vazio}</p>;
   }
   const supabase = await createClient();
-  const session = await getSessionContext();
   const ids = pacotes.map((p) => p.id);
   const [{ data: reenvios }, { data: settings }] = await Promise.all([
     supabase.from("signature_packages").select("number, resent_from_package_id").in("resent_from_package_id", ids).not("sent_at", "is", null),
     createAdminClient().from("signature_settings").select("zapsign_emails_enabled").eq("id", true).maybeSingle(),
   ]);
+
+  // AP158 (item 2): a tela segue o banco — uma pergunta por unidade.
+  const perguntar = permissoesPorUnidade(supabase);
+  const unidades = [...new Set(pacotes.map((p) => p.clinic_id))];
+  const permissoes = new Map(await Promise.all(unidades.map(async (c) => [c, await perguntar(c)] as const)));
 
   return (
     <ul className="space-y-2">
@@ -77,7 +82,7 @@ export async function ListaDePacotes({
             zapsignEmailsEnabled: !!settings?.zapsign_emails_enabled,
             resentAs,
           },
-          permissoesDoPacote(session, p.clinic_id)
+          permissoes.get(p.clinic_id) ?? SEM_PERMISSAO
         );
         return (
           <li key={p.id} className="rounded-md border p-3">

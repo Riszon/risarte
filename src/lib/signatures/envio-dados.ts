@@ -315,7 +315,9 @@ async function loadTreatment(
   let planId: string | null = origin.type === "treatment_plan" ? origin.id : null;
 
   if (origin.type === "plan_negotiation" && origin.id) {
-    const { data } = await supabase.from("plan_negotiations").select(cols).eq("id", origin.id).maybeSingle<NegotiationRow>();
+    // AP158 (item 7): a negociação tem de ser DESTE paciente — um id de outro
+    // levaria os valores dele para o contrato e o corte da autenticação.
+    const { data } = await supabase.from("plan_negotiations").select(cols).eq("id", origin.id).eq("client_id", clientId).maybeSingle<NegotiationRow>();
     negotiation = data ?? null;
   } else {
     let q = supabase

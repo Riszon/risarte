@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.429.0",
+    data: "2026-11-11",
+    migracao: "0397",
+    titulo: "Assinatura digital: ajustes finos da revisão (botões, cancelamento, painel)",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Cancelar um pacote não faz mais ele aparecer como \"Recusado\" (e contar como recusa do paciente) quando o aviso da ZapSign chega antes: fica Cancelado, com o motivo digitado.",
+        papeis: "todos",
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A equipe da Franqueadora que tem a permissão passa a ver os botões (ver, baixar, reenviar, cancelar) também nos pacotes das unidades do seu escopo.",
+        papeis: ["finance_franchisor", "franchisor_staff"],
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Aberta a ficha numa unidade com quem o paciente só está compartilhado, o envio para assinatura usa a unidade do paciente (antes a janela era preenchida e o envio recusado no fim).",
+        papeis: "todos",
+        manual: "13d.1. Enviar um documento para o paciente assinar (0.374.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O painel da unidade das assinaturas mostra só as unidades onde a pessoa tem essa permissão; e o relatório em páginas não pula nem repete pacote.",
+        papeis: "todos",
+        manual: "13d.7. O painel e os relatórios (0.381.0)",
+      },
+    ],
+  },
+  {
     versao: "0.428.0",
     data: "2026-11-11",
     migracao: "0396",

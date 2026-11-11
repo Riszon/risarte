@@ -255,10 +255,12 @@ describe("assinaturas digitais: a ação do pacote segue a porta do banco (ZS4)"
     return migracao.slice(i, migracao.indexOf("$$;", i));
   };
 
-  it("cancelar: a porta exige acao.assinaturas.cancelar e a tela usa canCancelSignatures", () => {
+  // AP158 (item 2, 11/11/2026): a tela PERGUNTA ao banco (`signature_can`) —
+  // antes ela repetia a conta e esquecia o papel da Franqueadora com escopo.
+  it("cancelar: a porta exige acao.assinaturas.cancelar e a tela pergunta o mesmo ao banco", () => {
     expect(corpo("signature_cancel_package")).toContain("signature_can('acao.assinaturas.cancelar', v_pkg.clinic_id)");
-    expect(pacote).toMatch(/if \(!canCancelSignatures\(session, pkg\.clinic_id\)\)/);
-    expect(ler("src/lib/signatures/access.ts")).toMatch(/cancel: canCancelSignatures\(session, clinicId\)/);
+    expect(pacote).toMatch(/if \(!\(await podeNoBanco\(await createClient\(\), "acao\.assinaturas\.cancelar", pkg\.clinic_id\)\)\)/);
+    expect(ler("src/lib/signatures/acesso-no-banco.ts")).toContain('podeNoBanco(supabase, "acao.assinaturas.cancelar", clinicId)');
   });
 
   it("cancelar: o banco recusa o ASSINADO, e a tela nem oferece", () => {
@@ -272,15 +274,15 @@ describe("assinaturas digitais: a ação do pacote segue a porta do banco (ZS4)"
     expect(fn.indexOf("refuseDocument(")).toBeLessThan(fn.indexOf('rpc("signature_cancel_package"'));
   });
 
-  it("reenviar: a porta exige acao.assinaturas.enviar e a tela usa canSendSignatures", () => {
+  it("reenviar: a porta exige acao.assinaturas.enviar e a tela pergunta o mesmo ao banco", () => {
     expect(corpo("signature_mark_notified")).toContain("signature_can('acao.assinaturas.enviar', v_pkg.clinic_id)");
-    expect(pacote.match(/if \(!canSendSignatures\(session, pkg\.clinic_id\)\)/g)).toHaveLength(3);
+    expect(pacote.match(/if \(!\(await podeNoBanco\(await createClient\(\), "acao\.assinaturas\.enviar", pkg\.clinic_id\)\)\)/g)).toHaveLength(3);
   });
 
   it("visualizar e baixar: o registro exige ver o pacote, e o download exige baixar", () => {
     expect(corpo("signature_log_action")).toContain("signature_can_view_package(p_package_id)");
-    expect(pacote.match(/if \(!canDownloadSignatures\(session, pkg\.clinic_id\)\)/g)).toHaveLength(2);
-    expect(pacote).toMatch(/if \(!canViewSignaturePackages\(session, pkg\.clinic_id\)\)/);
+    expect(pacote.match(/if \(!\(await podeNoBanco\(await createClient\(\), "acao\.assinaturas\.baixar", pkg\.clinic_id\)\)\)/g)).toHaveLength(2);
+    expect(pacote).toMatch(/if \(!\(await podeNoBanco\(await createClient\(\), "acao\.assinaturas\.visualizar", pkg\.clinic_id\)\)\)/);
   });
 
   it("as portas novas não executam sem login", () => {
@@ -290,9 +292,9 @@ describe("assinaturas digitais: a ação do pacote segue a porta do banco (ZS4)"
   });
 
   it("o detalhe e a ficha usam a MESMA regra de ações", () => {
-    expect(ler("src/app/(app)/assinaturas/pacotes/[id]/page.tsx")).toMatch(/acoesPermitidas\([\s\S]{0,400}permissoesDoPacote\(session, pkg\.clinic_id\)/);
+    expect(ler("src/app/(app)/assinaturas/pacotes/[id]/page.tsx")).toMatch(/acoesPermitidas\([\s\S]{0,500}await permissoesNoBanco\(supabase, pkg\.clinic_id\)/);
     // A ficha do paciente e a da empresa (ZS5) desenham pela lista comum.
-    expect(ler("src/app/(app)/assinaturas/lista-de-pacotes.tsx")).toMatch(/acoesPermitidas\([\s\S]{0,400}permissoesDoPacote\(session, p\.clinic_id\)/);
+    expect(ler("src/app/(app)/assinaturas/lista-de-pacotes.tsx")).toMatch(/acoesPermitidas\([\s\S]{0,400}permissoes\.get\(p\.clinic_id\)/);
     expect(ler("src/app/(app)/assinaturas/assinaturas-do-cliente.tsx")).toContain("<ListaDePacotes");
     expect(ler("src/app/(app)/assinaturas/assinaturas-da-empresa.tsx")).toContain("<ListaDePacotes");
   });

@@ -2,6 +2,17 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧹 0.429.0 — ASSINATURA DIGITAL: ACHADOS MENORES DA REVISÃO (11/11/2026; migração 0397)
+>
+> AP158, EV-327. ⚠️ **Permissão de UM pacote (ver, baixar, reenviar,
+> cancelar) = `acesso-no-banco.ts` (`signature_can`)**, nunca `pode()`: o
+> banco conta a Franqueadora com escopo e a tela não (régua
+> `tela-segue-o-banco`). ⚠️ A assinatura do paciente sai pela unidade dele
+> (`unidadeDoEnvio`). ⚠️ Ao recriar `signature_apply_webhook`, partir da
+> **0397** (cancelamento do riSZon = cancelado). Gatilho
+> `signature_packages_company_issuer`: pacote de empresa só pela Franqueadora.
+> Itens 11 e 13 sem mudança (backlog). Ensaio 9/9; **não visto na tela.**
+
 > ## 🔁 0.428.0 — ASSINATURA DIGITAL: OS DE PRIORIDADE MÉDIA DA REVISÃO (11/11/2026; migração 0396)
 >
 > AP153–AP157 (revisão a fundo pedida pelo dono; EV-326). A 0.427.0 é da

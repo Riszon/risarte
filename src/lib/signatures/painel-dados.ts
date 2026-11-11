@@ -108,7 +108,11 @@ export function alcanceDoPainel(session: SessionContext): "rede" | "unidade" | n
 export type LeituraDoPainel = { ok: true; linhas: LinhaDoPainel[] } | { ok: false; erro: string };
 
 /** Lê em páginas (a API corta em 1.000) — leitura pela metade não vira número. */
-export async function lerLinhasDoPainel(supabase: SupabaseClient, f: FiltrosDoPainel): Promise<LeituraDoPainel> {
+export async function lerLinhasDoPainel(
+  supabase: SupabaseClient,
+  f: FiltrosDoPainel,
+  alcance: "rede" | "unidade" = "rede"
+): Promise<LeituraDoPainel> {
   const r = await lerTodasAsPaginas<LinhaDoPainel>((de, ate) =>
     supabase
       .rpc("signature_report_rows", {
@@ -130,7 +134,19 @@ export async function lerLinhasDoPainel(supabase: SupabaseClient, f: FiltrosDoPa
         : "Não foi possível ler os pacotes agora. Recarregue a página.",
     };
   }
-  return { ok: true, linhas: r.linhas.map((l) => ({ ...l, items: Array.isArray(l.items) ? l.items : [] })) };
+  let linhas = r.linhas.map((l) => ({ ...l, items: Array.isArray(l.items) ? l.items : [] }));
+  // AP158 (item 3): no painel DA UNIDADE só entram as unidades onde a pessoa
+  // tem o painel da unidade — a leitura (RLS) traz também as que ela só pode
+  // visualizar. Pergunta ao banco uma vez por unidade.
+  if (alcance === "unidade") {
+    const unidades = [...new Set(linhas.map((l) => l.clinic_id))];
+    const respostas = await Promise.all(
+      unidades.map(async (c) => [c, (await supabase.rpc("signature_can", { p_capability: "acao.assinaturas.painel_unidade", p_clinic_id: c })).data === true] as const)
+    );
+    const permitidas = new Set(respostas.filter(([, ok]) => ok).map(([c]) => c));
+    linhas = linhas.filter((l) => permitidas.has(l.clinic_id));
+  }
+  return { ok: true, linhas };
 }
 
 export type OpcoesDosFiltros = {

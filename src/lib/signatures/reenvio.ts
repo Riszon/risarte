@@ -4,7 +4,7 @@ import type { SessionContext } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isZapsignConfigured, isZapsignFake } from "@/lib/zapsign";
-import { canSendSignatures } from "./access";
+import { podeNoBanco } from "./acesso-no-banco";
 import { extrairPaginas } from "./pdf/copy";
 import { lerRazaoSocial } from "./razao-social";
 import { pacoteAssinadoComOsMesmos, recusaDoNovoEnvio } from "./duplicidade";
@@ -116,7 +116,7 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
     .eq("id", packageId)
     .maybeSingle();
   if (!old) return { ok: false, error: "Pacote não encontrado, ou você não tem acesso a ele." };
-  if (!canSendSignatures(session, old.clinic_id)) return { ok: false, error: "Você não tem permissão para enviar documentos nesta unidade." };
+  if (!(await podeNoBanco(supabase, "acao.assinaturas.enviar", old.clinic_id))) return { ok: false, error: "Você não tem permissão para enviar documentos nesta unidade." };
   if (!["refused", "expired", "cancelled"].includes(old.status) || !old.sent_at) {
     return { ok: false, error: "Só pacote recusado, expirado ou cancelado depois de enviado pode ser reenviado como novo." };
   }

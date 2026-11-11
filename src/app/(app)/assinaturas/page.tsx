@@ -83,7 +83,7 @@ export default async function AssinaturasPage({ searchParams }: { searchParams: 
 
   const f = lerFiltros(sp, hoje);
   const supabase = await createClient();
-  const leitura = await lerLinhasDoPainel(supabase, f);
+  const leitura = await lerLinhasDoPainel(supabase, f, alcance);
   const linhas = leitura.ok ? leitura.linhas : [];
   const opcoes = await lerOpcoes(supabase, session, alcance, linhas);
   const ind = calcularIndicadores(linhas, f.periodo, { hoje, faixas: opcoes.faixas });
