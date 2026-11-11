@@ -35,7 +35,7 @@ export async function montarRelatorio(
   const hoje = todayInBrazil();
   const f = lerFiltros(sp, hoje);
   const supabase = await createClient();
-  const leitura = await lerLinhasDoPainel(supabase, f);
+  const leitura = await lerLinhasDoPainel(supabase, f, alcance);
   if (!leitura.ok) return { ok: false, status: 503, erro: leitura.erro };
   const opcoes = await lerOpcoes(supabase, session, alcance, leitura.linhas);
   const ind = calcularIndicadores(leitura.linhas, f.periodo, { hoje, faixas: opcoes.faixas });

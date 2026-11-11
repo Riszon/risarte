@@ -4,11 +4,14 @@ import type { SessionContext } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isZapsignConfigured, isZapsignFake } from "@/lib/zapsign";
-import { canSendSignatures } from "./access";
+import { podeNoBanco } from "./acesso-no-banco";
 import { extrairPaginas } from "./pdf/copy";
 import { lerRazaoSocial } from "./razao-social";
+import { pacoteAssinadoComOsMesmos, recusaDoNovoEnvio } from "./duplicidade";
+import { prazoDeAssinatura } from "./prazo";
 import { BUCKET, gerarPdfDoPacote, mensagemDaPorta, qualificacao, type PdfDoc, type PrepareResult } from "./send";
-import type { TemplateBody } from "./types";
+import type { SignerDraft, TemplateBody } from "./types";
+import { validarSignatarios } from "./validate";
 
 /**
  * "REENVIAR COMO NOVO PACOTE" (ZS4) — para o pacote recusado, expirado ou
@@ -40,7 +43,7 @@ type OldItem = {
   origin_id: string | null;
 };
 
-type OldSigner = {
+export type OldSigner = {
   sort_order: number;
   order_group: number;
   signer_type: string;
@@ -53,6 +56,55 @@ type OldSigner = {
   auth_mode_applied: string | null;
 };
 
+type Contatos = {
+  cliente: { cpf: string | null; email: string | null; phone: string | null } | null;
+  responsaveis: { full_name: string; cpf: string | null; email: string | null; phone: string | null }[];
+  equipe: Map<string, { cpf: string | null; email: string | null; whatsapp: string | null }>;
+};
+
+async function contatosAtuais(admin: ReturnType<typeof createAdminClient>, clientId: string, antigos: OldSigner[]): Promise<Contatos> {
+  const staffIds = [...new Set(antigos.map((s) => s.staff_member_id).filter((x): x is string => !!x))];
+  const [{ data: cliente }, { data: responsaveis }, { data: equipe }] = await Promise.all([
+    admin.from("clients").select("cpf, email, phone").eq("id", clientId).maybeSingle(),
+    admin.from("client_guardians").select("full_name, cpf, email, phone").eq("client_id", clientId),
+    staffIds.length
+      ? admin.from("staff_members").select("id, cpf, email, whatsapp").in("id", staffIds)
+      : Promise.resolve({ data: [] as { id: string; cpf: string | null; email: string | null; whatsapp: string | null }[] }),
+  ]);
+  return {
+    cliente: cliente ?? null,
+    responsaveis: responsaveis ?? [],
+    equipe: new Map((equipe ?? []).map((e) => [e.id, e])),
+  };
+}
+
+const soDigitos = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
+
+/**
+ * Regra pura (AP156): troca CPF, e-mail e telefone de cada signatário pelo
+ * cadastro de hoje. Paciente pelo cadastro do cliente; responsável legal pelo
+ * responsável de mesmo CPF (senão de mesmo nome); Risartano pela ficha dele.
+ * Sem cadastro achado, fica o que o pacote antigo tinha.
+ */
+export function atualizarContatos(antigos: OldSigner[], atuais: Contatos): OldSigner[] {
+  return antigos.map((s) => {
+    if (s.signer_type === "client" && atuais.cliente) {
+      return { ...s, cpf: atuais.cliente.cpf ?? s.cpf, email: atuais.cliente.email ?? s.email, phone: atuais.cliente.phone ?? s.phone };
+    }
+    if (s.signer_type === "legal_guardian") {
+      const g =
+        atuais.responsaveis.find((x) => soDigitos(x.cpf) && soDigitos(x.cpf) === soDigitos(s.cpf)) ??
+        atuais.responsaveis.find((x) => x.full_name.trim().toLowerCase() === s.name.trim().toLowerCase());
+      if (g) return { ...s, cpf: g.cpf ?? s.cpf, email: g.email ?? s.email, phone: g.phone ?? s.phone };
+    }
+    if (s.staff_member_id) {
+      const e = atuais.equipe.get(s.staff_member_id);
+      if (e) return { ...s, cpf: e.cpf ?? s.cpf, email: e.email ?? s.email, phone: e.whatsapp ?? s.phone };
+    }
+    return s;
+  });
+}
+
 export async function reenviarComoNovo(session: SessionContext, packageId: string): Promise<PrepareResult> {
   // 1) O antigo, pela sessão de quem pediu (RLS: quem não vê não reenvia).
   const supabase = await createClient();
@@ -64,7 +116,7 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
     .eq("id", packageId)
     .maybeSingle();
   if (!old) return { ok: false, error: "Pacote não encontrado, ou você não tem acesso a ele." };
-  if (!canSendSignatures(session, old.clinic_id)) return { ok: false, error: "Você não tem permissão para enviar documentos nesta unidade." };
+  if (!(await podeNoBanco(supabase, "acao.assinaturas.enviar", old.clinic_id))) return { ok: false, error: "Você não tem permissão para enviar documentos nesta unidade." };
   if (!["refused", "expired", "cancelled"].includes(old.status) || !old.sent_at) {
     return { ok: false, error: "Só pacote recusado, expirado ou cancelado depois de enviado pode ser reenviado como novo." };
   }
@@ -104,11 +156,32 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
   if (!razao.ok) return razao;
   const issuerName = razao.nome;
   const items = (itemsRaw ?? []) as OldItem[];
-  const signers = (signersRaw ?? []) as OldSigner[];
-  if (items.length === 0 || signers.length === 0) return { ok: false, error: "O pacote original está incompleto (sem documentos ou signatários)." };
+  const antigos = (signersRaw ?? []) as OldSigner[];
+  if (items.length === 0 || antigos.length === 0) return { ok: false, error: "O pacote original está incompleto (sem documentos ou signatários)." };
+
+  // AP156: o motivo comum de reenviar depois de vencer é um contato corrigido
+  // (telefone, e-mail). Os signatários levam os dados do cadastro DE HOJE
+  // (paciente, responsável, Risartano) e passam pela mesma conferência do envio.
+  const atuais = await contatosAtuais(admin, old.client_id, antigos);
+  const signers = atualizarContatos(antigos, atuais);
+  const problemas = validarSignatarios(signers.map((x) => ({ ...x, qualification: qualificacao(x.signer_type) }) as SignerDraft));
+  if (problemas.length > 0) {
+    return { ok: false, error: `Corrija o cadastro antes de reenviar: ${problemas.map((p) => `${p.signer}: ${p.message}`).join(" ")}` };
+  }
 
   // 2) O texto atual de cada modelo.
   const templateIds = items.map((i) => i.template_id).filter((x): x is string => !!x);
+
+  // AP156: a mesma trava da janela de envio (0.401.1). Documento já assinado
+  // por todos em outro pacote não sai de novo por aqui: a janela de envio é
+  // quem pede o motivo e o Gerente/Admin.
+  const assinado = await pacoteAssinadoComOsMesmos(supabase, { clientId: old.client_id }, templateIds, session.userId);
+  if (assinado && assinado.packageId !== old.id) {
+    return {
+      ok: false,
+      error: `${recusaDoNovoEnvio({ assinado, motivo: null, podeLiberar: false })} Se for mesmo um documento novo, use Enviar para assinatura na ficha (pede o motivo).`,
+    };
+  }
   const { data: templates } = templateIds.length
     ? await admin.from("signature_templates").select("id, name, body, is_provisional_text").in("id", templateIds)
     : { data: [] as { id: string; name: string; body: TemplateBody | null; is_provisional_text: boolean }[] };
@@ -138,8 +211,7 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
 
   // 3) O rascunho novo pela porta do banco (a guarda de quem envia vale de novo).
   const expiryDays = settings?.patient_expiry_days ?? 7;
-  const expiresAt = new Date(Date.now() + expiryDays * 86_400_000);
-  expiresAt.setUTCHours(23, 59, 0, 0);
+  const expiresAt = prazoDeAssinatura(expiryDays);
   const oldCover = (old.cover_data ?? {}) as { client_name?: string; clinic_name?: string; negotiation_id?: string | null };
   const clientName = oldCover.client_name ?? "Paciente";
   const clinicName = clinic?.name ?? oldCover.clinic_name ?? "";

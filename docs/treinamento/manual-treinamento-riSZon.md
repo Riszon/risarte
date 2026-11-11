@@ -5420,7 +5420,9 @@ Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
    rodapé de cada página trazem a **razão social da unidade** e o CNPJ, **sem
    o logotipo da Risarte** (0.384.0). **Unidade sem razão social cadastrada não
    envia:** o sistema diz *"A unidade não tem razão social cadastrada"* e
-   onde cadastrar (Administração → Clínicas).
+   onde cadastrar (Administração → Clínicas). O pacote sai sempre pela
+   **unidade do paciente** (a de cadastro ou a preferida): aberto numa unidade
+   com quem o paciente só está compartilhado, a janela usa a dele (0.429.0).
 2. **Quem assina.** O sistema monta a ordem: **1º o paciente** (ou o
    **responsável legal**, se for menor de idade — sem responsável cadastrado o
    envio é barrado); **2º as testemunhas** que o modelo pede (escolhidas na
@@ -5436,7 +5438,8 @@ Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
    Precisa de atenção). No treino, o cliente com CPF inventado se resolve com
    **Gerar CPF de teste** no cadastro dele.
 3. **Conferir e enviar.** O PDF aparece inteiro na tela, com o número do pacote
-   (`ASS-000001`), as páginas e até quando o link vale. **Enviar para
+   (`ASS-000001`), as páginas e até quando o link vale (até as **23:59 de
+   Brasília** do último dia, desde a 0.428.0; antes vencia às 20:59). **Enviar para
    assinatura** cria o documento na ZapSign. Fechar a janela antes disso
    descarta o rascunho. Clicar duas vezes, ou enviar o mesmo pacote em duas
    abas, **não cria dois documentos** (0.426.0): a segunda tentativa avisa
@@ -5533,7 +5536,8 @@ Quem foi escolhido num envio como **testemunha** ou **representante da
 Risarte** assina pelo próprio sistema, na vez certa:
 
 1. Quando chega a sua vez (o cliente já assinou; depois, as testemunhas; por
-   último, a Risarte), o **sino** avisa "É a sua vez de assinar" e o **Início**
+   último, a Risarte), o **sino** avisa "É a sua vez de assinar" — também
+   para quem já tinha aberto o link antes (0.428.0) — e o **Início**
    mostra o cartão "1 documento espera a sua assinatura".
 2. Em **Minhas assinaturas pendentes** (menu Assinaturas → ou pelo cartão, ou
    pelo aviso) está a lista: o número do pacote, o paciente, os documentos e o
@@ -5592,8 +5596,8 @@ vencimento, quem visualizou, baixou, reenviou ou cancelou.
 | **Baixar assinado** | Pacote **Assinado**, para quem tem *Baixar o PDF assinado* | Baixa o PDF com as assinaturas e o registro da ZapSign. Logo depois da última assinatura, o sistema leva alguns instantes para buscar o PDF na ZapSign; até lá o botão não aparece e a página avisa |
 | **Baixar cópia** | Para quem tem *Baixar o PDF assinado* | Escolha um documento do pacote: sai **só aquele documento**, tirado do PDF original, com a faixa **"CÓPIA — não assinada digitalmente — pacote ASS-…"** em todas as páginas. Serve para consulta; a prova é o PDF assinado |
 | **Reenviar** | Pacote aguardando assinatura, para quem tem *Enviar para assinatura* | Mostra quem ainda falta assinar com **Abrir no WhatsApp**, **Copiar o link** e **Assinar agora** (a mensagem padrão das configurações). O sistema anota quando cada pessoa foi lembrada. Com os e-mails da ZapSign ligados nas configurações, aparece também **Reenviar pelo e-mail da ZapSign** (vai a todos os pendentes; a ZapSign pede alguns minutos entre um reenvio e outro) |
-| **Cancelar** | Pacote aguardando assinatura, para quem tem *Cancelar envio* | Pede o **motivo** (obrigatório) e cancela também **na ZapSign**: o link para de funcionar. Se a ZapSign não responder, **nada é cancelado** e a tela diz o motivo — tente de novo. O pacote não some: fica na lista como Cancelado, com o motivo e quem cancelou |
-| **Reenviar como novo pacote** | Pacote **Recusado, Expirado ou Cancelado**, para quem envia | Monta um pacote novo com os **mesmos documentos e as mesmas pessoas**, prazo novo contado de hoje, e mostra o PDF para conferir antes de **Enviar para assinatura**. Os dados preenchidos são os do envio original; o texto do modelo é o atual. Os dois pacotes apontam um para o outro ("Reenvio de…" / "Reenviado como…") |
+| **Cancelar** | Pacote aguardando assinatura, para quem tem *Cancelar envio* | Pede o **motivo** (obrigatório) e cancela também **na ZapSign**: o link para de funcionar. Se a ZapSign não responder, **nada é cancelado** e a tela diz o motivo — tente de novo. O pacote não some: fica na lista como Cancelado, com o motivo e quem cancelou. Desde a 0.429.0 ele nunca aparece como "Recusado" por causa do próprio cancelamento |
+| **Reenviar como novo pacote** | Pacote **Recusado, Expirado ou Cancelado**, para quem envia | Monta um pacote novo com os **mesmos documentos e as mesmas pessoas**, prazo novo contado de hoje, e mostra o PDF para conferir antes de **Enviar para assinatura**. Os dados preenchidos são os do envio original; o texto do modelo é o atual. **CPF, telefone e e-mail de quem assina vêm do cadastro de hoje** (corrigiu o telefone? o reenvio já leva o novo) e passam pela mesma conferência do envio; e se o mesmo documento já foi **assinado por todos** em outro pacote, o reenvio é recusado — para um documento novo, use **Enviar para assinatura** na ficha, que pede o motivo (0.428.0). Os dois pacotes apontam um para o outro ("Reenvio de…" / "Reenviado como…") |
 
 > ⚠️ **Pacote assinado não pode ser cancelado** — nem pelo sistema, nem pela
 > ZapSign. Para quem cancela, o botão aparece apagado com esse aviso. E
@@ -5643,6 +5647,9 @@ Franqueadora e Gerente de Unidade. O Coordenador vê e baixa, mas não reenvia
 nem cancela. **O link de assinatura de cada pessoa e os dados dela (CPF,
 telefone, e-mail) só aparecem para quem reenvia**, e todo PDF aberto ou baixado
 passa pelo sistema, que confere a permissão e registra na Auditoria (0.426.0).
+Os botões de cada pacote seguem a mesma regra do banco: a equipe da
+**Franqueadora** que tem a permissão vê e usa os botões também nos pacotes das
+unidades do seu escopo (0.429.0; antes via o pacote, mas sem os botões).
 
 ### 13d.5. O contrato de adesão do Empresarial (0.378.0)
 
@@ -5680,7 +5687,10 @@ assina uma vez. O envio pelo funil entra sozinho na lista da aba Envio e selos.
 
 - **Pacote vencido.** O que ainda aguardava assinatura e passou do prazo vira
   **Expirado**, e quem enviou recebe no sino *"Link de assinatura venceu"*. Se
-  ainda for preciso, use **Reenviar como novo pacote** (13d.4).
+  ainda for preciso, use **Reenviar como novo pacote** (13d.4). Se alguém
+  assinou na ZapSign bem no limite e o aviso chegou atrasado, a conferência de
+  hora em hora acerta: com todos assinados, o pacote passa a **Assinado**
+  (0.428.0).
 - **Lembrete a quem enviou.** Nos dias marcados em *Assinaturas →
   Configurações → Lembrar quem enviou nos dias* (padrão: 2 e 5 dias depois do envio), se o
   **cliente** ainda não assinou, quem enviou recebe no sino *"Cliente ainda não
@@ -5702,10 +5712,21 @@ assina uma vez. O envio pelo funil entra sozinho na lista da aba Envio e selos.
   consultado na ZapSign: se alguém assinou ou recusou e o aviso da ZapSign não
   chegou, a situação se acerta sozinha, do mesmo jeito que pelo aviso.
 - **PDF assinado que faltou.** Se o PDF não veio na hora da última assinatura,
-  o sistema busca de novo.
+  o sistema busca de novo — até 12 vezes; depois para e avisa o Admin (0.428.0).
 - **E-mails.** A cópia assinada ao cliente e os alertas de consumo saem pela
   fila, com até 3 tentativas. **Sem o serviço de e-mail configurado (Resend),
-  eles esperam na fila** — nada se perde, e saem quando for configurado.
+  eles esperam na fila** — nada se perde, e saem quando for configurado. A
+  cópia vai a **cada pessoa do lado do cliente com e-mail** (paciente,
+  responsável legal, representante da empresa) e **só sai com o PDF assinado
+  anexado**: se o PDF ainda não chegou, ela espera. Alerta de consumo com mais
+  de 7 dias não sai mais (0.428.0).
+- **Falhas avisam (0.428.0).** O **Admin Master** — e quem enviou o pacote —
+  recebe no sino quando: o contrato foi assinado mas **a venda não fechou
+  sozinha**; o contrato de adesão foi assinado mas **o selo do lead não foi
+  marcado**; **o PDF assinado não veio** da ZapSign; um envio que falhou deixou
+  **o documento aberto na ZapSign**. Cada falha avisa uma vez, com o link do
+  pacote. Se a **rotina diária parar** (mais de 26 horas sem rodar), o Admin
+  Master também é avisado.
 
 **Onde acompanhar.** Em *Assinaturas → Configurações*, o quadro **Rotinas
 automáticas** mostra quando cada rotina rodou pela última vez e o que fez
@@ -5715,7 +5736,7 @@ e-mails estão na fila.
 ### 13d.7. O painel e os relatórios (0.381.0)
 
 **Onde fica.** Menu **Assinaturas** — a página abre no painel. Aparece para
-quem tem **Painel da unidade** (vê as próprias unidades) ou **Painel da rede**
+quem tem **Painel da unidade** (vê só as unidades onde tem essa permissão — 0.429.0) ou **Painel da rede**
 (vê todas; por padrão Financeiro da Franqueadora e Admin). O Consultor RisLife
 vê só as empresas dele. Quem não tem nenhum dos dois vê os atalhos
 **Pacotes** e **Minhas pendentes**.

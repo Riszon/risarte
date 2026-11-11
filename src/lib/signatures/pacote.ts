@@ -7,7 +7,7 @@ import { montarMensagem, primeiroNome } from "@/lib/notify/templates";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ZapsignError, isZapsignFake, mensagemDaZapsign, refuseDocument, refuseDocumentFake, resendNotifications } from "@/lib/zapsign";
-import { canCancelSignatures, canDownloadSignatures, canSendSignatures, canViewSignaturePackages } from "./access";
+import { podeNoBanco } from "./acesso-no-banco";
 import { gerarCopia, nomeDoArquivo } from "./pdf/copy";
 import { BUCKET, qualificacao } from "./send";
 import type { PackageStage, PackageStatus } from "./types";
@@ -92,7 +92,7 @@ async function urlAssinada(path: string, download?: string): Promise<string | nu
 export async function abrirPdf(session: SessionContext, packageId: string): Promise<ActionResult<{ url: string; kind: "merged" | "signed" }>> {
   const pkg = await lerPacote(packageId);
   if (!pkg) return { ok: false, error: NAO_ENCONTRADO };
-  if (!canViewSignaturePackages(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para visualizar documentos assinados." };
+  if (!(await podeNoBanco(await createClient(), "acao.assinaturas.visualizar", pkg.clinic_id))) return { ok: false, error: "Você não tem permissão para visualizar documentos assinados." };
   const kind: "merged" | "signed" = pkg.status === "signed" && pkg.signed_pdf_path ? "signed" : "merged";
   const path = kind === "signed" ? pkg.signed_pdf_path : pkg.merged_pdf_path;
   if (!path) return { ok: false, error: "O PDF deste pacote ainda não foi gerado." };
@@ -105,7 +105,7 @@ export async function abrirPdf(session: SessionContext, packageId: string): Prom
 export async function baixarAssinado(session: SessionContext, packageId: string): Promise<ActionResult<{ url: string }>> {
   const pkg = await lerPacote(packageId);
   if (!pkg) return { ok: false, error: NAO_ENCONTRADO };
-  if (!canDownloadSignatures(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para baixar documentos assinados." };
+  if (!(await podeNoBanco(await createClient(), "acao.assinaturas.baixar", pkg.clinic_id))) return { ok: false, error: "Você não tem permissão para baixar documentos assinados." };
   if (pkg.status !== "signed") return { ok: false, error: "Este pacote ainda não está assinado por todos." };
   if (!pkg.signed_pdf_path) return { ok: false, error: "O PDF assinado ainda está sendo buscado na ZapSign. Tente de novo mais tarde." };
   const url = await urlAssinada(pkg.signed_pdf_path, nomeDoArquivo(pkg.number, "pacote", "assinado"));
@@ -118,7 +118,7 @@ export async function baixarAssinado(session: SessionContext, packageId: string)
 export async function baixarCopia(session: SessionContext, packageId: string, itemId: string): Promise<ActionResult<{ url: string }>> {
   const pkg = await lerPacote(packageId);
   if (!pkg) return { ok: false, error: NAO_ENCONTRADO };
-  if (!canDownloadSignatures(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para baixar documentos." };
+  if (!(await podeNoBanco(await createClient(), "acao.assinaturas.baixar", pkg.clinic_id))) return { ok: false, error: "Você não tem permissão para baixar documentos." };
   if (!pkg.merged_pdf_path || !pkg.sent_at) return { ok: false, error: "Este pacote não tem PDF enviado." };
 
   const supabase = await createClient();
@@ -187,7 +187,7 @@ export async function carregarReenvio(
 ): Promise<ActionResult<{ number: string; signers: ResendSigner[]; zapsignEmail: boolean }>> {
   const pkg = await lerPacote(packageId);
   if (!pkg) return { ok: false, error: NAO_ENCONTRADO };
-  if (!canSendSignatures(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para reenviar documentos." };
+  if (!(await podeNoBanco(await createClient(), "acao.assinaturas.enviar", pkg.clinic_id))) return { ok: false, error: "Você não tem permissão para reenviar documentos." };
   if (pkg.status !== "sent" && pkg.status !== "partially_signed") return { ok: false, error: "Este pacote não está aguardando assinatura." };
 
   const admin = createAdminClient();
@@ -233,7 +233,7 @@ export type ResendChannel = "whatsapp_link" | "copy_link" | "sign_now";
 export async function registrarReenvio(session: SessionContext, packageId: string, signerId: string, channel: ResendChannel): Promise<ActionResult> {
   const pkg = await lerPacote(packageId);
   if (!pkg) return { ok: false, error: NAO_ENCONTRADO };
-  if (!canSendSignatures(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para reenviar documentos." };
+  if (!(await podeNoBanco(await createClient(), "acao.assinaturas.enviar", pkg.clinic_id))) return { ok: false, error: "Você não tem permissão para reenviar documentos." };
   if (!["whatsapp_link", "copy_link", "sign_now"].includes(channel)) return { ok: false, error: "Canal inválido." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("signature_mark_notified", { p_package_id: pkg.id, p_signer_ids: [signerId], p_channel: channel });
@@ -246,7 +246,7 @@ export async function registrarReenvio(session: SessionContext, packageId: strin
 export async function reenviarPorEmailZapsign(session: SessionContext, packageId: string): Promise<ActionResult> {
   const pkg = await lerPacote(packageId);
   if (!pkg) return { ok: false, error: NAO_ENCONTRADO };
-  if (!canSendSignatures(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para reenviar documentos." };
+  if (!(await podeNoBanco(await createClient(), "acao.assinaturas.enviar", pkg.clinic_id))) return { ok: false, error: "Você não tem permissão para reenviar documentos." };
   if (!pkg.zapsign_doc_token) return { ok: false, error: "Este pacote não está na ZapSign." };
   const admin = createAdminClient();
   const { data: settings } = await admin.from("signature_settings").select("zapsign_emails_enabled").eq("id", true).maybeSingle();
@@ -278,7 +278,7 @@ export async function cancelarPacote(session: SessionContext, packageId: string,
   if (motivo.length > 500) return { ok: false, error: "O motivo pode ter até 500 caracteres." };
   const pkg = await lerPacote(packageId);
   if (!pkg) return { ok: false, error: NAO_ENCONTRADO };
-  if (!canCancelSignatures(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para cancelar documentos." };
+  if (!(await podeNoBanco(await createClient(), "acao.assinaturas.cancelar", pkg.clinic_id))) return { ok: false, error: "Você não tem permissão para cancelar documentos." };
   if (pkg.status === "signed") return { ok: false, error: "Documento assinado não pode ser cancelado." };
   if (pkg.status === "cancelled") return { ok: false, error: "Este pacote já está cancelado." };
   if (!["draft", "sent", "partially_signed"].includes(pkg.status)) return { ok: false, error: "Só pacote aguardando assinatura pode ser cancelado." };
@@ -306,6 +306,13 @@ export async function cancelarPacote(session: SessionContext, packageId: string,
   const supabase = await createClient();
   const { error } = await supabase.rpc("signature_cancel_package", { p_id: pkg.id, p_reason: motivo });
   if (error) {
+    // AP158 (item 15, 0397): o aviso de "recusa" que a ZapSign manda pelo
+    // cancelamento pode chegar ANTES desta porta e já gravar o pacote como
+    // cancelado (com o motivo digitado). Isso é sucesso, não erro.
+    if (pkg.zapsign_doc_token && error.message.includes("ALREADY_CANCELLED")) {
+      await logAudit({ action: "update", entityType: "signature_package", entityId: pkg.id, clinicId: pkg.clinic_id, details: { what: "cancel" } });
+      return { ok: true, number: pkg.number };
+    }
     console.error("signature_cancel_package failed after zapsign refuse:", error.message);
     return { ok: false, error: mensagemDaPortaZs4(error.message) };
   }

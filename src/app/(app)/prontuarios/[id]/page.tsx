@@ -51,6 +51,7 @@ import {
 } from "@/lib/auth";
 import { canSendSignatures, canViewSignaturePackages } from "@/lib/signatures/access";
 import { EnviarParaAssinaturaDialog } from "@/app/(app)/assinaturas/enviar-dialog";
+import { unidadeDoEnvio } from "@/lib/signatures/unidade-do-envio";
 import { AssinaturasDoCliente } from "@/app/(app)/assinaturas/assinaturas-do-cliente";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
@@ -871,6 +872,15 @@ export default async function ClientDetailPage(
       ? activeClinicId
       : ((client as { preferred_clinic_id?: string | null })
           .preferred_clinic_id ?? client.clinic_id);
+  // AP158 (item 1): a assinatura só sai pela unidade DO paciente (a de cadastro
+  // ou a preferida) — é o que o banco aceita (`signature_create_package`).
+  // Unidade só compartilhada (agenda, E7) mostrava o botão e o banco recusava
+  // no fim, com a janela toda preenchida.
+  const signatureClinicId = unidadeDoEnvio({
+    ativa: scheduleClinicId,
+    cadastro: client.clinic_id,
+    preferida: (client as { preferred_clinic_id?: string | null }).preferred_clinic_id ?? null,
+  });
   const canScheduleFromFicha =
     client.status !== "anonymized" &&
     (hasRoleInClinic(session, scheduleClinicId, ["receptionist"]) || isSdr);
@@ -2102,8 +2112,8 @@ export default async function ClientDetailPage(
     ]);
   const canViewDocuments = canEmitDocuments || canViewClinical;
   // ZS2: assinatura digital — enviar e ver os pacotes do paciente (matriz).
-  const canSendSignature = client.status === "active" && canSendSignatures(session, scheduleClinicId);
-  const canSeeSignatures = canViewSignaturePackages(session, scheduleClinicId);
+  const canSendSignature = client.status === "active" && canSendSignatures(session, signatureClinicId);
+  const canSeeSignatures = canViewSignaturePackages(session, signatureClinicId);
   let documentItems: ClinicalDocumentItem[] = [];
   let documentTemplates: DocumentTemplate[] = [];
   if (canViewDocuments) {
@@ -2895,7 +2905,7 @@ export default async function ClientDetailPage(
                 {canSendSignature && (
                   <EnviarParaAssinaturaDialog
                     clientId={client.id}
-                    clinicId={scheduleClinicId}
+                    clinicId={signatureClinicId}
                     origin={{ type: "client", id: client.id }}
                   />
                 )}
@@ -3564,7 +3574,7 @@ export default async function ClientDetailPage(
               <div className="mb-3 flex justify-end">
                 <EnviarParaAssinaturaDialog
                   clientId={client.id}
-                  clinicId={scheduleClinicId}
+                  clinicId={signatureClinicId}
                   origin={{ type: "treatment_plan", id: plans.find((p) => p.status === "approved" && !p.complementOfPlanId)?.id ?? null }}
                   label="Enviar plano para assinatura"
                 />
@@ -3697,7 +3707,7 @@ export default async function ClientDetailPage(
               {canSeeSignatures && (
                 <AssinaturasDoCliente
                   clientId={client.id}
-                  clinicId={scheduleClinicId}
+                  clinicId={signatureClinicId}
                   canSend={canSendSignature}
                 />
               )}

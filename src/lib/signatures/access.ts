@@ -1,5 +1,4 @@
 import { pode, type SessionContext } from "@/lib/auth";
-import type { PackagePermissions } from "./actions-permitidas";
 
 /**
  * Quem pode o quê nas ASSINATURAS DIGITAIS — espelho de `signature_can` (0340).
@@ -52,12 +51,5 @@ export function canConfigureSignatures(session: SessionContext): boolean {
   return pode(session, "acao.assinaturas.configurar");
 }
 
-/** As quatro permissões que decidem as ações de um pacote (ZS4, `acoesPermitidas`). */
-export function permissoesDoPacote(session: SessionContext, clinicId: string): PackagePermissions {
-  return {
-    view: canViewSignaturePackages(session, clinicId),
-    download: canDownloadSignatures(session, clinicId),
-    send: canSendSignatures(session, clinicId),
-    cancel: canCancelSignatures(session, clinicId),
-  };
-}
+// As permissões de UM pacote (ver, baixar, reenviar, cancelar) são perguntadas
+// ao banco: `acesso-no-banco.ts` (AP158). As de cima servem ao menu e às telas.

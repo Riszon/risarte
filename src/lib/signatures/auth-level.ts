@@ -1,3 +1,4 @@
+import { telefoneValido } from "./validate";
 import type { ZapsignAuthMode } from "@/lib/zapsign/types";
 import type { AuthLevel, OrderGroup, SignatureTemplate } from "./types";
 
@@ -38,7 +39,10 @@ export function modoDeAutenticacao(input: {
   email: string | null;
 }): { auth_mode: ZapsignAuthMode; require_selfie_photo: boolean } {
   if (input.level === "strong" && input.orderGroup === 1) {
-    const temTelefone = (input.phone ?? "").replace(/\D/g, "").length >= 10;
+    // AP158 (item 6): a MESMA régua que decide se o telefone vai à ZapSign
+    // (`telefoneValido`). Antes, 10+ dígitos bastavam aqui e o telefone era
+    // recusado lá: o código ia por WhatsApp sem telefone e a ZapSign dava 400.
+    const temTelefone = telefoneValido(input.phone);
     return {
       auth_mode: temTelefone ? "assinaturaTela-tokenWhatsapp" : "assinaturaTela-tokenEmail",
       require_selfie_photo: true,

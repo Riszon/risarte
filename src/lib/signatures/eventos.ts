@@ -28,10 +28,17 @@ export const EVENT_LABEL: Record<string, string> = {
   "action:download_copy": "Cópia de documento baixada",
   "action:resend": "Link reenviado",
   "action:cancel": "Cancelado",
+  // Revisão de 11/11/2026 (AP155): falhas e rotinas que antes não apareciam.
+  lead_seal_failed: "Assinado, mas o selo do contrato do lead não foi marcado",
+  pdf_fetch_gave_up: "O PDF assinado não veio da ZapSign (a busca parou)",
+  reconcile_failed: "Falha ao conferir com a ZapSign",
+  expired_by_routine: "Vencido pela data (rotina diária)",
+  reminder: "Lembrete a quem enviou",
+  failure_notified: "Falha avisada ao Admin",
 };
 
 /** Eventos que pedem atenção (o detalhe pinta de âmbar). */
-export const EVENT_WARNING = new Set(["new_send_reason", "send_failed", "send_mark_skipped", "pending_download", "copy_failed", "closing_failed"]);
+export const EVENT_WARNING = new Set(["closing_failed", "lead_seal_failed", "pdf_fetch_gave_up", "reconcile_failed", "new_send_reason", "send_failed", "send_mark_skipped", "pending_download", "copy_failed"]);
 
 export const RESEND_CHANNEL_LABEL: Record<string, string> = {
   whatsapp_link: "WhatsApp",

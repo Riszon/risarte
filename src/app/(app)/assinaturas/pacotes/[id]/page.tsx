@@ -9,7 +9,8 @@ import { AtualizaAoVivo } from "@/components/assinaturas/atualiza-ao-vivo";
 import { getSessionContext } from "@/lib/auth";
 import { formatBrDate, formatBrDateTime } from "@/lib/dates";
 import { formatBRL } from "@/lib/pricing";
-import { canViewSignatures, permissoesDoPacote } from "@/lib/signatures/access";
+import { canViewSignatures } from "@/lib/signatures/access";
+import { permissoesNoBanco } from "@/lib/signatures/acesso-no-banco";
 import { acoesPermitidas } from "@/lib/signatures/actions-permitidas";
 import { EVENT_WARNING, rotuloDoEvento } from "@/lib/signatures/eventos";
 import { qualificacaoDoTipo } from "@/lib/signatures/qualificacao";
@@ -114,7 +115,8 @@ export default async function PacotePage({ params }: { params: Promise<{ id: str
       zapsignEmailsEnabled: !!settings?.zapsign_emails_enabled,
       resentAs: resentAs?.number ?? null,
     },
-    permissoesDoPacote(session, pkg.clinic_id)
+    // AP158 (item 2): a tela segue o banco (inclui a Franqueadora com escopo).
+    await permissoesNoBanco(supabase, pkg.clinic_id)
   );
 
   const clientName = pkg.cover_data?.client_name ?? "Cliente";

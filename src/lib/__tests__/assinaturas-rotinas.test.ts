@@ -121,6 +121,8 @@ describe("réguas das rotinas (ZS6)", () => {
     expect(ler("src/app/api/cron/signatures-hourly/route.ts")).toMatch(/if \(!isCronRequestAuthorized\(request\)\) \{\s*return new Response\(null, \{ status: 401 \}\);/);
     const rotina = ler("src/lib/signatures/rotina-horaria.ts");
     expect(rotina).toContain('if (stats.zapsign === "ligada") {');
-    expect(rotina).toContain("const MAX_TENTATIVAS = 3;");
+    // AP153: o limite de tentativas do e-mail mora na fila (fila-de-email.ts).
+    expect(ler("src/lib/signatures/fila-de-email.ts")).toContain("export const MAX_TENTATIVAS = 3;");
+    expect(rotina).toContain("mandarLinha(admin, m)");
   });
 });
