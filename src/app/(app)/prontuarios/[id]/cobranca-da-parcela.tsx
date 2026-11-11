@@ -24,6 +24,7 @@ import {
   SITUACOES_ATIVAS,
   meioInicial,
   mensagemDaCobrancaNoWhatsApp,
+  motivoSemCobranca,
   type MeioDaCobranca,
   type SituacaoDaCobranca,
 } from "@/lib/cobrancas";
@@ -88,6 +89,7 @@ export function CobrancaDaParcela({
   cobrancas,
   dispensas,
   today,
+  unidadePronta,
   permissoes,
   onAbrirBaixa,
 }: {
@@ -96,6 +98,8 @@ export function CobrancaDaParcela({
   cobrancas: ChargeRow[];
   dispensas: WaiverRow[];
   today: string;
+  /** A unidade da parcela está pronta para cobrar; `null` = banco sem a 4004. */
+  unidadePronta: boolean | null;
   permissoes: PermissoesDaCobranca;
   onAbrirBaixa: () => void;
 }) {
@@ -109,8 +113,21 @@ export function CobrancaDaParcela({
 
   const ativa = cobrancas.find((c) => SITUACOES_ATIVAS.has(c.status as SituacaoDaCobranca)) ?? null;
   const anteriores = cobrancas.filter((c) => c !== ativa).length;
+  // Sem cobrança ativa: ou o botão aparece, ou a tela diz por quê.
+  const motivo_ = ativa
+    ? null
+    : motivoSemCobranca({
+        status: parcela.status,
+        paymentMethod: parcela.paymentMethod,
+        graceDays: parcela.terms.graceDays,
+        unidadePronta,
+        podeEmitir: permissoes.emitir,
+      });
   const podeTerCobranca =
-    parcela.isOpen && !METODOS_SEM_COBRANCA_NA_ASA1.has(parcela.paymentMethod ?? "") && parcela.terms.graceDays === 0;
+    parcela.isOpen &&
+    !METODOS_SEM_COBRANCA_NA_ASA1.has(parcela.paymentMethod ?? "") &&
+    parcela.terms.graceDays === 0 &&
+    unidadePronta === true;
 
   function aposAcao(r: { ok: boolean; error?: string }, sucesso: string) {
     if (r.ok) {
@@ -283,6 +300,13 @@ export function CobrancaDaParcela({
           )}
           {anteriores > 0 && <span className="text-muted-foreground">{anteriores} cobrança(s) anterior(es) cancelada(s)</span>}
         </div>
+      )}
+
+      {permissoes.ver && !ativa && motivo_ && (
+        <p className="text-muted-foreground">
+          <span className="font-medium">Cobrança pelo Asaas:</span> {motivo_}
+          {anteriores > 0 && ` (${anteriores} cobrança(s) anterior(es) cancelada(s))`}
+        </p>
       )}
 
       {emitindo && (

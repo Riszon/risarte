@@ -60,6 +60,12 @@ export type ReceivablesData = {
   charges: ChargeRow[];
   /** 4004 — as dispensas da quitação por valor menor. */
   waivers: WaiverRow[];
+  /**
+   * 4004 — a unidade de cada parcela está pronta para cobrar pelo Asaas?
+   * Vazio quando o banco ainda não tem a 4004 (`cobrancaDisponivel` falso).
+   */
+  unidadesProntas: Record<string, boolean>;
+  cobrancaDisponivel: boolean;
 };
 
 /** 4004 — uma cobrança do Asaas (sem CPF: o pagador vai só pelo nome). */
@@ -281,11 +287,20 @@ export async function loadClientReceivables(
       boletoIssuableIds,
       charges: [],
       waivers: [],
+      unidadesProntas: {},
+      cobrancaDisponivel: false,
     };
   }
 
   const ids = installments.map((i) => i.id);
-  const { charges, waivers } = await loadChargesAndWaivers(supabase, clientId, ids);
+  const { charges, waivers, disponivel: cobrancaDisponivel } = await loadChargesAndWaivers(supabase, clientId, ids);
+  const unidadesProntas: Record<string, boolean> = {};
+  if (cobrancaDisponivel) {
+    for (const cid of new Set(installments.map((i) => i.clinicId).filter((x): x is string => !!x))) {
+      const { data: pronta } = await supabase.rpc("central_is_ready", { p_clinic_id: cid });
+      unidadesProntas[cid] = pronta === true;
+    }
+  }
   const waivedPrincipal = new Map<string, number>();
   for (const w of waivers) {
     waivedPrincipal.set(w.installmentId, (waivedPrincipal.get(w.installmentId) ?? 0) + w.principalCents);
@@ -366,6 +381,8 @@ export async function loadClientReceivables(
     boletoIssuableIds,
     charges,
     waivers,
+    unidadesProntas,
+    cobrancaDisponivel,
   };
 }
 
@@ -377,7 +394,7 @@ async function loadChargesAndWaivers(
   supabase: Awaited<ReturnType<typeof createClient>>,
   clientId: string,
   installmentIds: string[]
-): Promise<{ charges: ChargeRow[]; waivers: WaiverRow[] }> {
+): Promise<{ charges: ChargeRow[]; waivers: WaiverRow[]; disponivel: boolean }> {
   const { data: cRows, error: cErr } = await supabase
     .from("charges")
     .select(
@@ -411,7 +428,7 @@ async function loadChargesAndWaivers(
         profiles: { full_name: string } | null;
       }[]
     >();
-  if (cErr) return { charges: [], waivers: [] };
+  if (cErr) return { charges: [], waivers: [], disponivel: false };
 
   // O nome e o telefone de quem paga (para o WhatsApp): o cliente ou o responsável.
   const { data: cli } = await supabase
@@ -494,7 +511,7 @@ async function loadChargesAndWaivers(
     byName: w.profiles?.full_name ?? null,
     createdAt: w.created_at,
   }));
-  return { charges, waivers };
+  return { charges, waivers, disponivel: true };
 }
 
 /**

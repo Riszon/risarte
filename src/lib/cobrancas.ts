@@ -109,3 +109,30 @@ export function mensagemDaCobrancaNoWhatsApp(args: {
     "Pelo link você escolhe a forma de pagamento indicada. Qualquer dúvida, estamos à disposição.",
   ].join("\n");
 }
+
+/**
+ * Por que a parcela NÃO oferece "Gerar cobrança" (a tela diz em vez de calar).
+ * `null` = o botão aparece; os motivos que dependem da venda e do pagador
+ * (contrato, CPF, responsável) aparecem na prévia, ao clicar.
+ */
+export function motivoSemCobranca(p: {
+  status: string;
+  paymentMethod: string | null;
+  graceDays: number;
+  unidadePronta: boolean | null;
+  podeEmitir: boolean;
+}): string | null {
+  if (p.status === "paga") return "Parcela paga: não há o que cobrar.";
+  if (p.status === "cancelada") return "Parcela cancelada: não há o que cobrar.";
+  if (p.status === "renegociada") return "Parcela renegociada: a cobrança é das parcelas da renegociação.";
+  if (METODOS_SEM_COBRANCA_NA_ASA1.has(p.paymentMethod ?? "")) {
+    return "Cartão parcelado, crédito recorrente e depósito à vista ainda não são cobrados pelo Asaas.";
+  }
+  if (p.graceDays > 0) return "Parcela com carência não é cobrada pelo Asaas.";
+  if (p.unidadePronta === null) return "As cobranças pelo Asaas ainda não existem neste banco (falta a migração 4004).";
+  if (!p.unidadePronta) {
+    return "A unidade ainda não está pronta para cobrar pelo Asaas (Central de Configuração › Conta e tarifas).";
+  }
+  if (!p.podeEmitir) return "Você vê as cobranças, mas a sua permissão não inclui gerar (Cobranças: emitir).";
+  return null;
+}

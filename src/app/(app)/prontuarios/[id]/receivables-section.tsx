@@ -126,6 +126,7 @@ export function ReceivablesSection({
   clinicIdPadrao,
   charges = [],
   waivers = [],
+  unidadesProntas = null,
   cobranca = { ver: false, emitir: false, cancelar: false, receber: false },
   canWaive = false,
 }: {
@@ -152,6 +153,8 @@ export function ReceivablesSection({
   /** 4004 — as cobranças do Asaas e as dispensas (quitação por valor menor). */
   charges?: ChargeRow[];
   waivers?: WaiverRow[];
+  /** 4004 — unidade pronta para cobrar, por unidade; `null` = banco sem a 4004. */
+  unidadesProntas?: Record<string, boolean> | null;
   /** 4004 — o que esta pessoa faz com a cobrança (a tela; o banco decide de novo). */
   cobranca?: PermissoesDaCobranca;
   /** 4004 — Gerente da unidade / Admin Master: quitar por valor menor. */
@@ -793,6 +796,9 @@ export function ReceivablesSection({
                   cobrancas={charges.filter((c) => c.installmentId === v.id)}
                   dispensas={waivers.filter((w) => w.installmentId === v.id)}
                   today={today}
+                  unidadePronta={
+                    unidadesProntas === null ? null : (unidadesProntas[v.clinicId ?? clinicIdPadrao] ?? false)
+                  }
                   permissoes={cobranca}
                   onAbrirBaixa={() => openPayment(v.id)}
                 />

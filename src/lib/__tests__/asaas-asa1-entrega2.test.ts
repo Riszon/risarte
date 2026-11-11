@@ -21,13 +21,112 @@ import {
   mensagemDaCobranca,
   mensagemDaCobrancaNoWhatsApp,
   METODOS_SEM_COBRANCA_NA_ASA1,
+  motivoSemCobranca,
   SITUACOES_ATIVAS,
 } from "@/lib/cobrancas";
+import { emitirComOAsaas, type BancoDaEmissao, type CobrancaDoBanco } from "@/lib/asaas/cobranca";
 import { viewInstallment, type Installment } from "@/lib/finance/receivables";
 import { CAPACIDADES, matrizPadrao } from "@/lib/permissions";
 
 const TESTE = "$aact_hmlg_" + "x".repeat(40);
 const cred = { apiKey: TESTE, environment: "sandbox" as const };
+
+// ---- o tempo esgotado na emissão, de ponta a ponta (sem banco) --------------------
+function cobrancaDeTeste(id: string): CobrancaDoBanco {
+  return {
+    charge_id: id,
+    status: "emitindo",
+    clinic_id: "c",
+    gateway_account_id: "a",
+    billing_type: "PIX",
+    value_cents: 1050,
+    discount_cents: 50,
+    fine_percent: 2,
+    interest_percent: 1,
+    due_date: "2026-11-20",
+    description: "Parcela 1",
+    asaas_payment_id: null,
+    payer_kind: "guardian",
+    payer_guardian_id: "g",
+    client_id: "k",
+    payer_name: "Mãe",
+    payer_cpf: "12345678909",
+    asaas_customer_id: null,
+  };
+}
+function bancoDeTeste() {
+  const gravado: { erro: string | null; emissao: string | null } = { erro: null, emissao: null };
+  const banco: BancoDaEmissao = {
+    salvarPagador: async () => "local-1",
+    gravarErro: async (code) => {
+      gravado.erro = code;
+    },
+    gravarEmissao: async (r) => {
+      gravado.emissao = r.asaasPaymentId;
+      return null;
+    },
+  };
+  return { banco, gravado };
+}
+/** O Asaas de mentira que, no POST da cobrança, CRIA (ou não) e não responde a tempo. */
+function asaasQueNaoResponde(criaAntesDeTravar: boolean) {
+  const posts: string[] = [];
+  const f = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if ((init?.method ?? "GET") === "POST" && /\/payments$/.test(new URL(url).pathname)) {
+      posts.push(url);
+      if (criaAntesDeTravar) await fakeAsaasFetch(input, init);
+      await new Promise((_, rej) => init?.signal?.addEventListener("abort", () => rej(new Error("abort"))));
+    }
+    return fakeAsaasFetch(input, init);
+  }) as typeof fetch;
+  return { f, posts };
+}
+
+describe("tempo esgotado ao emitir: consulta pela referência, nunca repete", () => {
+  it("o Asaas criou e não respondeu: o riSZon acha pela referência e grava, sem duplicar", async () => {
+    limparAsaasDeMentira();
+    const { f, posts } = asaasQueNaoResponde(true);
+    const { banco, gravado } = bancoDeTeste();
+    const r = await emitirComOAsaas(cobrancaDeTeste("ref-lento-1"), cred, { fetchImpl: f, timeoutMs: 20, sleep: async () => {} }, banco);
+    expect(r).toEqual({ ok: true });
+    expect(posts.length).toBe(1);
+    expect(gravado.emissao).toMatch(/^pay_fake/);
+    expect(await findPaymentsByReference(cred, "ref-lento-1", { fetchImpl: fakeAsaasFetch })).toHaveLength(1);
+  });
+
+  it("o Asaas NÃO criou e não respondeu: fica 'erro de emissão' sem repetir; o 'Tentar de novo' consulta antes e cria uma só", async () => {
+    limparAsaasDeMentira();
+    const lento = asaasQueNaoResponde(false);
+    const t1 = bancoDeTeste();
+    const r1 = await emitirComOAsaas(cobrancaDeTeste("ref-lento-2"), cred, { fetchImpl: lento.f, timeoutMs: 20, sleep: async () => {} }, t1.banco);
+    expect(r1.ok).toBe(false);
+    expect(lento.posts.length).toBe(1);
+    expect(t1.gravado.erro).toBe("unknown_outcome");
+    // Tentar de novo, com o Asaas respondendo.
+    const t2 = bancoDeTeste();
+    expect(await emitirComOAsaas(cobrancaDeTeste("ref-lento-2"), cred, { fetchImpl: fakeAsaasFetch }, t2.banco)).toEqual({ ok: true });
+    // E mais uma vez (como se a gravação tivesse falhado): acha a que existe.
+    const t3 = bancoDeTeste();
+    expect(await emitirComOAsaas(cobrancaDeTeste("ref-lento-2"), cred, { fetchImpl: fakeAsaasFetch }, t3.banco)).toEqual({ ok: true });
+    expect(t3.gravado.emissao).toBe(t2.gravado.emissao);
+    expect(await findPaymentsByReference(cred, "ref-lento-2", { fetchImpl: fakeAsaasFetch })).toHaveLength(1);
+  });
+});
+
+describe("a tela diz por que não há o botão", () => {
+  const base = { status: "em_aberto", paymentMethod: "pix", graceDays: 0, unidadePronta: true, podeEmitir: true };
+  it("botão aparece quando tudo está certo", () => {
+    expect(motivoSemCobranca(base)).toBeNull();
+  });
+  it("cada motivo tem frase", () => {
+    expect(motivoSemCobranca({ ...base, status: "paga" })).toMatch(/paga/);
+    expect(motivoSemCobranca({ ...base, paymentMethod: "cartao_parcelado" })).toMatch(/parcelado/);
+    expect(motivoSemCobranca({ ...base, unidadePronta: false })).toMatch(/não está pronta/);
+    expect(motivoSemCobranca({ ...base, unidadePronta: null })).toMatch(/4004/);
+    expect(motivoSemCobranca({ ...base, podeEmitir: false })).toMatch(/permissão/);
+  });
+});
 const ler = (p: string) => readFileSync(p, "utf8").replace(/\r\n/g, "\n");
 
 function resposta(status: number, body: unknown) {

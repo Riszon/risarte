@@ -18,7 +18,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 |---|---|---|
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
-| **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | 🟡 **pronta, esperando a aprovação do dono** (core 0.430.0, Asaas 0.3.0); 4004 no treino; ensaio 75/75; prova real no sandbox passou; **falta a produção** (o dono roda a 4004) | **4004** |
+| **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | 🟡 **pronta, esperando a aprovação do dono** (core 0.430.0, Asaas 0.3.0); 4004 no treino; ensaio 91/91; prova real no sandbox passou; **falta a produção** (o dono roda a 4004) | **4004** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -72,7 +72,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 
 ### Provas
 
-- Ensaio no treino em transação desfeita **75/75**
+- Ensaio no treino em transação desfeita **91/91**
   (`scripts/asaas-ensaio-asa1-entrega2.mjs --confirmar`), provado quebrando
   (sem a trava da baixa e sem congelar os juros na dispensa: 2 falhas).
 - Prova real no sandbox (`npm run test:asaas`): cobrança Pix em nome da mãe
@@ -82,7 +82,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   atualizado e sem multa nova. Dados de TESTE ficaram no treino ("Teste
   Asaas ASA1 Paciente"); Londrina (sandbox) ficou com termo, split declarado e
   marcada como pronta.
-- Régua `asaas-asa1-entrega2.test.ts` (16): o corpo enviado ao Asaas, o tempo
+- Régua `asaas-asa1-entrega2.test.ts` (20; inclui o tempo esgotado na emissão, de ponta a ponta com o Asaas de mentira): o corpo enviado ao Asaas, o tempo
   esgotado que não repete, o Asaas de mentira, as mensagens de todos os códigos
   do banco, nenhuma tela com campo de cartão, criar/cancelar só de `cobranca.ts`.
 - Telas no servidor local: a ficha com a cobrança paga pela mãe, Link/Pix/

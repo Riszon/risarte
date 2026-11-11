@@ -6117,6 +6117,22 @@ some. Para mudar, cancele a cobrança antes.
 **A baixa do pagamento pelo Asaas** ainda é manual nesta etapa: a baixa
 automática vem na próxima (ASA2).
 
+**A baixa manual (Registrar recebimento), desde a 0.430.0:**
+
+- **O valor já vem calculado:** parcela + benefício perdido + multa + juros na
+  data do recebimento. Quem recebe só muda se o paciente pagou menos.
+- **Valor menor é baixa parcial**, para todos que dão baixa (Recepcionista,
+  Gerente, Financeiro da Franqueadora, Admin Master): o saldo continua em
+  aberto, a multa e os juros continuam sobre o valor cheio, e o saldo pode
+  ganhar uma cobrança nova no Asaas. A Recepcionista não dá desconto nem
+  dispensa multa e juros — isso continua igual a antes.
+- **Valor maior que o devido** é recusado, como antes.
+- **Com cobrança do Asaas ativa, o Dar baixa some:** use **Recebeu no balcão**
+  (cancela a cobrança e abre a baixa). Cobrança marcada como feita fora do
+  riSZon continua com baixa manual.
+- A **taxa da rede** é calculada sobre o valor que entrou em cada baixa, uma
+  vez só.
+
 **Quitação por valor menor** *(Gerente da unidade e Admin Master)*: no
 **Registrar recebimento**, digite o valor que o paciente pagou e marque
 **Quitar a parcela por este valor**; o motivo é obrigatório. A parcela fica

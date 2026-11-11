@@ -12,8 +12,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > trava a parcela e a baixa manual ("Recebeu no balcão" cancela no Asaas e abre
 > a baixa); cobrança externa (D17). **Quitação por valor menor** (Gerente e
 > Admin, com motivo; `payment_waivers`; principal dispensado em 1.9.02). As
-> permissões `acao.cobranca.*` nascem só com o Admin. Ensaio 75/75; prova real
-> no sandbox (paga pelo sandbox no CPF da mãe); régua 16; telas conferidas no
+> permissões `acao.cobranca.*` nascem só com o Admin. Ensaio 91/91; prova real
+> no sandbox (paga pelo sandbox no CPF da mãe); régua 20; telas conferidas no
 > servidor local. ⚠️ Achado do núcleo: fechar venda direta falha desde a 0373.
 > 🟡 4004 só no treino; esperando a aprovação do dono.
 >

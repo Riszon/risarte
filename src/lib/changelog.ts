@@ -83,6 +83,13 @@ export const CHANGELOG: Versao[] = [
         manual: "13g. A Central de Configuração",
       },
       {
+        tipo: "aviso",
+        texto:
+          "Dar baixa continua igual: o valor já vem calculado com multa e juros, e receber menos vira baixa parcial (o saldo fica em aberto). Só o Gerente e o Admin podem quitar por um valor menor. Quando a parcela tiver cobrança ativa no Asaas, use “Recebeu no balcão”.",
+        papeis: ["receptionist", "unit_manager", "finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+      {
         tipo: "novidade",
         texto:
           "Na Central de Configuração, aba Financeiro da rede: o limite de dias para a nova cobrança de uma parcela vencida (padrão 7).",

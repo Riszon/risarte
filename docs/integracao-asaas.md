@@ -623,3 +623,23 @@ A regra da parcela vencida (14.3) e a quitação por valor menor (14.5) foram ap
   - **Gerente de Unidade:** ver, emitir e cancelar na própria unidade;
   - **Recepcionista:** ver e emitir na própria unidade;
   - **Assistente Comercial e Consultor Comercial:** ver e enviar o link dos clientes deles.
+
+## 15. Registrado para a ASA4 (11/11/2026)
+
+Pedido do Jeferson ao aprovar a entrega 2 da ASA1. Vale quando a ASA4 for planejada.
+
+### 15.1 O Consultor Comercial não gera nem cancela cobrança
+
+A geração é **automática na assinatura do contrato no ZapSign**. O consultor não tem botão de gerar nem de cancelar cobrança.
+
+### 15.2 O cockpit do Consultor Comercial
+
+Mostra as cobranças das vendas dele, com a situação de cada uma e os botões **Copiar link**, **Enviar pelo WhatsApp**, **Copiar Pix** e a **linha digitável**. Mostra também quando o pagamento da primeira cobrança foi confirmado e a venda fechou (D21).
+
+### 15.3 O fluxo depois da assinatura, por meio de pagamento
+
+- **Boleto:** a primeira cobrança é enviada automaticamente ao pagador; as seguintes são lembradas antes do vencimento, pela régua.
+- **Pix:** o cockpit mostra o QR Code da primeira cobrança para pagamento na hora, e o mesmo Pix vai por link; as seguintes vão por link antes do vencimento. No Pix Automático (ASA4B), o pagador autoriza uma vez.
+- **Cartão:** o pagador recebe o link da fatura do Asaas e digita o cartão lá. No parcelado, um único pagamento cobre o tratamento; no recorrente (ASA4B), a cobrança é mensal e automática.
+- **Contrato com muitas parcelas:** o pagador não recebe todas de uma vez. Recebe só a primeira na assinatura e cada uma das seguintes perto do vencimento.
+- **O envio automático usa a régua do Asaas**, ligada na ASA2. A aba Cobrança e comunicação da Central mostra o custo de cada canal.

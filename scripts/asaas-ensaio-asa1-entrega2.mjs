@@ -104,6 +104,10 @@ try {
   await c.query("select public.gateway_register_term($1, current_date, 'Ensaio Franqueado', null)", [conta]);
   await c.query("select public.gateway_declare_split_enabled($1, true)", [conta]);
   await c.query("select public.central_mark_ready($1, true)", [unidade]);
+  // Uma taxa da rede de 5% (no treino elas estão em zero), para medir a conta a pagar.
+  await comoServidor();
+  await c.query("update public.network_fees set percent = 5, active = true where fee = 'fundo' and clinic_id is null");
+  await c.query("update public.network_fee_types set active = true where key = 'fundo'");
   await comoServidor();
   const faltando = (await c.query("select item from public._central_readiness_raw($1) where not ok", [unidade])).rows;
   conf("a unidade do ensaio fica com todos os itens de prontidão", faltando.length === 0);
@@ -128,6 +132,7 @@ try {
   // A venda nasce fechada SEM os gatilhos (o fechamento de venda direta pelo
   // gatilho da 0373 está quebrado no núcleo; não é o que este ensaio mede).
   const venda = async (cli, assinado) => {
+    await comoServidor();
     await c.query("set local session_replication_role = replica");
     const id = (await um(
       "insert into public.direct_sales (clinic_id, client_id, client_name, description, value_cents, contract_signed, closed_at) values ($1, $2, 'Ensaio', 'Ensaio cobrança', 100000, $3, case when $3 then now() end) returning id",
@@ -364,6 +369,58 @@ try {
   await c.query("select public.register_payment_with_waiver($1, 10000, current_date, 'pix', null, null, 'pagou tudo', null, null)", [cheia]);
   await comoServidor();
   conf("pagou tudo: não há dispensa", (await um("select count(*)::int n from public.payment_waivers where installment_id = $1", [cheia])).n === 0);
+
+  // ---- 10b) pagamento PARCIAL pela recepção e nova cobrança do saldo ---------------------------
+  const parcialEmDia = await parcela(adulto, { venc: await dia(10), metodo: "pix" });
+  await como(recepcao);
+  e = await recusa("select public.register_payment_receipt($1, 3000, current_date, 'dinheiro', null, null, null)", [parcialEmDia]);
+  conf("Recepcionista recebe valor menor (baixa parcial)", e === null);
+  await comoServidor();
+  conf("a parcela fica parcial (o saldo continua em aberto)",
+    (await um("select status from public.payment_installments where id = $1", [parcialEmDia])).status === "parcial");
+  conf("a parcial da recepção não gera dispensa",
+    (await um("select count(*)::int n from public.payment_waivers where installment_id = $1", [parcialEmDia])).n === 0);
+  await como(recepcao);
+  p = await previa(parcialEmDia, "PIX");
+  conf("o saldo da parcial ganha nova cobrança (em dia: o que falta)", p.error_code === null && Number(p.value_cents) === 7000);
+  e = await recusa("select public.charge_prepare($1, 'PIX', null)", [parcialEmDia]);
+  conf("a recepção emite a cobrança do saldo", e === null);
+
+  const parcialVencida = await parcela(adulto, { venc: await dia(-15), metodo: "pix" });
+  await como(recepcao);
+  await c.query("select public.register_payment_receipt($1, 2000, current_date, 'dinheiro', null, null, null)", [parcialVencida]);
+  const sPv = await saldo(parcialVencida, await dia(2));
+  await como(recepcao);
+  p = await previa(parcialVencida, "PIX", await dia(2));
+  conf("o saldo da parcial VENCIDA ganha nova cobrança (atualizado até a nova data)",
+    p.error_code === null && Number(p.value_cents) === Number(sPv.total_rem));
+
+  // ---- 10c) a taxa da franqueadora sobre o que ENTROU, uma vez por baixa ------------------------
+  await comoServidor();
+  const taxas = async (inst) =>
+    (await c.query(
+      `select s.receipt_id, s.fee, s.base_cents, r.amount_cents
+         from public.split_charges s join public.payment_receipts r on r.id = s.receipt_id
+        where r.installment_id = $1 and s.source_type = 'receipt'`,
+      [inst]
+    )).rows;
+  const tiposDeTaxa = (await um(
+    "select count(*)::int n from public.network_fee_types where kind = 'percent' and active"
+  )).n;
+  const confereTaxa = (nome, linhas, recebidas) => {
+    const porBaixa = new Map();
+    for (const l of linhas) porBaixa.set(l.receipt_id + l.fee, (porBaixa.get(l.receipt_id + l.fee) ?? 0) + 1);
+    conf(`${nome}: a taxa usa o valor recebido`, linhas.every((l) => Number(l.base_cents) === Number(l.amount_cents)));
+    conf(`${nome}: uma taxa por tipo e por baixa (sem duplicar)`, [...porBaixa.values()].every((n) => n === 1));
+    if (tiposDeTaxa > 0) conf(`${nome}: a taxa foi lançada`, new Set(linhas.map((l) => l.receipt_id)).size === recebidas);
+  };
+  confereTaxa("recebeu no balcão", await taxas(emDia), 1);
+  confereTaxa("baixa parcial", await taxas(parcialEmDia), 1);
+  const tq = await taxas(devendo);
+  confereTaxa("quitação por valor menor", tq, 1);
+  conf("quitação por valor menor: a taxa é sobre o pago, não sobre o devido",
+    tq.every((l) => Number(l.base_cents) === pago));
+  if (tiposDeTaxa === 0) console.log("    (aviso: o treino não tem taxa percentual ativa; só a regra da base foi conferida)");
 
   // ---- 11) quem lê ------------------------------------------------------------------------------
   await como(recepcao);

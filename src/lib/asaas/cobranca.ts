@@ -31,7 +31,7 @@ import { AsaasError, mensagemDoAsaas, type AsaasRequestOptions } from "./client"
  *   5. grava a resposta (`_charge_mark_issued`) ou o erro (`_charge_mark_error`).
  */
 
-type CobrancaDoBanco = {
+export type CobrancaDoBanco = {
   charge_id: string;
   status: string;
   clinic_id: string;
@@ -77,9 +77,9 @@ async function marcarErro(chargeId: string, code: string) {
 async function pagadorNoAsaas(
   c: CobrancaDoBanco,
   cred: AsaasCredential,
-  opts: AsaasRequestOptions
+  opts: AsaasRequestOptions,
+  banco: BancoDaEmissao
 ): Promise<{ asaasId: string; localId: string }> {
-  const admin = createAdminClient();
   let asaasId = c.asaas_customer_id;
   if (!asaasId) {
     const achado = await findCustomerByCpfCnpj(cred, c.payer_cpf, opts);
@@ -90,16 +90,53 @@ async function pagadorNoAsaas(
     asaasId = novo?.id ?? null;
   }
   if (!asaasId) throw new AsaasError({ code: "invalid_response", messagePt: "O Asaas não devolveu o pagador.", logMessage: "customer without id" });
-  const { data, error } = await admin.rpc("_gateway_customer_save", {
-    p_account_id: c.gateway_account_id,
-    p_cpf_cnpj: c.payer_cpf,
-    p_asaas_customer_id: asaasId,
-    p_owner_kind: c.payer_kind,
-    p_client_id: c.client_id,
-    p_guardian_id: c.payer_guardian_id,
-  });
-  if (error) throw new Error(`gateway customer save failed: ${error.message}`);
-  return { asaasId, localId: data as string };
+  return { asaasId, localId: await banco.salvarPagador(c, asaasId) };
+}
+
+/** O que a emissão grava no banco (separado para o teste do tempo esgotado). */
+export type BancoDaEmissao = {
+  salvarPagador: (c: CobrancaDoBanco, asaasCustomerId: string) => Promise<string>;
+  gravarErro: (code: string) => Promise<void>;
+  /** Devolve a mensagem de erro, ou nulo se gravou. */
+  gravarEmissao: (r: {
+    asaasPaymentId: string;
+    gatewayCustomerId: string | null;
+    invoiceUrl: string | null;
+    bankSlipUrl: string | null;
+    pixCopyPaste: string | null;
+    identificationField: string | null;
+  }) => Promise<string | null>;
+};
+
+function bancoDe(chargeId: string): BancoDaEmissao {
+  const admin = createAdminClient();
+  return {
+    salvarPagador: async (c, asaasId) => {
+      const { data, error } = await admin.rpc("_gateway_customer_save", {
+        p_account_id: c.gateway_account_id,
+        p_cpf_cnpj: c.payer_cpf,
+        p_asaas_customer_id: asaasId,
+        p_owner_kind: c.payer_kind,
+        p_client_id: c.client_id,
+        p_guardian_id: c.payer_guardian_id,
+      });
+      if (error) throw new Error(`gateway customer save failed: ${error.message}`);
+      return data as string;
+    },
+    gravarErro: (code) => marcarErro(chargeId, code),
+    gravarEmissao: async (r) => {
+      const { error } = await admin.rpc("_charge_mark_issued", {
+        p_charge_id: chargeId,
+        p_asaas_payment_id: r.asaasPaymentId,
+        p_gateway_customer_id: r.gatewayCustomerId,
+        p_invoice_url: r.invoiceUrl,
+        p_bank_slip_url: r.bankSlipUrl,
+        p_pix_copy_paste: r.pixCopyPaste,
+        p_identification_field: r.identificationField,
+      });
+      return error ? error.message : null;
+    },
+  };
 }
 
 /** Emite no Asaas a cobrança que o banco deixou "emitindo". */
@@ -119,7 +156,19 @@ export async function emitirNoAsaas(chargeId: string, actorId: string | null): P
     return { ok: false, error: "Não foi possível ler a chave da conta Asaas da unidade. Avise o Admin Master." };
   }
   const opts = opcoesDaConta(c.gateway_account_id, purpose);
+  return emitirComOAsaas(c, cred, opts, bancoDe(chargeId));
+}
 
+/**
+ * O miolo da emissão, sem ler a chave: consulta pela referência, pagador,
+ * cobrança (com a nova consulta se o POST esgotar o tempo), Pix/linha e grava.
+ */
+export async function emitirComOAsaas(
+  c: CobrancaDoBanco,
+  cred: AsaasCredential,
+  opts: AsaasRequestOptions,
+  banco: BancoDaEmissao
+): Promise<ResultadoDaEmissao> {
   let pagador: { asaasId: string; localId: string } | null = null;
   let pagamento: AsaasPayment | null = null;
   try {
@@ -127,7 +176,7 @@ export async function emitirNoAsaas(chargeId: string, actorId: string | null): P
     [pagamento] = await findPaymentsByReference(cred, c.charge_id, opts);
     if (!pagamento) {
       // 2) O pagador.
-      pagador = await pagadorNoAsaas(c, cred, opts);
+      pagador = await pagadorNoAsaas(c, cred, opts, banco);
       // 3) A cobrança.
       try {
         pagamento = await createPayment(
@@ -158,12 +207,12 @@ export async function emitirNoAsaas(chargeId: string, actorId: string | null): P
   } catch (e) {
     const code = e instanceof AsaasError ? e.code : "unexpected";
     if (!(e instanceof AsaasError)) console.error("charge emit failed:", e instanceof Error ? e.message : e);
-    await marcarErro(chargeId, code);
+    await banco.gravarErro(code);
     return { ok: false, error: mensagemDoAsaas(e) };
   }
 
   if (!pagamento?.id) {
-    await marcarErro(chargeId, "invalid_response");
+    await banco.gravarErro("invalid_response");
     return { ok: false, error: "O Asaas não devolveu a cobrança." };
   }
 
@@ -178,18 +227,16 @@ export async function emitirNoAsaas(chargeId: string, actorId: string | null): P
   }
 
   // 5) Grava.
-  const admin = createAdminClient();
-  const { error } = await admin.rpc("_charge_mark_issued", {
-    p_charge_id: chargeId,
-    p_asaas_payment_id: pagamento.id,
-    p_gateway_customer_id: pagador?.localId ?? null,
-    p_invoice_url: pagamento.invoiceUrl ?? null,
-    p_bank_slip_url: pagamento.bankSlipUrl ?? null,
-    p_pix_copy_paste: pix,
-    p_identification_field: linha,
+  const error = await banco.gravarEmissao({
+    asaasPaymentId: pagamento.id,
+    gatewayCustomerId: pagador?.localId ?? null,
+    invoiceUrl: pagamento.invoiceUrl ?? null,
+    bankSlipUrl: pagamento.bankSlipUrl ?? null,
+    pixCopyPaste: pix,
+    identificationField: linha,
   });
   if (error) {
-    console.error("charge mark issued failed:", error.message);
+    console.error("charge mark issued failed:", error);
     return { ok: false, error: "A cobrança foi criada no Asaas, mas não foi gravada no riSZon. Use “Tentar de novo”: nada será duplicado." };
   }
   return { ok: true };

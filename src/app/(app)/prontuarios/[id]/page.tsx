@@ -604,6 +604,8 @@ export default async function ClientDetailPage(
         boletoIssuableIds: [] as string[],
         charges: [],
         waivers: [],
+        unidadesProntas: {} as Record<string, boolean>,
+        cobrancaDisponivel: false,
       };
   const financeToday = todayInBrazil();
   // AP51: as contas da unidade de cada cobrança, para o "Entrou em" da baixa.
@@ -3762,6 +3764,7 @@ export default async function ClientDetailPage(
               contas={contasDoDinheiro}
               clinicIdPadrao={client.clinic_id}
               charges={receivables.charges}
+              unidadesProntas={receivables.cobrancaDisponivel ? receivables.unidadesProntas : null}
               waivers={receivables.waivers}
               cobranca={{
                 ver: pode(session, "acao.cobranca.ver", client.clinic_id),
