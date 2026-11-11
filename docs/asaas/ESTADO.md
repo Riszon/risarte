@@ -16,7 +16,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 
 | Fase | Situação | Migrações |
 |---|---|---|
-| **ASA0 — Fundação** | código pronto e provado no treino e no sandbox, **webhook real recebido** (10/11/2026); **falta** a aprovação do dono, as migrações na produção e a entrada no `main` | **4000, 4001, 4002** |
+| **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | ASA1 — Cobrança avulsa e link | próxima (plano e OK do dono antes) | — |
 
 ## ASA0 — Fundação (Asaas 0.1.0, 10/11/2026)
@@ -165,14 +165,21 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 - Londrina tem dois eventos gravados: um de ensaio local (`evt_local_…`) e o
   `PAYMENT_CREATED` real da cobrança de R$ 5,00 de teste (em aberto no sandbox).
 
-### O que falta para fechar a ASA0
+### Fechamento da ASA0 (11/11/2026)
 
-1. Aprovação do dono.
-2. O dono roda a 4000, a 4001 e a 4002 na produção, nessa ordem.
-3. A branch entra no `main`, com `APP_VERSION`, novidade e manual conforme a
-   regra do manual (a Central nasce só para o Admin Master). Antes, apagar a
-   cópia solta de `docs/integracao-asaas.md` na pasta principal (está fora do
-   Git lá e faria o `git pull` recusar).
+1. ✅ Aprovada pelo dono.
+2. ✅ 4000, 4001 e 4002 rodadas na produção pelo dono, nessa ordem, com as
+   conferências batidas (5·13·2·0·false·0, 3·1·0, 7·1·2·0). ⚠️ A 4001 deu
+   "Success. No rows returned" na primeira vez **sem ter entrado** — o editor
+   rodou outra coisa; só a conferência à parte mostrou. Rodar migração: Ctrl+A,
+   Delete, colar, clicar fora do texto, Run; e exigir ver a linha de conferência.
+3. ✅ No `main` com a versão 0.423.0, a novidade e o manual 13g (a Central só
+   para o Admin Master). A cópia solta de `docs/integracao-asaas.md` na pasta
+   principal foi apagada antes (era idêntica à da branch).
+4. Na produção a Central está vazia: nenhuma conta Asaas, trava de produção
+   desligada. A verificação semanal roda todo dia e não encontra conta.
+
+**A próxima fase é a ASA1** (cobrança avulsa e link), com plano e OK do dono antes.
 
 ⚠️ **Lição desta sessão:** texto com crases dentro de `node -e "…"` no Git Bash
 vira substituição de comando — o shell tentou executar cada trecho entre

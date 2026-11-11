@@ -7,9 +7,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > **Projeto novo, com documento de estado próprio: `docs/asaas/ESTADO.md`**
 > (especificação, versão 3: `docs/integracao-asaas.md`). Faixa de migração
 > **4000+**; `ASAAS_VERSION`/`ASAAS_MIGRATION` no `version.ts`. Feito num
-> worktree à parte (`wt-asaas`, branch `feat/asaas-integration`) e **ainda fora
-> do `main`**: falta o projeto `risarte-asaas` na Vercel (prova do webhook
-> real), a aprovação do dono e as migrações na produção.
+> worktree à parte (`wt-asaas`, branch `feat/asaas-integration`). **Aprovada
+> pelo dono e no `main` em 11/11/2026** (core 0.423.0, manual 13g), depois das
+> três migrações na produção. Webhook real do Asaas recebido pelo projeto de
+> teste `risarte-asaas.vercel.app`.
 > - **Central de Configuração** (`/central`): níveis Rede e Unidade, registro
 >   de abas, herança campo a campo, histórico por aba e a faixa de prontidão.
 >   Nasce só para o Admin Master (`modulo.central` sem papel nenhum).
@@ -23,7 +24,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   semanal** das contas (`/api/cron/gateway-accounts`).
 > - Tudo em SANDBOX. Ensaio no treino 63/63 (desfeito), 48 testes, 14 quebras
 >   de propósito reprovadas, prova real no sandbox com as 4 contas de teste.
->   ✅ 4000–4002 **só no treino**.
+>   ✅ 4000–4002 **nos dois bancos** (produção pelo dono em 11/11/2026, nessa
+>   ordem; conferências 5·13·2·0·false·0, 3·1·0 e 7·1·2·0 — a 4001 precisou
+>   de uma segunda rodada: na primeira o editor rodou outra coisa).
 >
 > ## ✅ 0.422.0 — REPASSE DOS DENTISTAS, ETAPA 4: O PAGAMENTO PELO RELATÓRIO (10/11/2026; migração 0393)
 >

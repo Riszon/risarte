@@ -406,8 +406,13 @@ Syncthing se comportarem de forma estranha.**
   tarifas), contas no Vault, cliente HTTP, rota mínima de webhook, verificação
   semanal.** Estado completo, regras e o que falta em `docs/asaas/ESTADO.md`;
   especificação (versão 3) em `docs/integracao-asaas.md`.
-- ⚠️ **AINDA NÃO ESTÁ NO `main`.** Falta o projeto `risarte-asaas` na Vercel
-  (prova do webhook real), a aprovação do dono e as migrações na produção.
+- ✅ **Aprovada pelo dono e no `main` em 11/11/2026** (core 0.423.0, manual
+  13g). Webhook real do Asaas recebido pelo projeto de teste
+  `risarte-asaas.vercel.app` (branch de produção dele: `feat/asaas-integration`).
+- ⚠️ **Rodar migração no SQL Editor: Ctrl+A, Delete, colar, clicar fora do
+  texto, Run.** A 4001 deu "Success. No rows returned" na primeira vez sem ter
+  entrado (o editor rodou outra coisa); só a conferência à parte mostrou.
+  Conferência que não aparece = não medi, nunca "passou".
 - ⚠️ **A chave do Asaas só sai do Vault em `src/lib/asaas/account.ts`**; nada
   de `ASAAS_API_KEY` em código novo. **Produção trancada** no banco
   (`gateway_accounts_guard`) e no cliente (`ASAAS_ALLOW_PRODUCTION`) até a ASA7.
@@ -417,8 +422,8 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ O treino tem **contas de teste do sandbox** em Londrina, Cambé e na
   RISARTE Franchising (adquirente "Asaas (teste)", que não é o padrão). O
   ensaio `scripts/asaas-ensaio-asa0.mjs` usa só unidades sem conta.
-- ✅ **4000, 4001 e 4002 aplicadas só no TREINO.** Produção: depois da
-  aprovação da fase.
+- ✅ **4000, 4001 e 4002 aplicadas nos dois bancos** (produção pelo dono em
+  11/11/2026, nessa ordem; conferências batidas).
 - Não visto num navegador; o webhook vindo do Asaas de verdade não foi provado
   (sem endereço público ainda).
 
