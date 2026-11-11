@@ -410,7 +410,8 @@ Syncthing se comportarem de forma estranha.**
   Não somar `provider_payouts` direto (perde "não pagar", desconto, anulado).
 - ⚠️ **O dentista não vê produção** (valores de venda): a porta dele não tem a
   coluna. Régua `repasse-etapa5.test.ts`.
-- ⏳ **0401 aplicada só no treino**; falta o dono rodar na produção.
+- ✅ **0401 aplicada no treino e na produção** (o dono informou em
+  11/11/2026; não conferido de fora).
 
 **11/11/2026 (Asaas — ASA1, entrega 2) — PC Administrador (core 0.432.0 → 0.433.0, Asaas 0.3.0, migração 4004; worktree `wt-asaas`)**
 

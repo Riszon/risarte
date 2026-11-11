@@ -5,7 +5,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## ✅ 0.434.0 — REPASSE DOS DENTISTAS, ETAPA 5: AS VISÕES (11/11/2026; migração 0401)
 >
 > Última das etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões V1–V6 do
-> dono). ⏳ **0401 aplicada só no TREINO**; falta o dono rodar na produção.
+> dono). ✅ **0401 aplicada no treino e na produção** (o dono informou em
+> 11/11/2026; não conferido de fora).
 > **Não visto na tela.** Só leitura: nenhuma tabela nova.
 > - ⚠️ **UMA conta para as três visões: `_payout_lines`** (interna). Cada
 >   repasse vira uma linha classificada (repasse | ortodontia | desconto |
