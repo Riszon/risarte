@@ -408,6 +408,9 @@ Syncthing se comportarem de forma estranha.**
   sem repetição + reserva do envio, link/CPF dos signatários e o balde fora da
   leitura do logado (0395). ⚠️ Leitura de signatário com a sessão da pessoa
   NÃO pede `sign_url`/token/CPF/e-mail/telefone (régua).
+- ✅ **0395 aplicada nos dois bancos** (produção pelo dono em 11/11/2026;
+  conferido de fora: sem login `signature_signers` recusa com 42501, e
+  `signature_packages`, de controle, responde vazio). AP150–AP152 fechados.
 - ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
   (produção) ou `--treino`; liberado na regra local do Claude. Com
   `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign
