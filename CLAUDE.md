@@ -412,7 +412,8 @@ Syncthing se comportarem de forma estranha.**
   partir dela. O bill parte o desconto e pode criar pagamento COMPENSADO
   (`payout_payments.payable_id` nulo).
 - ⚠️ A 0399 era da venda direta (outra sessão, mesma pasta): a minha virou 0400.
-- ⏳ **0400 aplicada só no treino**; falta o dono rodar na produção.
+- ✅ **0400 aplicada no treino e na produção** (o dono informou em
+  11/11/2026; não conferido de fora).
 
 **11/11/2026 (venda direta fecha) — PC Administrador (core 0.430.0 → 0.431.0, migração 0399)**
 

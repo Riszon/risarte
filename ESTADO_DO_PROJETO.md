@@ -5,8 +5,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## ✅ 0.432.0 — REPASSE DOS DENTISTAS, ETAPA 4B: O DESCONTO POR FALHA DO DENTISTA (11/11/2026; migração 0400)
 >
 > Decisão 12 do dono e F1–F6 (`docs/Financeiro/REPASSE-PLANO.md`, as seis
-> como recomendado). ⏳ **0400 aplicada só no TREINO**; falta o dono rodar na
-> produção. **Não visto na tela.**
+> como recomendado). ✅ **0400 aplicada no treino e na produção** (o dono
+> informou em 11/11/2026; não conferido de fora). **Não visto na tela.**
 > - **`payout_failures`** = a ocorrência (uma VIVA por repasse:
 >   `payout_failures_one_live`). Nasce por gatilho blindado na reprovação do
 >   controle de qualidade (`plan_quality_reviews`) e no cancelamento efetivado
