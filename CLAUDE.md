@@ -400,6 +400,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (revisão da ZapSign) — PC Administrador (sem versão nova)**
+
+- **Revisão a fundo da assinatura digital** (pedido do dono): 9 itens no
+  backlog, **AP150–AP158** (3 de prioridade alta: anexo > 1 MB, documento
+  fora do sistema na ZapSign, link do paciente legível por quem só vê).
+- ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
+  (produção) ou `--treino`; liberado na regra local do Claude. Com
+  `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign
+  (créditos, documentos fora do riSZon). Não imprime dado pessoal.
+- ⚠️ O banco do treino pela conexão direta (IPv6) deu tempo esgotado neste
+  PC; o `aws-0-sa-east-1.pooler.supabase.com` (usuário
+  `postgres.bsnptybalszjjbhxeejo`) funciona.
+
 **11/11/2026 (relatos, OC-00176) — PC Administrador (core 0.423.0 → 0.424.0, sem migração)**
 
 - O item "Lançamentos no razão" da missão do Financeiro virou **"Lançamentos
