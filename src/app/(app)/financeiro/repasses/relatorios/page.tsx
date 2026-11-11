@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canManagePayoutReports, canViewFinance } from "@/lib/finance/access";
 import { todayInBrazil } from "@/lib/dates";
+import { carregarCobrancas } from "@/lib/finance/payout-report-db";
 import {
   candidateFromDb,
   monthError,
@@ -66,6 +67,12 @@ export default async function PayoutReportsPage(
     if (r.error) console.error(`${nome} failed:`, r.error.message);
   }
 
+  const reports = ((lista.data ?? []) as ReportDb[]).map(reportFromDb);
+  const cobrancas = await carregarCobrancas(
+    supabase,
+    reports.filter((r) => !["rascunho", "cancelado", "com_gerente"].includes(r.status)).map((r) => r.id)
+  );
+
   const withheld: WithheldRow[] = (
     (retidos.data ?? []) as {
       payout_id: string;
@@ -113,7 +120,9 @@ export default async function PayoutReportsPage(
         today={today}
         canManage={canManage}
         candidates={((cands.data ?? []) as CandidateDb[]).map(candidateFromDb)}
-        reports={((lista.data ?? []) as ReportDb[]).map(reportFromDb)}
+        reports={reports}
+        billing={[...cobrancas.values()]}
+        userId={session.userId}
         withheld={withheld}
         loadFailed={Boolean(cands.error || lista.error)}
       />

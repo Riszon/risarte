@@ -28,6 +28,7 @@ export default async function PayoutReportPage(
         report={dados.report}
         items={dados.items}
         history={dados.history}
+        payments={dados.payments}
         canManage={canManagePayoutReports(session)}
         canApprove={dados.canApprove}
         backHref="/financeiro/repasses/relatorios"

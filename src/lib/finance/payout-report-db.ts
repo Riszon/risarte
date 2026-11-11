@@ -1,11 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  billingFromDb,
   reportFromDb,
   reportItemFromDb,
+  reportPaymentFromDb,
   type Report,
+  type ReportBilling,
+  type ReportBillingDb,
   type ReportDb,
   type ReportItem,
   type ReportItemDb,
+  type ReportPayment,
+  type ReportPaymentDb,
 } from "@/lib/finance/payout-report";
 
 // Repasse (0390/0391) — a leitura de UM relatório para quem cuida dele (o
@@ -24,10 +30,50 @@ export type ReportData = {
   report: Report;
   items: ReportItem[];
   history: HistoryRow[];
+  /** As contas a pagar geradas deste relatório (0393). */
+  payments: ReportPayment[];
   /** O usuário é o aprovador DESTE relatório (o banco responde). */
   canApprove: boolean;
   loadFailed: boolean;
 };
+
+/**
+ * As contas a pagar de UM relatório (0393). Serve às três visões: o banco
+ * devolve ao dentista só as que valem, sem o registro interno.
+ */
+export async function carregarPagamentos(
+  supabase: SupabaseClient,
+  reportId: string
+): Promise<ReportPayment[]> {
+  const { data, error } = await supabase.rpc("payout_report_payments", {
+    p_report_id: reportId,
+  });
+  if (error) {
+    console.error("payout_report_payments failed:", error.message);
+    return [];
+  }
+  return ((data ?? []) as ReportPaymentDb[]).map(reportPaymentFromDb);
+}
+
+/** O resumo do pagamento de vários relatórios, por id (0393). */
+export async function carregarCobrancas(
+  supabase: SupabaseClient,
+  reportIds: string[]
+): Promise<Map<string, ReportBilling>> {
+  const mapa = new Map<string, ReportBilling>();
+  if (reportIds.length === 0) return mapa;
+  const { data, error } = await supabase.rpc("payout_report_billing", {
+    p_report_ids: reportIds,
+  });
+  if (error) {
+    console.error("payout_report_billing failed:", error.message);
+    return mapa;
+  }
+  for (const r of (data ?? []) as ReportBillingDb[]) {
+    mapa.set(r.report_id, billingFromDb(r));
+  }
+  return mapa;
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,10 +92,11 @@ export async function carregarRelatorio(
   const linha = ((cab ?? []) as ReportDb[])[0];
   if (!linha) return null;
 
-  const [itens, hist, pode] = await Promise.all([
+  const [itens, hist, pode, payments] = await Promise.all([
     supabase.rpc("payout_report_items_detail", { p_report_id: id }),
     supabase.rpc("payout_report_history", { p_report_id: id }),
     supabase.rpc("can_approve_payout_report", { p_report_id: id }),
+    carregarPagamentos(supabase, id),
   ]);
   if (itens.error) console.error("payout_report_items_detail failed:", itens.error.message);
   if (hist.error) console.error("payout_report_history failed:", hist.error.message);
@@ -73,6 +120,7 @@ export async function carregarRelatorio(
       actorName: h.actor_name,
       procedureName: h.procedure_name,
     })),
+    payments,
     canApprove: pode.data === true,
     loadFailed: Boolean(itens.error),
   };

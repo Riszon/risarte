@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Lock, Plus } from "lucide-react";
@@ -13,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { formatBRL, parseBRLToCents } from "@/lib/pricing";
 import { summarizePayouts } from "@/lib/finance/payout";
 import {
-  closePayoutMonth,
   saveCareerLevel,
   savePayoutRate,
   setProviderLevel,
@@ -286,7 +286,6 @@ export function PayoutManager({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [bonus, setBonus] = useState(String(closing?.bonusPercent ?? 0));
 
   // Formulário da tabela.
   const [procedureId, setProcedureId] = useState("");
@@ -364,7 +363,7 @@ export function PayoutManager({
     [levels]
   );
 
-  const bonusNum = Number(bonus.replace(",", ".")) || 0;
+  // O bônus só existe nos meses fechados pelo caminho antigo (até a 0393).
   const summary = summarizePayouts(
     lines.map((l) => ({
       providerId: l.providerId,
@@ -372,7 +371,7 @@ export function PayoutManager({
       amountCents: l.amountCents,
       accrualDate: l.accrualDate,
     })),
-    closing?.status === "fechado" ? closing.bonusPercent : bonusNum
+    closing?.status === "fechado" ? closing.bonusPercent : 0
   );
   const totalFixed = summary.reduce((s, p) => s + p.fixedCents, 0);
   const totalGeral = summary.reduce((s, p) => s + p.totalCents, 0);
@@ -408,22 +407,6 @@ export function PayoutManager({
       });
       if (r.ok) {
         toast.success("Nível atualizado.");
-        router.refresh();
-      } else toast.error(r.error ?? "Algo deu errado.");
-    });
-  }
-
-  function closeMonth() {
-    startTransition(async () => {
-      const r = await closePayoutMonth({
-        clinicId,
-        month: `${month}-01`,
-        bonusPercent: bonusNum,
-      });
-      if (r.ok) {
-        toast.success(
-          "Mês fechado — as contas a pagar dos dentistas foram geradas."
-        );
         router.refresh();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -481,36 +464,32 @@ export function PayoutManager({
                 <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
                   <strong>{semTabela}</strong> procedimento
                   {semTabela === 1 ? "" : "s"} sem valor de repasse cadastrado —
-                  entraram com R$ 0,00. Cadastre na tabela abaixo antes de
-                  fechar o mês, senão o dentista recebe a menos.
+                  entraram com R$ 0,00. Cadastre na tabela abaixo e recalcule
+                  nas pendências: procedimento com R$ 0,00 não entra em
+                  relatório de repasse.
                 </p>
               )}
 
-              <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border bg-muted/30 p-3">
-                <label className="block">
-                  <Label className="text-[11px]">Bônus do período (%)</Label>
-                  <Input
-                    className="h-8 w-28"
-                    inputMode="decimal"
-                    value={bonus}
-                    disabled={isClosed || !canEdit}
-                    onChange={(e) => setBonus(e.target.value)}
-                  />
-                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                    incide sobre o total, não por procedimento
-                  </span>
-                </label>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
                 <span className="text-sm">
                   Fixo {formatBRL(totalFixed)} ·{" "}
                   <strong className="text-base">
                     Total {formatBRL(totalGeral)}
                   </strong>
                 </span>
-                {canEdit && !isClosed && (
-                  <Button size="sm" disabled={isPending} onClick={closeMonth}>
-                    Fechar o mês e gerar contas a pagar
-                  </Button>
-                )}
+                <span className="text-xs text-muted-foreground">
+                  O pagamento é feito pelos{" "}
+                  <Link
+                    href="/financeiro/repasses/relatorios"
+                    className="underline"
+                  >
+                    Relatórios de repasse
+                  </Link>
+                  : só vira conta a pagar o que o aprovador e o dentista
+                  aprovaram.
+                  {isClosed &&
+                    " Este mês foi fechado pelo caminho antigo e continua como está."}
+                </span>
               </div>
             </>
           )}

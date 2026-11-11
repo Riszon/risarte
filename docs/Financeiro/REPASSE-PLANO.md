@@ -79,7 +79,8 @@ conseguimos gerar nenhum repasse até agora".
 | 1 | **Destravar e proteger:** recalcular o que saiu zerado, pendências com o motivo, "em andamento", marca "Sem repasse", travas no banco (linha fechada imutável, sessão com repasse não se apaga, fim da escrita direta). | ✅ 0.417.0, migração 0387 |
 | 2 | **Relatório de repasse:** um por dentista e por unidade, com o detalhe por procedimento; gerar um ou todos; excluir com motivo. Um procedimento só entra em um relatório. | ✅ migração 0390 |
 | 3 | **Aprovações:** Gerente (um por vez, só a equipe dele; Coordenador quando não há Gerente), depois o Dentista na tela "Meus repasses"; reprovar com formulário; avisos a cada passo; prazo de 5 dias úteis. | ✅ migração 0391 |
-| 4 | **Pagamento:** só o aprovado pelos dois vira conta a pagar, ligada aos procedimentos; parcial; vencimento no dia 15; estorno por falha do dentista como linha negativa. Sai o "Fechar o mês" antigo. | a fazer |
+| 4 | **Pagamento:** só o aprovado pelos dois vira conta a pagar, ligada aos procedimentos; parcial; vencimento no dia 15. Sai o "Fechar o mês" antigo. | ✅ 0.422.0, migração 0393 |
+| 4B | **Desconto por falha do dentista** (decisão 12): aviso quando um procedimento pago é refeito ou tem a venda cancelada; o Gerente registra a falha; linha negativa no relatório seguinte. | a fazer |
 | 5 | **Visões:** histórico da unidade, consolidado da rede, gráfico de produção e ganho por dentista. | a fazer |
 
 ## Etapa 2 — decisões do dono (10/11/2026, as quatro como recomendado)
@@ -131,6 +132,31 @@ como paga — a trava contra pagar duas vezes, no pagamento, nasce ali.
 o relatório **do próprio Coordenador** precisa ser aprovado pelo Financeiro da
 Franqueadora, e por uma pessoa diferente da que enviou. Com um só Financeiro,
 quem aprova é o Admin Master.
+
+## Etapa 4 — decisões do dono (10/11/2026, as seis como recomendado)
+
+- **P1.** A conta a pagar nasce por um **botão** do Financeiro da Franqueadora
+  (um relatório, ou todos os da unidade), não sozinha a cada aprovação.
+- **P2.** Competência = o **mês do relatório**.
+- **P3.** Vencimento no dia 15: liberado **até o dia 10** vence no mesmo mês;
+  depois, no mês seguinte.
+- **P4.** A conta do repasse **não passa pela alçada** das contas a pagar.
+- **P5.** O **"Fechar o mês" antigo saiu**; os meses já fechados ficam.
+- **P6.** O desconto por falha do dentista virou a **etapa 4B**.
+
+**Como ficou (0393):** `payout_payments` liga o relatório à conta a pagar;
+`payout_report_items.payment_id` é a trava (um procedimento, uma conta);
+"pago" é lido da própria conta a pagar; cancelar a conta (sem baixa) devolve
+as linhas. A conta entra no razão pela competência. Os quatro achados do
+fechamento antigo (abaixo) ficaram resolvidos para o caminho novo.
+
+**Consequência a decidir:** o **bônus do período em %** só existia no "Fechar o
+mês". Saiu com ele (a decisão 8 já deixava o bônus fora do relatório). Até
+haver regra nova, bônus é conta a pagar lançada à mão em 2.1.02.
+
+**Para a 4B:** conta a pagar é sempre positiva (`payout_report_bill` recusa
+soma ≤ 0): a linha negativa precisa abater dentro de uma conta positiva ou
+esperar o relatório seguinte.
 
 ## O que a Etapa 4 precisa resolver do fechamento antigo
 

@@ -4,6 +4,9 @@
 // com motivo, quem pode). Aqui ficam os tipos, os rótulos e as frases dos
 // erros — o que a pessoa lê.
 
+import { formatIsoDateBr } from "@/lib/dates";
+import { formatBRL } from "@/lib/pricing";
+
 export type ReportStatus =
   | "rascunho"
   | "com_gerente"
@@ -356,6 +359,10 @@ export const EVENT_LABEL: Record<string, string> = {
   voltou_ao_dentista: "Voltou ao dentista",
   aprovado: "Relatório aprovado — liberado para pagar",
   prazo_vencido: "Prazo do dentista vencido",
+  conta_gerada: "Conta a pagar gerada",
+  conta_cancelada: "Conta a pagar cancelada (os procedimentos voltaram para liberado)",
+  pago: "Repasse pago",
+  pagamento_estornado: "Pagamento estornado",
 };
 
 export function eventLabel(action: string): string {
@@ -571,4 +578,192 @@ export function reportErrorText(message: string): string {
   if (m.includes("INVALID_KIND")) return "Escolha adiar ou não pagar.";
   if (m.includes("NOT_FOUND")) return "Registro não encontrado.";
   return "Não foi possível concluir. Tente de novo.";
+}
+
+// -----------------------------------------------------------------------------
+// Etapa 4 (0393) — O PAGAMENTO PELO RELATÓRIO
+//
+// O que está liberado vira conta a pagar por um botão do Financeiro. "Pago"
+// não é uma marca copiada: o banco lê da própria conta a pagar.
+// -----------------------------------------------------------------------------
+export type PaymentState = "programado" | "parcial" | "pago" | "cancelado";
+
+export const PAYMENT_STATE_LABEL: Record<PaymentState, string> = {
+  programado: "Pagamento programado",
+  parcial: "Pago em parte",
+  pago: "Pago",
+  cancelado: "Conta cancelada",
+};
+
+/** Uma conta a pagar gerada de um relatório de repasse. */
+export type ReportPayment = {
+  paymentId: string;
+  payableId: string;
+  amountCents: number;
+  itemCount: number;
+  /** AAAA-MM-DD */
+  accrualDate: string;
+  dueDate: string;
+  state: PaymentState;
+  paidCents: number;
+  paidOn: string | null;
+  createdAt: string;
+  createdByName: string | null;
+  cancelReason: string | null;
+  itemIds: string[];
+};
+
+export type ReportPaymentDb = {
+  payment_id: string;
+  payable_id: string;
+  amount_cents: number | string;
+  item_count: number;
+  accrual_date: string;
+  due_date: string;
+  state: string;
+  paid_cents: number | string | null;
+  paid_on: string | null;
+  created_at: string;
+  created_by_name: string | null;
+  cancel_reason: string | null;
+  item_ids: string[] | null;
+};
+
+const PAYMENT_STATES: PaymentState[] = ["programado", "parcial", "pago", "cancelado"];
+
+export function reportPaymentFromDb(r: ReportPaymentDb): ReportPayment {
+  return {
+    paymentId: r.payment_id,
+    payableId: r.payable_id,
+    amountCents: Number(r.amount_cents ?? 0),
+    itemCount: Number(r.item_count ?? 0),
+    accrualDate: r.accrual_date,
+    dueDate: r.due_date,
+    state: PAYMENT_STATES.includes(r.state as PaymentState)
+      ? (r.state as PaymentState)
+      : "programado",
+    paidCents: Number(r.paid_cents ?? 0),
+    paidOn: r.paid_on,
+    createdAt: r.created_at,
+    createdByName: r.created_by_name,
+    cancelReason: r.cancel_reason,
+    itemIds: r.item_ids ?? [],
+  };
+}
+
+/** O resumo do pagamento de um relatório (as listas). */
+export type ReportBilling = {
+  reportId: string;
+  /** Liberado e ainda sem conta a pagar. */
+  toBillCents: number;
+  toBillCount: number;
+  /** Em conta a pagar ainda não paga. */
+  scheduledCents: number;
+  paidCents: number;
+  nextDue: string | null;
+  lastPaidOn: string | null;
+};
+
+export type ReportBillingDb = {
+  report_id: string;
+  to_bill_cents: number | string | null;
+  to_bill_count: number | null;
+  scheduled_cents: number | string | null;
+  paid_cents: number | string | null;
+  next_due: string | null;
+  last_paid_on: string | null;
+};
+
+export function billingFromDb(r: ReportBillingDb): ReportBilling {
+  return {
+    reportId: r.report_id,
+    toBillCents: Number(r.to_bill_cents ?? 0),
+    toBillCount: Number(r.to_bill_count ?? 0),
+    scheduledCents: Number(r.scheduled_cents ?? 0),
+    paidCents: Number(r.paid_cents ?? 0),
+    nextDue: r.next_due,
+    lastPaidOn: r.last_paid_on,
+  };
+}
+
+const dataBr = formatIsoDateBr;
+const reais = formatBRL;
+
+/** Em qual conta (que ainda vale) cada linha do relatório está. */
+export function paymentByItem(payments: ReportPayment[]): Map<string, ReportPayment> {
+  const mapa = new Map<string, ReportPayment>();
+  for (const p of payments) {
+    if (p.state === "cancelado") continue;
+    for (const id of p.itemIds) mapa.set(id, p);
+  }
+  return mapa;
+}
+
+/**
+ * O pagamento de UMA linha, numa frase. `null` = a linha ainda não está
+ * liberada (a conversa dela é que aparece).
+ */
+export function itemPaymentText(
+  released: boolean,
+  payment: ReportPayment | undefined
+): string | null {
+  if (!released) return null;
+  if (!payment) return "Liberado — ainda sem conta a pagar";
+  if (payment.state === "pago") {
+    return payment.paidOn ? `Pago em ${dataBr(payment.paidOn)}` : "Pago";
+  }
+  if (payment.state === "parcial") {
+    return `Conta paga em parte — vencimento ${dataBr(payment.dueDate)}`;
+  }
+  return `Pagamento programado para ${dataBr(payment.dueDate)}`;
+}
+
+/** O pagamento do relatório inteiro, numa frase curta (as listas). */
+export function billingText(b: ReportBilling | undefined): string | null {
+  if (!b) return null;
+  const partes: string[] = [];
+  if (b.paidCents > 0) {
+    partes.push(
+      `${reais(b.paidCents)} pago${b.lastPaidOn ? ` em ${dataBr(b.lastPaidOn)}` : ""}`
+    );
+  }
+  if (b.scheduledCents > 0) {
+    partes.push(
+      `${reais(b.scheduledCents)} com pagamento programado${b.nextDue ? ` para ${dataBr(b.nextDue)}` : ""}`
+    );
+  }
+  if (b.toBillCents > 0) {
+    partes.push(`${reais(b.toBillCents)} liberado, sem conta a pagar`);
+  }
+  return partes.length ? partes.join(" · ") : null;
+}
+
+/** Soma do que o "gerar de todos" criaria agora. */
+export function totalToBill(billing: ReportBilling[]): { reports: number; cents: number } {
+  const prontos = billing.filter((b) => b.toBillCents > 0);
+  return {
+    reports: prontos.length,
+    cents: prontos.reduce((s, b) => s + b.toBillCents, 0),
+  };
+}
+
+/** Os erros do pagamento, em português (os demais caem em `reportErrorText`). */
+export function billingErrorText(message: string): string {
+  const m = message;
+  if (m.includes("NOTHING_TO_BILL")) {
+    return "Não há nada liberado esperando conta a pagar neste relatório.";
+  }
+  if (m.includes("ITEM_IN_PAYMENT")) {
+    return "Este procedimento já está em uma conta a pagar e não pode mais mudar.";
+  }
+  if (m.includes("PERIOD_CLOSED")) {
+    return "O mês está fechado na contabilidade. Fale com quem cuida do fechamento.";
+  }
+  if (m.includes("WRONG_STAGE")) {
+    return "Este relatório ainda não foi aprovado pelo dentista.";
+  }
+  if (m.includes("NOT_ALLOWED")) {
+    return "Só o Financeiro da Franqueadora gera a conta a pagar — e nunca a do próprio repasse.";
+  }
+  return reportErrorText(m);
 }

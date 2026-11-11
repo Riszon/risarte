@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canManagePayoutReports } from "@/lib/finance/access";
-import { carregarRelatorio } from "@/lib/finance/payout-report-db";
+import { carregarPagamentos, carregarRelatorio } from "@/lib/finance/payout-report-db";
 import {
   myItemFromDb,
   myReportFromDb,
@@ -49,9 +49,10 @@ export default async function RepassePage(props: PageProps<"/repasses/[id]">) {
   // O dentista do relatório vê SEMPRE a visão dele, mesmo que também leia o
   // financeiro da unidade: ninguém confere o próprio repasse.
   if (eu.is_provider) {
-    const [lista, itens] = await Promise.all([
+    const [lista, itens, pagamentos] = await Promise.all([
       supabase.rpc("my_payout_reports"),
       supabase.rpc("my_payout_report_detail", { p_report_id: id }),
+      carregarPagamentos(supabase, id),
     ]);
     if (lista.error) console.error("my_payout_reports failed:", lista.error.message);
     if (itens.error) console.error("my_payout_report_detail failed:", itens.error.message);
@@ -62,6 +63,7 @@ export default async function RepassePage(props: PageProps<"/repasses/[id]">) {
         <MyReportView
           report={myReportFromDb(linha)}
           items={((itens.data ?? []) as MyItemDb[]).map(myItemFromDb)}
+          payments={pagamentos}
           loadFailed={Boolean(itens.error)}
         />
       </div>
@@ -78,6 +80,7 @@ export default async function RepassePage(props: PageProps<"/repasses/[id]">) {
         report={dados.report}
         items={dados.items}
         history={dados.history}
+        payments={dados.payments}
         canManage={canManagePayoutReports(session)}
         canApprove={dados.canApprove}
         backHref="/repasses"

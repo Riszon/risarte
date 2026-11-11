@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { todayInBrazil } from "@/lib/dates";
 import { canManagePayoutReports } from "@/lib/finance/access";
 import {
+  billingErrorText,
   correctionError,
   monthError,
   reasonError,
@@ -151,6 +152,59 @@ export async function decideContestedItem(input: {
   });
   refresh(input.reportId);
   return { ok: true };
+}
+
+/**
+ * 0393 — GERA A CONTA A PAGAR do que está liberado em UM relatório (aprovado
+ * pelo aprovador e pelo dentista, ou decidido pelo Financeiro). O banco só
+ * leva o que ainda não foi para uma conta: clicar de novo não paga duas vezes.
+ */
+export async function billPayoutReport(input: {
+  reportId: string;
+}): Promise<ReportResult> {
+  const session = await getSessionContext();
+  if (!canManagePayoutReports(session)) return { ok: false, error: NEGADO };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payout_report_bill", {
+    p_report_id: input.reportId,
+  });
+  if (error) {
+    console.error("payout_report_bill failed:", error.message);
+    return { ok: false, error: billingErrorText(error.message) };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "payout_payment",
+    entityId: input.reportId,
+  });
+  refresh(input.reportId);
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true, count: 1 };
+}
+
+/** 0393 — o mesmo, para todos os relatórios da unidade com algo liberado. */
+export async function billAllPayoutReports(input: {
+  clinicId: string;
+}): Promise<ReportResult> {
+  const session = await getSessionContext();
+  if (!canManagePayoutReports(session)) return { ok: false, error: NEGADO };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("payout_reports_bill_all", {
+    p_clinic_id: input.clinicId,
+  });
+  if (error) {
+    console.error("payout_reports_bill_all failed:", error.message);
+    return { ok: false, error: billingErrorText(error.message) };
+  }
+  await logAudit({
+    action: "create",
+    entityType: "payout_payment",
+    entityId: input.clinicId,
+    clinicId: input.clinicId,
+  });
+  refresh();
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true, count: Number(data ?? 0) };
 }
 
 /** Gera (ou completa) o relatório de um dentista, ou de todos os da unidade. */

@@ -19,11 +19,15 @@ import {
   FINANCE_ACTION_LABEL,
   MY_REVIEW_LABEL,
   MY_STATUS_LABEL,
+  PAYMENT_STATE_LABEL,
   dentistResponseError,
+  itemPaymentText,
+  paymentByItem,
   type ContestInput,
   type ContestKind,
   type MyItem,
   type MyReport,
+  type ReportPayment,
 } from "@/lib/finance/payout-report";
 import { respondToMyReport } from "../actions";
 
@@ -42,10 +46,13 @@ type Rascunho = { kind: ContestKind; text: string };
 export function MyReportView({
   report,
   items,
+  payments,
   loadFailed,
 }: {
   report: MyReport;
   items: MyItem[];
+  /** Os pagamentos deste relatório (0393): programados e feitos. */
+  payments: ReportPayment[];
   loadFailed: boolean;
 }) {
   const router = useRouter();
@@ -57,6 +64,7 @@ export function MyReportView({
   const [missing, setMissing] = useState("");
   const [confirming, setConfirming] = useState(false);
 
+  const contaDaLinha = paymentByItem(payments);
   const pendentes = items.filter((i) => i.reviewState === "pendente");
   const marcadas = Object.keys(contests).length;
   const aprovando = pendentes.length - marcadas;
@@ -163,7 +171,7 @@ export function MyReportView({
                 )}
               </>
             ) : report.status === "aprovado" ? (
-              "Relatório aprovado. O pagamento é feito pelo Financeiro."
+              "Relatório aprovado. O pagamento é feito pelo Financeiro, no dia 15."
             ) : report.status === "em_contestacao" ? (
               "Sua contestação está com quem responde pela equipe. O que você aprovou já está liberado para pagamento."
             ) : (
@@ -187,6 +195,46 @@ export function MyReportView({
         <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
           Não foi possível carregar os procedimentos.
         </p>
+      )}
+
+      {payments.length > 0 && (
+        <Card>
+          <CardContent className="space-y-2 p-4">
+            <h2 className="font-medium">Pagamento</h2>
+            <ul className="divide-y divide-dashed rounded-lg border text-sm">
+              {payments.map((p) => (
+                <li
+                  key={p.paymentId}
+                  className="flex flex-wrap items-center justify-between gap-2 p-2"
+                >
+                  <span>
+                    <strong className="tabular-nums">{formatBRL(p.amountCents)}</strong>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {p.itemCount} procedimento{p.itemCount === 1 ? "" : "s"} ·{" "}
+                      {p.state === "pago" && p.paidOn
+                        ? `pago em ${formatIsoDateBr(p.paidOn)}`
+                        : `previsto para ${formatIsoDateBr(p.dueDate)}`}
+                    </span>
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px]",
+                      p.state === "pago" &&
+                        "border-emerald-300 text-emerald-700 dark:text-emerald-300"
+                    )}
+                  >
+                    {PAYMENT_STATE_LABEL[p.state]}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              O que você aprovou é pago no dia 15. Um procedimento ainda em
+              análise entra em um pagamento à parte, quando for resolvido.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       <Card>
@@ -218,6 +266,14 @@ export function MyReportView({
                       {i.reviewState && !podeMarcar && (
                         <p className="text-xs text-muted-foreground">
                           {MY_REVIEW_LABEL[i.reviewState]}
+                          {i.released && (
+                            <strong className="ml-1 text-foreground">
+                              ·{" "}
+                              {contaDaLinha.has(i.itemId)
+                                ? itemPaymentText(true, contaDaLinha.get(i.itemId))
+                                : "aguardando o Financeiro programar o pagamento"}
+                            </strong>
+                          )}
                         </p>
                       )}
                       {i.contestText && (

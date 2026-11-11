@@ -105,6 +105,7 @@ export const TABELAS: Record<string, string> = {
   "public.payment_receipts": "Recebimento",
   "public.payment_renegotiations": "Renegociação",
   "public.payout_closings": "Fechamento de repasse",
+  "public.payout_payments": "Conta a pagar do repasse",
   "public.payout_report_items": "Procedimento do relatório de repasse",
   "public.payout_reports": "Relatório de repasse",
   "public.permission_defaults": "Padrão de permissão",
