@@ -400,6 +400,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (Asaas — ASA1, entrega 2) — PC Administrador (core 0.429.0 → 0.430.0, Asaas 0.3.0, migração 4004; worktree `wt-asaas`)**
+
+- **A cobrança de parcela pelo Asaas, as travas e a quitação por valor menor**
+  (estado em `docs/asaas/ESTADO.md`; decisões na seção 14 da especificação).
+  ⚠️ **A conta do valor mora em `_charge_compute`** (prévia e gravação).
+  ⚠️ **Parcela com cobrança ativa fica travada**; baixa manual só com a
+  cobrança cancelada ou externa (a ASA2 liga `risarte.baixa_do_asaas`).
+  ⚠️ **Código de recusa novo precisa de mensagem em `src/lib/cobrancas.ts`.**
+- ⚠️ **Achado do núcleo (não corrigido aqui):** desde a 0373, fechar venda
+  direta falha com `record "new" has no field "negotiation_id"`
+  (`post_sale_accruals_on_close`).
+- 🟡 4004 no treino; **falta a aprovação do dono e a 4004 na produção**; não
+  está no `main`.
+
 **11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.426.0 → 0.427.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
 
 - **Abas Financeiro e Comercial da Central, responsável financeiro e carência

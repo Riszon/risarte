@@ -2,6 +2,21 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔌 0.430.0 / ASAAS 0.3.0 — ASA1, ENTREGA 2: A COBRANÇA DE PARCELA PELO ASAAS (11/11/2026; migração 4004)
+>
+> Estado completo em `docs/asaas/ESTADO.md`; decisões na seção 14 da
+> especificação. Na ficha › Financeiro, a parcela em aberto ganha a cobrança no
+> Asaas (boleto, Pix, cartão à vista pela página do Asaas) em nome do
+> responsável financeiro; a vencida ganha vencimento novo até o limite da rede
+> (padrão 7 dias) com o valor atualizado; uma cobrança ativa por parcela, que
+> trava a parcela e a baixa manual ("Recebeu no balcão" cancela no Asaas e abre
+> a baixa); cobrança externa (D17). **Quitação por valor menor** (Gerente e
+> Admin, com motivo; `payment_waivers`; principal dispensado em 1.9.02). As
+> permissões `acao.cobranca.*` nascem só com o Admin. Ensaio 75/75; prova real
+> no sandbox (paga pelo sandbox no CPF da mãe); régua 16; telas conferidas no
+> servidor local. ⚠️ Achado do núcleo: fechar venda direta falha desde a 0373.
+> 🟡 4004 só no treino; esperando a aprovação do dono.
+>
 > ## 🧹 0.429.0 — ASSINATURA DIGITAL: ACHADOS MENORES DA REVISÃO (11/11/2026; migração 0397)
 >
 > AP158, EV-327. ⚠️ **Permissão de UM pacote (ver, baixar, reenviar,

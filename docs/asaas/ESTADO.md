@@ -18,7 +18,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 |---|---|---|
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
-| **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | 🟡 **pronta, esperando a aprovação do dono** (core 0.429.0, Asaas 0.3.0); 4004 no treino; ensaio 75/75; prova real no sandbox passou; **falta a produção** (o dono roda a 4004) | **4004** |
+| **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | 🟡 **pronta, esperando a aprovação do dono** (core 0.430.0, Asaas 0.3.0); 4004 no treino; ensaio 75/75; prova real no sandbox passou; **falta a produção** (o dono roda a 4004) | **4004** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -34,7 +34,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
 
-## ASA1, entrega 2 — a cobrança de parcela (Asaas 0.3.0, core 0.429.0, 11/11/2026)
+## ASA1, entrega 2 — a cobrança de parcela (Asaas 0.3.0, core 0.430.0, 11/11/2026)
 
 ### O que existe
 

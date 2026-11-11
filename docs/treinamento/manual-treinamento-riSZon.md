@@ -5944,7 +5944,7 @@ o que antes ficava em Financeiro → Cadastros → Configuração.
 - **Carência: fixa em zero.** O campo aparece só para leitura — *o Asaas não
   aplica carência; multa e juros contam do dia seguinte ao vencimento*. O
   sistema recusa outro valor.
-- **Nova cobrança de parcela vencida: até quantos dias** *(desde a 0.429.0,
+- **Nova cobrança de parcela vencida: até quantos dias** *(desde a 0.430.0,
   só na Rede; padrão 7, de 0 a 30)*. O Asaas não aceita cobrança com
   vencimento no passado: a parcela vencida ganha um vencimento novo, de hoje
   até esse limite. Acima dele, só renegociando.
@@ -6059,7 +6059,7 @@ gravado nesta aba até rodarem.
 
 ### 13g.2. Cobrança de parcela pelo Asaas
 
-*(desde a versão 0.429.0; em testes: as permissões nascem só com o Admin
+*(desde a versão 0.430.0; em testes: as permissões nascem só com o Admin
 Master)*
 
 **Para que serve:** gerar, para uma parcela que já existe, a cobrança no Asaas

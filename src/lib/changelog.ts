@@ -62,6 +62,36 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.430.0",
+    data: "2026-11-11",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4004, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Cobrança de parcela pelo Asaas (em testes) e quitação por valor menor",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha do paciente, aba Financeiro, a parcela em aberto pode ganhar a cobrança no Asaas (boleto, Pix ou cartão à vista), em nome do responsável financeiro quando houver, com o link pronto para copiar ou mandar pelo WhatsApp. Por enquanto só para o Admin Master, em testes.",
+        papeis: [],
+        manual: "13g. A Central de Configuração",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Gerente da unidade pode quitar a parcela por um valor menor que o devido, com motivo: a diferença é dispensada (primeiro juros, depois multa, benefício perdido e principal), fica registrada com o nome de quem fez e a Franqueadora vê.",
+        papeis: ["unit_manager"],
+        manual: "13g. A Central de Configuração",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na Central de Configuração, aba Financeiro da rede: o limite de dias para a nova cobrança de uma parcela vencida (padrão 7).",
+        papeis: ["finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+    ],
+  },
+  {
     versao: "0.429.0",
     data: "2026-11-11",
     migracao: "0397",
