@@ -6,7 +6,7 @@ import { loadSendContext, type SendOrigin } from "@/lib/signatures/envio-dados";
 import { descartarRascunho, enviarPacote, prepararPacote, type PrepareResult, type SendResult } from "@/lib/signatures/send";
 import { candidatosDoRepresentante } from "@/lib/signatures/signers";
 import type { PackageOriginType } from "@/lib/signatures/types";
-import { MAX_ATTACHMENT_BYTES } from "@/lib/signatures/validate";
+import { lerAnexosEnviados, lerReferencias } from "@/lib/signatures/anexos-enviados";
 import { isValidCpf } from "@/lib/masks";
 
 /**
@@ -99,7 +99,8 @@ export async function carregarContextoDeEnvio(input: { clientId: string; clinicI
 /**
  * Passo 3: cria o rascunho e o PDF. O FormData leva `client_id`, `clinic_id`,
  * `origin_type`, `origin_id`, `template_ids` (JSON), `witness_keys` (JSON),
- * `representative_keys` (JSON objeto) e os arquivos em `attachments`.
+ * `representative_keys` (JSON objeto) e `attachment_refs` (JSON): os anexos já
+ * mandados ao armazenamento pelo navegador (AP150 — o arquivo não passa aqui).
  */
 export async function prepararEnvio(formData: FormData): Promise<PrepareResult> {
   const session = await getSessionContext();
@@ -123,13 +124,9 @@ export async function prepararEnvio(formData: FormData): Promise<PrepareResult> 
   const representativeKeys: Record<string, string> = {};
   for (const [k, v] of Object.entries(repRaw)) if (typeof v === "string") representativeKeys[k] = v;
 
-  const attachments: { name: string; bytes: Uint8Array }[] = [];
-  for (const f of formData.getAll("attachments")) {
-    if (!(f instanceof File) || f.size === 0) continue;
-    if (f.size > MAX_ATTACHMENT_BYTES) return { ok: false, error: `O anexo "${f.name}" passa de 8 MB.` };
-    attachments.push({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) });
-  }
-  if (attachments.length > 10) return { ok: false, error: "No máximo 10 anexos por pacote." };
+  const lidos = await lerAnexosEnviados(session.userId, lerReferencias(str("attachment_refs")));
+  if (!lidos.ok) return lidos;
+  const attachments = lidos.anexos;
 
   return prepararPacote({
     session,

@@ -2218,7 +2218,7 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 - **Depende de:** ninguém.
 
 **Regras Comerciais — validade do orçamento** (desde a 0.338.0; desde a
-0.426.0 as Regras Comerciais ficam na **Central de Configuração › Comercial**,
+0.427.0 as Regras Comerciais ficam na **Central de Configuração › Comercial**,
 e o menu Administração → Regras Comerciais leva até lá). O campo **Validade do
 orçamento impresso (dias)** diz até quando vale
 o orçamento que o cliente assina, contado do dia da impressão. Fica no
@@ -2647,7 +2647,7 @@ trabalha. **Duração estimada:** 60 minutos.
 2. **Comece pelo CPF.** O sistema procura antes de deixar você digitar o resto:
    se o paciente já existir na rede, ele **autopreenche** (evidência: LOTE F1).
 3. Preencha nome, nascimento, telefone, e-mail e endereço.
-4. **Responsáveis e quem paga** (desde a versão 0.426.0):
+4. **Responsáveis e quem paga** (desde a versão 0.427.0):
    - **Paciente menor de 18 anos:** cadastre ao menos um responsável e marque
      **Responsável financeiro (paga as cobranças)** em um deles. Com um só
      responsável, ele já vem marcado. As cobranças saem no CPF de quem estiver
@@ -5415,7 +5415,8 @@ Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
 1. **O que vai no pacote.** Escolha um **kit** (Início de tratamento = contrato +
    consentimento; Orçamento aprovado) ou marque os modelos um a um. Dá para
    juntar **PDFs avulsos** (exames, termos de fora), até 8 MB cada e 10 MB no
-   pacote inteiro. Tudo vira **um PDF só**, com capa e índice. A capa e o
+   pacote inteiro (desde a 0.426.0 o arquivo sobe direto ao armazenamento ao
+   preparar; antes, PDF acima de 1 MB dava erro). Tudo vira **um PDF só**, com capa e índice. A capa e o
    rodapé de cada página trazem a **razão social da unidade** e o CNPJ, **sem
    o logotipo da Risarte** (0.384.0). **Unidade sem razão social cadastrada não
    envia:** o sistema diz *"A unidade não tem razão social cadastrada"* e
@@ -5437,7 +5438,10 @@ Financeiro da Franqueadora e Gerente de Unidade; o Admin Master sempre).
 3. **Conferir e enviar.** O PDF aparece inteiro na tela, com o número do pacote
    (`ASS-000001`), as páginas e até quando o link vale. **Enviar para
    assinatura** cria o documento na ZapSign. Fechar a janela antes disso
-   descarta o rascunho.
+   descarta o rascunho. Clicar duas vezes, ou enviar o mesmo pacote em duas
+   abas, **não cria dois documentos** (0.426.0): a segunda tentativa avisa
+   *"Este pacote já está sendo enviado (outro clique ou outra aba)"* — confira
+   a ficha antes de tentar de novo.
 
 **Depois do envio:** para cada pessoa, três botões — **Abrir no WhatsApp**
 (abre a conversa com a mensagem padrão e o link, você só aperta enviar),
@@ -5636,7 +5640,9 @@ Assinaturas digitais): visualizar e baixar — os mesmos do menu, inclusive o
 Coordenador Clínico; reenviar, cancelar e reenviar como novo — Consultor
 Comercial, Consultor Empresarial, Assistente Comercial, Financeiro da
 Franqueadora e Gerente de Unidade. O Coordenador vê e baixa, mas não reenvia
-nem cancela.
+nem cancela. **O link de assinatura de cada pessoa e os dados dela (CPF,
+telefone, e-mail) só aparecem para quem reenvia**, e todo PDF aberto ou baixado
+passa pelo sistema, que confere a permissão e registra na Auditoria (0.426.0).
 
 ### 13d.5. O contrato de adesão do Empresarial (0.378.0)
 
@@ -5882,7 +5888,7 @@ foi preparado para a assistente. Avise o administrador.
 
 ## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.426.0)*
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
 financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão

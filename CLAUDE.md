@@ -400,7 +400,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.425.0 → 0.426.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
+**11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.426.0 → 0.427.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
 
 - **Abas Financeiro e Comercial da Central, responsável financeiro e carência
   fixa em zero** (estado em `docs/asaas/ESTADO.md`; decisões na seção 14 da
@@ -414,9 +414,17 @@ Syncthing se comportarem de forma estranha.**
 
 **11/11/2026 (revisão da ZapSign) — PC Administrador (sem versão nova)**
 
-- **Revisão a fundo da assinatura digital** (pedido do dono): 9 itens no
-  backlog, **AP150–AP158** (3 de prioridade alta: anexo > 1 MB, documento
-  fora do sistema na ZapSign, link do paciente legível por quem só vê).
+**11/11/2026 (revisão da ZapSign) — PC Administrador (core 0.425.0 → 0.426.0, migração 0395)**
+
+- **Revisão a fundo da assinatura digital** (pedido do dono): itens no
+  backlog **AP150–AP158 e AP160**. Os 3 de prioridade alta corrigidos na
+  0.426.0 (bloco no ESTADO): anexo direto ao armazenamento, criação na ZapSign
+  sem repetição + reserva do envio, link/CPF dos signatários e o balde fora da
+  leitura do logado (0395). ⚠️ Leitura de signatário com a sessão da pessoa
+  NÃO pede `sign_url`/token/CPF/e-mail/telefone (régua).
+- ✅ **0395 aplicada nos dois bancos** (produção pelo dono em 11/11/2026;
+  conferido de fora: sem login `signature_signers` recusa com 42501, e
+  `signature_packages`, de controle, responde vazio). AP150–AP152 fechados.
 - ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
   (produção) ou `--treino`; liberado na regra local do Claude. Com
   `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign

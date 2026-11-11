@@ -17,7 +17,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | Fase | Situação | Migrações |
 |---|---|---|
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
-| **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.426.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
+| **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
 | ASA1, entrega 2 — a cobrança | plano aprovado (spec seção 14); **antes de começar**, o dono decide os pontos do 14.6 (parcela vencida e quitação por valor menor) | — |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
@@ -34,7 +34,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
 
-## ASA1, entrega 1 — abas Financeiro e Comercial e o responsável financeiro (Asaas 0.2.0, core 0.426.0, 11/11/2026)
+## ASA1, entrega 1 — abas Financeiro e Comercial e o responsável financeiro (Asaas 0.2.0, core 0.427.0, 11/11/2026)
 
 ### O que existe
 

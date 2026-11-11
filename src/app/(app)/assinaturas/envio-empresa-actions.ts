@@ -12,7 +12,7 @@ import {
   type AnexoDoPacote,
   type EmpresaOrigin,
 } from "@/lib/signatures/send-empresa";
-import { MAX_ATTACHMENT_BYTES } from "@/lib/signatures/validate";
+import { lerAnexosEnviados, lerReferencias } from "@/lib/signatures/anexos-enviados";
 
 /**
  * AS AÇÕES DA JANELA "ENVIAR PARA ASSINATURA" DA EMPRESA (ZS5). O trabalho de
@@ -94,9 +94,10 @@ export async function carregarContextoDaEmpresa(input: { origin: EmpresaOrigin }
  * Cria o rascunho e o PDF. O FormData leva `origin_type`, `origin_id`,
  * `incluir_contrato` ("1"), `avisos_lidos` ("1"), `rep_name`, `rep_cpf`,
  * `rep_email`, `rep_phone`, `witness_keys` (JSON), `representative_key`, os
- * arquivos do computador em `attachments` e `anexos_ordem` (JSON): a ordem dos
+ * arquivos do computador já mandados ao armazenamento em `attachment_refs`
+ * (JSON; AP150 — o arquivo não passa aqui) e `anexos_ordem` (JSON): a ordem dos
  * anexos, cada um `{ "origem": "computador", "indice": n }` (n = posição em
- * `attachments`) ou `{ "origem": "guardado", "id": "<company_files.id>" }`.
+ * `attachment_refs`) ou `{ "origem": "guardado", "id": "<company_files.id>" }`.
  */
 export async function prepararEnvioDaEmpresa(formData: FormData): Promise<PrepareResult> {
   const session = await getSessionContext();
@@ -116,12 +117,9 @@ export async function prepararEnvioDaEmpresa(formData: FormData): Promise<Prepar
   const witnessRaw = json("witness_keys");
   const witnessKeys = Array.isArray(witnessRaw) ? witnessRaw.filter((x): x is string => typeof x === "string") : [];
 
-  const arquivos: { name: string; bytes: Uint8Array }[] = [];
-  for (const f of formData.getAll("attachments")) {
-    if (!(f instanceof File) || f.size === 0) continue;
-    if (f.size > MAX_ATTACHMENT_BYTES) return { ok: false, error: `O anexo "${f.name}" passa de 8 MB.` };
-    arquivos.push({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) });
-  }
+  const lidos = await lerAnexosEnviados(session.userId, lerReferencias(str("attachment_refs")));
+  if (!lidos.ok) return lidos;
+  const arquivos = lidos.anexos;
 
   const ordemRaw = json("anexos_ordem");
   const anexos: AnexoDoPacote[] = [];

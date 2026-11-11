@@ -30,6 +30,7 @@ import type { PrepareResult, SendResult } from "@/lib/signatures/send";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { LinksDeAssinatura } from "./links-de-assinatura";
 import { AvisoDeDuplicidade, type Duplicidade } from "./aviso-de-duplicidade";
+import { enviarAnexos } from "./enviar-anexos";
 
 /**
  * A JANELA "ENVIAR PARA ASSINATURA" (plano ZS0 §10), em três passos:
@@ -172,8 +173,14 @@ export function EnviarParaAssinaturaDialog({
     fd.set("template_ids", JSON.stringify(templateIds));
     fd.set("witness_keys", JSON.stringify(witnessKeys));
     fd.set("representative_keys", JSON.stringify(repKeys));
-    for (const f of attachments) fd.append("attachments", f);
     startTransition(async () => {
+      // AP150: os PDFs vão direto ao armazenamento; a ação recebe só as referências.
+      const enviados = await enviarAnexos(attachments);
+      if (!enviados.ok) {
+        toast.error(enviados.error);
+        return;
+      }
+      fd.set("attachment_refs", JSON.stringify(enviados.refs));
       const r = await prepararEnvio(fd);
       if (r.ok) {
         setDuplicidade(null);

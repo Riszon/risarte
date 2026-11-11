@@ -74,9 +74,13 @@ async function registrar(pkg: PackageRow, action: "view" | "download" | "downloa
   });
 }
 
+/**
+ * AP152 (0395): o balde não tem mais regra de leitura para logados — a URL
+ * nasce aqui, pela chave de serviço, e SÓ depois de a ação conferir a
+ * permissão (visualizar/baixar) e o pacote ter sido lido pela RLS.
+ */
 async function urlAssinada(path: string, download?: string): Promise<string | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, URL_SECONDS, download ? { download } : undefined);
+  const { data, error } = await createAdminClient().storage.from(BUCKET).createSignedUrl(path, URL_SECONDS, download ? { download } : undefined);
   if (error || !data) {
     console.error("signature signed url failed:", error?.message);
     return null;
@@ -127,7 +131,7 @@ export async function baixarCopia(session: SessionContext, packageId: string, it
   if (!item) return { ok: false, error: "Documento não encontrado neste pacote." };
   if (!item.first_page || !item.last_page) return { ok: false, error: "As páginas deste documento não foram registradas no envio." };
 
-  const file = await supabase.storage.from(BUCKET).download(pkg.merged_pdf_path);
+  const file = await createAdminClient().storage.from(BUCKET).download(pkg.merged_pdf_path);
   if (file.error || !file.data) return { ok: false, error: "Não foi possível ler o PDF original do pacote." };
   let bytes: Uint8Array;
   try {
@@ -186,10 +190,11 @@ export async function carregarReenvio(
   if (!canSendSignatures(session, pkg.clinic_id)) return { ok: false, error: "Você não tem permissão para reenviar documentos." };
   if (pkg.status !== "sent" && pkg.status !== "partially_signed") return { ok: false, error: "Este pacote não está aguardando assinatura." };
 
-  const supabase = await createClient();
   const admin = createAdminClient();
+  // AP152 (0395): o link e o telefone não são lidos com a sessão da pessoa;
+  // a permissão de reenviar já foi conferida acima.
   const [{ data: signers }, { data: settings }, { data: clinic }] = await Promise.all([
-    supabase
+    admin
       .from("signature_signers")
       .select("id, name, signer_type, order_group, sort_order, status, sign_url, phone, last_notified_at")
       .eq("package_id", pkg.id)

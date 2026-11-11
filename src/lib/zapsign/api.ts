@@ -58,7 +58,12 @@ export async function createDocumentFromPdf(
     // A ordem no corpo é a ordem dos grupos: o teste prende isto.
     signers: [...input.signers].sort((a, b) => (a.order_group ?? 1) - (b.order_group ?? 1)),
   };
-  return zapsignRequest<ZapsignDocument>("POST", "/docs/", body, options);
+  // AP151: a CRIAÇÃO NUNCA SE REPETE. Se a ZapSign criou o documento e só
+  // demorou a responder, repetir criaria um SEGUNDO documento (gasta crédito
+  // e o primeiro fica fora do riSZon). Sem resposta, o envio falha e a pessoa
+  // tenta de novo pela tela — e o tempo limite é maior que o das consultas,
+  // porque o PDF vai inteiro no corpo.
+  return zapsignRequest<ZapsignDocument>("POST", "/docs/", body, { timeoutMs: 60_000, ...options, retries: 0 });
 }
 
 export async function getDocument(docToken: string, options?: ZapsignRequestOptions): Promise<ZapsignDocument> {
