@@ -4,7 +4,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 
 > ## 💲 0.425.0 — VENDA DIRETA: O PREÇO É O DO CATÁLOGO (11/11/2026; migração 0394)
 >
-> AP139 (escolhido com o dono para o dia). ⏳ **0394 SÓ NO TREINO.**
+> AP139 (escolhido com o dono para o dia). ✅ **0394 APLICADA nos dois bancos**
+> (o dono, 11/11/2026; conferido de fora: porta e crua recusam sem login, a
+> crua existe). AP139 fechado.
 > - ⚠️ **`create_direct_sale_v2` virou PORTA sobre `_create_direct_sale_v2_raw`**
 >   (a conta da venda — sessões, avisos, auditoria — mora na crua). A porta
 >   remonta os itens: preço = `catalog_price_for`; preço diferente da tela →

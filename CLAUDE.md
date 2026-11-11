@@ -421,7 +421,8 @@ Syncthing se comportarem de forma estranha.**
   grava (régua).
 - ⚠️ **Treino sem IPv6 nesta máquina:** `RISARTE_TREINO_POOLER=1` antes de
   `npm run migrar:teste` e dos ensaios.
-- ⏳ **0394 só no treino.** Não visto na tela.
+- ✅ **0394 aplicada nos dois bancos** (o dono, 11/11/2026; conferido de
+  fora). Não visto na tela.
 
 **11/11/2026 (relatos, OC-00176) — PC Administrador (core 0.423.0 → 0.424.0, sem migração)**
 
