@@ -400,11 +400,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**11/11/2026 (revisão da ZapSign) — PC Administrador (sem versão nova)**
+**11/11/2026 (revisão da ZapSign) — PC Administrador (core 0.425.0 → 0.426.0, migração 0395)**
 
-- **Revisão a fundo da assinatura digital** (pedido do dono): 9 itens no
-  backlog, **AP150–AP158** (3 de prioridade alta: anexo > 1 MB, documento
-  fora do sistema na ZapSign, link do paciente legível por quem só vê).
+- **Revisão a fundo da assinatura digital** (pedido do dono): itens no
+  backlog **AP150–AP158 e AP160**. Os 3 de prioridade alta corrigidos na
+  0.426.0 (bloco no ESTADO): anexo direto ao armazenamento, criação na ZapSign
+  sem repetição + reserva do envio, link/CPF dos signatários e o balde fora da
+  leitura do logado (0395). ⚠️ Leitura de signatário com a sessão da pessoa
+  NÃO pede `sign_url`/token/CPF/e-mail/telefone (régua).
 - ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
   (produção) ou `--treino`; liberado na regra local do Claude. Com
   `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign

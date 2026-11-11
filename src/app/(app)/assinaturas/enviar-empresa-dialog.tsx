@@ -30,6 +30,7 @@ import {
 } from "./envio-empresa-actions";
 import { LinksDeAssinatura } from "./links-de-assinatura";
 import { AvisoDeDuplicidade, type Duplicidade } from "./aviso-de-duplicidade";
+import { enviarAnexos } from "./enviar-anexos";
 
 /**
  * A JANELA "ENVIAR PARA ASSINATURA" DA EMPRESA (ZS5, plano ZS0 §4.6), no
@@ -194,18 +195,25 @@ export function EnviarEmpresaParaAssinaturaDialog({
     fd.set("rep_phone", rep.phone);
     fd.set("witness_keys", JSON.stringify(witnessKeys));
     fd.set("representative_key", repKey);
-    // Os arquivos do computador vão em "attachments"; a ordem de TODOS os
-    // anexos (computador e guardados) vai em "anexos_ordem".
+    // Os arquivos do computador vão direto ao armazenamento (AP150) e chegam à
+    // ação como "attachment_refs"; a ordem de TODOS os anexos (computador e
+    // guardados) vai em "anexos_ordem".
     const ordem: ({ origem: "computador"; indice: number } | { origem: "guardado"; id: string })[] = [];
-    let indice = 0;
+    const doComputador: File[] = [];
     for (const a of anexos) {
       if (a.origem === "computador") {
-        fd.append("attachments", a.file);
-        ordem.push({ origem: "computador", indice: indice++ });
+        ordem.push({ origem: "computador", indice: doComputador.length });
+        doComputador.push(a.file);
       } else ordem.push({ origem: "guardado", id: a.arquivoId });
     }
     fd.set("anexos_ordem", JSON.stringify(ordem));
     startTransition(async () => {
+      const enviados = await enviarAnexos(doComputador);
+      if (!enviados.ok) {
+        toast.error(enviados.error);
+        return;
+      }
+      fd.set("attachment_refs", JSON.stringify(enviados.refs));
       const r = await prepararEnvioDaEmpresa(fd);
       if (r.ok) {
         setDuplicidade(null);

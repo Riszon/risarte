@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.426.0",
+    data: "2026-11-11",
+    migracao: "0395",
+    titulo: "Assinatura digital: anexos grandes, envio sem duplicar e o link do paciente protegido",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Os PDFs avulsos do pacote (exames, termos de fora) voltaram a aceitar até 8 MB cada: antes, qualquer arquivo acima de 1 MB dava erro ao preparar.",
+        papeis: "todos",
+        manual: "13d.1. Enviar um documento para o paciente assinar (0.374.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Clicar duas vezes em Enviar para assinatura, ou enviar o mesmo pacote em duas abas, não cria mais dois documentos na ZapSign: a segunda tentativa avisa que o pacote já está sendo enviado.",
+        papeis: "todos",
+        manual: "13d.1. Enviar um documento para o paciente assinar (0.374.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O link de assinatura de cada pessoa e os dados dela (CPF, telefone, e-mail) só saem para quem pode reenviar; e todo PDF de pacote, aberto ou baixado, passa pelo sistema, que confere a permissão e registra na Auditoria.",
+        papeis: "todos",
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+    ],
+  },
+  {
     versao: "0.425.0",
     data: "2026-11-11",
     migracao: "0394",

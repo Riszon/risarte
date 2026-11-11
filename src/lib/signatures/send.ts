@@ -402,6 +402,39 @@ export async function gerarPdfDoPacote(input: {
   }
 }
 
+/** A criação pode ter acontecido mesmo sem resposta (tempo esgotado, rede, 5xx). */
+export function criacaoIncerta(e: unknown): boolean {
+  if (!(e instanceof ZapsignError)) return false;
+  return e.code === "timeout" || e.code === "network" || (e.httpStatus ?? 0) >= 500;
+}
+
+export const MENSAGEM_ENVIO_EM_ANDAMENTO =
+  "Este pacote já está sendo enviado (outro clique ou outra aba). Aguarde alguns segundos e confira a ficha antes de tentar de novo.";
+
+/**
+ * AP151: a reserva do envio. Devolve a mensagem da recusa, ou `null` quando
+ * esta tentativa pode seguir. A chave `send_claim|pacote|N` (N = falhas já
+ * registradas) é única em `signature_events.event_key`.
+ */
+export async function reservarEnvio(admin: ReturnType<typeof createAdminClient>, packageId: string, userId: string): Promise<string | null> {
+  const { count, error } = await admin
+    .from("signature_events")
+    .select("id", { count: "exact", head: true })
+    .eq("package_id", packageId)
+    .eq("event_type", "send_failed");
+  if (error || count === null) return "Não foi possível conferir o pacote agora. Tente de novo em instantes.";
+  const { error: erro } = await admin.from("signature_events").insert({
+    package_id: packageId,
+    event_type: "send_claimed",
+    event_key: `send_claim|${packageId}|${count}`,
+    actor_user_id: userId,
+  });
+  if (!erro) return null;
+  if (erro.code === "23505") return MENSAGEM_ENVIO_EM_ANDAMENTO;
+  console.error("signature send claim failed:", erro.message);
+  return "Não foi possível reservar o envio agora. Tente de novo em instantes.";
+}
+
 export async function enviarPacote(input: { session: SessionContext; packageId: string }): Promise<SendResult> {
   const admin = createAdminClient();
   const { data: pkg, error } = await admin
@@ -465,6 +498,14 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
     signers: zapSigners,
     sandbox: zapsignEnv() === "sandbox",
   };
+
+  // AP151: RESERVA O ENVIO antes de criar na ZapSign. Dois cliques ou duas
+  // abas criavam dois documentos (o perdedor ficava vivo lá, fora do riSZon).
+  // A chave do evento é única: só uma tentativa por vez passa. Depois de uma
+  // falha registrada (`send_failed`), a chave muda e a pessoa pode tentar de
+  // novo.
+  const reserva = await reservarEnvio(admin, pkg.id, input.session.userId);
+  if (reserva) return { ok: false, error: reserva };
 
   const fake = isZapsignFake();
   let docToken: string | null = null;
@@ -548,15 +589,34 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
   } catch (e) {
     const msg = e instanceof ZapsignError ? e.logMessage : e instanceof Error ? e.message : String(e);
     console.error("signature send failed:", msg);
+    // AP151: o documento criado é cancelado na ZapSign; se o cancelamento
+    // falhar, o token FICA no rastro (antes só ia para o log e o documento
+    // vivo ficava sem registro no riSZon).
+    let cancelado: boolean | null = null;
     if (docToken) {
       try {
         if (fake) await refuseDocumentFake();
         else await refuseDocument({ doc_token: docToken, rejected_reason: "riSZon: falha ao concluir o envio", notify_signer: false });
+        cancelado = true;
       } catch (e2) {
+        cancelado = false;
         console.error("signature refuse after failure failed:", e2 instanceof Error ? e2.message : String(e2));
       }
     }
-    await admin.from("signature_events").insert({ package_id: pkg.id, event_type: "send_failed", actor_user_id: input.session.userId, error: msg.slice(0, 500) });
+    await admin.from("signature_events").insert({
+      package_id: pkg.id,
+      event_type: "send_failed",
+      actor_user_id: input.session.userId,
+      error: msg.slice(0, 500),
+      payload: {
+        doc_token: docToken,
+        doc_cancelled: cancelado,
+        // Sem resposta da criação, o documento PODE existir na ZapSign: a
+        // conferência (scripts/conferir-assinatura-digital.mjs) acha pelo
+        // external_id = este pacote.
+        creation_uncertain: !docToken && criacaoIncerta(e),
+      },
+    });
     await admin.from("signature_signers").update({ zapsign_signer_token: null, sign_url: null }).eq("package_id", pkg.id);
     // AP108: outro envio do mesmo documento passou na frente (0361) — o
     // documento recém-criado já foi cancelado na ZapSign acima.

@@ -89,7 +89,9 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
       .select("sort_order, template_id, title, rendered_data, first_page, last_page, origin_type, origin_id")
       .eq("package_id", old.id)
       .order("sort_order"),
-    supabase
+    // AP152 (0395): CPF, e-mail e telefone não são lidos com a sessão da
+    // pessoa; o pacote já passou pela RLS e a permissão de enviar, acima.
+    admin
       .from("signature_signers")
       .select("sort_order, order_group, signer_type, name, cpf, email, phone, user_id, staff_member_id, auth_mode_applied")
       .eq("package_id", old.id)
@@ -123,7 +125,7 @@ export async function reenviarComoNovo(session: SessionContext, packageId: strin
         return { ok: false, error: `O anexo "${it.title}" não pode ser recuperado do pacote original. Envie um pacote novo pela ficha.` };
       }
       if (!merged) {
-        const file = await supabase.storage.from(BUCKET).download(old.merged_pdf_path);
+        const file = await admin.storage.from(BUCKET).download(old.merged_pdf_path);
         if (file.error || !file.data) return { ok: false, error: "Não foi possível ler o PDF do pacote original." };
         merged = new Uint8Array(await file.data.arrayBuffer());
       }

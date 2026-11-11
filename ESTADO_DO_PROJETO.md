@@ -2,6 +2,29 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔐 0.426.0 — ASSINATURA DIGITAL: OS TRÊS DE PRIORIDADE ALTA DA REVISÃO (11/11/2026; migração 0395)
+>
+> Revisão a fundo pedida pelo dono (achados AP150–AP160 no backlog; conferência
+> só de leitura `scripts/conferir-assinatura-digital.mjs`).
+>
+> - **AP150 — anexo > 1 MB não passava** (limite da ação de servidor). Agora o
+>   navegador manda o PDF direto ao balde (`enviar-anexos.ts` +
+>   `pedirEnvioDeAnexo`, URL assinada de upload em `anexos-temp/<usuário>/`); a
+>   preparação lê pela chave de serviço (`lerAnexosEnviados`, confere o dono
+>   do caminho e 8 MB) e apaga a cópia temporária.
+> - **AP151 — documento fora do sistema:** a criação na ZapSign nunca se
+>   repete (`retries: 0`, 60 s); o envio é reservado antes por
+>   `signature_events.event_key` único (`reservarEnvio`); a falha guarda o
+>   token do documento e se o cancelamento pegou.
+> - **AP152 — link do paciente:** 0395 = leitura por coluna em
+>   `signature_signers` (sem `sign_url`, token, CPF, e-mail, telefone) e sem
+>   leitura do balde para logados. ⚠️ **Leitura nova de signatário com a sessão
+>   da pessoa não pode pedir essas colunas** (régua
+>   `assinaturas-revisao-ap150-152.test.ts`); URL de PDF só por
+>   `createAdminClient()` depois da permissão.
+> - Testes provados quebrando 5 vezes; ensaio 7/7 no treino. **Não visto na
+>   tela.** O código funciona antes e depois da 0395.
+
 > ## 💲 0.425.0 — VENDA DIRETA: O PREÇO É O DO CATÁLOGO (11/11/2026; migração 0394)
 >
 > AP139 (escolhido com o dono para o dia). ✅ **0394 APLICADA nos dois bancos**
