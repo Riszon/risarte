@@ -2,6 +2,30 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔁 0.428.0 — ASSINATURA DIGITAL: OS DE PRIORIDADE MÉDIA DA REVISÃO (11/11/2026; migração 0396)
+>
+> AP153–AP157 (revisão a fundo pedida pelo dono; EV-326). A 0.427.0 é da
+> sessão do Asaas.
+>
+> - **AP153 — cópia ao cliente:** `src/lib/signatures/fila-de-email.ts` é a
+>   ÚNICA porta da `signature_outbox` (pôr e mandar). ⚠️ Cópia nunca congela
+>   `attachment_path` ao entrar: o anexo é resolvido na hora de mandar; sem PDF
+>   guardado, espera. Vai a todo o grupo 1 com e-mail.
+> - **AP154 — prazo e vencimento:** `prazoDeAssinatura` (23:59 de Brasília);
+>   0396 deixa `doc_signed` valer sobre pacote vencido PELA ROTINA
+>   (`expired_by_routine`). ⚠️ Ao recriar `signature_apply_webhook`, partir da
+>   0396 (não da 0359): ela tem esse ramo e a guarda do rascunho.
+> - **AP155 — falhas avisam:** porta `signature_failure_notices` (0396), pela rotina
+>   horária; uma vez por falha (`failure_notice|<evento>`). PDF desiste em 12
+>   falhas (`pdf_fetch_gave_up`).
+> - **AP156 — Reenviar como novo:** contatos do cadastro de hoje + conferência
+>   + trava do já assinado.
+> - **AP157 — RisLife:** a trava vale para quem tem o papel (não só para quem
+>   tem só ele), exceto gestor do programa.
+> - Testes provados quebrando 5 vezes; ensaio 8/8 no treino. **Não visto na
+>   tela.** O código funciona antes e depois da 0396 (a função recriada é do
+>   banco; o app não depende dela mudar).
+
 > ## 🔌 0.427.0 / ASAAS 0.2.0 — ASA1, ENTREGA 1: ABAS FINANCEIRO E COMERCIAL E O RESPONSÁVEL FINANCEIRO (11/11/2026; migração 4003)
 >
 > Estado completo em `docs/asaas/ESTADO.md`; decisões na seção 14 da

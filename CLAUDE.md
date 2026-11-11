@@ -425,6 +425,10 @@ Syncthing se comportarem de forma estranha.**
 - ✅ **0395 aplicada nos dois bancos** (produção pelo dono em 11/11/2026;
   conferido de fora: sem login `signature_signers` recusa com 42501, e
   `signature_packages`, de controle, responde vazio). AP150–AP152 fechados.
+- **0.428.0 (migração 0396): AP153–AP157** (bloco no ESTADO). ⚠️ A fila de
+  e-mail da assinatura é só `fila-de-email.ts`; falhas do pós-assinatura avisam
+  pela porta `signature_failure_notices` (0396); ao recriar `signature_apply_webhook`,
+  partir da 0396. ⏳ 0396 no treino; produção com o dono.
 - ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
   (produção) ou `--treino`; liberado na regra local do Claude. Com
   `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign

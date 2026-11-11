@@ -1,5 +1,6 @@
 import "server-only";
 
+import { prazoDeAssinatura } from "./prazo";
 import type { SessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatBrDate, formatInBrazil, todayInBrazil } from "@/lib/dates";
@@ -178,8 +179,8 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
 
   const linkedAmountCents = ctx.treatment?.totalCents ?? null;
   const auth = nivelDeAutenticacao({ templates, linkedAmountCents, thresholdCents: ctx.settings.thresholdCents });
-  const expiresAt = new Date(Date.now() + ctx.settings.patientExpiryDays * 86_400_000);
-  expiresAt.setUTCHours(23, 59, 0, 0);
+  // AP154: o prazo termina às 23:59 de BRASÍLIA (antes, 23:59 UTC = 20:59 aqui).
+  const expiresAt = prazoDeAssinatura(ctx.settings.patientExpiryDays);
 
   const guardian = ctx.isMinor ? (ctx.guardians[0] ?? null) : null;
   const todayIso = todayInBrazil();

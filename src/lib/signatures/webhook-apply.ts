@@ -1,11 +1,11 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatBrDate } from "@/lib/dates";
-import { isEmailConfigured, sendEmail } from "@/lib/notify/email";
+import { isEmailConfigured } from "@/lib/notify/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ZapsignWebhookEvent } from "@/lib/zapsign/webhook";
 import { BUCKET } from "./send";
+import { enfileirarCopias, mandarCopiasDoPacote } from "./fila-de-email";
 import { eventoParaPorta, type PortaResult } from "./webhook-event";
 
 /**
@@ -59,7 +59,10 @@ export async function aplicarWebhook(
     out.signedFile = await guardarAssinado(admin, fetchImpl, r, event);
   }
   if (r.newly_signed) {
-    out.copy = await enfileirarCopia(admin, r, out.signedFile === "saved");
+    // AP153: a cópia vai para a fila de cada pessoa do lado do cliente; com o
+    // e-mail ligado e o PDF guardado, sai na hora (senão a rotina manda).
+    const fila = await enfileirarCopias(admin, r.package_id, { registrarSemEmail: true });
+    out.copy = fila === "queued" && isEmailConfigured() && out.signedFile === "saved" ? await mandarCopiasDoPacote(admin, r.package_id) : fila;
   }
   return out;
 }
@@ -95,54 +98,4 @@ export async function guardarAssinado(
   } catch (e) {
     return pendente(e instanceof Error ? e.message : String(e));
   }
-}
-
-/**
- * A cópia assinada ao cliente: uma linha na fila (`signature_outbox`); com o
- * e-mail configurado e o PDF já guardado, tenta na hora.
- */
-async function enfileirarCopia(admin: SupabaseClient, r: PortaResult, pdfSaved: boolean): Promise<"sent" | "queued" | "not_needed"> {
-  const packageId = r.package_id!;
-  const { data: signer } = await admin
-    .from("signature_signers")
-    .select("name, email")
-    .eq("package_id", packageId)
-    .eq("order_group", 1)
-    .order("sort_order")
-    .limit(1)
-    .maybeSingle();
-  if (!signer?.email) {
-    await admin.from("signature_events").insert({ package_id: packageId, event_type: "copy_skipped", error: "cliente sem e-mail" });
-    return "not_needed";
-  }
-  const { data: pkg } = await admin.from("signature_packages").select("number, clinic_id, expires_at, signed_pdf_path, completed_at, cover_data").eq("id", packageId).maybeSingle();
-  const clinicName = (pkg?.cover_data as { clinic_name?: string } | null)?.clinic_name ?? "Risarte Odontologia";
-  const subject = `Seus documentos assinados — ${pkg?.number ?? ""}`.trim();
-  const text =
-    `Olá, ${signer.name.split(/\s+/)[0]}!\n\n` +
-    `Todos assinaram os documentos do pacote ${pkg?.number ?? ""} da ${clinicName}` +
-    (pkg?.completed_at ? ` em ${formatBrDate(pkg.completed_at)}` : "") +
-    `. A cópia assinada vai anexa a este e-mail.\n\nQualquer dúvida, fale com a unidade.\n\nRisarte Odontologia`;
-
-  const { data: row, error } = await admin
-    .from("signature_outbox")
-    .insert({ kind: "signed_copy", package_id: packageId, to_email: signer.email, to_name: signer.name, subject, body_text: text, attachment_path: pkg?.signed_pdf_path ?? null })
-    .select("id")
-    .single();
-  if (error || !row) {
-    console.error("signature_outbox:", error?.message);
-    return "queued";
-  }
-  if (!isEmailConfigured() || !pdfSaved || !pkg?.signed_pdf_path) return "queued";
-
-  const file = await admin.storage.from(BUCKET).download(pkg.signed_pdf_path);
-  if (file.error || !file.data) return "queued";
-  const bytes = new Uint8Array(await file.data.arrayBuffer());
-  const sent = await sendEmail({ to: signer.email, toName: signer.name, subject, text, attachments: [{ filename: `${pkg.number}-assinado.pdf`, bytes }] });
-  await admin
-    .from("signature_outbox")
-    .update(sent.ok ? { status: "sent", sent_at: new Date().toISOString(), attempts: 1 } : { status: "pending", attempts: 1, last_error: sent.error })
-    .eq("id", row.id);
-  await admin.from("signature_events").insert({ package_id: packageId, event_type: sent.ok ? "copy_sent" : "copy_failed", error: sent.ok ? null : sent.error });
-  return sent.ok ? "sent" : "queued";
 }

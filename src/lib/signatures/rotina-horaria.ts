@@ -1,13 +1,15 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isEmailConfigured, sendEmail } from "@/lib/notify/email";
+import { isEmailConfigured } from "@/lib/notify/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getDocument, isZapsignConfigured, isZapsignFake, zapsignEnv } from "@/lib/zapsign";
 import { eventosDaConferencia } from "./conferencia";
 import { contagemConfirmada } from "@/lib/contagem";
-import { BUCKET } from "./send";
+import { lerPorLotes } from "@/lib/paginar";
 import { aplicarWebhook, guardarAssinado } from "./webhook-apply";
+import { avisarFalhas } from "./avisos-de-falha";
+import { COLUNAS_DA_FILA, enfileirarCopias, mandarLinha, type LinhaDaFila } from "./fila-de-email";
 
 /**
  * A ROTINA DE HORA EM HORA (ZS6, plano ZS0 §5.7) — `/api/cron/signatures-hourly`,
@@ -30,7 +32,7 @@ import { aplicarWebhook, guardarAssinado } from "./webhook-apply";
 const LIMITE_CONFERENCIA = 40;
 const LIMITE_DOWNLOADS = 20;
 const LIMITE_EMAILS = 50;
-const MAX_TENTATIVAS = 3;
+const MAX_TENTATIVAS_PDF = 12;
 
 export type RotinaHorariaStats = {
   conferidos: number;
@@ -65,7 +67,10 @@ export async function rodarRotinaHoraria(deps: { admin?: SupabaseClient; fetchIm
     await conferir(admin, fetchImpl, stats);
     await buscarPdfsPendentes(admin, fetchImpl, stats);
   }
+  await copiasQueFaltam(admin, stats);
   await mandarFila(admin, stats);
+  // AP155: falha do pós-assinatura e rotina parada viram aviso ao Admin.
+  await avisarFalhas(admin, stats);
 
   const { error } = await admin.rpc("signature_log_job_run", {
     p_job: "hourly",
@@ -80,29 +85,50 @@ async function conferir(admin: SupabaseClient, fetchImpl: typeof fetch, stats: R
   const { data: settings } = await admin.from("signature_settings").select("reconcile_after_hours").eq("id", true).maybeSingle();
   const horas = Math.max(1, Number(settings?.reconcile_after_hours ?? 6));
   const corte = new Date(Date.now() - horas * 3_600_000).toISOString();
-  const { data: pacotes, error } = await admin
-    .from("signature_packages")
-    .select("id, zapsign_doc_token")
-    .in("status", ["sent", "partially_signed"])
-    .not("zapsign_doc_token", "is", null)
-    .lt("sent_at", corte)
-    .order("sent_at")
-    .limit(LIMITE_CONFERENCIA * 3);
-  if (error) {
-    stats.erros.push(`conferência: ${error.message}`);
+  // AP155: antes só os 120 mais antigos entravam na conta e o resto nunca era
+  // conferido. Agora a lista inteira (até 1.000) é filtrada de uma vez pelo
+  // que teve notícia nas últimas horas — quem foi conferido agora espera a
+  // vez, e os de trás chegam a ela.
+  // AP154: entram também os vencidos nos últimos 7 dias — a ZapSign pode ter
+  // assinatura feita no limite (a porta, 0396, só aplica ao vencido pela rotina).
+  const seteDias = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const [abertos, vencidos] = await Promise.all([
+    admin
+      .from("signature_packages")
+      .select("id, zapsign_doc_token")
+      .in("status", ["sent", "partially_signed"])
+      .not("zapsign_doc_token", "is", null)
+      .lt("sent_at", corte)
+      .order("sent_at")
+      .limit(1000),
+    admin
+      .from("signature_packages")
+      .select("id, zapsign_doc_token")
+      .eq("status", "expired")
+      .not("zapsign_doc_token", "is", null)
+      .gte("expires_at", seteDias)
+      .order("expires_at")
+      .limit(200),
+  ]);
+  const erro = abertos.error ?? vencidos.error;
+  if (erro) {
+    stats.erros.push(`conferência: ${erro.message}`);
     return;
   }
-  for (const p of pacotes ?? []) {
+  const candidatos = [...(abertos.data ?? []), ...(vencidos.data ?? [])];
+  // Quem teve notícia nas últimas horas — lido em lotes (a API corta em 1.000).
+  const recentes = await lerPorLotes<{ package_id: string }>(
+    candidatos.map((p) => p.id),
+    (lote, de, ate) => admin.from("signature_events").select("package_id").in("package_id", lote).gt("created_at", corte).range(de, ate)
+  );
+  if (!recentes.ok) {
+    stats.erros.push("conferência: não foi possível ler as notícias recentes");
+    return;
+  }
+  const comNoticia = new Set(recentes.linhas.map((e) => e.package_id));
+  const pacotes = candidatos.filter((p) => !comNoticia.has(p.id));
+  for (const p of pacotes) {
     if (stats.conferidos >= LIMITE_CONFERENCIA) break;
-    // Teve notícia (webhook, ação ou conferência) nas últimas horas? Pula.
-    const { data: ultimo } = await admin
-      .from("signature_events")
-      .select("created_at")
-      .eq("package_id", p.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (ultimo?.created_at && ultimo.created_at > corte) continue;
     stats.conferidos++;
     try {
       const doc = await getDocument(p.zapsign_doc_token as string);
@@ -131,33 +157,95 @@ async function conferir(admin: SupabaseClient, fetchImpl: typeof fetch, stats: R
 }
 
 async function buscarPdfsPendentes(admin: SupabaseClient, fetchImpl: typeof fetch, stats: RotinaHorariaStats) {
-  const { data: pacotes, error } = await admin
+  // AP155: o PDF que nunca baixa (documento de teste, apagado na ZapSign) não
+  // ocupa mais a vaga para sempre: depois de MAX_TENTATIVAS_PDF falhas o
+  // pacote sai da busca e o Admin é avisado (`pdf_fetch_gave_up`).
+  const { data: candidatos, error } = await admin
     .from("signature_packages")
     .select("id, clinic_id, number, zapsign_doc_token")
     .eq("status", "signed")
     .is("signed_pdf_path", null)
     .not("zapsign_doc_token", "is", null)
     .order("completed_at")
-    .limit(LIMITE_DOWNLOADS);
+    .limit(200);
   if (error) {
     stats.erros.push(`PDF assinado: ${error.message}`);
     return;
   }
-  for (const p of pacotes ?? []) {
+  const ids = (candidatos ?? []).map((p) => p.id);
+  const { data: tentativas } = ids.length
+    ? await admin.from("signature_events").select("package_id, event_type").in("package_id", ids).in("event_type", ["pdf_fetch_failed", "pdf_fetch_gave_up"])
+    : { data: [] as { package_id: string; event_type: string }[] };
+  const falhas = new Map<string, number>();
+  const desistidos = new Set<string>();
+  for (const t of tentativas ?? []) {
+    if (t.event_type === "pdf_fetch_gave_up") desistidos.add(t.package_id);
+    else falhas.set(t.package_id, (falhas.get(t.package_id) ?? 0) + 1);
+  }
+  const pacotes = (candidatos ?? []).filter((p) => !desistidos.has(p.id)).slice(0, LIMITE_DOWNLOADS);
+  for (const p of pacotes) {
+    const falhou = async (motivo: string) => {
+      stats.erros.push(`PDF ${p.id}: ${motivo.slice(0, 120)}`);
+      await admin.from("signature_events").insert({ package_id: p.id, event_type: "pdf_fetch_failed", error: motivo.slice(0, 300) });
+      if (desistirDoPdf((falhas.get(p.id) ?? 0) + 1)) {
+        await admin.from("signature_events").insert({
+          package_id: p.id,
+          event_type: "pdf_fetch_gave_up",
+          error: `O PDF assinado não veio da ZapSign em ${MAX_TENTATIVAS_PDF} tentativas: ${motivo.slice(0, 200)}`,
+        });
+      }
+    };
     try {
       const doc = await getDocument(p.zapsign_doc_token as string);
-      if (!doc.signed_file) continue;
+      if (!doc.signed_file) {
+        await falhou("a ZapSign ainda não tem o PDF assinado");
+        continue;
+      }
       const r = await guardarAssinado(
         admin,
         fetchImpl,
         { duplicate: false, matched: true, package_id: p.id, clinic_id: p.clinic_id, number: p.number },
         { signedFileUrl: doc.signed_file }
       );
-      if (r === "saved") stats.pdfsBuscados++;
+      if (r === "saved") {
+        stats.pdfsBuscados++;
+        // AP153: a cópia ao cliente entra agora (se ainda não estava na fila).
+        await enfileirarCopias(admin, p.id);
+      } else await falhou("o download do PDF assinado falhou");
     } catch (e) {
-      stats.erros.push(`PDF ${p.id}: ${(e instanceof Error ? e.message : String(e)).slice(0, 120)}`);
+      await falhou(e instanceof Error ? e.message : String(e));
     }
   }
+}
+
+/** Regra pura (AP155): a partir de quantas falhas a rotina desiste do PDF. */
+export function desistirDoPdf(falhas: number): boolean {
+  return falhas >= MAX_TENTATIVAS_PDF;
+}
+
+/**
+ * AP153: a cópia que faltou. Se a função caiu entre gravar a assinatura no
+ * banco e pôr a cópia na fila, a repetição da ZapSign é reconhecida como
+ * repetida e a cópia nunca entraria. Pacote assinado nos últimos 7 dias, sem
+ * cópia na fila, ganha a sua aqui.
+ */
+async function copiasQueFaltam(admin: SupabaseClient, stats: RotinaHorariaStats) {
+  const seteDias = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const { data: assinados, error } = await admin
+    .from("signature_packages")
+    .select("id")
+    .eq("status", "signed")
+    .gte("completed_at", seteDias)
+    .limit(200);
+  if (error) {
+    stats.erros.push(`cópias: ${error.message}`);
+    return;
+  }
+  const ids = (assinados ?? []).map((p) => p.id);
+  if (ids.length === 0) return;
+  const { data: naFila } = await admin.from("signature_outbox").select("package_id").eq("kind", "signed_copy").in("package_id", ids);
+  const comCopia = new Set((naFila ?? []).map((x) => x.package_id as string));
+  for (const id of ids) if (!comCopia.has(id)) await enfileirarCopias(admin, id);
 }
 
 async function mandarFila(admin: SupabaseClient, stats: RotinaHorariaStats) {
@@ -172,7 +260,7 @@ async function mandarFila(admin: SupabaseClient, stats: RotinaHorariaStats) {
 
   const { data: fila, error } = await admin
     .from("signature_outbox")
-    .select("id, to_email, to_name, subject, body_text, attachment_path, attempts")
+    .select(COLUNAS_DA_FILA)
     .eq("status", "pending")
     .order("created_at")
     .limit(LIMITE_EMAILS);
@@ -180,26 +268,10 @@ async function mandarFila(admin: SupabaseClient, stats: RotinaHorariaStats) {
     stats.erros.push(`fila: ${error.message}`);
     return;
   }
-  for (const m of fila ?? []) {
-    let anexos: { filename: string; bytes: Uint8Array }[] = [];
-    if (m.attachment_path) {
-      const baixado = await admin.storage.from(BUCKET).download(m.attachment_path);
-      if (baixado.error || !baixado.data) {
-        // Sem o anexo o e-mail não sai (a cópia assinada é o motivo dele).
-        await marcarFalha(admin, m.id, m.attempts, "anexo não encontrado no bucket");
-        stats.emailsComErro++;
-        continue;
-      }
-      anexos = [{ filename: m.attachment_path.split("/").pop() ?? "documento.pdf", bytes: new Uint8Array(await baixado.data.arrayBuffer()) }];
-    }
-    const r = await sendEmail({ to: m.to_email, toName: m.to_name, subject: m.subject, text: m.body_text, attachments: anexos });
-    if (r.ok) {
-      await admin.from("signature_outbox").update({ status: "sent", sent_at: new Date().toISOString(), attempts: m.attempts + 1, last_error: null }).eq("id", m.id);
-      stats.emailsEnviados++;
-    } else {
-      await marcarFalha(admin, m.id, m.attempts, r.error);
-      stats.emailsComErro++;
-    }
+  for (const m of (fila ?? []) as LinhaDaFila[]) {
+    const r = await mandarLinha(admin, m);
+    if (r === "sent") stats.emailsEnviados++;
+    else if (r === "failed") stats.emailsComErro++;
   }
   stats.emailsNaFila = contagemConfirmada(
     await admin.from("signature_outbox").select("id", { count: "exact", head: true }).eq("status", "pending")
@@ -207,10 +279,3 @@ async function mandarFila(admin: SupabaseClient, stats: RotinaHorariaStats) {
   if (stats.emailsNaFila === null) stats.erros.push("fila: não foi possível contar o que restou");
 }
 
-async function marcarFalha(admin: SupabaseClient, id: number, tentativas: number, erro: string) {
-  const agora = tentativas + 1;
-  await admin
-    .from("signature_outbox")
-    .update({ attempts: agora, last_error: erro.slice(0, 300), status: agora >= MAX_TENTATIVAS ? "failed" : "pending" })
-    .eq("id", id);
-}

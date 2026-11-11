@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.428.0",
+    data: "2026-11-11",
+    migracao: "0396",
+    titulo: "Assinatura digital: cópia com o PDF, prazo até 23:59, falhas que avisam e reenvio com dados novos",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O link de assinatura vale até as 23:59 de Brasília do último dia (antes vencia às 20:59). E se alguém assinou na ZapSign bem no limite, a conferência de hora em hora acerta o pacote para Assinado.",
+        papeis: "todos",
+        manual: "13d.6. O que o sistema faz sozinho: lembretes, vencimento e consumo (0.380.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A cópia assinada ao cliente vai a cada pessoa do lado do cliente com e-mail e só sai com o PDF assinado anexado — antes podia sair sem o anexo. Alerta de consumo antigo não sai mais quando o e-mail for ligado.",
+        papeis: "todos",
+        manual: "13d.6. O que o sistema faz sozinho: lembretes, vencimento e consumo (0.380.0)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Admin Master e quem enviou o pacote recebem aviso no sino quando o contrato foi assinado mas a venda não fechou sozinha, quando o selo do contrato do lead não foi marcado, quando o PDF assinado não veio da ZapSign ou quando um envio que falhou deixou o documento aberto lá. Rotina diária parada também avisa.",
+        papeis: ["unit_manager"],
+        manual: "13d.6. O que o sistema faz sozinho: lembretes, vencimento e consumo (0.380.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Reenviar como novo pacote leva o CPF, o telefone e o e-mail do cadastro de hoje e confere os dados como no envio; e não reenvia documento que já foi assinado por todos em outro pacote (para um documento novo, use Enviar para assinatura, que pede o motivo).",
+        papeis: "todos",
+        manual: "13d.4. O detalhe do pacote: visualizar, baixar, reenviar e cancelar (0.376.0)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "\"É a sua vez de assinar\" chega também a quem já tinha aberto o link antes da sua vez.",
+        papeis: "todos",
+        manual: "13d.3. Quem assina pela Risarte: Minhas assinaturas pendentes (0.375.0)",
+      },
+    ],
+  },
+  {
     versao: "0.427.0",
     data: "2026-11-11",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4003, ASAAS_MIGRATION).

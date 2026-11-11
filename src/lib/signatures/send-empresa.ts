@@ -1,5 +1,6 @@
 import "server-only";
 
+import { prazoDeAssinatura } from "./prazo";
 import type { SessionContext } from "@/lib/auth";
 import { anexoDoContrato, carregarContratoDoLead, type ContratoDoLead } from "@/lib/empresarial/contrato-do-lead";
 import { corpoDoContratoParaAssinatura } from "@/lib/empresarial/contrato-para-assinatura";
@@ -385,8 +386,8 @@ export async function prepararPacoteDaEmpresa(input: {
 
   // 3) Autenticação (decisão 4: sem o corte de R$) e prazo (decisão 5).
   const auth = nivelDeAutenticacao({ templates: [ctx.template], linkedAmountCents: null, thresholdCents: 0 });
-  const expiresAt = new Date(Date.now() + ctx.settings.companyExpiryDays * 86_400_000);
-  expiresAt.setUTCHours(23, 59, 0, 0);
+  // AP154: o prazo termina às 23:59 de BRASÍLIA (antes, 23:59 UTC = 20:59 aqui).
+  const expiresAt = prazoDeAssinatura(ctx.settings.companyExpiryDays);
 
   // 4) A porta do banco (0345 confere a empresa/lead e a trava do RisLife).
   const supabase = await createClient();
