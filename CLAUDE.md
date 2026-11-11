@@ -410,8 +410,8 @@ Syncthing se comportarem de forma estranha.**
   ⚠️ **Código de recusa novo precisa de mensagem em `src/lib/cobrancas.ts`.**
 - O achado do núcleo (venda direta não fechava desde a 0373) foi corrigido
   em outra sessão (0.431.0, migração 0399).
-- 🟡 4004 no treino; **falta a aprovação do dono e a 4004 na produção**; não
-  está no `main`.
+- ✅ **4004 nos dois bancos** (produção pelo dono em 11/11/2026, conferência
+  batida); aprovada e no `main`. Próxima: ASA2 (baixa pelo webhook).
 
 **11/11/2026 (repasse, etapa 4B) — PC Administrador (core 0.431.0 → 0.432.0, migração 0400)**
 

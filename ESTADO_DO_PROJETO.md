@@ -15,7 +15,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > permissões `acao.cobranca.*` nascem só com o Admin. Ensaio 91/91; prova real
 > no sandbox (paga pelo sandbox no CPF da mãe); régua 20; telas conferidas no
 > servidor local.
-> 🟡 4004 só no treino; esperando a aprovação do dono.
+> ✅ 4004 nos dois bancos (produção pelo dono em 11/11/2026, conferência batida); no `main`.
 >
 > ## ✅ 0.432.0 — REPASSE DOS DENTISTAS, ETAPA 4B: O DESCONTO POR FALHA DO DENTISTA (11/11/2026; migração 0400)
 >
