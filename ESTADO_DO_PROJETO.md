@@ -5,8 +5,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## ✅ 0.422.0 — REPASSE DOS DENTISTAS, ETAPA 4: O PAGAMENTO PELO RELATÓRIO (10/11/2026; migração 0393)
 >
 > Quarta das 5 etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões P1–P6 do
-> dono). ⏳ **0393 aplicada só no TREINO** (`migrar:teste`); falta o dono
-> rodar na produção. **Não visto na tela.**
+> dono). ✅ **0393 aplicada no treino** (`migrar:teste`) **e na produção**
+> (o dono informou em 10/11/2026; não conferido de fora). **Não visto na
+> tela.**
 > - **`payout_payments`** = a conta a pagar gerada de um relatório (uma por
 >   geração; `payable_id` único). As linhas apontam para ela em
 >   `payout_report_items.payment_id`. Aprovação parcial = mais de uma conta
