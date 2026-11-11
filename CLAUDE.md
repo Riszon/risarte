@@ -409,7 +409,9 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Contrato à mão só com papel** (OC-00171, 0392): a trava é o gatilho
   `commercial_sales_paper_guard`. Caminho novo que marque contrato com origem
   `manual` tem de gravar `contract_paper_path` antes (use
-  `commercial_mark_paper_contract`). ⏳ 0392 só no treino.
+  `commercial_mark_paper_contract`). ✅ 0392 nos dois bancos (o dono rodou na
+  produção em 10/11/2026; conferido de fora: sem login recusa, a chave de
+  serviço para em NOT_ALLOWED, colunas e pasta privada de 10 MB existem).
 **10/11/2026 (repasse, etapa 3) — PC Administrador (core 0.419.0 → 0.420.0, migração 0391)**
 
 - **Aprovações do repasse** (bloco 0.420.0 no ESTADO; decisões A1–A6 em

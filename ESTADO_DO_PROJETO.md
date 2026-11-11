@@ -25,8 +25,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   PAPER_REQUIRED, por qualquer caminho). Tela: janela `papel-do-contrato.tsx`
 >   no Fechamento, link "Ver o papel assinado" e a lista na aba Documentos
 >   (`contratos-no-papel.tsx`). Colunas novas lidas À PARTE. Ensaio no treino
->   (desfeito) 8/8; régua `contrato-no-papel.test.ts`. ✅ 0392 no treino;
->   ⏳ falta a produção.
+>   (desfeito) 8/8; régua `contrato-no-papel.test.ts`. ✅ 0392 nos dois bancos
+>   (produção pelo dono em 10/11/2026; conferido de fora).
 > ## ✅ 0.420.0 — REPASSE DOS DENTISTAS, ETAPA 3: AS APROVAÇÕES (10/11/2026; migração 0391)
 >
 > Terceira das 5 etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões A1–A6
