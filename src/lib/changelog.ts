@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.431.0",
+    data: "2026-11-11",
+    migracao: "0399",
+    titulo: "Venda direta volta a fechar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Venda direta: desde 09/11 o último passo do fechamento (contrato assinado + pagamento confirmado) dava erro e a venda ficava em \"aguardando fechamento\"; a venda direta de valor zero, que fecha sozinha, nem chegava a ser criada. Agora as duas fecham de novo, e a receita entra no Financeiro no dia do fechamento. A venda pela negociação (Comercial) não foi afetada.",
+        papeis: ["commercial_consultant", "receptionist", "unit_manager"],
+      },
+    ],
+  },
+  {
     versao: "0.430.0",
     data: "2026-11-11",
     migracao: "0398",

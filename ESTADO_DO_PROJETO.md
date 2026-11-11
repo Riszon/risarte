@@ -2,6 +2,31 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧾 0.431.0 — VENDA DIRETA VOLTA A FECHAR (11/11/2026; migração 0399)
+>
+> Achado pela sessão da integração Asaas ao montar o ensaio da cobrança.
+> ✅ **0399 aplicada no treino** (`migrar:teste --ate 0399`). ⏳ **Produção:
+> o dono roda.** Produção lida (só leitura) em 11/11/2026: **0 vendas
+> diretas e 0 vendas comerciais** — nada ficou preso lá.
+> - 🔴 **Defeito confirmado (0373):** `post_sale_accruals_on_close`, gatilho
+>   de `commercial_sales` E de `direct_sales`, tinha UMA consulta com
+>   `new.negotiation_id` e `new.id` separados por `tg_table_name = …`. O
+>   PL/pgSQL avalia todo `new.<coluna>` da consulta, mesmo no lado falso do
+>   `and`: fechar venda direta dava `record "new" has no field
+>   "negotiation_id"`. Caía junto a venda direta de valor zero (o gatilho
+>   da 0165 fecha ao criar). No treino: 11 vendas diretas, 0 fechadas.
+> - **Correção:** um ramo por tabela (`if tg_table_name = 'direct_sales'` /
+>   `elsif 'commercial_sales'`); o resto da regra da 0373 igual. Os 4
+>   gatilhos não mudam (apontam para a função pelo nome).
+> - ⚠️ **Função de gatilho ligada a mais de uma tabela: cada comando SQL só
+>   cita colunas de UMA delas** (régua `venda-direta-fecha.test.ts`, provada
+>   quebrando; reconhece o defeito da 0373).
+> - Ensaio `scripts/receita-ensaio-0399.mjs` no treino 15/15 (transação
+>   desfeita): reproduz o erro com a função da 0373; com a 0399, venda direta
+>   fecha e lança R$ 500 na 1.1.02, a de valor zero fecha sozinha, a
+>   comercial fecha pelos dois caminhos (criar fechada e fechar depois) e
+>   lança na 1.1.01. `QUEBRA=ramo` reprova 4. **Não visto na tela.**
+
 > ## 🦷 0.430.0 — REPASSE: VENDA CANCELADA NO MEIO PAGA AS SESSÕES FEITAS (11/11/2026; migração 0398)
 >
 > AP141 (escolhido com o dono para o dia). ✅ **0398 aplicada nos dois bancos** (produção pelo dono em 11/11/2026, conferência ok; de fora: sem login `_payout_accrue_block` recusa com 42501, a de controle responde "não encontrada", as colunas novas respondem, 0 casos presos na produção). AP141 fechado.
