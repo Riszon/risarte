@@ -44,10 +44,16 @@ export default async function RepassesPage() {
   await getSessionContext();
   const supabase = await createClient();
 
-  const [aprovar, meus] = await Promise.all([
+  const [aprovar, meus, ocorrencias] = await Promise.all([
     supabase.rpc("payout_reports_to_approve"),
     supabase.rpc("my_payout_reports"),
+    supabase.rpc("payout_failure_list", { p_clinic_id: null }),
   ]);
+  if (ocorrencias.error) console.error("payout_failure_list failed:", ocorrencias.error.message);
+  // 0400 — as ocorrências de falha que esperam a MINHA decisão.
+  const ocorr = (ocorrencias.data ?? []) as { status: string; can_decide: boolean | null }[];
+  const ocorrAbertas = ocorr.filter((o) => o.status === "aberta");
+  const ocorrMinhas = ocorrAbertas.filter((o) => o.can_decide).length;
   if (aprovar.error) console.error("payout_reports_to_approve failed:", aprovar.error.message);
   if (meus.error) console.error("my_payout_reports failed:", meus.error.message);
 
@@ -84,6 +90,25 @@ export default async function RepassesPage() {
           Não foi possível carregar os repasses. Tente de novo; se continuar,
           avise o suporte.
         </p>
+      )}
+
+      {ocorr.length > 0 && (
+        <Link
+          href="/repasses/ocorrencias"
+          className={
+            ocorrMinhas > 0
+              ? "flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-200"
+              : "flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm hover:bg-muted/40"
+          }
+        >
+          <span>
+            <strong>Ocorrências de falha</strong>
+            {ocorrMinhas > 0
+              ? ` — ${ocorrMinhas} esperando a sua decisão`
+              : ` — ${ocorrAbertas.length} aberta${ocorrAbertas.length === 1 ? "" : "s"}`}
+          </span>
+          <span className="text-xs underline">Abrir</span>
+        </Link>
       )}
 
       {fila.length > 0 && (

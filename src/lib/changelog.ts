@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.432.0",
+    data: "2026-11-11",
+    migracao: "0400",
+    titulo: "Repasse dos dentistas: o desconto por falha do dentista",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Repasses → Ocorrências de falha: quando um procedimento que já tem repasse é reprovado no controle de qualidade ou é de uma venda cancelada, abre uma ocorrência sozinha. Quem aprova a equipe decide, com motivo, se foi falha do dentista. Foi falha: o valor pago volta como desconto no próximo relatório dele (ou deixa de ser pago, se ainda não entrou em relatório). Refeito pelo mesmo dentista, nada se desconta.",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No relatório de repasse, o botão Registrar falha abre uma ocorrência à mão, para os casos que o sistema não percebe sozinho (uma reclamação, um acordo com o cliente).",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quando outro dentista refaz um procedimento reprovado e o primeiro teve a falha confirmada, quem refez passa a receber o repasse do procedimento.",
+        papeis: ["dentist", "planner_dentist", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Meus repasses: o desconto por falha aparece como linha negativa no relatório, com o motivo, e pode ser contestado como qualquer linha. Se o desconto passar do repasse do pagamento, o que sobra vai para o próximo relatório.",
+        papeis: ["dentist", "planner_dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
     versao: "0.431.0",
     data: "2026-11-11",
     migracao: "0399",

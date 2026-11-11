@@ -48,6 +48,7 @@ import {
   approvePayoutReport,
   approverExcludeItem,
   approverRestoreItem,
+  openPayoutFailure,
   returnPayoutReport,
 } from "@/app/(app)/repasses/actions";
 
@@ -119,6 +120,18 @@ export function ReportDetail({
   const contaDaLinha = paymentByItem(payments);
   const semConta = incluidos.filter((i) => i.released && !contaDaLinha.has(i.itemId));
   const semContaCents = semConta.reduce((s, i) => s + i.amountCents, 0);
+  // 0400 — só gera conta com repasse POSITIVO liberado; o desconto abate nela.
+  const positivoSemConta = semConta.some((i) => i.amountCents > 0);
+  // "Registrar falha do dentista": depois de enviado, num procedimento com repasse.
+  const podeRegistrarFalha =
+    (canManage || canApprove) && !["rascunho", "cancelado"].includes(report.status);
+
+  function registrarFalha(item: ReportItem) {
+    comMotivo(
+      () => openPayoutFailure({ payoutId: item.payoutId, reason, reportId: report.id }),
+      "Ocorrência registrada. Quem aprova a equipe decide se foi falha."
+    );
+  }
   const temLiberado = incluidos.some((i) => i.released);
 
   function abrir(id: string) {
@@ -402,10 +415,12 @@ export function ReportDetail({
                   ainda sem conta a pagar.
                   <span className="block text-xs text-muted-foreground">
                     Vencimento no dia 15: liberado até o dia 10 vence no mesmo
-                    mês; depois disso, no mês seguinte.
+                    mês; depois disso, no mês seguinte. Desconto por falha abate
+                    na conta; o que passar do repasse fica para o próximo
+                    relatório.
                   </span>
                 </span>
-                {canManage && (
+                {canManage && positivoSemConta && (
                   <Button
                     size="sm"
                     className="print:hidden"
@@ -532,8 +547,54 @@ export function ReportDetail({
                               Decidir
                             </Button>
                           )}
+                          {!aberto &&
+                            podeRegistrarFalha &&
+                            !podeResponder &&
+                            !podeDecidir &&
+                            i.origin !== "desconto" &&
+                            i.amountCents > 0 &&
+                            !i.hasFailure && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs"
+                                disabled={isPending}
+                                onClick={() => abrir(`falha-${i.itemId}`)}
+                              >
+                                Registrar falha
+                              </Button>
+                            )}
+                          {i.hasFailure && (
+                            <Link href="/repasses/ocorrencias" className="text-[11px] underline">
+                              ocorrência
+                            </Link>
+                          )}
                         </td>
-                        {aberto && (
+                        {open === `falha-${i.itemId}` ? (
+                          <div className="space-y-2 rounded-lg border bg-muted/30 p-2">
+                            <p className="text-xs text-muted-foreground">
+                              Registra uma ocorrência sobre este procedimento. Quem
+                              aprova a equipe decide se foi falha do dentista; só
+                              então há desconto.
+                            </p>
+                            <div className="flex flex-wrap items-end gap-2">
+                              <label className="block min-w-0 flex-1">
+                                <Label className="text-[11px]">O que aconteceu (obrigatório)</Label>
+                                <Input
+                                  className="h-8"
+                                  value={reason}
+                                  onChange={(e) => setReason(e.target.value)}
+                                />
+                              </label>
+                              <Button size="sm" disabled={isPending} onClick={() => registrarFalha(i)}>
+                                Registrar
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setOpen(null)}>
+                                Desistir
+                              </Button>
+                            </div>
+                          </div>
+                        ) : aberto && (
                           <div className="space-y-2 rounded-lg border bg-muted/30 p-2">
                             {canAdjust && (
                               <KindRadios name={`ex-${i.itemId}`} kind={kind} onKind={setKind} />
@@ -806,6 +867,11 @@ function ItemRows({
           {item.origin === "ortodontia" && (
             <span className="ml-1 text-xs text-muted-foreground">
               (manutenção de Ortodontia)
+            </span>
+          )}
+          {item.origin === "desconto" && item.failureReason && (
+            <span className="block text-xs text-muted-foreground">
+              Motivo: {item.failureReason}
             </span>
           )}
         </td>

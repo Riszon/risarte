@@ -2,6 +2,42 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## ✅ 0.432.0 — REPASSE DOS DENTISTAS, ETAPA 4B: O DESCONTO POR FALHA DO DENTISTA (11/11/2026; migração 0400)
+>
+> Decisão 12 do dono e F1–F6 (`docs/Financeiro/REPASSE-PLANO.md`, as seis
+> como recomendado). ⏳ **0400 aplicada só no TREINO**; falta o dono rodar na
+> produção. **Não visto na tela.**
+> - **`payout_failures`** = a ocorrência (uma VIVA por repasse:
+>   `payout_failures_one_live`). Nasce por gatilho blindado na reprovação do
+>   controle de qualidade (`plan_quality_reviews`) e no cancelamento efetivado
+>   (`plan_cancellations`), ou à mão (`payout_failure_open`).
+> - **Quem decide** = `can_decide_payout_failure` (Gerentes; sem Gerente,
+>   Coordenadores; nunca o dentista; sem ninguém, o Financeiro).
+>   `payout_failure_decide`: redo_same → `refaz_sem_custo` (F1); em
+>   relatório/conta/pago/fechamento antigo → `desconto` (linha negativa em
+>   `provider_payouts`, `failure_id`, sem sessão); fora de relatório →
+>   `nao_pagar`. Nos dois últimos, o original fica `failure_voided_at`.
+> - ⚠️ **Valor negativo só com `failure_id`** (`provider_payouts_discount_sign`);
+>   `provider_payouts_one_origin` aceita a linha sem sessão. **A sessão única
+>   virou parcial** (`provider_payouts_session_live_unique`, sem os anulados).
+> - ⚠️ **`_payout_accrue_block` recriada (partir da 0400):** o anulado só deixa
+>   de segurar o bloco quando a falha foi com `redo_other` (F2: quem refez
+>   recebe). Nos outros casos o procedimento não é pago de novo a ninguém.
+> - ⚠️ **`provider_payouts_lock` recriada:** mês do fechamento antigo aceita só
+>   a marca `failure_voided_at`.
+> - **Relatório:** `payout_report_generate` só abre relatório com repasse
+>   POSITIVO; o desconto entra junto (`amount_cents <> 0`).
+>   `payout_report_candidates` ganhou `discount_count`/`discount_cents`.
+>   `payout_report_finance_decide`: corrigir desconto = descontar menos.
+> - ⚠️ **`payout_report_bill` recriada (partir da 0400):** exige positivo;
+>   descontos do mais antigo ao mais novo; o que não cabe é PARTIDO (saldo =
+>   nova linha negativa) ou adiado; soma zero = `payout_payments` sem
+>   `payable_id` (estado "compensado"). `payout_report_payments`,
+>   `_billing`, `_items_detail` e `my_payout_report_detail` recriadas.
+> - Lembrete: `payout_failure_reminder_run` (cron `risarte-payout-failures-daily`).
+> - Telas: `/repasses/ocorrencias`, "Registrar falha" no relatório, motivo na
+>   linha negativa. Ensaio no treino (desfeito) **36/36**; régua
+>   `repasse-etapa4b.test.ts`, provada quebrando 5×.
 > ## 🧾 0.431.0 — VENDA DIRETA VOLTA A FECHAR (11/11/2026; migração 0399)
 >
 > Achado pela sessão da integração Asaas ao montar o ensaio da cobrança.

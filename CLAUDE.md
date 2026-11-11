@@ -400,6 +400,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (repasse, etapa 4B) — PC Administrador (core 0.431.0 → 0.432.0, migração 0400)**
+
+- **Desconto por falha do dentista** (bloco 0.432.0 no ESTADO; decisões
+  F1–F6 em `docs/Financeiro/REPASSE-PLANO.md`). **A próxima é a Etapa 5
+  (visões)**, com plano e OK do dono antes.
+- ⚠️ **Linha de desconto = `provider_payouts` negativo com `failure_id`**;
+  repasse com falha confirmada fica `failure_voided_at`. Leitura nova de
+  produção do dentista (Etapa 5) tem de levar os dois em conta.
+- ⚠️ **`_payout_accrue_block` e `payout_report_bill` recriadas na 0400**:
+  partir dela. O bill parte o desconto e pode criar pagamento COMPENSADO
+  (`payout_payments.payable_id` nulo).
+- ⚠️ A 0399 era da venda direta (outra sessão, mesma pasta): a minha virou 0400.
+- ⏳ **0400 aplicada só no treino**; falta o dono rodar na produção.
+
 **11/11/2026 (venda direta fecha) — PC Administrador (core 0.430.0 → 0.431.0, migração 0399)**
 
 - **A venda direta voltou a fechar** (bloco 0.431.0 no ESTADO; defeito da

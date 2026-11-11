@@ -3431,6 +3431,13 @@ quando quem responde pela equipe conferiu e enviou — o sino avisa.
   do mês seguinte. O relatório mostra **Pagamento programado para** a data e,
   depois, **Pago em** — e o sino avisa nos dois momentos. Um procedimento
   ainda em análise é pago à parte, quando for resolvido.
+- **Desconto por falha** *(desde a 0.432.0)*: quando quem responde pela equipe
+  confirma falha sua num procedimento já pago, o valor volta como **linha
+  negativa** no seu próximo relatório, com o motivo — o sino avisa. Você pode
+  contestar como qualquer linha. Refazer o seu próprio procedimento não gera
+  desconto (você não recebe de novo). Se o desconto passar do repasse do
+  pagamento, o resto vai para o relatório seguinte; se consumir tudo, o
+  pagamento aparece como **Compensado pelo desconto**.
 
 1. **Meu Dia** → seus atendimentos.
 2. **Atendimento** → **Chamar**.
@@ -4072,8 +4079,54 @@ do relatório.
 > como estão. Um bônus, enquanto não houver regra nova, é lançado à mão em
 > Contas a pagar, na conta **2.1.02**.
 >
-> **Ainda não está nesta versão:** o desconto de um repasse já pago, quando o
-> procedimento é refeito ou a venda é cancelada por falha do dentista.
+#### Falha do dentista: a ocorrência e o desconto (desde a 0.432.0)
+
+Quando um procedimento que **já tem repasse** dá problema, o sistema abre uma
+**ocorrência**. O desconto só acontece se quem aprova a equipe decidir que foi
+**falha do próprio dentista**.
+
+**Onde a ocorrência nasce.**
+
+| Origem | Quando |
+|---|---|
+| **Controle de qualidade** | O Coordenador **reprova** um procedimento que já tem repasse. |
+| **Venda cancelada** | A venda é cancelada (termo efetivado) e tinha procedimentos com repasse. |
+| **À mão** | No relatório de repasse, **Registrar falha** na linha do procedimento, com o que aconteceu (uma reclamação, um acordo de devolução com o cliente). |
+
+O sino avisa quem decide e o Financeiro da Franqueadora.
+
+**Quem decide:** o **Gerente** da unidade; sem Gerente, o **Coordenador
+clínico**; nunca o próprio dentista. Sem ninguém na unidade, o Financeiro da
+Franqueadora. **Uma ocorrência por vez.**
+
+**Decidir** (em **Repasses → Ocorrências de falha** → **Decidir**): escolha
+**Foi falha do dentista** ou **Não foi falha do dentista** e escreva o motivo.
+A tela diz, antes de confirmar, o que vai acontecer:
+
+| Situação do procedimento | "Foi falha" faz |
+|---|---|
+| Reprovado para **refazer com o mesmo dentista** | Nada a descontar: ele refaz sem receber de novo. |
+| Repasse **já em relatório, em conta a pagar ou pago** | **Desconto** no próximo relatório do dentista: uma linha negativa, com o motivo. |
+| Repasse **ainda fora de relatório** | O repasse deixa de ser pago. |
+
+- **Quanto se desconta:** o valor pago pelo procedimento. Você pode descontar
+  **menos** (escreva o valor); **nunca mais** do que foi pago.
+- **Refeito por outro dentista:** confirmada a falha do primeiro, **quem refez
+  recebe** o repasse do procedimento.
+- **"Não foi falha"** encerra a ocorrência e nada muda no repasse.
+- **Um procedimento só é descontado uma vez.**
+- **Ocorrência sem decisão não trava nada.** Depois de 3 dias úteis, quem
+  decide recebe um lembrete.
+
+**O desconto no relatório.** A linha negativa entra no próximo relatório do
+dentista **junto com repasse** (desconto sozinho não abre relatório) e passa
+pelas mesmas aprovações: o dentista vê o motivo e pode contestar. Na
+**decisão do Financeiro**, corrigir um desconto é **descontar menos**.
+
+**Na conta a pagar**, o desconto abate o repasse. Se o desconto for **maior**
+que o repasse liberado, o que cabe entra agora e **o resto passa para o próximo
+relatório**, até zerar. Se o desconto consumir todo o repasse, o pagamento fica
+**Compensado pelo desconto**, sem conta a pagar.
 
 #### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
 

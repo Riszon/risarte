@@ -211,9 +211,11 @@ export function MyReportView({
                     <strong className="tabular-nums">{formatBRL(p.amountCents)}</strong>
                     <span className="ml-2 text-xs text-muted-foreground">
                       {p.itemCount} procedimento{p.itemCount === 1 ? "" : "s"} ·{" "}
-                      {p.state === "pago" && p.paidOn
-                        ? `pago em ${formatIsoDateBr(p.paidOn)}`
-                        : `previsto para ${formatIsoDateBr(p.dueDate)}`}
+                      {p.state === "compensado"
+                        ? "o desconto consumiu o repasse deste pagamento"
+                        : p.state === "pago" && p.paidOn
+                          ? `pago em ${formatIsoDateBr(p.paidOn)}`
+                          : `previsto para ${formatIsoDateBr(p.dueDate)}`}
                     </span>
                   </span>
                   <Badge
@@ -263,6 +265,11 @@ export function MyReportView({
                           </Link>
                         )}
                       </p>
+                      {i.failureReason && (
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Desconto por falha.</strong> Motivo: {i.failureReason}
+                        </p>
+                      )}
                       {i.reviewState && !podeMarcar && (
                         <p className="text-xs text-muted-foreground">
                           {MY_REVIEW_LABEL[i.reviewState]}

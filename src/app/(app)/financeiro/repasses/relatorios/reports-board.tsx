@@ -219,6 +219,11 @@ export function ReportsBoard({
                             {c.zeroCount === 1 ? "" : "m"} de fora
                           </span>
                         )}
+                        {c.discountCount > 0 && (
+                          <span className="ml-1 text-rose-700 dark:text-rose-300">
+                            · desconto por falha {formatBRL(c.discountCents)} entra junto
+                          </span>
+                        )}
                         {c.draftCode && (
                           <span className="ml-1">
                             · já tem o rascunho{" "}
@@ -266,6 +271,15 @@ export function ReportsBoard({
               </div>
             </>
           )}
+
+          <p className="text-xs text-muted-foreground">
+            Desconto por falha do dentista só entra junto com repasse: sozinho,
+            espera o próximo relatório. As ocorrências ficam em{" "}
+            <Link href="/repasses/ocorrencias" className="underline">
+              Repasses → Ocorrências de falha
+            </Link>
+            .
+          </p>
 
           {!canManage && (
             <p className="text-xs text-muted-foreground">
