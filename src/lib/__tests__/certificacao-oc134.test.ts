@@ -41,6 +41,8 @@ describe("o lançamento à mão conta onde ele nasce hoje", () => {
       filtros: [{ coluna: "source_type", valor: "bank_transaction" }],
     });
     expect(i.onde).toContain("Conciliação");
+    // OC-00176: o nome diz onde nasce (o cadastro de bens não conta aqui).
+    expect(i.rotulo).toBe("Lançamentos pela Conciliação");
   });
 });
 

@@ -1083,6 +1083,12 @@ primeiras.
 > foi feito **depois do aceite da missão**. O item de anamnese saiu da lista do
 > Dentista — só o Coordenador consegue preencher a ficha.
 
+> **"Lançamentos pela Conciliação"** (nome desde a 0.424.0, relato OC-00176;
+> antes, "Lançamentos no razão"). O item conta só os lançamentos que você
+> cria em **Financeiro → Conciliação → Lançar** (ou Transferência), a partir de
+> uma linha do extrato. O cadastro de **bens** também lança no razão (compra
+> do bem), mas **não conta** neste item.
+
 > **Se a missão de uma função tiver só ações que dependem de terceiros**, a
 > tela avisa. Quem tiver aquela função ficaria travado sem ter como resolver
 > sozinho, e o portão viraria castigo por algo que não é dela.

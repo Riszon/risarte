@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.424.0",
+    data: "2026-11-11",
+    migracao: null,
+    titulo: "Certificação do Financeiro: o item da Conciliação com o nome certo",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Missão do Financeiro da Franqueadora: o item \"Lançamentos no razão\" passou a se chamar \"Lançamentos pela Conciliação\" — ele conta só o que é lançado em Financeiro → Conciliação → Lançar; o cadastro de bens não entra. A contagem não mudou. (OC-00176)",
+        papeis: ["finance_franchisor"],
+        manual: "2.6. Os três ambientes",
+      },
+    ],
+  },
+  {
     versao: "0.423.0",
     data: "2026-11-11",
     // Sem migração do CORE: as desta entrega são da integração Asaas

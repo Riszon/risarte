@@ -400,6 +400,12 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (relatos, OC-00176) — PC Administrador (core 0.423.0 → 0.424.0, sem migração)**
+
+- O item "Lançamentos no razão" da missão do Financeiro virou **"Lançamentos
+  pela Conciliação"** (só o rótulo; a chave `lancamentos_razao` e a contagem
+  não mudaram). Bloco 0.424.0 no ESTADO.
+
 **10/11/2026 (Asaas — ASA0) — PC Administrador (Asaas 0.1.0, migrações 4000 a 4002; core sem versão nova; worktree `wt-asaas`, branch `feat/asaas-integration`)**
 
 - **Integração Asaas, fase ASA0: Central de Configuração (casca + aba Conta e

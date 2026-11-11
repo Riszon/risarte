@@ -2,6 +2,15 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏷️ 0.424.0 — CERTIFICAÇÃO: "LANÇAMENTOS PELA CONCILIAÇÃO" (11/11/2026; sem migração)
+>
+> Relato OC-00176 (André, treino): 7 bens cadastrados e a missão contou 2 em
+> "Lançamentos no razão". NÃO era defeito: o item conta `financial_entries`
+> com `source_type=bank_transaction` (Conciliação → Lançar); os bens geram
+> `asset_acquisition` (lido no treino: 8 de bem, 2 de conciliação). Só o
+> NOME mudou (`certificacao.ts`, chave `lancamentos_razao` intacta). Retratos
+> de progresso já guardados mostram o nome antigo até a próxima medição.
+>
 > ## 🔌 ASAAS 0.1.0 — INTEGRAÇÃO ASAAS, FASE ASA0: A FUNDAÇÃO (10/11/2026; migrações 4000 a 4002)
 >
 > **Projeto novo, com documento de estado próprio: `docs/asaas/ESTADO.md`**
