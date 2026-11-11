@@ -400,7 +400,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**11/11/2026 (Asaas — ASA1, entrega 2) — PC Administrador (core 0.429.0 → 0.430.0, Asaas 0.3.0, migração 4004; worktree `wt-asaas`)**
+**11/11/2026 (Asaas — ASA1, entrega 2) — PC Administrador (core 0.432.0 → 0.433.0, Asaas 0.3.0, migração 4004; worktree `wt-asaas`)**
 
 - **A cobrança de parcela pelo Asaas, as travas e a quitação por valor menor**
   (estado em `docs/asaas/ESTADO.md`; decisões na seção 14 da especificação).
@@ -408,11 +408,42 @@ Syncthing se comportarem de forma estranha.**
   ⚠️ **Parcela com cobrança ativa fica travada**; baixa manual só com a
   cobrança cancelada ou externa (a ASA2 liga `risarte.baixa_do_asaas`).
   ⚠️ **Código de recusa novo precisa de mensagem em `src/lib/cobrancas.ts`.**
-- ⚠️ **Achado do núcleo (não corrigido aqui):** desde a 0373, fechar venda
-  direta falha com `record "new" has no field "negotiation_id"`
-  (`post_sale_accruals_on_close`).
+- O achado do núcleo (venda direta não fechava desde a 0373) foi corrigido
+  em outra sessão (0.431.0, migração 0399).
 - 🟡 4004 no treino; **falta a aprovação do dono e a 4004 na produção**; não
   está no `main`.
+
+**11/11/2026 (repasse, etapa 4B) — PC Administrador (core 0.431.0 → 0.432.0, migração 0400)**
+
+- **Desconto por falha do dentista** (bloco 0.432.0 no ESTADO; decisões
+  F1–F6 em `docs/Financeiro/REPASSE-PLANO.md`). **A próxima é a Etapa 5
+  (visões)**, com plano e OK do dono antes.
+- ⚠️ **Linha de desconto = `provider_payouts` negativo com `failure_id`**;
+  repasse com falha confirmada fica `failure_voided_at`. Leitura nova de
+  produção do dentista (Etapa 5) tem de levar os dois em conta.
+- ⚠️ **`_payout_accrue_block` e `payout_report_bill` recriadas na 0400**:
+  partir dela. O bill parte o desconto e pode criar pagamento COMPENSADO
+  (`payout_payments.payable_id` nulo).
+- ⚠️ A 0399 era da venda direta (outra sessão, mesma pasta): a minha virou 0400.
+- ✅ **0400 aplicada no treino e na produção** (o dono informou em
+  11/11/2026; não conferido de fora).
+
+**11/11/2026 (venda direta fecha) — PC Administrador (core 0.430.0 → 0.431.0, migração 0399)**
+
+- **A venda direta voltou a fechar** (bloco 0.431.0 no ESTADO; defeito da
+  0373). ⚠️ **Função de gatilho em mais de uma tabela: cada comando SQL só
+  cita colunas de UMA delas** — o PL/pgSQL avalia `new.<coluna>` mesmo atrás
+  de `tg_table_name = …` falso (régua `venda-direta-fecha.test.ts`).
+- ✅ 0399 nos dois bancos (treino: ensaio 15/15; produção pelo dono em
+  11/11/2026, não conferido de fora). Não visto na tela.
+
+**11/11/2026 (repasse em parte) — PC Administrador (core 0.429.0 → 0.430.0, migração 0398)**
+
+- **AP141** (bloco 0.430.0 no ESTADO). ⚠️ **A conta do repasse por
+  procedimento mora em `_payout_accrue_block`**; sessão cancelada não segura
+  o bloco e o pago em parte é proporcional (`sessions_done`/`sessions_total`).
+- ✅ **0398 aplicada nos dois bancos** (o dono, 11/11/2026; conferido de
+  fora; 0 casos presos na produção). Não visto na tela.
 
 **11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.426.0 → 0.427.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
 
@@ -447,8 +478,9 @@ Syncthing se comportarem de forma estranha.**
   sem login). AP153–AP157 fechados.
 - **0.429.0 (migração 0397): AP158** (bloco no ESTADO). ⚠️ Permissão de um
   pacote é perguntada ao banco (`acesso-no-banco.ts`); ao recriar
-  `signature_apply_webhook`, partir da 0397. ⏳ 0397 no treino; produção
-  com o dono.
+  `signature_apply_webhook`, partir da 0397. ✅ 0397 nos dois bancos
+  (produção pelo dono em 11/11/2026; conferência dele true · true · 1 — de
+  fora não dá para medir: gatilho não aparece na API). AP158 fechado.
 - ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
   (produção) ou `--treino`; liberado na regra local do Claude. Com
   `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign

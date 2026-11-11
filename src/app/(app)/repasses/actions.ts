@@ -7,6 +7,8 @@ import { logAudit } from "@/lib/audit";
 import {
   CONTEST_KINDS,
   dentistResponseError,
+  discountError,
+  failureErrorText,
   reasonError,
   reportErrorText,
   type ContestInput,
@@ -180,5 +182,75 @@ export async function respondToMyReport(input: {
   }
   await registrar(input.reportId);
   refresh(input.reportId);
+  return { ok: true, status: (data as string) ?? undefined };
+}
+
+// -----------------------------------------------------------------------------
+// 0400 — A FALHA DO DENTISTA. Quem decide é o banco (`can_decide_payout_failure`:
+// quem aprova a equipe; sem ninguém na unidade, o Financeiro da Franqueadora;
+// nunca o próprio dentista).
+// -----------------------------------------------------------------------------
+function refreshFailures(reportId?: string) {
+  revalidatePath("/repasses");
+  revalidatePath("/repasses/ocorrencias");
+  revalidatePath("/financeiro/repasses/relatorios");
+  if (reportId) {
+    revalidatePath(`/repasses/${reportId}`);
+    revalidatePath(`/financeiro/repasses/relatorios/${reportId}`);
+  }
+}
+
+/** "Registrar falha do dentista" num procedimento com repasse. */
+export async function openPayoutFailure(input: {
+  payoutId: string;
+  reason: string;
+  reportId?: string;
+}): Promise<FlowResult> {
+  await getSessionContext();
+  const erro = reasonError(input.reason);
+  if (erro) return { ok: false, error: erro };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payout_failure_open", {
+    p_payout_id: input.payoutId,
+    p_reason: input.reason.trim(),
+  });
+  if (error) {
+    console.error("payout_failure_open failed:", error.message);
+    return { ok: false, error: failureErrorText(error.message) };
+  }
+  await logAudit({ action: "create", entityType: "payout_failure", entityId: input.payoutId });
+  refreshFailures(input.reportId);
+  return { ok: true };
+}
+
+/** Decide UMA ocorrência: foi ou não foi falha do dentista, com motivo. */
+export async function decidePayoutFailure(input: {
+  failureId: string;
+  isFailure: boolean;
+  reason: string;
+  /** Vazio = desconta o valor pago. */
+  discountCents: number | null;
+  baseCents: number;
+}): Promise<FlowResult> {
+  await getSessionContext();
+  const erro = reasonError(input.reason);
+  if (erro) return { ok: false, error: erro };
+  if (input.isFailure) {
+    const e = discountError(input.discountCents, input.baseCents);
+    if (e) return { ok: false, error: e };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("payout_failure_decide", {
+    p_failure_id: input.failureId,
+    p_is_failure: input.isFailure,
+    p_reason: input.reason.trim(),
+    p_discount_cents: input.isFailure ? input.discountCents : null,
+  });
+  if (error) {
+    console.error("payout_failure_decide failed:", error.message);
+    return { ok: false, error: failureErrorText(error.message) };
+  }
+  await logAudit({ action: "update", entityType: "payout_failure", entityId: input.failureId });
+  refreshFailures();
   return { ok: true, status: (data as string) ?? undefined };
 }

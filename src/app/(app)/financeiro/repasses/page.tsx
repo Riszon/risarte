@@ -8,6 +8,7 @@ import { todayInBrazil } from "@/lib/dates";
 import { PayoutManager } from "./payout-manager";
 import { PayoutWatchlist } from "./payout-watchlist";
 import { watchRowFromDb, type WatchDbRow, type WatchRow } from "@/lib/finance/payout-watchlist";
+import { textoDoPagoEmParte } from "@/lib/finance/repasse-em-parte";
 
 export default async function PayoutsPage(
   props: PageProps<"/financeiro/repasses">
@@ -133,12 +134,29 @@ export default async function PayoutsPage(
   });
   const nameById = new Map(providers.map((p) => [p.id, p.name]));
 
+  // AP141 (0398): o "pago em parte" é lido À PARTE — sem a 0398 no banco a
+  // consulta falha e a tela segue como antes.
+  const { data: parteRows } = await supabase
+    .from("provider_payouts")
+    .select("id, sessions_done, sessions_total")
+    .eq("clinic_id", clinicId)
+    .gte("accrual_date", monthStart)
+    .lt("accrual_date", nextStart)
+    .not("sessions_total", "is", null);
+  const parteById = new Map(
+    ((parteRows ?? []) as { id: string; sessions_done: number | null; sessions_total: number | null }[]).map(
+      (r) => [r.id, textoDoPagoEmParte(r.sessions_done, r.sessions_total)]
+    )
+  );
+
   // Procedimento marcado "sem repasse" (0387) não é linha de apuração.
   const lines = (payoutRows ?? []).filter((r) => !r.no_payout).map((r) => ({
     id: r.id as string,
     providerId: r.provider_id as string,
     providerName: nameById.get(r.provider_id as string) ?? "—",
-    procedureName: (r.procedure_name as string) ?? "—",
+    procedureName: [(r.procedure_name as string) ?? "—", parteById.get(r.id as string)]
+      .filter(Boolean)
+      .join(" · "),
     accrualDate: r.accrual_date as string,
     amountCents: Number(r.amount_cents ?? 0),
     closed: r.closing_id !== null,

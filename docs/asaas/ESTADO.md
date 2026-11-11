@@ -18,7 +18,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 |---|---|---|
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
-| **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | 🟡 **pronta, esperando a aprovação do dono** (core 0.430.0, Asaas 0.3.0); 4004 no treino; ensaio 91/91; prova real no sandbox passou; **falta a produção** (o dono roda a 4004) | **4004** |
+| **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | 🟡 **pronta, esperando a aprovação do dono** (core 0.433.0, Asaas 0.3.0); 4004 no treino; ensaio 91/91; prova real no sandbox passou; **falta a produção** (o dono roda a 4004) | **4004** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -34,7 +34,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
 
-## ASA1, entrega 2 — a cobrança de parcela (Asaas 0.3.0, core 0.430.0, 11/11/2026)
+## ASA1, entrega 2 — a cobrança de parcela (Asaas 0.3.0, core 0.433.0, 11/11/2026)
 
 ### O que existe
 
@@ -100,9 +100,12 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   `src/lib/cobrancas.ts`** (régua).
 - ⚠️ **A baixa vinda do Asaas (ASA2) liga `risarte.baixa_do_asaas`** na
   transação, senão a trava recusa.
-- ⚠️ **Achado do núcleo, fora da integração:** desde a 0373, fechar venda
-  direta falha (`post_sale_accruals_on_close` lê `new.negotiation_id` também
-  em `direct_sales`). O ensaio cria a venda já fechada sem os gatilhos.
+- Achado do núcleo (fechar venda direta falhava desde a 0373) corrigido em
+  outra sessão (core 0.431.0, migração 0399). O ensaio continua criando a
+  venda já fechada sem os gatilhos (não é o que ele mede).
+- A tela diz por que a parcela não oferece cobrança (`motivoSemCobranca` em
+  `src/lib/cobrancas.ts`; a unidade pronta vem de `central_is_ready` no
+  carregador). Os motivos de venda e pagador aparecem na prévia, ao clicar.
 
 ## ASA1, entrega 1 — abas Financeiro e Comercial e o responsável financeiro (Asaas 0.2.0, core 0.427.0, 11/11/2026)
 

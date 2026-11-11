@@ -80,7 +80,7 @@ conseguimos gerar nenhum repasse até agora".
 | 2 | **Relatório de repasse:** um por dentista e por unidade, com o detalhe por procedimento; gerar um ou todos; excluir com motivo. Um procedimento só entra em um relatório. | ✅ migração 0390 |
 | 3 | **Aprovações:** Gerente (um por vez, só a equipe dele; Coordenador quando não há Gerente), depois o Dentista na tela "Meus repasses"; reprovar com formulário; avisos a cada passo; prazo de 5 dias úteis. | ✅ migração 0391 |
 | 4 | **Pagamento:** só o aprovado pelos dois vira conta a pagar, ligada aos procedimentos; parcial; vencimento no dia 15. Sai o "Fechar o mês" antigo. | ✅ 0.422.0, migração 0393 |
-| 4B | **Desconto por falha do dentista** (decisão 12): aviso quando um procedimento pago é refeito ou tem a venda cancelada; o Gerente registra a falha; linha negativa no relatório seguinte. | a fazer |
+| 4B | **Desconto por falha do dentista** (decisão 12): ocorrência quando um procedimento com repasse é reprovado ou tem a venda cancelada (ou à mão); quem aprova a equipe decide; linha negativa no relatório seguinte. | ✅ 0.432.0, migração 0400 |
 | 5 | **Visões:** histórico da unidade, consolidado da rede, gráfico de produção e ganho por dentista. | a fazer |
 
 ## Etapa 2 — decisões do dono (10/11/2026, as quatro como recomendado)
@@ -157,6 +157,31 @@ haver regra nova, bônus é conta a pagar lançada à mão em 2.1.02.
 **Para a 4B:** conta a pagar é sempre positiva (`payout_report_bill` recusa
 soma ≤ 0): a linha negativa precisa abater dentro de uma conta positiva ou
 esperar o relatório seguinte.
+
+## Etapa 4B — decisões do dono (11/11/2026, as seis como recomendado)
+
+- **F1.** Refação pelo **mesmo** dentista não desconta: ele refaz sem receber
+  de novo.
+- **F2.** Refação por **outro** dentista, com falha do primeiro: o primeiro é
+  descontado e **quem refez recebe**.
+- **F3.** Desconta o **valor pago**; quem decide pode descontar menos (com
+  motivo), nunca mais.
+- **F4.** Desconto maior que o repasse do pagamento: o que sobra passa para o
+  relatório seguinte, até zerar.
+- **F5.** Sem prazo limite no sistema.
+- **F6.** Ocorrência sem decisão não trava nada; lembrete a quem decide.
+
+**Como ficou (0400):** `payout_failures` (a ocorrência), aberta por gatilho
+na reprovação do controle de qualidade e no cancelamento efetivado, ou à mão;
+`payout_failure_decide` (quem aprova a equipe). "Foi falha" num repasse em
+relatório, conta ou já pago cria a **linha de desconto** (`provider_payouts`
+negativo, `failure_id`); fora de relatório, o repasse só deixa de ser pago.
+A conta a pagar abate o desconto, parte o que não cabe e, se zerar, registra o
+pagamento como **compensado**.
+
+**Achado:** o termo de cancelamento **cobra do cliente o que já foi feito**
+(0206). Por isso, na maioria dos cancelamentos o repasse do que foi feito é
+devido e a ocorrência deve ser encerrada como "não foi falha".
 
 ## O que a Etapa 4 precisa resolver do fechamento antigo
 

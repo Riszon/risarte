@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🔌 0.430.0 / ASAAS 0.3.0 — ASA1, ENTREGA 2: A COBRANÇA DE PARCELA PELO ASAAS (11/11/2026; migração 4004)
+> ## 🔌 0.433.0 / ASAAS 0.3.0 — ASA1, ENTREGA 2: A COBRANÇA DE PARCELA PELO ASAAS (11/11/2026; migração 4004)
 >
 > Estado completo em `docs/asaas/ESTADO.md`; decisões na seção 14 da
 > especificação. Na ficha › Financeiro, a parcela em aberto ganha a cobrança no
@@ -14,9 +14,91 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > Admin, com motivo; `payment_waivers`; principal dispensado em 1.9.02). As
 > permissões `acao.cobranca.*` nascem só com o Admin. Ensaio 91/91; prova real
 > no sandbox (paga pelo sandbox no CPF da mãe); régua 20; telas conferidas no
-> servidor local. ⚠️ Achado do núcleo: fechar venda direta falha desde a 0373.
+> servidor local.
 > 🟡 4004 só no treino; esperando a aprovação do dono.
 >
+> ## ✅ 0.432.0 — REPASSE DOS DENTISTAS, ETAPA 4B: O DESCONTO POR FALHA DO DENTISTA (11/11/2026; migração 0400)
+>
+> Decisão 12 do dono e F1–F6 (`docs/Financeiro/REPASSE-PLANO.md`, as seis
+> como recomendado). ✅ **0400 aplicada no treino e na produção** (o dono
+> informou em 11/11/2026; não conferido de fora). **Não visto na tela.**
+> - **`payout_failures`** = a ocorrência (uma VIVA por repasse:
+>   `payout_failures_one_live`). Nasce por gatilho blindado na reprovação do
+>   controle de qualidade (`plan_quality_reviews`) e no cancelamento efetivado
+>   (`plan_cancellations`), ou à mão (`payout_failure_open`).
+> - **Quem decide** = `can_decide_payout_failure` (Gerentes; sem Gerente,
+>   Coordenadores; nunca o dentista; sem ninguém, o Financeiro).
+>   `payout_failure_decide`: redo_same → `refaz_sem_custo` (F1); em
+>   relatório/conta/pago/fechamento antigo → `desconto` (linha negativa em
+>   `provider_payouts`, `failure_id`, sem sessão); fora de relatório →
+>   `nao_pagar`. Nos dois últimos, o original fica `failure_voided_at`.
+> - ⚠️ **Valor negativo só com `failure_id`** (`provider_payouts_discount_sign`);
+>   `provider_payouts_one_origin` aceita a linha sem sessão. **A sessão única
+>   virou parcial** (`provider_payouts_session_live_unique`, sem os anulados).
+> - ⚠️ **`_payout_accrue_block` recriada (partir da 0400):** o anulado só deixa
+>   de segurar o bloco quando a falha foi com `redo_other` (F2: quem refez
+>   recebe). Nos outros casos o procedimento não é pago de novo a ninguém.
+> - ⚠️ **`provider_payouts_lock` recriada:** mês do fechamento antigo aceita só
+>   a marca `failure_voided_at`.
+> - **Relatório:** `payout_report_generate` só abre relatório com repasse
+>   POSITIVO; o desconto entra junto (`amount_cents <> 0`).
+>   `payout_report_candidates` ganhou `discount_count`/`discount_cents`.
+>   `payout_report_finance_decide`: corrigir desconto = descontar menos.
+> - ⚠️ **`payout_report_bill` recriada (partir da 0400):** exige positivo;
+>   descontos do mais antigo ao mais novo; o que não cabe é PARTIDO (saldo =
+>   nova linha negativa) ou adiado; soma zero = `payout_payments` sem
+>   `payable_id` (estado "compensado"). `payout_report_payments`,
+>   `_billing`, `_items_detail` e `my_payout_report_detail` recriadas.
+> - Lembrete: `payout_failure_reminder_run` (cron `risarte-payout-failures-daily`).
+> - Telas: `/repasses/ocorrencias`, "Registrar falha" no relatório, motivo na
+>   linha negativa. Ensaio no treino (desfeito) **36/36**; régua
+>   `repasse-etapa4b.test.ts`, provada quebrando 5×.
+> ## 🧾 0.431.0 — VENDA DIRETA VOLTA A FECHAR (11/11/2026; migração 0399)
+>
+> Achado pela sessão da integração Asaas ao montar o ensaio da cobrança.
+> ✅ **0399 aplicada nos dois bancos** (treino por `migrar:teste --ate 0399`;
+> produção pelo dono em 11/11/2026; não conferido de fora — gatilho não aparece na API). Produção lida (só leitura) em 11/11/2026: **0 vendas
+> diretas e 0 vendas comerciais** — nada ficou preso lá.
+> - 🔴 **Defeito confirmado (0373):** `post_sale_accruals_on_close`, gatilho
+>   de `commercial_sales` E de `direct_sales`, tinha UMA consulta com
+>   `new.negotiation_id` e `new.id` separados por `tg_table_name = …`. O
+>   PL/pgSQL avalia todo `new.<coluna>` da consulta, mesmo no lado falso do
+>   `and`: fechar venda direta dava `record "new" has no field
+>   "negotiation_id"`. Caía junto a venda direta de valor zero (o gatilho
+>   da 0165 fecha ao criar). No treino: 11 vendas diretas, 0 fechadas.
+> - **Correção:** um ramo por tabela (`if tg_table_name = 'direct_sales'` /
+>   `elsif 'commercial_sales'`); o resto da regra da 0373 igual. Os 4
+>   gatilhos não mudam (apontam para a função pelo nome).
+> - ⚠️ **Função de gatilho ligada a mais de uma tabela: cada comando SQL só
+>   cita colunas de UMA delas** (régua `venda-direta-fecha.test.ts`, provada
+>   quebrando; reconhece o defeito da 0373).
+> - Ensaio `scripts/receita-ensaio-0399.mjs` no treino 15/15 (transação
+>   desfeita): reproduz o erro com a função da 0373; com a 0399, venda direta
+>   fecha e lança R$ 500 na 1.1.02, a de valor zero fecha sozinha, a
+>   comercial fecha pelos dois caminhos (criar fechada e fechar depois) e
+>   lança na 1.1.01. `QUEBRA=ramo` reprova 4. **Não visto na tela.**
+
+> ## 🦷 0.430.0 — REPASSE: VENDA CANCELADA NO MEIO PAGA AS SESSÕES FEITAS (11/11/2026; migração 0398)
+>
+> AP141 (escolhido com o dono para o dia). ✅ **0398 aplicada nos dois bancos** (produção pelo dono em 11/11/2026, conferência ok; de fora: sem login `_payout_accrue_block` recusa com 42501, a de controle responde "não encontrada", as colunas novas respondem, 0 casos presos na produção). AP141 fechado.
+> - 🔴 **Defeito confirmado no código:** `apply_plan_cancellation` (0360)
+>   cancela as sessões por fazer; o repasse do bloco esperava todas
+>   `done` (0352/0387) — o procedimento ficava em andamento para sempre e o
+>   dentista não recebia nada pelo que fez.
+> - **Decisão do dono: PROPORCIONAL.** Valor = tabela × procedimentos ×
+>   concluídas ÷ sessões do bloco; recebe quem concluiu a última sessão feita.
+>   Linha em parte = `provider_payouts.sessions_done`/`sessions_total`
+>   (vazias = inteiro); a tela de Repasses mostra "pago em parte".
+> - ⚠️ **A conta do bloco mora em `_payout_accrue_block`** (interna). O
+>   gatilho `accrue_session_payout` cuida da venda direta e chama a conta
+>   para o item do plano — também quando uma sessão de item é CANCELADA.
+>   Ao recriar `payout_recalculate` ou `payout_watchlist`, levar a fração
+>   (régua `repasse-venda-cancelada.test.ts`; a do AP61 lê as duas funções).
+> - Casos já presos: lançados pela própria 0398 (data = a da última sessão
+>   feita). No treino não havia nenhum.
+> - Ensaio no treino 14/14 (transação desfeita); régua 8/8 quebrando. EV-328.
+>   **Não visto na tela.**
+
 > ## 🧹 0.429.0 — ASSINATURA DIGITAL: ACHADOS MENORES DA REVISÃO (11/11/2026; migração 0397)
 >
 > AP158, EV-327. ⚠️ **Permissão de UM pacote (ver, baixar, reenviar,

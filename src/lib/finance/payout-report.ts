@@ -96,6 +96,9 @@ export type Candidate = {
   zeroCount: number;
   draftId: string | null;
   draftCode: string | null;
+  /** 0400 — linhas de desconto por falha esperando o próximo relatório. */
+  discountCount: number;
+  discountCents: number;
 };
 
 export type CandidateDb = {
@@ -107,6 +110,8 @@ export type CandidateDb = {
   zero_count: number;
   draft_id: string | null;
   draft_code: string | null;
+  discount_count?: number | null;
+  discount_cents?: number | string | null;
 };
 
 export function candidateFromDb(r: CandidateDb): Candidate {
@@ -119,6 +124,8 @@ export function candidateFromDb(r: CandidateDb): Candidate {
     zeroCount: Number(r.zero_count ?? 0),
     draftId: r.draft_id,
     draftCode: r.draft_code,
+    discountCount: Number(r.discount_count ?? 0),
+    discountCents: Number(r.discount_cents ?? 0),
   };
 }
 
@@ -230,9 +237,13 @@ export type ReportItem = {
   clientId: string | null;
   clientName: string | null;
   sessionId: string | null;
-  origin: "sessao" | "ortodontia";
+  origin: "sessao" | "ortodontia" | "desconto";
   amountCents: number;
   status: "incluido" | "excluido";
+  /** 0400 — linha de desconto: o motivo registrado por quem decidiu. */
+  failureReason: string | null;
+  /** 0400 — já há ocorrência aberta ou "foi falha" para este procedimento. */
+  hasFailure: boolean;
   exclusionKind: ExclusionKind | null;
   exclusionReason: string | null;
   excludedByName: string | null;
@@ -272,6 +283,8 @@ export type ReportItemDb = {
   finance_action?: string | null;
   finance_reason?: string | null;
   original_amount_cents?: number | string | null;
+  failure_reason?: string | null;
+  has_failure?: boolean | null;
 };
 
 const REVIEW_STATES: ReviewState[] = ["pendente", "aprovado", "contestado", "no_financeiro"];
@@ -320,7 +333,8 @@ export function reportItemFromDb(r: ReportItemDb): ReportItem {
     clientId: r.client_id,
     clientName: r.client_name,
     sessionId: r.session_id,
-    origin: r.origin === "ortodontia" ? "ortodontia" : "sessao",
+    origin:
+      r.origin === "ortodontia" ? "ortodontia" : r.origin === "desconto" ? "desconto" : "sessao",
     amountCents: Number(r.amount_cents ?? 0),
     status: r.status === "excluido" ? "excluido" : "incluido",
     exclusionKind:
@@ -330,6 +344,8 @@ export function reportItemFromDb(r: ReportItemDb): ReportItem {
     exclusionReason: r.exclusion_reason,
     excludedByName: r.excluded_by_name,
     excludedAt: r.excluded_at,
+    failureReason: r.failure_reason ?? null,
+    hasFailure: Boolean(r.has_failure),
     ...reviewFromDb(r),
   };
 }
@@ -363,6 +379,8 @@ export const EVENT_LABEL: Record<string, string> = {
   conta_cancelada: "Conta a pagar cancelada (os procedimentos voltaram para liberado)",
   pago: "Repasse pago",
   pagamento_estornado: "Pagamento estornado",
+  compensado: "Pagamento compensado pelo desconto (sem conta a pagar)",
+  desconto_partido: "Desconto maior que o repasse: o saldo passa para o próximo relatório",
 };
 
 export function eventLabel(action: string): string {
@@ -457,6 +475,8 @@ export type MyItem = ReturnType<typeof reviewFromDb> & {
   clientId: string | null;
   clientName: string | null;
   amountCents: number;
+  /** 0400 — linha de desconto por falha: o motivo. */
+  failureReason: string | null;
 };
 
 export type MyItemDb = Parameters<typeof reviewFromDb>[0] & {
@@ -466,6 +486,7 @@ export type MyItemDb = Parameters<typeof reviewFromDb>[0] & {
   client_id: string | null;
   client_name: string | null;
   amount_cents: number | string;
+  failure_reason?: string | null;
 };
 
 export function myItemFromDb(r: MyItemDb): MyItem {
@@ -476,6 +497,7 @@ export function myItemFromDb(r: MyItemDb): MyItem {
     clientId: r.client_id,
     clientName: r.client_name,
     amountCents: Number(r.amount_cents ?? 0),
+    failureReason: r.failure_reason ?? null,
     ...reviewFromDb(r),
   };
 }
@@ -509,10 +531,15 @@ export function correctionError(
   newCents: number | null,
   currentCents: number
 ): string | null {
-  if (newCents === null || !Number.isFinite(newCents) || newCents <= 0) {
+  if (newCents === null || !Number.isFinite(newCents) || newCents === 0) {
     return "Informe o valor corrigido.";
   }
   if (newCents === currentCents) return "O valor corrigido é igual ao atual.";
+  if (currentCents > 0 && newCents < 0) return "O repasse não pode virar desconto.";
+  // 0400 — num DESCONTO, corrigir é descontar menos (continua negativo).
+  if (currentCents < 0 && (newCents > 0 || newCents < currentCents)) {
+    return "Num desconto, a correção só pode diminuir o valor descontado.";
+  }
   return null;
 }
 
@@ -586,13 +613,14 @@ export function reportErrorText(message: string): string {
 // O que está liberado vira conta a pagar por um botão do Financeiro. "Pago"
 // não é uma marca copiada: o banco lê da própria conta a pagar.
 // -----------------------------------------------------------------------------
-export type PaymentState = "programado" | "parcial" | "pago" | "cancelado";
+export type PaymentState = "programado" | "parcial" | "pago" | "cancelado" | "compensado";
 
 export const PAYMENT_STATE_LABEL: Record<PaymentState, string> = {
   programado: "Pagamento programado",
   parcial: "Pago em parte",
   pago: "Pago",
   cancelado: "Conta cancelada",
+  compensado: "Compensado pelo desconto",
 };
 
 /** Uma conta a pagar gerada de um relatório de repasse. */
@@ -629,7 +657,7 @@ export type ReportPaymentDb = {
   item_ids: string[] | null;
 };
 
-const PAYMENT_STATES: PaymentState[] = ["programado", "parcial", "pago", "cancelado"];
+const PAYMENT_STATES: PaymentState[] = ["programado", "parcial", "pago", "cancelado", "compensado"];
 
 export function reportPaymentFromDb(r: ReportPaymentDb): ReportPayment {
   return {
@@ -712,6 +740,7 @@ export function itemPaymentText(
   if (payment.state === "pago") {
     return payment.paidOn ? `Pago em ${dataBr(payment.paidOn)}` : "Pago";
   }
+  if (payment.state === "compensado") return "Compensado pelo desconto";
   if (payment.state === "parcial") {
     return `Conta paga em parte — vencimento ${dataBr(payment.dueDate)}`;
   }
@@ -751,7 +780,7 @@ export function totalToBill(billing: ReportBilling[]): { reports: number; cents:
 export function billingErrorText(message: string): string {
   const m = message;
   if (m.includes("NOTHING_TO_BILL")) {
-    return "Não há nada liberado esperando conta a pagar neste relatório.";
+    return "Não há repasse liberado esperando conta a pagar neste relatório (desconto sozinho espera o próximo repasse).";
   }
   if (m.includes("ITEM_IN_PAYMENT")) {
     return "Este procedimento já está em uma conta a pagar e não pode mais mudar.";
@@ -764,6 +793,191 @@ export function billingErrorText(message: string): string {
   }
   if (m.includes("NOT_ALLOWED")) {
     return "Só o Financeiro da Franqueadora gera a conta a pagar — e nunca a do próprio repasse.";
+  }
+  return reportErrorText(m);
+}
+
+// -----------------------------------------------------------------------------
+// Etapa 4B (0400) — A FALHA DO DENTISTA
+//
+// A ocorrência nasce da reprovação no controle de qualidade, da venda
+// cancelada ou à mão. Quem aprova a equipe decide; "foi falha" vira desconto
+// (linha negativa no próximo relatório) ou deixa de pagar. A regra é do banco.
+// -----------------------------------------------------------------------------
+export type FailureSource = "qualidade" | "cancelamento" | "manual";
+export type FailureStatus = "aberta" | "falha" | "sem_falha";
+export type FailureOutcome = "desconto" | "nao_pagar" | "refaz_sem_custo";
+export type FailurePaidState = "pago" | "em_conta" | "em_relatorio" | "fora_de_relatorio";
+
+export const FAILURE_SOURCE_LABEL: Record<FailureSource, string> = {
+  qualidade: "Reprovado no controle de qualidade",
+  cancelamento: "Venda cancelada",
+  manual: "Registrado à mão",
+};
+
+export const FAILURE_RESOLUTION_LABEL: Record<string, string> = {
+  redo_same: "refazer com o mesmo dentista",
+  redo_other: "refazer com outro dentista",
+  replan: "voltar ao planejamento",
+  revise: "revisão",
+};
+
+export const FAILURE_STATUS_LABEL: Record<FailureStatus, string> = {
+  aberta: "Esperando decisão",
+  falha: "Foi falha do dentista",
+  sem_falha: "Não foi falha",
+};
+
+export const FAILURE_OUTCOME_LABEL: Record<FailureOutcome, string> = {
+  desconto: "Desconto no próximo relatório",
+  nao_pagar: "O repasse não será pago",
+  refaz_sem_custo: "Refaz sem receber de novo (nada a descontar)",
+};
+
+export const FAILURE_PAID_LABEL: Record<FailurePaidState, string> = {
+  pago: "repasse já pago",
+  em_conta: "repasse já em conta a pagar",
+  em_relatorio: "repasse em relatório",
+  fora_de_relatorio: "repasse ainda fora de relatório",
+};
+
+/**
+ * O que acontece se quem decide disser "foi falha" — a mesma regra do banco
+ * (`payout_failure_decide`), dita antes do clique.
+ */
+export function failureEffectText(f: {
+  source: FailureSource;
+  resolution: string | null;
+  paidState: FailurePaidState;
+}): string {
+  if (f.source === "qualidade" && f.resolution === "redo_same") {
+    return "Nada a descontar: o mesmo dentista refaz sem receber de novo.";
+  }
+  if (f.paidState === "fora_de_relatorio") {
+    return "O repasse deste procedimento deixa de ser pago.";
+  }
+  const extra =
+    f.resolution === "redo_other" ? " Quem refizer recebe o repasse do procedimento." : "";
+  return `Desconto no próximo relatório do dentista, pelas mesmas aprovações.${extra}`;
+}
+
+export type PayoutFailure = {
+  id: string;
+  clinicId: string;
+  clinicName: string;
+  providerId: string;
+  providerName: string;
+  payoutId: string;
+  procedureName: string;
+  finishedOn: string;
+  clientId: string | null;
+  clientName: string | null;
+  payoutCents: number;
+  source: FailureSource;
+  sourceNote: string | null;
+  resolution: string | null;
+  status: FailureStatus;
+  outcome: FailureOutcome | null;
+  baseCents: number | null;
+  discountCents: number | null;
+  decisionReason: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  canDecide: boolean;
+  paidState: FailurePaidState;
+};
+
+export type PayoutFailureDb = {
+  id: string;
+  clinic_id: string;
+  clinic_name: string;
+  provider_id: string;
+  provider_name: string | null;
+  payout_id: string;
+  procedure_name: string | null;
+  finished_on: string;
+  client_id: string | null;
+  client_name: string | null;
+  payout_cents: number | string;
+  source: string;
+  source_note: string | null;
+  resolution: string | null;
+  status: string;
+  outcome: string | null;
+  base_cents: number | string | null;
+  discount_cents: number | string | null;
+  decision_reason: string | null;
+  decided_by_name: string | null;
+  decided_at: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  can_decide: boolean | null;
+  paid_state: string;
+};
+
+const SOURCES: FailureSource[] = ["qualidade", "cancelamento", "manual"];
+const STATUSES: FailureStatus[] = ["aberta", "falha", "sem_falha"];
+const OUTCOMES: FailureOutcome[] = ["desconto", "nao_pagar", "refaz_sem_custo"];
+const PAID: FailurePaidState[] = ["pago", "em_conta", "em_relatorio", "fora_de_relatorio"];
+const centsOrNull = (v: number | string | null | undefined) =>
+  v === null || v === undefined ? null : Number(v);
+
+export function failureFromDb(r: PayoutFailureDb): PayoutFailure {
+  return {
+    id: r.id,
+    clinicId: r.clinic_id,
+    clinicName: r.clinic_name,
+    providerId: r.provider_id,
+    providerName: r.provider_name ?? "—",
+    payoutId: r.payout_id,
+    procedureName: r.procedure_name ?? "Procedimento",
+    finishedOn: r.finished_on,
+    clientId: r.client_id,
+    clientName: r.client_name,
+    payoutCents: Number(r.payout_cents ?? 0),
+    source: SOURCES.includes(r.source as FailureSource) ? (r.source as FailureSource) : "manual",
+    sourceNote: r.source_note,
+    resolution: r.resolution,
+    status: STATUSES.includes(r.status as FailureStatus) ? (r.status as FailureStatus) : "aberta",
+    outcome: OUTCOMES.includes(r.outcome as FailureOutcome) ? (r.outcome as FailureOutcome) : null,
+    baseCents: centsOrNull(r.base_cents),
+    discountCents: centsOrNull(r.discount_cents),
+    decisionReason: r.decision_reason,
+    decidedByName: r.decided_by_name,
+    decidedAt: r.decided_at,
+    createdByName: r.created_by_name,
+    createdAt: r.created_at,
+    canDecide: Boolean(r.can_decide),
+    paidState: PAID.includes(r.paid_state as FailurePaidState)
+      ? (r.paid_state as FailurePaidState)
+      : "fora_de_relatorio",
+  };
+}
+
+/** O desconto pedido: vazio = o valor pago; nunca zero, negativo ou acima do pago. */
+export function discountError(cents: number | null, baseCents: number): string | null {
+  if (cents === null) return null;
+  if (!Number.isFinite(cents) || cents <= 0) return "Informe um desconto maior que zero.";
+  if (cents > baseCents) return "O desconto não pode passar do valor pago.";
+  return null;
+}
+
+export function failureErrorText(message: string): string {
+  const m = message;
+  if (m.includes("ALREADY_OPEN")) {
+    return "Este procedimento já tem uma ocorrência aberta ou decidida como falha.";
+  }
+  if (m.includes("INVALID_ITEM")) {
+    return "Este procedimento não pode receber ocorrência (sem repasse, ou já descontado).";
+  }
+  if (m.includes("INVALID_AMOUNT")) {
+    return "O desconto tem de ser maior que zero e no máximo o valor pago.";
+  }
+  if (m.includes("WRONG_STAGE")) return "Esta ocorrência já foi decidida. Atualize a tela.";
+  if (m.includes("NOT_ALLOWED")) {
+    return "Quem decide é quem aprova a equipe do dentista (nunca o próprio dentista).";
   }
   return reportErrorText(m);
 }

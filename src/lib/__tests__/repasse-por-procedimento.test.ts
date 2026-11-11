@@ -29,7 +29,16 @@ function ultimaDefinicao(nome: string): { arquivo: string; corpo: string } {
 }
 
 describe("AP61: o repasse sai por procedimento concluído", () => {
-  const { arquivo, corpo } = ultimaDefinicao("accrue_session_payout");
+  // Desde a 0398 (AP141) a conta do bloco mora em `_payout_accrue_block`; o
+  // gatilho cuida da venda direta e chama a conta para o item do plano.
+  const gatilho = ultimaDefinicao("accrue_session_payout");
+  const bloco = ultimaDefinicao("_payout_accrue_block");
+  const arquivo = gatilho.arquivo;
+  const corpo = gatilho.corpo + "\n" + bloco.corpo;
+
+  it("o gatilho entrega o item do plano à conta do bloco", () => {
+    expect(gatilho.corpo).toContain("perform public._payout_accrue_block(new.id);");
+  });
 
   it("a definição mais recente é a da 0352 ou posterior", () => {
     expect(arquivo >= "0352").toBe(true);
@@ -41,17 +50,19 @@ describe("AP61: o repasse sai por procedimento concluído", () => {
     expect(corpo).toContain("s.session_index between v_from and v_to");
   });
 
-  it("só lança quando todas as sessões do bloco estão concluídas", () => {
-    expect(corpo).toMatch(/s\.id = any\(v_block\) and s\.status <> 'done'[\s\S]*?return new;/);
+  it("só lança quando nenhuma sessão do bloco está por fazer (concluída ou cancelada — AP141)", () => {
+    expect(corpo).toMatch(/s\.id = any\(v_block\) and s\.status not in \('done', 'cancelled'\)[\s\S]*?return;/);
   });
 
   it("não paga de novo um procedimento que já tem repasse (refação)", () => {
-    expect(corpo).toMatch(/from public\.provider_payouts p where p\.session_id = any\(v_block\)[\s\S]*?return new;/);
+    expect(bloco.corpo).toMatch(/from public\.provider_payouts p where p\.session_id = any\(v_block\)[\s\S]*?return;/);
+    expect(gatilho.corpo).toMatch(/from public\.provider_payouts p where p\.session_id = any\(v_block\)[\s\S]*?return new;/);
   });
 
   it("revisão não paga e não conta no bloco", () => {
-    expect(corpo).toContain("if new.redo_kind is not distinct from 'revisao' then");
-    expect(corpo.match(/redo_kind is distinct from 'revisao'/g)?.length).toBe(2);
+    expect(gatilho.corpo).toContain("if new.redo_kind is not distinct from 'revisao' then");
+    expect(bloco.corpo).toContain("if v_s.redo_kind is not distinct from 'revisao' then return; end if;");
+    expect(bloco.corpo.match(/redo_kind is distinct from 'revisao'/g)?.length).toBe(2);
   });
 
   it("o bloco único (sessões que não dividem pela quantidade) paga a quantidade toda", () => {

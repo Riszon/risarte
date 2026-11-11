@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.430.0",
+    versao: "0.433.0",
     data: "2026-11-11",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4004, ASAAS_MIGRATION).
     migracao: null,
@@ -95,6 +95,71 @@ export const CHANGELOG: Versao[] = [
           "Na Central de Configuração, aba Financeiro da rede: o limite de dias para a nova cobrança de uma parcela vencida (padrão 7).",
         papeis: ["finance_franchisor"],
         manual: "13g. A Central de Configuração",
+      },
+    ],
+  },
+  {
+    versao: "0.432.0",
+    data: "2026-11-11",
+    migracao: "0400",
+    titulo: "Repasse dos dentistas: o desconto por falha do dentista",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Repasses → Ocorrências de falha: quando um procedimento que já tem repasse é reprovado no controle de qualidade ou é de uma venda cancelada, abre uma ocorrência sozinha. Quem aprova a equipe decide, com motivo, se foi falha do dentista. Foi falha: o valor pago volta como desconto no próximo relatório dele (ou deixa de ser pago, se ainda não entrou em relatório). Refeito pelo mesmo dentista, nada se desconta.",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No relatório de repasse, o botão Registrar falha abre uma ocorrência à mão, para os casos que o sistema não percebe sozinho (uma reclamação, um acordo com o cliente).",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quando outro dentista refaz um procedimento reprovado e o primeiro teve a falha confirmada, quem refez passa a receber o repasse do procedimento.",
+        papeis: ["dentist", "planner_dentist", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Meus repasses: o desconto por falha aparece como linha negativa no relatório, com o motivo, e pode ser contestado como qualquer linha. Se o desconto passar do repasse do pagamento, o que sobra vai para o próximo relatório.",
+        papeis: ["dentist", "planner_dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
+    versao: "0.431.0",
+    data: "2026-11-11",
+    migracao: "0399",
+    titulo: "Venda direta volta a fechar",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Venda direta: desde 09/11 o último passo do fechamento (contrato assinado + pagamento confirmado) dava erro e a venda ficava em \"aguardando fechamento\"; a venda direta de valor zero, que fecha sozinha, nem chegava a ser criada. Agora as duas fecham de novo, e a receita entra no Financeiro no dia do fechamento. A venda pela negociação (Comercial) não foi afetada.",
+        papeis: ["commercial_consultant", "receptionist", "unit_manager"],
+      },
+    ],
+  },
+  {
+    versao: "0.430.0",
+    data: "2026-11-11",
+    migracao: "0398",
+    titulo: "Repasse: venda cancelada no meio paga as sessões feitas",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Repasse: quando a venda é cancelada no meio de um procedimento de várias sessões, o dentista recebe pelo que fez, proporcional às sessões concluídas (fez 2 de 3, recebe 2/3 do repasse). Antes, o procedimento ficava esperando a sessão cancelada e o repasse não saía nunca. Em Financeiro → Repasses a linha mostra \"pago em parte: 2 de 3 sessões\". Os casos que já estavam presos foram lançados com a data da última sessão feita.",
+        papeis: ["dentist", "clinical_coordinator", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
       },
     ],
   },

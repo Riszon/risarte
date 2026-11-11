@@ -3431,6 +3431,13 @@ quando quem responde pela equipe conferiu e enviou — o sino avisa.
   do mês seguinte. O relatório mostra **Pagamento programado para** a data e,
   depois, **Pago em** — e o sino avisa nos dois momentos. Um procedimento
   ainda em análise é pago à parte, quando for resolvido.
+- **Desconto por falha** *(desde a 0.432.0)*: quando quem responde pela equipe
+  confirma falha sua num procedimento já pago, o valor volta como **linha
+  negativa** no seu próximo relatório, com o motivo — o sino avisa. Você pode
+  contestar como qualquer linha. Refazer o seu próprio procedimento não gera
+  desconto (você não recebe de novo). Se o desconto passar do repasse do
+  pagamento, o resto vai para o relatório seguinte; se consumir tudo, o
+  pagamento aparece como **Compensado pelo desconto**.
 
 1. **Meu Dia** → seus atendimentos.
 2. **Atendimento** → **Chamar**.
@@ -3466,6 +3473,14 @@ Repasses. Se o plano tem o mesmo procedimento em dois dentes, cada dente conta
 quando as sessões dele terminam. O repasse vai para quem concluiu a **última
 sessão**, na data dela. Sessão de **revisão** não gera repasse, e um
 procedimento **refeito** não é pago de novo.
+
+**Venda cancelada no meio do procedimento** *(desde a 0.430.0)*. Quando o
+Gerente cancela a venda, as sessões que ainda não foram feitas são canceladas
+— e o procedimento interrompido é pago **pelo que foi feito, proporcional às
+sessões concluídas**: fez 2 de 3, recebe 2/3 do repasse do procedimento. Vai
+para quem concluiu a última sessão feita, na data dela. Em **Financeiro →
+Repasses** a linha mostra *"pago em parte: 2 de 3 sessões (venda cancelada)"*.
+Se nenhuma sessão do procedimento foi feita, não há repasse.
 
 **O dente de cada sessão e o odontograma do atendimento (desde a 0.339.0).**
 
@@ -4064,8 +4079,54 @@ do relatório.
 > como estão. Um bônus, enquanto não houver regra nova, é lançado à mão em
 > Contas a pagar, na conta **2.1.02**.
 >
-> **Ainda não está nesta versão:** o desconto de um repasse já pago, quando o
-> procedimento é refeito ou a venda é cancelada por falha do dentista.
+#### Falha do dentista: a ocorrência e o desconto (desde a 0.432.0)
+
+Quando um procedimento que **já tem repasse** dá problema, o sistema abre uma
+**ocorrência**. O desconto só acontece se quem aprova a equipe decidir que foi
+**falha do próprio dentista**.
+
+**Onde a ocorrência nasce.**
+
+| Origem | Quando |
+|---|---|
+| **Controle de qualidade** | O Coordenador **reprova** um procedimento que já tem repasse. |
+| **Venda cancelada** | A venda é cancelada (termo efetivado) e tinha procedimentos com repasse. |
+| **À mão** | No relatório de repasse, **Registrar falha** na linha do procedimento, com o que aconteceu (uma reclamação, um acordo de devolução com o cliente). |
+
+O sino avisa quem decide e o Financeiro da Franqueadora.
+
+**Quem decide:** o **Gerente** da unidade; sem Gerente, o **Coordenador
+clínico**; nunca o próprio dentista. Sem ninguém na unidade, o Financeiro da
+Franqueadora. **Uma ocorrência por vez.**
+
+**Decidir** (em **Repasses → Ocorrências de falha** → **Decidir**): escolha
+**Foi falha do dentista** ou **Não foi falha do dentista** e escreva o motivo.
+A tela diz, antes de confirmar, o que vai acontecer:
+
+| Situação do procedimento | "Foi falha" faz |
+|---|---|
+| Reprovado para **refazer com o mesmo dentista** | Nada a descontar: ele refaz sem receber de novo. |
+| Repasse **já em relatório, em conta a pagar ou pago** | **Desconto** no próximo relatório do dentista: uma linha negativa, com o motivo. |
+| Repasse **ainda fora de relatório** | O repasse deixa de ser pago. |
+
+- **Quanto se desconta:** o valor pago pelo procedimento. Você pode descontar
+  **menos** (escreva o valor); **nunca mais** do que foi pago.
+- **Refeito por outro dentista:** confirmada a falha do primeiro, **quem refez
+  recebe** o repasse do procedimento.
+- **"Não foi falha"** encerra a ocorrência e nada muda no repasse.
+- **Um procedimento só é descontado uma vez.**
+- **Ocorrência sem decisão não trava nada.** Depois de 3 dias úteis, quem
+  decide recebe um lembrete.
+
+**O desconto no relatório.** A linha negativa entra no próximo relatório do
+dentista **junto com repasse** (desconto sozinho não abre relatório) e passa
+pelas mesmas aprovações: o dentista vê o motivo e pode contestar. Na
+**decisão do Financeiro**, corrigir um desconto é **descontar menos**.
+
+**Na conta a pagar**, o desconto abate o repasse. Se o desconto for **maior**
+que o repasse liberado, o que cabe entra agora e **o resto passa para o próximo
+relatório**, até zerar. Se o desconto consumir todo o repasse, o pagamento fica
+**Compensado pelo desconto**, sem conta a pagar.
 
 #### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
 
@@ -5944,7 +6005,7 @@ o que antes ficava em Financeiro → Cadastros → Configuração.
 - **Carência: fixa em zero.** O campo aparece só para leitura — *o Asaas não
   aplica carência; multa e juros contam do dia seguinte ao vencimento*. O
   sistema recusa outro valor.
-- **Nova cobrança de parcela vencida: até quantos dias** *(desde a 0.430.0,
+- **Nova cobrança de parcela vencida: até quantos dias** *(desde a 0.433.0,
   só na Rede; padrão 7, de 0 a 30)*. O Asaas não aceita cobrança com
   vencimento no passado: a parcela vencida ganha um vencimento novo, de hoje
   até esse limite. Acima dele, só renegociando.
@@ -6059,7 +6120,7 @@ gravado nesta aba até rodarem.
 
 ### 13g.2. Cobrança de parcela pelo Asaas
 
-*(desde a versão 0.430.0; em testes: as permissões nascem só com o Admin
+*(desde a versão 0.433.0; em testes: as permissões nascem só com o Admin
 Master)*
 
 **Para que serve:** gerar, para uma parcela que já existe, a cobrança no Asaas
@@ -6117,7 +6178,7 @@ some. Para mudar, cancele a cobrança antes.
 **A baixa do pagamento pelo Asaas** ainda é manual nesta etapa: a baixa
 automática vem na próxima (ASA2).
 
-**A baixa manual (Registrar recebimento), desde a 0.430.0:**
+**A baixa manual (Registrar recebimento), desde a 0.433.0:**
 
 - **O valor já vem calculado:** parcela + benefício perdido + multa + juros na
   data do recebimento. Quem recebe só muda se o paciente pagou menos.
