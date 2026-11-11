@@ -62,6 +62,30 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.423.0",
+    data: "2026-11-11",
+    // Sem migração do CORE: as desta entrega são da integração Asaas
+    // (4000 a 4002, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Central de Configuração: a conta Asaas de cada unidade (primeira etapa)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Administração → Central de Configuração (só o Admin Master, por enquanto): a conta Asaas de cada unidade, com a chave gravada num cofre e nunca mais exibida, o termo de autorização do franqueado, as tarifas do Asaas por meio de pagamento e a lista do que falta para a unidade poder cobrar. Nada é cobrado ainda, e só contas de teste são aceitas.",
+        papeis: [],
+        manual: "13g. Para o Admin Master: a Central de Configuração",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O riSZon confere cada conta Asaas uma vez por semana. Se o Asaas recusar a chave, a unidade deixa de estar pronta para cobrar e o Admin Master recebe um aviso no sino.",
+        papeis: [],
+        manual: "13g. Para o Admin Master: a Central de Configuração",
+      },
+    ],
+  },
+  {
     versao: "0.422.0",
     data: "2026-11-10",
     migracao: "0393",

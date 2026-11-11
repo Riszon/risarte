@@ -38,6 +38,7 @@
 13b. [Para o Admin Master: alterar permissões](#13b-para-o-admin-master-alterar-permissões)
 13c. [Para o Admin Master: a Auditoria](#13c-para-o-admin-master-a-auditoria)
 13f. [A assistente virtual (Rita)](#13f-a-assistente-virtual-rita)
+13g. [Para o Admin Master: a Central de Configuração](#13g-para-o-admin-master-a-central-de-configuração)
 14. [Checklists](#14-checklists)
 15. [Novidades, problemas e alertas](#15-novidades-problemas-e-alertas) — inclui o **relógio**
 
@@ -5849,6 +5850,107 @@ próxima etapa. Enquanto isso, cada item diz onde ele se muda hoje.
 
 **Se aparecer "Falta liberar a área rita no Supabase":** o ambiente ainda não
 foi preparado para a assistente. Avise o administrador.
+
+## 13g. Para o Admin Master: a Central de Configuração
+
+*(desde a versão 0.423.0 — primeira etapa da integração com o Asaas)*
+
+**Onde:** **Administração → Central de Configuração**. Por enquanto só o
+**Admin Master** vê. As permissões **Central de Configuração** e **Central:
+gravar a chave da conta Asaas** existem em Administração → Permissões, mas
+nascem sem nenhuma função marcada.
+
+**Para que serve:** reunir num lugar só toda a configuração comercial e
+financeira da rede e de cada unidade. Nesta primeira etapa ela tem uma aba,
+**Conta e tarifas**: a conta Asaas da unidade, o que o Asaas cobra por meio de
+pagamento e o que falta para a unidade poder cobrar pelo riSZon. As próximas
+etapas acrescentam as outras abas (Financeiro, Comercial, Taxas da franquia…).
+
+**Nada é cobrado ainda.** Nesta etapa o riSZon só se liga à conta Asaas e
+confere se está tudo pronto. Nenhuma cobrança sai daqui. E o sistema só aceita
+**conta de teste (sandbox)**: chave de produção do Asaas é recusada até a etapa
+de homologação.
+
+**A tela inicial:** o nível **Rede** (a conta da franqueadora e as carteiras
+que só recebem repasse) e a lista de **unidades**, cada uma com o selo:
+
+- **Pronta para cobrar** — está tudo conferido e o Admin Master marcou;
+- **Tudo conferido — falta o Admin Master marcar**;
+- **Ainda não pode cobrar** — falta algum item (o número aparece ao lado);
+- **Não foi possível conferir** — o banco não respondeu. A unidade é tratada
+  como **não pronta**.
+
+**Dentro de uma unidade, no alto, a lista do que falta.** Cada item diz como se
+resolve:
+
+1. **Conta Asaas validada** — a chave de API gravada e aceita pelo Asaas.
+2. **Identificador de carteira (walletId)** — vem sozinho do Asaas.
+3. **Webhook ativo** — o aviso de pagamento. O riSZon cria sozinho ao gravar a
+   chave.
+4. **Tarifas** — vêm da consulta ao Asaas.
+5. **Chave Pix cadastrada na conta** — cadastrada no painel do Asaas. Sem ela,
+   o QR Code do PIX vale só até o fim do dia.
+6. **Split habilitado** — no painel do Asaas: **Integrações › Segurança ›
+   Habilitar Split**. O Asaas não informa isso ao riSZon: depois de habilitar,
+   clique em **Declarar: o split está habilitado**.
+7. **Termo de autorização do franqueado registrado** — o documento em que a
+   unidade autoriza a franqueadora a operar a conta Asaas dela.
+8. **Antecipação automática desligada** — no painel do Asaas. Ligada, ela
+   diminui o repasse à franqueadora.
+
+Com os oito itens conferidos, aparece o botão **Marcar como pronta para
+cobrar**. **A marcação cai sozinha** se um item voltar a faltar (por exemplo, a
+chave foi apagada no Asaas). A tela diz quando caiu e por quê, e o sistema não
+cobra de unidade que não está pronta.
+
+**A conta da unidade, passo a passo:**
+
+1. **Abrir o cadastro da conta** (unidade sem conta).
+2. **Registrar o termo:** a data em que foi assinado, o nome de quem assinou e,
+   se quiser, uma observação. A data não pode ser futura.
+3. **Gravar a chave:** o franqueado gera a chave de API no painel do Asaas da
+   conta dele (**Integrações › Chaves de API**). Ela é **colada direto nesta
+   tela** — nunca enviada por WhatsApp, e-mail ou chat. O riSZon confere a
+   chave no Asaas, guarda num cofre e **nunca mais a mostra**: a tela passa a
+   dizer só "Chave gravada em… · Último uso em…". Depois de gravar, o riSZon
+   cria o webhook e busca as tarifas sozinho.
+4. **Conferir** a situação no Asaas, o webhook (com o último aviso recebido) e
+   as conferências do painel.
+
+**Quem grava a chave:** o Admin Master. O **Gerente da própria unidade** também
+pode, mas só depois de duas coisas: o termo registrado **e** a permissão
+**Central: gravar a chave da conta Asaas** liberada para ele. O Financeiro da
+Franqueadora vê a Central, mas não grava a chave.
+
+**Botões da conta:**
+
+- **Verificar agora** — confere de novo a chave, a situação, as tarifas, a chave
+  Pix e a antecipação. O riSZon faz isso **sozinho uma vez por semana**, o que
+  também impede que o Asaas desative a chave por falta de uso (ele desativa a
+  chave parada há 3 meses). Se a verificação falhar porque o Asaas recusou a
+  chave, a unidade deixa de estar pronta e o Admin Master recebe um aviso no
+  sino.
+- **Criar o webhook / Recriar o webhook** — quando o aviso de pagamento não foi
+  criado ou precisa ser refeito.
+- **Trocar a chave** — cola uma chave nova no lugar da antiga.
+- **Desativar esta conta…** — pede o motivo; apaga a chave e o aviso de
+  pagamento, e tira a unidade de "pronta". O cadastro e o histórico ficam.
+
+**Tarifas:** a tabela mostra o que o Asaas cobra por boleto, PIX, débito e
+crédito (à vista e por faixa de parcelas), em quantos dias o dinheiro cai e a
+vigência. Tarifa **promocional** aparece com a data de fim, e a tarifa cheia já
+aparece valendo a partir do dia seguinte. Quando o Asaas muda uma tarifa, a
+antiga é encerrada e a nova começa: nada é apagado. São as mesmas tarifas que o
+financeiro usa para lançar a taxa (Financeiro → Adquirentes, com o nome
+**Asaas**). Esse adquirente **não** vira o padrão da unidade: as baixas de hoje
+continuam com o adquirente que a unidade já usa.
+
+**Histórico de alterações:** no pé da aba, mostra quem mudou o quê e quando
+(conta, termo, marcação de pronta, tarifas).
+
+**Se aparecer "A Central de Configuração ainda não existe neste banco":** as
+migrações da integração (4000 a 4002) ainda não rodaram neste ambiente. Nada
+pode ser gravado até rodarem.
 
 ## 14. Checklists
 
