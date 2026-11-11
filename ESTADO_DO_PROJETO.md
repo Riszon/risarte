@@ -12,7 +12,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > (`finance_settings_grace_zero`). **Responsável financeiro**
 > (`client_guardians.is_financial`, um por cliente; o salvar não apaga e recria
 > mais). Ensaio 25/25, suíte 3.908, telas conferidas por papel no servidor
-> local. ⏳ 4003 só no treino; produção antes da entrada no `main`.
+> local. ✅ 4003 nos dois bancos (produção pelo dono em 11/11/2026, conferência batida); no `main`.
 >
 > ## 💲 0.425.0 — VENDA DIRETA: O PREÇO É O DO CATÁLOGO (11/11/2026; migração 0394)
 >

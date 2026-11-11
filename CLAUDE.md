@@ -410,7 +410,7 @@ Syncthing se comportarem de forma estranha.**
   por id**; os responsáveis vão sempre no formulário.
 - ⚠️ **Banco de treino por IPv4:** o direto não respondeu deste PC; use
   `TEST_DB_URL` pelo ambiente com o pooler (`scripts/test-db.mjs`).
-- ⏳ **4003 só no treino.** A entrega 2 (cobrança) espera as decisões do 14.6.
+- ✅ **4003 nos dois bancos** (produção pelo dono em 11/11/2026); aprovada e no `main`. A entrega 2 (cobrança) espera as decisões do 14.6.
 
 **11/11/2026 (revisão da ZapSign) — PC Administrador (sem versão nova)**
 
