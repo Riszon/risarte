@@ -4,9 +4,11 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatBRL } from "@/lib/pricing";
 import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr } from "@/lib/dates";
+import { carregarCobrancas } from "@/lib/finance/payout-report-db";
 import {
   MY_STATUS_LABEL,
   REPORT_STATUS_LABEL,
+  billingText,
   myReportFromDb,
   type MyReportDb,
 } from "@/lib/finance/payout-report";
@@ -53,6 +55,16 @@ export default async function RepassesPage() {
   const comigo = fila.filter((r) => ["com_gerente", "em_contestacao"].includes(r.status));
   const andando = fila.filter((r) => !["com_gerente", "em_contestacao"].includes(r.status));
   const relatorios = ((meus.data ?? []) as MyReportDb[]).map(myReportFromDb);
+  // 0393 — o pagamento de cada relatório meu (o banco só devolve os meus).
+  const cobrancas = await carregarCobrancas(
+    supabase,
+    relatorios.map((r) => r.id)
+  );
+  const pagamentoDe = (id: string) => {
+    const b = cobrancas.get(id);
+    // Para o dentista, "sem conta a pagar" é detalhe interno do Financeiro.
+    return b ? billingText({ ...b, toBillCents: 0, toBillCount: 0 }) : null;
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
@@ -172,6 +184,9 @@ export default async function RepassesPage() {
                         ? ` · ${formatBRL(r.releasedCents)} já aprovado`
                         : ""}
                     </p>
+                    {pagamentoDe(r.id) && (
+                      <p className="text-xs font-medium">{pagamentoDe(r.id)}</p>
+                    )}
                   </div>
                   <span className="flex items-center gap-2">
                     <strong className="tabular-nums">{formatBRL(r.totalCents)}</strong>

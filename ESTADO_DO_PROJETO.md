@@ -25,6 +25,55 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   de propósito reprovadas, prova real no sandbox com as 4 contas de teste.
 >   ✅ 4000–4002 **só no treino**.
 >
+> ## ✅ 0.422.0 — REPASSE DOS DENTISTAS, ETAPA 4: O PAGAMENTO PELO RELATÓRIO (10/11/2026; migração 0393)
+>
+> Quarta das 5 etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões P1–P6 do
+> dono). ✅ **0393 aplicada no treino** (`migrar:teste`) **e na produção**
+> (o dono informou em 10/11/2026; não conferido de fora). **Não visto na
+> tela.**
+> - **`payout_payments`** = a conta a pagar gerada de um relatório (uma por
+>   geração; `payable_id` único). As linhas apontam para ela em
+>   `payout_report_items.payment_id`. Aprovação parcial = mais de uma conta
+>   por relatório.
+> - **`payout_report_bill(relatório)`** (só `can_manage_payout_reports`, e
+>   nunca o dentista do relatório): trava o relatório, junta as linhas
+>   `released` sem `payment_id`, cria a conta em 2.1.01 **aberta e sem
+>   alçada** e chama `post_payable_accrual` (o fechamento antigo não
+>   lançava a competência). `payout_reports_bill_all(unidade)` chama a mesma,
+>   relatório a relatório.
+> - **Vencimento** (`_payout_due_date`): dia 15, corte no dia 10 da data em
+>   que a última linha foi liberada (`released_at`, relógio do Brasil); nunca
+>   antes de hoje. **Competência** = `period_month`; mês fechado na
+>   contabilidade → hoje.
+> - ⚠️ **"PAGO" NÃO É COLUNA:** é lido da conta a pagar
+>   (`payout_report_payments`: programado / parcial / pago / cancelado).
+>   Estornou o pagamento, deixa de estar pago. Não criar marca de pago na
+>   linha.
+> - ⚠️ **Travas:** `payout_report_items_payment_lock` (linha em conta não
+>   muda de valor, situação nem relatório; só sai quando a conta foi
+>   CANCELADA; só entra liberada e em conta do mesmo relatório) e
+>   `payout_payments_lock` (não apaga, não muda valor, cancelada não volta).
+>   A linha continua `active`: o índice da 0390 segue valendo.
+> - ⚠️ **Gatilho `payables_payout_payment_sync` em `payables`** (quando a
+>   situação muda): cancelada → conta do repasse cancelada e linhas soltas;
+>   paga → evento e aviso ao dentista; deixou de estar paga → evento. Quem
+>   recriar `cancel_payable` não precisa levar nada: o efeito mora no gatilho.
+> - ⚠️ **`close_payout_month` só recusa** (`PAYOUT_CLOSING_RETIRED`). O
+>   botão e a ação saíram; os meses já fechados seguem (`closing_id`). **O
+>   bônus em % saiu junto** (só o fechamento antigo o aplicava) — AP no
+>   backlog. A missão `fechamentos_repasse` da certificação passou a contar
+>   `payout_payments.created_by`.
+> - **Leituras:** `payout_report_payments(relatório)` e
+>   `payout_report_billing(ids[])` servem ao Financeiro, ao aprovador e ao
+>   dentista (este só vê as contas que valem, sem o nome de quem gerou);
+>   no app, `carregarPagamentos` / `carregarCobrancas`
+>   (`payout-report-db.ts`) e as frases em `payout-report.ts`
+>   (`itemPaymentText`, `billingText`).
+> - Ensaio no treino (desfeito) **36/36** (`scripts/repasse-ensaio-0393.mjs
+>   --confirmar`); régua `repasse-etapa4.test.ts`, provada quebrando 4×.
+> - **Fica para a 4B:** o desconto por falha do dentista (decisão 12).
+>   **Etapa 5:** histórico, consolidado da rede e gráfico.
+>
 > ## 💡 0.421.0 — SUGESTÕES DA EQUIPE, LOTE 3 (10/11/2026; migração 0392)
 >
 > Relatos do TREINO, sugestões aprovadas pelo dono (sessão "Relatos riSZon").

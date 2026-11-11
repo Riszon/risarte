@@ -3396,6 +3396,11 @@ quando quem responde pela equipe conferiu e enviou — o sino avisa.
   **contestar de novo**, a decisão final passa a ser do Financeiro da
   Franqueadora.
 - Você só vê os **seus** relatórios.
+- **O pagamento** *(desde a 0.422.0)*: o repasse é pago no **dia 15**. O que
+  você aprovou até o dia 10 entra no pagamento do mesmo mês; depois disso, no
+  do mês seguinte. O relatório mostra **Pagamento programado para** a data e,
+  depois, **Pago em** — e o sino avisa nos dois momentos. Um procedimento
+  ainda em análise é pago à parte, quando for resolvido.
 
 1. **Meu Dia** → seus atendimentos.
 2. **Atendimento** → **Chamar**.
@@ -3859,8 +3864,9 @@ motivo escrito**. Vale para todos os meses, não só o que está na tela.
   valor fica congelado: mudar a tabela depois não reescreve o que foi feito.
 - O recálculo usa a tabela que vale **na data do procedimento** e fica
   registrado (quem e quando).
-- Repasse que já entrou em **fechamento** não é alterado nem apagado, e uma
-  sessão que já tem repasse não pode ser apagada.
+- Repasse que já entrou em **fechamento** (os meses fechados pelo caminho
+  antigo, até a 0.421.0) não é alterado nem apagado, e uma sessão que já tem
+  repasse não pode ser apagada.
 
 #### Relatórios de repasse (desde a 0.419.0)
 
@@ -3973,9 +3979,63 @@ aprovador é avisado. **O sistema nunca aprova sozinho.**
 linhas, as outras ficam **liberadas para pagar** enquanto a discussão continua.
 O relatório mostra quanto já está liberado.
 
-> **Ainda não está nesta versão:** o pagamento pelo relatório. Até lá, o
-> **Fechar o mês** de Repasses continua funcionando, e **não leva** o que está
-> em relatório nem o que está em "não pagar".
+#### O pagamento do repasse pelo relatório (desde a 0.422.0)
+
+O que foi aprovado **por quem responde pela equipe e pelo dentista** vira
+**conta a pagar**. Quem gera é o **Financeiro da Franqueadora**.
+
+**Gerar a conta a pagar.**
+
+- **No relatório:** o cartão **Pagamento** mostra quanto está liberado e ainda
+  sem conta. **Gerar conta a pagar** cria **uma conta** com todos esses
+  procedimentos.
+- **Na lista de relatórios:** **Gerar as contas a pagar** faz o mesmo para
+  todos os relatórios da unidade que têm algo liberado — uma conta por
+  relatório.
+
+A conta nasce em **Financeiro → Contas a pagar**, já aberta (não passa pela
+autorização de contas a pagar: o aprovador e o dentista já aprovaram), na conta
+**2.1.01**, com o nome do dentista e o número do relatório (RP-000001). Ela
+entra no resultado (DRE) pelo **mês do relatório**. O dentista é avisado pelo
+sino.
+
+**O vencimento é o dia 15.** O que foi liberado **até o dia 10** vence no dia
+15 **do mesmo mês**; o que foi liberado **depois do dia 10**, no dia 15 **do mês
+seguinte**. Se a conta for gerada depois do dia 15 que valeria, ela vence no
+dia em que foi gerada.
+
+**Pagar.** Em **Contas a pagar**, como qualquer outra conta. Quando a conta
+fica **paga**, o relatório mostra **Pago**, com a data, para o Financeiro, para
+o aprovador e para o dentista — e o dentista é avisado. Se o pagamento for
+**estornado**, o relatório deixa de mostrar "pago".
+
+**Aprovação parcial.** Quando o dentista contesta uma linha, as outras já
+podem ir para uma conta. Resolvida a contestação, a linha entra em uma
+**segunda conta** do mesmo relatório. O cartão Pagamento lista todas.
+
+**O que o sistema não deixa fazer.**
+
+- Um procedimento **não entra em duas contas**: gerar de novo só leva o que
+  ainda não foi.
+- Procedimento que está em uma conta **não muda de valor nem sai do
+  relatório**.
+- Só entra em conta o que está **liberado para pagar**.
+- **Ninguém gera a conta do próprio repasse.**
+- Conta com pagamento registrado **não se cancela**.
+
+**Cancelar a conta a pagar** (em Contas a pagar, com motivo, só enquanto não
+tem pagamento): os procedimentos voltam para **"Liberado — ainda sem conta a
+pagar"** e podem ir para uma conta nova. O cancelamento fica na linha do tempo
+do relatório.
+
+> **O "Fechar o mês" de Repasses saiu** nesta versão, junto com o **bônus do
+> período em percentual** que só ele aplicava. O repasse é pago apenas pelos
+> Relatórios de repasse. Os meses já fechados pelo caminho antigo continuam
+> como estão. Um bônus, enquanto não houver regra nova, é lançado à mão em
+> Contas a pagar, na conta **2.1.02**.
+>
+> **Ainda não está nesta versão:** o desconto de um repasse já pago, quando o
+> procedimento é refeito ou a venda é cancelada por falha do dentista.
 
 #### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
 

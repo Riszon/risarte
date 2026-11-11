@@ -110,51 +110,6 @@ export async function setProviderLevel(input: {
 }
 
 /**
- * Fecha o mês: consolida, aplica o bônus e gera as contas a pagar.
- * NÃO paga ninguém — quem paga é o Financeiro, pelo fluxo que já existe.
- */
-export async function closePayoutMonth(input: {
-  clinicId: string;
-  month: string;
-  bonusPercent: number;
-}): Promise<PayoutResult> {
-  await getSessionContext();
-  const supabase = await createClient();
-
-  const { error } = await supabase.rpc("close_payout_month", {
-    p_clinic_id: input.clinicId,
-    p_month: input.month,
-    p_bonus_percent: input.bonusPercent,
-  });
-  if (error) {
-    const m = error.message;
-    if (m.includes("ALREADY_CLOSED")) {
-      return { ok: false, error: "Este mês já foi fechado." };
-    }
-    if (m.includes("NOTHING_TO_CLOSE")) {
-      return {
-        ok: false,
-        error: "Não há repasse apurado neste mês para fechar.",
-      };
-    }
-    if (m.includes("NOT_ALLOWED")) {
-      return { ok: false, error: "Sua função não permite fechar o repasse." };
-    }
-    console.error("close_payout_month failed:", m);
-    return { ok: false, error: "Não foi possível fechar o mês." };
-  }
-
-  await logAudit({
-    action: "create",
-    entityType: "payout_closing",
-    entityId: input.clinicId,
-    clinicId: input.clinicId,
-  });
-  refresh();
-  return { ok: true };
-}
-
-/**
  * 0387 — recalcula UM repasse que saiu com R$ 0,00 (o nível do dentista ou o
  * valor da tabela chegaram depois da conclusão). A regra mora no banco: só
  * linha zerada e fora de fechamento, pela tabela que vale na data do

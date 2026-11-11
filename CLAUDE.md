@@ -438,6 +438,24 @@ Syncthing se comportarem de forma estranha.**
   `commercial_mark_paper_contract`). ✅ 0392 nos dois bancos (o dono rodou na
   produção em 10/11/2026; conferido de fora: sem login recusa, a chave de
   serviço para em NOT_ALLOWED, colunas e pasta privada de 10 MB existem).
+**10/11/2026 (repasse, etapa 4) — PC Administrador (core 0.421.0 → 0.422.0, migração 0393)**
+
+- **Pagamento do repasse pelo relatório** (bloco 0.422.0 no ESTADO; decisões
+  P1–P6 em `docs/Financeiro/REPASSE-PLANO.md`). **As próximas são a 4B
+  (desconto por falha do dentista) e a Etapa 5 (visões)**, com plano e OK do
+  dono antes.
+- ⚠️ **"Pago" não é coluna:** é lido da conta a pagar
+  (`payout_report_payments`). Não criar marca de pago na linha do relatório.
+- ⚠️ **Linha em conta é travada** (`payout_report_items_payment_lock`): só
+  se solta quando a conta a pagar é CANCELADA (gatilho
+  `payables_payout_payment_sync` em `payables`).
+- ⚠️ **`close_payout_month` só recusa**; o repasse é pago só por
+  `payout_report_bill`. O bônus em % saiu junto (item no backlog).
+- ⚠️ A conta do repasse nasce **aberta e sem alçada** (decisão P4) — inserida
+  direto em `payables`, seguida de `post_payable_accrual`.
+- ✅ **0393 aplicada no treino e na produção** (o dono informou em
+  10/11/2026; não conferido de fora).
+
 **10/11/2026 (repasse, etapa 3) — PC Administrador (core 0.419.0 → 0.420.0, migração 0391)**
 
 - **Aprovações do repasse** (bloco 0.420.0 no ESTADO; decisões A1–A6 em

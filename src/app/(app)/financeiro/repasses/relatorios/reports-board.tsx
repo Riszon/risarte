@@ -14,13 +14,17 @@ import { formatBRL } from "@/lib/pricing";
 import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr } from "@/lib/dates";
 import {
   REPORT_STATUS_LABEL,
+  billingText,
   nextStepText,
   reasonError,
   totalReady,
+  totalToBill,
   type Candidate,
   type Report,
+  type ReportBilling,
 } from "@/lib/finance/payout-report";
 import {
+  billAllPayoutReports,
   generatePayoutReports,
   releaseWithheldPayout,
   sendAllDraftReports,
@@ -44,6 +48,8 @@ export function ReportsBoard({
   canManage,
   candidates,
   reports,
+  billing,
+  userId,
   withheld,
   loadFailed,
 }: {
@@ -54,6 +60,10 @@ export function ReportsBoard({
   canManage: boolean;
   candidates: Candidate[];
   reports: Report[];
+  /** O pagamento de cada relatório que já passou pelo dentista (0393). */
+  billing: ReportBilling[];
+  /** Quem está na tela: ninguém gera a conta do próprio repasse. */
+  userId: string;
   withheld: WithheldRow[];
   loadFailed: boolean;
 }) {
@@ -94,6 +104,27 @@ export function ReportsBoard({
           n === 0
             ? "Nenhum rascunho para enviar."
             : `${n} relatório${n === 1 ? "" : "s"} enviado${n === 1 ? "" : "s"} para aprovação.`
+        );
+      }
+      router.refresh();
+    });
+  }
+
+  // 0393 — o que está liberado e ainda não virou conta a pagar.
+  const cobranca = new Map(billing.map((b) => [b.reportId, b]));
+  const meus = new Set(reports.filter((r) => r.providerId === userId).map((r) => r.id));
+  const aCobrar = totalToBill(billing.filter((b) => !meus.has(b.reportId)));
+
+  function billAll() {
+    startTransition(async () => {
+      const r = await billAllPayoutReports({ clinicId });
+      if (!r.ok) toast.error(r.error ?? "Algo deu errado.");
+      else {
+        const n = r.count ?? 0;
+        toast.success(
+          n === 0
+            ? "Nada liberado esperando conta a pagar."
+            : `${n} conta${n === 1 ? "" : "s"} a pagar gerada${n === 1 ? "" : "s"}. Os dentistas foram avisados.`
         );
       }
       router.refresh();
@@ -266,6 +297,24 @@ export function ReportsBoard({
             Enviar pode ser de uma vez. Aprovar é sempre um relatório por vez,
             por quem responde pela equipe e depois pelo dentista.
           </p>
+          {aCobrar.reports > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3 text-sm">
+              <span>
+                <strong>{formatBRL(aCobrar.cents)}</strong> liberado em{" "}
+                {aCobrar.reports} relatório{aCobrar.reports === 1 ? "" : "s"},
+                ainda sem conta a pagar.
+                <span className="block text-xs text-muted-foreground">
+                  Uma conta por relatório, com vencimento no dia 15. O que já
+                  foi para uma conta não entra de novo.
+                </span>
+              </span>
+              {canManage && (
+                <Button size="sm" disabled={isPending} onClick={billAll}>
+                  Gerar as contas a pagar
+                </Button>
+              )}
+            </div>
+          )}
           {reports.length === 0 ? (
             <p className="py-4 text-center text-xs text-muted-foreground">
               Nenhum relatório gerado ainda.
@@ -304,6 +353,11 @@ export function ReportsBoard({
                               decisão.
                             </strong>
                           )}
+                        </p>
+                      )}
+                      {billingText(cobranca.get(r.id)) && (
+                        <p className="text-xs font-medium">
+                          {billingText(cobranca.get(r.id))}
                         </p>
                       )}
                     </div>

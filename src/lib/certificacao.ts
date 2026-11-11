@@ -875,13 +875,14 @@ export const INDICADORES = [
   },
   {
     chave: "fechamentos_repasse",
-    rotulo: "Fechamentos de repasse",
-    ajuda: "Fechamentos mensais de repasse ao dentista feitos por ela.",
-    onde: "Financeiro → Repasses → Fechar o mês e gerar contas a pagar",
+    rotulo: "Contas a pagar de repasse geradas",
+    ajuda:
+      "Contas a pagar geradas por ela a partir de relatórios de repasse aprovados.",
+    onde: "Financeiro → Relatórios de repasse → Gerar conta a pagar",
     nivel: "complementar",
     dependeDeOutro: true,
-    origem: "payout_closings.closed_by",
-    quando: "closed_at",
+    origem: "payout_payments.created_by",
+    quando: "created_at",
     papeis: ["finance_franchisor"],
   },
 

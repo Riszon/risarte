@@ -19,19 +19,24 @@ import {
   EXCLUSION_HELP,
   EXCLUSION_LABEL,
   FINANCE_ACTION_LABEL,
+  PAYMENT_STATE_LABEL,
   REPORT_STATUS_LABEL,
   REVIEW_LABEL,
   correctionError,
   eventLabel,
+  itemPaymentText,
   nextStepText,
+  paymentByItem,
   reasonError,
   type ExclusionKind,
   type FinanceAction,
   type ManagerAction,
   type Report,
   type ReportItem,
+  type ReportPayment,
 } from "@/lib/finance/payout-report";
 import {
+  billPayoutReport,
   cancelPayoutReport,
   decideContestedItem,
   excludeReportItem,
@@ -70,6 +75,7 @@ export function ReportDetail({
   report,
   items,
   history,
+  payments,
   canManage,
   canApprove,
   backHref,
@@ -78,6 +84,8 @@ export function ReportDetail({
   report: Report;
   items: ReportItem[];
   history: HistoryRow[];
+  /** As contas a pagar geradas deste relatório (0393). */
+  payments: ReportPayment[];
   /** Financeiro da Franqueadora / Admin Master. */
   canManage: boolean;
   /** É o aprovador DESTE relatório. */
@@ -106,6 +114,12 @@ export function ReportDetail({
 
   const incluidos = items.filter((i) => i.status === "incluido");
   const excluidos = items.filter((i) => i.status === "excluido");
+
+  // 0393 — o pagamento: o que está liberado e ainda não foi para uma conta.
+  const contaDaLinha = paymentByItem(payments);
+  const semConta = incluidos.filter((i) => i.released && !contaDaLinha.has(i.itemId));
+  const semContaCents = semConta.reduce((s, i) => s + i.amountCents, 0);
+  const temLiberado = incluidos.some((i) => i.released);
 
   function abrir(id: string) {
     setOpen(id);
@@ -367,6 +381,110 @@ export function ReportDetail({
         </p>
       )}
 
+      {/* -- PAGAMENTO (0393) --------------------------------------------------- */}
+      {(temLiberado || payments.length > 0) && (
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <div>
+              <h2 className="font-medium">Pagamento</h2>
+              <p className="text-xs text-muted-foreground">
+                Só vira conta a pagar o que foi aprovado por quem responde pela
+                equipe <strong>e</strong> pelo dentista. Cada procedimento entra
+                em uma conta só. O pagamento é registrado em Contas a pagar.
+              </p>
+            </div>
+
+            {semConta.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3 text-sm">
+                <span>
+                  <strong>{formatBRL(semContaCents)}</strong> liberado em{" "}
+                  {semConta.length} procedimento{semConta.length === 1 ? "" : "s"},
+                  ainda sem conta a pagar.
+                  <span className="block text-xs text-muted-foreground">
+                    Vencimento no dia 15: liberado até o dia 10 vence no mesmo
+                    mês; depois disso, no mês seguinte.
+                  </span>
+                </span>
+                {canManage && (
+                  <Button
+                    size="sm"
+                    className="print:hidden"
+                    disabled={isPending}
+                    onClick={() =>
+                      run(
+                        () => billPayoutReport({ reportId: report.id }),
+                        "Conta a pagar gerada. O dentista foi avisado."
+                      )
+                    }
+                  >
+                    Gerar conta a pagar
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {payments.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma conta a pagar gerada ainda.
+              </p>
+            ) : (
+              <ul className="divide-y divide-dashed rounded-lg border text-sm">
+                {payments.map((p) => (
+                  <li
+                    key={p.paymentId}
+                    className="flex flex-wrap items-center justify-between gap-2 p-2"
+                  >
+                    <div className="min-w-0">
+                      <p>
+                        <strong className="tabular-nums">{formatBRL(p.amountCents)}</strong>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {p.itemCount} procedimento{p.itemCount === 1 ? "" : "s"} ·
+                          vencimento {formatIsoDateBr(p.dueDate)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Gerada em {formatBrDateTime(p.createdAt)}
+                        {p.createdByName ? ` por ${p.createdByName}` : ""}
+                        {p.state === "pago" && p.paidOn
+                          ? ` · paga em ${formatIsoDateBr(p.paidOn)}`
+                          : ""}
+                        {p.state === "parcial"
+                          ? ` · ${formatBRL(p.paidCents)} já pago`
+                          : ""}
+                        {p.state === "cancelado"
+                          ? ` · motivo do cancelamento: ${p.cancelReason ?? "—"}`
+                          : ""}
+                      </p>
+                    </div>
+                    <span className="flex items-center gap-2">
+                      {canManage && p.state !== "cancelado" && p.state !== "pago" && (
+                        <Link
+                          href="/financeiro/contas-a-pagar"
+                          className="text-xs underline print:hidden"
+                        >
+                          pagar em Contas a pagar
+                        </Link>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px]",
+                          p.state === "cancelado" && "text-muted-foreground",
+                          p.state === "pago" &&
+                            "border-emerald-300 text-emerald-700 dark:text-emerald-300"
+                        )}
+                      >
+                        {PAYMENT_STATE_LABEL[p.state]}
+                      </Badge>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* -- PROCEDIMENTOS ------------------------------------------------------ */}
       <Card>
         <CardContent className="space-y-2 p-4">
@@ -393,7 +511,11 @@ export function ReportDetail({
                     const podeDecidir = canManage && i.reviewState === "no_financeiro";
                     const aberto = open === i.itemId;
                     return (
-                      <ItemRows key={i.itemId} item={i}>
+                      <ItemRows
+                        key={i.itemId}
+                        item={i}
+                        paymentText={itemPaymentText(i.released, contaDaLinha.get(i.itemId))}
+                      >
                         <td className="py-1.5 text-right print:hidden">
                           {!aberto && canAdjust && (
                             <Button size="sm" variant="ghost" disabled={isPending} onClick={() => abrir(i.itemId)}>
@@ -664,9 +786,12 @@ function KindRadios({
  */
 function ItemRows({
   item,
+  paymentText,
   children,
 }: {
   item: ReportItem;
+  /** O pagamento desta linha, numa frase (0393); nulo = ainda não liberada. */
+  paymentText: string | null;
   children: [React.ReactNode, React.ReactNode];
 }) {
   const [acoes, formulario] = children;
@@ -714,6 +839,7 @@ function ItemRows({
                 {REVIEW_LABEL[item.reviewState]}
               </Badge>
             )}
+            {paymentText && <span className="font-medium">{paymentText}</span>}
             {item.contestText && (
               <span className="block">
                 <strong>

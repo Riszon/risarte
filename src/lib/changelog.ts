@@ -62,6 +62,41 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.422.0",
+    data: "2026-11-10",
+    migracao: "0393",
+    titulo: "Repasse dos dentistas: o pagamento pelo relatório",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Relatórios de repasse: o que o aprovador e o dentista aprovaram vira conta a pagar pelo botão Gerar conta a pagar (no relatório) ou Gerar as contas a pagar (todos da unidade). Cada procedimento entra em uma conta só; gerar de novo não leva o que já foi. O vencimento é o dia 15: liberado até o dia 10 vence no mesmo mês; depois, no mês seguinte. O pagamento continua em Contas a pagar.",
+        papeis: ["finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Meus repasses: o relatório mostra o pagamento — programado para o dia 15, ou pago, com a data. O sino avisa quando o pagamento é programado e quando é feito.",
+        papeis: ["dentist", "planner_dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Financeiro → Repasses: o botão Fechar o mês e gerar contas a pagar saiu, junto com o bônus do período em percentual. O repasse agora é pago só pelos Relatórios de repasse. Os meses já fechados pelo caminho antigo continuam como estão.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A conta a pagar do repasse entra no resultado (DRE) pelo mês do relatório. Antes, o repasse só aparecia quando era pago.",
+        papeis: ["finance_franchisor", "unit_manager"],
+      },
+    ],
+  },
+  {
     versao: "0.421.0",
     data: "2026-11-10",
     migracao: "0392",
