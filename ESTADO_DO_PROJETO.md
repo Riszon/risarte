@@ -5,8 +5,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## 🧾 0.431.0 — VENDA DIRETA VOLTA A FECHAR (11/11/2026; migração 0399)
 >
 > Achado pela sessão da integração Asaas ao montar o ensaio da cobrança.
-> ✅ **0399 aplicada no treino** (`migrar:teste --ate 0399`). ⏳ **Produção:
-> o dono roda.** Produção lida (só leitura) em 11/11/2026: **0 vendas
+> ✅ **0399 aplicada nos dois bancos** (treino por `migrar:teste --ate 0399`;
+> produção pelo dono em 11/11/2026; não conferido de fora — gatilho não aparece na API). Produção lida (só leitura) em 11/11/2026: **0 vendas
 > diretas e 0 vendas comerciais** — nada ficou preso lá.
 > - 🔴 **Defeito confirmado (0373):** `post_sale_accruals_on_close`, gatilho
 >   de `commercial_sales` E de `direct_sales`, tinha UMA consulta com

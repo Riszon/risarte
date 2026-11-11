@@ -406,8 +406,8 @@ Syncthing se comportarem de forma estranha.**
   0373). ⚠️ **Função de gatilho em mais de uma tabela: cada comando SQL só
   cita colunas de UMA delas** — o PL/pgSQL avalia `new.<coluna>` mesmo atrás
   de `tg_table_name = …` falso (régua `venda-direta-fecha.test.ts`).
-- ✅ 0399 no treino (ensaio 15/15). ⏳ **Produção: o dono roda** (lá há 0
-  vendas). Não visto na tela.
+- ✅ 0399 nos dois bancos (treino: ensaio 15/15; produção pelo dono em
+  11/11/2026, não conferido de fora). Não visto na tela.
 
 **11/11/2026 (repasse em parte) — PC Administrador (core 0.429.0 → 0.430.0, migração 0398)**
 
