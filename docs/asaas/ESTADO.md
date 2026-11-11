@@ -19,6 +19,20 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | ASA1 — Cobrança avulsa e link | próxima (plano e OK do dono antes) | — |
 
+⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
+resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
+- **ASA3:** uma entrada de split por carteira com `percentualValue` e
+  `fixedValue` juntos (confirmado). Mostrar ao dono os cálculos da compensação
+  nos três casos (tarifa fixa, percentual com mínimo e máximo, boleto pago pelo
+  QR Code PIX) e a diferença máxima por meio de pagamento **antes de implementar**.
+- **ASA4B:** Pix Automático com jornada sem pagamento inicial e split desde a
+  primeira parcela. Cartão recorrente **em aberto**: mandar o objeto
+  `creditCard` faria o cartão passar pelo servidor do riSZon, o que é proibido.
+- **ASA7:** decidir a lista de IPs autorizados (IP fixo da Vercel: US$ 100/mês
+  por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
+- **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
+  `PAYMENT_RECEIVED` é proposta, a validar com o contador.
+
 ## ASA0 — Fundação (Asaas 0.1.0, 10/11/2026)
 
 ### O que existe
