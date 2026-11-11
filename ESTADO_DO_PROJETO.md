@@ -4,7 +4,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 
 > ## 🦷 0.430.0 — REPASSE: VENDA CANCELADA NO MEIO PAGA AS SESSÕES FEITAS (11/11/2026; migração 0398)
 >
-> AP141 (escolhido com o dono para o dia). ⏳ **0398 SÓ NO TREINO.**
+> AP141 (escolhido com o dono para o dia). ✅ **0398 aplicada nos dois bancos** (produção pelo dono em 11/11/2026, conferência ok; de fora: sem login `_payout_accrue_block` recusa com 42501, a de controle responde "não encontrada", as colunas novas respondem, 0 casos presos na produção). AP141 fechado.
 > - 🔴 **Defeito confirmado no código:** `apply_plan_cancellation` (0360)
 >   cancela as sessões por fazer; o repasse do bloco esperava todas
 >   `done` (0352/0387) — o procedimento ficava em andamento para sempre e o

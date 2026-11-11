@@ -405,7 +405,8 @@ Syncthing se comportarem de forma estranha.**
 - **AP141** (bloco 0.430.0 no ESTADO). ⚠️ **A conta do repasse por
   procedimento mora em `_payout_accrue_block`**; sessão cancelada não segura
   o bloco e o pago em parte é proporcional (`sessions_done`/`sessions_total`).
-- ⏳ **0398 só no treino.** Não visto na tela.
+- ✅ **0398 aplicada nos dois bancos** (o dono, 11/11/2026; conferido de
+  fora; 0 casos presos na produção). Não visto na tela.
 
 **11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.426.0 → 0.427.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
 
