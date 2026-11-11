@@ -433,8 +433,9 @@ Syncthing se comportarem de forma estranha.**
   sem login). AP153–AP157 fechados.
 - **0.429.0 (migração 0397): AP158** (bloco no ESTADO). ⚠️ Permissão de um
   pacote é perguntada ao banco (`acesso-no-banco.ts`); ao recriar
-  `signature_apply_webhook`, partir da 0397. ⏳ 0397 no treino; produção
-  com o dono.
+  `signature_apply_webhook`, partir da 0397. ✅ 0397 nos dois bancos
+  (produção pelo dono em 11/11/2026; conferência dele true · true · 1 — de
+  fora não dá para medir: gatilho não aparece na API). AP158 fechado.
 - ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
   (produção) ou `--treino`; liberado na regra local do Claude. Com
   `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign
