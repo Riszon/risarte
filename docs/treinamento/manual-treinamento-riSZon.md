@@ -5923,6 +5923,10 @@ o que antes ficava em Financeiro → Cadastros → Configuração.
 - **Carência: fixa em zero.** O campo aparece só para leitura — *o Asaas não
   aplica carência; multa e juros contam do dia seguinte ao vencimento*. O
   sistema recusa outro valor.
+- **Nova cobrança de parcela vencida: até quantos dias** *(desde a 0.429.0,
+  só na Rede; padrão 7, de 0 a 30)*. O Asaas não aceita cobrança com
+  vencimento no passado: a parcela vencida ganha um vencimento novo, de hoje
+  até esse limite. Acima dele, só renegociando.
 
 **Aba Comercial.** O que antes ficava em Administração → Regras Comerciais:
 desconto máximo, desconto à vista, máximo de parcelas, meios de pagamento
@@ -6031,6 +6035,76 @@ continuam com o adquirente que a unidade já usa.
 **Se aparecer "A conta Asaas ainda não existe neste banco":** as migrações da
 integração (4000 a 4002) ainda não rodaram neste ambiente. Nada pode ser
 gravado nesta aba até rodarem.
+
+### 13g.2. Cobrança de parcela pelo Asaas
+
+*(desde a versão 0.429.0; em testes: as permissões nascem só com o Admin
+Master)*
+
+**Para que serve:** gerar, para uma parcela que já existe, a cobrança no Asaas
+(boleto, Pix ou cartão à vista) e mandar o link ao paciente. Só funciona na
+unidade **pronta para cobrar** (aba Conta e tarifas).
+
+**Onde:** na ficha do paciente, aba **Financeiro**, embaixo de cada parcela em
+aberto.
+
+**Quem pode:** três permissões novas em **Administração → Permissões** —
+**Cobranças: ver**, **Cobranças: emitir** e **Cobranças: cancelar**. Hoje só o
+Admin Master as tem. Mesmo com a permissão, o sistema confere a função: emitem
+o Admin Master, o Financeiro da Franqueadora, o Gerente e a Recepcionista da
+unidade; cancelam o Admin Master, o Financeiro da Franqueadora e o Gerente.
+
+**Gerar a cobrança:** **Gerar cobrança no Asaas** → escolha a forma (já vem a
+da parcela) → confira o valor, o vencimento, a multa e os juros e **quem
+paga** → **Gerar**.
+
+- **Quem paga** é o **responsável financeiro** marcado no cadastro; sem ele, o
+  próprio paciente. Paciente menor sem responsável financeiro, ou CPF de quem
+  paga vazio ou inválido: o sistema recusa e diz o que corrigir.
+- **Parcela em dia:** o valor cheio com o desconto de pontualidade valendo até
+  o vencimento; depois dele, a multa e os juros da parcela.
+- **Parcela vencida:** escolha um **vencimento novo**, de hoje até o limite da
+  rede (aba Financeiro). O valor já vem com a multa e os juros **até essa
+  data**, sem desconto de pontualidade; a cobrança nova não tem multa de novo,
+  só os juros do mês a partir do vencimento novo. Mais que o limite, só
+  renegociando.
+- **Cartão:** à vista, digitado pelo paciente na página do Asaas. O riSZon
+  nunca recebe dado de cartão.
+- Não geram cobrança agora: parcelas de **cartão parcelado**, **crédito
+  recorrente** e **depósito à vista**, e venda sem contrato assinado.
+
+**Depois de gerada:** a situação, **Link** (copia), o ícone que abre a fatura,
+**WhatsApp** (mensagem pronta com o link para quem paga), **Pix** (copia e
+cola) e **Linha digitável** (boleto). Uma parcela tem **uma** cobrança ativa
+por vez.
+
+**Enquanto a cobrança está ativa a parcela fica travada:** não muda valor,
+vencimento, forma, não é cancelada, renegociada nem apagada, e o **Dar baixa**
+some. Para mudar, cancele a cobrança antes.
+
+- **Recebeu no balcão** — o paciente pagou na clínica: o sistema cancela a
+  cobrança no Asaas e, confirmado, abre o registro do recebimento. Se ele já
+  pagou pelo Asaas, nada é cancelado.
+- **Cancelar cobrança** — pede o motivo e cancela no Asaas; o link para de
+  funcionar.
+- **Tentar de novo** — aparece quando o Asaas não respondeu. O sistema
+  pergunta ao Asaas antes de criar outra: nunca sai cobrança duplicada.
+- **Já cobrada fora do riSZon** — quando a cobrança foi feita direto no Asaas:
+  o riSZon não gera outra e a baixa continua manual. **Desfazer** tira a
+  marcação.
+
+**A baixa do pagamento pelo Asaas** ainda é manual nesta etapa: a baixa
+automática vem na próxima (ASA2).
+
+**Quitação por valor menor** *(Gerente da unidade e Admin Master)*: no
+**Registrar recebimento**, digite o valor que o paciente pagou e marque
+**Quitar a parcela por este valor**; o motivo é obrigatório. A parcela fica
+paga e a diferença é **dispensada**, nesta ordem: juros, multa, benefício
+perdido e, por último, o principal. Só o principal dispensado entra no
+financeiro como **Descontos concedidos**; a taxa da rede é calculada sobre o
+que entrou. A ficha mostra a dispensa com o valor, o motivo, quem e quando, e
+a Franqueadora vê. A Recepcionista recebe valor menor só como baixa parcial
+(o saldo fica em aberto).
 
 ## 14. Checklists
 

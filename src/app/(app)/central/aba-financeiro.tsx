@@ -16,13 +16,18 @@ type Linha = {
   monthly_interest_percent: number | null;
   rounding_mode: "half_up" | "half_even" | null;
   alert_overdue_percent: number | null;
+  overdue_reissue_max_days?: number | null;
 };
 
 async function lerLinhas(supabase: SupabaseClient): Promise<Linha[]> {
-  const { data } = await supabase
+  const colunas = "clinic_id, late_fee_percent, monthly_interest_percent, rounding_mode, alert_overdue_percent";
+  // 4004: com a coluna do limite da reemissão; sem a 4004, sem ela.
+  const com = await supabase
     .from("finance_settings")
-    .select("clinic_id, late_fee_percent, monthly_interest_percent, rounding_mode, alert_overdue_percent")
+    .select(`${colunas}, overdue_reissue_max_days`)
     .returns<Linha[]>();
+  if (!com.error) return com.data ?? [];
+  const { data } = await supabase.from("finance_settings").select(colunas).returns<Linha[]>();
   return data ?? [];
 }
 
@@ -33,6 +38,8 @@ function daRede(linhas: Linha[]): ValoresDaRede {
     monthly_interest_percent: Number(r?.monthly_interest_percent ?? 1),
     rounding_mode: r?.rounding_mode ?? "half_up",
     alert_overdue_percent: r?.alert_overdue_percent == null ? 5 : Number(r.alert_overdue_percent),
+    overdue_reissue_max_days:
+      r && "overdue_reissue_max_days" in r ? Number(r.overdue_reissue_max_days ?? 7) : null,
   };
 }
 

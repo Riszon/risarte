@@ -46,6 +46,7 @@ import {
   hasRoleWithScopeForClinic,
   isDentistRestricted,
   isSdrRestricted,
+  pode,
   sdrAccessibleClientIds,
 } from "@/lib/auth";
 import { canSendSignatures, canViewSignaturePackages } from "@/lib/signatures/access";
@@ -600,6 +601,8 @@ export default async function ClientDetailPage(
         periodEnd: "",
         boletos: {},
         boletoIssuableIds: [] as string[],
+        charges: [],
+        waivers: [],
       };
   const financeToday = todayInBrazil();
   // AP51: as contas da unidade de cada cobrança, para o "Entrou em" da baixa.
@@ -3748,6 +3751,15 @@ export default async function ClientDetailPage(
               canAuthorize={canAuthorizeRenegotiation}
               contas={contasDoDinheiro}
               clinicIdPadrao={client.clinic_id}
+              charges={receivables.charges}
+              waivers={receivables.waivers}
+              cobranca={{
+                ver: pode(session, "acao.cobranca.ver", client.clinic_id),
+                emitir: pode(session, "acao.cobranca.emitir", client.clinic_id),
+                cancelar: pode(session, "acao.cobranca.cancelar", client.clinic_id),
+                receber: canReceivePayment && pode(session, "acao.cobranca.ver", client.clinic_id),
+              }}
+              canWaive={canAuthorizeRenegotiation}
             />
           </TabPanel>
         )}

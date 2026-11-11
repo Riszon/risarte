@@ -31,6 +31,8 @@ export type ValoresDaRede = {
   monthly_interest_percent: number;
   rounding_mode: "half_up" | "half_even";
   alert_overdue_percent: number | null;
+  /** 4004 — dias da nova cobrança de parcela vencida; `null` = banco sem a 4004. */
+  overdue_reissue_max_days?: number | null;
 };
 
 /** A linha da unidade, crua: `null` = segue a rede. */
@@ -140,10 +142,16 @@ export function FinanceiroDaRede({
   const [juros, setJuros] = useState(texto(rede.monthly_interest_percent));
   const [arred, setArred] = useState(rede.rounding_mode);
   const [teto, setTeto] = useState(texto(rede.alert_overdue_percent));
+  // 4004: só a REDE tem o limite da reemissão (a linha da franqueadora não).
+  const temReemissao = clinicId === null && rede.overdue_reissue_max_days != null;
+  const [reemissao, setReemissao] = useState(String(rede.overdue_reissue_max_days ?? 7));
   const m = num(multa);
   const j = num(juros);
   const t = num(teto);
-  const invalido = m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0);
+  const d = Number(reemissao);
+  const reemissaoInvalida = temReemissao && (!Number.isInteger(d) || d < 0 || d > 30);
+  const invalido =
+    m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0) || reemissaoInvalida;
   const acimaDoLimite = (m ?? 0) > 2;
 
   return (
@@ -174,6 +182,22 @@ export function FinanceiroDaRede({
             <input value={teto} onChange={(e) => setTeto(e.target.value)} disabled={!canEdit} inputMode="decimal" placeholder="ex.: 5" className={fieldClass} />
           </label>
           <Carencia />
+          {temReemissao && (
+            <label className="block text-sm font-medium">
+              Nova cobrança de parcela vencida: até quantos dias (0 a 30)
+              <input
+                value={reemissao}
+                onChange={(e) => setReemissao(e.target.value)}
+                disabled={!canEdit}
+                inputMode="numeric"
+                className={cn(fieldClass, reemissaoInvalida && "border-destructive")}
+              />
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                O Asaas não aceita vencimento no passado: a parcela vencida ganha nova data de hoje até este limite, com
+                multa e juros até a nova data. Acima disso, só renegociando.
+              </span>
+            </label>
+          )}
         </div>
         <p className="text-[11px] text-muted-foreground">
           Teto da inadimplência: acima dele a unidade acende em <strong>Recebíveis</strong> e no painel da rede. Não é um
@@ -193,6 +217,7 @@ export function FinanceiroDaRede({
                   monthlyInterestPercent: j,
                   roundingMode: arred,
                   overduePercent: t,
+                  ...(temReemissao ? { reissueMaxDays: d } : {}),
                 },
                 "Configuração salva."
               )

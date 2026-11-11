@@ -278,6 +278,36 @@ export const CAPACIDADES: Capability[] = [
     padrao: [],
   },
   {
+    // 4004 — Cobrança pelo Asaas (ASA1). Nascem só com o Admin Master; o BANCO
+    // decide de novo quem emite (Admin, Financeiro da Franqueadora, Gerente e
+    // Recepcionista da unidade) e quem cancela (Admin, Financeiro, Gerente).
+    id: "acao.cobranca.ver",
+    rotulo: "Cobranças: ver",
+    grupo: "Módulos",
+    descricao:
+      "Ver as cobranças do Asaas nas parcelas do paciente: a situação, o link da fatura, o Pix e o boleto.",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
+    id: "acao.cobranca.emitir",
+    rotulo: "Cobranças: emitir",
+    grupo: "Módulos",
+    descricao:
+      "Gerar a cobrança de uma parcela no Asaas (boleto, Pix ou cartão à vista) e enviar o link ao paciente.",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
+    id: "acao.cobranca.cancelar",
+    rotulo: "Cobranças: cancelar",
+    grupo: "Módulos",
+    descricao:
+      "Cancelar a cobrança no Asaas, marcar parcela cobrada fora do riSZon e quitar por valor menor (este último só Gerente e Admin).",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
     // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
     // cada um enxerga (as que cria, as das unidades que gere, e aquelas em
     // que participa).

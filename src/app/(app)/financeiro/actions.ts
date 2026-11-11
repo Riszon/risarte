@@ -37,6 +37,11 @@ export async function saveFinanceSettings(input: {
    * funciona com coluna anulável na linha que sobrescreve).
    */
   overduePercent?: number | null;
+  /**
+   * 4004 — até quantos dias à frente a parcela VENCIDA pode ganhar nova
+   * cobrança no Asaas. Só na REDE; `undefined` = não mexe (banco sem a 4004).
+   */
+  reissueMaxDays?: number;
 }): Promise<FinanceResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
@@ -70,6 +75,12 @@ export async function saveFinanceSettings(input: {
       error: "A carência é fixa em zero: o Asaas não aplica carência; multa e juros contam do dia seguinte ao vencimento.",
     };
   }
+  if (
+    input.reissueMaxDays !== undefined &&
+    (!Number.isInteger(input.reissueMaxDays) || input.reissueMaxDays < 0 || input.reissueMaxDays > 30)
+  ) {
+    return { ok: false, error: "O limite da nova cobrança de parcela vencida vai de 0 a 30 dias." };
+  }
   const teto = input.overduePercent ?? null;
   if (teto !== null && (!Number.isFinite(teto) || teto < 0 || teto > 100)) {
     return {
@@ -97,6 +108,7 @@ export async function saveFinanceSettings(input: {
       grace_days: naRede ? 0 : null,
       rounding_mode: input.roundingMode,
       alert_overdue_percent: teto,
+      ...(naRede && input.reissueMaxDays !== undefined ? { overdue_reissue_max_days: input.reissueMaxDays } : {}),
       updated_at: new Date().toISOString(),
       updated_by: session.userId,
     },

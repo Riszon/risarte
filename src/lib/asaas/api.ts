@@ -159,3 +159,131 @@ export function createWebhook(
 export function deleteWebhook(cred: AsaasCredential, id: string, opts?: Opts): Promise<unknown> {
   return asaasRequest<unknown>({ ...cred, method: "DELETE", path: "/webhooks/{id}", params: { id } }, opts);
 }
+
+// ---- Clientes (ASA1) -------------------------------------------------------------
+// Conferido em docs.asaas.com (criar-novo-cliente, listar-clientes) em 11/11/2026.
+
+export type AsaasCustomer = { id?: string | null; name?: string | null; cpfCnpj?: string | null; deleted?: boolean | null };
+
+/** `GET /v3/customers?cpfCnpj=` — o pagador que já existe na conta (o primeiro não apagado). */
+export async function findCustomerByCpfCnpj(cred: AsaasCredential, cpfCnpj: string, opts?: Opts): Promise<AsaasCustomer | null> {
+  const r = await asaasRequest<Lista<AsaasCustomer>>(
+    { ...cred, method: "GET", path: "/customers", query: { cpfCnpj, limit: 10 } },
+    opts
+  );
+  return (r?.data ?? []).find((c) => c?.id && !c.deleted) ?? null;
+}
+
+/**
+ * `POST /v3/customers` — até a ASA2, SÓ nome e CPF/CNPJ e as notificações do
+ * Asaas desligadas (o riSZon é quem avisa o paciente).
+ */
+export function createCustomer(
+  cred: AsaasCredential,
+  input: { name: string; cpfCnpj: string },
+  opts?: Opts
+): Promise<AsaasCustomer> {
+  return asaasRequest<AsaasCustomer>(
+    {
+      ...cred,
+      method: "POST",
+      path: "/customers",
+      body: { name: input.name, cpfCnpj: input.cpfCnpj, notificationDisabled: true },
+    },
+    opts
+  );
+}
+
+// ---- Cobranças (ASA1) --------------------------------------------------------------
+// Conferido em docs.asaas.com (criar-nova-cobranca, listar-cobrancas,
+// obter-qr-code-para-pagamentos-via-pix, obter-linha-digitavel-do-boleto,
+// excluir-cobranca) em 11/11/2026.
+
+export type AsaasPayment = {
+  id?: string | null;
+  status?: string | null;
+  value?: number | null;
+  dueDate?: string | null;
+  billingType?: string | null;
+  externalReference?: string | null;
+  invoiceUrl?: string | null;
+  bankSlipUrl?: string | null;
+  deleted?: boolean | null;
+};
+
+export type NovaCobranca = {
+  customer: string;
+  billingType: "BOLETO" | "PIX" | "CREDIT_CARD";
+  /** Em reais (o Asaas trabalha em reais com 2 casas). */
+  value: number;
+  dueDate: string;
+  description: string;
+  /** O id da cobrança no riSZon. */
+  externalReference: string;
+  /** Desconto FIXO válido até o vencimento (0 = sem desconto). */
+  discountValue: number;
+  /** Multa em % (0 = sem multa). */
+  finePercent: number;
+  /** Juros em % AO MÊS (0 = sem juros). */
+  interestPercent: number;
+};
+
+/** `POST /v3/payments` — multa e juros vão SEMPRE explícitos (nunca os padrões da conta). */
+export function createPayment(cred: AsaasCredential, input: NovaCobranca, opts?: Opts): Promise<AsaasPayment> {
+  return asaasRequest<AsaasPayment>(
+    {
+      ...cred,
+      method: "POST",
+      path: "/payments",
+      body: {
+        customer: input.customer,
+        billingType: input.billingType,
+        value: input.value,
+        dueDate: input.dueDate,
+        description: input.description.slice(0, 500),
+        externalReference: input.externalReference,
+        discount: { value: input.discountValue, dueDateLimitDays: 0, type: "FIXED" },
+        fine: { value: input.finePercent, type: "PERCENTAGE" },
+        interest: { value: input.interestPercent },
+      },
+    },
+    opts
+  );
+}
+
+/** `GET /v3/payments?externalReference=` — o que já foi criado com esta referência. */
+export async function findPaymentsByReference(cred: AsaasCredential, externalReference: string, opts?: Opts): Promise<AsaasPayment[]> {
+  const r = await asaasRequest<Lista<AsaasPayment>>(
+    { ...cred, method: "GET", path: "/payments", query: { externalReference, limit: 10 } },
+    opts
+  );
+  return (r?.data ?? []).filter((p) => p?.id && !p.deleted);
+}
+
+/** `GET /v3/payments/{id}` */
+export function getPayment(cred: AsaasCredential, id: string, opts?: Opts): Promise<AsaasPayment> {
+  return asaasRequest<AsaasPayment>({ ...cred, method: "GET", path: "/payments/{id}", params: { id } }, opts);
+}
+
+/** `GET /v3/payments/{id}/pixQrCode` — o Pix copia e cola (`payload`). */
+export async function getPixPayload(cred: AsaasCredential, id: string, opts?: Opts): Promise<string | null> {
+  const r = await asaasRequest<{ payload?: string | null }>(
+    { ...cred, method: "GET", path: "/payments/{id}/pixQrCode", params: { id } },
+    opts
+  );
+  return typeof r?.payload === "string" && r.payload ? r.payload : null;
+}
+
+/** `GET /v3/payments/{id}/identificationField` — a linha digitável do boleto. */
+export async function getIdentificationField(cred: AsaasCredential, id: string, opts?: Opts): Promise<string | null> {
+  const r = await asaasRequest<{ identificationField?: string | null }>(
+    { ...cred, method: "GET", path: "/payments/{id}/identificationField", params: { id } },
+    opts
+  );
+  return typeof r?.identificationField === "string" && r.identificationField ? r.identificationField : null;
+}
+
+/** `DELETE /v3/payments/{id}` — cancela (o Asaas recusa a cobrança já paga). */
+export function deletePayment(cred: AsaasCredential, id: string, opts?: Opts): Promise<{ deleted?: boolean | null }> {
+  return asaasRequest<{ deleted?: boolean | null }>({ ...cred, method: "DELETE", path: "/payments/{id}", params: { id } }, opts);
+}

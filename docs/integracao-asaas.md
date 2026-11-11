@@ -455,7 +455,7 @@ Toda ação de cobrança grava autor, data e motivo na auditoria.
 | ASA0 — Fundação | Casca da Central (níveis, herança, histórico, prontidão) e aba Conta e tarifas; `gateway_accounts`, Vault, logs, cliente HTTP, vinculação de conta, tarifas pela consulta do Asaas, travas de ambiente; rota mínima de webhook e `gateway_webhook_events`; verificação semanal das contas; roteiro das contas de teste (migrações 4000 a 4002) | Vincular uma conta sandbox e ver walletId, tarifas e webhook ativos; um evento de teste chega; a chave não aparece em tela, log nem repositório; o Gerente só alcança a própria unidade, e só depois do termo; conta de produção é recusada; com o menu escondido e sem as migrações, a produção abre como hoje |
 | ASA1 — Cobrança avulsa e link | Em duas entregas (seção 14). **Entrega 1:** abas Financeiro e Comercial (carência fixa em zero) e responsável financeiro com IDs estáveis. **Entrega 2:** `gateway_customers`, `charges`, cobrança de parcela existente (boleto, PIX ou cartão à vista pela fatura do Asaas), Copiar link e Enviar pelo WhatsApp, cancelar, cobrança externa, recebimento no balcão com cobrança ativa | Link gerado pelo riSZon pago no sandbox, no CPF do responsável quando houver; menus antigos abrem as abas novas; nenhuma cobrança duplicada |
 | ASA2 — Webhooks e baixa | Rota por conta, idempotência, baixa pela função existente, fechamento da venda (D21), sinalização "em dia" ou "em atraso", aba Cobrança e comunicação | Pagamento simulado dá baixa, fecha a venda e atualiza a sinalização sem ação humana |
-| ASA3 — Split | Aba Taxas da franquia sobre `network_fees`; `split_recipients`, `charge_splits`; marca de retido na origem; teto de segurança; painel de repasses, mostrando por unidade quanto foi recebido com split e quanto por fora (dinheiro, maquininha, cobrança externa). Antes de implementar: os cálculos da compensação da tarifa nos três casos e a diferença máxima por meio de pagamento, para aprovação (seção 13.2, item 1) | No prazo, o repasse liquidado é exatamente o percentual sobre o valor pago, nos três meios; formato da entrada confirmado; nenhuma conta a pagar em dobro |
+| ASA3 — Split | Aba Taxas da franquia sobre `network_fees`; `split_recipients`, `charge_splits`; marca de retido na origem; teto de segurança; painel de repasses, mostrando por unidade quanto foi recebido com split e quanto por fora (dinheiro, maquininha, cobrança externa), e as dispensas do período (quitação por valor menor) com valor, autor e motivo. Antes de implementar: os cálculos da compensação da tarifa nos três casos e a diferença máxima por meio de pagamento, para aprovação (seção 13.2, item 1) | No prazo, o repasse liquidado é exatamente o percentual sobre o valor pago, nos três meios; formato da entrada confirmado; nenhuma conta a pagar em dobro |
 | ASA4 — Gatilhos de contrato | Emissão na assinatura; renegociação assinada no ZapSign; cartão parcelado; venda direta; mensalidades do PPR+ e da Ortodontia; reemissão de cobrança externa; distrato com checklist | Contrato de teste gera N cobranças corretas; distrato só cancela ao efetivar; `npm run test:indica` verde |
 | ASA4B — Recorrência | Pix Automático (jornada sem pagamento inicial, com split desde a primeira parcela) e cartão de crédito recorrente: autorização, token, cobrança mensal vinculada, falha e cancelamento. O cartão recorrente só entra quando o token puder ser obtido sem o cartão passar pelo riSZon (seção 13.2, item 3) | Autorização ativa gera débito no ciclo seguinte com split; recusa volta para o link |
 | ASA5 — Empresarial | Aba Empresarial sobre `split_rules`; implantação e mensalidade com split para a RisLife; emissão em lote; aposentar o cliente e a Edge Function antigos | Implantação e mensalidade de teste pagas com o repasse correto, sobre o valor pago |
@@ -566,7 +566,14 @@ O plano da ASA1 foi aprovado em **duas entregas**, cada uma entrando no `main` s
 ### 14.3 Parcela vencida
 
 - **Conferido no sandbox (11/11/2026):** o Asaas **recusa** vencimento no passado, nos três meios ("Não é permitido data de vencimento inferior a hoje"), e **aceita** vencimento hoje.
-- **Proposta, a aprovar antes da entrega 2** (preferência do Jeferson): quem emite escolhe o novo vencimento (hoje ou depois). O valor sai atualizado com a multa e os juros que o riSZon já calcula até o novo vencimento, e o desconto de pontualidade não se aplica (o benefício já foi perdido). Detalhes em aberto: o 14.6.
+- ✅ **Regra aprovada pelo Jeferson (11/11/2026):**
+  - quem emite escolhe a nova data, **de hoje até 7 dias corridos à frente**;
+  - o valor sai atualizado com a multa e os juros que o riSZon já calcula **até a nova data**, não até o dia da emissão;
+  - o desconto de pontualidade não vale (o benefício já foi perdido);
+  - a cobrança reemitida vai **sem multa nova**, com os **juros mensais normais** a partir da nova data;
+  - se a nova data também passar, a diferença de centavos que o Asaas cobrar a mais é registrada **como juros** na baixa (ASA2);
+  - **acima do limite de dias a emissão é recusada**, com a indicação de que o caminho é a **renegociação**;
+  - o limite é **configuração da rede** na aba Financeiro da Central, com **padrão 7**.
 
 ### 14.4 Pagamento no balcão com cobrança ativa
 
@@ -593,19 +600,20 @@ Quando o paciente paga em dinheiro ou maquininha uma parcela com cobrança emiti
 | Desconto ou dispensa na baixa | **Não existe**: "só quita quem paga tudo". Desconto hoje só por **renegociação** (Gerente, Financeiro com autorização do Gerente, Admin). | **Diferença:** a regra pedida cria a **quitação por valor menor**, só para o Gerente da unidade e o Admin Master, com motivo obrigatório e auditoria. |
 | Conta a pagar de taxa | Sobre o valor recebido inteiro, inclusive multa e juros (`_apply_fee_split` com o valor da baixa). | Igual. |
 
-**Proposta para a quitação por valor menor** (a implementar na entrega 2, se aprovada):
+**✅ Quitação por valor menor — aprovada pelo Jeferson (11/11/2026):**
 
+- só o **Gerente da unidade** e o **Admin Master**, com **motivo obrigatório**;
 - é um recebimento normal do valor pago, mais uma **dispensa** registrada com o motivo, que fecha o saldo;
 - a dispensa abate primeiro os juros, depois a multa, depois o benefício perdido e por último o principal;
 - só a parte de principal dispensada entra no razão como **Descontos concedidos (1.9.02)**. Multa, juros e benefício perdido nunca chegaram a ser lançados como receita, então dispensá-los não gera lançamento;
-- a taxa da rede é calculada só sobre o que entrou de dinheiro.
+- a conta a pagar de taxa é calculada sobre o valor efetivamente recebido;
+- **acréscimo:** toda dispensa fica visível para a franqueadora. Na ASA1, a dispensa é gravada com valor por natureza, autor, data e motivo, num registro que o painel consegue ler depois; na **ASA3**, o painel de repasses lista, por unidade, as dispensas do período com valor, autor e motivo.
 
-### 14.6 Em aberto, para o Jeferson decidir antes da entrega 2
+**A diferença entre parcial e quitação por valor menor:** a Recepcionista recebe o valor devido ou um valor menor como **pagamento parcial** — o saldo continua em aberto, e ela não dá desconto nem dispensa multa e juros. A **quitação por valor menor** fecha o saldo e exige o Gerente da unidade ou o Admin Master.
 
-- A regra da parcela vencida (14.3), com dois detalhes:
-  - a cobrança reemitida vai **sem multa nova** e com os **juros mensais** normais a partir do novo vencimento?
-  - se o novo vencimento também passar, os juros do Asaas incidem sobre o valor novo (que já inclui multa e juros): a diferença de centavos é registrada como juros na baixa da ASA2?
-- A quitação por valor menor (14.5): aprovar como proposta.
+### 14.6 Decididos em 11/11/2026
+
+A regra da parcela vencida (14.3) e a quitação por valor menor (14.5) foram aprovadas, com os dois acréscimos: o limite de dias da reemissão (padrão 7, na aba Financeiro) e a dispensa visível para a franqueadora (painel de repasses da ASA3).
 
 ### 14.7 Permissões
 

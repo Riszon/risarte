@@ -53,6 +53,10 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   gateway_account_key: "Chave de API da conta Asaas (gravada; o valor nunca é registrado)",
   gateway_account_disabled: "Conta Asaas desativada",
   central_unit_readiness: "Central — unidade pronta para cobrar",
+  charge: "Cobrança do Asaas",
+  charges: "Cobrança do Asaas",
+  gateway_customers: "Pagador no Asaas",
+  payment_waivers: "Quitação por valor menor (dispensa)",
   // ------------------------------------------------ assinaturas digitais (0340)
   signature_settings: "Configuração das assinaturas digitais",
   signature_template: "Modelo de documento para assinatura",

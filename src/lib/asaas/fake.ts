@@ -2,7 +2,8 @@
  * O ASAAS DE MENTIRA (`ASAAS_ENV=fake`, ver `isAsaasFake` em `env.ts`).
  *
  * Responde o que a API responderia para as chamadas da ASA0 — carteira, dados
- * e situação da conta, tarifas, chave Pix, antecipação e webhook — sem rede.
+ * e situação da conta, tarifas, chave Pix, antecipação e webhook — e da ASA1
+ * (clientes e cobranças, guardados na memória do processo), sem rede.
  * Serve ao servidor local de teste e ao E2E. Nenhuma conta é tocada.
  *
  * Uma chave que contenha `recusada` devolve 401, para a tela poder mostrar o
@@ -69,5 +70,77 @@ export const fakeAsaasFetch: typeof fetch = async (input, init) => {
   if (method === "DELETE" && path.startsWith("/webhooks/")) {
     return json(200, { deleted: true });
   }
+  // ---- clientes e cobranças (ASA1) — guardados na memória do processo ----
+  if (method === "GET" && path === "/customers") {
+    const cpf = url.searchParams.get("cpfCnpj") ?? "";
+    const achado = FAKE_CUSTOMERS.get(cpf);
+    return json(200, { data: achado ? [{ id: achado, cpfCnpj: cpf, deleted: false }] : [] });
+  }
+  if (method === "POST" && path === "/customers") {
+    const body = JSON.parse(String(init?.body ?? "{}")) as { cpfCnpj?: string };
+    const id = `cus_fake${(FAKE_CUSTOMERS.size + 1).toString().padStart(6, "0")}`;
+    FAKE_CUSTOMERS.set(String(body.cpfCnpj ?? ""), id);
+    return json(200, { id, cpfCnpj: body.cpfCnpj, deleted: false });
+  }
+  if (method === "GET" && path === "/payments") {
+    const ref = url.searchParams.get("externalReference") ?? "";
+    return json(200, { data: [...FAKE_PAYMENTS.values()].filter((p) => p.externalReference === ref && !p.deleted) });
+  }
+  if (method === "POST" && path === "/payments") {
+    const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+    const id = `pay_fake${(FAKE_PAYMENTS.size + 1).toString().padStart(6, "0")}`;
+    const p = {
+      id,
+      status: "PENDING",
+      value: body.value,
+      dueDate: body.dueDate,
+      billingType: body.billingType,
+      externalReference: body.externalReference,
+      invoiceUrl: `https://sandbox.asaas.com/i/${id}`,
+      bankSlipUrl: body.billingType === "BOLETO" ? `https://sandbox.asaas.com/b/pdf/${id}` : null,
+      deleted: false,
+    };
+    FAKE_PAYMENTS.set(id, p);
+    return json(200, p);
+  }
+  const pag = /^\/payments\/([^/]+)(\/[a-zA-Z]+)?$/.exec(path);
+  if (pag) {
+    const p = FAKE_PAYMENTS.get(pag[1]);
+    if (!p) return json(404, { errors: [{ code: "not_found", description: "fake" }] });
+    if (method === "GET" && !pag[2]) return json(200, p);
+    if (method === "GET" && pag[2] === "/pixQrCode") return json(200, { payload: `00020126fake${p.id}`, encodedImage: "" });
+    if (method === "GET" && pag[2] === "/identificationField") return json(200, { identificationField: "00190000090000000000000000000000000000000000000" });
+    if (method === "DELETE" && !pag[2]) {
+      if (p.status !== "PENDING" && p.status !== "OVERDUE") {
+        return json(400, { errors: [{ code: "invalid_action", description: "fake" }] });
+      }
+      p.deleted = true;
+      return json(200, { deleted: true, id: p.id });
+    }
+  }
   return json(404, { errors: [{ code: "not_found", description: "fake" }] });
 };
+
+type FakePayment = {
+  id: string;
+  status: string;
+  value: unknown;
+  dueDate: unknown;
+  billingType: unknown;
+  externalReference: unknown;
+  invoiceUrl: string;
+  bankSlipUrl: string | null;
+  deleted: boolean;
+};
+const FAKE_CUSTOMERS = new Map<string, string>();
+const FAKE_PAYMENTS = new Map<string, FakePayment>();
+
+/** Para os testes: esvazia o Asaas de mentira e marca uma cobrança como paga. */
+export function limparAsaasDeMentira() {
+  FAKE_CUSTOMERS.clear();
+  FAKE_PAYMENTS.clear();
+}
+export function pagarNoAsaasDeMentira(id: string) {
+  const p = FAKE_PAYMENTS.get(id);
+  if (p) p.status = "RECEIVED";
+}

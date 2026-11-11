@@ -50,10 +50,14 @@ import {
   RENEGOTIATION_STATUS_LABELS,
 } from "@/lib/finance/renegotiation";
 import type {
+  ChargeRow,
   ReceiptRow,
   RenegotiationRow,
   SaleSummary,
+  WaiverRow,
 } from "./receivables-loader";
+import { CobrancaDaParcela, type PermissoesDaCobranca } from "./cobranca-da-parcela";
+import { SITUACOES_ATIVAS, type SituacaoDaCobranca } from "@/lib/cobrancas";
 import {
   authorizeRenegotiation,
   registerBoletoIssue,
@@ -120,6 +124,10 @@ export function ReceivablesSection({
   canAuthorize,
   contas = [],
   clinicIdPadrao,
+  charges = [],
+  waivers = [],
+  cobranca = { ver: false, emitir: false, cancelar: false, receber: false },
+  canWaive = false,
 }: {
   clientId: string;
   installments: Installment[];
@@ -141,6 +149,13 @@ export function ReceivablesSection({
   contas?: ContaDaUnidade[];
   /** A unidade do cliente — usada quando a cobrança não diz a dela. */
   clinicIdPadrao: string;
+  /** 4004 — as cobranças do Asaas e as dispensas (quitação por valor menor). */
+  charges?: ChargeRow[];
+  waivers?: WaiverRow[];
+  /** 4004 — o que esta pessoa faz com a cobrança (a tela; o banco decide de novo). */
+  cobranca?: PermissoesDaCobranca;
+  /** 4004 — Gerente da unidade / Admin Master: quitar por valor menor. */
+  canWaive?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -170,6 +185,17 @@ export function ReceivablesSection({
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [reversingId, setReversingId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  // 4004 — quitação por valor menor (dispensa o resto, com motivo).
+  const [waive, setWaive] = useState(false);
+  const [waiveReason, setWaiveReason] = useState("");
+  /** A cobrança do Asaas ATIVA (não externa) de cada parcela: trava a baixa manual. */
+  const activeGatewayCharge = useMemo(() => {
+    const m = new Set<string>();
+    for (const c of charges) {
+      if (!c.isExternal && SITUACOES_ATIVAS.has(c.status as SituacaoDaCobranca)) m.add(c.installmentId);
+    }
+    return m;
+  }, [charges]);
 
   const allViews = useMemo(
     () => installments.map((i) => viewInstallment(i, today)),
@@ -261,11 +287,14 @@ export function ReceivablesSection({
     setConta(contaPadrao(contas, v.clinicId ?? clinicIdPadrao, v.paymentMethod ?? "pix"));
     setReference("");
     setNotes("");
+    setWaive(false);
+    setWaiveReason("");
   }
 
   function save() {
     if (!paying) return;
-    const quita = amountCents >= paying.updatedBalanceCents;
+    const quitaMenor = canWaive && waive && amountCents < paying.updatedBalanceCents;
+    const quita = quitaMenor || amountCents >= paying.updatedBalanceCents;
     startTransition(async () => {
       const r = await registerReceipt({
         clientId,
@@ -277,9 +306,14 @@ export function ReceivablesSection({
         notes,
         clientToken: crypto.randomUUID(),
         conta,
+        waiverReason: quitaMenor ? waiveReason : undefined,
       });
       if (r.ok) {
-        const base = quita
+        const base = quitaMenor
+          ? `Recebimento registrado — parcela quitada por valor menor (dispensado ${formatBRL(
+              paying.updatedBalanceCents - amountCents
+            )}).`
+          : quita
           ? "Recebimento registrado — cobrança quitada."
           : "Recebimento parcial registrado.";
         // FIN4c: o cliente pagou o bruto, mas a clínica recebe o líquido — e
@@ -729,7 +763,7 @@ export function ReceivablesSection({
                           Registrar emissão
                         </Button>
                       )}
-                    {v.isOpen && canReceive && (
+                    {v.isOpen && canReceive && !activeGatewayCharge.has(v.id) && (
                       <Button
                         size="sm"
                         className="h-8"
@@ -752,6 +786,16 @@ export function ReceivablesSection({
                     )}
                   </div>
                 </div>
+
+                <CobrancaDaParcela
+                  clientId={clientId}
+                  parcela={v}
+                  cobrancas={charges.filter((c) => c.installmentId === v.id)}
+                  dispensas={waivers.filter((w) => w.installmentId === v.id)}
+                  today={today}
+                  permissoes={cobranca}
+                  onAbrirBaixa={() => openPayment(v.id)}
+                />
 
                 {historyId === v.id && (
                   <ul className="mt-2 space-y-1 border-t pt-2 text-xs">
@@ -1475,6 +1519,37 @@ export function ReceivablesSection({
               )}
 
               {errors.length === 0 &&
+                canWaive &&
+                amountCents > 0 &&
+                amountCents < paying.updatedBalanceCents && (
+                  <div className="space-y-1.5 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+                    <label className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 size-3.5 accent-primary"
+                        checked={waive}
+                        onChange={(e) => setWaive(e.target.checked)}
+                      />
+                      <span>
+                        Quitar a parcela por este valor e dispensar{" "}
+                        <strong>{formatBRL(paying.updatedBalanceCents - amountCents)}</strong>{" "}
+                        (primeiro juros, depois multa, benefício perdido e, por último, principal). Fica registrado com
+                        o seu nome e o motivo, e a Franqueadora vê.
+                      </span>
+                    </label>
+                    {waive && (
+                      <input
+                        value={waiveReason}
+                        onChange={(e) => setWaiveReason(e.target.value)}
+                        placeholder="Motivo (obrigatório)"
+                        className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                      />
+                    )}
+                  </div>
+                )}
+
+              {errors.length === 0 &&
+                !(canWaive && waive) &&
                 amountCents < paying.updatedBalanceCents && (
                   <p className="rounded-lg border border-sky-300 bg-sky-50 p-2 text-xs text-sky-900">
                     Baixa parcial: sobra{" "}
@@ -1492,7 +1567,14 @@ export function ReceivablesSection({
             <Button variant="outline" onClick={() => setPayingId(null)}>
               Cancelar
             </Button>
-            <Button disabled={isPending || errors.length > 0} onClick={save}>
+            <Button
+              disabled={
+                isPending ||
+                errors.length > 0 ||
+                (canWaive && waive && amountCents < (paying?.updatedBalanceCents ?? 0) && waiveReason.trim().length < 5)
+              }
+              onClick={save}
+            >
               <Check className="mr-1 size-4" />
               Registrar
             </Button>

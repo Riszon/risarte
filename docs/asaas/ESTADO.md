@@ -18,7 +18,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 |---|---|---|
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
-| ASA1, entrega 2 — a cobrança | plano aprovado (spec seção 14); **antes de começar**, o dono decide os pontos do 14.6 (parcela vencida e quitação por valor menor) | — |
+| **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | 🟡 **pronta, esperando a aprovação do dono** (core 0.429.0, Asaas 0.3.0); 4004 no treino; ensaio 75/75; prova real no sandbox passou; **falta a produção** (o dono roda a 4004) | **4004** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -33,6 +33,76 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
+
+## ASA1, entrega 2 — a cobrança de parcela (Asaas 0.3.0, core 0.429.0, 11/11/2026)
+
+### O que existe
+
+- **4004** — `charges` (o `id` é o `externalReference` no Asaas; nasce com as
+  origens e meios das próximas fases, recusados por regra na ASA1; UMA ativa
+  por parcela pelo índice `charges_one_active_per_installment`; nunca apagada),
+  `gateway_customers` (o pagador no Asaas por CONTA e CPF), `payment_waivers`
+  (a dispensa: valor por natureza, autor, motivo; imutável),
+  `finance_settings.overdue_reissue_max_days` (rede, padrão 7, 0–30).
+  `installment_balance` passa a descontar a dispensa do que FALTA ("pago"
+  continua sendo só o dinheiro que entrou; quitada com dispensa não corre mais
+  juros). Portas: `charge_preview`, `charge_prepare`, `charge_retry_prepare`,
+  `charge_cancel_check` (`cancel` / `counter`), `charge_mark_external` /
+  `charge_unmark_external`, `register_payment_with_waiver`. Do servidor (só
+  chave de serviço): `_charge_compute` (a conta, a mesma da prévia e da
+  gravação), `_charge_for_gateway`, `_gateway_customer_save`,
+  `_charge_mark_issued` / `_error` / `_cancelled`. Travas:
+  `payment_installments_charge_lock` (valor, vencimento, benefício, multa,
+  juros, meio, cliente, cancelar/renegociar, apagar) e
+  `payment_receipts_charge_lock` (sem baixa manual com cobrança do Asaas
+  ativa; a externa continua manual; a ASA2 libera a baixa dela com
+  `set local risarte.baixa_do_asaas = '1'`). `_cpf_ok` confere os dígitos.
+- **Servidor** (`src/lib/asaas/cobranca.ts`): `emitirNoAsaas` consulta o Asaas
+  pela referência ANTES de criar (e de novo se o POST esgotar o tempo — nunca
+  repete às cegas), acha o pagador pelo CPF ou cria (só nome + CPF,
+  `notificationDisabled`), cria a cobrança com multa/juros/desconto sempre
+  explícitos, lê o Pix ou a linha digitável. `cancelarNoAsaas` recusa a
+  cobrança paga no Asaas e só grava depois de o Asaas confirmar. Endpoints em
+  `api.ts`; o Asaas de mentira (`fake.ts`) guarda clientes e cobranças na memória.
+- **Tela** (ficha › Financeiro): `cobranca-da-parcela.tsx` +
+  `cobranca-actions.ts` (a permissão da tela `acao.cobranca.*` e a porta do
+  banco em toda ação); a quitação por valor menor no **Registrar
+  recebimento** (`registerReceipt` com `waiverReason`); o limite de dias na
+  aba Financeiro da rede. Textos puros em `src/lib/cobrancas.ts`.
+
+### Provas
+
+- Ensaio no treino em transação desfeita **75/75**
+  (`scripts/asaas-ensaio-asa1-entrega2.mjs --confirmar`), provado quebrando
+  (sem a trava da baixa e sem congelar os juros na dispensa: 2 falhas).
+- Prova real no sandbox (`npm run test:asaas`): cobrança Pix em nome da mãe
+  (responsável financeira de um menor), uma só no Asaas pela referência,
+  paga pelo sandbox; boleto com linha digitável cancelado por "recebeu no
+  balcão"; a paga não se cancela; vencida reemitida em 3 dias com o valor
+  atualizado e sem multa nova. Dados de TESTE ficaram no treino ("Teste
+  Asaas ASA1 Paciente"); Londrina (sandbox) ficou com termo, split declarado e
+  marcada como pronta.
+- Régua `asaas-asa1-entrega2.test.ts` (16): o corpo enviado ao Asaas, o tempo
+  esgotado que não repete, o Asaas de mentira, as mensagens de todos os códigos
+  do banco, nenhuma tela com campo de cartão, criar/cancelar só de `cobranca.ts`.
+- Telas no servidor local: a ficha com a cobrança paga pela mãe, Link/Pix/
+  WhatsApp, "Recebeu no balcão", "Dar baixa" escondido com cobrança ativa; o
+  campo novo na aba Financeiro da rede.
+
+### Regras que quem mexer aqui precisa saber
+
+- ⚠️ **A conta do valor mora em `_charge_compute`** — a prévia e a gravação
+  usam a mesma. Mudar regra de valor é lá.
+- ⚠️ **Situação ativa = `emitindo`, `emitida`, `vencida`, `erro_emissao`,
+  `externa`** — a mesma lista no índice, nas travas e em `SITUACOES_ATIVAS`
+  (régua).
+- ⚠️ **Código de recusa novo no banco precisa de mensagem em
+  `src/lib/cobrancas.ts`** (régua).
+- ⚠️ **A baixa vinda do Asaas (ASA2) liga `risarte.baixa_do_asaas`** na
+  transação, senão a trava recusa.
+- ⚠️ **Achado do núcleo, fora da integração:** desde a 0373, fechar venda
+  direta falha (`post_sale_accruals_on_close` lê `new.negotiation_id` também
+  em `direct_sales`). O ensaio cria a venda já fechada sem os gatilhos.
 
 ## ASA1, entrega 1 — abas Financeiro e Comercial e o responsável financeiro (Asaas 0.2.0, core 0.427.0, 11/11/2026)
 

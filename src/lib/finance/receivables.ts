@@ -76,6 +76,11 @@ export type Installment = {
   wasOverdue: boolean;
   /** A unidade da cobrança (AP51: as contas oferecidas na baixa são as dela). */
   clinicId?: string;
+  /**
+   * 4004 — principal DISPENSADO na quitação por valor menor. Não é dinheiro
+   * que entrou (não soma em "pago"), mas deixa de faltar.
+   */
+  waivedPrincipalCents?: number;
 };
 
 export type InstallmentView = Installment & {
@@ -112,7 +117,10 @@ export function viewInstallment(
   inst: Installment,
   referenceDate: string
 ): InstallmentView {
-  const balance = Math.max(0, inst.amountCents - inst.paidAmountCents);
+  const balance = Math.max(
+    0,
+    inst.amountCents - inst.paidAmountCents - (inst.waivedPrincipalCents ?? 0)
+  );
   const paidTotal =
     inst.paidAmountCents +
     inst.paidBenefitCents +

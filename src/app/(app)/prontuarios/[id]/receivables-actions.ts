@@ -140,6 +140,12 @@ export async function registerReceipt(input: {
   clientToken: string;
   /** AP51: a conta em que o dinheiro entrou — id, 'caixa' ou vazio (a principal). */
   conta?: string;
+  /**
+   * 4004 — QUITAÇÃO POR VALOR MENOR (Gerente da unidade e Admin Master): com
+   * motivo, a baixa do valor recebido fecha a parcela e o resto é dispensado
+   * (juros → multa → benefício perdido → principal). O banco decide quem pode.
+   */
+  waiverReason?: string;
 }): Promise<
   ReceivableResult & { fee?: FeeOutcome; feeSkipped?: FeeSkipReason }
 > {
@@ -158,15 +164,42 @@ export async function registerReceipt(input: {
   // AP51: a porta da 0317 grava a conta escolhida. Antes de a 0317 rodar neste
   // banco ela não existe — aí a baixa segue pela função de sempre (sem conta,
   // como era).
-  let { data: receiptId, error } = await supabase.rpc("register_payment_receipt_to", {
-    p_conta: input.conta ?? "",
-    ...args,
-  });
-  if (portaAusente(error)) {
-    ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt", args));
+  //
+  // 4004: a quitação por valor menor tem porta própria e NUNCA volta à função
+  // de sempre (sem a 4004 ela daria baixa parcial calada, sem a dispensa).
+  const quitaMenor = Boolean(input.waiverReason && input.waiverReason.trim());
+  let receiptId: unknown;
+  let error: { message: string } | null;
+  if (quitaMenor) {
+    ({ data: receiptId, error } = await supabase.rpc("register_payment_with_waiver", {
+      ...args,
+      p_conta: input.conta ?? "",
+      p_reason: input.waiverReason?.trim() ?? "",
+    }));
+  } else {
+    ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt_to", {
+      p_conta: input.conta ?? "",
+      ...args,
+    }));
+    if (portaAusente(error)) {
+      ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt", args));
+    }
   }
   if (error) {
     const m = error.message;
+    if (m.includes("CHARGE_IN_GATEWAY")) {
+      return {
+        ok: false,
+        error:
+          "Esta parcela tem cobrança ativa no Asaas. Use “Recebeu no balcão”: a cobrança é cancelada no Asaas e a baixa abre em seguida.",
+      };
+    }
+    if (m.includes("REASON_REQUIRED")) {
+      return { ok: false, error: "Escreva o motivo da quitação por valor menor." };
+    }
+    if (quitaMenor && m.includes("NOT_ALLOWED")) {
+      return { ok: false, error: "Só o Gerente da unidade e o Admin Master quitam por valor menor." };
+    }
     const daConta = erroDaConta(m);
     if (daConta) return { ok: false, error: daConta };
     if (m.includes("AMOUNT_OVER_BALANCE")) {
@@ -222,6 +255,7 @@ export async function registerReceipt(input: {
     action: "create",
     entityType: "payment_receipt",
     entityId: input.installmentId,
+    ...(quitaMenor ? { details: { quitacaoPorValorMenor: true } } : {}),
   });
   revalidatePath(`/prontuarios/${input.clientId}`);
   revalidatePath("/financeiro");

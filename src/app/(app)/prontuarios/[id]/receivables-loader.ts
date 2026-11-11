@@ -56,6 +56,51 @@ export type ReceivablesData = {
    * diferentes, e oferecer o botão na errada só daria erro.
    */
   boletoIssuableIds: string[];
+  /** 4004 — as cobranças do Asaas das parcelas (as mais novas primeiro). */
+  charges: ChargeRow[];
+  /** 4004 — as dispensas da quitação por valor menor. */
+  waivers: WaiverRow[];
+};
+
+/** 4004 — uma cobrança do Asaas (sem CPF: o pagador vai só pelo nome). */
+export type ChargeRow = {
+  id: string;
+  installmentId: string;
+  status: string;
+  billingType: string | null;
+  valueCents: number | null;
+  discountCents: number;
+  dueDate: string | null;
+  isOverdueReissue: boolean;
+  isExternal: boolean;
+  externalNote: string | null;
+  invoiceUrl: string | null;
+  bankSlipUrl: string | null;
+  pixCopyPaste: string | null;
+  identificationField: string | null;
+  errorCode: string | null;
+  payerKind: string | null;
+  payerName: string | null;
+  payerPhone: string | null;
+  createdAt: string;
+  updatedAt: string;
+  byName: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+};
+
+/** 4004 — o que foi dispensado numa quitação por valor menor. */
+export type WaiverRow = {
+  id: string;
+  installmentId: string;
+  principalCents: number;
+  benefitCents: number;
+  lateFeeCents: number;
+  interestCents: number;
+  totalCents: number;
+  reason: string;
+  byName: string | null;
+  createdAt: string;
 };
 
 type InstallmentRow = {
@@ -234,10 +279,18 @@ export async function loadClientReceivables(
       periodEnd: end,
       boletos,
       boletoIssuableIds,
+      charges: [],
+      waivers: [],
     };
   }
 
   const ids = installments.map((i) => i.id);
+  const { charges, waivers } = await loadChargesAndWaivers(supabase, clientId, ids);
+  const waivedPrincipal = new Map<string, number>();
+  for (const w of waivers) {
+    waivedPrincipal.set(w.installmentId, (waivedPrincipal.get(w.installmentId) ?? 0) + w.principalCents);
+  }
+  for (const i of installments) i.waivedPrincipalCents = waivedPrincipal.get(i.id) ?? 0;
   const { data: recRows } = await supabase
     .from("payment_receipts")
     .select(
@@ -311,7 +364,137 @@ export async function loadClientReceivables(
     periodEnd: end,
     boletos,
     boletoIssuableIds,
+    charges,
+    waivers,
   };
+}
+
+/**
+ * 4004 — cobranças e dispensas. Antes de a 4004 rodar neste banco as tabelas
+ * não existem: a tela segue como era (sem cobranças).
+ */
+async function loadChargesAndWaivers(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clientId: string,
+  installmentIds: string[]
+): Promise<{ charges: ChargeRow[]; waivers: WaiverRow[] }> {
+  const { data: cRows, error: cErr } = await supabase
+    .from("charges")
+    .select(
+      "id, payment_installment_id, status, billing_type, value_cents, discount_cents, due_date, is_overdue_reissue, is_external, external_note, invoice_url, bank_slip_url, pix_copy_paste, identification_field, error_code, payer_kind, payer_guardian_id, created_at, updated_at, cancelled_at, cancel_reason, profiles:profiles!charges_created_by_fkey ( full_name )"
+    )
+    .in("payment_installment_id", installmentIds)
+    .order("created_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        payment_installment_id: string;
+        status: string;
+        billing_type: string | null;
+        value_cents: number | null;
+        discount_cents: number | null;
+        due_date: string | null;
+        is_overdue_reissue: boolean;
+        is_external: boolean;
+        external_note: string | null;
+        invoice_url: string | null;
+        bank_slip_url: string | null;
+        pix_copy_paste: string | null;
+        identification_field: string | null;
+        error_code: string | null;
+        payer_kind: string | null;
+        payer_guardian_id: string | null;
+        created_at: string;
+        updated_at: string;
+        cancelled_at: string | null;
+        cancel_reason: string | null;
+        profiles: { full_name: string } | null;
+      }[]
+    >();
+  if (cErr) return { charges: [], waivers: [] };
+
+  // O nome e o telefone de quem paga (para o WhatsApp): o cliente ou o responsável.
+  const { data: cli } = await supabase
+    .from("clients")
+    .select("full_name, phone")
+    .eq("id", clientId)
+    .maybeSingle<{ full_name: string; phone: string | null }>();
+  const guardianIds = [
+    ...new Set((cRows ?? []).map((r) => r.payer_guardian_id).filter((x): x is string => !!x)),
+  ];
+  const guardians = new Map<string, { full_name: string; phone: string | null }>();
+  if (guardianIds.length > 0) {
+    const { data: gRows } = await supabase
+      .from("client_guardians")
+      .select("id, full_name, phone")
+      .in("id", guardianIds)
+      .returns<{ id: string; full_name: string; phone: string | null }[]>();
+    for (const g of gRows ?? []) guardians.set(g.id, g);
+  }
+
+  const charges: ChargeRow[] = (cRows ?? []).map((r) => {
+    const g = r.payer_guardian_id ? guardians.get(r.payer_guardian_id) : null;
+    return {
+      id: r.id,
+      installmentId: r.payment_installment_id,
+      status: r.status,
+      billingType: r.billing_type,
+      valueCents: r.value_cents === null ? null : Number(r.value_cents),
+      discountCents: Number(r.discount_cents ?? 0),
+      dueDate: r.due_date,
+      isOverdueReissue: r.is_overdue_reissue,
+      isExternal: r.is_external,
+      externalNote: r.external_note,
+      invoiceUrl: r.invoice_url,
+      bankSlipUrl: r.bank_slip_url,
+      pixCopyPaste: r.pix_copy_paste,
+      identificationField: r.identification_field,
+      errorCode: r.error_code,
+      payerKind: r.payer_kind,
+      payerName: g?.full_name ?? (r.payer_kind === "client" ? (cli?.full_name ?? null) : null),
+      payerPhone: g ? (g.phone ?? cli?.phone ?? null) : (cli?.phone ?? null),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      byName: r.profiles?.full_name ?? null,
+      cancelledAt: r.cancelled_at,
+      cancelReason: r.cancel_reason,
+    };
+  });
+
+  const { data: wRows } = await supabase
+    .from("payment_waivers")
+    .select(
+      "id, installment_id, principal_cents, benefit_cents, late_fee_cents, interest_cents, total_cents, reason, created_at, profiles:profiles!payment_waivers_created_by_fkey ( full_name )"
+    )
+    .in("installment_id", installmentIds)
+    .order("created_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        installment_id: string;
+        principal_cents: number;
+        benefit_cents: number;
+        late_fee_cents: number;
+        interest_cents: number;
+        total_cents: number;
+        reason: string;
+        created_at: string;
+        profiles: { full_name: string } | null;
+      }[]
+    >();
+  const waivers: WaiverRow[] = (wRows ?? []).map((w) => ({
+    id: w.id,
+    installmentId: w.installment_id,
+    principalCents: Number(w.principal_cents),
+    benefitCents: Number(w.benefit_cents),
+    lateFeeCents: Number(w.late_fee_cents),
+    interestCents: Number(w.interest_cents),
+    totalCents: Number(w.total_cents),
+    reason: w.reason,
+    byName: w.profiles?.full_name ?? null,
+    createdAt: w.created_at,
+  }));
+  return { charges, waivers };
 }
 
 /**
