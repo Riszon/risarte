@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.425.0",
+    data: "2026-11-11",
+    migracao: "0394",
+    titulo: "Venda direta: o preço é sempre o do catálogo",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Venda direta: o sistema confere, na hora de lançar, que o preço de cada procedimento é o do catálogo da unidade, que o procedimento pode ser lançado pela sua função e que o desconto do programa (Empresarial ou PPR+) é de um cliente que participa dele. Se o preço mudou enquanto a tela estava aberta, aparece \"O preço de um procedimento mudou desde que a tela abriu\" — atualize a página e lance de novo.",
+        papeis: ["receptionist", "sdr", "clinical_coordinator", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.424.0",
     data: "2026-11-11",
     migracao: null,

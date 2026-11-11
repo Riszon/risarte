@@ -413,6 +413,16 @@ Syncthing se comportarem de forma estranha.**
   PC; o `aws-0-sa-east-1.pooler.supabase.com` (usuário
   `postgres.bsnptybalszjjbhxeejo`) funciona.
 
+**11/11/2026 (venda direta) — PC Administrador (core 0.424.0 → 0.425.0, migração 0394)**
+
+- **AP139** (bloco 0.425.0 no ESTADO). ⚠️ **`create_direct_sale_v2` é porta
+  sobre `_create_direct_sale_v2_raw`**: o preço da venda direta é o do banco.
+  ⚠️ **`direct_sales`/`direct_sale_items` sem regra de escrita**: só função
+  grava (régua).
+- ⚠️ **Treino sem IPv6 nesta máquina:** `RISARTE_TREINO_POOLER=1` antes de
+  `npm run migrar:teste` e dos ensaios.
+- ⏳ **0394 só no treino.** Não visto na tela.
+
 **11/11/2026 (relatos, OC-00176) — PC Administrador (core 0.423.0 → 0.424.0, sem migração)**
 
 - O item "Lançamentos no razão" da missão do Financeiro virou **"Lançamentos

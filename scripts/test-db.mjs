@@ -66,11 +66,32 @@ export async function actAs(client, userId) {
   ]);
 }
 
+/**
+ * O endereço da conexão. A conexão DIRETA do Supabase (`db.<projeto>…:5432`)
+ * só responde por IPv6; quando a rede da máquina perde o IPv6 (11/11/2026:
+ * "connect ETIMEDOUT 2600:…"), tudo que fala com o treino para. Com
+ * `RISARTE_TREINO_POOLER=1` a mesma conta entra pelo pooler de sessão da
+ * região (IPv4), com o mesmo usuário e senha. A trava contra a produção já
+ * foi conferida no endereço original, e o nome do projeto vai no usuário.
+ */
+function enderecoDoBanco(original) {
+  if (process.env.RISARTE_TREINO_POOLER !== "1") return original;
+  const u = new URL(original);
+  const projeto = u.hostname.split(".")[1];
+  if (!projeto || projeto === PRODUCTION_REF) {
+    throw new Error("RECUSADO: não consegui ler o projeto de teste no endereço do banco.");
+  }
+  u.hostname = "aws-0-sa-east-1.pooler.supabase.com";
+  u.port = "5432";
+  u.username = `postgres.${projeto}`;
+  return u.toString();
+}
+
 /** Conexão aberta com o banco de teste, já com a trava conferida. */
 export async function connect() {
   const env = testEnv();
   const client = new pg.Client({
-    connectionString: env.TEST_DB_URL,
+    connectionString: enderecoDoBanco(env.TEST_DB_URL),
     ssl: { rejectUnauthorized: false },
     // Migração pesada (índice, backfill) leva tempo; desistir no meio deixaria
     // o banco num estado que ninguém sabe explicar.

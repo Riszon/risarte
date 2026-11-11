@@ -3259,6 +3259,16 @@ menor entre o mínimo e o preço da unidade (a unidade com preço próprio abaix
 do mínimo já decidiu aquele preço). A negociação não aceita acréscimo, então
 nela o máximo só depende do preço da unidade.
 
+**Na venda direta, o preço é sempre o do catálogo** *(desde a 0.425.0)*. Ao
+lançar, o sistema confere cada procedimento: o preço tem de ser o do catálogo
+da unidade (ou o da rede, se a unidade não tem preço próprio), o procedimento
+tem de estar liberado para a venda direta pela sua função, e o desconto do
+programa só vale para cliente do Empresarial ou do PPR+. Se o preço mudou
+enquanto a tela estava aberta (um reajuste aplicado, por exemplo), aparece
+*"O preço de um procedimento mudou desde que a tela abriu. Atualize a página e
+lance de novo."* Depois de lançada, o valor da venda só muda pelas condições
+(desconto e acréscimo), nunca à mão.
+
 **Assistente virtual no procedimento** (versão 0.403.1). Na lista, a
 etiqueta **Assistente virtual** marca o que a futura assistente de atendimento
 pelo WhatsApp **pode oferecer** ao paciente. Abra o cartão (setinha) para ver
