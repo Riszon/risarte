@@ -57,6 +57,10 @@ resultado como se fosse o banco inteiro.
    `indica.falhas_automacao`. Ao mexer nessas tabelas, rodar
    `npm run test:indica`. Antes de criar migração, use a faixa do SEU projeto
    e o próximo número livre dentro dela. (Core já foi até 0105; Empresarial 0096–0104.)
+   **A integração Asaas e a Central de Configuração usam 4000+** (tabelas
+   `gateway_*` e `central_*` no `public`; estado em `docs/asaas/ESTADO.md`,
+   especificação em `docs/integracao-asaas.md`; `ASAAS_VERSION`/`ASAAS_MIGRATION`
+   no `version.ts`; branch `feat/asaas-integration`, worktree `wt-asaas`).
 2. **Documentos de estado separados:** cada projeto atualiza só os SEUS documentos
    (acima). Nunca mexer no documento de estado do outro projeto.
 3. **Versão separada** (`src/lib/version.ts`): o core edita `APP_VERSION`/
@@ -395,6 +399,28 @@ Syncthing se comportarem de forma estranha.**
 
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
+
+**10/11/2026 (Asaas — ASA0) — PC Administrador (Asaas 0.1.0, migrações 4000 a 4002; core sem versão nova; worktree `wt-asaas`, branch `feat/asaas-integration`)**
+
+- **Integração Asaas, fase ASA0: Central de Configuração (casca + aba Conta e
+  tarifas), contas no Vault, cliente HTTP, rota mínima de webhook, verificação
+  semanal.** Estado completo, regras e o que falta em `docs/asaas/ESTADO.md`;
+  especificação (versão 3) em `docs/integracao-asaas.md`.
+- ⚠️ **AINDA NÃO ESTÁ NO `main`.** Falta o projeto `risarte-asaas` na Vercel
+  (prova do webhook real), a aprovação do dono e as migrações na produção.
+- ⚠️ **A chave do Asaas só sai do Vault em `src/lib/asaas/account.ts`**; nada
+  de `ASAAS_API_KEY` em código novo. **Produção trancada** no banco
+  (`gateway_accounts_guard`) e no cliente (`ASAAS_ALLOW_PRODUCTION`) até a ASA7.
+- ⚠️ **`gateway_*`/`central_*` não têm regra de escrita**: só função grava.
+  As permissões `modulo.central` e `acao.central.vincular_conta` nascem sem
+  papel nenhum (só o Admin Master).
+- ⚠️ O treino tem **contas de teste do sandbox** em Londrina, Cambé e na
+  RISARTE Franchising (adquirente "Asaas (teste)", que não é o padrão). O
+  ensaio `scripts/asaas-ensaio-asa0.mjs` usa só unidades sem conta.
+- ✅ **4000, 4001 e 4002 aplicadas só no TREINO.** Produção: depois da
+  aprovação da fase.
+- Não visto num navegador; o webhook vindo do Asaas de verdade não foi provado
+  (sem endereço público ainda).
 
 **10/11/2026 (relatos, lote 3) — PC Administrador (core 0.420.0 → 0.421.0, migração 0392; worktree `wt-relatos`)**
 

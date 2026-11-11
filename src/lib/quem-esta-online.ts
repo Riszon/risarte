@@ -221,6 +221,7 @@ export const NOME_DA_TELA: Record<string, string> = {
   risartanos: "Risartanos",
   rita: "Assistente virtual",
   sistema: "Sistema",
+  central: "Central de Configuração",
 };
 
 /** As telas da Administração — o segundo pedaço do endereço. */

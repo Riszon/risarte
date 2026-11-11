@@ -2,6 +2,29 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔌 ASAAS 0.1.0 — INTEGRAÇÃO ASAAS, FASE ASA0: A FUNDAÇÃO (10/11/2026; migrações 4000 a 4002)
+>
+> **Projeto novo, com documento de estado próprio: `docs/asaas/ESTADO.md`**
+> (especificação, versão 3: `docs/integracao-asaas.md`). Faixa de migração
+> **4000+**; `ASAAS_VERSION`/`ASAAS_MIGRATION` no `version.ts`. Feito num
+> worktree à parte (`wt-asaas`, branch `feat/asaas-integration`) e **ainda fora
+> do `main`**: falta o projeto `risarte-asaas` na Vercel (prova do webhook
+> real), a aprovação do dono e as migrações na produção.
+> - **Central de Configuração** (`/central`): níveis Rede e Unidade, registro
+>   de abas, herança campo a campo, histórico por aba e a faixa de prontidão.
+>   Nasce só para o Admin Master (`modulo.central` sem papel nenhum).
+> - **Aba Conta e tarifas:** conta Asaas vinculada (chave no Supabase Vault,
+>   campo só de gravação), termo de autorização do franqueado, webhook criado
+>   pela API, tarifas vindas do Asaas no adquirente "Asaas" (`acquirer_rates`,
+>   com vigência e promoção), chave Pix, antecipação e split.
+> - **Travas:** produção recusada no banco e no cliente HTTP; nenhuma regra de
+>   escrita nas tabelas novas; o Gerente só grava a chave depois do termo.
+> - **Rota mínima de webhook** (`/api/webhooks/asaas/[ref]`) e **verificação
+>   semanal** das contas (`/api/cron/gateway-accounts`).
+> - Tudo em SANDBOX. Ensaio no treino 63/63 (desfeito), 48 testes, 14 quebras
+>   de propósito reprovadas, prova real no sandbox com as 4 contas de teste.
+>   ✅ 4000–4002 **só no treino**.
+>
 > ## 💡 0.421.0 — SUGESTÕES DA EQUIPE, LOTE 3 (10/11/2026; migração 0392)
 >
 > Relatos do TREINO, sugestões aprovadas pelo dono (sessão "Relatos riSZon").

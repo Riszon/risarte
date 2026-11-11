@@ -27,6 +27,7 @@
     "migrar:teste": "node scripts/apply-migrations.mjs",
     "test:indica": "node scripts/indica-testes-sql.mjs",
     "test:rita": "node scripts/rita-testes-sql.mjs",
+    "test:asaas": "node scripts/asaas-teste-sandbox.mjs",
     "backlog": "node scripts/backlog.mjs",
     "manual:docx": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-treinamento-riSZon.md docs/treinamento/Manual-de-Treinamento-riSZon.docx",
     "manual:empresarial": "node scripts/gerar-manual-docx.mjs docs/treinamento/manual-empresarial.md docs/treinamento/Manual-Risarte-Empresarial.docx",

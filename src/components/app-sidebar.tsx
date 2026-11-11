@@ -45,6 +45,7 @@ import {
   Smile,
   SmilePlus,
   Bot,
+  SlidersHorizontal,
   Contact,
   ChevronsUpDown,
   type LucideIcon,
@@ -114,6 +115,8 @@ type Props = {
   canViewAssinaturas?: boolean;
   /** Rita 0A.7 (3006): "O que a Rita sabe". Opcional: só o layout informa. */
   canViewRita?: boolean;
+  /** ASA0 (4002): a Central de Configuração. Opcional: só o layout informa. */
+  canViewCentral?: boolean;
   /** FIN0: módulo Financeiro (gestão + Financeiro da Franqueadora). */
   canViewFinance: boolean;
   /** 0213: Estoque — gestão da unidade + quem atende (consumo avulso). */
@@ -244,6 +247,17 @@ const RITA_ITEM = {
   icon: Bot,
 };
 
+// ASA0 (4002): a Central de Configuração — a conta Asaas, as tarifas e, a cada
+// fase, mais uma aba da configuração comercial e financeira. Para o Admin
+// Master ela mora em Administração (ADMIN_ITEMS); para quem recebeu a
+// permissão `modulo.central` (o Gerente, quando o dono liberar), entra na
+// lista principal.
+const CENTRAL_ITEM = {
+  href: "/central",
+  label: "Central de Configuração",
+  icon: SlidersHorizontal,
+};
+
 // 0318: Metas SMART (rede e unidades). Fica perto do Início de propósito:
 // a meta só estimula se a equipe a vê todo dia.
 const METAS_ITEM = {
@@ -297,6 +311,8 @@ const ADMIN_ITEMS = [
   { href: "/admin/certificacao", label: "Certificação", icon: GraduationCap },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
   { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },
+  // ASA0 (4002): a Central de Configuração (conta Asaas e tarifas).
+  { href: CENTRAL_ITEM.href, label: CENTRAL_ITEM.label, icon: CENTRAL_ITEM.icon },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   // 0268: a agenda do comercial é OUTRA coisa — online, sem sala nem cadeira,
   // e sem depender do horário da unidade (relato OC-00072).
@@ -335,6 +351,7 @@ export function AppSidebar({
   canViewOrtho = false,
   canViewAssinaturas = false,
   canViewRita = false,
+  canViewCentral = false,
   canViewFinance,
   canViewStock,
   canViewPurchases,
@@ -464,6 +481,10 @@ export function AppSidebar({
   }
   if (canViewRita) {
     navItems = [...navItems, RITA_ITEM];
+  }
+  // O Admin Master já tem a Central em Administração.
+  if (canViewCentral && !isAdminMaster) {
+    navItems = [...navItems, CENTRAL_ITEM];
   }
   if (canViewStock) {
     navItems = [...navItems, STOCK_ITEM];

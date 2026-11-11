@@ -47,6 +47,12 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   clinical_evaluation_ortho_indication: "Indicação de ortodontia na avaliação",
   treatment_plan_ortho: "Proposta ortodôntica da opção do plano",
   ortho_batch: "Lote de mensalidades ortodônticas",
+  // ------------------------------------- Central de Configuração / Asaas (4000)
+  gateway_account: "Conta Asaas",
+  gateway_account_term: "Termo de autorização da conta Asaas",
+  gateway_account_key: "Chave de API da conta Asaas (gravada; o valor nunca é registrado)",
+  gateway_account_disabled: "Conta Asaas desativada",
+  central_unit_readiness: "Central — unidade pronta para cobrar",
   // ------------------------------------------------ assinaturas digitais (0340)
   signature_settings: "Configuração das assinaturas digitais",
   signature_template: "Modelo de documento para assinatura",

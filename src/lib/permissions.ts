@@ -250,6 +250,34 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["unit_manager", "franchisor_staff"],
   },
   {
+    // ASA0 (4002) — a Central de Configuração: toda a configuração comercial
+    // e financeira numa tela só (conta Asaas e tarifas na ASA0; as fases
+    // seguintes acrescentam as abas delas). NASCE SÓ COM O ADMIN MASTER
+    // (decisão do dono, 10/11/2026: cada fase entra escondida atrás da
+    // permissão). O BANCO decide o que cada um lê: o Financeiro da
+    // Franqueadora vê a rede, o Gerente só a própria unidade.
+    id: "modulo.central",
+    rotulo: "Central de Configuração",
+    grupo: "Módulos",
+    descricao:
+      "A conta Asaas de cada unidade, as tarifas e o que falta para a unidade poder cobrar. Ligar para o Gerente mostra só a unidade dele.",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
+    // ASA0 (4000) — colar a chave de API da conta Asaas da própria unidade.
+    // Mesmo com a permissão ligada, o BANCO só aceita a chave do Gerente
+    // depois de o termo de autorização do franqueado estar registrado
+    // (`_gateway_actor_can_link`).
+    id: "acao.central.vincular_conta",
+    rotulo: "Central: gravar a chave da conta Asaas",
+    grupo: "Módulos",
+    descricao:
+      "Colar a chave de API da conta Asaas da própria unidade. O banco só aceita depois de o termo de autorização do franqueado estar registrado.",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
     // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
     // cada um enxerga (as que cria, as das unidades que gere, e aquelas em
     // que participa).

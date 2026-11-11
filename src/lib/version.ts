@@ -21,3 +21,9 @@ export const INDICA_MIGRATION = "2011";
 // Estado em `docs/sdr/ESTADO.md`.
 export const RITA_VERSION = "0.7.0";
 export const RITA_MIGRATION = "3006";
+
+// Integração Asaas e Central de Configuração — tabelas `gateway_*` e
+// `central_*` no schema `public`, faixa de migração 4000+.
+// Estado em `docs/asaas/ESTADO.md`; especificação em `docs/integracao-asaas.md`.
+export const ASAAS_VERSION = "0.1.0";
+export const ASAAS_MIGRATION = "4002";
