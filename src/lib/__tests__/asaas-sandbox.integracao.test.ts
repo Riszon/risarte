@@ -31,6 +31,33 @@ describe.skipIf(!LIGADO)("Asaas sandbox — o caminho real do servidor", () => {
     }
   });
 
+  // Só com o endereço público do projeto de teste na Vercel, por exemplo:
+  //   ASAAS_WEBHOOK_BASE_URL=https://risarte-asaas.vercel.app npm run test:asaas
+  // Cria (ou recria) o webhook de cada conta de teste apontando para lá, pelo
+  // MESMO código do botão "Criar o webhook" da Central. Os avisos do Asaas
+  // sobre a fila vão para ASAAS_WEBHOOK_EMAIL (padrão: um endereço de teste).
+  it.skipIf(!process.env.ASAAS_WEBHOOK_BASE_URL)("cria o webhook de cada conta de teste no endereço publicado", async () => {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { criarWebhookDaConta, enderecoDoWebhook } = await import("@/lib/asaas/link");
+    const admin = createAdminClient();
+    const { data: contas } = await admin
+      .from("gateway_accounts")
+      .select("id, label, webhook_ref")
+      .eq("environment", "sandbox")
+      .eq("status", "active")
+      .not("api_key_secret_id", "is", null);
+    expect((contas ?? []).length).toBeGreaterThan(0);
+    for (const c of contas ?? []) {
+      expect(enderecoDoWebhook(c.webhook_ref)).toMatch(/^https:\/\/.+\/api\/webhooks\/asaas\/[0-9a-f]{32}$/);
+      const r = await criarWebhookDaConta({
+        accountId: c.id,
+        actorId: null,
+        notifyEmail: process.env.ASAAS_WEBHOOK_EMAIL || "riszon.webhook.teste@example.com",
+      });
+      expect(r, c.label).toBe("created");
+    }
+  }, 120_000);
+
   it("verifica cada conta de teste: chave do Vault aceita, tarifas gravadas", async () => {
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const { verificarConta } = await import("@/lib/asaas/link");

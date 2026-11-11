@@ -16,7 +16,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 
 | Fase | Situação | Migrações |
 |---|---|---|
-| **ASA0 — Fundação** | código pronto e provado no treino e no sandbox (10/11/2026); **falta** o projeto da Vercel para o webhook real, a aprovação do dono e as migrações na produção | **4000, 4001, 4002** |
+| **ASA0 — Fundação** | código pronto e provado no treino e no sandbox, **webhook real recebido** (10/11/2026); **falta** a aprovação do dono, as migrações na produção e a entrada no `main` | **4000, 4001, 4002** |
 | ASA1 — Cobrança avulsa e link | próxima (plano e OK do dono antes) | — |
 
 ## ASA0 — Fundação (Asaas 0.1.0, 10/11/2026)
@@ -118,9 +118,6 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 
 ### O que NÃO foi provado
 
-- **O webhook vindo do Asaas de verdade.** Precisa de endereço público: o
-  terceiro projeto da Vercel ainda não existe. É o que falta para o critério
-  de aceite "um evento de teste chega".
 - **As telas num navegador** (foram conferidas pelo HTML que o servidor
   devolve, não olhando). Os botões (gravar chave, termo, marcar pronta,
   desativar) não foram clicados: as funções por trás estão no ensaio.
@@ -129,34 +126,58 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
   mentira nos testes; a parte de verificação rodou de verdade.
 - `check:telas` completo não foi rodado (o disco C: está com ~12 GB livres).
 
+### O projeto de teste na Vercel e o webhook real (10/11/2026)
+
+- **`risarte-asaas`** (`https://risarte-asaas.vercel.app`): branch de produção
+  `feat/asaas-integration`, região São Paulo, proteção padrão. Variáveis: só
+  as três do Supabase de **treino** e `NEXT_PUBLIC_AMBIENTE=treino` (a chave de
+  serviço marcada para Production e Preview — a Vercel não deixou desmarcar o
+  Preview; é a do treino e as prévias ficam protegidas). Sem `CRON_SECRET`, sem
+  ZapSign, sem chave do Asaas.
+- ⚠️ **Projeto novo só monta a produção com um push na branch de produção.** O
+  primeiro push foi antes de o projeto existir: foi preciso um commit vazio.
+- ⚠️ **Variável sensível da Vercel não pode ser lida de volta.** A chave de
+  serviço do treino se copia no Supabase (projeto de treino › Project Settings
+  › API Keys › Legacy › `service_role`), nunca de outro projeto da Vercel. Sem
+  ela a rota do webhook responde 500 e o log diz `service role key is not
+  configured`.
+- Conferido de fora: a página aponta para o banco de treino, a função roda em
+  `gru1`, e a rota do webhook responde 401 sem token — o endereço de produção
+  do projeto não passa pela proteção da Vercel.
+- **Webhooks criados** nas quatro contas de teste pelo MESMO código do botão
+  "Criar o webhook" (`ASAAS_WEBHOOK_BASE_URL=https://risarte-asaas.vercel.app
+  npm run test:asaas`). Os avisos do Asaas sobre a fila vão para um endereço de
+  teste (`ASAAS_WEBHOOK_EMAIL` muda).
+- **Critério de aceite cumprido:** cobrança PIX de teste criada em Londrina
+  (`--evento londrina`) → o Asaas chamou o endereço publicado → o evento
+  `PAYMENT_CREATED` ficou gravado em `gateway_webhook_events` em segundos, com
+  o identificador do evento e a nossa referência.
+
 ### Estado do treino (resíduos conhecidos)
 
 - Quatro contas de teste ativas: a raiz na **RISARTE Franchising**,
-  **Londrina**, **Cambé** e a carteira **RisLife Teste**. Cada uma (menos a
-  RisLife) tem um adquirente "Asaas (teste)" com as tarifas, que **não** é o
-  padrão da unidade.
-- As três contas emissoras têm chave Pix aleatória criada no sandbox; falta um
-  "Verificar agora" para o riSZon enxergar.
-- A conta de Londrina tem um webhook **de ensaio local** (`wh-local-ensaio`,
-  não existe no Asaas) e um evento de ensaio gravado. "Criar o webhook" no
-  endereço publicado substitui.
+  **Londrina**, **Cambé** e a carteira **RisLife Teste**, todas com webhook
+  apontando para `risarte-asaas.vercel.app`. Cada uma (menos a RisLife) tem um
+  adquirente "Asaas (teste)" com as tarifas, que **não** é o padrão da unidade,
+  e uma chave Pix aleatória no sandbox.
+- Prontidão de Londrina: só faltam "split habilitado" e "termo registrado"
+  (os dois dependem de ato do Admin Master pela tela).
+- Londrina tem dois eventos gravados: um de ensaio local (`evt_local_…`) e o
+  `PAYMENT_CREATED` real da cobrança de R$ 5,00 de teste (em aberto no sandbox).
 
 ### O que falta para fechar a ASA0
 
-1. **Projeto `risarte-asaas` na Vercel** (o dono cria, guiado): mesmo
-   repositório, branch de produção `feat/asaas-integration`, região São Paulo
-   (gru1), proteção padrão; variáveis **só** `NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (as do treino) e
-   `NEXT_PUBLIC_AMBIENTE=treino`. **Sem** `CRON_SECRET`, sem ZapSign, sem chave
-   do Asaas.
-2. Prova de que o endereço é alcançado sem a proteção da Vercel: POST de fora
-   em `/api/webhooks/zapsign` devolve o 401 do riSZon.
-3. Na Central publicada: "Criar o webhook" e "Verificar agora" nas contas;
-   depois `node scripts/asaas-sandbox-contas.mjs --evento londrina --confirmar`
-   e conferir "Último evento recebido".
-4. Aprovação do dono → ele roda a 4000, a 4001 e a 4002 na produção, nessa
-   ordem → a branch entra no `main` (com `APP_VERSION`, novidade e manual
-   conforme a regra do manual: a Central nasce só para o Admin Master).
+1. Aprovação do dono.
+2. O dono roda a 4000, a 4001 e a 4002 na produção, nessa ordem.
+3. A branch entra no `main`, com `APP_VERSION`, novidade e manual conforme a
+   regra do manual (a Central nasce só para o Admin Master). Antes, apagar a
+   cópia solta de `docs/integracao-asaas.md` na pasta principal (está fora do
+   Git lá e faria o `git pull` recusar).
+
+⚠️ **Lição desta sessão:** texto com crases dentro de `node -e "…"` no Git Bash
+vira substituição de comando — o shell tentou executar cada trecho entre
+crases (nenhum rodou, todos falharam). Texto de documento se edita pela
+ferramenta de edição, nunca por script de terminal.
 
 ### Perguntas ao gerente de contas do Asaas (do dono)
 

@@ -417,7 +417,7 @@ Toda ação de cobrança grava autor, data e motivo na auditoria.
 - [x] `ASAAS_API_KEY` e `ASAAS_BASE_URL` no `.env.local` — e só lá: nenhum projeto da Vercel recebe a chave do Asaas.
 - [x] Vault conferido nos dois bancos (`supabase_vault` 0.3.1 no treino e na produção).
 - [x] Sandbox: "BaaS para subcontas" e "Autoaprovação de subcontas" ligadas (Menu do usuário › Minha conta › Configurações › Sandbox). A opção do período de avaliação não aparece nessa tela.
-- [ ] Terceiro projeto na Vercel (`risarte-asaas`), com a branch `feat/asaas-integration` como produção, para o webhook do sandbox.
+- [x] Terceiro projeto na Vercel (`risarte-asaas`), com a branch `feat/asaas-integration` como produção, para o webhook do sandbox — no ar em 10/11/2026; webhook real recebido.
 - [ ] **Gerente de contas do Asaas:**
   - As franquias, com CNPJs diferentes, podem ter subcontas geridas pela franqueadora?
   - Confirmação por escrito de que o split percentual incide sobre o valor pago quando há desconto, multa ou juros.
@@ -465,5 +465,5 @@ Método: plano aprovado antes do código, uma fase por vez, testes de cada fluxo
 - [ ] **Split em chargeback (gerente de contas).**
 - [ ] **Pix Automático (ASA4B):** jornada de autorização sem pagamento inicial, tarifa, funcionamento nas contas das unidades e teste em sandbox.
 - [ ] **Tokenização de cartão (ASA4B):** liberação na conta e tarifa do recorrente.
-- [ ] **Webhook no terceiro projeto da Vercel (primeiro passo da ASA0).**
+- [x] **Webhook no terceiro projeto da Vercel (primeiro passo da ASA0)** — o Asaas alcança o endereço de produção do projeto sem token na URL (10/11/2026).
 - [ ] **NFS-e (ASA8):** pedido de nota a cada recebimento, regras de cada prefeitura e configuração fiscal com o contador.
