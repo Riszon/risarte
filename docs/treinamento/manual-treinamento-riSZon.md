@@ -3467,6 +3467,14 @@ quando as sessões dele terminam. O repasse vai para quem concluiu a **última
 sessão**, na data dela. Sessão de **revisão** não gera repasse, e um
 procedimento **refeito** não é pago de novo.
 
+**Venda cancelada no meio do procedimento** *(desde a 0.430.0)*. Quando o
+Gerente cancela a venda, as sessões que ainda não foram feitas são canceladas
+— e o procedimento interrompido é pago **pelo que foi feito, proporcional às
+sessões concluídas**: fez 2 de 3, recebe 2/3 do repasse do procedimento. Vai
+para quem concluiu a última sessão feita, na data dela. Em **Financeiro →
+Repasses** a linha mostra *"pago em parte: 2 de 3 sessões (venda cancelada)"*.
+Se nenhuma sessão do procedimento foi feita, não há repasse.
+
 **O dente de cada sessão e o odontograma do atendimento (desde a 0.339.0).**
 
 - Cada sessão mostra **onde** é: *"Implante — Dente 46 · Sessão 2 de 3"*,

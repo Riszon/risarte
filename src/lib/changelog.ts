@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.430.0",
+    data: "2026-11-11",
+    migracao: "0398",
+    titulo: "Repasse: venda cancelada no meio paga as sessões feitas",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Repasse: quando a venda é cancelada no meio de um procedimento de várias sessões, o dentista recebe pelo que fez, proporcional às sessões concluídas (fez 2 de 3, recebe 2/3 do repasse). Antes, o procedimento ficava esperando a sessão cancelada e o repasse não saía nunca. Em Financeiro → Repasses a linha mostra \"pago em parte: 2 de 3 sessões\". Os casos que já estavam presos foram lançados com a data da última sessão feita.",
+        papeis: ["dentist", "clinical_coordinator", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
     versao: "0.429.0",
     data: "2026-11-11",
     migracao: "0397",

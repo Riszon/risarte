@@ -2,6 +2,27 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🦷 0.430.0 — REPASSE: VENDA CANCELADA NO MEIO PAGA AS SESSÕES FEITAS (11/11/2026; migração 0398)
+>
+> AP141 (escolhido com o dono para o dia). ⏳ **0398 SÓ NO TREINO.**
+> - 🔴 **Defeito confirmado no código:** `apply_plan_cancellation` (0360)
+>   cancela as sessões por fazer; o repasse do bloco esperava todas
+>   `done` (0352/0387) — o procedimento ficava em andamento para sempre e o
+>   dentista não recebia nada pelo que fez.
+> - **Decisão do dono: PROPORCIONAL.** Valor = tabela × procedimentos ×
+>   concluídas ÷ sessões do bloco; recebe quem concluiu a última sessão feita.
+>   Linha em parte = `provider_payouts.sessions_done`/`sessions_total`
+>   (vazias = inteiro); a tela de Repasses mostra "pago em parte".
+> - ⚠️ **A conta do bloco mora em `_payout_accrue_block`** (interna). O
+>   gatilho `accrue_session_payout` cuida da venda direta e chama a conta
+>   para o item do plano — também quando uma sessão de item é CANCELADA.
+>   Ao recriar `payout_recalculate` ou `payout_watchlist`, levar a fração
+>   (régua `repasse-venda-cancelada.test.ts`; a do AP61 lê as duas funções).
+> - Casos já presos: lançados pela própria 0398 (data = a da última sessão
+>   feita). No treino não havia nenhum.
+> - Ensaio no treino 14/14 (transação desfeita); régua 8/8 quebrando. EV-328.
+>   **Não visto na tela.**
+
 > ## 🧹 0.429.0 — ASSINATURA DIGITAL: ACHADOS MENORES DA REVISÃO (11/11/2026; migração 0397)
 >
 > AP158, EV-327. ⚠️ **Permissão de UM pacote (ver, baixar, reenviar,

@@ -400,6 +400,13 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (repasse em parte) — PC Administrador (core 0.429.0 → 0.430.0, migração 0398)**
+
+- **AP141** (bloco 0.430.0 no ESTADO). ⚠️ **A conta do repasse por
+  procedimento mora em `_payout_accrue_block`**; sessão cancelada não segura
+  o bloco e o pago em parte é proporcional (`sessions_done`/`sessions_total`).
+- ⏳ **0398 só no treino.** Não visto na tela.
+
 **11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.426.0 → 0.427.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
 
 - **Abas Financeiro e Comercial da Central, responsável financeiro e carência
