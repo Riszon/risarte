@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.424.0",
+    versao: "0.426.0",
     data: "2026-11-11",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4003, ASAAS_MIGRATION).
     migracao: null,
@@ -88,6 +88,36 @@ export const CHANGELOG: Versao[] = [
           "No cadastro do paciente, marque qual responsável é o financeiro (quem paga as cobranças). Paciente menor precisa de um marcado; adulto pode ter um responsável financeiro opcional, quando outra pessoa paga o tratamento.",
         papeis: ["receptionist", "sdr"],
         manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
+    versao: "0.425.0",
+    data: "2026-11-11",
+    migracao: "0394",
+    titulo: "Venda direta: o preço é sempre o do catálogo",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Venda direta: o sistema confere, na hora de lançar, que o preço de cada procedimento é o do catálogo da unidade, que o procedimento pode ser lançado pela sua função e que o desconto do programa (Empresarial ou PPR+) é de um cliente que participa dele. Se o preço mudou enquanto a tela estava aberta, aparece \"O preço de um procedimento mudou desde que a tela abriu\" — atualize a página e lance de novo.",
+        papeis: ["receptionist", "sdr", "clinical_coordinator", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
+    versao: "0.424.0",
+    data: "2026-11-11",
+    migracao: null,
+    titulo: "Certificação do Financeiro: o item da Conciliação com o nome certo",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Missão do Financeiro da Franqueadora: o item \"Lançamentos no razão\" passou a se chamar \"Lançamentos pela Conciliação\" — ele conta só o que é lançado em Financeiro → Conciliação → Lançar; o cadastro de bens não entra. A contagem não mudou. (OC-00176)",
+        papeis: ["finance_franchisor"],
+        manual: "2.6. Os três ambientes",
       },
     ],
   },

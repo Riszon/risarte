@@ -34,7 +34,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
 
-## ASA1, entrega 1 — abas Financeiro e Comercial e o responsável financeiro (Asaas 0.2.0, core 0.424.0, 11/11/2026)
+## ASA1, entrega 1 — abas Financeiro e Comercial e o responsável financeiro (Asaas 0.2.0, core 0.426.0, 11/11/2026)
 
 ### O que existe
 

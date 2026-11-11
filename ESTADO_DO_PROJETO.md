@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🔌 0.424.0 / ASAAS 0.2.0 — ASA1, ENTREGA 1: ABAS FINANCEIRO E COMERCIAL E O RESPONSÁVEL FINANCEIRO (11/11/2026; migração 4003)
+> ## 🔌 0.426.0 / ASAAS 0.2.0 — ASA1, ENTREGA 1: ABAS FINANCEIRO E COMERCIAL E O RESPONSÁVEL FINANCEIRO (11/11/2026; migração 4003)
 >
 > Estado completo em `docs/asaas/ESTADO.md`; decisões na seção 14 da
 > especificação. **Configuração financeira** e **Regras Comerciais** viraram as
@@ -13,6 +13,43 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > (`client_guardians.is_financial`, um por cliente; o salvar não apaga e recria
 > mais). Ensaio 25/25, suíte 3.908, telas conferidas por papel no servidor
 > local. ⏳ 4003 só no treino; produção antes da entrada no `main`.
+>
+> ## 💲 0.425.0 — VENDA DIRETA: O PREÇO É O DO CATÁLOGO (11/11/2026; migração 0394)
+>
+> AP139 (escolhido com o dono para o dia). ✅ **0394 APLICADA nos dois bancos**
+> (o dono, 11/11/2026; conferido de fora: porta e crua recusam sem login, a
+> crua existe). AP139 fechado.
+> - ⚠️ **`create_direct_sale_v2` virou PORTA sobre `_create_direct_sale_v2_raw`**
+>   (a conta da venda — sessões, avisos, auditoria — mora na crua). A porta
+>   remonta os itens: preço = `catalog_price_for`; preço diferente da tela →
+>   PRICE_MISMATCH; nome do catálogo; valor final = linha − benefício;
+>   procedimento ativo e liberado pela régua de `canLaunchDirectSaleProcedure`
+>   → PROCEDURE_NOT_ALLOWED; benefício só de cliente de programa e ≤ linha →
+>   PROGRAM_DISCOUNT_NOT_ALLOWED.
+> - 🔴 **Achado ao fazer:** `direct_sales` e `direct_sale_items` tinham regra
+>   de ESCRITA DIRETA (`direct_sales_write`, `direct_sale_items_write`) para
+>   recepção, SDR, coordenador e gerente — um UPDATE pela API mudava o valor
+>   de uma venda já lançada. **Saíram.** O app só lê essas tabelas, e todas as
+>   funções que gravam nelas rodam como dono (conferido no catálogo).
+> - ⚠️ **Limite declarado:** QUANTO de benefício cada procedimento tem é
+>   conta do app (`loadClientPrograms`); o banco confere só quem tem programa
+>   e o teto da linha (AP159 no backlog).
+> - ⚠️ **Rede desta máquina sem IPv6 (11/11/2026):** a conexão direta com o
+>   treino deu tempo esgotado. `RISARTE_TREINO_POOLER=1` faz os scripts do
+>   treino (`scripts/test-db.mjs`) entrarem pelo pooler (IPv4), com a mesma
+>   trava contra a produção.
+> - Ensaio no treino 14/14 (transação desfeita, inclusive cliente do PPR+);
+>   régua `venda-direta-preco-do-banco.test.ts` 8/8 quebrando. EV-323.
+>   **Não visto na tela.**
+
+> ## 🏷️ 0.424.0 — CERTIFICAÇÃO: "LANÇAMENTOS PELA CONCILIAÇÃO" (11/11/2026; sem migração)
+>
+> Relato OC-00176 (André, treino): 7 bens cadastrados e a missão contou 2 em
+> "Lançamentos no razão". NÃO era defeito: o item conta `financial_entries`
+> com `source_type=bank_transaction` (Conciliação → Lançar); os bens geram
+> `asset_acquisition` (lido no treino: 8 de bem, 2 de conciliação). Só o
+> NOME mudou (`certificacao.ts`, chave `lancamentos_razao` intacta). Retratos
+> de progresso já guardados mostram o nome antigo até a próxima medição.
 >
 > ## 🔌 ASAAS 0.1.0 — INTEGRAÇÃO ASAAS, FASE ASA0: A FUNDAÇÃO (10/11/2026; migrações 4000 a 4002)
 >

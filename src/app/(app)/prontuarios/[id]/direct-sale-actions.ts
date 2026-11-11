@@ -11,6 +11,15 @@ import type { UserRole } from "@/lib/roles";
 export type DirectSaleActionResult = { ok: boolean; error?: string };
 
 function mapError(m: string): string {
+  // AP139 (0394): o banco confere o preço, o procedimento e o benefício.
+  // ⚠️ Antes do NOT_ALLOWED genérico: os dois códigos abaixo terminam nele.
+  if (m.includes("PRICE_MISMATCH"))
+    return "O preço de um procedimento mudou desde que a tela abriu. Atualize a página e lance de novo.";
+  if (m.includes("PROCEDURE_NOT_ALLOWED"))
+    return "Um dos procedimentos não pode ser lançado na venda direta pela sua função.";
+  if (m.includes("PROGRAM_DISCOUNT_NOT_ALLOWED"))
+    return "O desconto do programa não confere com o cadastro do cliente. Atualize a página e lance de novo.";
+  if (m.includes("INVALID_QUANTITY")) return "Quantidade inválida.";
   if (m.includes("NOT_ALLOWED"))
     return "Você não tem permissão para lançar venda direta nesta unidade.";
   if (m.includes("APPOINTMENT_REQUIRED"))

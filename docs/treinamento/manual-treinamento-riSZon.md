@@ -1084,6 +1084,12 @@ primeiras.
 > foi feito **depois do aceite da missão**. O item de anamnese saiu da lista do
 > Dentista — só o Coordenador consegue preencher a ficha.
 
+> **"Lançamentos pela Conciliação"** (nome desde a 0.424.0, relato OC-00176;
+> antes, "Lançamentos no razão"). O item conta só os lançamentos que você
+> cria em **Financeiro → Conciliação → Lançar** (ou Transferência), a partir de
+> uma linha do extrato. O cadastro de **bens** também lança no razão (compra
+> do bem), mas **não conta** neste item.
+
 > **Se a missão de uma função tiver só ações que dependem de terceiros**, a
 > tela avisa. Quem tiver aquela função ficaria travado sem ter como resolver
 > sozinho, e o portão viraria castigo por algo que não é dela.
@@ -2212,7 +2218,7 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
 - **Depende de:** ninguém.
 
 **Regras Comerciais — validade do orçamento** (desde a 0.338.0; desde a
-0.424.0 as Regras Comerciais ficam na **Central de Configuração › Comercial**,
+0.426.0 as Regras Comerciais ficam na **Central de Configuração › Comercial**,
 e o menu Administração → Regras Comerciais leva até lá). O campo **Validade do
 orçamento impresso (dias)** diz até quando vale
 o orçamento que o cliente assina, contado do dia da impressão. Fica no
@@ -2641,7 +2647,7 @@ trabalha. **Duração estimada:** 60 minutos.
 2. **Comece pelo CPF.** O sistema procura antes de deixar você digitar o resto:
    se o paciente já existir na rede, ele **autopreenche** (evidência: LOTE F1).
 3. Preencha nome, nascimento, telefone, e-mail e endereço.
-4. **Responsáveis e quem paga** (desde a versão 0.424.0):
+4. **Responsáveis e quem paga** (desde a versão 0.426.0):
    - **Paciente menor de 18 anos:** cadastre ao menos um responsável e marque
      **Responsável financeiro (paga as cobranças)** em um deles. Com um só
      responsável, ele já vem marcado. As cobranças saem no CPF de quem estiver
@@ -3265,6 +3271,16 @@ recusado com o nome do procedimento e os valores. Como na negociação, vale o
 menor entre o mínimo e o preço da unidade (a unidade com preço próprio abaixo
 do mínimo já decidiu aquele preço). A negociação não aceita acréscimo, então
 nela o máximo só depende do preço da unidade.
+
+**Na venda direta, o preço é sempre o do catálogo** *(desde a 0.425.0)*. Ao
+lançar, o sistema confere cada procedimento: o preço tem de ser o do catálogo
+da unidade (ou o da rede, se a unidade não tem preço próprio), o procedimento
+tem de estar liberado para a venda direta pela sua função, e o desconto do
+programa só vale para cliente do Empresarial ou do PPR+. Se o preço mudou
+enquanto a tela estava aberta (um reajuste aplicado, por exemplo), aparece
+*"O preço de um procedimento mudou desde que a tela abriu. Atualize a página e
+lance de novo."* Depois de lançada, o valor da venda só muda pelas condições
+(desconto e acréscimo), nunca à mão.
 
 **Assistente virtual no procedimento** (versão 0.403.1). Na lista, a
 etiqueta **Assistente virtual** marca o que a futura assistente de atendimento
@@ -5866,7 +5882,7 @@ foi preparado para a assistente. Avise o administrador.
 
 ## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.424.0)*
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.426.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
 financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão

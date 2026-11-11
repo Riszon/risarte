@@ -849,7 +849,11 @@ export const INDICADORES = [
   },
   {
     chave: "lancamentos_razao",
-    rotulo: "Lançamentos no razão",
+    // OC-00176 (11/11/2026): o nome era "Lançamentos no razão" — e o cadastro
+    // de bens também lança no razão (compra de bem), mas não conta aqui. O
+    // nome passou a dizer ONDE o lançamento nasce. A chave não muda: metas e
+    // progresso guardados continuam valendo.
+    rotulo: "Lançamentos pela Conciliação",
     ajuda:
       "Lançamentos criados por ela na Conciliação, a partir da linha do extrato (o que o sistema não sabia: tarifa, rendimento, transferência).",
     onde: "Financeiro → Conciliação → Lançar (ou Transferência)",

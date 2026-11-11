@@ -400,7 +400,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.423.0 → 0.424.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
+**11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.425.0 → 0.426.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
 
 - **Abas Financeiro e Comercial da Central, responsável financeiro e carência
   fixa em zero** (estado em `docs/asaas/ESTADO.md`; decisões na seção 14 da
@@ -411,6 +411,36 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Banco de treino por IPv4:** o direto não respondeu deste PC; use
   `TEST_DB_URL` pelo ambiente com o pooler (`scripts/test-db.mjs`).
 - ⏳ **4003 só no treino.** A entrega 2 (cobrança) espera as decisões do 14.6.
+
+**11/11/2026 (revisão da ZapSign) — PC Administrador (sem versão nova)**
+
+- **Revisão a fundo da assinatura digital** (pedido do dono): 9 itens no
+  backlog, **AP150–AP158** (3 de prioridade alta: anexo > 1 MB, documento
+  fora do sistema na ZapSign, link do paciente legível por quem só vê).
+- ⚠️ **Conferência só de leitura: `node scripts/conferir-assinatura-digital.mjs`**
+  (produção) ou `--treino`; liberado na regra local do Claude. Com
+  `ZAPSIGN_API_TOKEN` no `.env.local` ela também pergunta à ZapSign
+  (créditos, documentos fora do riSZon). Não imprime dado pessoal.
+- ⚠️ O banco do treino pela conexão direta (IPv6) deu tempo esgotado neste
+  PC; o `aws-0-sa-east-1.pooler.supabase.com` (usuário
+  `postgres.bsnptybalszjjbhxeejo`) funciona.
+
+**11/11/2026 (venda direta) — PC Administrador (core 0.424.0 → 0.425.0, migração 0394)**
+
+- **AP139** (bloco 0.425.0 no ESTADO). ⚠️ **`create_direct_sale_v2` é porta
+  sobre `_create_direct_sale_v2_raw`**: o preço da venda direta é o do banco.
+  ⚠️ **`direct_sales`/`direct_sale_items` sem regra de escrita**: só função
+  grava (régua).
+- ⚠️ **Treino sem IPv6 nesta máquina:** `RISARTE_TREINO_POOLER=1` antes de
+  `npm run migrar:teste` e dos ensaios.
+- ✅ **0394 aplicada nos dois bancos** (o dono, 11/11/2026; conferido de
+  fora). Não visto na tela.
+
+**11/11/2026 (relatos, OC-00176) — PC Administrador (core 0.423.0 → 0.424.0, sem migração)**
+
+- O item "Lançamentos no razão" da missão do Financeiro virou **"Lançamentos
+  pela Conciliação"** (só o rótulo; a chave `lancamentos_razao` e a contagem
+  não mudaram). Bloco 0.424.0 no ESTADO.
 
 **10/11/2026 (Asaas — ASA0) — PC Administrador (Asaas 0.1.0, migrações 4000 a 4002; core sem versão nova; worktree `wt-asaas`, branch `feat/asaas-integration`)**
 
