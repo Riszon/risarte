@@ -89,6 +89,7 @@ const ABAS: Aba[] = [
       { href: "/financeiro/fechamento", label: "Fechamento" },
       { href: "/financeiro/repasses", label: "Repasses" },
       { href: "/financeiro/repasses/relatorios", label: "Relatórios de repasse" },
+      { href: "/financeiro/repasses/historico", label: "Histórico de repasse" },
     ],
   },
   {

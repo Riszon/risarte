@@ -400,6 +400,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (repasse, etapa 5) — PC Administrador (core 0.433.0 → 0.434.0, migração 0401)**
+
+- **As visões do repasse** (bloco 0.434.0 no ESTADO; decisões V1–V6 em
+  `docs/Financeiro/REPASSE-PLANO.md`). **As 5 etapas do repasse estão
+  entregues.**
+- ⚠️ **Número de repasse/produção numa tela = `_payout_lines`** (0401), pelas
+  portas `payout_history`, `payout_network_summary` e `my_payout_evolution`.
+  Não somar `provider_payouts` direto (perde "não pagar", desconto, anulado).
+- ⚠️ **O dentista não vê produção** (valores de venda): a porta dele não tem a
+  coluna. Régua `repasse-etapa5.test.ts`.
+- ⏳ **0401 aplicada só no treino**; falta o dono rodar na produção.
+
 **11/11/2026 (Asaas — ASA1, entrega 2) — PC Administrador (core 0.432.0 → 0.433.0, Asaas 0.3.0, migração 4004; worktree `wt-asaas`)**
 
 - **A cobrança de parcela pelo Asaas, as travas e a quitação por valor menor**

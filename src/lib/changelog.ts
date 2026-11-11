@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.434.0",
+    data: "2026-11-11",
+    migracao: "0401",
+    titulo: "Repasse dos dentistas: o histórico, a rede e a evolução de cada dentista",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Histórico de repasse: mês a mês e dentista a dentista, quanto foi produzido (o valor vendido dos procedimentos), o repasse, os descontos, o pago e o que falta pagar. Os dentistas aparecem lado a lado, em ordem de nome, e a planilha sai pelo botão Baixar planilha.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Histórico de repasse → clique no dentista: o gráfico dos últimos 12 meses com a produção e o repasse lado a lado, o quanto o repasse representa da produção e a tabela mês a mês. Dá para imprimir ou salvar em PDF.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Painel da rede → aba Repasses: o repasse de cada unidade no mês (apurado, descontos, pago, a pagar e vencido), com a cor de atenção, o Abrir na unidade e a planilha.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Repasses → Meus repasses: o gráfico do seu repasse nos últimos 12 meses, em todas as unidades em que você atende, já com os descontos.",
+        papeis: ["dentist", "planner_dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
     versao: "0.433.0",
     data: "2026-11-11",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4004, ASAAS_MIGRATION).

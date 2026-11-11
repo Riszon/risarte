@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { formatBRL } from "@/lib/pricing";
 import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr } from "@/lib/dates";
 import { carregarCobrancas } from "@/lib/finance/payout-report-db";
+import { carregarMinhaEvolucao } from "@/lib/finance/payout-visoes-db";
+import { mesesDoPeriodo, subtrairMeses } from "@/lib/finance/payout-visoes";
+import { todayInBrazil } from "@/lib/dates";
+import { BarrasDoRepasse } from "@/components/repasse/barras-do-repasse";
 import {
   MY_STATUS_LABEL,
   REPORT_STATUS_LABEL,
@@ -66,6 +70,19 @@ export default async function RepassesPage() {
     supabase,
     relatorios.map((r) => r.id)
   );
+  // 0401 — a evolução do MEU repasse nos últimos 12 meses, sem a produção (V3).
+  const mesHoje = todayInBrazil().slice(0, 7);
+  const deEvol = subtrairMeses(mesHoje, 11);
+  const evolucao = await carregarMinhaEvolucao(supabase, deEvol, mesHoje);
+  const evolRows = evolucao.ok ? evolucao.dados : [];
+  const evolMeses = mesesDoPeriodo(deEvol, mesHoje).map((month) => {
+    const doMes = evolRows.filter((r) => r.month === month);
+    return {
+      month,
+      producao: null,
+      repasse: doMes.reduce((s, r) => s + r.payoutCents + r.discountCents, 0),
+    };
+  });
   const pagamentoDe = (id: string) => {
     const b = cobrancas.get(id);
     // Para o dentista, "sem conta a pagar" é detalhe interno do Financeiro.
@@ -168,6 +185,17 @@ export default async function RepassesPage() {
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {evolRows.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-medium">Meu repasse nos últimos 12 meses</h2>
+          <p className="text-xs text-muted-foreground">
+            Pelo mês em que o procedimento foi finalizado, em todas as unidades em que você
+            atende, já com os descontos.
+          </p>
+          <BarrasDoRepasse meses={evolMeses} comProducao={false} />
         </section>
       )}
 

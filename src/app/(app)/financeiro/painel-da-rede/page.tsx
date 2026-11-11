@@ -14,7 +14,8 @@ import {
 import { parseNetworkTab, periodoDoMes } from "@/lib/finance/network-areas";
 import { NetworkPanelView } from "./panel-client";
 import { AbasDaRede } from "./abas-da-rede";
-import { AbaCaixa, AbaDre, AbaHora, AbaPagar, AbaReceber, AvisoDeLeitura } from "./areas";
+import { AbaCaixa, AbaDre, AbaHora, AbaPagar, AbaReceber, AbaRepasses, AvisoDeLeitura } from "./areas";
+import { carregarRepasseDaRede } from "@/lib/finance/payout-visoes-db";
 import {
   carregarCaixa,
   carregarDre,
@@ -72,6 +73,18 @@ export default async function NetworkPanelPage(
   } else if (aba === "receber") {
     const r = await carregarReceber(supabase, periodo);
     conteudo = r.ok ? <AbaReceber unidades={r.unidades} ctx={ctx} /> : <AvisoDeLeitura erro={r.erro} />;
+  } else if (aba === "repasses") {
+    const mesSel = `${periodo.ano}-${String(periodo.mes).padStart(2, "0")}`;
+    const r = await carregarRepasseDaRede(supabase, mesSel, mesSel);
+    conteudo = r.ok ? (
+      <AbaRepasses
+        unidades={r.dados}
+        ctx={ctx}
+        planilha={`/financeiro/painel-da-rede/repasses/planilha?de=${mesSel}&ate=${mesSel}`}
+      />
+    ) : (
+      <AvisoDeLeitura erro={r.erro} />
+    );
   } else if (aba === "dre") {
     const r = await carregarDre(supabase, periodo);
     conteudo = r.ok ? <AbaDre unidades={r.unidades} ctx={ctx} /> : <AvisoDeLeitura erro={r.erro} />;

@@ -2,6 +2,30 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## ✅ 0.434.0 — REPASSE DOS DENTISTAS, ETAPA 5: AS VISÕES (11/11/2026; migração 0401)
+>
+> Última das etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões V1–V6 do
+> dono). ⏳ **0401 aplicada só no TREINO**; falta o dono rodar na produção.
+> **Não visto na tela.** Só leitura: nenhuma tabela nova.
+> - ⚠️ **UMA conta para as três visões: `_payout_lines`** (interna). Cada
+>   repasse vira uma linha classificada (repasse | ortodontia | desconto |
+>   nao_pagar), com a produção (V1: preço do item × procedimentos × fração ×
+>   final/subtotal da negociação aceita; venda direta: final do item ÷
+>   quantidade; nula para Ortodontia, desconto e anulado) e a situação de
+>   pagamento (pago = fechamento antigo, conta paga ou compensada;
+>   programado; em_relatorio; fora). Mudou a regra de pagamento/desconto,
+>   muda aqui junto.
+> - Portas: `payout_history` (unidade; `finance_visible_clinic_ids`),
+>   `payout_network_summary` (rede; `can_manage_payout_reports`),
+>   `my_payout_evolution` (o dentista, SEM produção — V3). Período ≤ 36 meses
+>   (`_payout_period_ok`).
+> - Telas: `/financeiro/repasses/historico` (+ planilha),
+>   `/financeiro/repasses/dentistas/[id]`, aba `repasses` do Painel da rede
+>   (+ planilha em `painel-da-rede/repasses/planilha`), gráfico em
+>   `/repasses`. Conta pura em `payout-visoes.ts`; leituras em
+>   `payout-visoes-db.ts`; gráfico `components/repasse/barras-do-repasse.tsx`.
+> - Ensaio no treino (desfeito) **17/17**; régua `repasse-etapa5.test.ts`,
+>   provada quebrando 3×.
 > ## 🔌 0.433.0 / ASAAS 0.3.0 — ASA1, ENTREGA 2: A COBRANÇA DE PARCELA PELO ASAAS (11/11/2026; migração 4004)
 >
 > Estado completo em `docs/asaas/ESTADO.md`; decisões na seção 14 da

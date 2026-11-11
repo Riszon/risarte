@@ -81,7 +81,7 @@ conseguimos gerar nenhum repasse até agora".
 | 3 | **Aprovações:** Gerente (um por vez, só a equipe dele; Coordenador quando não há Gerente), depois o Dentista na tela "Meus repasses"; reprovar com formulário; avisos a cada passo; prazo de 5 dias úteis. | ✅ migração 0391 |
 | 4 | **Pagamento:** só o aprovado pelos dois vira conta a pagar, ligada aos procedimentos; parcial; vencimento no dia 15. Sai o "Fechar o mês" antigo. | ✅ 0.422.0, migração 0393 |
 | 4B | **Desconto por falha do dentista** (decisão 12): ocorrência quando um procedimento com repasse é reprovado ou tem a venda cancelada (ou à mão); quem aprova a equipe decide; linha negativa no relatório seguinte. | ✅ 0.432.0, migração 0400 |
-| 5 | **Visões:** histórico da unidade, consolidado da rede, gráfico de produção e ganho por dentista. | a fazer |
+| 5 | **Visões:** histórico da unidade, consolidado da rede, gráfico de produção e ganho por dentista. | ✅ 0.434.0, migração 0401 |
 
 ## Etapa 2 — decisões do dono (10/11/2026, as quatro como recomendado)
 
@@ -182,6 +182,25 @@ pagamento como **compensado**.
 **Achado:** o termo de cancelamento **cobra do cliente o que já foi feito**
 (0206). Por isso, na maioria dos cancelamentos o repasse do que foi feito é
 devido e a ocorrência deve ser encerrada como "não foi falha".
+
+## Etapa 5 — decisões do dono (11/11/2026, as seis como recomendado)
+
+- **V1.** Produção = o **valor vendido** do procedimento (preço do plano com o
+  desconto da negociação repartido; na venda direta, o valor final).
+- **V2.** Conta pelo **mês da finalização** do procedimento (competência).
+- **V3.** Franqueadora vê tudo; Gerente e franqueado, a própria unidade; o
+  **dentista vê só o próprio repasse**, sem a produção.
+- **V4.** Dentistas lado a lado só para Franqueadora e Gerente, **sem
+  ranking** (ordem de nome).
+- **V5.** Ortodontia: repasse sim; produção **não se aplica**.
+- **V6.** Planilha no histórico e no consolidado; impressão na página do
+  dentista.
+
+**Como ficou (0401):** só leitura. `_payout_lines` classifica cada repasse e
+calcula a produção e a situação de pagamento; `payout_history`,
+`payout_network_summary` e `my_payout_evolution` somam essa mesma conta.
+Telas: Financeiro → Histórico de repasse (com a evolução de cada dentista),
+Painel da rede → Repasses, e o gráfico em Meus repasses.
 
 ## O que a Etapa 4 precisa resolver do fechamento antigo
 
