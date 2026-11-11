@@ -17,7 +17,8 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | Fase | Situação | Migrações |
 |---|---|---|
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
-| ASA1 — Cobrança avulsa e link | próxima (plano e OK do dono antes) | — |
+| **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | código pronto e provado no treino (11/11/2026); **falta** a 4003 na produção e a entrada no `main` | **4003** |
+| ASA1, entrega 2 — a cobrança | plano aprovado (spec seção 14); **antes de começar**, o dono decide os pontos do 14.6 (parcela vencida e quitação por valor menor) | — |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -32,6 +33,65 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
+
+## ASA1, entrega 1 — abas Financeiro e Comercial e o responsável financeiro (Asaas 0.2.0, core 0.424.0, 11/11/2026)
+
+### O que existe
+
+- **4003** — `client_guardians.is_financial` com a regra de exclusão
+  `client_guardians_one_financial` (no máximo um pagador por cliente,
+  conferida no FIM do comando — o índice único comum recusava a troca do
+  pagador num comando só, achado no ensaio); o pagador marcado sozinho no
+  menor com um único responsável; `finance_settings_grace_zero` (carência
+  presa em zero; a migração PARA com `GRACE_NOT_ZERO` se achar outro valor, sem
+  mudar o dado); `central_history` com as abas `financeiro` e `comercial`.
+- **Central por aba** (`src/lib/central/central.ts`): `podeVerAba`,
+  `abasVisiveis`, `primeiraAba`. Conta = `modulo.central`; Financeiro =
+  `canConfigureFinanceNetwork` (rede e todas as unidades) ou
+  `canViewFinance` + função na unidade; Comercial = Admin Master. A Central
+  aparece para quem vê alguma aba — o Gerente e o Franqueado passam a vê-la
+  (só a aba Financeiro da própria unidade).
+- **Aba Financeiro** (`central/aba-financeiro.tsx`, `central/financeiro-form.tsx`):
+  herança campo a campo na unidade (vazio = segue a rede, `CampoHerdado`),
+  carência só leitura, os alertas da unidade no pé. **Aba Comercial**
+  (`central/aba-comercial.tsx`): os editores de Regras Comerciais com `escopo`
+  e as condições dos programas só para leitura.
+- `/financeiro/configuracao` e `/admin/regras-comerciais` redirecionam; o
+  formulário antigo (`financeiro/configuracao/settings-form.tsx`) saiu.
+- **Responsável financeiro** (`src/lib/responsaveis.ts`, `prontuarios/actions.ts`,
+  `client-form.tsx`): o salvar atualiza por id em vez de apagar e recriar; o
+  adulto pode ter um pagador opcional; a ficha mostra o selo.
+
+### Regras que quem mexer aqui precisa saber
+
+- ⚠️ **Componente de navegador da Central não importa `central.ts`** (ele
+  importa `@/lib/auth`, que é de servidor, e a montagem quebra). A herança
+  pura mora em `src/lib/central/heranca.ts`. Régua no
+  `asaas-asa1-entrega1.test.ts`.
+- ⚠️ **Aba nova = entrada em `ABAS_DA_CENTRAL`, ramo em `podeVerAba` e ramo
+  em `central_history`.**
+- ⚠️ **Os responsáveis vão SEMPRE no formulário**, também do adulto (antes,
+  editar um adulto apagava os responsáveis de quando era menor).
+- ⚠️ **Gravar a troca de pagador: quem deixa de ser vem primeiro**
+  (`ordemDeGravacao`).
+- ⚠️ **Banco de treino por IPv4:** o endereço direto (só IPv6) não respondeu
+  deste PC em 11/11/2026. `scripts/test-db.mjs` aceita `TEST_DB_URL` pelo
+  ambiente (o pooler `aws-0-sa-east-1.pooler.supabase.com`, usuário
+  `postgres.<ref>`); a trava de produção vale igual.
+
+### O que foi provado
+
+- Ensaio no treino, transação desfeita: **25/25**
+  (`scripts/asaas-ensaio-asa1-entrega1.mjs --confirmar`). `test:indica` 246/246.
+- Testes: `asaas-asa1-entrega1.test.ts` + a suíte inteira (3.908) e o lint.
+- Telas no servidor local contra o treino, por papel (só leitura): Admin vê as
+  três abas nos dois níveis; os endereços antigos levam às abas; o Gerente vê
+  só a aba Financeiro da própria unidade, só leitura, e é barrado no resto; o
+  Financeiro edita a rede e é barrado em Comercial e Conta; a Recepção não abre
+  a Central; a ficha mostra o selo do responsável financeiro.
+- **Não visto:** salvar pela tela (multa por campo, troca de pagador no
+  cadastro). A gravação está coberta pelo ensaio do banco e pela régua do
+  código, não por clique.
 
 ## ASA0 — Fundação (Asaas 0.1.0, 10/11/2026)
 

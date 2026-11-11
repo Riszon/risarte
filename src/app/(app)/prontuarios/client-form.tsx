@@ -56,6 +56,8 @@ const EMPTY_GUARDIAN: GuardianInput = {
   phone: null,
   email: null,
   guardianClientId: null,
+  id: null,
+  isFinancial: false,
 };
 
 export function ClientForm({
@@ -201,7 +203,9 @@ export function ClientForm({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("no_cpf", String(noCpf));
-    formData.set("guardians", JSON.stringify(minor ? guardians : []));
+    // ASA1 (4003): os responsáveis vão sempre — o adulto pode ter um pagador
+    // (antes, editar um adulto apagava os responsáveis de quando era menor).
+    formData.set("guardians", JSON.stringify(guardians));
     if (showPreferredUnit) formData.set("preferred_clinic_id", preferredUnit);
     setDuplicate(null);
 
@@ -498,32 +502,58 @@ export function ClientForm({
         </CardContent>
       </Card>
 
-      {minor && (
-        <Card className="border-gold">
+      {(minor || guardians.length > 0 || birthDate) && (
+        <Card className={minor ? "border-gold" : undefined}>
           <CardHeader>
             <CardTitle className="text-base">
-              Responsáveis (obrigatório para menores de 18 anos)
+              {minor
+                ? "Responsáveis (obrigatório para menores de 18 anos)"
+                : "Responsável financeiro (opcional)"}
             </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {minor
+                ? "Marque qual responsável é o financeiro: as cobranças saem no CPF dele."
+                : "Só quando outra pessoa paga o tratamento (cônjuge, pai, mãe). As cobranças saem no CPF de quem estiver marcado como responsável financeiro."}
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {guardians.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Adicione ao menos um responsável. Se o responsável já for
-                cliente Risarte, informe o CPF que os dados são preenchidos
-                automaticamente.
+                {minor
+                  ? "Adicione ao menos um responsável. Se o responsável já for cliente Risarte, informe o CPF que os dados são preenchidos automaticamente."
+                  : "Nenhum responsável: as cobranças saem no CPF do próprio cliente."}
               </p>
             )}
             {guardians.map((guardian, index) => (
               <div key={index} className="space-y-3 rounded-md border p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">
-                    Responsável {index + 1}
-                    {guardian.guardianClientId && (
-                      <span className="ml-2 text-xs text-gold-tinta">
-                        ★ cliente Risarte
-                      </span>
-                    )}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <p className="text-sm font-medium">
+                      Responsável {index + 1}
+                      {guardian.guardianClientId && (
+                        <span className="ml-2 text-xs text-gold-tinta">
+                          ★ cliente Risarte
+                        </span>
+                      )}
+                    </p>
+                    {/* ASA1 (4003): só um pode ser o pagador — marcar um
+                        desmarca os outros. */}
+                    <label className="flex items-center gap-1.5 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={guardian.isFinancial === true}
+                        onChange={(e) =>
+                          setGuardians((prev) =>
+                            prev.map((g, i) => ({
+                              ...g,
+                              isFinancial: i === index ? e.target.checked : e.target.checked ? false : g.isFinancial === true,
+                            }))
+                          )
+                        }
+                      />
+                      Responsável financeiro (paga as cobranças)
+                    </label>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
@@ -616,9 +646,15 @@ export function ClientForm({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setGuardians((prev) => [...prev, EMPTY_GUARDIAN])}
+              onClick={() =>
+                setGuardians((prev) => [
+                  ...prev,
+                  // O primeiro responsável já nasce como o pagador.
+                  { ...EMPTY_GUARDIAN, isFinancial: !prev.some((g) => g.isFinancial) },
+                ])
+              }
             >
-              Adicionar responsável
+              {minor ? "Adicionar responsável" : "Adicionar responsável financeiro"}
             </Button>
           </CardContent>
         </Card>

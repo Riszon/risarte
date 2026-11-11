@@ -38,7 +38,7 @@
 13b. [Para o Admin Master: alterar permissões](#13b-para-o-admin-master-alterar-permissões)
 13c. [Para o Admin Master: a Auditoria](#13c-para-o-admin-master-a-auditoria)
 13f. [A assistente virtual (Rita)](#13f-a-assistente-virtual-rita)
-13g. [Para o Admin Master: a Central de Configuração](#13g-para-o-admin-master-a-central-de-configuração)
+13g. [A Central de Configuração](#13g-a-central-de-configuração)
 14. [Checklists](#14-checklists)
 15. [Novidades, problemas e alertas](#15-novidades-problemas-e-alertas) — inclui o **relógio**
 
@@ -245,7 +245,7 @@ nele. Quem **grava** é decidido pelo banco, e a tela segue o banco:
 | Contas a pagar, conta bancária e conciliação da unidade | Gerente da unidade, Financeiro da Franqueadora, Admin Master |
 | Fornecedores das unidades que a pessoa gerencia | Gerente da unidade, Financeiro da Franqueadora, Admin Master |
 | Fornecedores da rede toda ou só da Franqueadora, e a lista de tipos de fornecedor | Financeiro da Franqueadora, Admin Master |
-| Multa, juros, carência e centros de custo (regras da rede) | Financeiro da Franqueadora, Admin Master |
+| Multa, juros e centros de custo (regras da rede) — multa e juros ficam na **Central de Configuração › Financeiro** | Financeiro da Franqueadora, Admin Master |
 
 Quem abre a tela sem poder gravar vê **"Só consulta"** e o nome de quem faz.
 **A conta bancária se cadastra em Financeiro → Conciliação → "Cadastrar conta
@@ -616,9 +616,10 @@ que não chega.
 **A taxa de inadimplência** é o **vencido dividido pelo que há a receber** —
 não sobre o faturamento, senão ela cairia em todo mês de venda forte mesmo com
 a cobrança piorando. Ela é comparada com um limite definido pela **rede**, no campo **Teto da
-inadimplência (%)** em **Financeiro → Cadastros → Configuração** — no mesmo
-bloco de multa, juros e carência. Na unidade, deixar o campo **vazio** quer
-dizer *"sigo o padrão da rede"*; preencher cria uma exceção só para ela.
+inadimplência (%)** na **Central de Configuração › Financeiro** (o menu
+**Financeiro → Cadastros → Configuração** leva até lá) — no mesmo bloco de
+multa e juros. Na unidade, deixar o campo **vazio** quer dizer *"sigo o padrão
+da rede"*; preencher cria uma exceção só para ela.
 
 > ⚠️ **O limite não é um índice de mercado.** Nenhum sistema sabe qual taxa é
 > "saudável" para a sua clínica: depende do ticket, do meio de pagamento e da
@@ -2210,8 +2211,10 @@ unidade ativa **não vê "Jornada"**, e ganha dois itens próprios, *Meu Dia* e
   aqui atinge todas as unidades.
 - **Depende de:** ninguém.
 
-**Administração → Regras Comerciais — validade do orçamento** (desde a
-0.338.0). O campo **Validade do orçamento impresso (dias)** diz até quando vale
+**Regras Comerciais — validade do orçamento** (desde a 0.338.0; desde a
+0.424.0 as Regras Comerciais ficam na **Central de Configuração › Comercial**,
+e o menu Administração → Regras Comerciais leva até lá). O campo **Validade do
+orçamento impresso (dias)** diz até quando vale
 o orçamento que o cliente assina, contado do dia da impressão. Fica no
 **Padrão da rede** e, se preciso, no ajuste de cada unidade (a unidade vence a
 rede). **Em branco, vale 15 dias** (decisão do dono, G2). Aceita de 1 a 365.
@@ -2638,8 +2641,18 @@ trabalha. **Duração estimada:** 60 minutos.
 2. **Comece pelo CPF.** O sistema procura antes de deixar você digitar o resto:
    se o paciente já existir na rede, ele **autopreenche** (evidência: LOTE F1).
 3. Preencha nome, nascimento, telefone, e-mail e endereço.
-4. Clique em **Cadastrar cliente**.
-5. **Resultado esperado:** o sistema abre a ficha do paciente e ele nasce na
+4. **Responsáveis e quem paga** (desde a versão 0.424.0):
+   - **Paciente menor de 18 anos:** cadastre ao menos um responsável e marque
+     **Responsável financeiro (paga as cobranças)** em um deles. Com um só
+     responsável, ele já vem marcado. As cobranças saem no CPF de quem estiver
+     marcado.
+   - **Paciente adulto:** o bloco **Responsável financeiro (opcional)** serve
+     para quando outra pessoa paga o tratamento (cônjuge, pai, mãe). Sem
+     ninguém ali, as cobranças saem no CPF do próprio paciente.
+   - Só um responsável pode estar marcado como financeiro: marcar um desmarca
+     o outro.
+5. Clique em **Cadastrar cliente**.
+6. **Resultado esperado:** o sistema abre a ficha do paciente e ele nasce na
    fase **Aquisição**, com um código próprio (ex.: `CAM-00001`).
 
 > **Cuidado:** o CPF é a trava contra paciente repetido. Digitar com pontuação
@@ -4263,7 +4276,7 @@ caso), `/ortodontia/casos/[id]/contrato` (o termo para imprimir),
 **Programas:** `/ppr`, `/empresarial`.
 
 **Administração (9 telas):** `/admin/clinicas`, `/admin/permissoes`,
-`/admin/sla`, `/admin/regras-comerciais`, `/admin/agenda`, `/admin/anamnese`,
+`/admin/sla`, `/admin/regras-comerciais` (leva à Central › Comercial), `/admin/agenda`, `/admin/anamnese`,
 `/admin/orientacoes`, `/admin/documentos`, `/admin/chat`, `/admin/auditoria`,
 `/admin/odontograma` (desde a versão 0.332.0).
 O antigo `/admin/usuarios` **não existe mais**: o acesso de cada pessoa mora na
@@ -5851,20 +5864,65 @@ próxima etapa. Enquanto isso, cada item diz onde ele se muda hoje.
 **Se aparecer "Falta liberar a área rita no Supabase":** o ambiente ainda não
 foi preparado para a assistente. Avise o administrador.
 
-## 13g. Para o Admin Master: a Central de Configuração
+## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0 — primeira etapa da integração com o Asaas)*
-
-**Onde:** **Administração → Central de Configuração**. Por enquanto só o
-**Admin Master** vê. As permissões **Central de Configuração** e **Central:
-gravar a chave da conta Asaas** existem em Administração → Permissões, mas
-nascem sem nenhuma função marcada.
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.424.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
-financeira da rede e de cada unidade. Nesta primeira etapa ela tem uma aba,
-**Conta e tarifas**: a conta Asaas da unidade, o que o Asaas cobra por meio de
-pagamento e o que falta para a unidade poder cobrar pelo riSZon. As próximas
-etapas acrescentam as outras abas (Financeiro, Comercial, Taxas da franquia…).
+financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão
+que toda unidade segue) e cada **unidade** (só o que for diferente do padrão).
+Hoje são três abas; as próximas etapas acrescentam outras (Taxas da franquia,
+Cobrança e comunicação, Fiscal…).
+
+**Onde:** **Administração → Central de Configuração** para o Admin Master; no
+menu principal, **Central de Configuração**, para quem vê alguma aba. Os
+endereços antigos continuam funcionando e levam à aba nova:
+**Financeiro → Cadastros → Configuração** abre a aba **Financeiro**, e
+**Administração → Regras Comerciais** abre a aba **Comercial**.
+
+**Quem vê cada aba:**
+
+| Aba | Quem vê | Quem altera |
+|---|---|---|
+| **Conta e tarifas** | Admin Master (a permissão **Central de Configuração** nasce sem nenhuma função marcada) | Admin Master |
+| **Financeiro** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade) | Admin Master e Financeiro da Franqueadora |
+| **Comercial** | Admin Master | Admin Master |
+
+**Aba Financeiro.** Multa, juros, arredondamento e o teto da inadimplência —
+o que antes ficava em Financeiro → Cadastros → Configuração.
+
+- **Na Rede:** o padrão de todas as unidades. A franqueadora tem o próprio
+  bloco, para as cobranças dela.
+- **Na unidade:** cada campo mostra **herdado da rede** ou **personalizado**.
+  Campo **vazio segue a rede**: só preencha o que for diferente. **voltar ao
+  padrão** limpa um campo; **Voltar ao padrão da rede em tudo** apaga a
+  configuração própria da unidade. Os **alertas** do financeiro da unidade
+  continuam no pé da aba.
+- **Carência: fixa em zero.** O campo aparece só para leitura — *o Asaas não
+  aplica carência; multa e juros contam do dia seguinte ao vencimento*. O
+  sistema recusa outro valor.
+
+**Aba Comercial.** O que antes ficava em Administração → Regras Comerciais:
+desconto máximo, desconto à vista, máximo de parcelas, meios de pagamento
+aceitos, parcela mínima por meio, validade do orçamento e a **cadência do
+follow-up**.
+
+- **Na Rede:** o padrão. **Na unidade:** o ajuste dela — campo vazio segue a
+  rede. Unidade sem ajuste mostra o formulário em branco: preencha só o que
+  for diferente e salve.
+- No pé da aba, **Condições dos programas (só leitura)**: o que o PPR+ e o
+  Empresarial permitem a mais para quem participa deles, com o caminho de onde
+  essas condições se editam hoje.
+
+**Histórico de alterações:** no pé de cada aba, quem mudou o quê e quando. O
+Gerente vê o histórico da aba Financeiro da própria unidade; o da aba Comercial
+é só do Admin Master.
+
+### 13g.1. Aba Conta e tarifas (Admin Master)
+
+A conta Asaas da unidade, o que o Asaas cobra por meio de pagamento e o que
+falta para a unidade poder cobrar pelo riSZon. A permissão **Central: gravar a
+chave da conta Asaas** também nasce sem nenhuma função marcada.
 
 **Nada é cobrado ainda.** Nesta etapa o riSZon só se liga à conta Asaas e
 confere se está tudo pronto. Nenhuma cobrança sai daqui. E o sistema só aceita
@@ -5948,9 +6006,9 @@ continuam com o adquirente que a unidade já usa.
 **Histórico de alterações:** no pé da aba, mostra quem mudou o quê e quando
 (conta, termo, marcação de pronta, tarifas).
 
-**Se aparecer "A Central de Configuração ainda não existe neste banco":** as
-migrações da integração (4000 a 4002) ainda não rodaram neste ambiente. Nada
-pode ser gravado até rodarem.
+**Se aparecer "A conta Asaas ainda não existe neste banco":** as migrações da
+integração (4000 a 4002) ainda não rodaram neste ambiente. Nada pode ser
+gravado nesta aba até rodarem.
 
 ## 14. Checklists
 

@@ -114,6 +114,7 @@ export async function saveCommercialRule(
     clinicId: clinicId ?? undefined,
   });
   revalidatePath("/admin/regras-comerciais");
+  revalidatePath("/central", "layout");
   return { ok: true };
 }
 
@@ -172,6 +173,7 @@ export async function saveFollowupSettings(
     clinicId: clinicId ?? undefined,
   });
   revalidatePath("/admin/regras-comerciais");
+  revalidatePath("/central", "layout");
   return { ok: true };
 }
 
@@ -196,6 +198,7 @@ export async function deleteFollowupSettings(
     entityId: settingsId,
   });
   revalidatePath("/admin/regras-comerciais");
+  revalidatePath("/central", "layout");
   return { ok: true };
 }
 
@@ -220,5 +223,6 @@ export async function deleteCommercialRule(ruleId: string): Promise<RuleResult> 
     entityId: ruleId,
   });
   revalidatePath("/admin/regras-comerciais");
+  revalidatePath("/central", "layout");
   return { ok: true };
 }

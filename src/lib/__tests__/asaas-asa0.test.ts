@@ -25,9 +25,9 @@ import {
   abaValida,
   diasSemUsoDaChave,
   estadoDaProntidao,
-  podeVerCentral,
-  podeVerRedeNaCentral,
-  podeVerUnidadeNaCentral,
+  podeVerContaAsaas,
+  podeVerContaDaRede,
+  podeVerContaDaUnidade,
   podeVincularContaPelaTela,
   valorEfetivo,
 } from "@/lib/central/central";
@@ -379,21 +379,21 @@ describe("Central de Configuração", () => {
     expect(sql).not.toMatch(/insert into public\.permission_matrix/);
   });
 
-  it("por padrão só o Admin Master vê a Central", () => {
-    expect(podeVerCentral(sessao({ isAdminMaster: true }))).toBe(true);
-    expect(podeVerCentral(sessao({ rolesByClinic: { a: ["unit_manager"] } }))).toBe(false);
-    expect(podeVerCentral(sessao({ rolesByClinic: { f: ["finance_franchisor"] } }))).toBe(false);
+  it("por padrão só o Admin Master vê a CONTA Asaas", () => {
+    expect(podeVerContaAsaas(sessao({ isAdminMaster: true }))).toBe(true);
+    expect(podeVerContaAsaas(sessao({ rolesByClinic: { a: ["unit_manager"] } }))).toBe(false);
+    expect(podeVerContaAsaas(sessao({ rolesByClinic: { f: ["finance_franchisor"] } }))).toBe(false);
   });
 
-  it("com a permissão ligada, o Gerente só alcança a PRÓPRIA unidade e nunca a rede", () => {
+  it("com a permissão ligada, o Gerente só alcança a conta da PRÓPRIA unidade e nunca a da rede", () => {
     const permissoes = { ...matrizPadrao(), "modulo.central": ["unit_manager" as const, "finance_franchisor" as const] };
     const gerente = sessao({ rolesByClinic: { a: ["unit_manager"] }, permissoes });
-    expect(podeVerUnidadeNaCentral(gerente, "a")).toBe(true);
-    expect(podeVerUnidadeNaCentral(gerente, "b")).toBe(false);
-    expect(podeVerRedeNaCentral(gerente)).toBe(false);
+    expect(podeVerContaDaUnidade(gerente, "a")).toBe(true);
+    expect(podeVerContaDaUnidade(gerente, "b")).toBe(false);
+    expect(podeVerContaDaRede(gerente)).toBe(false);
     const financeiro = sessao({ rolesByClinic: { f: ["finance_franchisor"] }, permissoes });
-    expect(podeVerUnidadeNaCentral(financeiro, "b")).toBe(true);
-    expect(podeVerRedeNaCentral(financeiro)).toBe(true);
+    expect(podeVerContaDaUnidade(financeiro, "b")).toBe(true);
+    expect(podeVerContaDaRede(financeiro)).toBe(true);
   });
 
   it("gravar a chave: Admin sempre; Gerente só com a permissão e só na própria unidade; Financeiro nunca", () => {
@@ -407,10 +407,10 @@ describe("Central de Configuração", () => {
   });
 
   it("a aba da ASA0 existe nos dois níveis; aba desconhecida não abre", () => {
-    expect(ABAS_DA_CENTRAL.map((a) => a.id)).toEqual(["conta"]);
+    expect(ABAS_DA_CENTRAL.map((a) => a.id)[0]).toBe("conta");
     expect(abaValida("rede", "conta")).not.toBeNull();
     expect(abaValida("unidade", "conta")).not.toBeNull();
-    expect(abaValida("unidade", "financeiro")).toBeNull();
+    expect(abaValida("unidade", "fiscal")).toBeNull();
   });
 
   it("LISTA VAZIA não é 'pronta': é 'não consegui conferir'", () => {

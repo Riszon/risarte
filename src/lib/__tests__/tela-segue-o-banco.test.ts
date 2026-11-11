@@ -218,7 +218,9 @@ describe("as telas usam a regra que segue o banco", () => {
     expect(ler("src/app/(app)/financeiro/actions.ts")).toMatch(
       /if \(!bancoAceitaGravarNaRede\(session\)\)[\s\S]{0,200}multa, juros e carência/
     );
-    expect(ler("src/app/(app)/financeiro/configuracao/page.tsx")).toMatch(/canEdit=\{podeEditarRede\}/);
+    // ASA1: a tela virou a aba Financeiro da Central — a mesma regra lá.
+    expect(ler("src/app/(app)/central/aba-financeiro.tsx")).toMatch(/const podeEditar = canEditFinanceNetwork\(session\);/);
+    expect(ler("src/app/(app)/central/aba-financeiro.tsx")).toMatch(/canEdit=\{podeEditar\}/);
   });
   it("centros de custo: editar e criar seguem o banco", () => {
     expect(ler("src/app/(app)/financeiro/centros-de-custo/page.tsx")).toMatch(
@@ -236,7 +238,7 @@ describe("as telas usam a regra que segue o banco", () => {
     expect(ler("src/app/(app)/financeiro/conciliacao/reconciliation-board.tsx")).toMatch(/Só consulta: quem cadastra a conta bancária é/);
     expect(ler("src/app/(app)/estoque/stock-client.tsx")).toMatch(/O cadastro de itens é da rede: quem faz é/);
     expect(ler("src/app/(app)/compras/purchases-client.tsx")).toMatch(/Quem monta e envia a lista de compras/);
-    expect(ler("src/app/(app)/financeiro/configuracao/page.tsx")).toMatch(/Quem altera multa, juros e carência é/);
+    expect(ler("src/app/(app)/central/aba-financeiro.tsx")).toMatch(/Quem altera multa e juros é/);
     expect(ler("src/app/(app)/financeiro/fluxo-de-caixa/cash-flow-client.tsx")).toMatch(/href="\/financeiro\/conciliacao"/);
   });
 });

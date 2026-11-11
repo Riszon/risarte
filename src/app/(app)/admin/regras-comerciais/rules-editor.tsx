@@ -40,15 +40,50 @@ export function CommercialRulesEditor({
   rows,
   clinics,
   validadePronta = false,
+  escopo,
 }: {
   rows: RuleRowUi[];
   clinics: { id: string; name: string }[];
   /** OD4: a coluna da validade só existe depois da 0313. */
   validadePronta?: boolean;
+  /**
+   * ASA1 (aba Comercial da Central): mostra SÓ um nível — o padrão da rede,
+   * ou o ajuste de uma unidade (existente ou novo). Sem escopo, a tela antiga.
+   */
+  escopo?: "rede" | { clinicId: string; nome: string };
 }) {
   const networkRule = rows.find((r) => r.clinic_id === null) ?? null;
-  const unitRules = rows.filter((r) => r.clinic_id !== null);
+  // O estado vem ANTES dos retornos do escopo (regra dos hooks do React).
   const [addUnitId, setAddUnitId] = useState("");
+  if (escopo === "rede") {
+    return (
+      <RuleForm
+        title="Padrão da rede"
+        subtitle="Vale para todas as unidades que não tiverem ajuste próprio."
+        clinicId={null}
+        rule={networkRule}
+        validadePronta={validadePronta}
+      />
+    );
+  }
+  if (escopo) {
+    const daUnidade = rows.find((r) => r.clinic_id === escopo.clinicId) ?? null;
+    return (
+      <RuleForm
+        title={escopo.nome}
+        subtitle={
+          daUnidade
+            ? "Cada campo preenchido vence o padrão da rede nesta unidade; campo vazio segue a rede."
+            : "Esta unidade segue o padrão da rede em tudo. Preencha só o que for diferente e salve."
+        }
+        clinicId={escopo.clinicId}
+        rule={daUnidade}
+        removableId={daUnidade?.id}
+        validadePronta={validadePronta}
+      />
+    );
+  }
+  const unitRules = rows.filter((r) => r.clinic_id !== null);
 
   const clinicName = (id: string | null) =>
     clinics.find((c) => c.id === id)?.name ?? "Unidade";

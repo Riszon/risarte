@@ -310,8 +310,9 @@ const ADMIN_ITEMS = [
   // antes de o riSZon real ser liberado.
   { href: "/admin/certificacao", label: "Certificação", icon: GraduationCap },
   { href: "/admin/sla", label: "Prazos (SLA)", icon: Clock },
-  { href: "/admin/regras-comerciais", label: "Regras Comerciais", icon: BadgePercent },
-  // ASA0 (4002): a Central de Configuração (conta Asaas e tarifas).
+  // ASA1: as Regras Comerciais viraram a aba Comercial da Central.
+  { href: "/central/rede/comercial", label: "Regras Comerciais", icon: BadgePercent },
+  // ASA0 (4002): a Central de Configuração (conta Asaas, Financeiro, Comercial).
   { href: CENTRAL_ITEM.href, label: CENTRAL_ITEM.label, icon: CENTRAL_ITEM.icon },
   { href: "/admin/agenda", label: "Config. Agenda", icon: CalendarClock },
   // 0268: a agenda do comercial é OUTRA coisa — online, sem sala nem cadeira,

@@ -62,6 +62,36 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.424.0",
+    data: "2026-11-11",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4003, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Central de Configuração: abas Financeiro e Comercial, e o responsável financeiro",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A Configuração financeira (multa, juros, arredondamento e alertas) e as Regras Comerciais passaram para a Central de Configuração, nas abas Financeiro e Comercial. Os menus antigos levam até lá. Na unidade, cada campo diz se está herdado da rede ou personalizado; campo vazio segue a rede.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A carência de multa e juros agora é fixa em zero: o Asaas não aplica carência, então multa e juros contam do dia seguinte ao vencimento.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No cadastro do paciente, marque qual responsável é o financeiro (quem paga as cobranças). Paciente menor precisa de um marcado; adulto pode ter um responsável financeiro opcional, quando outra pessoa paga o tratamento.",
+        papeis: ["receptionist", "sdr"],
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.423.0",
     data: "2026-11-11",
     // Sem migração do CORE: as desta entrega são da integração Asaas
@@ -74,14 +104,14 @@ export const CHANGELOG: Versao[] = [
         texto:
           "Administração → Central de Configuração (só o Admin Master, por enquanto): a conta Asaas de cada unidade, com a chave gravada num cofre e nunca mais exibida, o termo de autorização do franqueado, as tarifas do Asaas por meio de pagamento e a lista do que falta para a unidade poder cobrar. Nada é cobrado ainda, e só contas de teste são aceitas.",
         papeis: [],
-        manual: "13g. Para o Admin Master: a Central de Configuração",
+        manual: "13g. A Central de Configuração",
       },
       {
         tipo: "aviso",
         texto:
           "O riSZon confere cada conta Asaas uma vez por semana. Se o Asaas recusar a chave, a unidade deixa de estar pronta para cobrar e o Admin Master recebe um aviso no sino.",
         papeis: [],
-        manual: "13g. Para o Admin Master: a Central de Configuração",
+        manual: "13g. A Central de Configuração",
       },
     ],
   },

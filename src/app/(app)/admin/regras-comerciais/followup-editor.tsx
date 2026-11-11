@@ -23,13 +23,42 @@ const selectClass =
 export function FollowupCadenceEditor({
   rows,
   clinics,
+  escopo,
 }: {
   rows: FollowupRowUi[];
   clinics: { id: string; name: string }[];
+  /** ASA1 (aba Comercial da Central): só a rede, ou só uma unidade. */
+  escopo?: "rede" | { clinicId: string; nome: string };
 }) {
   const networkRow = rows.find((r) => r.clinic_id === null) ?? null;
-  const unitRows = rows.filter((r) => r.clinic_id !== null);
+  // O estado vem ANTES do retorno do escopo (regra dos hooks do React).
   const [addUnitId, setAddUnitId] = useState("");
+  if (escopo) {
+    const daUnidade = escopo === "rede" ? null : (rows.find((r) => r.clinic_id === escopo.clinicId) ?? null);
+    return (
+      <div className="space-y-2">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Cadência do follow-up</h2>
+          <p className="text-sm text-muted-foreground">
+            Quantas tentativas o Consultor faz, de quanto em quanto tempo, e o prazo máximo. Esgotou → o cliente vai à
+            Gerente (follow-up na clínica).
+          </p>
+        </div>
+        {escopo === "rede" ? (
+          <CadenceForm title="Padrão da rede" subtitle="Vale para todas as unidades sem cadência própria." clinicId={null} row={networkRow} />
+        ) : (
+          <CadenceForm
+            title={escopo.nome}
+            subtitle={daUnidade ? "Cadência própria desta unidade." : "Esta unidade segue a cadência da rede. Salve para ter uma própria."}
+            clinicId={escopo.clinicId}
+            row={daUnidade}
+            removableId={daUnidade?.id}
+          />
+        )}
+      </div>
+    );
+  }
+  const unitRows = rows.filter((r) => r.clinic_id !== null);
 
   const clinicName = (id: string | null) =>
     clinics.find((c) => c.id === id)?.name ?? "Unidade";

@@ -13,6 +13,7 @@ import {
   type AgendaSettingRow,
 } from "@/lib/agenda-settings";
 import { holidayOn } from "@/lib/holidays";
+import { erroDosResponsaveis, normalizarPagador, ordemDeGravacao } from "@/lib/responsaveis";
 
 export type DuplicateInfo = {
   clientId: string;
@@ -95,6 +96,14 @@ export type GuardianInput = {
   /** ZS2 (0341): para a assinatura digital quando o paciente é menor. */
   email: string | null;
   guardianClientId: string | null;
+  /**
+   * ASA1 (4003): o identificador do responsável que já existe — com ele o
+   * salvar ATUALIZA a linha em vez de apagar e recriar (o pagador das
+   * cobranças precisa de identificador estável). Nulo = responsável novo.
+   */
+  id?: string | null;
+  /** ASA1 (4003): o responsável financeiro — quem paga as cobranças. */
+  isFinancial?: boolean;
 };
 
 // A conta da idade mora em `@/lib/idade` (achado AP3): ela era feita aqui com
@@ -107,7 +116,11 @@ function parseGuardians(raw: string): GuardianInput[] | null {
     for (const g of parsed) {
       if (!g.fullName?.trim() || !g.relationship?.trim()) return null;
     }
-    return parsed;
+    return parsed.map((g) => ({
+      ...g,
+      id: typeof g.id === "string" && /^[0-9a-f-]{36}$/i.test(g.id) ? g.id : null,
+      isFinancial: g.isFinancial === true,
+    }));
   } catch {
     return null;
   }
@@ -147,19 +160,19 @@ function parseClientForm(formData: FormData) {
   }
 
   const birthDate = field(formData, "birth_date")!;
-  const guardians = parseGuardians(String(formData.get("guardians") ?? "[]"));
-  if (guardians === null) {
+  const lidos = parseGuardians(String(formData.get("guardians") ?? "[]"));
+  if (lidos === null) {
     return {
       error:
         "Dados do responsável incompletos: nome e parentesco são obrigatórios." as const,
     };
   }
-  if (birthDate && ehMenorDeIdade(birthDate) && guardians.length === 0) {
-    return {
-      error:
-        "Cliente menor de 18 anos: informe ao menos um responsável." as const,
-    };
-  }
+  // ASA1 (4003): menor tem exatamente um responsável financeiro (com um só,
+  // ele é marcado sozinho); adulto pode ter um pagador opcional.
+  const menor = Boolean(birthDate && ehMenorDeIdade(birthDate));
+  const guardians = normalizarPagador(lidos, menor);
+  const erroDoPagador = erroDosResponsaveis(guardians, menor);
+  if (erroDoPagador) return { error: erroDoPagador };
 
   const phone = field(formData, "phone");
   const zipCode = field(formData, "zip_code");
@@ -191,30 +204,73 @@ function parseClientForm(formData: FormData) {
   };
 }
 
+/**
+ * ASA1 (4003): GRAVA OS RESPONSÁVEIS SEM TROCAR O IDENTIFICADOR. Antes era
+ * "apaga tudo e reinsere", e cada edição do cadastro mudava o id de todos os
+ * responsáveis — o pagador das cobranças precisa de id estável. Agora:
+ * atualiza quem continua, insere quem é novo e apaga só quem saiu.
+ *
+ * ⚠️ O CÓDIGO PODE IR AO AR ANTES DA 4003 (CLAUDE.md §0b): sem a coluna
+ * `is_financial`, grava sem ela.
+ */
 async function saveGuardians(
   clientId: string,
   guardians: GuardianInput[]
-): Promise<void> {
+): Promise<string | null> {
   const supabase = await createClient();
-  // Replace strategy: guardians are few; delete + reinsert keeps it simple.
-  await supabase.from("client_guardians").delete().eq("client_id", clientId);
-  if (guardians.length > 0) {
-    const { error } = await supabase.from("client_guardians").insert(
-      guardians.map((g) => ({
-        client_id: clientId,
-        guardian_client_id: g.guardianClientId,
-        full_name: g.fullName.trim(),
-        cpf: g.cpf ? formatCpf(g.cpf) : null,
-        birth_date: g.birthDate || null,
-        relationship: g.relationship.trim(),
-        phone: g.phone ? formatPhone(g.phone) : null,
-        // ZS2 (0341): sem esta linha, salvar o cadastro apagava o e-mail do
-        // responsável (a gravação é apagar + reinserir).
-        email: g.email?.trim().toLowerCase() || null,
-      }))
-    );
-    if (error) console.error("saveGuardians failed:", error.message);
+  const { data: atuais, error: erroDaLeitura } = await supabase
+    .from("client_guardians")
+    .select("id")
+    .eq("client_id", clientId);
+  if (erroDaLeitura) {
+    console.error("saveGuardians read failed:", erroDaLeitura.message);
+    return "Não foi possível ler os responsáveis para gravar.";
   }
+  const coluna = await supabase.from("client_guardians").select("is_financial").limit(1);
+  const comPagador = !coluna.error;
+
+  const idsAtuais = new Set((atuais ?? []).map((g) => g.id as string));
+  const continuam = guardians.filter((g) => g.id && idsAtuais.has(g.id));
+  const novos = guardians.filter((g) => !g.id || !idsAtuais.has(g.id));
+  const sairam = [...idsAtuais].filter((id) => !continuam.some((g) => g.id === id));
+
+  const linha = (g: GuardianInput) => ({
+    guardian_client_id: g.guardianClientId,
+    full_name: g.fullName.trim(),
+    cpf: g.cpf ? formatCpf(g.cpf) : null,
+    birth_date: g.birthDate || null,
+    relationship: g.relationship.trim(),
+    phone: g.phone ? formatPhone(g.phone) : null,
+    // ZS2 (0341): o e-mail do responsável, para a assinatura digital.
+    email: g.email?.trim().toLowerCase() || null,
+    ...(comPagador ? { is_financial: g.isFinancial === true } : {}),
+  });
+
+  if (sairam.length > 0) {
+    const { error } = await supabase.from("client_guardians").delete().in("id", sairam);
+    if (error) {
+      console.error("saveGuardians delete failed:", error.message);
+      return "Não foi possível remover o responsável que saiu.";
+    }
+  }
+  // Quem deixa de ser pagador grava primeiro (o banco confere "um só").
+  for (const g of ordemDeGravacao(continuam.map((x) => ({ ...x, isFinancial: x.isFinancial === true })))) {
+    const { error } = await supabase.from("client_guardians").update(linha(g)).eq("id", g.id!);
+    if (error) {
+      console.error("saveGuardians update failed:", error.message);
+      return "Não foi possível gravar os responsáveis.";
+    }
+  }
+  if (novos.length > 0) {
+    const { error } = await supabase
+      .from("client_guardians")
+      .insert(novos.map((g) => ({ client_id: clientId, ...linha(g) })));
+    if (error) {
+      console.error("saveGuardians insert failed:", error.message);
+      return "Não foi possível gravar os responsáveis.";
+    }
+  }
+  return null;
 }
 
 /** Autofill helper: is this CPF already a Risarte client? */
@@ -458,7 +514,10 @@ export async function createClientRecord(
     return { ok: false, error: "Não foi possível cadastrar o cliente." };
   }
 
-  await saveGuardians(data.id, parsed.guardians);
+  // O cliente já foi criado: uma falha aqui não desfaz o cadastro (a ficha
+  // mostra que falta o responsável, e quem cadastra completa na edição).
+  const erroDosResp = await saveGuardians(data.id, parsed.guardians);
+  if (erroDosResp) console.error("createClientRecord: guardians not saved");
 
   await logAudit({
     action: "create",
@@ -542,7 +601,10 @@ export async function updateClientRecord(
     return { ok: false, error: "Não foi possível salvar as alterações." };
   }
 
-  await saveGuardians(clientId, parsed.guardians);
+  const erroDosResp = await saveGuardians(clientId, parsed.guardians);
+  if (erroDosResp) {
+    return { ok: false, error: `Os dados do cliente foram salvos, mas os responsáveis não: ${erroDosResp}` };
+  }
 
   if (changedFields.length > 0) {
     await supabase.from("client_changes").insert({

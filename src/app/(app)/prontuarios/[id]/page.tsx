@@ -511,6 +511,18 @@ export default async function ClientDetailPage(
       }[]
     >();
 
+  // ASA1 (4003): quem é o responsável financeiro. Lido À PARTE: antes da
+  // 4003 a coluna não existe, e a ficha abre igual, só sem a marca.
+  const pagadores = new Set<string>();
+  if ((guardians ?? []).length > 0) {
+    const { data: marcas } = await supabase
+      .from("client_guardians")
+      .select("id, is_financial")
+      .eq("client_id", id)
+      .returns<{ id: string; is_financial: boolean }[]>();
+    for (const m of marcas ?? []) if (m.is_financial) pagadores.add(m.id);
+  }
+
   // I6: quem mais está no Risarte Empresarial junto com este cliente
   // (titular ↔ dependentes). Vem por função com guarda de acesso (0175).
   type EmpFamily = {
@@ -3106,6 +3118,8 @@ export default async function ClientDetailPage(
               phone: g.phone,
               email: g.email,
               guardianClientId: g.guardian_client_id,
+              id: g.id,
+              isFinancial: pagadores.has(g.id),
             }))}
           />
 
@@ -3162,6 +3176,11 @@ export default async function ClientDetailPage(
                           {guardian.guardian_client_id && (
                             <Badge className="bg-gold text-gold-foreground text-[10px]">
                               Cliente Risarte
+                            </Badge>
+                          )}
+                          {pagadores.has(guardian.id) && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Responsável financeiro
                             </Badge>
                           )}
                         </p>

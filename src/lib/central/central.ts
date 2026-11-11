@@ -7,28 +7,36 @@
 // ACRESCENTA a sua aba em `ABAS_DA_CENTRAL` — nenhuma cria tela à parte.
 
 import { pode, type SessionContext } from "@/lib/auth";
+import { canConfigureFinanceNetwork, canViewFinance } from "@/lib/finance/access";
 
 // ---- quem abre -------------------------------------------------------------
-
-/** A Central aparece no menu? (`modulo.central` nasce só com o Admin Master.) */
-export function podeVerCentral(session: SessionContext): boolean {
-  return pode(session, "modulo.central");
-}
+//
+// ⚠️ DESDE A ASA1 A CENTRAL ABRE POR ABA. Cada aba tem quem a vê, e a Central
+// aparece para quem vê pelo menos uma:
+//   * Conta e tarifas — `modulo.central` (nasce só com o Admin Master);
+//   * Financeiro      — quem abria Financeiro › Configuração: a rede para quem
+//                       configura a rede; a unidade para quem tem função nela;
+//   * Comercial       — só o Admin Master (como Regras Comerciais sempre foi).
 
 const temPapel = (session: SessionContext, papel: string, clinicId?: string) =>
   clinicId
     ? (session.rolesByClinic[clinicId] ?? []).some((r) => r === papel)
     : Object.values(session.rolesByClinic).some((papeis) => papeis.some((r) => r === papel));
 
-/** O nível Rede: Admin Master e o Financeiro da Franqueadora. */
-export function podeVerRedeNaCentral(session: SessionContext): boolean {
-  if (!podeVerCentral(session)) return false;
+/** A conta Asaas (aba Conta e tarifas) — `modulo.central`. */
+export function podeVerContaAsaas(session: SessionContext): boolean {
+  return pode(session, "modulo.central");
+}
+
+/** A conta Asaas do nível Rede: Admin Master e o Financeiro da Franqueadora. */
+export function podeVerContaDaRede(session: SessionContext): boolean {
+  if (!podeVerContaAsaas(session)) return false;
   return session.isAdminMaster || temPapel(session, "finance_franchisor");
 }
 
-/** Uma unidade: quem vê a rede, e o Gerente da PRÓPRIA unidade. */
-export function podeVerUnidadeNaCentral(session: SessionContext, clinicId: string): boolean {
-  if (!podeVerCentral(session)) return false;
+/** A conta Asaas de uma unidade: quem vê a rede, e o Gerente da PRÓPRIA unidade. */
+export function podeVerContaDaUnidade(session: SessionContext, clinicId: string): boolean {
+  if (!podeVerContaAsaas(session)) return false;
   if (session.isAdminMaster || temPapel(session, "finance_franchisor")) return true;
   return temPapel(session, "unit_manager", clinicId);
 }
@@ -61,8 +69,9 @@ export type AbaDaCentral = {
 
 /**
  * O REGISTRO DE ABAS. A ordem aqui é a ordem da tela.
- * ASA1 acrescenta `financeiro` e `comercial`; ASA2, `cobranca`; ASA3,
- * `taxas`; ASA5, `empresarial`; ASA8, `fiscal`.
+ * ASA2 acrescenta `cobranca`; ASA3, `taxas`; ASA5, `empresarial`; ASA8,
+ * `fiscal`. Aba nova = uma entrada aqui, um ramo em `podeVerAba` e um ramo em
+ * `central_history` (banco).
  */
 export const ABAS_DA_CENTRAL: AbaDaCentral[] = [
   {
@@ -71,6 +80,20 @@ export const ABAS_DA_CENTRAL: AbaDaCentral[] = [
     descricao: "A conta Asaas, a chave de API (só gravação), o webhook e as tarifas por meio de pagamento.",
     niveis: ["rede", "unidade"],
     fase: "ASA0",
+  },
+  {
+    id: "financeiro",
+    rotulo: "Financeiro",
+    descricao: "Multa, juros, arredondamento e os alertas do financeiro. A carência é fixa em zero.",
+    niveis: ["rede", "unidade"],
+    fase: "ASA1",
+  },
+  {
+    id: "comercial",
+    rotulo: "Comercial",
+    descricao: "Desconto máximo e à vista, parcelamento, meios aceitos, parcela mínima, validade do orçamento e a cadência do follow-up.",
+    niveis: ["rede", "unidade"],
+    fase: "ASA1",
   },
 ];
 
@@ -82,8 +105,64 @@ export function abaValida(nivel: NivelDaCentral, id: string): AbaDaCentral | nul
   return abasDoNivel(nivel).find((a) => a.id === id) ?? null;
 }
 
+/** Esta pessoa vê esta aba, neste nível (e nesta unidade)? */
+export function podeVerAba(
+  session: SessionContext,
+  aba: string,
+  nivel: NivelDaCentral,
+  clinicId?: string | null
+): boolean {
+  if (!abaValida(nivel, aba)) return false;
+  if (nivel === "unidade" && !clinicId) return false;
+  switch (aba) {
+    case "conta":
+      return nivel === "rede" ? podeVerContaDaRede(session) : podeVerContaDaUnidade(session, clinicId!);
+    case "financeiro":
+      if (canConfigureFinanceNetwork(session)) return true;
+      // Gerente e Franqueado: só a configuração da própria unidade.
+      return nivel === "unidade" && canViewFinance(session) && (session.rolesByClinic[clinicId!] ?? []).length > 0;
+    case "comercial":
+      return session.isAdminMaster;
+    default:
+      return false;
+  }
+}
+
+/** As abas que esta pessoa vê, na ordem da tela. */
+export function abasVisiveis(
+  session: SessionContext,
+  nivel: NivelDaCentral,
+  clinicId?: string | null
+): AbaDaCentral[] {
+  return abasDoNivel(nivel).filter((a) => podeVerAba(session, a.id, nivel, clinicId));
+}
+
+/** O nível Rede aparece para quem vê pelo menos uma aba dele. */
+export function podeVerRedeNaCentral(session: SessionContext): boolean {
+  return abasVisiveis(session, "rede").length > 0;
+}
+
+/** Uma unidade aparece para quem vê pelo menos uma aba dela. */
+export function podeVerUnidadeNaCentral(session: SessionContext, clinicId: string): boolean {
+  return abasVisiveis(session, "unidade", clinicId).length > 0;
+}
+
+/**
+ * A Central aparece no menu? Para quem vê pelo menos uma aba em algum lugar:
+ * a conta Asaas (`modulo.central`), o Financeiro (quem tem o módulo) ou o
+ * Comercial (Admin Master).
+ */
+export function podeVerCentral(session: SessionContext): boolean {
+  return session.isAdminMaster || podeVerContaAsaas(session) || canViewFinance(session);
+}
+
 export const rotaDaRede = (aba = "conta") => `/central/rede/${aba}`;
 export const rotaDaUnidade = (clinicId: string, aba = "conta") => `/central/unidades/${clinicId}/${aba}`;
+
+/** A primeira aba que a pessoa vê (o destino de "abrir a unidade" ou "abrir a rede"). */
+export function primeiraAba(session: SessionContext, nivel: NivelDaCentral, clinicId?: string | null): string | null {
+  return abasVisiveis(session, nivel, clinicId)[0]?.id ?? null;
+}
 
 // ---- a prontidão ----------------------------------------------------------------
 
@@ -158,29 +237,8 @@ export const ESTADO_DA_PRONTIDAO: Record<EstadoDaProntidao, { rotulo: string; to
   nao_conferida: { rotulo: "Não foi possível conferir", tom: "bg-muted text-muted-foreground" },
 };
 
-// ---- a herança campo a campo -------------------------------------------------------
-
-export type OrigemDoValor = "herdado" | "personalizado" | "sem_valor";
-
-/**
- * A regra de toda aba com dois níveis (o padrão já usado em `finance_settings`):
- * campo VAZIO na unidade herda o da rede. `null` e `undefined` são vazio; zero
- * e texto vazio digitado NÃO são (zero é um valor: "sem multa" é uma decisão).
- */
-export function valorEfetivo<T>(
-  daUnidade: T | null | undefined,
-  daRede: T | null | undefined
-): { valor: T | null; origem: OrigemDoValor } {
-  if (daUnidade !== null && daUnidade !== undefined) return { valor: daUnidade, origem: "personalizado" };
-  if (daRede !== null && daRede !== undefined) return { valor: daRede, origem: "herdado" };
-  return { valor: null, origem: "sem_valor" };
-}
-
-export const ORIGEM_DO_VALOR: Record<OrigemDoValor, string> = {
-  herdado: "herdado da rede",
-  personalizado: "personalizado",
-  sem_valor: "sem valor na rede",
-};
+// A herança campo a campo mora em `heranca.ts` (puro, usado no navegador).
+export { ORIGEM_DO_VALOR, valorEfetivo, type OrigemDoValor } from "./heranca";
 
 // ---- a chave de API: o aviso do tempo sem uso ---------------------------------------
 

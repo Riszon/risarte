@@ -400,6 +400,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (Asaas — ASA1, entrega 1) — PC Administrador (core 0.423.0 → 0.424.0, Asaas 0.2.0, migração 4003; worktree `wt-asaas`)**
+
+- **Abas Financeiro e Comercial da Central, responsável financeiro e carência
+  fixa em zero** (estado em `docs/asaas/ESTADO.md`; decisões na seção 14 da
+  especificação). ⚠️ **A Central abre por aba** (`podeVerAba`): o Gerente e o
+  Franqueado passam a vê-la. ⚠️ **Componente de navegador não importa
+  `central.ts`** (herança pura em `heranca.ts`). ⚠️ **`saveGuardians` atualiza
+  por id**; os responsáveis vão sempre no formulário.
+- ⚠️ **Banco de treino por IPv4:** o direto não respondeu deste PC; use
+  `TEST_DB_URL` pelo ambiente com o pooler (`scripts/test-db.mjs`).
+- ⏳ **4003 só no treino.** A entrega 2 (cobrança) espera as decisões do 14.6.
+
 **10/11/2026 (Asaas — ASA0) — PC Administrador (Asaas 0.1.0, migrações 4000 a 4002; core sem versão nova; worktree `wt-asaas`, branch `feat/asaas-integration`)**
 
 - **Integração Asaas, fase ASA0: Central de Configuração (casca + aba Conta e

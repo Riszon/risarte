@@ -1,4 +1,4 @@
-import { ORIGEM_DO_VALOR, type OrigemDoValor } from "@/lib/central/central";
+import { ORIGEM_DO_VALOR, type OrigemDoValor } from "@/lib/central/heranca";
 import { cn } from "@/lib/utils";
 
 /**

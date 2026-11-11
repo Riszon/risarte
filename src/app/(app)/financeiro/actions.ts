@@ -22,10 +22,15 @@ export type FinanceResult = { ok: boolean; error?: string };
  */
 export async function saveFinanceSettings(input: {
   clinicId: string | null;
-  lateFeePercent: number;
-  monthlyInterestPercent: number;
-  graceDays: number;
-  roundingMode: "half_up" | "half_even";
+  /**
+   * ASA1: na UNIDADE, `null` = o campo segue a rede (herança campo a campo,
+   * como `finance_settings` permite desde a 0230). Na REDE, todos obrigatórios.
+   */
+  lateFeePercent: number | null;
+  monthlyInterestPercent: number | null;
+  /** ASA1 (4003): carência FIXA EM ZERO — o Asaas não aplica carência. Ignorado. */
+  graceDays?: number | null;
+  roundingMode: "half_up" | "half_even" | null;
   /**
    * Teto da taxa de inadimplência (%). `null` na linha da UNIDADE significa
    * "segue a rede" — é o que faz a cascata existir (lição da 0230: cascata só
@@ -43,17 +48,27 @@ export async function saveFinanceSettings(input: {
     return { ok: false, error: `Só consulta: quem altera multa, juros e carência é ${QUEM_GRAVA_NA_REDE}.` };
   }
 
-  if (input.lateFeePercent < 0 || input.lateFeePercent > 2) {
+  const naRede = input.clinicId === null;
+  if (naRede && (input.lateFeePercent === null || input.monthlyInterestPercent === null || input.roundingMode === null)) {
+    return { ok: false, error: "O padrão da rede precisa de multa, juros e arredondamento — é ele que as unidades seguem." };
+  }
+  if (input.lateFeePercent !== null && (!Number.isFinite(input.lateFeePercent) || input.lateFeePercent < 0 || input.lateFeePercent > 2)) {
     return {
       ok: false,
       error: "A multa não pode passar de 2% (limite do Código de Defesa do Consumidor).",
     };
   }
-  if (input.monthlyInterestPercent < 0 || input.monthlyInterestPercent > 100) {
+  if (
+    input.monthlyInterestPercent !== null &&
+    (!Number.isFinite(input.monthlyInterestPercent) || input.monthlyInterestPercent < 0 || input.monthlyInterestPercent > 100)
+  ) {
     return { ok: false, error: "Juros ao mês inválido." };
   }
-  if (!Number.isInteger(input.graceDays) || input.graceDays < 0) {
-    return { ok: false, error: "A carência precisa ser um número de dias." };
+  if (input.graceDays !== undefined && input.graceDays !== null && input.graceDays !== 0) {
+    return {
+      ok: false,
+      error: "A carência é fixa em zero: o Asaas não aplica carência; multa e juros contam do dia seguinte ao vencimento.",
+    };
   }
   const teto = input.overduePercent ?? null;
   if (teto !== null && (!Number.isFinite(teto) || teto < 0 || teto > 100)) {
@@ -78,7 +93,8 @@ export async function saveFinanceSettings(input: {
       clinic_id: input.clinicId,
       late_fee_percent: input.lateFeePercent,
       monthly_interest_percent: input.monthlyInterestPercent,
-      grace_days: input.graceDays,
+      // ASA1 (4003): zero na rede; vazio (segue a rede) na unidade.
+      grace_days: naRede ? 0 : null,
       rounding_mode: input.roundingMode,
       alert_overdue_percent: teto,
       updated_at: new Date().toISOString(),
@@ -104,6 +120,7 @@ export async function saveFinanceSettings(input: {
     clinicId: input.clinicId ?? undefined,
   });
   revalidatePath("/financeiro/configuracao");
+  revalidatePath("/central", "layout");
   return { ok: true };
 }
 
@@ -128,6 +145,7 @@ export async function clearFinanceSettings(
     clinicId,
   });
   revalidatePath("/financeiro/configuracao");
+  revalidatePath("/central", "layout");
   return { ok: true };
 }
 

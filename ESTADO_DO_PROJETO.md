@@ -2,6 +2,18 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔌 0.424.0 / ASAAS 0.2.0 — ASA1, ENTREGA 1: ABAS FINANCEIRO E COMERCIAL E O RESPONSÁVEL FINANCEIRO (11/11/2026; migração 4003)
+>
+> Estado completo em `docs/asaas/ESTADO.md`; decisões na seção 14 da
+> especificação. **Configuração financeira** e **Regras Comerciais** viraram as
+> abas **Financeiro** e **Comercial** da Central (os endereços antigos
+> redirecionam); a Central passa a abrir por aba — o Gerente e o Franqueado a
+> veem com a aba Financeiro da própria unidade. **Carência fixa em zero**
+> (`finance_settings_grace_zero`). **Responsável financeiro**
+> (`client_guardians.is_financial`, um por cliente; o salvar não apaga e recria
+> mais). Ensaio 25/25, suíte 3.908, telas conferidas por papel no servidor
+> local. ⏳ 4003 só no treino; produção antes da entrada no `main`.
+>
 > ## 🔌 ASAAS 0.1.0 — INTEGRAÇÃO ASAAS, FASE ASA0: A FUNDAÇÃO (10/11/2026; migrações 4000 a 4002)
 >
 > **Projeto novo, com documento de estado próprio: `docs/asaas/ESTADO.md`**

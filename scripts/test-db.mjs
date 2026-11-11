@@ -26,6 +26,12 @@ export function testEnv() {
       })
   );
 
+  // CAMINHO ALTERNATIVO (11/11/2026): o endereço direto do banco só responde
+  // por IPv6, e houve dia em que a rede deste PC não alcançou. Quem precisar
+  // passa `TEST_DB_URL` pelo ambiente (o pooler do Supabase, por IPv4). A trava
+  // de produção abaixo vale igual: o endereço do pooler leva o `ref` do projeto.
+  if (process.env.TEST_DB_URL) env.TEST_DB_URL = process.env.TEST_DB_URL;
+
   for (const key of [
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",

@@ -26,8 +26,9 @@ import {
 } from "@/lib/asaas/link";
 import {
   abaValida,
-  podeVerRedeNaCentral,
-  podeVerUnidadeNaCentral,
+  podeVerAba,
+  podeVerContaDaRede,
+  podeVerContaDaUnidade,
   podeVincularContaPelaTela,
 } from "@/lib/central/central";
 
@@ -188,8 +189,8 @@ export async function verificarAgora(accountId: string): Promise<Resultado> {
   const conta = await contaVisivel(accountId);
   if (!conta) return { ok: false, error: MENSAGENS.ACCOUNT_NOT_FOUND };
   const podeVer = conta.clinic_id
-    ? podeVerUnidadeNaCentral(session, conta.clinic_id)
-    : podeVerRedeNaCentral(session);
+    ? podeVerContaDaUnidade(session, conta.clinic_id)
+    : podeVerContaDaRede(session);
   if (!podeVer) return { ok: false, error: "Você não tem permissão para esta ação." };
   if (conta.status === "awaiting_key") return { ok: false, error: "Grave a chave de API antes de verificar." };
   if (!isAdminClientConfigured()) return { ok: false, error: SEM_SERVIDOR };
@@ -255,7 +256,7 @@ export async function carregarHistorico(
   const nivel = clinicId ? "unidade" : "rede";
   if (!abaValida(nivel, aba)) return { ok: false, error: "Aba desconhecida.", rows: [] };
   if (clinicId !== null && !UUID.test(clinicId)) return { ok: false, error: "Unidade inválida.", rows: [] };
-  const podeVer = clinicId ? podeVerUnidadeNaCentral(session, clinicId) : podeVerRedeNaCentral(session);
+  const podeVer = podeVerAba(session, aba, nivel, clinicId);
   if (!podeVer) return { ok: false, error: "Você não tem permissão para ver este histórico.", rows: [] };
 
   const supabase = await createClient();

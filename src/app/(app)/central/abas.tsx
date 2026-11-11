@@ -1,18 +1,17 @@
 import Link from "next/link";
-import { abasDoNivel, type NivelDaCentral } from "@/lib/central/central";
+import type { AbaDaCentral } from "@/lib/central/central";
 import { cn } from "@/lib/utils";
 
-/** As abas da Central no nível pedido. Cada fase acrescenta a sua em `ABAS_DA_CENTRAL`. */
+/** As abas da Central que ESTA pessoa vê (ver `abasVisiveis`), na ordem da tela. */
 export function AbasDaCentral({
-  nivel,
+  abas,
   ativa,
   hrefDaAba,
 }: {
-  nivel: NivelDaCentral;
+  abas: AbaDaCentral[];
   ativa: string;
   hrefDaAba: (aba: string) => string;
 }) {
-  const abas = abasDoNivel(nivel);
   return (
     <nav className="flex flex-wrap gap-1 border-b" aria-label="Abas da Central de Configuração">
       {abas.map((a) => (
@@ -39,8 +38,8 @@ export function AbasDaCentral({
 export function AvisoSemMigracao() {
   return (
     <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
-      A Central de Configuração ainda não existe neste banco (faltam as migrações 4000 a 4002). Nada pode ser gravado
-      até elas rodarem.
+      A conta Asaas ainda não existe neste banco (faltam as migrações 4000 a 4002). Nada pode ser gravado nesta aba até
+      elas rodarem.
     </p>
   );
 }

@@ -51,6 +51,7 @@ export async function saveAlertSettings(input: {
     clinicId: input.clinicId,
   });
   revalidatePath("/financeiro/configuracao");
+  revalidatePath("/central", "layout");
   return { ok: true };
 }
 
@@ -79,5 +80,6 @@ export async function checkFinanceAlertsNow(input: {
   }
 
   revalidatePath("/financeiro/configuracao");
+  revalidatePath("/central", "layout");
   return { ok: true, count: Number(data ?? 0) };
 }
