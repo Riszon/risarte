@@ -183,6 +183,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   payout_report: "Relatório de repasse",
   payout_payment: "Conta a pagar do repasse",
   payout_failure: "Ocorrência de falha no repasse",
+  payout_mediation: "Conversa sobre divergência de repasse",
   network_fee: "Taxa da rede",
   network_fee_clear: "Taxa da rede (acordo removido)",
   network_fee_type: "Tipo de taxa da rede",

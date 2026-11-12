@@ -208,6 +208,7 @@ export function ChatHub({
   totalUsers,
   canMessageUnits,
   initialBlockedIds = [],
+  initialChannelId = null,
 }: {
   meId: string;
   initialChannels: ChatChannel[];
@@ -217,6 +218,8 @@ export function ChatHub({
   canMessageUnits: boolean;
   /** Ids bloqueados no chat (só o Admin recebe a lista, para gerenciar). */
   initialBlockedIds?: string[];
+  /** Abrir já nesta conversa (só se ela estiver entre as da pessoa). */
+  initialChannelId?: string | null;
 }) {
   const [channels, setChannels] = useState<ChatChannel[]>(initialChannels);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(
@@ -229,7 +232,9 @@ export function ChatHub({
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(
-    initialChannels[0]?.id ?? null
+    (initialChannelId && initialChannels.some((c) => c.id === initialChannelId)
+      ? initialChannelId
+      : initialChannels[0]?.id) ?? null
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [people, setPeople] = useState<Record<string, ChatPerson>>({});

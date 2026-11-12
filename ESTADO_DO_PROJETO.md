@@ -2,6 +2,45 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🟡 0.436.0 — REPASSE: A DIVERGÊNCIA QUE CHEGA AO FINANCEIRO (12/11/2026; migração 0402)
+>
+> Pedido do dono depois do RP-000006 da Londrina (treino): o dentista
+> contestou 2×, o Financeiro quis "dar um realzinho a mais" mas escolheu
+> **adiar**; o procedimento voltou no RP-000023 com o mesmo R$ 155,00 e
+> ninguém viu a história. E "corrigir" liberava o valor novo direto, sem a
+> unidade nem o dentista. Decisões em `docs/Financeiro/REPASSE-PLANO.md`
+> (D1–D2 da divergência, as duas como recomendado).
+> - **Roteiro** (`payout_mediation_contacts`, só cresce, trava
+>   `payout_mediation_contacts_lock`): o Financeiro registra a conversa com
+>   a unidade E com o dentista (ou "sem contato") antes de decidir; sem os
+>   dois, `payout_report_finance_decide` recusa (MEDIATION_REQUIRED). Conta
+>   só o registrado depois de `finance_since` (gatilho
+>   `payout_report_items_finance_since`, `clock_timestamp()`).
+>   Orientação obrigatória (GUIDANCE_REQUIRED). Lembrete com 3 dias úteis
+>   parado (`payout_report_deadline_run` recriada).
+> - ⚠️ **"Corrigir" só PROPÕE** (`proposed_amount_cents`): estados
+>   `correcao_unidade` (`payout_report_value_ack`, quem aprova) →
+>   `correcao_dentista` (`payout_report_value_respond`). Não concordou →
+>   `no_financeiro` com `final_round`; aí corrigir libera direto. Sem
+>   aprovador na unidade, pula a unidade. `_payout_report_sync` recriada.
+> - ⚠️ **Achado e corrigido:** o valor corrigido ficava só em
+>   `payout_report_items`; o Histórico (0401) lê `provider_payouts` e
+>   mostrava o antigo. Agora o aceite (e a rodada final) grava nos dois; a
+>   0402 levou os corrigidos antigos.
+> - `payout_report_finance_decide` mudou de assinatura (+`p_guidance`; a
+>   antiga é derrubada). `items_detail`, `my_payout_report_detail`,
+>   `my_payout_reports`, `payout_reports_to_approve` recriadas (adiado com
+>   `prev_*` por `_payout_item_origin`). Portas novas
+>   `payout_mediation_record/list/people` (só o Financeiro; telefone da
+>   ficha do Risartano).
+> - Tela: `roteiro-divergencia.tsx` (WhatsApp com mensagem pronta, Ligar,
+>   Chat — `/chat?canal=` abre a conversa), "Estou ciente" do aprovador,
+>   Aceitar/Não concordo do dentista, explicação do "Registrar falha"
+>   (`payout-divergencia.ts`). Manual 6.4 e 6.6; EV-333.
+> - Ensaio no treino em transação desfeita 30/30; régua
+>   `repasse-divergencia.test.ts` provada quebrando 3×. 🟡 **0402 só no
+>   treino.** **Não visto na tela.**
+>
 > ## 🔌 0.435.0 / ASAAS 0.4.0 — ASA2, ENTREGA 1: O AVISO DO ASAAS VIRA BAIXA (11/11/2026; migração 4005)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na seção 16 da especificação.

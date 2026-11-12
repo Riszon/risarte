@@ -19,7 +19,8 @@ export default async function PayoutReportPage(
 
   const { id } = await props.params;
   const supabase = await createClient();
-  const dados = await carregarRelatorio(supabase, id);
+  const podeGerir = canManagePayoutReports(session);
+  const dados = await carregarRelatorio(supabase, id, { roteiro: podeGerir });
   if (!dados) notFound();
 
   return (
@@ -29,10 +30,12 @@ export default async function PayoutReportPage(
         items={dados.items}
         history={dados.history}
         payments={dados.payments}
-        canManage={canManagePayoutReports(session)}
+        canManage={podeGerir}
         canApprove={dados.canApprove}
         backHref="/financeiro/repasses/relatorios"
         loadFailed={dados.loadFailed}
+        mediation={dados.mediation}
+        people={dados.people}
       />
     </div>
   );

@@ -36,6 +36,17 @@ import {
   type ReportPayment,
 } from "@/lib/finance/payout-report";
 import {
+  FALHA_QUANDO_USAR,
+  FALHA_QUEM_DECIDE,
+  FALHA_SAIDAS,
+  FALHA_SOZINHA,
+  guidanceError,
+  roteiro,
+  type MediationContact,
+  type MediationPerson,
+} from "@/lib/finance/payout-divergencia";
+import { RoteiroDaDivergencia } from "./roteiro-divergencia";
+import {
   billPayoutReport,
   cancelPayoutReport,
   decideContestedItem,
@@ -44,6 +55,7 @@ import {
   sendPayoutReport,
 } from "../actions";
 import {
+  ackProposedValue,
   answerContest,
   approvePayoutReport,
   approverExcludeItem,
@@ -81,6 +93,8 @@ export function ReportDetail({
   canApprove,
   backHref,
   loadFailed,
+  mediation = [],
+  people = [],
 }: {
   report: Report;
   items: ReportItem[];
@@ -93,6 +107,9 @@ export function ReportDetail({
   canApprove: boolean;
   backHref: string;
   loadFailed: boolean;
+  /** 0402 — as conversas do roteiro e com quem falar (só o Financeiro recebe). */
+  mediation?: MediationContact[];
+  people?: MediationPerson[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -112,6 +129,7 @@ export function ReportDetail({
   const [answer, setAnswer] = useState<ManagerAction>("manter");
   const [decision, setDecision] = useState<FinanceAction>("manter");
   const [amount, setAmount] = useState("");
+  const [guidance, setGuidance] = useState("");
 
   const incluidos = items.filter((i) => i.status === "incluido");
   const excluidos = items.filter((i) => i.status === "excluido");
@@ -141,6 +159,7 @@ export function ReportDetail({
     setAnswer("manter");
     setDecision("manter");
     setAmount("");
+    setGuidance("");
   }
 
   function run(fn: () => Promise<Resultado>, sucesso: string) {
@@ -198,7 +217,19 @@ export function ReportDetail({
     );
   }
 
+  function confirmarCiencia(item: ReportItem) {
+    run(
+      () => ackProposedValue({ reportId: report.id, itemId: item.itemId, note: reason }),
+      "Confirmado. O dentista foi avisado para aceitar o valor novo."
+    );
+  }
+
   function decidir(item: ReportItem) {
+    if (!roteiro(mediation, item.itemId).podeDecidir) {
+      return void toast.error("Antes de decidir, registre a conversa com a unidade e com o dentista.");
+    }
+    const g = guidanceError(guidance);
+    if (g) return void toast.error(g);
     const novo = decision === "corrigir" ? parseBRLToCents(amount) : null;
     if (decision === "corrigir") {
       const e = correctionError(novo, item.amountCents);
@@ -214,8 +245,11 @@ export function ReportDetail({
           newAmountCents: novo,
           currentAmountCents: item.amountCents,
           exclusionKind: decision === "excluir" ? kind : null,
+          guidance,
         }),
-      "Decisão registrada."
+      decision === "corrigir" && !item.finalRound
+        ? "Valor proposto. A unidade confirma e o dentista aceita."
+        : "Decisão registrada. A orientação foi junto."
     );
   }
 
@@ -524,6 +558,10 @@ export function ReportDetail({
                   {incluidos.map((i) => {
                     const podeResponder = canAnswer && i.reviewState === "contestado";
                     const podeDecidir = canManage && i.reviewState === "no_financeiro";
+                    const podeConfirmar =
+                      canApprove &&
+                      report.status === "em_contestacao" &&
+                      i.reviewState === "correcao_unidade";
                     const aberto = open === i.itemId;
                     return (
                       <ItemRows
@@ -544,13 +582,19 @@ export function ReportDetail({
                           )}
                           {!aberto && podeDecidir && (
                             <Button size="sm" variant="outline" disabled={isPending} onClick={() => abrir(i.itemId)}>
-                              Decidir
+                              Resolver a divergência
+                            </Button>
+                          )}
+                          {!aberto && podeConfirmar && (
+                            <Button size="sm" variant="outline" disabled={isPending} onClick={() => abrir(i.itemId)}>
+                              Ver o valor novo
                             </Button>
                           )}
                           {!aberto &&
                             podeRegistrarFalha &&
                             !podeResponder &&
                             !podeDecidir &&
+                            !podeConfirmar &&
                             i.origin !== "desconto" &&
                             i.amountCents > 0 &&
                             !i.hasFailure && (
@@ -572,11 +616,7 @@ export function ReportDetail({
                         </td>
                         {open === `falha-${i.itemId}` ? (
                           <div className="space-y-2 rounded-lg border bg-muted/30 p-2">
-                            <p className="text-xs text-muted-foreground">
-                              Registra uma ocorrência sobre este procedimento. Quem
-                              aprova a equipe decide se foi falha do dentista; só
-                              então há desconto.
-                            </p>
+                            <ComoFuncionaAFalha />
                             <div className="flex flex-wrap items-end gap-2">
                               <label className="block min-w-0 flex-1">
                                 <Label className="text-[11px]">O que aconteceu (obrigatório)</Label>
@@ -594,8 +634,56 @@ export function ReportDetail({
                               </Button>
                             </div>
                           </div>
+                        ) : aberto && podeConfirmar ? (
+                          <div className="space-y-2 rounded-lg border bg-muted/30 p-2 text-sm">
+                            <p>
+                              O Financeiro propôs pagar{" "}
+                              <strong>{formatBRL(i.proposedAmountCents ?? 0)}</strong> no lugar
+                              de {formatBRL(i.amountCents)}.
+                            </p>
+                            {i.financeReason && (
+                              <p className="text-xs">
+                                <strong>Motivo:</strong> {i.financeReason}
+                              </p>
+                            )}
+                            {i.financeGuidance && (
+                              <p className="text-xs">
+                                <strong>Orientação do Financeiro:</strong> {i.financeGuidance}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Confirme que está ciente. Depois disso o dentista é avisado para
+                              aceitar; o valor só vale quando ele aceitar.
+                            </p>
+                            <div className="flex flex-wrap items-end gap-2">
+                              <label className="block min-w-0 flex-1">
+                                <Label className="text-[11px]">Comentário (opcional)</Label>
+                                <Input
+                                  className="h-8"
+                                  value={reason}
+                                  onChange={(e) => setReason(e.target.value)}
+                                />
+                              </label>
+                              <Button size="sm" disabled={isPending} onClick={() => confirmarCiencia(i)}>
+                                Estou ciente
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setOpen(null)}>
+                                Desistir
+                              </Button>
+                            </div>
+                          </div>
                         ) : aberto && (
                           <div className="space-y-2 rounded-lg border bg-muted/30 p-2">
+                            {podeDecidir && (
+                              <RoteiroDaDivergencia
+                                reportId={report.id}
+                                reportCode={report.code}
+                                item={i}
+                                people={people}
+                                contacts={mediation}
+                                history={history}
+                              />
+                            )}
                             {canAdjust && (
                               <KindRadios name={`ex-${i.itemId}`} kind={kind} onKind={setKind} />
                             )}
@@ -634,8 +722,18 @@ export function ReportDetail({
                                 {(
                                   [
                                     ["manter", "Manter o valor", "Libera para pagar pelo valor que está."],
-                                    ["corrigir", "Corrigir o valor", "Grava o valor novo (o antigo fica guardado) e libera para pagar."],
-                                    ["excluir", "Excluir do relatório", "O procedimento sai deste relatório."],
+                                    [
+                                      "corrigir",
+                                      "Pagar com outro valor",
+                                      i.finalRound
+                                        ? "Rodada final: grava o valor novo (o antigo fica guardado) e libera para pagar."
+                                        : "O valor novo vai para a unidade confirmar e para o dentista aceitar. Só vale depois do aceite.",
+                                    ],
+                                    [
+                                      "excluir",
+                                      "Tirar deste relatório",
+                                      "Adiar: volta no próximo relatório com o MESMO valor. Não pagar: fica fora. Para mudar o valor, use “Pagar com outro valor”.",
+                                    ],
                                   ] as [FinanceAction, string, string][]
                                 ).map(([a, titulo, ajuda]) => (
                                   <label key={a} className="flex items-start gap-2">
@@ -669,9 +767,17 @@ export function ReportDetail({
                                 {decision === "excluir" && (
                                   <KindRadios name={`dk-${i.itemId}`} kind={kind} onKind={setKind} />
                                 )}
-                                <p className="text-[11px] text-muted-foreground">
-                                  Esta é a decisão final sobre este procedimento.
-                                </p>
+                                <label className="block">
+                                  <Label className="text-[11px]">
+                                    Orientação para a unidade e o dentista (obrigatória) — o que
+                                    foi combinado e como evitar a divergência da próxima vez
+                                  </Label>
+                                  <Input
+                                    className="h-8"
+                                    value={guidance}
+                                    onChange={(e) => setGuidance(e.target.value)}
+                                  />
+                                </label>
                               </div>
                             )}
 
@@ -690,7 +796,7 @@ export function ReportDetail({
                               </label>
                               <Button
                                 size="sm"
-                                disabled={isPending}
+                                disabled={isPending || (podeDecidir && !roteiro(mediation, i.itemId).podeDecidir)}
                                 onClick={() =>
                                   podeDecidir
                                     ? decidir(i)
@@ -857,7 +963,11 @@ function ItemRows({
 }) {
   const [acoes, formulario] = children;
   const temConversa =
-    item.contestText || item.managerResponse || item.financeAction || item.reviewState;
+    item.contestText ||
+    item.managerResponse ||
+    item.financeAction ||
+    item.reviewState ||
+    item.prevReportCode;
   return (
     <>
       <tr className="align-top">
@@ -927,6 +1037,32 @@ function ItemRows({
                 {item.financeReason}
               </span>
             )}
+            {item.proposedAmountCents !== null && item.reviewState?.startsWith("correcao") && (
+              <span className="block">
+                <strong>Valor proposto:</strong> {formatBRL(item.proposedAmountCents)}
+                {item.unitAckAt
+                  ? ` · unidade ciente${item.unitAckName ? ` (${item.unitAckName})` : ""} em ${formatBrDateTime(item.unitAckAt)}`
+                  : ""}
+                {item.unitAckNote ? ` — ${item.unitAckNote}` : ""}
+              </span>
+            )}
+            {item.dentistValueReply && (
+              <span className="block">
+                <strong>Resposta do dentista ao valor:</strong> {item.dentistValueReply}
+              </span>
+            )}
+            {item.financeGuidance && (
+              <span className="block">
+                <strong>Orientação do Financeiro:</strong> {item.financeGuidance}
+              </span>
+            )}
+            {item.prevReportCode && (
+              <span className="block">
+                <strong>Veio adiado do {item.prevReportCode}</strong>
+                {item.prevReason ? `: ${item.prevReason}` : ""}
+                {item.prevGuidance ? ` · Orientação: ${item.prevGuidance}` : ""}
+              </span>
+            )}
           </td>
         </tr>
       )}
@@ -941,5 +1077,25 @@ function ItemRows({
         <td colSpan={5} className="border-b border-dashed p-0" />
       </tr>
     </>
+  );
+}
+
+/** 0402 — o que acontece ao registrar uma falha (pedido do dono). */
+function ComoFuncionaAFalha() {
+  return (
+    <div className="space-y-1.5 text-xs">
+      <p className="font-medium">Como funciona o registro de falha</p>
+      <p className="text-muted-foreground">{FALHA_QUANDO_USAR}</p>
+      <p className="text-muted-foreground">{FALHA_QUEM_DECIDE}</p>
+      <ul className="space-y-1">
+        {FALHA_SAIDAS.map((x) => (
+          <li key={x.titulo} className="rounded border bg-background p-1.5">
+            <strong>{x.titulo}.</strong> {x.texto}{" "}
+            <span className="text-muted-foreground">Exemplo: {x.exemplo}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-muted-foreground">{FALHA_SOZINHA}</p>
+    </div>
   );
 }

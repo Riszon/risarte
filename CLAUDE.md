@@ -400,6 +400,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**12/11/2026 (repasse, a divergência) — PC Administrador (core 0.435.0 → 0.436.0, migração 0402)**
+
+- **O roteiro da divergência e o valor novo que volta para aprovação**
+  (bloco 0.436.0 no ESTADO; decisões D1–D2 em
+  `docs/Financeiro/REPASSE-PLANO.md`).
+- ⚠️ **Decidir no Financeiro exige as duas conversas** (`payout_mediation_contacts`,
+  MEDIATION_REQUIRED) e a orientação. ⚠️ **"Corrigir" só propõe**
+  (`correcao_unidade` → `correcao_dentista`); só a rodada final
+  (`final_round`) libera direto. Ao recriar `payout_report_finance_decide`,
+  `_payout_report_sync` ou `payout_report_deadline_run`, partir da 0402.
+- ⚠️ **Valor de repasse que muda grava em `provider_payouts` também** (o
+  Histórico da 0401 lê de lá).
+- 🟡 **0402 só no treino**; falta o dono rodar na produção.
+
 **11/11/2026 (Asaas — ASA2, entrega 1) — PC Administrador (core 0.434.0 → 0.435.0, Asaas 0.4.0, migração 4005; worktree `wt-asaas`)**
 
 - **O aviso do Asaas vira baixa** (estado em `docs/asaas/ESTADO.md`; decisões

@@ -15,6 +15,13 @@ import {
   type ExclusionKind,
   type FinanceAction,
 } from "@/lib/finance/payout-report";
+import {
+  guidanceError,
+  mediationError,
+  type MediationChannel,
+  type MediationOutcome,
+  type MediationParty,
+} from "@/lib/finance/payout-divergencia";
 
 // Repasse, Etapa 2 (0390). Toda regra mora no banco; a guarda daqui é só para
 // a pessoa ouvir "não" antes de preencher.
@@ -109,8 +116,46 @@ export async function sendAllDraftReports(input: {
 }
 
 /**
- * 0391 — a DECISÃO FINAL do Financeiro sobre uma linha contestada duas vezes
- * (ou encaminhada pelo aprovador): manter, corrigir o valor ou excluir.
+ * 0402 — o ROTEIRO da divergência: o Financeiro registra a conversa com a
+ * unidade ou com o dentista (ou que não conseguiu contato). Sem os dois
+ * registros, o banco recusa a decisão.
+ */
+export async function recordMediation(input: {
+  reportId: string;
+  itemId: string;
+  party: MediationParty;
+  outcome: MediationOutcome;
+  channel: MediationChannel | null;
+  contactUserId: string | null;
+  summary: string;
+}): Promise<ReportResult> {
+  const session = await getSessionContext();
+  if (!canManagePayoutReports(session)) return { ok: false, error: NEGADO };
+  const erro = mediationError(input);
+  if (erro) return { ok: false, error: erro };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payout_mediation_record", {
+    p_item_id: input.itemId,
+    p_party: input.party,
+    p_outcome: input.outcome,
+    p_channel: input.outcome === "conversou" ? input.channel : null,
+    p_contact_user_id: input.contactUserId,
+    p_summary: input.summary.trim(),
+  });
+  if (error) {
+    console.error("payout_mediation_record failed:", error.message);
+    return { ok: false, error: reportErrorText(error.message) };
+  }
+  await logAudit({ action: "create", entityType: "payout_mediation", entityId: input.itemId });
+  refresh(input.reportId);
+  return { ok: true };
+}
+
+/**
+ * A DECISÃO do Financeiro sobre uma linha contestada duas vezes (ou
+ * encaminhada pelo aprovador): manter, propor outro valor (0402: a unidade
+ * confirma e o dentista aceita; na rodada final, decide de vez) ou tirar do
+ * relatório. Leva a orientação à unidade e ao dentista.
  */
 export async function decideContestedItem(input: {
   reportId: string;
@@ -120,10 +165,11 @@ export async function decideContestedItem(input: {
   newAmountCents: number | null;
   currentAmountCents: number;
   exclusionKind: ExclusionKind | null;
+  guidance: string;
 }): Promise<ReportResult> {
   const session = await getSessionContext();
   if (!canManagePayoutReports(session)) return { ok: false, error: NEGADO };
-  const erro = reasonError(input.reason);
+  const erro = reasonError(input.reason) ?? guidanceError(input.guidance);
   if (erro) return { ok: false, error: erro };
   if (input.action === "corrigir") {
     const e = correctionError(input.newAmountCents, input.currentAmountCents);
@@ -140,6 +186,7 @@ export async function decideContestedItem(input: {
     p_new_amount_cents:
       input.action === "corrigir" ? Math.round(input.newAmountCents ?? 0) : null,
     p_exclusion_kind: input.action === "excluir" ? input.exclusionKind : null,
+    p_guidance: input.guidance.trim(),
   });
   if (error) {
     console.error("payout_report_finance_decide failed:", error.message);

@@ -185,6 +185,57 @@ export async function respondToMyReport(input: {
   return { ok: true, status: (data as string) ?? undefined };
 }
 
+/** 0402 — a unidade confirma que está ciente do valor novo proposto pelo Financeiro. */
+export async function ackProposedValue(input: {
+  reportId: string;
+  itemId: string;
+  note: string;
+}): Promise<FlowResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("payout_report_value_ack", {
+    p_item_id: input.itemId,
+    p_note: input.note.trim() || null,
+  });
+  if (error) {
+    console.error("payout_report_value_ack failed:", error.message);
+    return { ok: false, error: reportErrorText(error.message) };
+  }
+  await registrar(input.reportId);
+  refresh(input.reportId);
+  return { ok: true, status: (data as string) ?? undefined };
+}
+
+/**
+ * 0402 — o dentista aceita o valor novo, ou não concorda (com explicação):
+ * aí volta UMA última vez ao Financeiro, que decide de vez.
+ */
+export async function respondProposedValue(input: {
+  reportId: string;
+  itemId: string;
+  accept: boolean;
+  text: string;
+}): Promise<FlowResult> {
+  await getSessionContext();
+  if (!input.accept) {
+    const erro = reasonError(input.text);
+    if (erro) return { ok: false, error: erro };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("payout_report_value_respond", {
+    p_item_id: input.itemId,
+    p_accept: input.accept,
+    p_text: input.text.trim() || null,
+  });
+  if (error) {
+    console.error("payout_report_value_respond failed:", error.message);
+    return { ok: false, error: reportErrorText(error.message) };
+  }
+  await registrar(input.reportId);
+  refresh(input.reportId);
+  return { ok: true, status: (data as string) ?? undefined };
+}
+
 // -----------------------------------------------------------------------------
 // 0400 — A FALHA DO DENTISTA. Quem decide é o banco (`can_decide_payout_failure`:
 // quem aprova a equipe; sem ninguém na unidade, o Financeiro da Franqueadora;

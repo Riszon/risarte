@@ -202,6 +202,24 @@ calcula a produção e a situação de pagamento; `payout_history`,
 Telas: Financeiro → Histórico de repasse (com a evolução de cada dentista),
 Painel da rede → Repasses, e o gráfico em Meus repasses.
 
+## A divergência que chega ao Financeiro — decisões do dono (12/11/2026, as duas como recomendado)
+
+Pedido depois do teste na Londrina (RP-000006 → RP-000023).
+
+- **D1.** Antes de decidir, o Financeiro registra a conversa com a **unidade**
+  (quem aprova) **e** com o **dentista** — ou "não consegui contato", com o que
+  tentou. Sem os dois registros, o banco recusa a decisão. A decisão leva uma
+  **orientação** obrigatória para os dois.
+- **D2.** "Corrigir" passa a **propor**: a unidade confirma que está **ciente**
+  e o **dentista aceita**. Se o dentista não concordar, volta **uma última
+  vez** ao Financeiro, e aí a decisão é final.
+
+**Como ficou (0402):** `payout_mediation_contacts` + `payout_mediation_record`;
+estados `correcao_unidade` / `correcao_dentista` com
+`payout_report_value_ack` e `payout_report_value_respond`; `final_round`;
+o adiado mostra de onde veio (`_payout_item_origin`); "Registrar falha"
+ganhou a explicação das saídas.
+
 ## O que a Etapa 4 precisa resolver do fechamento antigo
 
 Achados lendo `close_payout_month` (0209), ainda no ar até a Etapa 4:

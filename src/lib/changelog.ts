@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.436.0",
+    data: "2026-11-12",
+    migracao: "0402",
+    titulo: "Repasse: o roteiro da divergência e o valor novo que volta para aprovação",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando um procedimento contestado chega ao Financeiro, \"Resolver a divergência\" abre um passo a passo: entender o caso, conversar com a unidade e com o dentista (com botões de WhatsApp com mensagem pronta, ligar e Chat) e só então decidir, com uma orientação que vai para os dois.",
+        papeis: ["finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O valor novo decidido pelo Financeiro não é mais pago direto: a unidade confirma que está ciente e o dentista aceita. Se o dentista não concordar, volta uma última vez ao Financeiro, que decide de vez.",
+        papeis: ["finance_franchisor", "unit_manager", "clinical_coordinator", "dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Procedimento adiado volta no relatório seguinte dizendo de qual relatório veio e por quê. As opções do Financeiro mudaram de nome: \"Pagar com outro valor\" e \"Tirar deste relatório\" (adiar volta com o mesmo valor).",
+        papeis: ["finance_franchisor", "unit_manager", "dentist"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "\"Registrar falha\" explica, antes de registrar, quando usar, quem decide e o que pode acontecer depois, com exemplos.",
+        papeis: ["finance_franchisor", "unit_manager", "clinical_coordinator"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O valor corrigido de um repasse passa a aparecer também no Histórico de repasse (antes ficava só no relatório).",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.435.0",
     data: "2026-11-11",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4005, ASAAS_MIGRATION).
