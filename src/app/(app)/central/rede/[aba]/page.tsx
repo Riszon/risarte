@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { AbasDaCentral, AvisoSemMigracao } from "../../abas";
 import { AbaComercialDaRede } from "../../aba-comercial";
 import { AbaFinanceiroDaRede } from "../../aba-financeiro";
+import { AbaCobrancaDaRede } from "../../aba-cobranca";
 import { HistoricoDaAba } from "../../conta-client";
 import { ContaETarifas } from "../../conta-e-tarifas";
 import { AvisosComErro } from "../../avisos-com-erro";
@@ -46,6 +47,7 @@ export default async function CentralDaRedePage({ params }: PageProps<"/central/
       {aba === "conta" && <AbaContaDaRede session={session} franqueadoras={franqueadoras} />}
       {aba === "financeiro" && <AbaFinanceiroDaRede supabase={supabase} session={session} franqueadoras={franqueadoras} />}
       {aba === "comercial" && <AbaComercialDaRede supabase={supabase} />}
+      {aba === "cobranca" && <AbaCobrancaDaRede supabase={supabase} session={session} />}
 
       <HistoricoDaAba aba={aba} clinicId={null} />
     </div>

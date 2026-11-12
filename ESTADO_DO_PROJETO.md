@@ -2,6 +2,16 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔌 0.438.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (12/11/2026; migração 4007)
+>
+> Estado em `docs/asaas/ESTADO.md`; decisões na 17.4 e 17.5 da especificação.
+> Central → Cobrança e comunicação: régua única da rede (8 avisos, padrão D8),
+> declaração do termo pelo Admin, botão por unidade, custo estimado
+> (mensageria por cobrança paga; WhatsApp e ligação por envio), alerta de
+> saldo. Fila no banco aplicada a cada 10 min. "Não receber avisos" por CPF na
+> rede (D7). Comprovante na ficha. Ensaio 77/77; sandbox sem envio 17/17.
+> 🟡 4007 só no treino.
+>
 > ## ✅ 0.437.0 / ASAAS 0.5.0 — ASA2, ENTREGA 2: SELO "EM ATRASO" E PAINEL DE COBRANÇAS (12/11/2026; migração 4006)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na seção 17 da especificação.

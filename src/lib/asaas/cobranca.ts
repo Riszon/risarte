@@ -14,6 +14,7 @@ import {
   type AsaasPayment,
 } from "./api";
 import { AsaasError, mensagemDoAsaas, type AsaasRequestOptions } from "./client";
+import { aplicarReguaDoPagador } from "./regua-servidor";
 
 /**
  * A COBRANÇA NO ASAAS (ASA1, entrega 2) — só no servidor.
@@ -97,6 +98,8 @@ async function pagadorNoAsaas(
 /** O que a emissão grava no banco (separado para o teste do tempo esgotado). */
 export type BancoDaEmissao = {
   salvarPagador: (c: CobrancaDoBanco, asaasCustomerId: string) => Promise<string>;
+  /** ASA2 (4007): aplica a régua do pagador, se ele estiver na fila. */
+  aplicarRegua?: (gatewayCustomerId: string) => Promise<void>;
   gravarErro: (code: string) => Promise<void>;
   /** Devolve a mensagem de erro, ou nulo se gravou. */
   gravarEmissao: (r: {
@@ -109,9 +112,10 @@ export type BancoDaEmissao = {
   }) => Promise<string | null>;
 };
 
-function bancoDe(chargeId: string): BancoDaEmissao {
+function bancoDe(chargeId: string, cred: AsaasCredential, opts: AsaasRequestOptions): BancoDaEmissao {
   const admin = createAdminClient();
   return {
+    aplicarRegua: (id) => aplicarReguaDoPagador(id, cred, opts),
     salvarPagador: async (c, asaasId) => {
       const { data, error } = await admin.rpc("_gateway_customer_save", {
         p_account_id: c.gateway_account_id,
@@ -157,7 +161,7 @@ export async function emitirNoAsaas(chargeId: string, actorId: string | null): P
     return { ok: false, error: "Não foi possível ler a chave da conta Asaas da unidade. Avise o Admin Master." };
   }
   const opts = opcoesDaConta(c.gateway_account_id, purpose);
-  return emitirComOAsaas(c, cred, opts, bancoDe(chargeId));
+  return emitirComOAsaas(c, cred, opts, bancoDe(chargeId, cred, opts));
 }
 
 /**
@@ -178,6 +182,9 @@ export async function emitirComOAsaas(
     if (!pagamento) {
       // 2) O pagador.
       pagador = await pagadorNoAsaas(c, cred, opts, banco);
+      // 2b) ASA2 (4007): a régua do pagador ANTES da cobrança, para o aviso
+      // "cobrança criada" sair. Falha aqui não impede a emissão.
+      if (banco.aplicarRegua) await banco.aplicarRegua(pagador.localId).catch(() => {});
       // 3) A cobrança.
       try {
         pagamento = await createPayment(

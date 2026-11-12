@@ -66,6 +66,7 @@ import {
 } from "@/components/ui/card";
 import { ClientDataSection } from "./client-data-section";
 import { ReceivablesSection } from "./receivables-section";
+import { AvisosDeCobranca } from "./avisos-de-cobranca";
 import { carregarContasDaUnidade } from "../../financeiro/contas-da-unidade";
 import { CancelPlanCard } from "./cancel-plan-card";
 import { loadClientReceivables } from "./receivables-loader";
@@ -3777,6 +3778,7 @@ export default async function ClientDetailPage(
             label="Financeiro"
             alertCount={lateInstallmentCount}
           >
+            <AvisosDeCobranca clientId={client.id} />
             <ReceivablesSection
               clientId={client.id}
               installments={receivables.installments}

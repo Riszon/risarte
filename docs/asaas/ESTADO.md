@@ -21,7 +21,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.433.0, Asaas 0.3.0); 4004 nos dois bancos (produção pelo dono, conferência batida); testada pelo dono no projeto de teste | **4004** |
 | **ASA2, entrega 1** — o aviso do Asaas vira baixa | ✅ **concluída: aprovada pelo dono em 11/11/2026, 4005 rodada na produção e `main` em 12/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; prova do pagamento atrasado ✅ em 12/11 (boleto de R$ 10,00 vencido em 11/11, pago com R$ 10,20 e baixa de R$ 10,20 = 10,00 + multa 0,20); produção conferida com o dono logado (Novidades 0.435.0, campo de arredondamento R$ 0,10 na Central, ficha do paciente sem erro) | **4005** |
 | ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças ("A receber do Asaas" e cobranças emitidas) | ✅ **aprovada pelo dono no treino em 12/11/2026** (core 0.437.0, Asaas 0.5.0; spec seção 17); 4006 no treino e na produção (o dono rodou em 12/11/2026; conferência bateu); ensaio 47/47 (provado quebrando o teto); no `main` | **4006** |
-| ASA2, entrega 3 — a régua (aba Cobrança e comunicação) | aguardando as respostas do Asaas (spec 17.4) | 4007 |
+| ASA2, entrega 3 — a régua (aba Cobrança e comunicação) e o comprovante | 🟡 **construída, no treino** (core 0.438.0, Asaas 0.6.0; spec 17.4 e 17.5); ensaio 77/77 (provado quebrando o D7); prova no sandbox sem envio 17/17; ⚠️ falta o dono decidir o 2º lembrete (o Asaas o deixa fixo no dia do vencimento) e testar | **4007** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -36,6 +36,48 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
+
+## ASA2, entrega 3 — a régua de avisos do Asaas e o comprovante (Asaas 0.6.0, core 0.438.0, 12/11/2026)
+
+### O que existe
+
+- **4007** — `gateway_notification_rules` (os 8 avisos da rede, padrão D8),
+  `gateway_notification_settings` (a declaração do termo, só o Admin; a
+  versão da régua), `gateway_notification_units` (o botão de cada unidade;
+  nenhuma nasce ligada), `gateway_notification_optouts` (por CPF, na rede
+  toda; desligam Recepção, Gerente, Financeiro, Admin; religam Gerente,
+  Financeiro, Admin). Portas `gateway_regua_read/save/declare_privacy/unit_set/
+  unit_overview` e `gateway_optout_status/set`. `charges.receipt_url` pelo
+  aviso de pagamento (as antigas preenchidas). `central_history(cobranca)`.
+- **A FILA** mora em `gateway_customers.regua_*`: gatilhos marcam pendente
+  (pagador novo, unidade ligada/desligada, régua, declaração, contato da ficha
+  e do responsável, pedido de não receber, conta desativada).
+  `_gateway_regua_queue` resolve no banco o que não pede Asaas e devolve o
+  resto com o modo (`on`/`off`/`clear`); `_gateway_regua_done` só limpa o
+  pendente se nada mudou depois do início da rodada; erro espera 10 min, 40
+  min… até 6 h.
+- **Servidor:** `src/lib/asaas/regua.ts` (puro: celular, `pacoteDosAvisos`,
+  custo) e `regua-servidor.ts` (fila, a régua antes da cobrança nascer, saldo).
+  Cron `/api/cron/gateway-regua` a cada 10 min, 50 pagadores por conta, sem
+  insistir no 429. Saldo na rotina diária (`GET /finance/balance`) para quem
+  tem WhatsApp na régua; zerado avisa Gerente e Admin. Tarifas de aviso
+  gravadas na verificação da conta.
+- ⚠️ **Canal só com o contato** (provado no sandbox): o Asaas recusa ligar
+  e-mail de pagador sem e-mail. E-mail só com e-mail; SMS, WhatsApp e ligação
+  só com celular.
+- ⚠️ **Prazos reais do Asaas** (medidos no sandbox, 12/11/2026): 1º lembrete
+  5/10/15/30; **2º lembrete só 0 (fixo no dia)**; vencida do dia só 0; 2º de
+  vencida 1/7/15/30. A 4007 ainda aceita 0/5/10/15/30 no 2º lembrete —
+  **decisão do dono pendente** antes de adaptar.
+- **Apagar o contato (D6):** `email: ""` e `mobilePhone: ""` no
+  `PUT /customers/{id}` deixam os dois nulos (provado).
+
+### Provas
+
+- `node scripts/asaas-ensaio-asa2-entrega3.mjs --confirmar` (treino, desfeito): 77/77.
+- `node scripts/asaas-prova-regua-sandbox.mjs --confirmar` (sandbox, sem envio:
+  pagador sem celular, avisos desligados, e-mail `example.com`, apagado no fim): 17/17.
+- `src/lib/__tests__/asaas-asa2-entrega3.test.ts`.
 
 ## ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças (Asaas 0.5.0, core 0.437.0, 12/11/2026)
 

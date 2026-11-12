@@ -1,5 +1,7 @@
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { rodarRotinaDosAvisos, rodarVerificacaoDasContas } from "@/lib/asaas/rotina";
+import { conferirSaldoDaRegua } from "@/lib/asaas/regua-servidor";
+import { todayInBrazil } from "@/lib/dates";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
 
 /**
@@ -25,7 +27,12 @@ export async function GET(request: Request) {
       console.error("gateway notices routine failed:", e instanceof Error ? e.message : e);
       return {};
     });
-    return Response.json({ ok: true, ...stats, ...avisos });
+    // ASA2 (4007): o saldo das contas com WhatsApp na régua.
+    const saldosZerados = await conferirSaldoDaRegua(todayInBrazil()).catch((e) => {
+      console.error("gateway regua balance failed:", e instanceof Error ? e.message : e);
+      return 0;
+    });
+    return Response.json({ ok: true, ...stats, ...avisos, saldosZerados });
   } catch (e) {
     // Banco sem as migrações 4000+ (o código pode ir ao ar antes): não é erro
     // da rotina — não há conta nenhuma para verificar.

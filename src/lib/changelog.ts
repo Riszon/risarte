@@ -62,6 +62,43 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.438.0",
+    data: "2026-11-12",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4007, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Régua de avisos do Asaas e comprovante",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Central de Configuração → Cobrança e comunicação: a régua de avisos que o Asaas manda ao pagador (cobrança criada, lembretes, vencida, pagamento recebido), com os canais e-mail, SMS, WhatsApp e ligação. Uma régua só para a rede; cada unidade liga ou desliga. A aba mostra o custo estimado por mês e quantos pagadores estão sem e-mail ou sem celular.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.5. Régua de avisos do Asaas e comprovante",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Nenhuma unidade nasce com a régua ligada, e nenhuma liga antes de o Admin Master declarar que o termo de privacidade foi atualizado com o Asaas. Com a régua desligada, o Asaas não envia nada ao pagador, nem a confirmação de pagamento.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.5. Régua de avisos do Asaas e comprovante",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha do paciente, aba Financeiro: \"Não receber avisos de cobrança\", para quando o paciente ou o responsável pedir. Vale para o CPF em todas as unidades, com o motivo registrado. Voltar a receber é com o Gerente ou o Financeiro.",
+        papeis: ["receptionist", "unit_manager", "finance_franchisor"],
+        manual: "13g.5. Régua de avisos do Asaas e comprovante",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cobrança paga pelo Asaas ganha \"Ver comprovante\" e \"Enviar comprovante pelo WhatsApp\", com a mensagem pronta. Vale mesmo com a régua desligada.",
+        papeis: ["receptionist", "unit_manager", "finance_franchisor", "franchisee"],
+        manual: "13g.5. Régua de avisos do Asaas e comprovante",
+      },
+    ],
+  },
+  {
     versao: "0.437.0",
     data: "2026-11-12",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4006, ASAAS_MIGRATION).

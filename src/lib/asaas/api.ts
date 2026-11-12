@@ -290,3 +290,75 @@ export async function getIdentificationField(cred: AsaasCredential, id: string, 
 export function deletePayment(cred: AsaasCredential, id: string, opts?: Opts): Promise<{ deleted?: boolean | null }> {
   return asaasRequest<{ deleted?: boolean | null }>({ ...cred, method: "DELETE", path: "/payments/{id}", params: { id } }, opts);
 }
+
+// ---- A régua de avisos (ASA2, entrega 3) ---------------------------------------
+// Conferido em docs.asaas.com (atualizar-cliente-existente,
+// recuperar-notificacoes-de-um-cliente, atualizar-notificacoes-existentes-em-lote,
+// recuperar-saldo-da-conta) em 12/11/2026.
+
+/** O que a régua manda no `PUT /v3/customers/{id}` — só os campos a mudar. */
+export type ContatoDoPagador = {
+  email?: string;
+  mobilePhone?: string;
+  notificationDisabled: boolean;
+};
+
+/** `PUT /v3/customers/{id}` — contato e avisos ligados ou desligados. */
+export function updateCustomer(cred: AsaasCredential, id: string, body: ContatoDoPagador, opts?: Opts): Promise<AsaasCustomer> {
+  return asaasRequest<AsaasCustomer>({ ...cred, method: "PUT", path: "/customers/{id}", params: { id }, body }, opts);
+}
+
+export type AsaasNotification = {
+  id?: string | null;
+  customer?: string | null;
+  enabled?: boolean | null;
+  event?: string | null;
+  scheduleOffset?: number | null;
+  emailEnabledForProvider?: boolean | null;
+  smsEnabledForProvider?: boolean | null;
+  emailEnabledForCustomer?: boolean | null;
+  smsEnabledForCustomer?: boolean | null;
+  phoneCallEnabledForCustomer?: boolean | null;
+  whatsappEnabledForCustomer?: boolean | null;
+  deleted?: boolean | null;
+};
+
+/** `GET /v3/customers/{id}/notifications` — os avisos do pagador (não o histórico de envios). */
+export async function getCustomerNotifications(cred: AsaasCredential, id: string, opts?: Opts): Promise<AsaasNotification[]> {
+  const r = await asaasRequest<Lista<AsaasNotification>>(
+    { ...cred, method: "GET", path: "/customers/{id}/notifications", params: { id } },
+    opts
+  );
+  return (r?.data ?? []).filter((n): n is AsaasNotification => !!n && typeof n.id === "string" && !n.deleted);
+}
+
+export type AvisoParaGravar = {
+  id: string;
+  enabled: boolean;
+  emailEnabledForProvider: boolean;
+  smsEnabledForProvider: boolean;
+  emailEnabledForCustomer: boolean;
+  smsEnabledForCustomer: boolean;
+  phoneCallEnabledForCustomer: boolean;
+  whatsappEnabledForCustomer: boolean;
+  scheduleOffset?: number;
+};
+
+/** `PUT /v3/notifications/batch` — grava os avisos de um pagador de uma vez. */
+export function updateNotificationsBatch(
+  cred: AsaasCredential,
+  customer: string,
+  notifications: AvisoParaGravar[],
+  opts?: Opts
+): Promise<{ notifications?: AsaasNotification[] | null }> {
+  return asaasRequest<{ notifications?: AsaasNotification[] | null }>(
+    { ...cred, method: "PUT", path: "/notifications/batch", body: { customer, notifications } },
+    opts
+  );
+}
+
+/** `GET /v3/finance/balance` — o saldo da conta, em reais. */
+export async function getBalance(cred: AsaasCredential, opts?: Opts): Promise<number | null> {
+  const r = await asaasRequest<{ balance?: number | null }>({ ...cred, method: "GET", path: "/finance/balance" }, opts);
+  return typeof r?.balance === "number" && Number.isFinite(r.balance) ? r.balance : null;
+}

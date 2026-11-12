@@ -53,6 +53,11 @@ export function podeVincularContaPelaTela(session: SessionContext, clinicId: str
   return temPapel(session, "unit_manager", clinicId) && pode(session, "acao.central.vincular_conta", clinicId);
 }
 
+/** A régua de avisos (aba Cobrança e comunicação): quem edita e liga as unidades. */
+export function podeEditarRegua(session: SessionContext): boolean {
+  return session.isAdminMaster || temPapel(session, "finance_franchisor");
+}
+
 // ---- as abas ------------------------------------------------------------------
 
 export type NivelDaCentral = "rede" | "unidade";
@@ -95,6 +100,13 @@ export const ABAS_DA_CENTRAL: AbaDaCentral[] = [
     niveis: ["rede", "unidade"],
     fase: "ASA1",
   },
+  {
+    id: "cobranca",
+    rotulo: "Cobrança e comunicação",
+    descricao: "A régua de avisos do Asaas ao pagador: avisos, prazos, canais, o custo e o botão de cada unidade.",
+    niveis: ["rede", "unidade"],
+    fase: "ASA2",
+  },
 ];
 
 export function abasDoNivel(nivel: NivelDaCentral): AbaDaCentral[] {
@@ -123,6 +135,11 @@ export function podeVerAba(
       return nivel === "unidade" && canViewFinance(session) && (session.rolesByClinic[clinicId!] ?? []).length > 0;
     case "comercial":
       return session.isAdminMaster;
+    case "cobranca":
+      // ASA2 (4007): editam o Admin Master e o Financeiro da Franqueadora; o
+      // Gerente e o Franqueado veem a da própria unidade (o banco decide de novo).
+      if (podeEditarRegua(session)) return true;
+      return nivel === "unidade" && (temPapel(session, "unit_manager", clinicId!) || temPapel(session, "franchisee", clinicId!));
     default:
       return false;
   }

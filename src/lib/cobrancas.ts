@@ -115,6 +115,20 @@ export function mensagemDaCobrancaNoWhatsApp(args: {
 }
 
 /**
+ * ASA2 (4007): o texto do WhatsApp com o comprovante do Asaas. Vale com a
+ * régua desligada e para quem pediu para não receber avisos: é a clínica quem
+ * envia, quando o paciente pede.
+ */
+export function mensagemDoComprovanteNoWhatsApp(args: { nomeDoPagador: string; valorFormatado: string | null; link: string }): string {
+  const primeiro = args.nomeDoPagador.trim().split(/\s+/)[0] ?? "";
+  return [
+    `Olá${primeiro ? `, ${primeiro}` : ""}! Recebemos o pagamento${args.valorFormatado ? ` de ${args.valorFormatado}` : ""}. Segue o comprovante:`,
+    args.link,
+    "Obrigado!",
+  ].join("\n");
+}
+
+/**
  * Por que a parcela NÃO oferece "Gerar cobrança" (a tela diz em vez de calar).
  * `null` = o botão aparece; os motivos que dependem da venda e do pagador
  * (contrato, CPF, responsável) aparecem na prévia, ao clicar.

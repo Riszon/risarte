@@ -35,38 +35,38 @@ function sessao(p: Partial<SessionContext>): SessionContext {
 }
 
 describe("Central por aba", () => {
-  it("as três abas existem nos dois níveis, na ordem da tela", () => {
-    expect(ABAS_DA_CENTRAL.map((a) => a.id)).toEqual(["conta", "financeiro", "comercial"]);
+  it("as abas existem nos dois níveis, na ordem da tela (a ASA2 acrescentou Cobrança e comunicação)", () => {
+    expect(ABAS_DA_CENTRAL.map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca"]);
     for (const a of ABAS_DA_CENTRAL) expect(a.niveis).toEqual(["rede", "unidade"]);
   });
 
-  it("Admin Master vê as três abas em todo lugar", () => {
+  it("Admin Master vê todas as abas em todo lugar", () => {
     const admin = sessao({ isAdminMaster: true });
-    expect(abasVisiveis(admin, "rede").map((a) => a.id)).toEqual(["conta", "financeiro", "comercial"]);
-    expect(abasVisiveis(admin, "unidade", "a").map((a) => a.id)).toEqual(["conta", "financeiro", "comercial"]);
+    expect(abasVisiveis(admin, "rede").map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca"]);
+    expect(abasVisiveis(admin, "unidade", "a").map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca"]);
     expect(podeVerCentral(admin)).toBe(true);
   });
 
-  it("Gerente (padrão de hoje): só a aba Financeiro da PRÓPRIA unidade — nada da rede, nada da conta Asaas", () => {
+  it("Gerente (padrão de hoje): Financeiro e Cobrança e comunicação da PRÓPRIA unidade — nada da rede, nada da conta Asaas", () => {
     const gerente = sessao({ rolesByClinic: { a: ["unit_manager"] } });
     expect(podeVerCentral(gerente)).toBe(true);
-    expect(abasVisiveis(gerente, "unidade", "a").map((x) => x.id)).toEqual(["financeiro"]);
+    expect(abasVisiveis(gerente, "unidade", "a").map((x) => x.id)).toEqual(["financeiro", "cobranca"]);
     expect(abasVisiveis(gerente, "unidade", "b")).toEqual([]);
     expect(podeVerRedeNaCentral(gerente)).toBe(false);
     expect(podeVerUnidadeNaCentral(gerente, "a")).toBe(true);
     expect(primeiraAba(gerente, "unidade", "a")).toBe("financeiro");
   });
 
-  it("Franqueado: a aba Financeiro da própria unidade", () => {
+  it("Franqueado: Financeiro e Cobrança e comunicação da própria unidade", () => {
     const franqueado = sessao({ rolesByClinic: { a: ["franchisee"] } });
-    expect(abasVisiveis(franqueado, "unidade", "a").map((x) => x.id)).toEqual(["financeiro"]);
+    expect(abasVisiveis(franqueado, "unidade", "a").map((x) => x.id)).toEqual(["financeiro", "cobranca"]);
     expect(podeVerRedeNaCentral(franqueado)).toBe(false);
   });
 
-  it("Financeiro da Franqueadora: Financeiro na rede e em todas as unidades; Comercial e conta, não", () => {
+  it("Financeiro da Franqueadora: Financeiro e Cobrança e comunicação na rede e em todas as unidades; Comercial e conta, não", () => {
     const fin = sessao({ rolesByClinic: { f: ["finance_franchisor"] } });
-    expect(abasVisiveis(fin, "rede").map((x) => x.id)).toEqual(["financeiro"]);
-    expect(abasVisiveis(fin, "unidade", "qualquer").map((x) => x.id)).toEqual(["financeiro"]);
+    expect(abasVisiveis(fin, "rede").map((x) => x.id)).toEqual(["financeiro", "cobranca"]);
+    expect(abasVisiveis(fin, "unidade", "qualquer").map((x) => x.id)).toEqual(["financeiro", "cobranca"]);
   });
 
   it("Comercial é só do Admin Master (como Regras Comerciais sempre foi)", () => {

@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AbasDaCentral, AvisoSemMigracao } from "../../../abas";
 import { AbaComercialDaUnidade } from "../../../aba-comercial";
 import { AbaFinanceiroDaUnidade } from "../../../aba-financeiro";
+import { AbaCobrancaDaUnidade } from "../../../aba-cobranca";
 import { HistoricoDaAba } from "../../../conta-client";
 import { ContaETarifas } from "../../../conta-e-tarifas";
 import { AvisosComErro } from "../../../avisos-com-erro";
@@ -69,6 +70,7 @@ export default async function CentralDaUnidadePage({
         <AbaFinanceiroDaUnidade supabase={supabase} session={session} clinicId={clinicId} clinicName={clinica.name} />
       )}
       {aba === "comercial" && <AbaComercialDaUnidade supabase={supabase} clinicId={clinicId} clinicName={clinica.name} />}
+      {aba === "cobranca" && <AbaCobrancaDaUnidade supabase={supabase} clinicId={clinicId} clinicName={clinica.name} />}
 
       <HistoricoDaAba aba={aba} clinicId={clinicId} />
     </div>

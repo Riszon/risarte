@@ -24,6 +24,7 @@ import {
   SITUACOES_ATIVAS,
   meioInicial,
   mensagemDaCobrancaNoWhatsApp,
+  mensagemDoComprovanteNoWhatsApp,
   motivoSemCobranca,
   type MeioDaCobranca,
   type SituacaoDaCobranca,
@@ -176,11 +177,45 @@ export function CobrancaDaParcela({
         (() => {
           const paga = cobrancas.find((c) => c.status === "paga" || c.status === "liquidada");
           if (!paga) return null;
+          // ASA2 (4007): o comprovante do Asaas, para a clínica mandar quando o
+          // paciente pedir (vale com a régua desligada e com o "não receber avisos").
+          const waComprovante = paga.receiptUrl
+            ? linkDoWhatsApp(
+                paga.payerPhone,
+                mensagemDoComprovanteNoWhatsApp({
+                  nomeDoPagador: paga.payerName ?? "",
+                  valorFormatado: paga.valueCents === null ? null : formatBRL(paga.valueCents),
+                  link: paga.receiptUrl,
+                })
+              )
+            : null;
           return (
-            <p className="text-muted-foreground">
-              Paga pelo Asaas ({MEIO_CURTO[paga.billingType ?? ""] ?? paga.billingType})
-              {paga.status === "liquidada" ? " · dinheiro disponível" : " · aguardando o dinheiro cair"}.
-            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-muted-foreground">
+                Paga pelo Asaas ({MEIO_CURTO[paga.billingType ?? ""] ?? paga.billingType})
+                {paga.status === "liquidada" ? " · dinheiro disponível" : " · aguardando o dinheiro cair"}.
+              </span>
+              {paga.receiptUrl && (
+                <a
+                  href={paga.receiptUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-7 items-center gap-1 rounded-md border px-2 hover:bg-muted"
+                >
+                  <ExternalLink className="size-3" /> Ver comprovante
+                </a>
+              )}
+              {waComprovante && (
+                <a
+                  href={waComprovante}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-7 items-center gap-1 rounded-md border px-2 hover:bg-muted"
+                >
+                  <MessageCircle className="size-3" /> Enviar comprovante pelo WhatsApp
+                </a>
+              )}
+            </div>
           );
         })()}
 

@@ -6052,13 +6052,13 @@ foi preparado para a assistente. Avise o administrador.
 
 ## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0)*
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.438.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
 financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão
 que toda unidade segue) e cada **unidade** (só o que for diferente do padrão).
-Hoje são três abas; as próximas etapas acrescentam outras (Taxas da franquia,
-Cobrança e comunicação, Fiscal…).
+Hoje são quatro abas; as próximas etapas acrescentam outras (Taxas da franquia,
+Fiscal…).
 
 **Onde:** **Administração → Central de Configuração** para o Admin Master; no
 menu principal, **Central de Configuração**, para quem vê alguma aba. Os
@@ -6073,6 +6073,7 @@ endereços antigos continuam funcionando e levam à aba nova:
 | **Conta e tarifas** | Admin Master (a permissão **Central de Configuração** nasce sem nenhuma função marcada) | Admin Master |
 | **Financeiro** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade) | Admin Master e Financeiro da Franqueadora |
 | **Comercial** | Admin Master | Admin Master |
+| **Cobrança e comunicação** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade) | Admin Master e Financeiro da Franqueadora (o termo de privacidade, só o Admin Master) — ver 13g.5 |
 
 **Aba Financeiro.** Multa, juros, arredondamento e o teto da inadimplência —
 o que antes ficava em Financeiro → Cadastros → Configuração.
@@ -6375,6 +6376,69 @@ pacientes.
 **Franqueado** veem a própria unidade; o **Admin Master** e o **Financeiro da
 Franqueadora**, a rede, com filtro por unidade. A **Recepcionista não vê**. Na
 produção, enquanto a integração está em testes, só o Admin Master.
+
+### 13g.5. Régua de avisos do Asaas e comprovante
+
+*(desde a versão 0.438.0)*
+
+A **régua** é o conjunto de avisos que o **Asaas** manda ao pagador da
+cobrança (o paciente ou o responsável financeiro): cobrança criada, lembretes
+antes do vencimento, linha digitável do boleto, cobrança vencida, pagamento
+recebido e cobrança alterada. Quem envia é o Asaas, por **e-mail, SMS,
+WhatsApp ou ligação**; a clínica não precisa fazer nada.
+
+**Onde:** **Central de Configuração → aba Cobrança e comunicação**.
+
+- **Na Rede:** a régua é **uma só para toda a rede**. O **Admin Master** e o
+  **Financeiro da Franqueadora** escolhem, em cada aviso, o prazo (quando dá) e
+  os canais. Os avisos que o Asaas mandaria para a própria unidade ficam sempre
+  desligados: o riSZon já avisa a equipe.
+- **Na Unidade:** o botão **Ligar a régua desta unidade** (Admin Master e
+  Financeiro), quantos pagadores estão sem e-mail, sem celular ou pediram para
+  não receber, e o **custo estimado por mês**. O **Gerente** e o **Franqueado**
+  veem a aba da própria unidade, sem mexer.
+
+**Antes de ligar:** o **Admin Master** declara, uma vez, que o **termo de
+privacidade** foi atualizado com o Asaas como operador. Sem a declaração,
+nenhuma unidade liga. Nenhuma unidade nasce ligada.
+
+**Ao ligar uma unidade**, o riSZon manda ao Asaas o **e-mail e o celular** dos
+pagadores dela (da ficha do paciente ou do cadastro do responsável financeiro)
+e aplica a régua em cada um, em até **10 minutos**. As cobranças **já abertas**
+passam a receber os **próximos** lembretes; o aviso "cobrança criada" não é
+reenviado para elas. Celular só vai quando é celular de verdade (DDD + 9 + 8
+dígitos). Um canal só é ligado para quem tem o contato: sem e-mail, o pagador
+não recebe e-mail; sem celular, não recebe SMS nem WhatsApp. Quando o contato
+é preenchido na ficha, o riSZon atualiza o Asaas sozinho.
+
+**Ao desligar**, os avisos param. O e-mail e o celular continuam no Asaas e só
+são apagados se a conta Asaas da unidade for desativada. Com a régua
+desligada, o Asaas **não envia nada** ao pagador — nem a confirmação de
+pagamento.
+
+**O custo** fica na conta Asaas da unidade:
+
+- **E-mail e SMS** são cobrados pela **mensageria**: uma vez por cobrança (não
+  por aviso), só quando a cobrança é paga, descontada na compensação.
+- **WhatsApp e ligação** são cobrados **a cada envio**, paga ou não a cobrança.
+
+**WhatsApp:** a mensagem sai de um número oficial do Asaas, não da clínica. Se
+o pagador responder, um assistente do Asaas orienta a procurar a clínica — a
+resposta **não chega à clínica**. O WhatsApp só sai se houver **saldo** na
+conta Asaas da unidade; quando a conta fica sem saldo, o Gerente e o Admin
+recebem um aviso e a aba mostra o alerta.
+
+**"Não receber avisos de cobrança"** (ficha do paciente → aba **Financeiro**):
+quando o paciente (ou o responsável) pede para não receber, a **Recepcionista**,
+o **Gerente**, o **Financeiro da Franqueadora** ou o **Admin Master** registra,
+com o motivo. Vale para aquele **CPF em todas as unidades**. Voltar a receber:
+só o **Gerente**, o **Financeiro** ou o **Admin**.
+
+**Comprovante:** quando o pagamento é confirmado, a cobrança na ficha mostra
+**Ver comprovante** e **Enviar comprovante pelo WhatsApp** (abre o WhatsApp com
+a mensagem pronta para o telefone do pagador). Vale com a régua desligada e
+para quem pediu para não receber avisos: é a clínica quem envia, quando o
+paciente pede.
 
 ## 14. Checklists
 

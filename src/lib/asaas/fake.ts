@@ -53,6 +53,7 @@ export const fakeAsaasFetch: typeof fetch = async (input, init) => {
         debitCard: { operationValue: 0.35, defaultPercentage: 1.89, daysToReceive: 3 },
         pix: { fixedFeeValue: 1.99, percentageFee: null, monthlyCreditsWithoutFee: 30 },
       },
+      notification: { phoneCallFeeValue: 0.55, whatsAppFeeValue: 0.55, messagingFeeValue: 0.99 },
     });
   }
   if (method === "GET" && path === "/pix/addressKeys") {
@@ -81,6 +82,21 @@ export const fakeAsaasFetch: typeof fetch = async (input, init) => {
     const id = `cus_fake${(FAKE_CUSTOMERS.size + 1).toString().padStart(6, "0")}`;
     FAKE_CUSTOMERS.set(String(body.cpfCnpj ?? ""), id);
     return json(200, { id, cpfCnpj: body.cpfCnpj, deleted: false });
+  }
+  // ---- a régua (ASA2, entrega 3) ----
+  const cli = /^\/customers\/([^/]+)(\/notifications)?$/.exec(path);
+  if (cli && method === "PUT" && !cli[2]) {
+    return json(200, { id: cli[1], deleted: false });
+  }
+  if (cli && method === "GET" && cli[2]) {
+    return json(200, { data: avisosDeMentira(cli[1]), hasMore: false, totalCount: 8 });
+  }
+  if (method === "PUT" && path === "/notifications/batch") {
+    const body = JSON.parse(String(init?.body ?? "{}")) as { notifications?: unknown[] };
+    return json(200, { notifications: body.notifications ?? [] });
+  }
+  if (method === "GET" && path === "/finance/balance") {
+    return json(200, { balance: 0 });
   }
   if (method === "GET" && path === "/payments") {
     const ref = url.searchParams.get("externalReference") ?? "";
@@ -143,4 +159,33 @@ export function limparAsaasDeMentira() {
 export function pagarNoAsaasDeMentira(id: string) {
   const p = FAKE_PAYMENTS.get(id);
   if (p) p.status = "RECEIVED";
+}
+
+/** Os 8 avisos padrão do Asaas para um pagador (docs.asaas.com, "Notificações padrões"). */
+function avisosDeMentira(customer: string) {
+  const base = [
+    ["PAYMENT_CREATED", 0],
+    ["PAYMENT_DUEDATE_WARNING", 0],
+    ["PAYMENT_RECEIVED", 0],
+    ["SEND_LINHA_DIGITAVEL", 0],
+    ["PAYMENT_OVERDUE", 0],
+    ["PAYMENT_OVERDUE", 7],
+    ["PAYMENT_DUEDATE_WARNING", 10],
+    ["PAYMENT_UPDATED", 0],
+  ] as const;
+  return base.map(([event, scheduleOffset], i) => ({
+    object: "notification",
+    id: `not_fake_${customer}_${i}`,
+    customer,
+    enabled: true,
+    event,
+    scheduleOffset,
+    emailEnabledForProvider: false,
+    smsEnabledForProvider: false,
+    emailEnabledForCustomer: true,
+    smsEnabledForCustomer: true,
+    phoneCallEnabledForCustomer: event === "PAYMENT_OVERDUE",
+    whatsappEnabledForCustomer: false,
+    deleted: false,
+  }));
 }

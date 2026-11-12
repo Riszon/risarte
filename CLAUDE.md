@@ -400,6 +400,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**12/11/2026 (Asaas — ASA2, entrega 3) — PC Administrador (core 0.437.0 → 0.438.0, Asaas 0.6.0, migração 4007; worktree `wt-asaas`)**
+
+- **Régua de avisos do Asaas e comprovante** (estado em `docs/asaas/ESTADO.md`;
+  decisões na 17.4 e 17.5 da especificação). ⚠️ **Nenhuma chamada ao Asaas sai
+  do banco:** a fila mora em `gateway_customers.regua_*` e o cron
+  `/api/cron/gateway-regua` (10 min) aplica. ⚠️ **Canal só com o contato** (o
+  Asaas recusa e-mail sem e-mail). ⚠️ **Prova no sandbox só sem envio** (o
+  sandbox envia de verdade): pagador sem celular, avisos desligados,
+  `example.com`.
+- 🟡 4007 só no treino; falta o dono decidir o 2º lembrete (fixo no dia no
+  Asaas) e testar.
+
 **12/11/2026 (Asaas — ASA2, entrega 2) — PC Administrador (core 0.436.0 → 0.437.0, Asaas 0.5.0, migração 4006; worktree `wt-asaas`)**
 
 - **Selo "Em atraso" e Painel de cobranças** (estado em `docs/asaas/ESTADO.md`;

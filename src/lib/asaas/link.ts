@@ -18,6 +18,7 @@ import {
 import { AsaasError, mensagemDoAsaas } from "./client";
 import { MENSAGEM_DA_RECUSA, recusaDeAmbiente, webhookBaseUrl } from "./env";
 import { diaDoAsaas, ratesFromAsaasFees } from "./fees";
+import { tarifasDeAvisoDoAsaas } from "./regua";
 
 /**
  * VINCULAR E VERIFICAR UMA CONTA ASAAS (ASA0).
@@ -229,6 +230,18 @@ export async function verificarConta(args: {
     const rates = ratesFromAsaasFees(fees, todayInBrazil());
     const sync = await admin.rpc("_gateway_sync_fees", { p_account_id: args.accountId, p_rates: rates });
     if (sync.error) console.error("gateway fees sync failed:", sync.error.message);
+    // ASA2 (4007): as tarifas de aviso (mensageria, WhatsApp, ligação) para a
+    // estimativa da régua. Banco sem a 4007 só registra e segue.
+    const avisos = tarifasDeAvisoDoAsaas(fees);
+    const notif = await admin.rpc("_gateway_save_notification_fees", {
+      p_account_id: args.accountId,
+      p_messaging_cents: avisos.mensageriaCents,
+      p_whatsapp_cents: avisos.whatsappCents,
+      p_phone_call_cents: avisos.ligacaoCents,
+    });
+    if (notif.error && !/does not exist|schema cache/i.test(notif.error.message)) {
+      console.error("gateway notification fees save failed:", notif.error.message);
+    }
 
     const gravou = await admin.rpc("_gateway_record_check", {
       p_account_id: args.accountId,

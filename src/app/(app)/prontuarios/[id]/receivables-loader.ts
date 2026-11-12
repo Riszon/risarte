@@ -110,6 +110,8 @@ export type ChargeRow = {
   byName: string | null;
   cancelledAt: string | null;
   cancelReason: string | null;
+  /** 4007 — o comprovante do Asaas (cobrança paga). */
+  receiptUrl: string | null;
 };
 
 /** 4004 — o que foi dispensado numa quitação por valor menor. */
@@ -476,14 +478,19 @@ async function loadChargesAndWaivers(
   clientId: string,
   installmentIds: string[]
 ): Promise<{ charges: ChargeRow[]; waivers: WaiverRow[]; disponivel: boolean }> {
-  const { data: cRows, error: cErr } = await supabase
-    .from("charges")
-    .select(
-      "id, payment_installment_id, status, billing_type, value_cents, discount_cents, due_date, is_overdue_reissue, is_external, external_note, invoice_url, bank_slip_url, pix_copy_paste, identification_field, error_code, payer_kind, payer_guardian_id, created_at, updated_at, cancelled_at, cancel_reason, profiles:profiles!charges_created_by_fkey ( full_name )"
-    )
-    .in("payment_installment_id", installmentIds)
-    .order("created_at", { ascending: false })
-    .returns<
+  const colunas =
+    "id, payment_installment_id, status, billing_type, value_cents, discount_cents, due_date, is_overdue_reissue, is_external, external_note, invoice_url, bank_slip_url, pix_copy_paste, identification_field, error_code, payer_kind, payer_guardian_id, created_at, updated_at, cancelled_at, cancel_reason, profiles:profiles!charges_created_by_fkey ( full_name )";
+  const ler = (comComprovante: boolean) =>
+    supabase
+      .from("charges")
+      .select(comComprovante ? `${colunas}, receipt_url` : colunas)
+      .in("payment_installment_id", installmentIds)
+      .order("created_at", { ascending: false })
+      .returns<LinhaDaCobranca[]>();
+  // 4007: com o comprovante do Asaas; banco sem a 4007, sem ele.
+  let { data: cRows, error: cErr } = await ler(true);
+  if (cErr && /receipt_url/.test(cErr.message)) ({ data: cRows, error: cErr } = await ler(false));
+  type LinhaDaCobranca =
       {
         id: string;
         payment_installment_id: string;
@@ -506,9 +513,9 @@ async function loadChargesAndWaivers(
         updated_at: string;
         cancelled_at: string | null;
         cancel_reason: string | null;
+        receipt_url?: string | null;
         profiles: { full_name: string } | null;
-      }[]
-    >();
+      };
   if (cErr) return { charges: [], waivers: [], disponivel: false };
 
   // O nome e o telefone de quem paga (para o WhatsApp): o cliente ou o responsável.
@@ -556,6 +563,7 @@ async function loadChargesAndWaivers(
       byName: r.profiles?.full_name ?? null,
       cancelledAt: r.cancelled_at,
       cancelReason: r.cancel_reason,
+      receiptUrl: r.receipt_url ?? null,
     };
   });
 
