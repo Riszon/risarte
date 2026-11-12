@@ -412,7 +412,8 @@ Syncthing se comportarem de forma estranha.**
   `_payout_report_sync` ou `payout_report_deadline_run`, partir da 0402.
 - ⚠️ **Valor de repasse que muda grava em `provider_payouts` também** (o
   Histórico da 0401 lê de lá).
-- 🟡 **0402 só no treino**; falta o dono rodar na produção.
+- ✅ **0402 aplicada no treino e na produção** (o dono informou em
+  12/11/2026; não conferido de fora).
 
 **11/11/2026 (Asaas — ASA2, entrega 1) — PC Administrador (core 0.434.0 → 0.435.0, Asaas 0.4.0, migração 4005; worktree `wt-asaas`)**
 

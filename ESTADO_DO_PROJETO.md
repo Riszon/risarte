@@ -38,8 +38,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   Aceitar/Não concordo do dentista, explicação do "Registrar falha"
 >   (`payout-divergencia.ts`). Manual 6.4 e 6.6; EV-333.
 > - Ensaio no treino em transação desfeita 30/30; régua
->   `repasse-divergencia.test.ts` provada quebrando 3×. 🟡 **0402 só no
->   treino.** **Não visto na tela.**
+>   `repasse-divergencia.test.ts` provada quebrando 3×. ✅ **0402 aplicada no
+>   treino e na produção** (o dono informou em 12/11/2026; não conferido de
+>   fora). **Não visto na tela.**
 >
 > ## 🔌 0.435.0 / ASAAS 0.4.0 — ASA2, ENTREGA 1: O AVISO DO ASAAS VIRA BAIXA (11/11/2026; migração 4005)
 >
