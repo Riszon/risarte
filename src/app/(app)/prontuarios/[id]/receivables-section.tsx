@@ -54,8 +54,10 @@ import type {
   ReceiptRow,
   RenegotiationRow,
   SaleSummary,
+  SurplusRow,
   WaiverRow,
 } from "./receivables-loader";
+import { DuplicidadesDoCliente, DispensarTaxaDaRede } from "./duplicidade";
 import { CobrancaDaParcela, type PermissoesDaCobranca } from "./cobranca-da-parcela";
 import { SITUACOES_ATIVAS, type SituacaoDaCobranca } from "@/lib/cobrancas";
 import {
@@ -127,6 +129,10 @@ export function ReceivablesSection({
   charges = [],
   waivers = [],
   unidadesProntas = null,
+  surpluses = [],
+  keptFeeReceiptIds = [],
+  canResolveSurplus = false,
+  canWaiveNetworkFee = false,
   cobranca = { ver: false, emitir: false, cancelar: false, receber: false },
   canWaive = false,
 }: {
@@ -155,6 +161,13 @@ export function ReceivablesSection({
   waivers?: WaiverRow[];
   /** 4004 — unidade pronta para cobrar, por unidade; `null` = banco sem a 4004. */
   unidadesProntas?: Record<string, boolean> | null;
+  /** 4005 — pagamentos em duplicidade e baixas com a taxa da rede mantida. */
+  surpluses?: SurplusRow[];
+  keptFeeReceiptIds?: string[];
+  /** Gerente da unidade, Financeiro da Franqueadora e Admin. */
+  canResolveSurplus?: boolean;
+  /** Financeiro da Franqueadora e Admin: dispensar a taxa mantida no estorno. */
+  canWaiveNetworkFee?: boolean;
   /** 4004 — o que esta pessoa faz com a cobrança (a tela; o banco decide de novo). */
   cobranca?: PermissoesDaCobranca;
   /** 4004 — Gerente da unidade / Admin Master: quitar por valor menor. */
@@ -635,6 +648,14 @@ export function ReceivablesSection({
               Nenhuma cobrança nesta situação.
             </p>
           )}
+          <DuplicidadesDoCliente
+            clientId={clientId}
+            surpluses={surpluses}
+            parcelasAbertas={allViews
+              .filter((x) => x.isOpen)
+              .map((x) => ({ id: x.id, rotulo: `${x.kind === "entrada" ? "Entrada" : "Parcela"} ${x.seq} · ${fmtDate(x.dueDate)} · falta ${formatBRL(x.updatedBalanceCents)}` }))}
+            podeResolver={canResolveSurplus}
+          />
           {shown.map((v) => {
             const hist = historyOf(v.id);
             return (
@@ -850,6 +871,14 @@ export function ReceivablesSection({
                             {r.reversalReason && (
                               <span className="block text-[11px]">
                                 Motivo: {r.reversalReason}
+                              </span>
+                            )}
+                            {r.reversed && !r.reversalOf && keptFeeReceiptIds.includes(r.id) && (
+                              <span className="block text-[11px] text-amber-800">
+                                Estornada pelo Asaas: a taxa da rede continua devida.
+                                {canWaiveNetworkFee && (
+                                  <DispensarTaxaDaRede clientId={clientId} receiptId={r.id} />
+                                )}
                               </span>
                             )}
                           </span>

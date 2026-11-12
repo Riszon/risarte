@@ -606,6 +606,8 @@ export default async function ClientDetailPage(
         waivers: [],
         unidadesProntas: {} as Record<string, boolean>,
         cobrancaDisponivel: false,
+        surpluses: [],
+        keptFeeReceiptIds: [] as string[],
       };
   const financeToday = todayInBrazil();
   // AP51: as contas da unidade de cada cobrança, para o "Entrou em" da baixa.
@@ -3773,6 +3775,10 @@ export default async function ClientDetailPage(
                 receber: canReceivePayment && pode(session, "acao.cobranca.ver", client.clinic_id),
               }}
               canWaive={canAuthorizeRenegotiation}
+              surpluses={receivables.surpluses}
+              keptFeeReceiptIds={receivables.keptFeeReceiptIds}
+              canResolveSurplus={canReverseReceipt}
+              canWaiveNetworkFee={isFinanceStaff}
             />
           </TabPanel>
         )}

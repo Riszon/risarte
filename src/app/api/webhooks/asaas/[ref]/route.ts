@@ -14,7 +14,11 @@ import { lerEventoDoAsaas } from "@/lib/asaas/webhook";
  *   2. grava o evento BRUTO em `gateway_webhook_events` (repetido não entra
  *      duas vezes: o identificador do evento é único por conta);
  *   3. responde **200**.
- * Quem PROCESSA o evento (baixa, venda, repasse) é a ASA2.
+ * ASA2 (4005): depois de gravar, PROCESSA os avisos pendentes desta conta, na
+ * ordem em que chegaram (`_gateway_process_pending`). Erro ou demora no
+ * processamento NUNCA muda a resposta: o aviso já está gravado e é tentado de
+ * novo (próximo aviso, rotina diária, botão Reprocessar). Só o 200 conta para
+ * o Asaas, e 15 falhas seguidas pausam a fila.
  *
  * ⚠️ O ASAAS SÓ CONTA O 200 COMO SUCESSO, espera no máximo 10 segundos, não
  * segue redirecionamento e pausa a fila depois de 15 falhas seguidas. Por
@@ -66,6 +70,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ ref
   if (error) {
     console.error("asaas webhook: record failed:", error.message);
     return new Response(null, { status: 500 });
+  }
+
+  // ASA2: processa o que estiver pendente nesta conta. Qualquer falha aqui é
+  // engolida — a resposta é 200 porque o aviso já está guardado.
+  try {
+    const { error: erroDoProcesso } = await admin.rpc("_gateway_process_pending", {
+      p_account_id: conta.account_id,
+      p_limit: 20,
+    });
+    if (erroDoProcesso) console.error("asaas webhook: processing failed:", erroDoProcesso.message);
+  } catch (e) {
+    console.error("asaas webhook: processing threw:", e instanceof Error ? e.message : e);
   }
 
   return Response.json({ ok: true, duplicate: novo !== true }, { status: 200 });

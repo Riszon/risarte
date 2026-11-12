@@ -66,6 +66,23 @@ export type ReceivablesData = {
    */
   unidadesProntas: Record<string, boolean>;
   cobrancaDisponivel: boolean;
+  /** 4005 — pagamentos pelo Asaas em duplicidade deste cliente (abertos e resolvidos). */
+  surpluses: SurplusRow[];
+  /** 4005 — baixas estornadas pelo Asaas cuja taxa da rede continua devida (D13). */
+  keptFeeReceiptIds: string[];
+};
+
+/** 4005 — um pagamento em duplicidade (16.6). */
+export type SurplusRow = {
+  id: string;
+  installmentId: string | null;
+  amountCents: number;
+  paidOn: string | null;
+  reason: string;
+  status: "aberto" | "devolvido" | "abatido";
+  appliedInstallmentId: string | null;
+  resolutionNote: string | null;
+  createdAt: string;
 };
 
 /** 4004 — uma cobrança do Asaas (sem CPF: o pagador vai só pelo nome). */
@@ -105,6 +122,8 @@ export type WaiverRow = {
   interestCents: number;
   totalCents: number;
   reason: string;
+  /** 4005: a dispensa de sempre ou o arredondamento automático do Asaas. */
+  kind: "dispensa" | "arredondamento";
   byName: string | null;
   createdAt: string;
 };
@@ -289,6 +308,8 @@ export async function loadClientReceivables(
       waivers: [],
       unidadesProntas: {},
       cobrancaDisponivel: false,
+      surpluses: [],
+      keptFeeReceiptIds: [],
     };
   }
 
@@ -309,7 +330,7 @@ export async function loadClientReceivables(
   const { data: recRows } = await supabase
     .from("payment_receipts")
     .select(
-      "id, installment_id, amount_cents, principal_cents, benefit_cents, late_fee_cents, interest_cents, received_at, payment_method, reference, reversed, reversal_of, reversal_reason, created_at, acquirer_fee_cents, acquirer_fee_charged_at_issue, settlement_date, profiles:profiles!payment_receipts_created_by_fkey ( full_name )"
+      "id, installment_id, amount_cents, principal_cents, benefit_cents, late_fee_cents, interest_cents, received_at, payment_method, reference, notes, reversed, reversal_of, reversal_reason, created_at, acquirer_fee_cents, acquirer_fee_charged_at_issue, settlement_date, profiles:profiles!payment_receipts_created_by_fkey ( full_name )"
     )
     .in("installment_id", ids)
     .order("created_at", { ascending: false })
@@ -325,6 +346,7 @@ export async function loadClientReceivables(
         received_at: string;
         payment_method: string | null;
         reference: string | null;
+        notes: string | null;
         reversed: boolean;
         reversal_of: string | null;
         reversal_reason: string | null;
@@ -350,7 +372,12 @@ export async function loadClientReceivables(
     reversed: r.reversed,
     reversalOf: r.reversal_of,
     reversalReason: r.reversal_reason,
-    byName: r.profiles?.full_name ?? null,
+    // 4005: a baixa vinda do aviso do Asaas não tem pessoa.
+    byName:
+      r.profiles?.full_name ??
+      (r.notes === "Baixa automática (Asaas)" || (r.reversal_of && r.reference?.startsWith("Asaas "))
+        ? "Asaas (automático)"
+        : null),
     createdAt: r.created_at,
     acquirerFeeCents: r.acquirer_fee_cents ?? 0,
     acquirerFeeChargedAtIssue: Boolean(r.acquirer_fee_charged_at_issue),
@@ -383,7 +410,61 @@ export async function loadClientReceivables(
     waivers,
     unidadesProntas,
     cobrancaDisponivel,
+    ...(await loadGatewayExtras(supabase, clientId, receipts.map((r) => r.id))),
   };
+}
+
+/**
+ * 4005 — duplicidades do cliente e as baixas com a taxa da rede mantida.
+ * Sem a 4005 no banco: listas vazias.
+ */
+async function loadGatewayExtras(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clientId: string,
+  receiptIds: string[]
+): Promise<{ surpluses: SurplusRow[]; keptFeeReceiptIds: string[] }> {
+  const { data: sRows, error } = await supabase
+    .from("gateway_payment_surpluses")
+    .select("id, installment_id, amount_cents, paid_on, reason, status, applied_installment_id, resolution_note, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        installment_id: string | null;
+        amount_cents: number;
+        paid_on: string | null;
+        reason: string;
+        status: SurplusRow["status"];
+        applied_installment_id: string | null;
+        resolution_note: string | null;
+        created_at: string;
+      }[]
+    >();
+  if (error) return { surpluses: [], keptFeeReceiptIds: [] };
+  const surpluses: SurplusRow[] = (sRows ?? []).map((s) => ({
+    id: s.id,
+    installmentId: s.installment_id,
+    amountCents: Number(s.amount_cents),
+    paidOn: s.paid_on,
+    reason: s.reason,
+    status: s.status,
+    appliedInstallmentId: s.applied_installment_id,
+    resolutionNote: s.resolution_note,
+    createdAt: s.created_at,
+  }));
+  let keptFeeReceiptIds: string[] = [];
+  if (receiptIds.length > 0) {
+    const { data: kRows } = await supabase
+      .from("split_charges")
+      .select("receipt_id")
+      .in("receipt_id", receiptIds)
+      .eq("kept_after_refund", true)
+      .is("waived_at", null)
+      .returns<{ receipt_id: string }[]>();
+    keptFeeReceiptIds = [...new Set((kRows ?? []).map((k) => k.receipt_id))];
+  }
+  return { surpluses, keptFeeReceiptIds };
 }
 
 /**
@@ -478,10 +559,10 @@ async function loadChargesAndWaivers(
     };
   });
 
-  const { data: wRows } = await supabase
+  const comNatureza = await supabase
     .from("payment_waivers")
     .select(
-      "id, installment_id, principal_cents, benefit_cents, late_fee_cents, interest_cents, total_cents, reason, created_at, profiles:profiles!payment_waivers_created_by_fkey ( full_name )"
+      "id, installment_id, principal_cents, benefit_cents, late_fee_cents, interest_cents, total_cents, reason, kind, created_at, profiles:profiles!payment_waivers_created_by_fkey ( full_name )"
     )
     .in("installment_id", installmentIds)
     .order("created_at", { ascending: false })
@@ -495,10 +576,37 @@ async function loadChargesAndWaivers(
         interest_cents: number;
         total_cents: number;
         reason: string;
+        kind?: string | null;
         created_at: string;
         profiles: { full_name: string } | null;
       }[]
     >();
+  let wRows = comNatureza.data;
+  if (comNatureza.error) {
+    // Banco sem a 4005: a coluna `kind` ainda não existe.
+    ({ data: wRows } = await supabase
+      .from("payment_waivers")
+      .select(
+        "id, installment_id, principal_cents, benefit_cents, late_fee_cents, interest_cents, total_cents, reason, created_at, profiles:profiles!payment_waivers_created_by_fkey ( full_name )"
+      )
+      .in("installment_id", installmentIds)
+      .order("created_at", { ascending: false })
+      .returns<
+        {
+          id: string;
+          installment_id: string;
+          principal_cents: number;
+          benefit_cents: number;
+          late_fee_cents: number;
+          interest_cents: number;
+          total_cents: number;
+          reason: string;
+          kind?: string | null;
+          created_at: string;
+          profiles: { full_name: string } | null;
+        }[]
+      >());
+  }
   const waivers: WaiverRow[] = (wRows ?? []).map((w) => ({
     id: w.id,
     installmentId: w.installment_id,
@@ -508,6 +616,7 @@ async function loadChargesAndWaivers(
     interestCents: Number(w.interest_cents),
     totalCents: Number(w.total_cents),
     reason: w.reason,
+    kind: w.kind === "arredondamento" ? "arredondamento" : "dispensa",
     byName: w.profiles?.full_name ?? null,
     createdAt: w.created_at,
   }));

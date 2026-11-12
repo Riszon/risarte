@@ -21,6 +21,7 @@ import {
   verificarAgora,
   type LinhaDoHistorico,
   type Resultado,
+  reprocessarAviso,
 } from "./actions";
 
 /** Roda uma ação, mostra o resultado e recarrega a tela. */
@@ -52,7 +53,7 @@ export function BotaoDeAcao({
   sucesso,
   variante = "outline",
 }: {
-  acao: "abrir" | "verificar" | "webhook" | "split" | "pronta";
+  acao: "abrir" | "verificar" | "webhook" | "split" | "pronta" | "reprocessar";
   alvo: string;
   valor?: boolean;
   rotulo: string;
@@ -65,6 +66,7 @@ export function BotaoDeAcao({
     if (acao === "verificar") return verificarAgora(alvo);
     if (acao === "webhook") return criarWebhook(alvo);
     if (acao === "split") return declararSplit(alvo, valor === true);
+    if (acao === "reprocessar") return reprocessarAviso(Number(alvo));
     return marcarPronta(alvo, valor === true);
   };
   return (

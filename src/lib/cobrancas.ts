@@ -81,6 +81,10 @@ const MENSAGEM_DO_BANCO: Record<string, string> = {
   AMOUNT_OVER_BALANCE: "O valor é maior que o saldo da parcela.",
   INVALID_AMOUNT: "Informe um valor maior que zero.",
   SALE_NOT_CLOSED: "A venda ainda não foi fechada; a baixa só entra depois do fechamento.",
+  SURPLUS_NOT_FOUND: "Pagamento em duplicidade não encontrado.",
+  SURPLUS_ALREADY_RESOLVED: "Este pagamento em duplicidade já foi resolvido.",
+  INSTALLMENT_OF_OTHER_CLIENT: "Escolha uma parcela deste mesmo paciente.",
+  NOTHING_TO_WAIVE: "Esta baixa não tem taxa da rede mantida para dispensar.",
 };
 
 /** A mensagem pt-BR de um erro do banco (procura o código no texto). */

@@ -42,6 +42,11 @@ export async function saveFinanceSettings(input: {
    * cobrança no Asaas. Só na REDE; `undefined` = não mexe (banco sem a 4004).
    */
   reissueMaxDays?: number;
+  /**
+   * 4005 — diferença a MENOR do pagamento pelo Asaas que fecha a parcela como
+   * arredondamento, em centavos. Só na REDE; `undefined` = não mexe.
+   */
+  roundingToleranceCents?: number;
 }): Promise<FinanceResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
@@ -81,6 +86,12 @@ export async function saveFinanceSettings(input: {
   ) {
     return { ok: false, error: "O limite da nova cobrança de parcela vencida vai de 0 a 30 dias." };
   }
+  if (
+    input.roundingToleranceCents !== undefined &&
+    (!Number.isInteger(input.roundingToleranceCents) || input.roundingToleranceCents < 0 || input.roundingToleranceCents > 500)
+  ) {
+    return { ok: false, error: "O arredondamento automático vai de R$ 0,00 a R$ 5,00." };
+  }
   const teto = input.overduePercent ?? null;
   if (teto !== null && (!Number.isFinite(teto) || teto < 0 || teto > 100)) {
     return {
@@ -109,6 +120,9 @@ export async function saveFinanceSettings(input: {
       rounding_mode: input.roundingMode,
       alert_overdue_percent: teto,
       ...(naRede && input.reissueMaxDays !== undefined ? { overdue_reissue_max_days: input.reissueMaxDays } : {}),
+      ...(naRede && input.roundingToleranceCents !== undefined
+        ? { gateway_rounding_tolerance_cents: input.roundingToleranceCents }
+        : {}),
       updated_at: new Date().toISOString(),
       updated_by: session.userId,
     },

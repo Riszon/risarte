@@ -215,3 +215,57 @@ export async function desfazerCobrancaExterna(input: {
   revalidatePath(`/prontuarios/${input.clientId}`);
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// ASA2 (4005): pagamento em duplicidade e a taxa da rede mantida no estorno.
+// O banco confere quem pode (Gerente da unidade, Financeiro, Admin; a dispensa
+// da taxa só Financeiro e Admin).
+// ---------------------------------------------------------------------------
+
+export async function abaterDuplicidade(input: {
+  clientId: string;
+  surplusId: string;
+  installmentId: string;
+  note: string;
+}): Promise<ResultadoDaCobranca> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("gateway_surplus_apply", {
+    p_id: input.surplusId,
+    p_installment_id: input.installmentId,
+    p_note: input.note,
+  });
+  if (error) return { ok: false, error: mensagemDaCobranca(error.message) };
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  return { ok: true };
+}
+
+export async function marcarDuplicidadeDevolvida(input: {
+  clientId: string;
+  surplusId: string;
+  note: string;
+}): Promise<ResultadoDaCobranca> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("gateway_surplus_mark_refunded", { p_id: input.surplusId, p_note: input.note });
+  if (error) return { ok: false, error: mensagemDaCobranca(error.message) };
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  return { ok: true };
+}
+
+export async function dispensarTaxaDaRede(input: {
+  clientId: string;
+  receiptId: string;
+  reason: string;
+}): Promise<ResultadoDaCobranca> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("network_fee_waive_after_refund", {
+    p_receipt_id: input.receiptId,
+    p_reason: input.reason,
+  });
+  if (error) return { ok: false, error: mensagemDaCobranca(error.message) };
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  revalidatePath("/financeiro");
+  return { ok: true };
+}

@@ -42,6 +42,7 @@ function cobrancaDeTeste(id: string): CobrancaDoBanco {
     value_cents: 1050,
     discount_cents: 50,
     fine_percent: 2,
+    fine_cents: 210,
     interest_percent: 1,
     due_date: "2026-11-20",
     description: "Parcela 1",
@@ -162,7 +163,7 @@ describe("o que o riSZon manda ao Asaas", () => {
         description: "Parcela 1",
         externalReference: "11111111-1111-1111-1111-111111111111",
         discountValue: 5,
-        finePercent: 0,
+        fineValue: 0,
         interestPercent: 1,
       },
       { fetchImpl }
@@ -175,7 +176,7 @@ describe("o que o riSZon manda ao Asaas", () => {
       dueDate: "2026-11-20",
       externalReference: "11111111-1111-1111-1111-111111111111",
       discount: { value: 5, dueDateLimitDays: 0, type: "FIXED" },
-      fine: { value: 0, type: "PERCENTAGE" },
+      fine: { value: 0, type: "FIXED" },
       interest: { value: 1 },
     });
     // Nunca dado de cartão nem split na ASA1.
@@ -199,7 +200,7 @@ describe("o que o riSZon manda ao Asaas", () => {
         description: "d",
         externalReference: "r",
         discountValue: 0,
-        finePercent: 2,
+        fineValue: 2,
         interestPercent: 1,
       },
       { fetchImpl: fetchImpl as unknown as typeof fetch, timeoutMs: 10, sleep: async () => {} }
@@ -227,7 +228,7 @@ describe("o Asaas de mentira (servidor local de teste)", () => {
         description: "d",
         externalReference: "ref-1",
         discountValue: 0,
-        finePercent: 2,
+        fineValue: 2,
         interestPercent: 1,
       },
       opts
@@ -250,7 +251,7 @@ describe("o Asaas de mentira (servidor local de teste)", () => {
         description: "d",
         externalReference: "ref-2",
         discountValue: 0,
-        finePercent: 2,
+        fineValue: 2,
         interestPercent: 1,
       },
       opts
@@ -364,7 +365,9 @@ describe("guardas estáticas", () => {
   });
 
   it("as ações de cobrança da ficha conferem a permissão da tela antes do banco", () => {
-    const s = ler("src/app/(app)/prontuarios/[id]/cobranca-actions.ts");
+    // As ações da ASA2 (duplicidade, taxa mantida) não são de cobrança: quem
+    // pode é conferido só no banco (papel), e ficam depois deste marcador.
+    const s = ler("src/app/(app)/prontuarios/[id]/cobranca-actions.ts").split("// ASA2 (4005)")[0];
     const funcoes = s.split(/export async function /).slice(1);
     expect(funcoes.length).toBeGreaterThanOrEqual(6);
     for (const f of funcoes) {

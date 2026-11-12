@@ -11,6 +11,7 @@ import { AbaComercialDaUnidade } from "../../../aba-comercial";
 import { AbaFinanceiroDaUnidade } from "../../../aba-financeiro";
 import { HistoricoDaAba } from "../../../conta-client";
 import { ContaETarifas } from "../../../conta-e-tarifas";
+import { AvisosComErro } from "../../../avisos-com-erro";
 import { FaixaDeProntidao } from "../../../prontidao";
 
 export const metadata: Metadata = { title: "Central de Configuração — Unidade" };
@@ -59,7 +60,10 @@ export default async function CentralDaUnidadePage({
         (semMigracao ? (
           <AvisoSemMigracao />
         ) : (
-          <ContaETarifas supabase={supabase} session={session} clinicId={clinicId} clinicName={clinica.name} conta={conta} />
+          <>
+            <ContaETarifas supabase={supabase} session={session} clinicId={clinicId} clinicName={clinica.name} conta={conta} />
+            {session.isAdminMaster && conta && <AvisosComErro supabase={supabase} accountId={conta.id} />}
+          </>
         ))}
       {aba === "financeiro" && (
         <AbaFinanceiroDaUnidade supabase={supabase} session={session} clinicId={clinicId} clinicName={clinica.name} />

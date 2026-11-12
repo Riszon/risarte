@@ -280,3 +280,19 @@ export async function carregarHistorico(
     })),
   };
 }
+
+/**
+ * ASA2 (4005): reprocessa um aviso do Asaas que ficou com erro. Só o Admin
+ * Master (o banco confere de novo em `gateway_reprocess_event`).
+ */
+export async function reprocessarAviso(eventId: number): Promise<Resultado> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return { ok: false, error: SO_ADMIN };
+  if (!Number.isInteger(eventId) || eventId <= 0) return { ok: false, error: "Aviso inválido." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("gateway_reprocess_event", { p_event_id: eventId });
+  if (error) return { ok: false, error: mensagemDoBancoDoGateway(error) };
+  revalidatePath("/central", "layout");
+  if (data === "erro") return { ok: false, error: "O aviso continua com erro. Veja a mensagem na lista." };
+  return { ok: true };
+}

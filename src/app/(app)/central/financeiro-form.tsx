@@ -33,6 +33,8 @@ export type ValoresDaRede = {
   alert_overdue_percent: number | null;
   /** 4004 — dias da nova cobrança de parcela vencida; `null` = banco sem a 4004. */
   overdue_reissue_max_days?: number | null;
+  /** 4005 — arredondamento automático do Asaas, em centavos; `null` = banco sem a 4005. */
+  gateway_rounding_tolerance_cents?: number | null;
 };
 
 /** A linha da unidade, crua: `null` = segue a rede. */
@@ -149,9 +151,17 @@ export function FinanceiroDaRede({
   const j = num(juros);
   const t = num(teto);
   const d = Number(reemissao);
+  // 4005: o arredondamento automático do pagamento pelo Asaas (só na REDE).
+  const temArredondamento = clinicId === null && rede.gateway_rounding_tolerance_cents != null;
+  const [arredondamento, setArredondamento] = useState(
+    ((rede.gateway_rounding_tolerance_cents ?? 10) / 100).toFixed(2).replace(".", ",")
+  );
+  const arredNum = num(arredondamento);
+  const arredCents = arredNum === null || Number.isNaN(arredNum) ? Number.NaN : Math.round(arredNum * 100);
+  const arredInvalido = temArredondamento && (!Number.isInteger(arredCents) || arredCents < 0 || arredCents > 500);
   const reemissaoInvalida = temReemissao && (!Number.isInteger(d) || d < 0 || d > 30);
   const invalido =
-    m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0) || reemissaoInvalida;
+    m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0) || reemissaoInvalida || arredInvalido;
   const acimaDoLimite = (m ?? 0) > 2;
 
   return (
@@ -198,6 +208,22 @@ export function FinanceiroDaRede({
               </span>
             </label>
           )}
+          {temArredondamento && (
+            <label className="block text-sm font-medium">
+              Arredondamento automático do Asaas (R$, até 5,00)
+              <input
+                value={arredondamento}
+                onChange={(e) => setArredondamento(e.target.value)}
+                disabled={!canEdit}
+                inputMode="decimal"
+                className={cn(fieldClass, arredInvalido && "border-destructive")}
+              />
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                Quando o pagamento pelo Asaas vem até este valor ABAIXO do devido, a parcela fecha sozinha, registrada como
+                arredondamento (não é dispensa). Acima disso, o saldo fica em aberto e o Gerente é avisado.
+              </span>
+            </label>
+          )}
         </div>
         <p className="text-[11px] text-muted-foreground">
           Teto da inadimplência: acima dele a unidade acende em <strong>Recebíveis</strong> e no painel da rede. Não é um
@@ -218,6 +244,7 @@ export function FinanceiroDaRede({
                   roundingMode: arred,
                   overduePercent: t,
                   ...(temReemissao ? { reissueMaxDays: d } : {}),
+                  ...(temArredondamento ? { roundingToleranceCents: arredCents } : {}),
                 },
                 "Configuração salva."
               )

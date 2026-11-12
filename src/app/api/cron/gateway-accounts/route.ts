@@ -1,5 +1,5 @@
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
-import { rodarVerificacaoDasContas } from "@/lib/asaas/rotina";
+import { rodarRotinaDosAvisos, rodarVerificacaoDasContas } from "@/lib/asaas/rotina";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
 
 /**
@@ -19,7 +19,13 @@ export async function GET(request: Request) {
   if (!isAdminClientConfigured()) return Response.json({ ok: false, error: "not_configured" }, { status: 500 });
   try {
     const stats = await rodarVerificacaoDasContas();
-    return Response.json({ ok: true, ...stats });
+    // ASA2: avisos pendentes, resumo das vencidas e fila pausada. Banco sem a
+    // 4005 só registra o erro e segue.
+    const avisos = await rodarRotinaDosAvisos().catch((e) => {
+      console.error("gateway notices routine failed:", e instanceof Error ? e.message : e);
+      return {};
+    });
+    return Response.json({ ok: true, ...stats, ...avisos });
   } catch (e) {
     // Banco sem as migrações 4000+ (o código pode ir ao ar antes): não é erro
     // da rotina — não há conta nenhuma para verificar.

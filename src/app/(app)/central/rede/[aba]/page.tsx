@@ -13,6 +13,7 @@ import { AbaComercialDaRede } from "../../aba-comercial";
 import { AbaFinanceiroDaRede } from "../../aba-financeiro";
 import { HistoricoDaAba } from "../../conta-client";
 import { ContaETarifas } from "../../conta-e-tarifas";
+import { AvisosComErro } from "../../avisos-com-erro";
 
 export const metadata: Metadata = { title: "Central de Configuração — Rede" };
 
@@ -64,16 +65,21 @@ async function AbaContaDaRede({
   const carteiras = contas.filter((c) => c.ownerType === "recipient");
   return (
     <>
-      {franqueadoras.map((f) => (
-        <ContaETarifas
-          key={f.id}
-          supabase={supabase}
-          session={session}
-          clinicId={f.id}
-          clinicName={f.name}
-          conta={contas.find((c) => c.clinicId === f.id) ?? null}
-        />
-      ))}
+      {franqueadoras.map((f) => {
+        const conta = contas.find((c) => c.clinicId === f.id) ?? null;
+        return (
+          <div key={f.id} className="space-y-4">
+            <ContaETarifas
+              supabase={supabase}
+              session={session}
+              clinicId={f.id}
+              clinicName={f.name}
+              conta={conta}
+            />
+            {session.isAdminMaster && conta && <AvisosComErro supabase={supabase} accountId={conta.id} />}
+          </div>
+        );
+      })}
       <Card>
         <CardHeader className="gap-1">
           <CardTitle className="text-base">Carteiras de repasse</CardTitle>

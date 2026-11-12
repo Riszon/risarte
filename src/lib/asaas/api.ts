@@ -222,9 +222,12 @@ export type NovaCobranca = {
   externalReference: string;
   /** Desconto FIXO válido até o vencimento (0 = sem desconto). */
   discountValue: number;
-  /** Multa em % (0 = sem multa). */
-  finePercent: number;
-  /** Juros em % AO MÊS (0 = sem juros). */
+  /**
+   * Multa EM REAIS (0 = sem multa). ASA2 (16.3): o riSZon calcula a multa
+   * sobre o valor cheio da parcela e manda o valor pronto.
+   */
+  fineValue: number;
+  /** Juros em % AO MÊS (0 = sem juros), já ajustados à proporção do valor cheio. */
   interestPercent: number;
 };
 
@@ -243,7 +246,7 @@ export function createPayment(cred: AsaasCredential, input: NovaCobranca, opts?:
         description: input.description.slice(0, 500),
         externalReference: input.externalReference,
         discount: { value: input.discountValue, dueDateLimitDays: 0, type: "FIXED" },
-        fine: { value: input.finePercent, type: "PERCENTAGE" },
+        fine: { value: input.fineValue, type: "FIXED" },
         interest: { value: input.interestPercent },
       },
     },

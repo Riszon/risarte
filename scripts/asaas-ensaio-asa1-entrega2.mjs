@@ -69,9 +69,15 @@ async function comoServidor() {
 try {
   await c.query("begin");
   const sql = readFileSync(ARQ, "utf8");
-  await c.query(sql);
-  const e2 = await recusa(sql);
-  conf("a 4004 roda duas vezes sem erro", e2 === null);
+  // Com a 4005 no banco, as funções de emissão mudaram de formato (multa em
+  // reais): a 4004 não é reaplicada, só conferida.
+  const tem4005 = (await um("select count(*)::int n from information_schema.columns where table_name = 'charges' and column_name = 'fine_cents'")).n > 0;
+  let e2 = null;
+  if (!tem4005) {
+    await c.query(sql);
+    e2 = await recusa(sql);
+  }
+  conf("a 4004 roda duas vezes sem erro (ou a 4005 já está no banco)", e2 === null);
   if (e2) console.log("   ", e2);
 
   const pessoa = async (conta) =>
@@ -205,7 +211,10 @@ try {
   conf("vencida: o valor é o saldo atualizado ATÉ a nova data", Number(p7.value_cents) === Number(s7.total_rem));
   conf("vencida: data mais longe cobra mais juros", Number(p7.value_cents) > Number(pHoje.value_cents));
   conf("vencida: sem multa nova e sem desconto", Number(p7.fine_percent) === 0 && Number(p7.discount_cents) === 0);
-  conf("vencida: juros mensais a partir da nova data", Number(p7.interest_percent) === 1);
+  // 4005: juros na proporção do valor cheio (parcela 100,00 ÷ valor da cobrança).
+  conf("vencida: juros mensais a partir da nova data",
+    tem4005 ? Math.abs(Number(p7.interest_percent) - Math.round((10000 / Number(p7.value_cents)) * 10000) / 10000) < 0.0001
+            : Number(p7.interest_percent) === 1);
   conf("vencida: marcada como reemissão", p7.is_overdue_reissue === true && p7.max_reissue_days === 7);
   // O limite segue a rede.
   await comoServidor();

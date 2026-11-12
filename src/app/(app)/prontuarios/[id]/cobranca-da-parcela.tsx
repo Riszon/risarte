@@ -114,7 +114,8 @@ export function CobrancaDaParcela({
   const ativa = cobrancas.find((c) => SITUACOES_ATIVAS.has(c.status as SituacaoDaCobranca)) ?? null;
   const anteriores = cobrancas.filter((c) => c !== ativa).length;
   // Sem cobrança ativa: ou o botão aparece, ou a tela diz por quê.
-  const motivo_ = ativa
+  const jaPagaPeloAsaas = cobrancas.some((c) => c.status === "paga" || c.status === "liquidada");
+  const motivo_ = ativa || jaPagaPeloAsaas
     ? null
     : motivoSemCobranca({
         status: parcela.status,
@@ -154,16 +155,34 @@ export function CobrancaDaParcela({
   }
 
   if (!permissoes.ver && dispensas.length === 0) return null;
+  // Parcela paga pelo Asaas: só a linha da paga (sem o motivo "parcela paga").
 
   return (
     <div className="mt-2 space-y-1.5 border-t pt-2 text-xs">
-      {dispensas.map((w) => (
-        <p key={w.id} className="rounded border border-amber-300 bg-amber-50 p-1.5 text-amber-900">
-          Quitada por valor menor: dispensado {formatBRL(w.totalCents)}
-          {w.principalCents > 0 && ` (principal ${formatBRL(w.principalCents)})`} — “{w.reason}”
-          {w.byName && `, por ${w.byName}`} em {fmtDate(w.createdAt)}.
-        </p>
-      ))}
+      {dispensas.map((w) =>
+        w.kind === "arredondamento" ? (
+          <p key={w.id} className="text-muted-foreground">
+            Fechada por arredondamento do Asaas (automático): {formatBRL(w.totalCents)} em {fmtDate(w.createdAt)}.
+          </p>
+        ) : (
+          <p key={w.id} className="rounded border border-amber-300 bg-amber-50 p-1.5 text-amber-900">
+            Quitada por valor menor: dispensado {formatBRL(w.totalCents)}
+            {w.principalCents > 0 && ` (principal ${formatBRL(w.principalCents)})`} — “{w.reason}”
+            {w.byName && `, por ${w.byName}`} em {fmtDate(w.createdAt)}.
+          </p>
+        )
+      )}
+      {permissoes.ver &&
+        (() => {
+          const paga = cobrancas.find((c) => c.status === "paga" || c.status === "liquidada");
+          if (!paga) return null;
+          return (
+            <p className="text-muted-foreground">
+              Paga pelo Asaas ({MEIO_CURTO[paga.billingType ?? ""] ?? paga.billingType})
+              {paga.status === "liquidada" ? " · dinheiro disponível" : " · aguardando o dinheiro cair"}.
+            </p>
+          );
+        })()}
 
       {permissoes.ver && ativa && !ativa.isExternal && (
         <div className="flex flex-wrap items-center gap-1.5">

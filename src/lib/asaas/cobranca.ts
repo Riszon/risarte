@@ -40,6 +40,7 @@ export type CobrancaDoBanco = {
   value_cents: number;
   discount_cents: number;
   fine_percent: number;
+  fine_cents: number;
   interest_percent: number;
   due_date: string;
   description: string;
@@ -189,7 +190,7 @@ export async function emitirComOAsaas(
             description: c.description,
             externalReference: c.charge_id,
             discountValue: reais(c.discount_cents),
-            finePercent: Number(c.fine_percent),
+            fineValue: reais(c.fine_cents ?? 0),
             interestPercent: Number(c.interest_percent),
           },
           opts

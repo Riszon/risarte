@@ -17,6 +17,7 @@ type Linha = {
   rounding_mode: "half_up" | "half_even" | null;
   alert_overdue_percent: number | null;
   overdue_reissue_max_days?: number | null;
+  gateway_rounding_tolerance_cents?: number | null;
 };
 
 async function lerLinhas(supabase: SupabaseClient): Promise<Linha[]> {
@@ -24,9 +25,12 @@ async function lerLinhas(supabase: SupabaseClient): Promise<Linha[]> {
   // 4004: com a coluna do limite da reemissão; sem a 4004, sem ela.
   const com = await supabase
     .from("finance_settings")
-    .select(`${colunas}, overdue_reissue_max_days`)
+    .select(`${colunas}, overdue_reissue_max_days, gateway_rounding_tolerance_cents`)
     .returns<Linha[]>();
   if (!com.error) return com.data ?? [];
+  // 4004 sem a 4005: só o limite da reemissão.
+  const so4004 = await supabase.from("finance_settings").select(`${colunas}, overdue_reissue_max_days`).returns<Linha[]>();
+  if (!so4004.error) return so4004.data ?? [];
   const { data } = await supabase.from("finance_settings").select(colunas).returns<Linha[]>();
   return data ?? [];
 }
@@ -40,6 +44,8 @@ function daRede(linhas: Linha[]): ValoresDaRede {
     alert_overdue_percent: r?.alert_overdue_percent == null ? 5 : Number(r.alert_overdue_percent),
     overdue_reissue_max_days:
       r && "overdue_reissue_max_days" in r ? Number(r.overdue_reissue_max_days ?? 7) : null,
+    gateway_rounding_tolerance_cents:
+      r && "gateway_rounding_tolerance_cents" in r ? Number(r.gateway_rounding_tolerance_cents ?? 10) : null,
   };
 }
 
