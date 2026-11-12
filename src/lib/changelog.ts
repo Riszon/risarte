@@ -62,6 +62,36 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.435.0",
+    data: "2026-11-11",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4005, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Pagamento pelo Asaas dá baixa sozinho (em testes)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando o paciente paga uma cobrança do Asaas, o riSZon dá a baixa sozinho, com a taxa e a data em que o dinheiro cai, e fecha a venda se for o primeiro pagamento. A baixa aparece como “Asaas (automático)”. Por enquanto só nas unidades de teste.",
+        papeis: ["receptionist", "unit_manager", "finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Pagamento pelo Asaas de uma cobrança já cancelada ou de parcela já paga não vira baixa em dobro: aparece na ficha como pagamento em duplicidade, para o Gerente ou o Financeiro devolver ou abater em outra parcela.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na Central de Configuração, aba Financeiro da rede: o arredondamento automático do Asaas (padrão R$ 0,10). Na aba Conta e tarifas, o Admin vê e reprocessa os avisos do Asaas que deram erro.",
+        papeis: ["finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+    ],
+  },
+  {
     versao: "0.434.0",
     data: "2026-11-11",
     migracao: "0401",

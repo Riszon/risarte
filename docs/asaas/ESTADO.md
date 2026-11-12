@@ -19,6 +19,8 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
 | **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.433.0, Asaas 0.3.0); 4004 nos dois bancos (produção pelo dono, conferência batida); testada pelo dono no projeto de teste | **4004** |
+| **ASA2, entrega 1** — o aviso do Asaas vira baixa | 🟡 **em teste** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; falta a prova no sandbox de ponta a ponta, a do pagamento atrasado (dois dias) e a do cartão (o dono paga) | **4005** |
+| ASA2, entrega 2 — sinalização "em atraso" e a régua | plano aprovado (spec seção 16.8) | — |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -33,6 +35,47 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
+
+## ASA2, entrega 1 — o aviso do Asaas vira baixa (Asaas 0.4.0, core 0.435.0, 11/11/2026)
+
+### O que existe
+
+- **4005** — o aviso gravado pelo webhook é processado por
+  `_gateway_process_event` (tenta, grava o resultado ou o erro; nunca levanta
+  erro), `_gateway_apply_event` (o que cada aviso faz, seção 16.2) e
+  `_gateway_on_paid` (D21 → baixa → taxa real → situação). Funções internas,
+  todas só da chave de serviço: `_gateway_confirm_sale`, `_gateway_receipt`,
+  `_gateway_apply_fee`, `_gateway_reverse_receipt`, `_gateway_bank_account`,
+  `_gateway_notify`, `_gateway_process_pending`, `_gateway_overdue_summary`.
+  Portas: `gateway_reprocess_event` (Admin), `gateway_surplus_apply` e
+  `gateway_surplus_mark_refunded` (Gerente, Financeiro, Admin),
+  `network_fee_waive_after_refund` (Financeiro, Admin).
+- **Tabelas e colunas:** `gateway_payment_surpluses` (duplicidade);
+  `payment_waivers.kind` (`dispensa` | `arredondamento`, este sem autor);
+  `split_charges.kept_after_refund` e `waived_*`; `bank_accounts.gateway_account_id`
+  (a conta "Asaas"); `charges.fine_cents`, `paid_cents`, `paid_on`,
+  `credit_date`, `receipt_id`; `gateway_webhook_events.attempts`, `charge_id`,
+  `result`; `*.payment_confirmed_source`; `finance_settings.gateway_rounding_tolerance_cents`.
+- **`apply_receipt_split` recriada** (núcleo): não desfaz a taxa da rede
+  mantida no estorno pelo Asaas (D13).
+- **Emissão:** multa em reais (`fine` FIXED) e juros proporcionais ao valor
+  cheio, calculados em `_charge_compute`.
+- **Webhook** processa os pendentes da conta depois de gravar e sempre
+  responde 200. **Rotina diária** (`rodarRotinaDosAvisos`): pendentes,
+  resumo das vencidas e fila pausada (`interrupted`).
+
+### Regras que quem mexer aqui precisa saber
+
+- ⚠️ **A baixa do aviso não passa por `register_payment_receipt`** (que exige
+  pessoa logada): `_gateway_receipt` repete a mesma regra. Mudou a regra de
+  abatimento? Mude nas duas.
+- ⚠️ **A trava da baixa manual é contornada só por `risarte.baixa_do_asaas`**,
+  ligada dentro de `_gateway_receipt` e `_gateway_reverse_receipt`.
+- ⚠️ **O valor pago vem de `payment.value`** do aviso — a prova do pagamento
+  atrasado (dois dias) confirma se é o total com juros.
+- ⚠️ **Reaplicar a 4004 depois da 4005 quebra** (as funções de emissão mudaram
+  de formato): o ensaio da ASA1 entrega 2 só confere a 4004 quando a 4005 já
+  está no banco.
 
 ## ASA1, entrega 2 — a cobrança de parcela (Asaas 0.3.0, core 0.433.0, 11/11/2026)
 

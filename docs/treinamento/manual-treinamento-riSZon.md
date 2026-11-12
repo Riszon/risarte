@@ -6043,6 +6043,9 @@ o que antes ficava em Financeiro → Cadastros → Configuração.
 - **Carência: fixa em zero.** O campo aparece só para leitura — *o Asaas não
   aplica carência; multa e juros contam do dia seguinte ao vencimento*. O
   sistema recusa outro valor.
+- **Arredondamento automático do Asaas** *(desde a 0.435.0, só na Rede;
+  padrão R$ 0,10, até R$ 5,00)*. Pagamento pelo Asaas até este valor abaixo do
+  devido fecha a parcela sozinho, registrado como arredondamento.
 - **Nova cobrança de parcela vencida: até quantos dias** *(desde a 0.433.0,
   só na Rede; padrão 7, de 0 a 30)*. O Asaas não aceita cobrança com
   vencimento no passado: a parcela vencida ganha um vencimento novo, de hoje
@@ -6213,8 +6216,35 @@ some. Para mudar, cancele a cobrança antes.
   o riSZon não gera outra e a baixa continua manual. **Desfazer** tira a
   marcação.
 
-**A baixa do pagamento pelo Asaas** ainda é manual nesta etapa: a baixa
-automática vem na próxima (ASA2).
+**A baixa do pagamento pelo Asaas é automática** *(desde a 0.435.0)*:
+
+- quando o Asaas avisa que o paciente pagou, o riSZon dá a baixa sozinho, na
+  conta **Asaas** da unidade, com a taxa e a data em que o dinheiro cai
+  informadas pelo próprio Asaas. A baixa aparece como **Asaas (automático)**;
+- se for o primeiro pagamento de uma venda com contrato assinado, a **venda
+  fecha** junto (antes da baixa);
+- Pix aparece já como dinheiro disponível; boleto e cartão primeiro como
+  **Paga pelo Asaas · aguardando o dinheiro cair** e depois disponível;
+- **pagou a mais** (por exemplo, juros de uns dias de atraso): a diferença
+  entra como juros; **pagou a menos até R$ 0,10** (configurável na aba
+  Financeiro da rede): a parcela fecha como **arredondamento (automático)**;
+  acima disso, o saldo fica em aberto e o Gerente é avisado;
+- **pagamento em duplicidade** (pagou no balcão e depois o boleto no banco, por
+  exemplo): não há baixa em dobro. A ficha mostra o quadro **Pagamento em
+  duplicidade pelo Asaas**, e o Gerente, o Financeiro ou o Admin escolhe
+  **Abater em outra parcela** ou **Devolvido** (a devolução é feita no painel
+  do Asaas);
+- **estorno pelo Asaas**: a baixa é desfeita e a parcela volta a ficar em
+  aberto, mas a **taxa da rede continua devida**. O Financeiro da Franqueadora
+  e o Admin podem **Dispensar a taxa**, com motivo, no histórico da parcela;
+- **cobrança vencida**: o Gerente recebe um **resumo diário** por unidade, em
+  vez de um aviso por parcela. Estorno, contestação no cartão, duplicidade,
+  cobrança apagada ou alterada no painel do Asaas geram aviso na hora.
+
+**Avisos do Asaas com erro** (Admin Master): na aba **Conta e tarifas** da
+Central aparecem os avisos que não puderam ser processados, com o motivo e o
+botão **Reprocessar**. Nada se perde: o riSZon também tenta de novo sozinho
+todo dia e no próximo aviso.
 
 **A baixa manual (Registrar recebimento), desde a 0.433.0:**
 

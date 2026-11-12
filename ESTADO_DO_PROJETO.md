@@ -2,6 +2,17 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔌 0.435.0 / ASAAS 0.4.0 — ASA2, ENTREGA 1: O AVISO DO ASAAS VIRA BAIXA (11/11/2026; migração 4005)
+>
+> Estado em `docs/asaas/ESTADO.md`; decisões na seção 16 da especificação.
+> Pagamento pelo Asaas dá baixa sozinho (conta "Asaas", taxa e data reais),
+> fecha a venda no primeiro pagamento (D21, nas três origens), trata valor a
+> maior (juros), a menor (arredondamento até R$ 0,10, configurável), estorno
+> (a taxa da rede continua devida, com dispensa manual), duplicidade (devolver
+> ou abater), cobrança apagada/restaurada/alterada no painel, contestação; o
+> webhook responde 200 sempre; avisos com erro reprocessáveis. Emissão com
+> multa em reais. Ensaio 63/63. 🟡 4005 só no treino.
+>
 > ## ✅ 0.434.0 — REPASSE DOS DENTISTAS, ETAPA 5: AS VISÕES (11/11/2026; migração 0401)
 >
 > Última das etapas (`docs/Financeiro/REPASSE-PLANO.md`, decisões V1–V6 do

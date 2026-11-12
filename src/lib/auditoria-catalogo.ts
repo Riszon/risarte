@@ -89,6 +89,7 @@ export const TABELAS: Record<string, string> = {
   "public.fixed_assets": "Bem (ativo fixo)",
   "public.gateway_accounts": "Conta Asaas",
   "public.gateway_customers": "Pagador no Asaas",
+  "public.gateway_payment_surpluses": "Pagamento em duplicidade pelo Asaas",
   "public.gateway_settings": "Asaas — interruptor de produção",
   "public.goal_milestones": "Marco de meta",
   "public.goal_participant_rules": "Participantes da meta",

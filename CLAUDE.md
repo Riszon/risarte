@@ -400,6 +400,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**11/11/2026 (Asaas — ASA2, entrega 1) — PC Administrador (core 0.434.0 → 0.435.0, Asaas 0.4.0, migração 4005; worktree `wt-asaas`)**
+
+- **O aviso do Asaas vira baixa** (estado em `docs/asaas/ESTADO.md`; decisões
+  na seção 16 da especificação). ⚠️ **`_gateway_receipt` repete a regra de
+  `register_payment_receipt`** (mudou uma, mude a outra). ⚠️ **`apply_receipt_split`
+  foi recriada na 4005** (taxa mantida no estorno, D13). ⚠️ **Reaplicar a 4004
+  depois da 4005 quebra.**
+- 🟡 4005 só no treino; falta a prova no sandbox e a aprovação do dono.
+
 **11/11/2026 (repasse, etapa 5) — PC Administrador (core 0.433.0 → 0.434.0, migração 0401)**
 
 - **As visões do repasse** (bloco 0.434.0 no ESTADO; decisões V1–V6 em
