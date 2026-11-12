@@ -408,7 +408,7 @@ Syncthing se comportarem de forma estranha.**
   ficha, número da aba Financeiro e filtro de Prontuários. ⚠️ **Quem vê o selo e
   o painel é o banco** (`_gateway_cap_clinics`, lê a matriz com TETO: dentista,
   planner, TSB, ASB e SDR nunca veem o selo; a Recepcionista nunca vê o painel).
-- ✅ Aprovada pelo dono no treino em 12/11/2026; 🟡 4006 falta rodar na produção.
+- ✅ Aprovada pelo dono no treino e **4006 aplicada na produção** em 12/11/2026 (o dono rodou; conferência bateu).
 
 **12/11/2026 (repasse, a divergência) — PC Administrador (core 0.435.0 → 0.436.0, migração 0402)**
 
