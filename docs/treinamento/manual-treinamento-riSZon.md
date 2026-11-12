@@ -6044,7 +6044,7 @@ o que antes ficava em Financeiro → Cadastros → Configuração.
   aplica carência; multa e juros contam do dia seguinte ao vencimento*. O
   sistema recusa outro valor.
 - **Arredondamento automático do Asaas** *(desde a 0.435.0, só na Rede;
-  padrão R$ 0,10, até R$ 5,00)*. Pagamento pelo Asaas até este valor abaixo do
+  padrão R$ 0,10, até R$ 1,00)*. Pagamento pelo Asaas até este valor abaixo do
   devido fecha a parcela sozinho, registrado como arredondamento.
 - **Nova cobrança de parcela vencida: até quantos dias** *(desde a 0.433.0,
   só na Rede; padrão 7, de 0 a 30)*. O Asaas não aceita cobrança com
@@ -6288,8 +6288,9 @@ aberto. Não existe selo "em dia": sem atraso, nada aparece.
 
 **Quando acende:** só depois de **3 dias úteis** do vencimento (sábado, domingo
 e feriado nacional não contam), o tempo da compensação do boleto. Multa e juros
-não mudam: contam desde o vencimento, e a aba **Financeiro** continua mostrando
-a parcela como **vencida** desde o dia seguinte. O aviso "cobrança(s) em
+não mudam: contam desde o vencimento, e a aba **Financeiro** mostra a parcela
+como **vencida** desde o dia seguinte ("vencida há N dias", o cartão e o filtro
+**Vencidas**). "Em atraso" fica só para o que já passou da tolerância. O aviso "cobrança(s) em
 atraso" no alto da ficha, o número vermelho da aba Financeiro e o filtro "em
 atraso" da lista de Prontuários seguem a mesma regra do selo. Os 3 dias são do
 Admin Master ou do Financeiro da Franqueadora mudar, na Central de Configuração,

@@ -83,6 +83,17 @@ $$;
 revoke execute on function public.overdue_badge_cutoff() from public, anon, authenticated;
 grant execute on function public.overdue_badge_cutoff() to authenticated;
 
+-- O arredondamento automático do Asaas (4005) fecha saldo sem passar pelo
+-- Gerente: o teto cai de R$ 5,00 para R$ 1,00 (pedido do dono, 12/11/2026).
+update public.finance_settings
+   set gateway_rounding_tolerance_cents = 100
+ where gateway_rounding_tolerance_cents > 100;
+alter table public.finance_settings
+  drop constraint if exists finance_settings_rounding_tolerance_check;
+alter table public.finance_settings
+  add constraint finance_settings_rounding_tolerance_check
+  check (gateway_rounding_tolerance_cents is null or gateway_rounding_tolerance_cents between 0 and 100);
+
 -- -----------------------------------------------------------------------------
 -- 2) QUEM PODE — a matriz, com os papéis que NUNCA podem
 -- -----------------------------------------------------------------------------
@@ -293,10 +304,12 @@ update public.charges c
 -- -----------------------------------------------------------------------------
 -- 5) O PAINEL DE COBRANÇAS
 -- -----------------------------------------------------------------------------
--- "A receber do Asaas": pagas e ainda não liquidadas.
+-- "A receber do Asaas": pagas e ainda não liquidadas. O código do prontuário
+-- vai junto, para separar homônimos.
+drop function if exists public.gateway_receivables_due(uuid);
 create or replace function public.gateway_receivables_due(p_clinic_id uuid)
 returns table (
-  charge_id uuid, clinic_id uuid, clinic_name text, client_id uuid, client_name text,
+  charge_id uuid, clinic_id uuid, clinic_name text, client_id uuid, client_name text, client_code text,
   billing_type text, paid_on date, credit_date date,
   paid_cents bigint, fee_cents bigint, net_cents bigint
 )
@@ -315,7 +328,7 @@ begin
     raise exception 'NOT_ALLOWED';
   end if;
   return query
-  select ch.id, ch.clinic_id, cl.name, ch.client_id, c.full_name,
+  select ch.id, ch.clinic_id, cl.name, ch.client_id, c.full_name, c.code,
          ch.billing_type, ch.paid_on, ch.credit_date,
          ch.paid_cents, ch.fee_cents, ch.net_cents
     from public.charges ch
@@ -332,6 +345,7 @@ grant execute on function public.gateway_receivables_due(uuid) to authenticated;
 
 -- "Cobranças emitidas": todas as emitidas pelo riSZon, com filtros. A planilha
 -- (p_export) lê por aqui também, e a leitura vira registro de auditoria.
+drop function if exists public.gateway_charges_list(uuid, text[], text[], text, date, date, boolean);
 create or replace function public.gateway_charges_list(
   p_clinic_id uuid,
   p_statuses text[],
@@ -342,7 +356,7 @@ create or replace function public.gateway_charges_list(
   p_export boolean default false
 )
 returns table (
-  charge_id uuid, clinic_id uuid, clinic_name text, client_id uuid, client_name text,
+  charge_id uuid, clinic_id uuid, clinic_name text, client_id uuid, client_name text, client_code text,
   installment_seq integer, billing_type text, status text, is_overdue_reissue boolean,
   issued_at timestamptz, due_date date, value_cents bigint, paid_cents bigint,
   paid_on date, credit_date date, fee_cents bigint, net_cents bigint, invoice_url text
@@ -392,7 +406,7 @@ begin
   end if;
 
   return query
-  select ch.id, ch.clinic_id, cl.name, ch.client_id, c.full_name,
+  select ch.id, ch.clinic_id, cl.name, ch.client_id, c.full_name, c.code,
          pi.seq, ch.billing_type, ch.status, ch.is_overdue_reissue,
          ch.issued_at, ch.due_date, ch.value_cents, ch.paid_cents,
          ch.paid_on, ch.credit_date, ch.fee_cents, ch.net_cents, ch.invoice_url

@@ -103,8 +103,12 @@ export function computeLateCharges(input: {
   };
 }
 
-/** Rótulo curto do atraso para as telas ("3 dias em atraso"). */
+/**
+ * Rótulo curto da parcela vencida, na aba Financeiro ("vencida há 3 dias").
+ * ASA2 (4006): "em atraso" ficou só para o que passou da tolerância de dias
+ * úteis (o selo); aqui, desde o dia seguinte ao vencimento, é "vencida".
+ */
 export function lateLabel(days: number): string {
   if (days <= 0) return "Em dia";
-  return days === 1 ? "1 dia em atraso" : `${days} dias em atraso`;
+  return days === 1 ? "vencida há 1 dia" : `vencida há ${days} dias`;
 }

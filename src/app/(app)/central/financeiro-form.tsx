@@ -160,7 +160,8 @@ export function FinanceiroDaRede({
   );
   const arredNum = num(arredondamento);
   const arredCents = arredNum === null || Number.isNaN(arredNum) ? Number.NaN : Math.round(arredNum * 100);
-  const arredInvalido = temArredondamento && (!Number.isInteger(arredCents) || arredCents < 0 || arredCents > 500);
+  // 4006: o teto caiu para R$ 1,00 (fecha saldo sem passar pelo Gerente).
+  const arredInvalido = temArredondamento && (!Number.isInteger(arredCents) || arredCents < 0 || arredCents > 100);
   // 4006: os dias úteis do selo "Em atraso" (só na REDE).
   const temSelo = clinicId === null && rede.overdue_badge_business_days != null;
   const [diasDoSelo, setDiasDoSelo] = useState(String(rede.overdue_badge_business_days ?? 3));
@@ -217,7 +218,7 @@ export function FinanceiroDaRede({
           )}
           {temArredondamento && (
             <label className="block text-sm font-medium">
-              Arredondamento automático do Asaas (R$, até 5,00)
+              Arredondamento automático do Asaas (R$, até 1,00)
               <input
                 value={arredondamento}
                 onChange={(e) => setArredondamento(e.target.value)}

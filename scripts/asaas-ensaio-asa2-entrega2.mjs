@@ -119,6 +119,11 @@ try {
   conf("o feriado nacional e o fim de semana não contam (19/11 + 3 úteis = 25/11)", comFeriado === "2026-11-25");
   const fora = await recusa("update public.finance_settings set overdue_badge_business_days = 16 where clinic_id is null");
   conf("a tolerância fora de 0 a 15 é recusada", fora !== null);
+  const arredAlto = await recusa("update public.finance_settings set gateway_rounding_tolerance_cents = 101 where clinic_id is null");
+  conf("o arredondamento automático acima de R$ 1,00 é recusado", arredAlto !== null);
+  const arredUm = await recusa("update public.finance_settings set gateway_rounding_tolerance_cents = 100 where clinic_id is null");
+  conf("o arredondamento automático de R$ 1,00 é aceito", arredUm === null);
+  await c.query("update public.finance_settings set gateway_rounding_tolerance_cents = 10 where clinic_id is null");
 
   // --- 2) o cenário -------------------------------------------------------------
   const pessoa = async (conta) => (await um("select id from public.profiles where email = $1", [`${conta}@example.com`]))?.id;

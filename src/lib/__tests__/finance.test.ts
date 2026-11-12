@@ -200,8 +200,8 @@ describe("dias de atraso", () => {
 
   it("rótulo em pt-BR", () => {
     expect(lateLabel(0)).toBe("Em dia");
-    expect(lateLabel(1)).toBe("1 dia em atraso");
-    expect(lateLabel(12)).toBe("12 dias em atraso");
+    expect(lateLabel(1)).toBe("vencida há 1 dia");
+    expect(lateLabel(12)).toBe("vencida há 12 dias");
   });
 });
 

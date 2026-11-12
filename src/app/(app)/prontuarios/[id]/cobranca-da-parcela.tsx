@@ -467,7 +467,8 @@ function DialogoDeEmissao({
             </select>
             {meio === "CREDIT_CARD" && (
               <span className="text-[10px] text-muted-foreground">
-                O paciente digita o cartão na página do Asaas. O riSZon nunca recebe dados de cartão.
+                Cobra só esta parcela, à vista no cartão: o paciente digita o cartão na página do Asaas. Não parcela no
+                cartão. O riSZon nunca recebe dados de cartão.
               </span>
             )}
           </label>

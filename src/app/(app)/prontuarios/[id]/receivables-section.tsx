@@ -523,7 +523,7 @@ export function ReceivablesSection({
         <Card className={cn(summary.lateCents > 0 && "border-destructive/50")}>
           <CardContent className="p-3">
             <p className="text-[11px] font-medium text-muted-foreground">
-              Em atraso {summary.lateCount > 0 && `(${summary.lateCount})`}
+              Vencidas {summary.lateCount > 0 && `(${summary.lateCount})`}
             </p>
             <p
               className={cn(
@@ -712,7 +712,7 @@ export function ReceivablesSection({
                     {v.isLate && (
                       <span className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[11px] font-medium text-destructive">
                         <AlertTriangle className="size-3" />
-                        {lateLabel(v.daysLate)} · multa{" "}
+                        {lateLabel(v.daysLate).replace(/^v/, "V")} · multa{" "}
                         {formatBRL(v.lateFeeCents)} + juros{" "}
                         {formatBRL(v.interestCents)}
                         {v.benefitDueCents > 0 && (

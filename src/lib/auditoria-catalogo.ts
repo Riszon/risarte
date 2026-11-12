@@ -47,7 +47,7 @@ export const TABELAS: Record<string, string> = {
   "public.card_acquirers": "Adquirente",
   "public.career_levels": "Nível de carreira",
   "public.central_unit_readiness": "Central — unidade pronta para cobrar",
-  "public.charges": "Cobrança do Asaas",
+  "public.charges": "Cobrança do Asaas: registro",
   "public.chart_of_accounts": "Conta do plano de contas",
   "public.chat_contact_rules": "Regra de contato do chat",
   "public.client_consents": "Consentimento do cliente",

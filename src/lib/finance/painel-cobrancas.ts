@@ -12,6 +12,8 @@ export type LinhaAReceber = {
   clinic_name: string;
   client_id: string | null;
   client_name: string | null;
+  /** O código do prontuário (LDN-00066), para separar homônimos. */
+  client_code: string | null;
   billing_type: string;
   paid_on: string | null;
   credit_date: string | null;
@@ -26,6 +28,7 @@ export type LinhaEmitida = {
   clinic_name: string;
   client_id: string | null;
   client_name: string | null;
+  client_code: string | null;
   installment_seq: number | null;
   billing_type: string;
   status: string;
@@ -41,14 +44,15 @@ export type LinhaEmitida = {
   invoice_url: string | null;
 };
 
-/** Os meios na ordem da tela. Cartão parcelado, recorrente e Pix Automático chegam nas fases seguintes. */
-export const MEIOS_DO_PAINEL: { valor: string; rotulo: string; aPartirDe?: string }[] = [
+/**
+ * Os meios na ordem da tela — só os que o riSZon já emite. Cartão parcelado,
+ * recorrente e Pix Automático entram aqui quando a fase deles existir (o dono
+ * pediu para não mostrar linha de coisa que ainda não existe, 12/11/2026).
+ */
+export const MEIOS_DO_PAINEL: { valor: string; rotulo: string }[] = [
   { valor: "BOLETO", rotulo: "Boleto" },
   { valor: "PIX", rotulo: "Pix" },
   { valor: "CREDIT_CARD", rotulo: "Cartão à vista" },
-  { valor: "CREDIT_CARD_INSTALLMENT", rotulo: "Cartão parcelado", aPartirDe: "ASA4" },
-  { valor: "CREDIT_CARD_RECURRING", rotulo: "Cartão recorrente", aPartirDe: "fase do recorrente" },
-  { valor: "PIX_AUTOMATIC", rotulo: "Pix Automático", aPartirDe: "fase do Pix Automático" },
 ];
 
 export function rotuloDoMeio(valor: string): string {
@@ -81,7 +85,7 @@ export type AgendaDoAReceber = {
   total: Soma;
   /** Até hoje (inclusive, e o que já passou da data prevista), 7, 30, 60 dias e depois. */
   faixas: { chave: string; rotulo: string; soma: Soma }[];
-  porMeio: { valor: string; rotulo: string; aPartirDe?: string; soma: Soma }[];
+  porMeio: { valor: string; rotulo: string; soma: Soma }[];
   porDia: { data: string | null; soma: Soma }[];
   porUnidade: { clinicId: string; nome: string; soma: Soma }[];
 };
@@ -179,6 +183,7 @@ export function argumentosDaLista(f: FiltrosDaLista, exportar: boolean) {
 const COLUNAS: ColunaDoRelatorio[] = [
   { chave: "unidade", titulo: "Unidade", tipo: "texto", largura: 22 },
   { chave: "paciente", titulo: "Paciente", tipo: "texto", largura: 30 },
+  { chave: "prontuario", titulo: "Prontuário", tipo: "texto", largura: 12 },
   { chave: "parcela", titulo: "Parcela", tipo: "numero", largura: 8 },
   { chave: "meio", titulo: "Meio", tipo: "texto", largura: 14 },
   { chave: "situacao", titulo: "Situação", tipo: "texto", largura: 20 },
@@ -221,6 +226,7 @@ export function relatorioDasCobrancas(args: {
     linhas: linhas.map((l) => ({
       unidade: l.clinic_name,
       paciente: l.client_name ?? "—",
+      prontuario: l.client_code ?? "—",
       parcela: l.installment_seq,
       meio: rotuloDoMeio(l.billing_type),
       situacao: rotuloDaSituacao(l.status) + (l.is_overdue_reissue ? " (nova data)" : ""),

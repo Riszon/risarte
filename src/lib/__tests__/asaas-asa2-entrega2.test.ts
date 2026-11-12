@@ -89,6 +89,7 @@ describe("o Painel de cobranças", () => {
     clinic_name: "Unidade 1",
     client_id: "c1",
     client_name: "Ana",
+    client_code: "LDN-00001",
     billing_type: "BOLETO",
     paid_on: "2026-11-10",
     credit_date: "2026-11-12",
@@ -112,7 +113,8 @@ describe("o Painel de cobranças", () => {
     expect(f).toEqual({ hoje: 2, "7": 3, "30": 3, "60": 4 });
     expect(ag.total).toEqual({ qtd: 5, bruto: 5000, taxa: 500, liquido: 4500 });
     expect(ag.porMeio.find((m) => m.valor === "CREDIT_CARD")?.soma.qtd).toBe(1);
-    expect(ag.porMeio.find((m) => m.valor === "CREDIT_CARD_INSTALLMENT")?.aPartirDe).toBe("ASA4");
+    // Só os meios que já existem: nada de "a partir da ASA4" na tela.
+    expect(ag.porMeio.map((m) => m.rotulo)).toEqual(["Boleto", "Pix", "Cartão à vista"]);
     expect(ag.porDia.map((d) => d.data)).toEqual(["2026-11-10", "2026-11-12", "2026-11-18", "2026-12-14", null]);
     expect(ag.porUnidade.map((u) => u.nome)).toEqual(["Unidade 1", "Unidade 2"]);
   });

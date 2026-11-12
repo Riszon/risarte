@@ -21,6 +21,7 @@ import {
   TABELAS,
 } from "@/lib/auditoria-catalogo";
 import { PAYMENT_METHOD_LABELS } from "@/lib/commercial";
+import { ROTULO_DA_SITUACAO } from "@/lib/cobrancas";
 import { BRAZIL_TIME_ZONE, formatIsoDateBr } from "@/lib/dates";
 import {
   BANK_ACCOUNT_TYPE_LABELS,
@@ -170,6 +171,10 @@ const SITUACAO_DO_PLANO: Record<string, string> = {
 };
 
 const VALORES_POR_CAMPO: Record<string, Record<string, string>> = {
+  // ASA2 (4006): a planilha do Painel de cobranças, com os filtros usados.
+  situacoes: ROTULO_DA_SITUACAO,
+  meios: { BOLETO: "Boleto", PIX: "Pix", CREDIT_CARD: "Cartão à vista" },
+  data: { emissao: "emissão", vencimento: "vencimento", pagamento: "pagamento" },
   lifecycle: SITUACAO_DO_PLANO,
   role: ROLE_LABELS,
   papel: { ...ROLE_LABELS, "*": "Todas as funções", admin_master: "Admin Master" },
@@ -279,6 +284,12 @@ const DETALHES: Record<string, string> = {
   forcado: "Forçado pelo Admin",
   origem: "Como entrou",
   motivo: "Motivo",
+  // ASA2 (4006): a planilha do Painel de cobranças.
+  planilha: "Planilha",
+  situacoes: "Situações",
+  meios: "Meios de pagamento",
+  data: "Período pela data de",
+  linhas: "Linhas baixadas",
 };
 
 const VALORES_DOS_DETALHES: Record<string, string> = {

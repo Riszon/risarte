@@ -11,7 +11,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > Permissão em duas etapas (Gerente e Franqueado; depois Recepção, Comercial e
 > Financeiro) com teto no banco. Financeiro → Cobranças: "A receber do Asaas" e
 > "Cobranças emitidas" (planilha registrada na auditoria); nasce só com o
-> Admin. Taxa e líquido gravados na cobrança. Ensaio 45/45. 🟡 4006 só no treino.
+> Admin. Taxa e líquido gravados na cobrança. Ensaio 47/47. 🟡 4006 só no treino.
 >
 > ## 🔌 0.435.0 / ASAAS 0.4.0 — ASA2, ENTREGA 1: O AVISO DO ASAAS VIRA BAIXA (11/11/2026; migração 4005)
 >

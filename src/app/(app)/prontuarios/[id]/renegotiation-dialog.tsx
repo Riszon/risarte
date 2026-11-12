@@ -156,7 +156,7 @@ export function RenegotiationDialog({
             <p className="text-xs font-semibold">
               Dívida apurada hoje ({base.count} cobrança
               {base.count === 1 ? "" : "s"}
-              {base.lateCount > 0 && `, ${base.lateCount} em atraso`})
+              {base.lateCount > 0 && `, ${base.lateCount} vencida${base.lateCount === 1 ? "" : "s"}`})
             </p>
             <ul className="space-y-0.5 text-xs tabular-nums">
               <li className="flex justify-between">

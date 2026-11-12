@@ -220,7 +220,7 @@ export function allocateReceipt(
 export const RECEIVABLE_FILTERS = [
   { key: "todas", label: "Todas" },
   { key: "em_aberto", label: "Em aberto" },
-  { key: "em_atraso", label: "Em atraso" },
+  { key: "em_atraso", label: "Vencidas" },
   { key: "paga", label: "Pagas" },
   { key: "cancelada", label: "Canceladas" },
   { key: "renegociada", label: "Renegociadas" },
@@ -228,7 +228,7 @@ export const RECEIVABLE_FILTERS = [
 
 export type ReceivableFilter = (typeof RECEIVABLE_FILTERS)[number]["key"];
 
-/** "Em aberto" e "Em atraso" são listas separadas: vencida sai de "em aberto". */
+/** "Em aberto" e "Vencidas" são listas separadas: vencida sai de "em aberto". */
 export function matchesFilter(
   view: InstallmentView,
   filter: ReceivableFilter

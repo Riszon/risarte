@@ -90,9 +90,9 @@ export async function saveFinanceSettings(input: {
   }
   if (
     input.roundingToleranceCents !== undefined &&
-    (!Number.isInteger(input.roundingToleranceCents) || input.roundingToleranceCents < 0 || input.roundingToleranceCents > 500)
+    (!Number.isInteger(input.roundingToleranceCents) || input.roundingToleranceCents < 0 || input.roundingToleranceCents > 100)
   ) {
-    return { ok: false, error: "O arredondamento automático vai de R$ 0,00 a R$ 5,00." };
+    return { ok: false, error: "O arredondamento automático vai de R$ 0,00 a R$ 1,00." };
   }
   if (
     input.overdueBadgeBusinessDays !== undefined &&

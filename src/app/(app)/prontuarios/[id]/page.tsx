@@ -266,13 +266,20 @@ function initialsOf(name: string): string {
 // véspera, a partir das 21h.
 
 /** Há quanto tempo é cliente, ex.: "há 6 meses", "há 1 ano e 2 meses". */
+// O tempo de casa conta DIAS DO CALENDÁRIO de Brasília, não blocos de 24 horas
+// (relato do dono, 12/11/2026: cadastrado na noite de 11/11, aparecia "hoje"
+// na manhã de 12/11). O servidor roda em UTC; por isso as datas vêm do fuso.
 function clientDuration(createdIso: string): string {
-  const start = new Date(createdIso);
-  const now = new Date();
-  if (Number.isNaN(start.getTime()) || start > now) return "";
-  let years = now.getFullYear() - start.getFullYear();
-  let months = now.getMonth() - start.getMonth();
-  if (now.getDate() < start.getDate()) months -= 1;
+  const instante = new Date(createdIso);
+  if (Number.isNaN(instante.getTime()) || instante.getTime() > Date.now()) return "";
+  const diaBr = (d: Date) => d.toLocaleDateString("sv-SE", { timeZone: BRAZIL_TIME_ZONE });
+  const [sy, sm, sd] = diaBr(instante).split("-").map(Number);
+  const [ny, nm, nd] = diaBr(new Date()).split("-").map(Number);
+  const start = new Date(Date.UTC(sy, sm - 1, sd));
+  const now = new Date(Date.UTC(ny, nm - 1, nd));
+  let years = ny - sy;
+  let months = nm - sm;
+  if (nd < sd) months -= 1;
   if (months < 0) {
     years -= 1;
     months += 12;

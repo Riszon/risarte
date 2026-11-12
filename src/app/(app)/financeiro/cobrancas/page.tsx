@@ -234,12 +234,7 @@ async function AReceber({ unidade, hoje }: { unidade: string | null; hoje: strin
           <tbody>
             {ag.porMeio.map((m) => (
               <tr key={m.valor} className="border-t">
-                <td className="px-2 py-1.5">
-                  {m.rotulo}
-                  {m.aPartirDe && m.soma.qtd === 0 && (
-                    <span className="ml-1 text-[11px] text-muted-foreground">(a partir da {m.aPartirDe})</span>
-                  )}
-                </td>
+                <td className="px-2 py-1.5">{m.rotulo}</td>
                 <Valores soma={m.soma} />
               </tr>
             ))}
@@ -310,6 +305,7 @@ async function AReceber({ unidade, hoje }: { unidade: string | null; hoje: strin
                     ) : (
                       "—"
                     )}
+                    {l.client_code && <span className="ml-1 font-mono text-[11px] text-muted-foreground">{l.client_code}</span>}
                     {ag.porUnidade.length > 1 && <span className="ml-1 text-[11px] text-muted-foreground">· {l.clinic_name}</span>}
                   </td>
                   <td className="px-2 py-1.5">{rotuloDoMeio(l.billing_type)}</td>
@@ -385,6 +381,7 @@ async function Emitidas({
                     ) : (
                       "—"
                     )}
+                    {l.client_code && <span className="ml-1 font-mono text-[11px] text-muted-foreground">{l.client_code}</span>}
                     <span className="ml-1 text-[11px] text-muted-foreground">
                       {l.installment_seq ? `parcela ${l.installment_seq} · ` : ""}
                       {l.clinic_name}

@@ -78,7 +78,7 @@ export const CHANGELOG: Versao[] = [
       {
         tipo: "aviso",
         texto:
-          "\"Em atraso\" agora conta depois de 3 dias úteis do vencimento (o tempo da compensação do boleto): vale para o aviso no alto da ficha, o número vermelho da aba Financeiro e o filtro da lista de Prontuários. Multa e juros não mudam e a aba Financeiro continua mostrando a parcela como vencida desde o dia seguinte.",
+          "\"Em atraso\" agora conta depois de 3 dias úteis do vencimento (o tempo da compensação do boleto): vale para o aviso no alto da ficha, o número vermelho da aba Financeiro e o filtro da lista de Prontuários. Multa e juros não mudam. Dentro da aba Financeiro, a parcela passada do vencimento aparece como \"vencida\" (\"vencida há 3 dias\", o cartão e o filtro \"Vencidas\").",
         papeis: ["receptionist", "unit_manager", "franchisee", "finance_franchisor"],
         manual: "13g.3. Selo \"Em atraso\"",
       },
@@ -95,6 +95,19 @@ export const CHANGELOG: Versao[] = [
           "Financeiro → Cobranças: o que o Asaas ainda vai creditar, por data prevista (hoje, 7, 30 e 60 dias e dia a dia), com bruto, taxa e líquido, e a lista das cobranças emitidas pelo riSZon, com planilha. Por enquanto só para o Admin Master, em testes.",
         papeis: [],
         manual: "13g.4. Painel de cobranças",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O arredondamento automático do Asaas (Central de Configuração, aba Financeiro da rede) agora vai até R$ 1,00, porque fecha o saldo sem passar pelo Gerente.",
+        papeis: ["finance_franchisor"],
+        manual: "13g. A Central de Configuração",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na ficha do paciente, o \"Cliente desde\" contava 24 horas como um dia: quem foi cadastrado à noite aparecia como \"hoje\" na manhã seguinte. Agora conta os dias do calendário.",
+        papeis: "todos",
       },
     ],
   },
