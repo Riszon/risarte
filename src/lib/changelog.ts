@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.438.0",
+    data: "2026-11-12",
+    migracao: null,
+    titulo: "Recebíveis: as cobranças das empresas do Empresarial",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "As mensalidades e implantações das empresas do Empresarial ainda não pagas passaram a aparecer em Financeiro → Recebíveis da Franqueadora e em Recebíveis da rede, num bloco próprio \"Empresas (Empresarial)\": quanto há a receber, quanto venceu, a inadimplência das empresas e a lista. Esses números ficam fora da inadimplência dos pacientes. A baixa continua em Empresarial → Cobranças.",
+        papeis: ["finance_franchisor"],
+        manual: "2.4. Recebíveis e inadimplência",
+      },
+    ],
+  },
+  {
     versao: "0.437.0",
     data: "2026-11-12",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4006, ASAAS_MIGRATION).

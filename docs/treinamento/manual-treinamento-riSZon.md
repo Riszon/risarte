@@ -599,6 +599,16 @@ lançou e quem deu baixa*, na seção 2.3).
 > com multa e juros, está na aba **Inadimplentes** e na coluna *Com multa e
 > juros* da tabela.
 
+**As empresas do Empresarial** *(desde a 0.438.0)*. Nos Recebíveis da
+**Franqueadora** e em **Recebíveis da rede**, no fim da tela, o bloco
+**Empresas (Empresarial)** mostra as mensalidades e implantações das empresas
+que ainda não foram pagas: quanto há a receber, quanto venceu, a
+**inadimplência das empresas** e a lista, com a empresa, a cobrança, o
+vencimento e há quantos dias está em atraso. Esses números são da Franqueadora
+e ficam **fora** da inadimplência dos pacientes e dos totais de cima. O valor é
+o da cobrança, sem multa nem juros. A baixa continua em **Empresarial →
+Cobranças**.
+
 **Duas escadas de prazo**, e elas não se misturam de propósito:
 
 | Escada | Responde | Para que serve |
