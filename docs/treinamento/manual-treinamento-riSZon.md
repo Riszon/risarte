@@ -6391,8 +6391,10 @@ WhatsApp ou ligação**; a clínica não precisa fazer nada.
 
 - **Na Rede:** a régua é **uma só para toda a rede**. O **Admin Master** e o
   **Financeiro da Franqueadora** escolhem, em cada aviso, o prazo (quando dá) e
-  os canais. Os avisos que o Asaas mandaria para a própria unidade ficam sempre
-  desligados: o riSZon já avisa a equipe.
+  os canais. O lembrete antes do vencimento pode ser de 5, 10, 15 ou 30 dias; o
+  outro lembrete é sempre no dia do vencimento (o Asaas não deixa mudar). Os
+  avisos que o Asaas mandaria para a própria unidade ficam sempre desligados: o
+  riSZon já avisa a equipe.
 - **Na Unidade:** o botão **Ligar a régua desta unidade** (Admin Master e
   Financeiro), quantos pagadores estão sem e-mail, sem celular ou pediram para
   não receber, e o **custo estimado por mês**. O **Gerente** e o **Franqueado**

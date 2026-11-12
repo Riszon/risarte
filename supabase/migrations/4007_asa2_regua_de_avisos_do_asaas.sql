@@ -48,17 +48,24 @@ create table if not exists public.gateway_notification_rules (
   phone_call boolean not null default false,
   sort_order smallint not null,
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.profiles (id),
-  -- Os prazos que o Asaas aceita (docs.asaas.com, 12/11/2026).
-  constraint gateway_notification_rules_offset_check check (
+  updated_by uuid references public.profiles (id)
+);
+
+-- Os prazos que o Asaas ACEITA, medidos no sandbox em 12/11/2026 (a
+-- documentação dava 0/5/10/15/30 para os dois lembretes; o real é outro): o
+-- 1º lembrete 5/10/15/30; o 2º lembrete e a vencida do dia FIXOS em 0; o 2º de
+-- vencida 1/7/15/30. O dono aprovou o 2º lembrete fixo no dia (12/11/2026).
+alter table public.gateway_notification_rules
+  drop constraint if exists gateway_notification_rules_offset_check;
+alter table public.gateway_notification_rules
+  add constraint gateway_notification_rules_offset_check check (
     case slot
       when 'lembrete_1' then schedule_offset in (5, 10, 15, 30)
-      when 'lembrete_2' then schedule_offset in (0, 5, 10, 15, 30)
+      when 'lembrete_2' then schedule_offset = 0
       when 'vencida_1' then schedule_offset = 0
       when 'vencida_2' then schedule_offset in (1, 7, 15, 30)
       else schedule_offset is null
-    end)
-);
+    end);
 
 comment on table public.gateway_notification_rules is
   'A régua de avisos do Asaas da rede (ASA2 entrega 3, 4007; spec 17.5): os 8 avisos fixos por pagador.';
@@ -748,8 +755,6 @@ set search_path = ''
 as $$
 declare
   v_item jsonb;
-  v_l1 smallint;
-  v_l2 smallint;
   v_changed integer := 0;
   v_n integer;
 begin
@@ -759,7 +764,7 @@ begin
   end if;
   for v_item in select * from jsonb_array_elements(p_rules) loop
     update public.gateway_notification_rules r
-       set schedule_offset = case when r.slot in ('lembrete_1', 'lembrete_2', 'vencida_2')
+       set schedule_offset = case when r.slot in ('lembrete_1', 'vencida_2')
                                   then (v_item->>'scheduleOffset')::smallint
                                   else r.schedule_offset end,
            email = coalesce((v_item->>'email')::boolean, false),
@@ -769,7 +774,7 @@ begin
            updated_at = now(),
            updated_by = (select auth.uid())
      where r.slot = v_item->>'slot'
-       and (r.schedule_offset is distinct from case when r.slot in ('lembrete_1', 'lembrete_2', 'vencida_2')
+       and (r.schedule_offset is distinct from case when r.slot in ('lembrete_1', 'vencida_2')
                                                     then (v_item->>'scheduleOffset')::smallint
                                                     else r.schedule_offset end
             or r.email is distinct from coalesce((v_item->>'email')::boolean, false)
@@ -779,9 +784,6 @@ begin
     get diagnostics v_n = row_count;
     v_changed := v_changed + v_n;
   end loop;
-  select schedule_offset into v_l1 from public.gateway_notification_rules where slot = 'lembrete_1';
-  select schedule_offset into v_l2 from public.gateway_notification_rules where slot = 'lembrete_2';
-  if v_l2 >= v_l1 then raise exception 'REMINDERS_ORDER'; end if;
   if v_changed > 0 then
     update public.gateway_notification_settings
        set rules_version = rules_version + 1, updated_at = now()

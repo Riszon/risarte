@@ -21,7 +21,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.433.0, Asaas 0.3.0); 4004 nos dois bancos (produção pelo dono, conferência batida); testada pelo dono no projeto de teste | **4004** |
 | **ASA2, entrega 1** — o aviso do Asaas vira baixa | ✅ **concluída: aprovada pelo dono em 11/11/2026, 4005 rodada na produção e `main` em 12/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; prova do pagamento atrasado ✅ em 12/11 (boleto de R$ 10,00 vencido em 11/11, pago com R$ 10,20 e baixa de R$ 10,20 = 10,00 + multa 0,20); produção conferida com o dono logado (Novidades 0.435.0, campo de arredondamento R$ 0,10 na Central, ficha do paciente sem erro) | **4005** |
 | ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças ("A receber do Asaas" e cobranças emitidas) | ✅ **aprovada pelo dono no treino em 12/11/2026** (core 0.437.0, Asaas 0.5.0; spec seção 17); 4006 no treino e na produção (o dono rodou em 12/11/2026; conferência bateu); ensaio 47/47 (provado quebrando o teto); no `main` | **4006** |
-| ASA2, entrega 3 — a régua (aba Cobrança e comunicação) e o comprovante | 🟡 **construída, no treino** (core 0.438.0, Asaas 0.6.0; spec 17.4 e 17.5); ensaio 77/77 (provado quebrando o D7); prova no sandbox sem envio 17/17; ⚠️ falta o dono decidir o 2º lembrete (o Asaas o deixa fixo no dia do vencimento) e testar | **4007** |
+| ASA2, entrega 3 — a régua (aba Cobrança e comunicação) e o comprovante | 🟡 **construída, no treino** (core 0.438.0, Asaas 0.6.0; spec 17.4 e 17.5); ensaio 78/78 (provado quebrando o D7); prova no sandbox sem envio 17/17; 2º lembrete fixo no dia (D9, aprovado); falta o dono testar | **4007** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -67,14 +67,14 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   só com celular.
 - ⚠️ **Prazos reais do Asaas** (medidos no sandbox, 12/11/2026): 1º lembrete
   5/10/15/30; **2º lembrete só 0 (fixo no dia)**; vencida do dia só 0; 2º de
-  vencida 1/7/15/30. A 4007 ainda aceita 0/5/10/15/30 no 2º lembrete —
-  **decisão do dono pendente** antes de adaptar.
+  vencida 1/7/15/30. **D9 (dono, 12/11):** o 2º lembrete fica fixo no dia; o
+  banco só aceita 0 e o pacote não manda prazo nele.
 - **Apagar o contato (D6):** `email: ""` e `mobilePhone: ""` no
   `PUT /customers/{id}` deixam os dois nulos (provado).
 
 ### Provas
 
-- `node scripts/asaas-ensaio-asa2-entrega3.mjs --confirmar` (treino, desfeito): 77/77.
+- `node scripts/asaas-ensaio-asa2-entrega3.mjs --confirmar` (treino, desfeito): 78/78.
 - `node scripts/asaas-prova-regua-sandbox.mjs --confirmar` (sandbox, sem envio:
   pagador sem celular, avisos desligados, e-mail `example.com`, apagado no fim): 17/17.
 - `src/lib/__tests__/asaas-asa2-entrega3.test.ts`.

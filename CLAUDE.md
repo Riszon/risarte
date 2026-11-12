@@ -409,8 +409,8 @@ Syncthing se comportarem de forma estranha.**
   Asaas recusa e-mail sem e-mail). ⚠️ **Prova no sandbox só sem envio** (o
   sandbox envia de verdade): pagador sem celular, avisos desligados,
   `example.com`.
-- 🟡 4007 só no treino; falta o dono decidir o 2º lembrete (fixo no dia no
-  Asaas) e testar.
+- 🟡 4007 só no treino; 2º lembrete fixo no dia (D9, aprovado); falta o dono
+  testar.
 
 **12/11/2026 (Asaas — ASA2, entrega 2) — PC Administrador (core 0.436.0 → 0.437.0, Asaas 0.5.0, migração 4006; worktree `wt-asaas`)**
 

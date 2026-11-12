@@ -20,7 +20,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MENSAGENS: Record<string, string> = {
   NOT_ALLOWED: "Só o Admin Master e o Financeiro da Franqueadora mexem na régua.",
   RULES_INVALID: "A régua precisa ter os 8 avisos.",
-  REMINDERS_ORDER: "O primeiro lembrete precisa vir antes do segundo (prazo maior).",
   gateway_notification_rules_offset_check: "Um dos prazos não é aceito pelo Asaas.",
   NOTE_REQUIRED: "Escreva onde está o termo atualizado (ao menos uma frase curta).",
   PRIVACY_NOT_DECLARED: "Falta o Admin Master declarar o termo de privacidade.",

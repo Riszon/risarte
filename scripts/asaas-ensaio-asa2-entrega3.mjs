@@ -173,8 +173,9 @@ try {
   conf("gravar sem mudar nada não muda a versão", Array.isArray(semMudar) && (await versao()) === v0);
   const prazoRuim = await comoPessoa(P.financeiro, "select public.gateway_regua_save($1::jsonb)", [regua({ vencida_2: { scheduleOffset: 3 } })]);
   conf("prazo que o Asaas não aceita é recusado", typeof prazoRuim === "string" && /offset_check/.test(prazoRuim));
-  const ordem = await comoPessoa(P.financeiro, "select public.gateway_regua_save($1::jsonb)", [regua({ lembrete_2: { scheduleOffset: 10 } })]);
-  conf("o segundo lembrete não pode vir antes do primeiro", typeof ordem === "string" && /REMINDERS_ORDER/.test(ordem));
+  await comoPessoa(P.financeiro, "select public.gateway_regua_save($1::jsonb)", [regua({ lembrete_2: { scheduleOffset: 10 } })]);
+  conf("o lembrete do dia fica fixo em 0 (o Asaas não deixa mudar)", (await um("select schedule_offset o from public.gateway_notification_rules where slot = 'lembrete_2'")).o === 0);
+  conf("o banco recusa prazo no lembrete do dia mesmo direto na tabela", (await recusa("update public.gateway_notification_rules set schedule_offset = 5 where slot = 'lembrete_2'")) !== null);
   const curta = await comoPessoa(P.financeiro, "select public.gateway_regua_save('[]'::jsonb)");
   conf("régua sem os 8 avisos é recusada", typeof curta === "string" && /RULES_INVALID/.test(curta));
 

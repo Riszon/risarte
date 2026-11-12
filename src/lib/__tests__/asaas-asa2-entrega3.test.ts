@@ -116,9 +116,14 @@ describe("o pacote dos 8 avisos", () => {
       expect(i.smsEnabledForProvider).toBe(false);
     }
   });
-  it("só os avisos de prazo editável levam o prazo", () => {
+  it("só os avisos de prazo editável levam o prazo (o lembrete do dia e a vencida do dia são fixos no Asaas)", () => {
     const p = pacoteDosAvisos(doAsaas(), D8, cheio);
-    expect(p.filter((i) => "scheduleOffset" in i).map((i) => i.id).sort()).toEqual(["n2", "n6", "n7"]);
+    expect(p.filter((i) => "scheduleOffset" in i).map((i) => i.id).sort()).toEqual(["n6", "n7"]);
+  });
+  it("o 2º lembrete é fixo no dia: a tela não oferece prazo e o banco só aceita 0", () => {
+    expect(AVISOS_DA_REGUA.find((a) => a.slot === "lembrete_2")?.prazos).toBeNull();
+    expect(SQL).toMatch(/when 'lembrete_2' then schedule_offset = 0/);
+    expect(SQL).not.toContain("case when r.slot in ('lembrete_1', 'lembrete_2'");
   });
   it("canal só com o contato: sem e-mail, e-mail desligado; sem celular, SMS e WhatsApp desligados (o Asaas recusa)", () => {
     const semEmail = pacoteDosAvisos(doAsaas(), D8, { temEmail: false, temCelular: true });

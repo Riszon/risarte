@@ -36,8 +36,9 @@ export const AVISOS_DA_REGUA: {
   sentido: "antes" | "depois" | null;
 }[] = [
   { slot: "criada", rotulo: "Cobrança criada", explicacao: "Quando a cobrança é emitida, com o link para pagar.", prazos: null, sentido: null },
-  { slot: "lembrete_1", rotulo: "Primeiro lembrete", explicacao: "Antes do vencimento.", prazos: [5, 10, 15, 30], sentido: "antes" },
-  { slot: "lembrete_2", rotulo: "Segundo lembrete", explicacao: "Mais perto do vencimento (0 = no dia).", prazos: [0, 5, 10, 15, 30], sentido: "antes" },
+  { slot: "lembrete_1", rotulo: "Lembrete antes", explicacao: "Alguns dias antes do vencimento.", prazos: [5, 10, 15, 30], sentido: "antes" },
+  // O Asaas deixa este FIXO no dia do vencimento (medido no sandbox, 12/11/2026).
+  { slot: "lembrete_2", rotulo: "Lembrete no dia", explicacao: "No dia do vencimento (o Asaas não deixa mudar).", prazos: null, sentido: null },
   { slot: "linha_digitavel", rotulo: "Linha digitável", explicacao: "No dia do vencimento, só boleto, se o pagador ainda não abriu a fatura.", prazos: null, sentido: null },
   { slot: "vencida_1", rotulo: "Cobrança vencida", explicacao: "No dia seguinte ao vencimento sem pagamento.", prazos: null, sentido: null },
   { slot: "vencida_2", rotulo: "Vencida, novo aviso", explicacao: "Alguns dias depois do vencimento.", prazos: [1, 7, 15, 30], sentido: "depois" },
@@ -68,10 +69,10 @@ export class ReguaIncompleta extends Error {
  * Casa os avisos do pagador no Asaas com os 8 da régua e monta o pacote do
  * `PUT /notifications/batch`.
  *
- * Os dois lembretes (`PAYMENT_DUEDATE_WARNING`) se distinguem pelo prazo: o de
- * MAIOR prazo é o primeiro. Os dois de vencida (`PAYMENT_OVERDUE`): o de prazo
- * 0 é o do dia, o outro é o novo aviso. O riSZon sempre grava prazos
- * diferentes nos dois (o banco recusa o contrário), então a ordem se mantém.
+ * Os dois lembretes (`PAYMENT_DUEDATE_WARNING`) se distinguem pelo prazo: o
+ * do dia é fixo em 0 no Asaas, o outro vai de 5 a 30. Os dois de vencida
+ * (`PAYMENT_OVERDUE`): o de prazo 0 é o do dia, o outro vai de 1 a 30. Os
+ * prazos nunca empatam, então a correspondência se mantém.
  *
  * D1: os avisos para a UNIDADE (`*EnabledForProvider`) vão sempre desligados.
  * Um aviso sem nenhum canal vai desligado (`enabled: false`).
@@ -122,8 +123,9 @@ export function pacoteDosAvisos(
       phoneCallEnabledForCustomer: ligacao,
       whatsappEnabledForCustomer: whatsapp,
     };
-    // Só os três de prazo editável levam o prazo (o "vencida" do dia é fixo em 0).
-    if ((r.slot === "lembrete_1" || r.slot === "lembrete_2" || r.slot === "vencida_2") && r.scheduleOffset != null) {
+    // Só os dois de prazo editável levam o prazo: o lembrete do dia e a vencida
+    // do dia são fixos em 0 no Asaas (mandar o prazo neles é recusado).
+    if ((r.slot === "lembrete_1" || r.slot === "vencida_2") && r.scheduleOffset != null) {
       item.scheduleOffset = r.scheduleOffset;
     }
     return item;

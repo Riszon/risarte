@@ -9,7 +9,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > declaração do termo pelo Admin, botão por unidade, custo estimado
 > (mensageria por cobrança paga; WhatsApp e ligação por envio), alerta de
 > saldo. Fila no banco aplicada a cada 10 min. "Não receber avisos" por CPF na
-> rede (D7). Comprovante na ficha. Ensaio 77/77; sandbox sem envio 17/17.
+> rede (D7). Comprovante na ficha. 2º lembrete fixo no dia (D9). Ensaio 78/78;
+> sandbox sem envio 17/17.
 > 🟡 4007 só no treino.
 >
 > ## ✅ 0.437.0 / ASAAS 0.5.0 — ASA2, ENTREGA 2: SELO "EM ATRASO" E PAINEL DE COBRANÇAS (12/11/2026; migração 4006)
