@@ -13,8 +13,10 @@ import { ChatHub } from "./chat-hub";
 
 export const metadata: Metadata = { title: "Chat Hub" };
 
-export default async function ChatPage() {
+export default async function ChatPage(props: PageProps<"/chat">) {
   const session = await getSessionContext();
+  // 0402: `?canal=` abre direto numa conversa (o atalho do roteiro do repasse).
+  const { canal } = await props.searchParams;
 
   // Bloqueio (0133): o usuário bloqueado perde o acesso à tela inteira.
   if (await amIChatBlocked()) {
@@ -79,6 +81,7 @@ export default async function ChatPage() {
         totalUsers={totalUsers}
         canMessageUnits={canMessageUnits}
         initialBlockedIds={blockedUserIds}
+        initialChannelId={typeof canal === "string" ? canal : null}
       />
     </div>
   );

@@ -13,6 +13,14 @@ import {
   type ReportPayment,
   type ReportPaymentDb,
 } from "@/lib/finance/payout-report";
+import {
+  mediationFromDb,
+  personFromDb,
+  type MediationContact,
+  type MediationContactDb,
+  type MediationPerson,
+  type MediationPersonDb,
+} from "@/lib/finance/payout-divergencia";
 
 // Repasse (0390/0391) — a leitura de UM relatório para quem cuida dele (o
 // Financeiro e o aprovador). Usada pelas duas portas: Financeiro › Relatórios
@@ -35,6 +43,9 @@ export type ReportData = {
   /** O usuário é o aprovador DESTE relatório (o banco responde). */
   canApprove: boolean;
   loadFailed: boolean;
+  /** 0402 — o roteiro da divergência (só o Financeiro lê). */
+  mediation: MediationContact[];
+  people: MediationPerson[];
 };
 
 /**
@@ -80,7 +91,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** `null` = não existe ou a pessoa não pode ler (a tela responde "não encontrado"). */
 export async function carregarRelatorio(
   supabase: SupabaseClient,
-  id: string
+  id: string,
+  /** O Financeiro lê também o roteiro da divergência (0402). */
+  opcoes: { roteiro?: boolean } = {}
 ): Promise<ReportData | null> {
   if (!UUID.test(id)) return null;
 
@@ -102,9 +115,25 @@ export async function carregarRelatorio(
   if (hist.error) console.error("payout_report_history failed:", hist.error.message);
   if (pode.error) console.error("can_approve_payout_report failed:", pode.error.message);
 
+  const items = ((itens.data ?? []) as ReportItemDb[]).map(reportItemFromDb);
+  let mediation: MediationContact[] = [];
+  let people: MediationPerson[] = [];
+  // Só quando há divergência no Financeiro (ou já houve conversa): evita duas
+  // idas ao banco em todo relatório.
+  if (opcoes.roteiro && items.some((i) => i.reviewState === "no_financeiro" || i.financeAction)) {
+    const [m, p] = await Promise.all([
+      supabase.rpc("payout_mediation_list", { p_report_id: id }),
+      supabase.rpc("payout_mediation_people", { p_report_id: id }),
+    ]);
+    if (m.error) console.error("payout_mediation_list failed:", m.error.message);
+    if (p.error) console.error("payout_mediation_people failed:", p.error.message);
+    mediation = ((m.data ?? []) as MediationContactDb[]).map(mediationFromDb);
+    people = ((p.data ?? []) as MediationPersonDb[]).map(personFromDb);
+  }
+
   return {
     report: reportFromDb(linha),
-    items: ((itens.data ?? []) as ReportItemDb[]).map(reportItemFromDb),
+    items,
     history: (
       (hist.data ?? []) as {
         created_at: string;
@@ -123,5 +152,7 @@ export async function carregarRelatorio(
     payments,
     canApprove: pode.data === true,
     loadFailed: Boolean(itens.error),
+    mediation,
+    people,
   };
 }

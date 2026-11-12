@@ -20,7 +20,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
 | **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.433.0, Asaas 0.3.0); 4004 nos dois bancos (produção pelo dono, conferência batida); testada pelo dono no projeto de teste | **4004** |
 | **ASA2, entrega 1** — o aviso do Asaas vira baixa | ✅ **concluída: aprovada pelo dono em 11/11/2026, 4005 rodada na produção e `main` em 12/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; prova do pagamento atrasado ✅ em 12/11 (boleto de R$ 10,00 vencido em 11/11, pago com R$ 10,20 e baixa de R$ 10,20 = 10,00 + multa 0,20); produção conferida com o dono logado (Novidades 0.435.0, campo de arredondamento R$ 0,10 na Central, ficha do paciente sem erro) | **4005** |
-| ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças ("A receber do Asaas" e cobranças emitidas) | 🟡 **pronta para o dono testar** (core 0.436.0, Asaas 0.5.0; spec seção 17); 4006 no treino; ensaio 47/47 (provado quebrando o teto); falta o teste e a aprovação do dono, depois a 4006 na produção e o `main` | **4006** |
+| ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças ("A receber do Asaas" e cobranças emitidas) | ✅ **aprovada pelo dono no treino em 12/11/2026** (core 0.437.0, Asaas 0.5.0; spec seção 17); 4006 no treino; ensaio 47/47 (provado quebrando o teto); falta a 4006 na produção e o `main` | **4006** |
 | ASA2, entrega 3 — a régua (aba Cobrança e comunicação) | aguardando as respostas do Asaas (spec 17.4) | 4007 |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
@@ -37,7 +37,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
 
-## ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças (Asaas 0.5.0, core 0.436.0, 12/11/2026)
+## ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças (Asaas 0.5.0, core 0.437.0, 12/11/2026)
 
 ### O que existe
 

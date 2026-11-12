@@ -29,7 +29,7 @@ import {
   type MyReport,
   type ReportPayment,
 } from "@/lib/finance/payout-report";
-import { respondToMyReport } from "../actions";
+import { respondProposedValue, respondToMyReport } from "../actions";
 
 type Rascunho = { kind: ContestKind; text: string };
 
@@ -63,6 +63,26 @@ export function MyReportView({
   const [contests, setContests] = useState<Record<string, Rascunho>>({});
   const [missing, setMissing] = useState("");
   const [confirming, setConfirming] = useState(false);
+  // 0402 — o valor novo proposto pelo Financeiro: aceitar ou não concordar.
+  const [naoConcordo, setNaoConcordo] = useState<string | null>(null);
+  const [resposta, setResposta] = useState("");
+
+  function responderValor(itemId: string, accept: boolean) {
+    startTransition(async () => {
+      const r = await respondProposedValue({ reportId: report.id, itemId, accept, text: resposta });
+      if (!r.ok) toast.error(r.error ?? "Algo deu errado.");
+      else {
+        toast.success(
+          accept
+            ? "Valor aceito. O procedimento está liberado para pagamento."
+            : "Resposta enviada. O Financeiro dá a decisão final."
+        );
+        setNaoConcordo(null);
+        setResposta("");
+      }
+      router.refresh();
+    });
+  }
 
   const contaDaLinha = paymentByItem(payments);
   const pendentes = items.filter((i) => i.reviewState === "pendente");
@@ -301,6 +321,83 @@ export function MyReportView({
                           {i.financeReason}
                         </p>
                       )}
+                      {i.financeGuidance && (
+                        <p className="text-xs">
+                          <strong>Orientação do Financeiro:</strong> {i.financeGuidance}
+                        </p>
+                      )}
+                      {i.prevReportCode && (
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Veio do {i.prevReportCode}</strong>, onde foi adiado
+                          {i.prevReason ? ` pelo Financeiro: ${i.prevReason}` : "."}
+                          {i.prevGuidance ? ` Orientação: ${i.prevGuidance}` : ""}
+                        </p>
+                      )}
+                      {minhaVez && i.reviewState === "correcao_dentista" && i.proposedAmountCents !== null && (
+                        <div className="mt-2 space-y-2 rounded-lg border border-primary/40 bg-primary/5 p-2 text-sm print:hidden">
+                          <p>
+                            O Financeiro propôs pagar{" "}
+                            <strong>{formatBRL(i.proposedAmountCents)}</strong> no lugar de{" "}
+                            {formatBRL(i.amountCents)}. Quem responde pela equipe já está
+                            ciente.
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Se não concordar, volta uma última vez ao Financeiro, e a decisão
+                            dele passa a ser final.
+                          </p>
+                          {naoConcordo === i.itemId ? (
+                            <div className="flex flex-wrap items-end gap-2">
+                              <label className="block min-w-0 flex-1">
+                                <Label className="text-[11px]">
+                                  Por que não concorda (obrigatório)
+                                </Label>
+                                <Input
+                                  className="h-8"
+                                  value={resposta}
+                                  onChange={(e) => setResposta(e.target.value)}
+                                />
+                              </label>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isPending}
+                                onClick={() => responderValor(i.itemId, false)}
+                              >
+                                Enviar ao Financeiro
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={isPending}
+                                onClick={() => setNaoConcordo(null)}
+                              >
+                                Voltar
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                disabled={isPending}
+                                onClick={() => responderValor(i.itemId, true)}
+                              >
+                                Aceitar {formatBRL(i.proposedAmountCents)}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isPending}
+                                onClick={() => {
+                                  setResposta("");
+                                  setNaoConcordo(i.itemId);
+                                }}
+                              >
+                                Não concordo
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {podeMarcar && i.contestRound >= 1 && !c && (
                         <p className="text-[11px] text-muted-foreground">
                           Se contestar de novo, a decisão final passa a ser do
@@ -375,7 +472,7 @@ export function MyReportView({
             })}
           </ul>
 
-          {minhaVez && (
+          {minhaVez && pendentes.length > 0 && (
             <div className="space-y-3 print:hidden">
               <label className="block">
                 <Label className="text-[11px]">

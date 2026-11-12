@@ -400,7 +400,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**12/11/2026 (Asaas — ASA2, entrega 2) — PC Administrador (core 0.435.0 → 0.436.0, Asaas 0.5.0, migração 4006; worktree `wt-asaas`)**
+**12/11/2026 (Asaas — ASA2, entrega 2) — PC Administrador (core 0.436.0 → 0.437.0, Asaas 0.5.0, migração 4006; worktree `wt-asaas`)**
 
 - **Selo "Em atraso" e Painel de cobranças** (estado em `docs/asaas/ESTADO.md`;
   decisões na seção 17 da especificação). ⚠️ **"Em atraso" tem UMA regra:
@@ -408,7 +408,22 @@ Syncthing se comportarem de forma estranha.**
   ficha, número da aba Financeiro e filtro de Prontuários. ⚠️ **Quem vê o selo e
   o painel é o banco** (`_gateway_cap_clinics`, lê a matriz com TETO: dentista,
   planner, TSB, ASB e SDR nunca veem o selo; a Recepcionista nunca vê o painel).
-- 🟡 4006 só no treino; falta o dono testar e aprovar.
+- ✅ Aprovada pelo dono no treino em 12/11/2026; 🟡 4006 falta rodar na produção.
+
+**12/11/2026 (repasse, a divergência) — PC Administrador (core 0.435.0 → 0.436.0, migração 0402)**
+
+- **O roteiro da divergência e o valor novo que volta para aprovação**
+  (bloco 0.436.0 no ESTADO; decisões D1–D2 em
+  `docs/Financeiro/REPASSE-PLANO.md`).
+- ⚠️ **Decidir no Financeiro exige as duas conversas** (`payout_mediation_contacts`,
+  MEDIATION_REQUIRED) e a orientação. ⚠️ **"Corrigir" só propõe**
+  (`correcao_unidade` → `correcao_dentista`); só a rodada final
+  (`final_round`) libera direto. Ao recriar `payout_report_finance_decide`,
+  `_payout_report_sync` ou `payout_report_deadline_run`, partir da 0402.
+- ⚠️ **Valor de repasse que muda grava em `provider_payouts` também** (o
+  Histórico da 0401 lê de lá).
+- ✅ **0402 aplicada no treino e na produção** (o dono informou em
+  12/11/2026; não conferido de fora).
 
 **11/11/2026 (Asaas — ASA2, entrega 1) — PC Administrador (core 0.434.0 → 0.435.0, Asaas 0.4.0, migração 4005; worktree `wt-asaas`)**
 

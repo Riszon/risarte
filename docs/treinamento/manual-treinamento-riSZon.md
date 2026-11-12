@@ -3425,8 +3425,17 @@ quando quem responde pela equipe conferiu e enviou — o sino avisa.
 - **Prazo: 5 dias úteis.** Você recebe um lembrete no 3º. O sistema **não
   aprova por você**: sem a sua resposta, o pagamento não é liberado.
 - A resposta à sua contestação aparece na própria linha. Se discordar e
-  **contestar de novo**, a decisão final passa a ser do Financeiro da
-  Franqueadora.
+  **contestar de novo**, a decisão passa ao Financeiro da Franqueadora, que
+  conversa com a unidade e com você antes de decidir *(desde a 0.436.0)*. A
+  decisão vem com uma **Orientação do Financeiro**, na própria linha.
+- **Valor novo proposto pelo Financeiro** *(desde a 0.436.0)*: se o Financeiro
+  decidir pagar outro valor, a linha volta para você com **Aceitar R$ …** ou
+  **Não concordo**. O valor novo só vale quando você aceita. Se não concordar
+  (explicar é obrigatório), volta **uma última vez** ao Financeiro, e a decisão
+  dele passa a ser final.
+- **Procedimento adiado** *(desde a 0.436.0)*: quando um procedimento volta no
+  relatório seguinte, a linha diz de qual relatório veio e, se foi decisão do
+  Financeiro, o motivo e a orientação.
 - Você só vê os **seus** relatórios.
 - **O pagamento** *(desde a 0.422.0)*: o repasse é pago no **dia 15**. O que
   você aprovou até o dia 10 entra no pagamento do mesmo mês; depois disso, no
@@ -3978,8 +3987,8 @@ dentro do sistema e fica registrado.
 | **Rascunho** | Financeiro da Franqueadora | **Enviar para aprovação** (no relatório) ou **Enviar os rascunhos para aprovação** (todos da unidade, na lista). |
 | **Com o aprovador** | Gerente — ou o Coordenador clínico, na unidade sem Gerente | Confere, tira procedimento com motivo se precisar, e **Aprovar e enviar ao dentista**; ou **Devolver ao Financeiro**, com motivo. |
 | **Com o dentista** | O dentista | Aprova ou contesta cada procedimento, em **Repasses → Meus repasses**. |
-| **Em contestação** | O aprovador | **Responder** a cada linha contestada. |
-| **Com o Financeiro (decisão)** | Financeiro da Franqueadora | **Decidir**: manter, corrigir o valor ou excluir. É a decisão final. |
+| **Em contestação** | O aprovador | **Responder** a cada linha contestada — ou confirmar **Estou ciente** do valor novo proposto pelo Financeiro. |
+| **Com o Financeiro (decisão)** | Financeiro da Franqueadora | **Resolver a divergência**: segue o roteiro (conversa com a unidade e com o dentista) e decide: manter, pagar com outro valor ou tirar do relatório. |
 | **Aprovado** | — | Liberado para pagar. |
 
 **Quem aprova no lugar do Gerente.** Unidade **com** Gerente: o Gerente.
@@ -4010,17 +4019,49 @@ dentista. **Responder** → escolha:
 | **Pedir a decisão do Financeiro** | Vai ao Financeiro da Franqueadora, que decide — é o caminho para corrigir valor. |
 
 Se o dentista **contestar de novo a mesma linha**, ela vai direto ao
-Financeiro da Franqueadora.
+Financeiro da Franqueadora. **O Financeiro vai procurar você** antes de decidir
+(WhatsApp, ligação ou Chat): é o momento de contar o lado da unidade.
+
+**Valor novo do Financeiro** *(desde a 0.436.0)*. Quando o Financeiro decide
+pagar outro valor, a linha volta para você marcada **Valor novo — a unidade
+confirma**. **Ver o valor novo** mostra o valor, o motivo e a orientação;
+**Estou ciente** (comentário opcional) passa a linha ao dentista, que aceita
+ou não. O valor só vale depois do aceite do dentista.
 
 **"O dentista avisou que falta procedimento".** O aviso aparece no alto do
 relatório. O relatório **não é reaberto**: se o procedimento procede, ele entra
 no próximo relatório do dentista.
 
-**Para o Financeiro da Franqueadora.** Na lista de relatórios, a linha diz de
-quem é a vez e quantos procedimentos **esperam a sua decisão**. Em **Decidir**:
-**Manter o valor**, **Corrigir o valor** (o valor antigo fica guardado e
-aparece riscado) ou **Excluir do relatório**. Sempre com motivo. Depois de
-enviado, o Financeiro não mexe mais nas linhas — só decide o que chegar a ele.
+**Para o Financeiro da Franqueadora: o roteiro da divergência** *(desde a
+0.436.0)*. Na lista de relatórios, a linha diz de quem é a vez e quantos
+procedimentos **esperam a sua decisão**. No relatório, **Resolver a
+divergência** abre o passo a passo:
+
+1. **Entender:** o que o dentista disse em cada contestação, a resposta da
+   unidade e o valor de hoje — tudo no mesmo lugar.
+2. **Conversar com a unidade:** quem aprova a equipe (o Gerente; sem Gerente,
+   o Coordenador clínico). Os botões **WhatsApp** (abre com uma mensagem pronta
+   citando o relatório e o procedimento), **Ligar** e **Chat** ficam ao lado do
+   nome. O telefone vem da ficha do Risartano. Depois, **Registrar a conversa**:
+   por onde conversou e o que foi combinado — ou **Não consegui contato**, com
+   o que tentou.
+3. **Conversar com o dentista:** os mesmos botões e o mesmo registro.
+4. **Decidir:** só se libera com as duas conversas registradas (o sistema
+   recusa sem elas). **Manter o valor**; **Pagar com outro valor** (o valor
+   novo vai para a unidade confirmar e para o dentista aceitar — só vale
+   depois do aceite); ou **Tirar deste relatório** (**Adiar** volta no próximo
+   relatório **com o mesmo valor**; **Não pagar** fica fora). Para mudar o
+   valor, use sempre **Pagar com outro valor** — adiar não muda valor.
+5. **Orientar:** a **orientação** para a unidade e o dentista é obrigatória e
+   vai junto com a decisão: o que foi combinado e como evitar a divergência da
+   próxima vez.
+
+Se o dentista **não aceitar** o valor proposto, a linha volta **uma última
+vez**: o roteiro recomeça (as conversas de antes ficam visíveis, mas não
+contam) e, nessa rodada final, **Pagar com outro valor** grava e libera direto.
+O valor antigo fica guardado e aparece riscado. Divergência parada **3 dias
+úteis** com o Financeiro: o sino lembra. Depois de enviado, o Financeiro não
+mexe mais nas linhas — só decide o que chegar a ele.
 
 **O prazo do dentista: 5 dias úteis** (sábado, domingo e feriado nacional não
 contam). No 3º dia útil o dentista recebe um lembrete; vencido o prazo, o
@@ -4097,7 +4138,7 @@ Quando um procedimento que **já tem repasse** dá problema, o sistema abre uma
 |---|---|
 | **Controle de qualidade** | O Coordenador **reprova** um procedimento que já tem repasse. |
 | **Venda cancelada** | A venda é cancelada (termo efetivado) e tinha procedimentos com repasse. |
-| **À mão** | No relatório de repasse, **Registrar falha** na linha do procedimento, com o que aconteceu (uma reclamação, um acordo de devolução com o cliente). |
+| **À mão** | No relatório de repasse, **Registrar falha** na linha do procedimento, com o que aconteceu (uma reclamação, um acordo de devolução com o cliente). Ao abrir, a tela explica quando usar, quem decide e as saídas possíveis, com exemplos *(desde a 0.436.0)*. |
 
 O sino avisa quem decide e o Financeiro da Franqueadora.
 
@@ -4120,6 +4161,9 @@ A tela diz, antes de confirmar, o que vai acontecer:
 - **Refeito por outro dentista:** confirmada a falha do primeiro, **quem refez
   recebe** o repasse do procedimento.
 - **"Não foi falha"** encerra a ocorrência e nada muda no repasse.
+- **Falha não é contestação:** valor errado ou "não fui eu que fiz" é o
+  dentista quem contesta, no relatório dele. A falha é para procedimento que
+  precisou (ou vai precisar) ser refeito por erro do dentista.
 - **Um procedimento só é descontado uma vez.**
 - **Ocorrência sem decisão não trava nada.** Depois de 3 dias úteis, quem
   decide recebe um lembrete.
@@ -6274,7 +6318,7 @@ a Franqueadora vê. A Recepcionista recebe valor menor só como baixa parcial
 
 ### 13g.3. Selo "Em atraso"
 
-*(desde a versão 0.436.0)*
+*(desde a versão 0.437.0)*
 
 **Para que serve:** avisar, sem mostrar valor, que o paciente tem parcela em
 atraso, para a **recepção tratar do pagamento com discrição, fora da sala
@@ -6310,7 +6354,7 @@ pacientes.
 
 ### 13g.4. Painel de cobranças
 
-*(desde a versão 0.436.0; em testes: nasce só com o Admin Master)*
+*(desde a versão 0.437.0; em testes: nasce só com o Admin Master)*
 
 **Onde:** **Financeiro → Cobranças**. Duas abas:
 
