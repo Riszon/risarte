@@ -1,5 +1,6 @@
 "use client";
 
+import { SeloEmAtraso } from "@/components/selo-em-atraso";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -134,7 +135,7 @@ export function AppointmentInfoDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>
-            {appointment.clients?.full_name ?? "Agendamento"}
+            {appointment.clients?.full_name ?? "Agendamento"} <SeloEmAtraso dias={appointment.clientOverdueDays} className="ml-1 align-middle" />
           </DialogTitle>
         </DialogHeader>
         <div className="text-sm">

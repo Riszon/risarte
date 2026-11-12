@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { selosDeAtraso } from "@/lib/finance/selo-atraso";
 import Link from "next/link";
 import {
   Building2,
@@ -279,9 +280,15 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
       }
     }
 
+    // ASA2 (4006): o selo "Em atraso" — o banco só devolve a quem pode vê-lo.
+    const selosDaRede = await selosDeAtraso(
+      supabase,
+      (netAppts ?? []).map((a) => a.clients?.id ?? "")
+    );
     const networkAppointments: AgendaAppointment[] = (netAppts ?? []).map(
       (a) => ({
         id: a.id,
+        clientOverdueDays: a.clients ? (selosDaRede.get(a.clients.id) ?? null) : null,
         type: a.type,
         status: a.status,
         starts_at: a.starts_at,
@@ -653,8 +660,14 @@ export default async function AgendaPage(props: PageProps<"/agenda">) {
   }
 
   const staffNameById = new Map(staff.map((s) => [s.userId, s.name]));
+  // ASA2 (4006): o selo "Em atraso" — o banco só devolve a quem pode vê-lo.
+  const selosDaUnidade = await selosDeAtraso(
+    await createClient(),
+    appointments.map((a) => a.clients?.id ?? "")
+  );
   const unitAppointments: AgendaAppointment[] = appointments.map((a) => ({
     id: a.id,
+    clientOverdueDays: a.clients ? (selosDaUnidade.get(a.clients.id) ?? null) : null,
     type: a.type,
     status: a.status,
     starts_at: a.starts_at,

@@ -39,7 +39,7 @@ import { ShareByCpf } from "./share-by-cpf";
 import { BirthdayWhatsApp } from "./birthday-whatsapp";
 import { SharedClientsList, type SharedEntry } from "./shared-clients-list";
 import { notifyUnitBirthdays } from "./actions";
-import { daysLate } from "@/lib/finance/late-fees";
+import { corteDoAtraso } from "@/lib/finance/selo-atraso";
 import { todayInBrazil } from "@/lib/dates";
 import { CampoDeBusca } from "@/components/campo-de-busca";
 
@@ -263,6 +263,9 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
   const overdueByClient = new Map<string, number>();
   if (canSeeFinance) {
     const todayIso = todayInBrazil();
+    // ASA2 (4006): "em atraso" = passou da tolerância de dias úteis do selo
+    // (uma regra só com a ficha). Sem a 4006, vencida desde o dia seguinte.
+    const corte = await corteDoAtraso(supabase);
     const scope = isFranchisor ? clinicFilter : clinicId;
     type Parcela = { client_id: string | null; due_date: string; grace_days: number | null };
     // AP47: pedia 2.000 e a API devolve no máximo 1.000 — e isto CONTA as
@@ -272,16 +275,15 @@ export default async function ClientsPage(props: PageProps<"/prontuarios">) {
         .from("payment_installments")
         .select("client_id, due_date, grace_days")
         .in("status", ["em_aberto", "parcial"])
-        .lte("due_date", todayIso);
+        .lte("due_date", corte ?? todayIso);
       if (scope) q = q.eq("clinic_id", scope);
       return q.order("id").range(de, ate).returns<Parcela[]>();
     });
     if (!leitura.ok) console.error("prontuários — parcelas em atraso:", leitura.error.message);
     const overdueRows = leitura.ok ? leitura.linhas : [];
     for (const row of overdueRows) {
-      // A carência é a congelada na parcela (mesma conta da ficha).
       if (!row.client_id) continue;
-      if (daysLate(row.due_date, todayIso, row.grace_days ?? 0) <= 0) continue;
+      if (!corte && row.due_date >= todayIso) continue;
       overdueByClient.set(
         row.client_id,
         (overdueByClient.get(row.client_id) ?? 0) + 1

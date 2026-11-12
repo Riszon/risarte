@@ -6272,6 +6272,65 @@ que entrou. A ficha mostra a dispensa com o valor, o motivo, quem e quando, e
 a Franqueadora vê. A Recepcionista recebe valor menor só como baixa parcial
 (o saldo fica em aberto).
 
+### 13g.3. Selo "Em atraso"
+
+*(desde a versão 0.436.0)*
+
+**Para que serve:** avisar, sem mostrar valor, que o paciente tem parcela em
+atraso, para a **recepção tratar do pagamento com discrição, fora da sala
+clínica**. O selo **não bloqueia nada**: o paciente é agendado e atendido
+normalmente.
+
+**Como aparece:** "Em atraso há N dias", em vermelho, no cabeçalho da ficha, no
+card da agenda ("atraso Nd") e na janela do agendamento, e no cockpit da
+avaliação. N conta os dias **desde o vencimento** da parcela mais antiga em
+aberto. Não existe selo "em dia": sem atraso, nada aparece.
+
+**Quando acende:** só depois de **3 dias úteis** do vencimento (sábado, domingo
+e feriado nacional não contam), o tempo da compensação do boleto. Multa e juros
+não mudam: contam desde o vencimento, e a aba **Financeiro** continua mostrando
+a parcela como **vencida** desde o dia seguinte. O aviso "cobrança(s) em
+atraso" no alto da ficha, o número vermelho da aba Financeiro e o filtro "em
+atraso" da lista de Prontuários seguem a mesma regra do selo. Os 3 dias são do
+Admin Master ou do Financeiro da Franqueadora mudar, na Central de Configuração,
+aba **Financeiro** da rede (**Selo "Em atraso": depois de quantos dias úteis**).
+
+**Quem vê:** a permissão **Selo "Em atraso"** em **Administração → Permissões**.
+Começa com o **Gerente de Unidade** e o **Franqueado** (o Admin Master sempre
+vê). Depois que o dono liberar, também a **Recepcionista**, o **Consultor** e o
+**Assistente Comercial** e o **Financeiro da Franqueadora**. **Dentistas,
+auxiliares e SDR nunca veem**, mesmo que a permissão seja marcada para eles.
+
+**O que fazer quando ver o selo:** a recepção conversa com o paciente (ou com o
+responsável financeiro) no balcão, em particular, e oferece as formas de
+acertar: o link da cobrança, **Recebeu no balcão** ou a renegociação com o
+Gerente. Nunca comente o atraso na sala clínica nem na frente de outros
+pacientes.
+
+### 13g.4. Painel de cobranças
+
+*(desde a versão 0.436.0; em testes: nasce só com o Admin Master)*
+
+**Onde:** **Financeiro → Cobranças**. Duas abas:
+
+- **A receber do Asaas:** o que os pacientes **já pagaram** e o Asaas **ainda
+  não creditou**. Mostra o total, quanto cai **hoje** (inclusive o que já
+  passou da data prevista), nos **próximos 7, 30 e 60 dias**, dia a dia, por
+  meio de pagamento e, para a rede, por unidade, sempre com **bruto, taxa do
+  Asaas e líquido**. Quando o Asaas avisa que creditou, a cobrança sai daqui e
+  o dinheiro aparece na conta **Asaas** da unidade. O cartão parcelado entra
+  quando o riSZon passar a emitir cartão parcelado.
+- **Cobranças emitidas:** todas as cobranças emitidas pelo riSZon, com filtros
+  por situação, meio, período (pela data de emissão, vencimento ou pagamento) e
+  unidade, e o link para a ficha. **Cobranças criadas direto no painel do
+  Asaas não aparecem.** O botão **Baixar planilha** gera o Excel; cada download
+  fica registrado na **Auditoria** com quem baixou, quando e com quais filtros.
+
+**Quem vê:** a permissão **Painel de cobranças**. O **Gerente de Unidade** e o
+**Franqueado** veem a própria unidade; o **Admin Master** e o **Financeiro da
+Franqueadora**, a rede, com filtro por unidade. A **Recepcionista não vê**. Na
+produção, enquanto a integração está em testes, só o Admin Master.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

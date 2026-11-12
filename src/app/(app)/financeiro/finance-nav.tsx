@@ -44,7 +44,7 @@ import {
 
 type Item = { href: string; label: string };
 type Aba =
-  | { tipo: "direta"; href: string; label: string; icon: LucideIcon }
+  | { tipo: "direta"; href: string; label: string; icon: LucideIcon; soCobrancas?: boolean }
   | { tipo: "grupo"; label: string; icon: LucideIcon; itens: Item[]; soRede?: boolean };
 
 const ABAS: Aba[] = [
@@ -66,6 +66,14 @@ const ABAS: Aba[] = [
     href: "/financeiro/recebiveis",
     label: "Recebíveis",
     icon: HandCoins,
+  },
+  // ASA2 (4006): o Painel de cobranças do Asaas — só para quem tem a permissão.
+  {
+    tipo: "direta",
+    href: "/financeiro/cobrancas",
+    label: "Cobranças",
+    icon: Receipt,
+    soCobrancas: true,
   },
   {
     tipo: "direta",
@@ -122,7 +130,7 @@ const ABAS: Aba[] = [
 const CLASSE_ABA =
   "flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm transition-colors";
 
-export function FinanceNav({ veRede }: { veRede: boolean }) {
+export function FinanceNav({ veRede, veCobrancas = false }: { veRede: boolean; veCobrancas?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -136,7 +144,9 @@ export function FinanceNav({ veRede }: { veRede: boolean }) {
       className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
       <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4">
-        {ABAS.filter((a) => a.tipo !== "grupo" || !a.soRede || veRede).map(
+        {ABAS.filter(
+          (a) => (a.tipo === "grupo" ? !a.soRede || veRede : !a.soCobrancas || veCobrancas)
+        ).map(
           (aba) => {
             const Icon = aba.icon;
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { selosDeAtraso } from "@/lib/finance/selo-atraso";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Stethoscope } from "lucide-react";
@@ -228,6 +229,8 @@ export default async function EvaluationCockpitPage(
     upcomingCount: upcoming.length,
     plansOngoing: (statusPlans ?? []).filter((p) => p.lifecycle === "em_tratamento")
       .length,
+    // ASA2 (4006): o selo "Em atraso", sem valor; o banco só devolve a quem pode vê-lo.
+    overdueDays: (await selosDeAtraso(supabase, [clientId])).get(clientId) ?? null,
   };
 
   // -- Bloco F: histórico completo em pop-ups (desenvolvimento, atendimentos, planos).

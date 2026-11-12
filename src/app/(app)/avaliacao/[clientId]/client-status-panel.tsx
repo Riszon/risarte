@@ -12,8 +12,8 @@ import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 /**
  * Bloco A do cockpit — painel de status do cliente (topo). Um resumo rápido que
  * o Coordenador consulta durante toda a avaliação/reavaliação: andamento do
- * tratamento, procedimentos, atendimentos e planos. A situação financeira/
- * inadimplência depende do módulo financeiro (ASAAS) — ainda placeholder.
+ * tratamento, procedimentos, atendimentos e planos. ASA2 (4006): o selo
+ * "Em atraso" aparece só para quem pode vê-lo, sem valor, e não bloqueia nada.
  */
 export type ClientStatus = {
   treatmentPct: number | null;
@@ -23,6 +23,8 @@ export type ClientStatus = {
   nextVisit: string | null;
   upcomingCount: number;
   plansOngoing: number;
+  /** Dias desde o vencimento, quando o selo "Em atraso" vale para quem vê. */
+  overdueDays?: number | null;
 };
 
 function fmtDay(iso: string): string {
@@ -107,14 +109,19 @@ export function ClientStatusPanel({ status }: { status: ClientStatus }) {
           hint="em andamento"
         />
 
-        {/* Financeiro — placeholder até o módulo ASAAS. */}
-        <div className="rounded-lg border border-dashed bg-muted/20 px-3 py-2">
-          <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-            <Wallet className="size-3" /> Financeiro
-          </p>
-          <p className="text-sm font-medium text-muted-foreground">Em breve</p>
-          <p className="text-[11px] text-muted-foreground">integração ASAAS</p>
-        </div>
+        {/* ASA2 (4006): o selo "Em atraso" — só quando há atraso e só para quem
+            pode ver. Sem valor: o pagamento é tratado na recepção. */}
+        {status.overdueDays != null && status.overdueDays > 0 && (
+          <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-100">
+            <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide">
+              <Wallet className="size-3" /> Financeiro
+            </p>
+            <p className="text-sm font-medium">
+              {status.overdueDays === 1 ? "Em atraso há 1 dia" : `Em atraso há ${status.overdueDays} dias`}
+            </p>
+            <p className="text-[11px]">tratar com a recepção</p>
+          </div>
+        )}
       </div>
     </div>
   );

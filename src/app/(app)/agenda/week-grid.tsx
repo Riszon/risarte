@@ -1,5 +1,6 @@
 "use client";
 
+import { SeloEmAtraso } from "@/components/selo-em-atraso";
 import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -75,6 +76,8 @@ export type AgendaAppointment = {
   clientLinkable?: boolean;
   /** H4.7: nomes dos profissionais adicionais (atendimento conjunto). */
   participantNames?: string[];
+  /** ASA2 (4006): dias desde o vencimento, quando o selo "Em atraso" vale para quem vê. */
+  clientOverdueDays?: number | null;
   clients: {
     id: string;
     full_name: string;
@@ -307,6 +310,7 @@ export function WeekGrid({
                 {appointment.clients.full_name}
               </Link>
             )}
+            <SeloEmAtraso dias={appointment.clientOverdueDays} compacto />
             {appointment.clinic_name && (
               <p className="truncate text-[10px] font-medium text-primary">
                 {appointment.clinic_name}

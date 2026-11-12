@@ -47,6 +47,8 @@ export async function saveFinanceSettings(input: {
    * arredondamento, em centavos. Só na REDE; `undefined` = não mexe.
    */
   roundingToleranceCents?: number;
+  /** 4006 — dias úteis até o selo "Em atraso". Só na REDE; `undefined` = não mexe. */
+  overdueBadgeBusinessDays?: number;
 }): Promise<FinanceResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
@@ -92,6 +94,12 @@ export async function saveFinanceSettings(input: {
   ) {
     return { ok: false, error: "O arredondamento automático vai de R$ 0,00 a R$ 5,00." };
   }
+  if (
+    input.overdueBadgeBusinessDays !== undefined &&
+    (!Number.isInteger(input.overdueBadgeBusinessDays) || input.overdueBadgeBusinessDays < 0 || input.overdueBadgeBusinessDays > 15)
+  ) {
+    return { ok: false, error: "Os dias úteis do selo \"Em atraso\" vão de 0 a 15." };
+  }
   const teto = input.overduePercent ?? null;
   if (teto !== null && (!Number.isFinite(teto) || teto < 0 || teto > 100)) {
     return {
@@ -122,6 +130,9 @@ export async function saveFinanceSettings(input: {
       ...(naRede && input.reissueMaxDays !== undefined ? { overdue_reissue_max_days: input.reissueMaxDays } : {}),
       ...(naRede && input.roundingToleranceCents !== undefined
         ? { gateway_rounding_tolerance_cents: input.roundingToleranceCents }
+        : {}),
+      ...(naRede && input.overdueBadgeBusinessDays !== undefined
+        ? { overdue_badge_business_days: input.overdueBadgeBusinessDays }
         : {}),
       updated_at: new Date().toISOString(),
       updated_by: session.userId,

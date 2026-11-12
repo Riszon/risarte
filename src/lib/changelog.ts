@@ -62,6 +62,43 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.436.0",
+    data: "2026-11-12",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4006, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Selo \"Em atraso\" e Painel de cobranças",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O selo \"Em atraso há N dias\" aparece no alto da ficha do paciente, no card e na janela da agenda e no cockpit da avaliação, sem valor nenhum. Serve para tratar do pagamento com discrição, no balcão, fora da sala clínica. Não bloqueia agendamento nem atendimento.",
+        papeis: ["unit_manager", "franchisee"],
+        manual: "13g.3. Selo \"Em atraso\"",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "\"Em atraso\" agora conta depois de 3 dias úteis do vencimento (o tempo da compensação do boleto): vale para o aviso no alto da ficha, o número vermelho da aba Financeiro e o filtro da lista de Prontuários. Multa e juros não mudam e a aba Financeiro continua mostrando a parcela como vencida desde o dia seguinte.",
+        papeis: ["receptionist", "unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g.3. Selo \"Em atraso\"",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na Central de Configuração, aba Financeiro da rede: depois de quantos dias úteis a parcela conta como \"em atraso\" (padrão 3).",
+        papeis: ["finance_franchisor"],
+        manual: "13g.3. Selo \"Em atraso\"",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Cobranças: o que o Asaas ainda vai creditar, por data prevista (hoje, 7, 30 e 60 dias e dia a dia), com bruto, taxa e líquido, e a lista das cobranças emitidas pelo riSZon, com planilha. Por enquanto só para o Admin Master, em testes.",
+        papeis: [],
+        manual: "13g.4. Painel de cobranças",
+      },
+    ],
+  },
+  {
     versao: "0.435.0",
     data: "2026-11-11",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4005, ASAAS_MIGRATION).

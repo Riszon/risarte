@@ -58,6 +58,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   gateway_customers: "Pagador no Asaas",
   payment_waivers: "Quitação por valor menor (dispensa)",
   network_fee_waiver: "Dispensa da taxa da rede mantida no estorno",
+  gateway_charges_panel: "Planilha do Painel de cobranças",
   gateway_payment_surpluses: "Pagamento em duplicidade pelo Asaas",
   // ------------------------------------------------ assinaturas digitais (0340)
   signature_settings: "Configuração das assinaturas digitais",

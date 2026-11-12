@@ -2,6 +2,17 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔌 0.436.0 / ASAAS 0.5.0 — ASA2, ENTREGA 2: SELO "EM ATRASO" E PAINEL DE COBRANÇAS (12/11/2026; migração 4006)
+>
+> Estado em `docs/asaas/ESTADO.md`; decisões na seção 17 da especificação.
+> Selo "Em atraso há N dias" (sem valor) na ficha, na agenda e no cockpit da
+> avaliação, depois de 3 dias úteis do vencimento (configurável); a mesma regra
+> no aviso da ficha, no número da aba Financeiro e no filtro de Prontuários.
+> Permissão em duas etapas (Gerente e Franqueado; depois Recepção, Comercial e
+> Financeiro) com teto no banco. Financeiro → Cobranças: "A receber do Asaas" e
+> "Cobranças emitidas" (planilha registrada na auditoria); nasce só com o
+> Admin. Taxa e líquido gravados na cobrança. Ensaio 45/45. 🟡 4006 só no treino.
+>
 > ## 🔌 0.435.0 / ASAAS 0.4.0 — ASA2, ENTREGA 1: O AVISO DO ASAAS VIRA BAIXA (11/11/2026; migração 4005)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na seção 16 da especificação.

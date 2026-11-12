@@ -308,6 +308,32 @@ export const CAPACIDADES: Capability[] = [
     padrao: [],
   },
   {
+    // 4006 — Selo "Em atraso" (ASA2, entrega 2; spec 17.1). Duas etapas: nasce
+    // com Gerente e Franqueado; o dono libera depois Recepcionista, Consultor e
+    // Assistente Comercial e Financeiro da Franqueadora. O BANCO lê esta matriz
+    // (`_gateway_cap_clinics`) e tem um TETO: Dentista, Planner, TSB, ASB e SDR
+    // nunca veem, mesmo marcados aqui.
+    id: "acao.cobranca.selo_atraso",
+    rotulo: "Selo \"Em atraso\"",
+    grupo: "Módulos",
+    descricao:
+      "Ver o selo \"Em atraso há N dias\" na ficha, na agenda e no cockpit da avaliação, sem valores. Dentistas, auxiliares e SDR nunca veem.",
+    dependeDoBanco: true,
+    padrao: ["unit_manager", "franchisee"],
+  },
+  {
+    // 4006 — Painel de cobranças (spec 17.2). Nasce só com o Admin Master
+    // enquanto a integração está em testes. Teto no BANCO: Gerente e Franqueado
+    // (a própria unidade) e Financeiro da Franqueadora (a rede).
+    id: "modulo.painel_cobrancas",
+    rotulo: "Painel de cobranças",
+    grupo: "Módulos",
+    descricao:
+      "Financeiro → Cobranças: o que o Asaas ainda vai creditar e a lista das cobranças emitidas, com planilha. A Recepcionista nunca vê.",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
     // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
     // cada um enxerga (as que cria, as das unidades que gere, e aquelas em
     // que participa).

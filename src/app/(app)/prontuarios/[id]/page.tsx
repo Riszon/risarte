@@ -70,6 +70,8 @@ import { carregarContasDaUnidade } from "../../financeiro/contas-da-unidade";
 import { CancelPlanCard } from "./cancel-plan-card";
 import { loadClientReceivables } from "./receivables-loader";
 import { viewInstallment } from "@/lib/finance/receivables";
+import { corteDoAtraso, parcelaEmAtraso, selosDeAtraso } from "@/lib/finance/selo-atraso";
+import { SeloEmAtraso } from "@/components/selo-em-atraso";
 import {
   JourneySection,
   type ClientAppointment,
@@ -610,6 +612,13 @@ export default async function ClientDetailPage(
         keptFeeReceiptIds: [] as string[],
       };
   const financeToday = todayInBrazil();
+  // ASA2 (4006): uma regra só para "em atraso" (a tolerância de dias úteis) e o
+  // selo, que o banco só devolve a quem pode vê-lo (spec 17.1).
+  const [corteAtraso, selosDaFicha] = await Promise.all([
+    corteDoAtraso(supabase),
+    selosDeAtraso(supabase, [client.id]),
+  ]);
+  const diasDeAtraso = selosDaFicha.get(client.id) ?? null;
   // AP51: as contas da unidade de cada cobrança, para o "Entrou em" da baixa.
   const contasDoDinheiro = canReceivePayment
     ? await carregarContasDaUnidade(supabase, [
@@ -714,8 +723,19 @@ export default async function ClientDetailPage(
   }
 
   // Selo vermelho na aba: o atraso aparece sem precisar abrir o Financeiro.
+  // ASA2 (4006): o aviso e o número da aba seguem a tolerância do selo; a aba
+  // continua mostrando cada parcela como VENCIDA desde o vencimento.
   const lateInstallmentCount = receivables.installments.filter(
-    (i) => viewInstallment(i, financeToday).isLate
+    (i) =>
+      i.dueDate != null &&
+      parcelaEmAtraso(
+        {
+          dueDate: i.dueDate,
+          emAberto: viewInstallment(i, financeToday).isOpen,
+        },
+        corteAtraso,
+        financeToday
+      )
   ).length;
 
   const canEdit =
@@ -2812,6 +2832,7 @@ export default async function ClientDetailPage(
                   >
                     {STATUS_LABELS[client.status as keyof typeof STATUS_LABELS]}
                   </Badge>
+                  <SeloEmAtraso dias={diasDeAtraso} />
                   {client.staff_member_id &&
                     (client.risartano_active === false ? (
                       <Badge

@@ -35,6 +35,8 @@ export type ValoresDaRede = {
   overdue_reissue_max_days?: number | null;
   /** 4005 — arredondamento automático do Asaas, em centavos; `null` = banco sem a 4005. */
   gateway_rounding_tolerance_cents?: number | null;
+  /** 4006 — dias úteis até o selo "Em atraso"; `null` = banco sem a 4006. */
+  overdue_badge_business_days?: number | null;
 };
 
 /** A linha da unidade, crua: `null` = segue a rede. */
@@ -159,9 +161,14 @@ export function FinanceiroDaRede({
   const arredNum = num(arredondamento);
   const arredCents = arredNum === null || Number.isNaN(arredNum) ? Number.NaN : Math.round(arredNum * 100);
   const arredInvalido = temArredondamento && (!Number.isInteger(arredCents) || arredCents < 0 || arredCents > 500);
+  // 4006: os dias úteis do selo "Em atraso" (só na REDE).
+  const temSelo = clinicId === null && rede.overdue_badge_business_days != null;
+  const [diasDoSelo, setDiasDoSelo] = useState(String(rede.overdue_badge_business_days ?? 3));
+  const ds = Number(diasDoSelo);
+  const seloInvalido = temSelo && (!Number.isInteger(ds) || ds < 0 || ds > 15);
   const reemissaoInvalida = temReemissao && (!Number.isInteger(d) || d < 0 || d > 30);
   const invalido =
-    m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0) || reemissaoInvalida || arredInvalido;
+    m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0) || reemissaoInvalida || arredInvalido || seloInvalido;
   const acimaDoLimite = (m ?? 0) > 2;
 
   return (
@@ -224,6 +231,23 @@ export function FinanceiroDaRede({
               </span>
             </label>
           )}
+          {temSelo && (
+            <label className="block text-sm font-medium">
+              Selo &quot;Em atraso&quot;: depois de quantos dias úteis (0 a 15)
+              <input
+                value={diasDoSelo}
+                onChange={(e) => setDiasDoSelo(e.target.value)}
+                disabled={!canEdit}
+                inputMode="numeric"
+                className={cn(fieldClass, seloInvalido && "border-destructive")}
+              />
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                A parcela só aparece como &quot;em atraso&quot; (selo, aviso da ficha e filtro de prontuários) depois destes
+                dias úteis do vencimento, o tempo da compensação do boleto. Multa e juros não mudam: contam desde o
+                vencimento.
+              </span>
+            </label>
+          )}
         </div>
         <p className="text-[11px] text-muted-foreground">
           Teto da inadimplência: acima dele a unidade acende em <strong>Recebíveis</strong> e no painel da rede. Não é um
@@ -245,6 +269,7 @@ export function FinanceiroDaRede({
                   overduePercent: t,
                   ...(temReemissao ? { reissueMaxDays: d } : {}),
                   ...(temArredondamento ? { roundingToleranceCents: arredCents } : {}),
+                  ...(temSelo ? { overdueBadgeBusinessDays: ds } : {}),
                 },
                 "Configuração salva."
               )

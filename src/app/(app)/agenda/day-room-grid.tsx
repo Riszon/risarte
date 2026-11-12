@@ -1,5 +1,6 @@
 "use client";
 
+import { SeloEmAtraso } from "@/components/selo-em-atraso";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -594,6 +595,7 @@ export function DayRoomGrid({
               {appointment.clients.full_name}
             </Link>
           )}
+          <SeloEmAtraso dias={appointment.clientOverdueDays} compacto />
           <span className="flex shrink-0 items-center">
             <AppointmentInfoDialog
               appointment={appointment}
@@ -649,6 +651,7 @@ export function DayRoomGrid({
                 {appointment.clients.full_name}
               </Link>
             )}
+            <SeloEmAtraso dias={appointment.clientOverdueDays} compacto />
             {ehComercial(appointment.type) ? (
               <p
                 className={cn(

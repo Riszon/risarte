@@ -18,10 +18,17 @@ type Linha = {
   alert_overdue_percent: number | null;
   overdue_reissue_max_days?: number | null;
   gateway_rounding_tolerance_cents?: number | null;
+  overdue_badge_business_days?: number | null;
 };
 
 async function lerLinhas(supabase: SupabaseClient): Promise<Linha[]> {
   const colunas = "clinic_id, late_fee_percent, monthly_interest_percent, rounding_mode, alert_overdue_percent";
+  // 4006: com os dias úteis do selo "Em atraso".
+  const com4006 = await supabase
+    .from("finance_settings")
+    .select(`${colunas}, overdue_reissue_max_days, gateway_rounding_tolerance_cents, overdue_badge_business_days`)
+    .returns<Linha[]>();
+  if (!com4006.error) return com4006.data ?? [];
   // 4004: com a coluna do limite da reemissão; sem a 4004, sem ela.
   const com = await supabase
     .from("finance_settings")
@@ -46,6 +53,8 @@ function daRede(linhas: Linha[]): ValoresDaRede {
       r && "overdue_reissue_max_days" in r ? Number(r.overdue_reissue_max_days ?? 7) : null,
     gateway_rounding_tolerance_cents:
       r && "gateway_rounding_tolerance_cents" in r ? Number(r.gateway_rounding_tolerance_cents ?? 10) : null,
+    overdue_badge_business_days:
+      r && "overdue_badge_business_days" in r ? Number(r.overdue_badge_business_days ?? 3) : null,
   };
 }
 

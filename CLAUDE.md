@@ -400,6 +400,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**12/11/2026 (Asaas — ASA2, entrega 2) — PC Administrador (core 0.435.0 → 0.436.0, Asaas 0.5.0, migração 4006; worktree `wt-asaas`)**
+
+- **Selo "Em atraso" e Painel de cobranças** (estado em `docs/asaas/ESTADO.md`;
+  decisões na seção 17 da especificação). ⚠️ **"Em atraso" tem UMA regra:
+  `overdue_badge_cutoff()`** (dias úteis da rede, padrão 3) — selo, aviso da
+  ficha, número da aba Financeiro e filtro de Prontuários. ⚠️ **Quem vê o selo e
+  o painel é o banco** (`_gateway_cap_clinics`, lê a matriz com TETO: dentista,
+  planner, TSB, ASB e SDR nunca veem o selo; a Recepcionista nunca vê o painel).
+- 🟡 4006 só no treino; falta o dono testar e aprovar.
+
 **11/11/2026 (Asaas — ASA2, entrega 1) — PC Administrador (core 0.434.0 → 0.435.0, Asaas 0.4.0, migração 4005; worktree `wt-asaas`)**
 
 - **O aviso do Asaas vira baixa** (estado em `docs/asaas/ESTADO.md`; decisões
