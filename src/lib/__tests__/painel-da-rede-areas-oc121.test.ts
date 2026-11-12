@@ -326,7 +326,8 @@ describe("OC-00122 — quanto a unidade representa da rede", () => {
     expect(tela).toContain("Rede ({unidades.length})");
     // A coluna do nome fica fixa ao rolar de lado (celular).
     expect(tela).toMatch(/sticky left-0/);
-    // 5 desde a aba Hora clínica (pedido do dono, 27/10/2026; 0330).
-    expect((tela.match(/<TabelaDaArea/g) ?? []).length).toBe(5);
+    // 5 desde a aba Hora clínica (pedido do dono, 27/10/2026; 0330); 6 desde
+    // a aba Repasses (repasse, Etapa 5; 0401).
+    expect((tela.match(/<TabelaDaArea/g) ?? []).length).toBe(6);
   });
 });

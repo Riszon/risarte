@@ -500,7 +500,7 @@ quando ela foi; apurar na hora é botão do Painel da rede.
 #### O Painel da rede por área *(desde a 0.341.0, relato OC-00121)*
 
 Em **Rede → Painel da rede** (Admin Master e Financeiro da Franqueadora), no
-alto, o **mês e o ano** — valem para todas as abas — e seis abas:
+alto, o **mês e o ano** — valem para todas as abas — e sete abas:
 
 | Aba | O que mostra de cada unidade | Vermelho | Amarelo |
 |---|---|---|---|
@@ -510,6 +510,7 @@ alto, o **mês e o ano** — valem para todas as abas — e seis abas:
 | **Fluxo de caixa** | saldo no início, entradas, saídas e saldo no fim do mês | o saldo fica negativo em algum dia do mês | sai mais do que entra, com o saldo aguentando |
 | **DRE** | receita líquida, resultado e **margem** do mês | prejuízo | margem mais de 2 pontos abaixo da margem da rede |
 | **Hora clínica** *(desde a 0.362.0)* | a **hora clínica** (custo fixo por mês, horas de cadeira, ocupação esperada e real, hora real) nos **3 meses fechados** até o mês escolhido | — | hora mais de 10% acima da hora da rede |
+| **Repasses** *(desde a 0.434.0)* | o repasse dos dentistas no mês (pela finalização do procedimento): repasse, quanto ele representa da produção, descontos, pago, a pagar, vencido e o número de dentistas; **Baixar planilha** no alto | repasse com conta **vencida sem pagar** | relatório parado na aprovação ou ocorrência de falha sem decisão |
 
 Cada aba é uma **tabela em colunas** (desde a 0.341.1, relato OC-00122). A
 primeira linha, **Rede**, traz o total nas **mesmas colunas** das unidades —
@@ -554,7 +555,8 @@ mesmo mês** naquela unidade. No alto do Financeiro aparece a faixa *"Você abri
 … pelo Painel da rede"* com o botão **Voltar para a rede**, que devolve à
 franqueadora de onde você saiu, na mesma aba e no mesmo mês. Trocar de unidade
 pelo seletor apaga a faixa. Os **Recebíveis** abrem sem filtro de data (lá a
-data filtra pelo vencimento, e esconderia o atrasado). O mesmo botão está nas
+data filtra pelo vencimento, e esconderia o atrasado). Na aba **Repasses**, ele
+abre o **Histórico de repasse** da unidade no mesmo mês. O mesmo botão está nas
 telas **Recebíveis da rede** e **Consolidado**.
 
 O **Financeiro da Franqueadora trabalha sempre com todas as unidades**
@@ -3438,6 +3440,10 @@ quando quem responde pela equipe conferiu e enviou — o sino avisa.
   desconto (você não recebe de novo). Se o desconto passar do repasse do
   pagamento, o resto vai para o relatório seguinte; se consumir tudo, o
   pagamento aparece como **Compensado pelo desconto**.
+- **O gráfico do seu repasse** *(desde a 0.434.0)*: no alto de Meus repasses,
+  os últimos 12 meses, somando todas as unidades em que você atende, já com
+  os descontos. Você vê o seu repasse; a produção (os valores de venda) fica
+  com o Financeiro e o Gerente.
 
 1. **Meu Dia** → seus atendimentos.
 2. **Atendimento** → **Chamar**.
@@ -4127,6 +4133,38 @@ pelas mesmas aprovações: o dentista vê o motivo e pode contestar. Na
 que o repasse liberado, o que cabe entra agora e **o resto passa para o próximo
 relatório**, até zerar. Se o desconto consumir todo o repasse, o pagamento fica
 **Compensado pelo desconto**, sem conta a pagar.
+
+#### O histórico do repasse e a evolução de cada dentista (desde a 0.434.0)
+
+Em **Financeiro → Análise → Histórico de repasse** (Financeiro da Franqueadora,
+Gerente e franqueado, na unidade em que estão trabalhando). Escolha o período
+(**De** e **Até**, até 36 meses; sem escolher, os últimos 12) e clique em
+**Ver**.
+
+**Os números.**
+
+| Coluna | O que é |
+|---|---|
+| **Produção** | O **valor vendido** dos procedimentos: o preço no plano com o desconto da negociação repartido; na venda direta, o valor final do item. Manutenção de **Ortodontia** não tem produção (não se aplica). |
+| **Repasse** | O repasse apurado. Fica de fora o que está em "não pagar", "sem repasse" e o que teve falha confirmada antes de entrar em relatório. |
+| **Descontos** | As linhas negativas por falha do dentista. |
+| **Líquido** | Repasse menos os descontos. |
+| **Pago** | O que já foi pago (ou compensado pelo desconto). |
+| **A pagar** | O que tem pagamento programado mais o que ainda espera relatório ou aprovação. |
+
+O **mês** é o da **finalização do procedimento** — o mesmo da DRE e do
+relatório de repasse. O desconto entra no mês em que a falha foi decidida.
+
+- **Mês a mês:** a unidade inteira em cada mês do período (mês sem repasse
+  aparece zerado).
+- **Dentistas lado a lado:** cada dentista no período, **em ordem de nome**
+  (não é ranking), com o quanto o repasse representa da produção.
+- **Baixar planilha:** a mesma tabela, dentista por dentista e mês a mês.
+
+**A evolução de um dentista.** Clique no nome dele: o **gráfico** dos meses do
+período, com a **produção** (barra contornada) e o **repasse** (barra cheia)
+lado a lado — passe o mouse num mês para ver os valores —, os totais e a tabela
+mês a mês. **Imprimir / salvar em PDF** usa a impressão do navegador.
 
 #### Configurar agenda: horário por dia e feriados da unidade (desde a 0.403.0)
 

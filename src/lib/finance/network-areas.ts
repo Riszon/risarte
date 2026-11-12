@@ -33,6 +33,8 @@ export const NETWORK_TABS = [
   { key: "dre", label: "DRE" },
   // Pedido do dono, 27/10/2026 (0330): comparar o custo da hora clínica.
   { key: "hora", label: "Hora clínica" },
+  // Repasse, Etapa 5 (0401): o repasse dos dentistas, unidade a unidade.
+  { key: "repasses", label: "Repasses" },
 ] as const;
 
 export type NetworkTab = (typeof NETWORK_TABS)[number]["key"];
@@ -510,6 +512,11 @@ export function destinoNaUnidade(
       const p = periodoDaHoraClinica(hoje, DATA.test(de) ? de.slice(0, 7) : null);
       return `/financeiro/ponto-de-equilibrio?de=${p.de}&ate=${p.ate}`;
     }
+    // O histórico de repasse da unidade, no MESMO mês da aba.
+    case "repasses":
+      return DATA.test(de) && DATA.test(ate)
+        ? `/financeiro/repasses/historico?de=${de.slice(0, 7)}&ate=${ate.slice(0, 7)}`
+        : "/financeiro/repasses/historico";
     case "visao":
       return "/financeiro";
   }

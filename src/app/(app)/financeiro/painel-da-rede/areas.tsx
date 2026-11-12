@@ -39,6 +39,14 @@ import {
   type UnidadePagar,
   type UnidadeReceber,
 } from "@/lib/finance/network-areas";
+import {
+  farolRepasse,
+  percentualDoRepasse,
+  porAtencaoRepasse,
+  textoDoPercentual,
+  totaisDaRede,
+  type NetworkPayoutRow,
+} from "@/lib/finance/payout-visoes";
 import { BotaoAbrirNaUnidade } from "../abrir-na-unidade";
 
 /**
@@ -475,6 +483,73 @@ const porHora = (cents: number | null) => (cents === null ? "—" : `${formatBRL
  * conta da Precificação: custo fixo ÷ (horas de cadeira × ocupação esperada),
  * nos 3 meses fechados até o mês escolhido.
  */
+/**
+ * Repasse, Etapa 5 (0401) — o repasse dos dentistas, unidade a unidade, no
+ * mês escolhido (pelo mês da finalização do procedimento). A conta é a do
+ * banco (`payout_network_summary`), a mesma do histórico da unidade.
+ */
+export function AbaRepasses({
+  unidades,
+  ctx,
+  planilha,
+}: {
+  unidades: NetworkPayoutRow[];
+  ctx: Contexto;
+  planilha: string;
+}) {
+  const t = totaisDaRede(unidades);
+  const farois: ContagemDeFarol = { vermelho: 0, amarelo: 0, verde: 0, sem_dado: 0 };
+  for (const u of unidades) farois[farolRepasse(u).farol] += 1;
+  return (
+    <div className="space-y-4">
+      <Explica>
+        O repasse dos dentistas no mês, pela <strong>finalização do procedimento</strong>:
+        quanto foi apurado, descontado por falha, pago e o que espera. Vermelho é repasse
+        com conta <strong>vencida sem pagar</strong>; amarelo, relatório parado na aprovação
+        ou ocorrência de falha sem decisão.{" "}
+        <a href={planilha} className="underline">
+          Baixar planilha
+        </a>
+        .
+      </Explica>
+      <TabelaDaArea
+        unidades={[...unidades].sort(porAtencaoRepasse)}
+        farol={farolRepasse}
+        farois={farois}
+        aba="repasses"
+        ctx={ctx}
+        colunas={[
+          { rotulo: "Repasse", unidade: (u) => formatBRL(u.payoutCents), rede: formatBRL(t.payoutCents) },
+          {
+            rotulo: "% da produção",
+            unidade: (u) => textoDoPercentual(percentualDoRepasse(u)),
+            rede: textoDoPercentual(percentualDoRepasse(t)),
+          },
+          {
+            rotulo: "Descontos",
+            unidade: (u) => (u.discountCents ? formatBRL(u.discountCents) : "—"),
+            rede: t.discountCents ? formatBRL(t.discountCents) : "—",
+          },
+          { rotulo: "Pago", unidade: (u) => formatBRL(u.paidCents), rede: formatBRL(t.paidCents) },
+          {
+            rotulo: "A pagar",
+            unidade: (u) => formatBRL(u.scheduledCents + u.waitingCents),
+            rede: formatBRL(t.scheduledCents + t.waitingCents),
+          },
+          {
+            rotulo: "Vencido",
+            unidade: (u) => (u.overdueCents ? formatBRL(u.overdueCents) : "—"),
+            rede: t.overdueCents ? formatBRL(t.overdueCents) : "—",
+            alerta: (u) => u.overdueCents > 0,
+            redeAlerta: t.overdueCents > 0,
+          },
+          { rotulo: "Dentistas", unidade: (u) => u.dentists, rede: t.dentists },
+        ]}
+      />
+    </div>
+  );
+}
+
 export function AbaHora({ unidades, ctx }: { unidades: UnidadeHora[]; ctx: Contexto }) {
   const t = totaisHora(unidades);
   const periodo = unidades[0]?.hora.periodo;
