@@ -19,7 +19,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
 | **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.433.0, Asaas 0.3.0); 4004 nos dois bancos (produção pelo dono, conferência batida); testada pelo dono no projeto de teste | **4004** |
-| **ASA2, entrega 1** — o aviso do Asaas vira baixa | 🟡 **em teste** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; falta a prova no sandbox de ponta a ponta, a do pagamento atrasado (dois dias) e a do cartão (o dono paga) | **4005** |
+| **ASA2, entrega 1** — o aviso do Asaas vira baixa | 🟡 **aprovada pelo dono em 11/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; **falta a prova do pagamento atrasado (12/11, `ASAAS_INTEGRACAO=sim ASAAS_PROVA_ATRASO=conferir`)**, depois a 4005 na produção e o `main` | **4005** |
 | ASA2, entrega 2 — sinalização "em atraso" e a régua | plano aprovado (spec seção 16.8) | — |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
