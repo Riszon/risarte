@@ -14,6 +14,24 @@ import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const LIGADO = process.env.ASAAS_INTEGRACAO === "sim";
+
+/**
+ * O sandbox do Asaas devolve 500 ao confirmar ou apagar um BOLETO nos primeiros
+ * segundos depois de criado (o registro ainda não terminou). Espera e tenta de
+ * novo — só nos testes; no produto o erro vira "tente de novo em instantes".
+ */
+async function comPaciencia<T>(fn: () => Promise<T>, vezes = 6, esperaMs = 5000): Promise<T> {
+  let ultimo: unknown;
+  for (let i = 0; i < vezes; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      ultimo = e;
+      await new Promise((r) => setTimeout(r, esperaMs));
+    }
+  }
+  throw ultimo;
+}
 const PRODUCAO = "hvhbijctanrrkxhemlza";
 
 describe.skipIf(!LIGADO)("Asaas sandbox — o caminho real do servidor", () => {
@@ -260,12 +278,16 @@ describe.skipIf(!LIGADO)("Asaas sandbox — a cobrança de parcela (ASA1)", () =
     const { data: chk } = await pessoa.rpc("charge_cancel_check", { p_charge_id: c2, p_purpose: "counter" });
     const ck = (Array.isArray(chk) ? chk[0] : chk) as { asaas_payment_id: string; gateway_account_id: string };
     expect(
-      await cancelarNoAsaas({
-        chargeId: c2 as string,
-        accountId: ck.gateway_account_id,
-        asaasPaymentId: ck.asaas_payment_id,
-        actorId: adminId,
-        reason: "teste",
+      await comPaciencia(async () => {
+        const r = await cancelarNoAsaas({
+          chargeId: c2 as string,
+          accountId: ck.gateway_account_id,
+          asaasPaymentId: ck.asaas_payment_id,
+          actorId: adminId,
+          reason: "teste",
+        });
+        if (!r.ok) throw new Error(r.error);
+        return r;
       })
     ).toEqual({ ok: true });
     expect((await admin.from("charges").select("status").eq("id", c2).single()).data?.status).toBe("cancelada");
@@ -292,5 +314,272 @@ describe.skipIf(!LIGADO)("Asaas sandbox — a cobrança de parcela (ASA1)", () =
     const pg3 = await getPayment(cred, r3.asaas_payment_id, opts);
     expect(pg3.dueDate).toBe(dia(3));
     expect(Math.round((pg3.value ?? 0) * 100)).toBe(Number(r3.value_cents));
-  }, 180_000);
+  }, 300_000);
+});
+
+// ASA2, entrega 1 — de ponta a ponta: o riSZon emite, o sandbox paga, o Asaas
+// avisa o webhook PUBLICADO (projeto de teste na Vercel, que grava no treino) e
+// a baixa acontece SOZINHA, com a venda fechando (D21). Este teste só emite,
+// paga e depois LÊ o banco esperando o aviso chegar — não processa nada.
+// Exige o projeto de teste publicado com a 4005 (ASAAS_E2E_WEBHOOK=sim).
+describe.skipIf(!LIGADO || process.env.ASAAS_E2E_WEBHOOK !== "sim")("Asaas sandbox — o aviso vira baixa (ASA2)", () => {
+  it("Pix e boleto pagos no sandbox dão baixa sozinhos e fecham a venda direta", async () => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { emitirNoAsaas } = await import("@/lib/asaas/cobranca");
+    const { credencialDaConta, opcoesDaConta } = await import("@/lib/asaas/account");
+    const { asaasRequest } = await import("@/lib/asaas/client");
+    const admin = createAdminClient();
+
+    const { data: link } = await admin.auth.admin.generateLink({ type: "magiclink", email: "admin@example.com" });
+    const pessoa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { persistSession: false },
+    });
+    const { data: sess } = await pessoa.auth.verifyOtp({ type: "magiclink", token_hash: link!.properties!.hashed_token });
+    const adminId = sess.user!.id;
+
+    const { data: conta } = await admin
+      .from("gateway_accounts")
+      .select("id, clinic_id")
+      .eq("owner_type", "unit")
+      .eq("environment", "sandbox")
+      .eq("status", "active")
+      .order("created_at")
+      .limit(1)
+      .single();
+    const unidade = conta!.clinic_id as string;
+
+    const d = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+    const dv = (a: number[], p: number) => {
+      const r = (a.reduce((s, n, i) => s + n * (p - i), 0) * 10) % 11;
+      return r === 10 ? 0 : r;
+    };
+    d.push(dv(d, 10));
+    d.push(dv(d, 11));
+    const { data: cli } = await admin
+      .from("clients")
+      .insert({ clinic_id: unidade, full_name: "Teste Asaas ASA2 Paciente", birth_date: "1985-05-05", cpf: d.join("") })
+      .select("id")
+      .single();
+    const { data: venda } = await admin
+      .from("direct_sales")
+      .insert({
+        clinic_id: unidade,
+        client_id: cli!.id,
+        client_name: "Teste Asaas ASA2",
+        description: "Teste ASA2",
+        value_cents: 1500,
+        final_cents: 1500,
+        payment_method: "pix",
+        installments: 2,
+        contract_signed: true,
+      })
+      .select("id")
+      .single();
+    const hoje = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+    const dia = (n: number) => new Date(Date.parse(hoje) + n * 86400_000).toISOString().slice(0, 10);
+    const parcela = async (seq: number, valor: number, metodo: string) =>
+      (
+        await admin
+          .from("payment_installments")
+          .insert({
+            clinic_id: unidade,
+            client_id: cli!.id,
+            direct_sale_id: venda!.id,
+            seq,
+            due_date: dia(3),
+            amount_cents: valor,
+            payment_method: metodo,
+            late_fee_percent: 2,
+            monthly_interest_percent: 1,
+            grace_days: 0,
+          })
+          .select("id")
+          .single()
+      ).data!.id as string;
+    const pPix = await parcela(1, 700, "pix");
+    const pBoleto = await parcela(2, 800, "boleto");
+
+    const cred = await credencialDaConta(conta!.id, "integration_test", null);
+    const opts = opcoesDaConta(conta!.id, "integration_test");
+    const emitirEPagar = async (inst: string, tipo: "PIX" | "BOLETO") => {
+      const { data: id, error } = await pessoa.rpc("charge_prepare", { p_installment_id: inst, p_billing_type: tipo, p_due_date: null });
+      expect(error).toBeNull();
+      expect(await emitirNoAsaas(id as string, adminId)).toEqual({ ok: true });
+      const { data: ch } = await admin.from("charges").select("asaas_payment_id, fine_cents").eq("id", id).single();
+      await comPaciencia(() =>
+        asaasRequest(
+          { ...cred, method: "POST", path: "/sandbox/payment/{id}/confirm", params: { id: ch!.asaas_payment_id }, body: {} },
+          opts
+        )
+      );
+      return id as string;
+    };
+    const cPix = await emitirEPagar(pPix, "PIX");
+    const cBoleto = await emitirEPagar(pBoleto, "BOLETO");
+
+    // Espera o aviso chegar ao webhook publicado e a baixa acontecer (até 2 min).
+    const esperar = async (charge: string) => {
+      for (let i = 0; i < 40; i++) {
+        const { data } = await admin.from("charges").select("status, receipt_id").eq("id", charge).single();
+        if (data?.receipt_id) return data;
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+      return null;
+    };
+    const rPix = await esperar(cPix);
+    const rBoleto = await esperar(cBoleto);
+    expect(rPix?.receipt_id, "o aviso do Pix não deu a baixa a tempo").toBeTruthy();
+    expect(rBoleto?.receipt_id, "o aviso do boleto não deu a baixa a tempo").toBeTruthy();
+    expect(["paga", "liquidada"]).toContain(rPix!.status);
+    expect(["paga", "liquidada"]).toContain(rBoleto!.status);
+
+    const { data: parcelas } = await admin.from("payment_installments").select("status").in("id", [pPix, pBoleto]);
+    expect(parcelas!.every((p) => p.status === "paga")).toBe(true);
+    const { data: vd } = await admin.from("direct_sales").select("closed_at, payment_confirmed_source").eq("id", venda!.id).single();
+    expect(vd!.closed_at).toBeTruthy();
+    expect(vd!.payment_confirmed_source).toBe("asaas");
+    const { data: rec } = await admin
+      .from("payment_receipts")
+      .select("created_by, notes, acquirer_fee_cents, amount_cents")
+      .eq("id", rPix!.receipt_id)
+      .single();
+    expect(rec!.created_by).toBeNull();
+    expect(rec!.notes).toBe("Baixa automática (Asaas)");
+    expect(Number(rec!.amount_cents)).toBe(700);
+    const { data: ba } = await admin.from("bank_accounts").select("alias").eq("gateway_account_id", conta!.id).single();
+    expect(ba!.alias).toBe("Asaas");
+  }, 300_000);
+});
+
+// ASA2 — A PROVA DO PAGAMENTO ATRASADO, em dois dias (16.1):
+//   dia 1: ASAAS_PROVA_ATRASO=preparar npm run test:asaas  → cobrança de boleto
+//          vencendo HOJE para o paciente "Teste Asaas Atraso";
+//   dia 2: ASAAS_PROVA_ATRASO=conferir npm run test:asaas → paga no sandbox
+//          (já vencida), espera a baixa e confere qual campo do Asaas traz o
+//          total pago com multa e juros.
+describe.skipIf(!LIGADO || !process.env.ASAAS_PROVA_ATRASO)("Asaas sandbox — pagamento atrasado (ASA2)", () => {
+  beforeAll(() => {
+    for (const linha of readFileSync(".env.test.local", "utf8").split(/\r?\n/)) {
+      const i = linha.indexOf("=");
+      if (i < 1) continue;
+      const k = linha.slice(0, i).trim();
+      if (["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"].includes(k)) {
+        process.env[k] = linha.slice(i + 1).trim();
+      }
+    }
+    if ((process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").includes(PRODUCAO)) {
+      throw new Error("RECUSADO: este teste nunca roda contra o banco de produção.");
+    }
+  });
+
+  it("prepara ou confere a prova do atraso", async () => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { emitirNoAsaas } = await import("@/lib/asaas/cobranca");
+    const { credencialDaConta, opcoesDaConta } = await import("@/lib/asaas/account");
+    const { asaasRequest } = await import("@/lib/asaas/client");
+    const { getPayment } = await import("@/lib/asaas/api");
+    const admin = createAdminClient();
+    const NOME = "Teste Asaas Atraso";
+
+    const { data: conta } = await admin
+      .from("gateway_accounts")
+      .select("id, clinic_id")
+      .eq("owner_type", "unit")
+      .eq("environment", "sandbox")
+      .eq("status", "active")
+      .order("created_at")
+      .limit(1)
+      .single();
+    const cred = await credencialDaConta(conta!.id, "integration_test", null);
+    const opts = opcoesDaConta(conta!.id, "integration_test");
+
+    if (process.env.ASAAS_PROVA_ATRASO === "preparar") {
+      const { data: link } = await admin.auth.admin.generateLink({ type: "magiclink", email: "admin@example.com" });
+      const pessoa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+        auth: { persistSession: false },
+      });
+      const { data: sess } = await pessoa.auth.verifyOtp({ type: "magiclink", token_hash: link!.properties!.hashed_token });
+      const d = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+      const dv = (a: number[], p: number) => {
+        const r = (a.reduce((s, n, i) => s + n * (p - i), 0) * 10) % 11;
+        return r === 10 ? 0 : r;
+      };
+      d.push(dv(d, 10));
+      d.push(dv(d, 11));
+      const { data: cli } = await admin
+        .from("clients")
+        .insert({ clinic_id: conta!.clinic_id, full_name: NOME, birth_date: "1985-05-05", cpf: d.join("") })
+        .select("id")
+        .single();
+      const { data: venda } = await admin
+        .from("direct_sales")
+        .insert({
+          clinic_id: conta!.clinic_id,
+          client_id: cli!.id,
+          client_name: NOME,
+          description: "Prova do atraso",
+          value_cents: 1000,
+          final_cents: 1000,
+          payment_method: "boleto",
+          installments: 1,
+          contract_signed: true,
+        })
+        .select("id")
+        .single();
+      const hoje = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+      const { data: inst } = await admin
+        .from("payment_installments")
+        .insert({
+          clinic_id: conta!.clinic_id,
+          client_id: cli!.id,
+          direct_sale_id: venda!.id,
+          seq: 1,
+          due_date: hoje,
+          amount_cents: 1000,
+          payment_method: "boleto",
+          late_fee_percent: 2,
+          monthly_interest_percent: 1,
+          grace_days: 0,
+        })
+        .select("id")
+        .single();
+      const { data: id, error } = await pessoa.rpc("charge_prepare", { p_installment_id: inst!.id, p_billing_type: "BOLETO", p_due_date: null });
+      expect(error).toBeNull();
+      expect(await emitirNoAsaas(id as string, sess.user!.id)).toEqual({ ok: true });
+      console.log(`prova do atraso preparada: cobrança ${id} vence ${hoje}`);
+      return;
+    }
+
+    // conferir
+    const { data: cli } = await admin.from("clients").select("id").eq("full_name", NOME).order("created_at", { ascending: false }).limit(1).single();
+    const { data: ch } = await admin
+      .from("charges")
+      .select("id, asaas_payment_id, value_cents, fine_cents, due_date, payment_installment_id")
+      .eq("client_id", cli!.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    await comPaciencia(() =>
+      asaasRequest({ ...cred, method: "POST", path: "/sandbox/payment/{id}/confirm", params: { id: ch!.asaas_payment_id }, body: {} }, opts)
+    );
+    let receiptId: string | null = null;
+    for (let i = 0; i < 40 && !receiptId; i++) {
+      const { data } = await admin.from("charges").select("receipt_id").eq("id", ch!.id).single();
+      receiptId = data?.receipt_id ?? null;
+      if (!receiptId) await new Promise((r) => setTimeout(r, 3000));
+    }
+    const pg = (await getPayment(cred, ch!.asaas_payment_id, opts)) as Record<string, unknown>;
+    const { data: rec } = await admin
+      .from("payment_receipts")
+      .select("amount_cents, principal_cents, late_fee_cents, interest_cents")
+      .eq("id", receiptId)
+      .single();
+    console.log("ASAAS:", JSON.stringify({ value: pg.value, originalValue: pg.originalValue, interestValue: pg.interestValue, netValue: pg.netValue, status: pg.status }));
+    console.log("RISZON:", JSON.stringify(rec));
+    expect(receiptId, "o aviso não deu a baixa a tempo").toBeTruthy();
+    expect(Number(rec!.amount_cents)).toBe(Math.round(Number(pg.value) * 100));
+    expect(Number(pg.value)).toBeGreaterThan(Number(ch!.value_cents) / 100);
+  }, 300_000);
 });
