@@ -19,7 +19,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA0 — Fundação** | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.423.0); migrações nos dois bancos; webhook real recebido | **4000, 4001, 4002** |
 | **ASA1, entrega 1** — abas Financeiro e Comercial, responsável financeiro, carência zero | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.427.0); 4003 nos dois bancos (produção pelo dono, conferência batida) | **4003** |
 | **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.433.0, Asaas 0.3.0); 4004 nos dois bancos (produção pelo dono, conferência batida); testada pelo dono no projeto de teste | **4004** |
-| **ASA2, entrega 1** — o aviso do Asaas vira baixa | 🟡 **aprovada pelo dono em 11/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; **falta a prova do pagamento atrasado (12/11, `ASAAS_INTEGRACAO=sim ASAAS_PROVA_ATRASO=conferir`)**, depois a 4005 na produção e o `main` | **4005** |
+| **ASA2, entrega 1** — o aviso do Asaas vira baixa | 🟡 **aprovada pelo dono em 11/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; prova do pagamento atrasado ✅ em 12/11 (boleto de R$ 10,00 vencido em 11/11, pago com R$ 10,20 e baixa de R$ 10,20 = 10,00 + multa 0,20); **falta a 4005 na produção e o `main`** | **4005** |
 | ASA2, entrega 2 — sinalização "em atraso", a régua e o Painel de cobranças ("A receber do Asaas") | plano aprovado (spec seções 16.8 e 16.8.1) | — |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
@@ -71,8 +71,10 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   abatimento? Mude nas duas.
 - ⚠️ **A trava da baixa manual é contornada só por `risarte.baixa_do_asaas`**,
   ligada dentro de `_gateway_receipt` e `_gateway_reverse_receipt`.
-- ⚠️ **O valor pago vem de `payment.value`** do aviso — a prova do pagamento
-  atrasado (dois dias) confirma se é o total com juros.
+- ✅ **O valor pago vem de `payment.value`** do aviso — **provado em 12/11/2026**:
+  no pagamento atrasado, `value` traz o total com multa e juros (10,20),
+  `originalValue` o valor da emissão (10,00) e `interestValue` multa + juros
+  somados (0,20).
 - ⚠️ **Reaplicar a 4004 depois da 4005 quebra** (as funções de emissão mudaram
   de formato): o ensaio da ASA1 entrega 2 só confere a 4004 quando a 4005 já
   está no banco.
