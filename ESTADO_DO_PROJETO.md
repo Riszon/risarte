@@ -17,9 +17,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - Fora: relatório/planilha dos Recebíveis, Fluxo de caixa e Painel da rede
 >   continuam sem o Empresarial em aberto.
 > - Régua 9/9 e 8 de 8 quebrando; visto na tela no treino. EV-335.
-> - ⚠️ **Resíduo no treino (meu):** a conta `financeiro.franqueadora@example.com`
->   foi CRIADA sem querer (o gerador de link mágico cria o login quando o
->   e-mail não existe); sem função nenhuma. Não apaguei sem o dono pedir.
+> - A conta `financeiro.franqueadora@example.com`, criada sem querer no treino
+>   (o gerador de link mágico cria o login quando o e-mail não existe), foi
+>   apagada com autorização do dono em 12/11/2026. O AP140 foi fechado junto.
 
 > ## ✅ 0.437.0 / ASAAS 0.5.0 — ASA2, ENTREGA 2: SELO "EM ATRASO" E PAINEL DE COBRANÇAS (12/11/2026; migração 4006)
 >

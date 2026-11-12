@@ -431,8 +431,8 @@ Syncthing se comportarem de forma estranha.**
   aberto numa tela do Financeiro = `recebiveisDoEmpresarial`**, em bloco
   próprio; não somar no % de inadimplência dos pacientes (decisão do dono).
 - ⚠️ **Gerar link mágico para e-mail que não existe CRIA o login** (Supabase
-  `generateLink`): confira a conta de teste antes. Sobrou
-  `financeiro.franqueadora@example.com` no treino, sem função.
+  `generateLink`): confira a conta de teste antes (a que sobrou no treino
+  foi apagada com autorização do dono). A do Financeiro é `financeiro@example.com`.
 
 **11/11/2026 (Asaas — ASA2, entrega 1) — PC Administrador (core 0.434.0 → 0.435.0, Asaas 0.4.0, migração 4005; worktree `wt-asaas`)**
 
