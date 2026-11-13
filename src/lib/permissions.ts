@@ -334,6 +334,20 @@ export const CAPACIDADES: Capability[] = [
     padrao: [],
   },
   {
+    // 4009 — Pedir estorno (ASA3, entrega 2; spec 18.7.1). O Admin Master
+    // sempre pode. Para os demais, o BANCO exige esta permissão E o papel que a
+    // UNIDADE indicou na Central como tendo o acesso de autorização do Asaas
+    // (por padrão o Franqueado; o Admin pode liberar o Gerente). Teto no banco:
+    // Franqueado e Gerente. O código de autorização nunca passa pelo riSZon.
+    id: "acao.cobranca.estorno",
+    rotulo: "Pedir estorno",
+    grupo: "Módulos",
+    descricao:
+      "Pedir ao Asaas o estorno total de uma cobrança paga, pela ficha. Só quem a unidade indicou como titular do acesso de autorização do Asaas.",
+    dependeDoBanco: true,
+    padrao: ["franchisee", "unit_manager"],
+  },
+  {
     // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
     // cada um enxerga (as que cria, as das unidades que gere, e aquelas em
     // que participa).

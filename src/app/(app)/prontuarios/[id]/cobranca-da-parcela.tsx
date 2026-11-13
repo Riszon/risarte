@@ -30,6 +30,7 @@ import {
   type SituacaoDaCobranca,
 } from "@/lib/cobrancas";
 import type { ChargeRow, WaiverRow } from "./receivables-loader";
+import { SplitDaCobranca } from "./split-da-cobranca";
 import {
   cancelarCobranca,
   desfazerCobrancaExterna,
@@ -215,6 +216,17 @@ export function CobrancaDaParcela({
                   <MessageCircle className="size-3" /> Enviar comprovante pelo WhatsApp
                 </a>
               )}
+              {/* ASA3 (4009): o histórico do split e o estorno pedido pelo riSZon. */}
+              <div className="basis-full">
+                <SplitDaCobranca
+                  clientId={clientId}
+                  chargeId={paga.id}
+                  paga
+                  meio={paga.billingType ?? null}
+                  payerName={paga.payerName ?? null}
+                  payerPhone={paga.payerPhone ?? null}
+                />
+              </div>
             </div>
           );
         })()}
@@ -310,6 +322,19 @@ export function CobrancaDaParcela({
               </Button>
             )}
           </span>
+          {/* ASA3 (4009): quando o split desta cobrança em aberto foi atualizado e por quê. */}
+          {(ativa.status === "emitida" || ativa.status === "vencida") && (
+            <div className="basis-full">
+              <SplitDaCobranca
+                clientId={clientId}
+                chargeId={ativa.id}
+                paga={false}
+                meio={ativa.billingType ?? null}
+                payerName={ativa.payerName ?? null}
+                payerPhone={ativa.payerPhone ?? null}
+              />
+            </div>
+          )}
         </div>
       )}
 

@@ -52,10 +52,13 @@ export async function TaxasDaRedeConteudo({
   session,
   params,
   basePath,
+  unidadeFixa,
 }: {
   session: SessionContext;
   params: Record<string, string | string[] | undefined>;
   basePath: string;
+  /** ASA3 (4009): a aba da UNIDADE mostra sempre aquela unidade (o banco confere se a pessoa vê). */
+  unidadeFixa?: string;
 }) {
   const isNetworkAdmin = canConfigureFinanceNetwork(session);
   const activeClinicId = session.activeClinic?.id ?? null;
@@ -67,9 +70,9 @@ export async function TaxasDaRedeConteudo({
   const today = todayInBrazil();
   const year = Number(pick("ano") ?? today.slice(0, 4));
   const month = Number(pick("mes") ?? today.slice(5, 7));
-  const unitId = isNetworkAdmin
+  const unitId = unidadeFixa ?? (isNetworkAdmin
     ? (pick("unidade") ?? activeClinicId)
-    : activeClinicId;
+    : activeClinicId);
 
   const supabase = await createClient();
   const [

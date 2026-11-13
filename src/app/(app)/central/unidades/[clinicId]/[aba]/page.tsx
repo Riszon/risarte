@@ -10,6 +10,7 @@ import { AbasDaCentral, AvisoSemMigracao } from "../../../abas";
 import { AbaComercialDaUnidade } from "../../../aba-comercial";
 import { AbaFinanceiroDaUnidade } from "../../../aba-financeiro";
 import { AbaCobrancaDaUnidade } from "../../../aba-cobranca";
+import { AbaTaxasDaUnidade } from "../../../aba-taxas";
 import { HistoricoDaAba } from "../../../conta-client";
 import { ContaETarifas } from "../../../conta-e-tarifas";
 import { AvisosComErro } from "../../../avisos-com-erro";
@@ -25,6 +26,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  */
 export default async function CentralDaUnidadePage({
   params,
+  searchParams,
 }: PageProps<"/central/unidades/[clinicId]/[aba]">) {
   const { clinicId, aba } = await params;
   const session = await getSessionContext();
@@ -41,7 +43,7 @@ export default async function CentralDaUnidadePage({
   const prontidao = veConta && !semMigracao ? await carregarProntidao(supabase, clinicId) : null;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5 px-4 py-8">
+    <div className={aba === "taxas" ? "mx-auto max-w-5xl space-y-5 px-4 py-8" : "mx-auto max-w-4xl space-y-5 px-4 py-8"}>
       <CabecalhoDeModulo
         chapeu="Central de Configuração"
         icone={SlidersHorizontal}
@@ -71,6 +73,9 @@ export default async function CentralDaUnidadePage({
       )}
       {aba === "comercial" && <AbaComercialDaUnidade supabase={supabase} clinicId={clinicId} clinicName={clinica.name} />}
       {aba === "cobranca" && <AbaCobrancaDaUnidade supabase={supabase} clinicId={clinicId} clinicName={clinica.name} />}
+      {aba === "taxas" && (
+        <AbaTaxasDaUnidade supabase={supabase} session={session} clinicId={clinicId} clinicName={clinica.name} params={await searchParams} />
+      )}
 
       <HistoricoDaAba aba={aba} clinicId={clinicId} />
     </div>
