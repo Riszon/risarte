@@ -22,6 +22,10 @@ export default async function NetworkFeesPage(
   if (!canViewFinance(session)) redirect("/");
 
   const params = await props.searchParams;
+  // 4009 (U9): a tela antiga saiu — Gerente e Franqueado vão para a aba da unidade.
+  if (!canConfigureFinanceNetwork(session) && session.activeClinic?.id && session.activeClinic.type !== "franchisor") {
+    redirect(`/central/unidades/${session.activeClinic.id}/taxas`);
+  }
   if (canConfigureFinanceNetwork(session)) {
     const q = new URLSearchParams();
     for (const k of ["ano", "mes", "unidade"]) {

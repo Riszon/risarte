@@ -174,6 +174,22 @@ function asaasCodesOf(body: unknown): string[] {
     .slice(0, 5);
 }
 
+/**
+ * O MOTIVO que o Asaas escreveu (`errors[].description`), só para a TELA —
+ * nunca para o registro nem para o log. Ex.: "Não é possível efetuar o estorno
+ * pois o seu cliente não possui um e-mail válido." (pedido do dono, 13/11/2026).
+ */
+function asaasMotivoOf(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const errors = (body as { errors?: unknown }).errors;
+  if (!Array.isArray(errors)) return null;
+  const d = errors
+    .map((e) => (e && typeof e === "object" ? (e as { description?: unknown }).description : null))
+    .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    .map((x) => x.trim().slice(0, 240));
+  return d.length ? d.slice(0, 2).join(" ") : null;
+}
+
 function codeFor(status: number): AsaasErrorCode {
   if (status === 401) return "unauthorized";
   if (status === 403) return "forbidden";
@@ -325,10 +341,12 @@ export async function asaasRequest<T>(args: AsaasRequestArgs, options: AsaasRequ
     }
 
     const asaasCodes = asaasCodesOf(json);
+    // Dado recusado (400): a tela mostra o motivo do Asaas. O log continua só com o código.
+    const motivo = code === "bad_request" ? asaasMotivoOf(json) : null;
     const err = new AsaasError({
       code,
       httpStatus: res.status,
-      messagePt: MESSAGES_PT[code],
+      messagePt: motivo ? `O Asaas recusou: ${motivo}` : MESSAGES_PT[code],
       logMessage: `${where} -> ${res.status}${asaasCodes.length ? ` [${asaasCodes.join(",")}]` : ""} (attempt ${attempt})`,
       asaasCodes,
     });

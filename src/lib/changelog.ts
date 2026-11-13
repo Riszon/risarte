@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.444.0",
+    versao: "0.445.0",
     data: "2026-11-13",
     migracao: "0406",
     titulo: "Levantamento de Dívidas: as dívidas no Contas a Pagar",
@@ -87,6 +87,57 @@ export const CHANGELOG: Versao[] = [
           "No Contas a pagar da unidade, os títulos de dívidas antigas aparecem com o selo Saldo de implantação e o código da dívida, com filtro próprio. O vencido deles fica numa linha à parte (não entra em Vencidas nem gera aviso por título), aparece no Painel como Dívidas antigas vencidas e, no Fluxo de caixa, numa coluna própria Dívidas. A DRE, o ponto de equilíbrio, as metas e a hora clínica não mudam.",
         papeis: ["finance_franchisor", "unit_manager"],
         manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
+    versao: "0.444.0",
+    data: "2026-11-13",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4009, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Split das cobranças em aberto, estorno pelo riSZon e Taxas da franquia na unidade",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando uma taxa, campanha, destino ou tarifa do Asaas muda, o riSZon atualiza sozinho o split das cobranças em aberto (a cada 10 minutos, as vencidas primeiro). Só o split muda: o boleto, o Pix e o link continuam os mesmos, e o paciente não recebe aviso. A ficha mostra quando e por quê.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Pedir estorno pela ficha: o estorno total de uma cobrança paga sai do riSZon. Pix e cartão ficam aguardando a autorização de quem tem o acesso da conta Asaas da unidade (o riSZon nunca pede o código); o boleto manda um link ao pagador para os dados bancários (o Asaas exige celular e e-mail do pagador). Quando o Asaas recusa, a tela mostra o motivo dele. Concluído o estorno, a baixa é desfeita e a taxa da rede continua devida.",
+        papeis: ["franchisee", "unit_manager", "finance_franchisor"],
+        manual: "13g.7. Pedir estorno",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A baixa que veio do Asaas não pode mais ser estornada à mão no histórico de recebimentos: o estorno manual desfazia a baixa só no riSZon, com o dinheiro ainda recebido no Asaas, e a parcela voltava a aceitar cobrança. Agora é pelo \"Pedir estorno\". As baixas do balcão continuam como antes.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.7. Pedir estorno",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Central de Configuração → cada unidade → Taxas da franquia: se a unidade emite com split, a fila do split, quem pode pedir estorno e as taxas que valem para ela. O Gerente e o Franqueado veem a da própria unidade; a tela antiga de Taxas da rede saiu.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Saldo da conta da franqueadora: aviso quando fica negativo (um estorno devolve o split) e, se definido, quando fica abaixo do mínimo da rede.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O webhook de cada conta Asaas se corrige sozinho quando o riSZon passa a ouvir um aviso novo; webhook desatualizado aparece na prontidão da unidade até ser corrigido.",
+        papeis: [],
+        manual: "13g.1. Aba Conta e tarifas (Admin Master)",
       },
     ],
   },

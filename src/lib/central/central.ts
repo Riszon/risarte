@@ -111,7 +111,7 @@ export const ABAS_DA_CENTRAL: AbaDaCentral[] = [
     id: "taxas",
     rotulo: "Taxas da franquia",
     descricao: "As taxas que a rede cobra das unidades, para onde vai cada uma no split, a tolerância e a multa e os juros da cobrança à unidade.",
-    niveis: ["rede"],
+    niveis: ["rede", "unidade"],
     fase: "ASA3",
   },
 ];
@@ -149,8 +149,10 @@ export function podeVerAba(
       return nivel === "unidade" && (temPapel(session, "unit_manager", clinicId!) || temPapel(session, "franchisee", clinicId!));
     case "taxas":
       // ASA3 (4008): quem configura a rede (Admin Master e Financeiro da
-      // Franqueadora). Gerente e Franqueado continuam em Financeiro → Taxas da rede.
-      return canConfigureFinanceNetwork(session);
+      // Franqueadora). 4009 (U9): no nível da unidade, Gerente e Franqueado
+      // veem a da própria unidade, só leitura (o banco decide de novo).
+      if (canConfigureFinanceNetwork(session)) return true;
+      return nivel === "unidade" && (temPapel(session, "unit_manager", clinicId!) || temPapel(session, "franchisee", clinicId!));
     default:
       return false;
   }

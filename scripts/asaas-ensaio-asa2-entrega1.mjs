@@ -120,6 +120,7 @@ try {
   await c.query("select public.central_mark_ready($1, true)", [unidade]);
   await comoServidor();
   // Uma taxa da rede de 5% (no treino estão em zero), para medir a taxa mantida.
+  await c.query("update public.network_fees set percent = 0 where kind = 'percent' and fee <> 'fundo'");
   await c.query("update public.network_fees set percent = 5, active = true where fee = 'fundo' and clinic_id is null");
   await c.query("update public.network_fee_types set active = true where key = 'fundo'");
   // Os avisos do sandbox que já estavam no treino não entram neste ensaio.

@@ -111,6 +111,8 @@ export const TABELAS: Record<string, string> = {
   "public.gateway_notification_units": "Régua de avisos do Asaas (unidade ligada ou desligada)",
   "public.gateway_split_settings": "Split das taxas (tolerância, multa e juros da cobrança à unidade)",
   "public.charge_splits": "Split de cobrança (o que foi enviado e liquidado)",
+  "public.charge_split_updates": "Split de cobrança atualizado pela fila",
+  "public.charge_refunds": "Pedido de estorno",
   "public.gateway_payment_surpluses": "Pagamento em duplicidade pelo Asaas",
   "public.gateway_settings": "Asaas — interruptor de produção",
   "public.goal_milestones": "Marco de meta",

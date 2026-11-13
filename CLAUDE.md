@@ -400,16 +400,28 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**13/11/2026 (Levantamento de Dívidas — fase 3) — PC Administrador (core 0.443.0 → 0.444.0, migração 0406)**
+**13/11/2026 (Levantamento de Dívidas — fase 3) — PC Administrador (core 0.444.0 → 0.445.0, migração 0406)**
 
-- **As dívidas no Contas a Pagar** (bloco 0.444.0 no ESTADO). ⚠️ **"Fora do
+- **As dívidas no Contas a Pagar** (bloco 0.445.0 no ESTADO). ⚠️ **"Fora do
   resultado" = `account_outside_result`** (espelho `contaForaDoResultado`):
   leitor do razão novo ou recriado usa a função, nunca a lista de prefixos
   (régua `regra-fora-do-resultado.test.ts`). ⚠️ **Título da dívida =
   `_debt_title_spec`** (espelho `impactoNoFinanceiro`). ⚠️ Saldo de
   implantação vencido fica fora do "vencido" por título (`cash_overdue.opening_*`).
-- ⏳ 0406 só no treino; o dono roda na produção.
+- ✅ 0406 nos dois bancos (produção pelo dono em 13/11/2026; conferido de fora).
 
+
+**13/11/2026 (Asaas — ASA3, entrega 2) — PC Administrador (core 0.443.0 → 0.444.0, Asaas 0.8.0, migração 4009; worktree `wt-asaas`)**
+
+- **A fila do split e o estorno** (estado em `docs/asaas/ESTADO.md`; 18.7 a
+  18.7.7). ⚠️ **A fila compara a BASE** (`charges.split_inputs` × `_charge_split_inputs`)
+  — mudança que não altera a conta não chama o Asaas. ⚠️ **PUT só com o split**
+  (provado: não muda fatura, boleto, Pix nem gera PAYMENT_UPDATED); **nunca
+  lista vazia** sem a confirmação do Financeiro/Admin (U4). ⚠️ **Estorno:** o
+  riSZon nunca pede o código; Pix/cartão ficam AWAITING_CRITICAL_ACTION_AUTHORIZATION;
+  boleto exige o CELULAR do pagador no Asaas (vai na hora, com o termo e a
+  trava; apagado no fim com a régua desligada). ⚠️ **Mudou a lista de avisos do
+  webhook → suba `WEBHOOK_EVENTS_VERSION`**: a rotina de 10 min corrige as contas.
 
 **13/11/2026 (planilha modelo, o plano limita) — PC Administrador (Empresarial 0.103.0 → 0.104.0, sem migração)**
 

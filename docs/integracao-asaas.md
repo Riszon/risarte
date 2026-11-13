@@ -932,3 +932,105 @@ Percentuais de exemplo **diferentes por taxa e não redondos** (para pegar erro 
 - [ ] Cartão de débito na fatura de cobrança `CREDIT_CARD` (se aceitar, a tarifa do débito entra como a menor).
 - [x] Arredondamento do `percentualValue` × `netValue` — **para baixo** (medido no sandbox em 13/11/2026, 18.5.1).
 - [ ] Split em chargeback (gerente de contas).
+
+### 18.7 Entrega 2 — as cobranças em aberto (plano aprovado em 13/11/2026; migração 4009)
+
+**Escopo:** (1) a **fila** que atualiza o split das cobranças em aberto quando a taxa do dia muda; (2) **estorno** total com split e **bloqueio** por divergência; (3) a **visão da unidade** na aba Taxas da franquia (D19) e o fim da tela antiga.
+
+**Decisões (U1–U9, aprovadas como propostas, com os ajustes do Jeferson):**
+- **U1. Gatilhos:** padrão da rede ou acordo da unidade (percentual, ligada/desligada); campanha criada, alterada ou apagada; destino da taxa; tarifa nova do Asaas (inclusive o fim da promoção em 10/02/2027); rodada diária. Mudança que não altera a conta **não** chama o Asaas.
+- **U2. Rodada diária às 00:05 (Brasília).** Pagamento entre 00:00 e o fim da rodada, no dia da mudança, cai na S5.
+- **U3.** Cobrança emitida sem split que passou a poder ter: a fila **acrescenta** o split.
+- **U4. Nunca tirar o split automaticamente** (a lista vazia desliga tudo); aviso ao Financeiro. Taxa que vai a zero sai do split, as outras ficam. **Exceção (ajuste 3):** se **todas** as taxas da unidade forem a zero **por decisão registrada** (isenção ou campanha), o riSZon pode enviar a lista vazia **com confirmação do Financeiro ou do Admin e registro na auditoria**. Em qualquer outro caso, nunca.
+- **U5.** Cartão confirmado fora da janela do Asaas (até 1 dia útil antes do crédito, sem antecipação): sai da fila; a diferença cai na S5.
+- **U6. Estorno total com split (D13):** o retido já liquidado é estornado no razão (a unidade recebe de volta, a franqueadora devolve) e a taxa volta a ser devida na conta a pagar; a dispensa manual (16.5) continua. **Ajuste 4:** verificar na documentação e no sandbox o que acontece quando a carteira que recebeu o split não tem saldo para devolver; se o estorno falhar ou ficar pendente, o riSZon avisa o Financeiro. Estorno parcial e chargeback continuam à mão.
+- **U7. Bloqueio por divergência:** o riSZon refaz o split para caber no líquido real e reenvia dentro dos 2 dias úteis; avisa se falhar. **Ajuste 5:** a diferença em relação ao devido segue a S5 (acima da tolerância, conta a pagar da unidade).
+- **U8. "Atualizar agora"** na aba Taxas da franquia (Admin e Financeiro): roda a fila da unidade na hora. **Ajuste 6:** cada uso vai para a auditoria (quem, quando, unidade, quantas cobranças mudaram).
+- **U9.** Visão da unidade na Central: Gerente e Franqueado só leem; a tela antiga sai.
+
+**Ajustes:**
+1. **Atualizar o split sem efeito para o pagador:** provar no sandbox que o `PUT /payments/{id}` só com o split não dispara o aviso "cobrança alterada" da régua, não muda o link da fatura, a linha digitável nem o Pix copia e cola, e não reinicia o registro do boleto. Se disparar ou mudar, **parar e apresentar a alternativa antes de construir a fila**.
+2. **Ordem da fila:** primeiro as já vencidas e as de vencimento mais próximo. Estimar o tempo da fila no fim da promoção (10/02/2027) com o volume de uma unidade cheia.
+7. **Histórico por cobrança:** na ficha, a cobrança mostra quando o split foi atualizado e por qual motivo (taxa, campanha, destino ou tarifa).
+
+**Mantido:** fila a cada 10 minutos com até 50 cobranças por conta, parando no limite de chamadas.
+
+**Prova do ajuste 1 (13/11/2026, sandbox):** `PUT /payments/{id}` só com o split, em Pix e boleto: link da fatura, PDF do boleto, nosso número, linha digitável, Pix copia e cola, vencimento e valor **iguais**, e **nenhum** `PAYMENT_UPDATED` (de onde nasce o aviso "cobrança alterada"); o boleto não foi registrado de novo. Controle (só o vencimento): veio `PAYMENT_UPDATED` e a linha digitável mudou. **Aprovado pelo Jeferson: a fila segue como planejada.** (`scripts/asaas-prova-split-put-sandbox.mjs --put`)
+
+**Achado do ajuste 4 (13/11/2026, sandbox):** o estorno pedido pela API fica **`AWAITING_CRITICAL_ACTION_AUTHORIZATION`** até alguém da conta autorizar com o código (SMS). Por isso:
+
+#### 18.7.1 O estorno nasce no riSZon (decisão do Jeferson, 13/11/2026)
+
+1. Na ficha do paciente, a pessoa autorizada pede o **estorno total** de uma cobrança paga, com **motivo obrigatório**.
+2. O riSZon envia o pedido ao Asaas pela API. A cobrança fica **"Estorno aguardando autorização"**, com a orientação de autorizar no Asaas (e o link para o lugar certo do painel, se houver).
+3. A pessoa autoriza no Asaas com o código que recebe.
+4. Com o aviso de estorno concluído, o riSZon aplica a **U6**: estorna a baixa e o retido no razão; a taxa volta a ser devida pela unidade (D13), com a dispensa manual do Financeiro e do Admin.
+
+- **O riSZon nunca pede, recebe nem guarda o código de autorização.** A tela diz isso.
+- **Permissão nova "Pedir estorno":** nasce com o Admin Master. Na Central, a unidade indica quem tem o acesso de autorização do Asaas — por padrão o **Franqueado**; o Admin Master pode liberar para o **Gerente** da unidade. Só essas pessoas veem o botão.
+- Estorno **aguardando autorização há mais de 1 dia útil**: aviso a quem pediu e ao Financeiro da Franqueadora. Quem pediu pode **cancelar o pedido** enquanto pendente, se o Asaas permitir.
+- Estorno **recusado ou com falha** (ex.: saldo insuficiente): a cobrança volta para "Paga"; aviso a quem pediu e ao Financeiro.
+- Estorno feito **direto no painel do Asaas** continua tratado pelos avisos, como hoje. Estorno parcial e chargeback continuam à mão.
+- **Auditoria:** pedido, autor, motivo e resultado.
+- **A verificar (documentação e sandbox):** onde o titular autoriza a ação crítica (painel, aplicativo); se o pedido pendente pode ser cancelado pela API; o estorno de boleto (dados bancários do pagador) e de cartão confirmado; os avisos do Asaas em cada etapa. **Prova:** duas cobranças pela conta principal do sandbox (split para a carteira de Londrina, com saldo; e para a do Fundo de teste, sem saldo); o Jeferson autoriza no painel — **o código nunca passa pelo riSZon nem pela sessão**.
+
+#### 18.7.2 Ritmo da fila (decisão do Jeferson, 13/11/2026)
+
+- **150 cobranças por rodada** (10 min), parando no limite de chamadas; **as vencidas e as de vencimento mais próximo primeiro**. Estimativa: unidade com ~3.600 cobranças em aberto (300 contratos × 12 parcelas) → ~4 h no fim da promoção (10/02/2027), usando menos da metade da cota do Asaas.
+- **Diferença causada por mudança de TARIFA do Asaas**, em cobrança paga enquanto ainda estava na fila aguardando atualização, é **absorvida** (sem conta a pagar). Vale **só para tarifa**; mudança de taxa da rede ou de campanha continua na S5.
+- A tela mostra o **andamento da fila por unidade**: quantas faltam e a previsão de término.
+
+#### 18.7.3 Prova do estorno com split (13/11/2026, sandbox, autorizado pelo Jeferson no painel)
+
+Conta principal do sandbox, duas cobranças Pix de R$ 20,00 pagas e estornadas por inteiro (`scripts/asaas-prova-estorno-raiz-sandbox.mjs`):
+
+| Caso | Split | Estorno | Split depois | Carteira que recebeu o split |
+|---|---|---|---|---|
+| E1 | 14,72% para Londrina (com saldo) | `DONE` | `REFUNDED` (R$ 2,79) | devolveu R$ 2,79 (2.739,44 → 2.736,65) |
+| E2 | 1,83% para o Fundo de teste (**sem saldo**) | `DONE` | `REFUNDED` (R$ 0,33) | **ficou negativa: −R$ 0,33** |
+
+- **Carteira recebedora sem saldo:** o estorno **não falha nem fica pendente**; o Asaas debita a carteira mesmo assim e ela **fica negativa**. Na rede, a carteira é a da franqueadora (conta raiz).
+- **Avisos:** `PAYMENT_REFUNDED` (o Pix foi direto, sem `PAYMENT_REFUND_IN_PROGRESS`); **nenhum** `PAYMENT_SPLIT_CANCELLED` — o split aparece como `REFUNDED` dentro da cobrança.
+- **Antes da autorização:** o pedido fica `AWAITING_CRITICAL_ACTION_AUTHORIZATION` e a cobrança continua `RECEIVED`. A autorização é pelo token SMS ou do aplicativo do Asaas.
+- **Cancelar pedido pendente pela API: não existe** na documentação (o cancelamento aparece no extrato como `REFUND_REQUEST_CANCELLED`, sem aviso pelo webhook).
+- **Boleto:** rota própria (`POST /payments/{id}/bankSlip/refund`) que devolve um link (`requestUrl`) para o **pagador** informar os dados bancários e enviar documentos; pode ser **negado** (`PAYMENT_REFUND_DENIED`, ainda não assinado pelo riSZon).
+- **Cartão:** estornável confirmado ou recebido; até 10 dias úteis na fatura do pagador.
+
+#### 18.7.4 Estorno — decisões finais (Jeferson, 13/11/2026)
+
+1. **Saldo negativo:** depois de cada estorno com split, o riSZon confere o saldo da conta que recebeu e avisa o Financeiro da Franqueadora se ficou negativo; a rotina diária também confere. **Aviso preventivo:** saldo da conta da franqueadora abaixo de um **mínimo configurável na rede** avisa o Financeiro — nasce em branco (sem aviso) até o Jeferson definir. **Pendência com o Asaas:** o que acontece com conta de saldo negativo na produção (tarifa, bloqueio ou prazo para cobrir).
+2. **Pedido pendente:** sem botão de cancelar (o Asaas não cancela pela API); a tela orienta a cancelar no painel do Asaas ou a não autorizar. A rotina diária consulta os pedidos pendentes: cancelado → a cobrança volta para "Paga" e avisa quem pediu; pendente há mais de 1 dia útil → o aviso de 18.7.1.
+3. **Boleto:** o pedido mostra o link do Asaas com "Copiar link" e "Enviar pelo WhatsApp"; a cobrança fica **"Estorno aguardando o pagador"**; negado (`PAYMENT_REFUND_DENIED`) → volta para "Paga" e avisa quem pediu e o Financeiro. A tela explica que o pagador informa os dados bancários direto no Asaas e que o riSZon não recebe esses dados. O pagador é o **responsável financeiro**, quando houver.
+4. **Pix e cartão:** pedido no riSZon, autorização no Asaas pelo titular, U6 com o aviso de concluído. O riSZon nunca pede o código.
+
+#### 18.7.5 Webhook sem recriação manual (Jeferson, 13/11/2026)
+
+- A verificação de cada conta compara os avisos assinados no Asaas com a lista que o riSZon espera e **corrige sozinha, pela API**.
+- A mesma correção roda **logo depois de cada entrega** que muda a lista (a rotina de 10 minutos confere a versão da lista).
+- Webhook desatualizado **derruba a prontidão** da unidade até ser corrigido, e a Central mostra o motivo.
+- O botão manual "Criar o webhook" continua, como recurso.
+
+#### 18.7.6 Prova da entrega 2 no sandbox (13/11/2026, código real do servidor)
+
+- **Webhook que se corrige sozinho:** a rotina conferiu as 4 contas de teste com webhook e corrigiu a lista pela API (versão 2, com `PAYMENT_REFUND_DENIED`); o webhook de Londrina passou a ouvir o estorno negado. Sem clique de ninguém.
+- **A fila:** cobrança de boleto do LDN-00066 emitida pelo caminho da tela (17% + R$ 0,16). Royalty do treino de 6% → 6,5%: a cobrança entrou na fila (motivo taxa); a rodada mudou o split no Asaas para **17,5% + R$ 0,17**; de volta a 6%, voltou para 17% + R$ 0,16. Link da fatura, nosso número, vencimento e valor **iguais**; nenhum `PAYMENT_UPDATED`; o histórico da cobrança registrou as duas atualizações. A mesma rodada **acrescentou o split (U3)** às 3 cobranças de teste de Londrina emitidas antes do split habilitado.
+- **Estorno de boleto: LACUNA.** O Asaas recusou: *"Não é possível efetuar o estorno pois o seu cliente não possui um celular válido."* O estorno de boleto exige o **celular do pagador cadastrado no Asaas** (o riSZon cria o pagador só com nome e CPF; o celular só vai pela régua). **Parado para decisão do Jeferson** antes de adaptar.
+
+#### 18.7.7 Estorno de boleto com o celular do pagador (Jeferson, 13/11/2026)
+
+1. No pedido de estorno de boleto, o riSZon envia ao Asaas o **celular do pagador** que está na ficha (o responsável financeiro, quando houver). A tela mostra, antes de confirmar, **qual número** será enviado e avisa que o Asaas vai mandar um **SMS** com o link.
+2. Sem celular válido na ficha, o botão fica desabilitado e explica que é preciso cadastrar antes.
+3. Enviar o celular **não liga avisos**: os avisos do pagador ficam como estavam (`notificationDisabled` mantido). **Prova no sandbox com o celular do Jeferson, com a aprovação dele na hora.**
+4. **Limpeza:** com a régua da unidade **desligada**, o celular é apagado no Asaas (`mobilePhone: ""`, o método da D6) quando o estorno é concluído, negado ou cancelado; com a régua ligada, fica.
+5. Exige a **declaração do termo de privacidade** (a da régua). Sem ela, o estorno de boleto não sai pelo riSZon e a tela orienta a fazer no painel do Asaas.
+6. No sandbox vale a **lista de permitidos** (D10).
+7. **Auditoria:** celular enviado (por quem, quando) e apagado — **sem o número**.
+8. O manual (13g.7) explica o passo a passo e o que o pagador recebe.
+
+**Correção da 4008 dentro da 4009 (13/11/2026):** o razão da taxa retida lançava a receita numa "franqueadora qualquer" (com mais de uma clínica do tipo franqueadora, a conta bancária não batia e o aviso de split dava erro); e uma carteira recebedora **sem clínica** (o fundo com conta própria) fazia o razão recusar. Agora a receita vai para a clínica dona da conta que recebeu o split (sem clínica: a da conta raiz). Na produção ainda não há cobrança com split, então nada foi afetado.
+
+**Prova do estorno de boleto (13/11/2026, celular do Jeferson, aprovada na hora):** o riSZon enviou o celular ao Asaas (`PUT /customers`, aceito; avisos do pagador continuaram **desligados**; nenhuma mensagem chegou ao Jeferson). O Asaas então recusou o estorno por OUTRO dado: *"Não é possível efetuar o estorno pois o seu cliente não possui um e-mail válido."* **O estorno de boleto exige celular E e-mail do pagador no Asaas.** **Decisão do Jeferson (13/11/2026): o e-mail vai junto, com as mesmas regras do celular** (mostrado antes de confirmar; sem e-mail válido, o botão diz o que falta; avisos como estavam; apagado no fim com a régua desligada; termo; lista de permitidos; auditoria sem o endereço). **E em todo erro o motivo aparece na tela** (o riSZon passa a mostrar a descrição do Asaas nos dados recusados — só na tela, nunca no registro). (A primeira tentativa foi feita no riSZon Treino, que roda a versão publicada, sem o botão; os dados gravados lá valeram porque o banco é o mesmo.)
+
+**Prova do estorno de boleto concluída (13/11/2026, 19:25, com o celular e o e-mail do Jeferson, aprovada na hora):** boleto de R$ 6,00 do LDN-00066 (pagador: o responsável financeiro, com "Não receber avisos" ativo). O riSZon enviou celular e e-mail ao Asaas mantendo os avisos **desligados**; o Asaas aceitou o estorno (`AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION`) e devolveu o link; a ficha mostra "Estorno aguardando o pagador" com "Copiar link" e "Enviar pelo WhatsApp". O Jeferson recebeu **o link por e-mail** (nenhum SMS, nenhum aviso de cobrança). Auditoria sem os dados. Régua de Londrina ligada: o contato fica no Asaas (regra 4). **Cartão (R$ 7,00, mesmo paciente):** o estorno foi concluído na hora no sandbox, **sem pedir autorização do titular** (o Pix ficou aguardando o código); o riSZon desfez a baixa e marcou a cobrança como estornada.
+
+**Achado (13/11/2026):** o "Estornar baixa" manual do riSZon desfaz a baixa de uma parcela **paga pelo Asaas** só no riSZon — no Asaas o pagamento continua recebido. A parcela fica "Em aberto" e "Paga pelo Asaas" ao mesmo tempo, com "Gerar cobrança no Asaas" de novo (risco de cobrar duas vezes). **Decisão do Jeferson (13/11/2026): bloquear.** Pessoa logada não estorna a baixa de cobrança paga pelo Asaas (gatilho `payment_receipts_block_manual_gateway_reversal`, erro `GATEWAY_RECEIPT`; a tela troca o botão pelo aviso); o aviso de estorno do Asaas continua desfazendo a baixa. A parcela de 16/11 do LDN-00066 teve a baixa refeita no treino.

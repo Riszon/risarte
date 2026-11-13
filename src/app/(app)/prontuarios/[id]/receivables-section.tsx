@@ -896,7 +896,14 @@ export function ReceivablesSection({
                               {r.reversalOf ? "−" : "+"}
                               {formatBRL(r.amountCents)}
                             </span>
-                            {canReverse && !r.reversed && !r.reversalOf && (
+                            {/* ASA3 (4009): baixa que veio do Asaas não se estorna à mão —
+                                o dinheiro continuaria recebido lá. É pelo "Pedir estorno". */}
+                            {canReverse && !r.reversed && !r.reversalOf && r.reference?.startsWith("Asaas ") && (
+                              <span className="text-[11px] text-muted-foreground" title="A baixa veio do Asaas: use Pedir estorno na cobrança, que devolve o dinheiro no Asaas e desfaz a baixa junto.">
+                                estorno pelo “Pedir estorno”
+                              </span>
+                            )}
+                            {canReverse && !r.reversed && !r.reversalOf && !r.reference?.startsWith("Asaas ") && (
                               <Button
                                 size="sm"
                                 variant="ghost"

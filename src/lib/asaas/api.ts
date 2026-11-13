@@ -83,6 +83,8 @@ export type AsaasWebhook = {
   enabled?: boolean | null;
   interrupted?: boolean | null;
   hasAuthToken?: boolean | null;
+  /** Os avisos assinados (ASA3, 4009: conferidos e corrigidos pela rotina). */
+  events?: string[] | null;
 };
 
 /**
@@ -101,6 +103,8 @@ export const WEBHOOK_EVENTS = [
   "PAYMENT_REFUNDED",
   "PAYMENT_PARTIALLY_REFUNDED",
   "PAYMENT_REFUND_IN_PROGRESS",
+  // ASA3 (4009): estorno de boleto negado.
+  "PAYMENT_REFUND_DENIED",
   "PAYMENT_RECEIVED_IN_CASH_UNDONE",
   "PAYMENT_CHARGEBACK_REQUESTED",
   "PAYMENT_CHARGEBACK_DISPUTE",
@@ -118,6 +122,23 @@ export const WEBHOOK_EVENTS = [
   "ACCESS_TOKEN_EXPIRED",
   "ACCESS_TOKEN_DELETED",
 ] as const;
+
+/**
+ * A VERSÃO da lista acima. Mudou a lista → sobe a versão: a rotina de 10 em 10
+ * minutos confere cada conta e corrige o webhook pela API (18.7.5).
+ * 1 = ASA0 a ASA3 entrega 1; 2 = + PAYMENT_REFUND_DENIED (4009).
+ */
+export const WEBHOOK_EVENTS_VERSION = 2;
+
+/** `PUT /v3/webhooks/{id}` — troca os avisos assinados, sem recriar o webhook. */
+export function updateWebhookEvents(cred: AsaasCredential, id: string, events: readonly string[], opts?: Opts): Promise<AsaasWebhook> {
+  return asaasRequest<AsaasWebhook>({ ...cred, method: "PUT", path: "/webhooks/{id}", params: { id }, body: { events: [...events] } }, opts);
+}
+
+/** `GET /v3/webhooks/{id}` */
+export function getWebhook(cred: AsaasCredential, id: string, opts?: Opts): Promise<AsaasWebhook> {
+  return asaasRequest<AsaasWebhook>({ ...cred, method: "GET", path: "/webhooks/{id}", params: { id } }, opts);
+}
 
 /** `GET /v3/webhooks` — os webhooks da conta (máximo de 10 por conta). */
 export async function listWebhooks(cred: AsaasCredential, opts?: Opts): Promise<AsaasWebhook[]> {
@@ -211,6 +232,8 @@ export type AsaasPayment = {
   deleted?: boolean | null;
   /** ASA3: o split como o Asaas gravou (só vem se a cobrança tem split). */
   split?: AsaasSplit[] | null;
+  netValue?: number | null;
+  refunds?: AsaasRefund[] | null;
 };
 
 /** Uma entrada de split devolvida pelo Asaas. */
@@ -282,6 +305,32 @@ export async function findPaymentsByReference(cred: AsaasCredential, externalRef
 }
 
 /** `GET /v3/payments/{id}` */
+/**
+ * ASA3 (4009): troca SÓ o split de uma cobrança (`PUT /v3/payments/{id}` com
+ * `split`). Provado no sandbox: não muda fatura, boleto, Pix nem gera
+ * PAYMENT_UPDATED. ⚠️ Lista vazia DESLIGA o split — só com a confirmação (U4).
+ */
+export function updatePaymentSplit(cred: AsaasCredential, id: string, splits: SplitParaEnviar[], opts?: Opts): Promise<AsaasPayment> {
+  return asaasRequest<AsaasPayment>({ ...cred, method: "PUT", path: "/payments/{id}", params: { id }, body: { split: splits } }, opts);
+}
+
+/** Um estorno como o Asaas devolve na cobrança. */
+export type AsaasRefund = { status?: string | null; value?: number | null; dateCreated?: string | null };
+
+/** `POST /v3/payments/{id}/refund` — estorno TOTAL de Pix ou cartão. Pode ficar aguardando a autorização do titular. */
+export function refundPayment(cred: AsaasCredential, id: string, description: string, opts?: Opts): Promise<AsaasPayment & { refunds?: AsaasRefund[] | null }> {
+  return asaasRequest<AsaasPayment & { refunds?: AsaasRefund[] | null }>(
+    { ...cred, method: "POST", path: "/payments/{id}/refund", params: { id }, body: { description: description.slice(0, 200) } },
+    opts
+  );
+}
+
+/** `POST /v3/payments/{id}/bankSlip/refund` — estorno de boleto: devolve o link para o PAGADOR informar os dados bancários. */
+export async function refundBankSlip(cred: AsaasCredential, id: string, opts?: Opts): Promise<string | null> {
+  const r = await asaasRequest<{ requestUrl?: string | null }>({ ...cred, method: "POST", path: "/payments/{id}/bankSlip/refund", params: { id }, body: {} }, opts);
+  return typeof r?.requestUrl === "string" && r.requestUrl.startsWith("https://") ? r.requestUrl : null;
+}
+
 export function getPayment(cred: AsaasCredential, id: string, opts?: Opts): Promise<AsaasPayment> {
   return asaasRequest<AsaasPayment>({ ...cred, method: "GET", path: "/payments/{id}", params: { id } }, opts);
 }
