@@ -12,7 +12,7 @@
 // conta a pagar), a maior (divergência ao Financeiro), split cancelado; a
 // cobrança sem split (como hoje); as funções internas fechadas; o histórico
 // da aba. Percentuais de exemplo não redondos (18.5). Só contagens na saída.
-import { readFileSync } from "node:fs";
+import fs, { readFileSync } from "node:fs";
 import { connect } from "./test-db.mjs";
 import { entradasDoSplit, repasseSimulado, tarifaParaOSplit } from "../src/lib/asaas/split.ts";
 
@@ -92,6 +92,10 @@ try {
   const e2 = await recusa(sql);
   conf("a 4008 roda duas vezes sem erro", e2 === null);
   if (e2) console.log("   ", e2);
+  // Depois da 4009, o banco real tem as funções da 4009 por cima (inclusive a
+  // correção do razão retido): reaplica para ensaiar o que está valendo.
+  const ARQ_4009 = "supabase/migrations/4009_asa3_fila_do_split_e_estorno.sql";
+  if (fs.existsSync(ARQ_4009)) await c.query(readFileSync(ARQ_4009, "utf8"));
 
   // --- 1) S4: sem pontualidade ---------------------------------------------------
   conf("S4: nenhuma taxa com desconto de pontualidade", (await um("select count(*)::int n from public.network_fees where punctuality_discount_percent <> 0")).n === 0);

@@ -1434,6 +1434,7 @@ declare
   c public.charges%rowtype;
   v_dest uuid;
   v_dest_clinic uuid;
+  v_bank_acc uuid;
 begin
   select * into s from public.split_charges where id = p_split_charge_id;
   if not found then return; end if;
@@ -1458,9 +1459,11 @@ begin
      order by g.created_at limit 1;
   end if;
   select g.clinic_id into v_dest_clinic from public.gateway_accounts g where g.id = v_dest;
-  -- Carteira recebedora sem clínica (ex.: fundo com conta própria): a receita é da franqueadora dona da raiz.
+  v_bank_acc := case when v_dest_clinic is not null then v_dest end;
+  -- Carteira recebedora sem clínica (ex.: fundo com conta própria): a receita é
+  -- da franqueadora dona da raiz, e o dinheiro é lançado na conta dela.
   if v_dest_clinic is null then
-    select g.clinic_id into v_dest_clinic from public.gateway_accounts g
+    select g.id, g.clinic_id into v_bank_acc, v_dest_clinic from public.gateway_accounts g
      where g.owner_type = 'franchisor' and g.status = 'active' and g.clinic_id is not null
        and g.environment = (select environment from public.gateway_accounts where id = c.gateway_account_id)
      order by g.created_at limit 1;
@@ -1488,8 +1491,9 @@ begin
       v_dest_clinic, v_acc.franchisor_account, v_accrual,
       case when v_status = 'settled' then p_settled_on end, v_expected,
       greatest(s.retained_cents, 1), 'inflow', v_status, 'split_retained_revenue', s.id, v_label,
-      (select b.id from public.bank_accounts b
-        where b.id = public._gateway_bank_account(v_dest) and b.clinic_id = v_dest_clinic)
+      case when v_bank_acc is not null then
+        (select b.id from public.bank_accounts b
+          where b.id = public._gateway_bank_account(v_bank_acc) and b.clinic_id = v_dest_clinic) end
     )
     on conflict (source_type, source_id) where source_type in ('split_retained', 'split_retained_revenue')
     do update set amount_cents = excluded.amount_cents, status = excluded.status,
