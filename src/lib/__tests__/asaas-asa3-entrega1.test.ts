@@ -174,3 +174,102 @@ describe("teto de segurança", () => {
     expect(cabeNoLiquido(e, 10_000, 9_700, { a: 0, bCents: 99 }).ok).toBe(false);
   });
 });
+
+// ---- A emissão com o split (sem banco: o Asaas de mentira) ------------------------
+import { emitirComOAsaas, type BancoDaEmissao, type CobrancaDoBanco } from "@/lib/asaas/cobranca";
+import { fakeAsaasFetch, limparAsaasDeMentira } from "@/lib/asaas/fake";
+import { findPaymentsByReference } from "@/lib/asaas/api";
+import { decidirSplit, comIdsDoAsaas, type EntradaParaGravar, type PlanoDoSplit } from "@/lib/asaas/split";
+
+const cred = { apiKey: "$aact_hmlg_" + "x".repeat(40), environment: "sandbox" as const };
+const opts = { fetchImpl: fakeAsaasFetch };
+
+function cobranca(id: string, valor = 50_000, desconto = 0): CobrancaDoBanco {
+  return {
+    charge_id: id, status: "emitindo", clinic_id: "c", gateway_account_id: "a", billing_type: "PIX",
+    value_cents: valor, discount_cents: desconto, fine_percent: 2, fine_cents: 1000, interest_percent: 1,
+    due_date: "2026-11-20", description: "Parcela 1", asaas_payment_id: null, payer_kind: "client",
+    payer_guardian_id: null, client_id: "k", payer_name: "Paciente", payer_cpf: "12345678909", asaas_customer_id: null,
+  };
+}
+function plano(valor = 50_000, desconto = 0): PlanoDoSplit {
+  return {
+    elegivel: true,
+    carteiras: [
+      { accountId: "raiz", walletId: "w-raiz", percent: 14.72, fees: { royalty: 6.37, planejamento: 2.91, comercial: 5.44 } },
+      { accountId: "fundo", walletId: "w-fundo", percent: 1.83, fees: { fundo: 1.83 } },
+    ],
+    tarifas: TARIFAS, hoje: "2026-11-13", vencimento: "2026-11-20", valorCents: valor, descontoCents: desconto, meio: "PIX",
+  };
+}
+function bancoComSplit(p: PlanoDoSplit, falhaAoGravar = false) {
+  const g = { erro: null as string | null, emitida: null as string | null, split: null as EntradaParaGravar[] | null, sem: null as string | null, teto: 0 };
+  const banco: BancoDaEmissao = {
+    salvarPagador: async () => "local-1",
+    gravarErro: async (code) => { g.erro = code; },
+    gravarEmissao: async (r) => { g.emitida = r.asaasPaymentId; return null; },
+    planoDoSplit: async () => p,
+    gravarSplit: async (e) => { if (falhaAoGravar) throw new Error("banco fora"); g.split = e; },
+    semSplit: async (m) => { g.sem = m; },
+    avisarTeto: async () => { g.teto++; },
+  };
+  return { banco, g };
+}
+
+describe("a emissão com o split", () => {
+  it("manda as duas carteiras ao Asaas e grava com os ids do split", async () => {
+    limparAsaasDeMentira();
+    const { banco, g } = bancoComSplit(plano());
+    expect(await emitirComOAsaas(cobranca("s-1"), cred, opts, banco)).toEqual({ ok: true });
+    const [p] = await findPaymentsByReference(cred, "s-1", opts);
+    expect(p.split).toEqual([
+      expect.objectContaining({ walletId: "w-raiz", percentualValue: 14.72, fixedValue: 0.14 }),
+      expect.objectContaining({ walletId: "w-fundo", percentualValue: 1.83, fixedValue: 0.01 }),
+    ]);
+    expect(g.split?.map((e) => [e.walletId, e.accountId, e.asaasSplitId?.startsWith("split_fake_")])).toEqual([
+      ["w-raiz", "raiz", true],
+      ["w-fundo", "fundo", true],
+    ]);
+    expect(g.split?.[0].fees).toEqual({ royalty: 6.37, planejamento: 2.91, comercial: 5.44 });
+    expect(g.emitida).toBe(p.id);
+  });
+
+  it("sem split permitido (ex.: franqueadora): sai sem split e grava o motivo", async () => {
+    limparAsaasDeMentira();
+    const { banco, g } = bancoComSplit({ elegivel: false, motivo: "franqueadora" });
+    expect(await emitirComOAsaas(cobranca("s-2"), cred, opts, banco)).toEqual({ ok: true });
+    const [p] = await findPaymentsByReference(cred, "s-2", opts);
+    expect(p.split).toBeUndefined();
+    expect(g.sem).toBe("franqueadora");
+    expect(g.split).toBeNull();
+  });
+
+  it("TETO: parcela de R$ 1,00 no Pix não sai, e o Financeiro é avisado", async () => {
+    limparAsaasDeMentira();
+    const { banco, g } = bancoComSplit(plano(100));
+    const r = await emitirComOAsaas(cobranca("s-3", 100), cred, opts, banco);
+    expect(r.ok).toBe(false);
+    expect(g.erro).toBe("split_teto");
+    expect(g.teto).toBe(1);
+    expect(await findPaymentsByReference(cred, "s-3", opts)).toHaveLength(0);
+  });
+
+  it("o split não gravou: a cobrança NÃO é marcada emitida; a nova tentativa acha pela referência e grava, sem duplicar", async () => {
+    limparAsaasDeMentira();
+    const t1 = bancoComSplit(plano(), true);
+    const r1 = await emitirComOAsaas(cobranca("s-4"), cred, opts, t1.banco);
+    expect(r1.ok).toBe(false);
+    expect(t1.g.emitida).toBeNull();
+    const t2 = bancoComSplit(plano());
+    expect(await emitirComOAsaas(cobranca("s-4"), cred, opts, t2.banco)).toEqual({ ok: true });
+    expect(t2.g.split).toHaveLength(2);
+    expect(await findPaymentsByReference(cred, "s-4", opts)).toHaveLength(1);
+  });
+
+  it("decidirSplit e comIdsDoAsaas: o id casa pelo walletId", () => {
+    const d = decidirSplit(plano());
+    if (!d.vai) throw new Error("devia ir");
+    const com = comIdsDoAsaas(d.entradas, [{ id: "B", walletId: "w-fundo" }, { id: "A", walletId: "w-raiz" }]);
+    expect(com.map((e) => e.asaasSplitId)).toEqual(["A", "B"]);
+  });
+});

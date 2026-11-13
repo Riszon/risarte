@@ -149,3 +149,77 @@ export function cabeNoLiquido(entradas: EntradaDoSplit[], valorCents: number, de
   const total = entradas.reduce((s, e) => s + e.fixedCents + Math.ceil((Math.max(liquido, 0) * e.percentualValue) / 100), 0);
   return { ok: liquido > 0 && total <= liquido, liquidoCents: liquido, repasseCents: total };
 }
+
+/** O plano que o banco devolve (`_charge_split_plan`). */
+export type PlanoDoSplit =
+  | { elegivel: false; motivo: string }
+  | {
+      elegivel: true;
+      carteiras: { accountId: string; walletId: string; percent: number; fees: Record<string, number> }[];
+      tarifas: TarifaVigente[];
+      hoje: string;
+      vencimento: string;
+      valorCents: number;
+      descontoCents: number;
+      meio: MeioDoSplit;
+    };
+
+/** A entrada como o banco grava (`_charge_save_split`). */
+export type EntradaParaGravar = EntradaDoSplit & {
+  accountId: string;
+  fees: Record<string, number>;
+  tariffPercent: number;
+  tariffFixedCents: number;
+  asaasSplitId?: string | null;
+};
+
+export type DecisaoDoSplit =
+  | { vai: false; motivo: string; recusar: false }
+  | { vai: false; motivo: "teto"; recusar: true; liquidoCents: number; repasseCents: number }
+  | { vai: true; entradas: EntradaParaGravar[] };
+
+/**
+ * Do plano à decisão: sem split (com o motivo), cobrança RECUSADA pelo teto,
+ * ou as entradas a enviar. A janela da tarifa vai de hoje ao vencimento.
+ */
+export function decidirSplit(plano: PlanoDoSplit): DecisaoDoSplit {
+  if (!plano.elegivel) return { vai: false, motivo: plano.motivo, recusar: false };
+  const de = plano.hoje;
+  const ate = plano.vencimento > plano.hoje ? plano.vencimento : plano.hoje;
+  let tarifa: TarifaDoSplit;
+  let maxima: TarifaDoSplit;
+  try {
+    tarifa = tarifaParaOSplit(plano.tarifas, plano.meio, de, ate);
+    maxima = tarifaMaxima(plano.tarifas, plano.meio, de, ate);
+  } catch (e) {
+    if (e instanceof SemTarifa) return { vai: false, motivo: "sem_tarifa", recusar: false };
+    throw e;
+  }
+  const base = entradasDoSplit(
+    plano.carteiras.map((c) => ({ walletId: c.walletId, percent: Number(c.percent) })),
+    tarifa
+  );
+  if (!base.length) return { vai: false, motivo: "sem_taxa", recusar: false };
+  const teto = cabeNoLiquido(base, Number(plano.valorCents), Number(plano.descontoCents), maxima);
+  if (!teto.ok) return { vai: false, motivo: "teto", recusar: true, liquidoCents: teto.liquidoCents, repasseCents: teto.repasseCents };
+  const porCarteira = new Map(plano.carteiras.map((c) => [c.walletId, c]));
+  return {
+    vai: true,
+    entradas: base.map((e) => ({
+      ...e,
+      accountId: porCarteira.get(e.walletId)!.accountId,
+      fees: porCarteira.get(e.walletId)!.fees,
+      tariffPercent: Math.round(tarifa.a * 100 * 1e4) / 1e4,
+      tariffFixedCents: tarifa.bCents,
+    })),
+  };
+}
+
+/** Casa o que o Asaas devolveu com o que foi enviado (pelo walletId). */
+export function comIdsDoAsaas(
+  entradas: EntradaParaGravar[],
+  doAsaas: { id?: string | null; walletId?: string | null }[] | null | undefined
+): EntradaParaGravar[] {
+  const ids = new Map((doAsaas ?? []).filter((s) => s.walletId).map((s) => [s.walletId as string, s.id ?? null]));
+  return entradas.map((e) => ({ ...e, asaasSplitId: ids.get(e.walletId) ?? null }));
+}
