@@ -134,8 +134,8 @@ describe("a promoção que começa ou acaba com a cobrança em aberto (18.2, pro
     const doSplit = tarifaParaOSplit(TARIFAS, "PIX", "2027-02-05", "2027-02-15");
     expect(doSplit.bCents).toBe(99);
     const dif = diferencas(DUAS, doSplit, 50_000, { a: 0, bCents: 199 });
-    // p × (1,99 − 0,99) + o arredondamento: 14,72% → R$ 0,15; 1,83% → R$ 0,03.
-    expect(dif).toEqual([15, 3]);
+    // p × (1,99 − 0,99) + o arredondamento: 14,72% → R$ 0,16; 1,83% → R$ 0,03 (o Asaas arredonda para baixo).
+    expect(dif).toEqual([16, 3]);
   });
 
   it("o inverso: cheia na emissão, promoção começando antes do vencimento — paga na cheia, a favor da unidade; paga na promoção, exato", () => {
@@ -145,7 +145,7 @@ describe("a promoção que começa ou acaba com a cobrança em aberto (18.2, pro
     ];
     const doSplit = tarifaParaOSplit(comPromoFutura, "PIX", "2027-03-01", "2027-03-15");
     expect(doSplit.bCents).toBe(99);
-    expect(diferencas(DUAS, doSplit, 50_000, { a: 0, bCents: 199 })).toEqual([15, 3]);
+    expect(diferencas(DUAS, doSplit, 50_000, { a: 0, bCents: 199 })).toEqual([16, 3]);
     for (const d of diferencas(DUAS, doSplit, 50_000, { a: 0, bCents: 99 })) expect(d).toBeLessThanOrEqual(1);
   });
 

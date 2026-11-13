@@ -124,15 +124,15 @@ export function splitsParaOAsaas(entradas: EntradaDoSplit[]) {
 
 /**
  * Quanto o Asaas transferiria a cada carteira se o pago fosse `pagoCents` com a
- * tarifa `tarifa` (para a prova e o teto). Arredonda o percentual ao centavo
- * mais próximo — o modo do Asaas é pendência (18.6), medido no sandbox.
+ * tarifa `tarifa` (para a prova e o teto). O Asaas ARREDONDA PARA BAIXO o
+ * percentual × líquido (medido no sandbox em 13/11/2026, spec 18.6).
  */
 export function repasseSimulado(entradas: EntradaDoSplit[], pagoCents: number, tarifa: TarifaDoSplit) {
   const tarifaCents = Math.round(tarifa.a * pagoCents + tarifa.bCents);
   const liquido = pagoCents - tarifaCents;
   return entradas.map((e) => ({
     walletId: e.walletId,
-    cents: e.fixedCents + Math.round((liquido * e.percentualValue) / 100),
+    cents: e.fixedCents + Math.floor((liquido * e.percentualValue) / 100 + 1e-9),
     devidoCents: Math.round((pagoCents * e.percent) / 100),
   }));
 }

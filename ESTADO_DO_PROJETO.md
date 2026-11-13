@@ -10,8 +10,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > retido na origem (`split_charges.retained_cents`) fora da conta a pagar e no
 > razão; avisos de split (tolerância S5 R$ 0,10; a maior = divergência); S4 sem
 > pontualidade (travada em zero); aba Taxas da franquia (Taxas da rede mudou
-> para lá). Ensaio 50/50 (provado quebrando). EV-337.
-> 🟡 4008 só no treino; prova no sandbox com cobrança paga aguardando aprovação.
+> para lá). Ensaio 51/51 (provado quebrando). Prova no sandbox OK: 1 centavo
+> por carteira, Asaas arredonda para baixo (18.5.1). EV-337.
+> 🟡 4008 só no treino; falta o dono testar.
 >
 > ## ✅ 0.439.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (13/11/2026; migração 4007)
 >

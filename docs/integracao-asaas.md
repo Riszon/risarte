@@ -867,7 +867,7 @@ Comparação no cartão (17%, uma ou duas carteiras; método A = percentual p e 
 
 As diferenças são sempre **a favor da unidade** (o repasse nunca passa do percentual). No método B o erro é de até **2 centavos por carteira**: até 1 pelo F arredondado para baixo e, em parcelas grandes (a partir de uns R$ 5.000), mais 1 pelo corte do percentual em 4 casas (0,0001% × líquido). O do método A cresce com o valor e passa da tolerância da S5. **Escolhido: método B** (Jeferson, 13/11/2026), uma fórmula só para Pix, boleto e cartão. **Proteção:** se houver mais de uma tarifa vigente entre a emissão e o vencimento (início ou fim de promoção), vale a menor parte percentual e a menor parte fixa; a fila da entrega 2 corrige quando a tarifa muda.
 
-**Promoção com a cobrança em aberto (testes, 14,72% + 1,83%, Pix de R$ 500,00):** emitida na promoção (R$ 0,99) e paga depois do fim (R$ 1,99): repasse R$ 0,15 e R$ 0,03 abaixo do devido, a favor da unidade. O inverso (cheia na emissão, promoção começando antes do vencimento): pago na cheia, os mesmos R$ 0,15 e R$ 0,03 a favor da unidade; pago na promoção, até 1 centavo.
+**Promoção com a cobrança em aberto (testes, 14,72% + 1,83%, Pix de R$ 500,00):** emitida na promoção (R$ 0,99) e paga depois do fim (R$ 1,99): repasse R$ 0,16 e R$ 0,03 abaixo do devido, a favor da unidade. O inverso (cheia na emissão, promoção começando antes do vencimento): pago na cheia, os mesmos R$ 0,16 e R$ 0,03 a favor da unidade; pago na promoção, até 1 centavo.
 
 ### 18.3 Decisões
 
@@ -889,9 +889,42 @@ Enquanto a fila de atualização não existir, uma mudança de taxa (percentual,
 
 Percentuais de exemplo **diferentes por taxa e não redondos** (para pegar erro de rateio e de arredondamento), com um caso de **duas carteiras** (o fundo de propaganda com carteira própria). Sandbox: os três meios, o formato da entrada e o arredondamento do Asaas.
 
+### 18.5.1 Prova no sandbox (13/11/2026, aprovada pelo Jeferson)
+
+**Parte 1 — formato e arredondamento, direto na API** (`scripts/asaas-prova-split-sandbox.mjs`). Conta de teste de Londrina; pagador sem e-mail e sem celular, avisos desligados (nada enviado); split para a franqueadora (14,72%) e para a conta de teste **"Fundo de Propaganda Teste"** (1,83%). ⚠️ O caso de duas carteiras **só prova que o split funciona com o fundo em carteira própria, no futuro**: hoje o fundo vai para a franqueadora (D6), e a RisLife nunca é destino de taxa de paciente (D7). Pix e boleto pagos pela simulação do sandbox; cartão pela API com o cartão de teste publicado pelo Asaas. Antes, o Jeferson habilitou o split na conta principal do sandbox (sem isso o Asaas recusa a cobrança com split).
+
+| Meio | Pago | Tarifa | Carteira | Enviado | Devido | Liquidado | Diferença |
+|---|---|---|---|---|---|---|---|
+| Pix | 8,17 | 0,99 | franqueadora | 14,72% + 0,14 | 1,20 | 1,19 | 0,01 |
+| Pix | 8,17 | 0,99 | fundo (própria) | 1,83% + 0,01 | 0,15 | 0,14 | 0,01 |
+| Pix | 500,00 | 0,99 | franqueadora | 14,72% + 0,14 | 73,60 | 73,59 | 0,01 |
+| Pix | 500,00 | 0,99 | fundo (própria) | 1,83% + 0,01 | 9,15 | 9,14 | 0,01 |
+| Pix | 1.234,56 | 0,99 | franqueadora | 14,72% + 0,14 | 181,73 | 181,72 | 0,01 |
+| Pix | 1.234,56 | 0,99 | fundo (própria) | 1,83% + 0,01 | 22,59 | 22,58 | 0,01 |
+| Boleto | 500,00 | 0,99 | franqueadora | 14,72% + 0,14 | 73,60 | 73,59 | 0,01 |
+| Boleto | 500,00 | 0,99 | fundo (própria) | 1,83% + 0,01 | 9,15 | 9,14 | 0,01 |
+| Boleto | 987,65 | 0,99 | franqueadora | 14,72% + 0,14 | 145,38 | 145,37 | 0,01 |
+| Boleto | 987,65 | 0,99 | fundo (própria) | 1,83% + 0,01 | 18,07 | 18,06 | 0,01 |
+| Cartão | 500,00 | 10,44 | franqueadora | 15,0188% + 0,07 | 73,60 | 73,59 | 0,01 |
+| Cartão | 500,00 | 10,44 | fundo (própria) | 1,8671% + 0,00 | 9,15 | 9,14 | 0,01 |
+| Cartão | 1.234,56 | 25,05 | franqueadora | 15,0188% + 0,07 | 181,73 | 181,72 | 0,01 |
+| Cartão | 1.234,56 | 25,05 | fundo (própria) | 1,8671% + 0,00 | 22,59 | 22,58 | 0,01 |
+
+- **Formato confirmado:** uma entrada por carteira com `percentualValue` e `fixedValue` juntos; o Asaas aceitou nos três meios.
+- **Arredondamento do Asaas: PARA BAIXO** (trunca o percentual × líquido no centavo). Nos casos que distinguem os dois modos: 1,19690 → 1,19; 145,37635 → 145,37; 18,06588 → 18,06; 73,59604 → 73,59. A conta simulada do riSZon (`repasseSimulado`) passou a truncar também.
+- **Resultado:** o repasse **nunca passou do devido**; a diferença foi de **1 centavo por carteira** em todos os casos (o truncamento do Asaas somado ao F para baixo), dentro da tolerância de R$ 0,10.
+- **Cartão:** o split fica `AWAITING_CREDIT`/`PENDING` até a liquidação do cartão (cerca de 32 dias); o valor já vem calculado na cobrança.
+
+**Parte 2 — de ponta a ponta no projeto de teste.** Taxas do treino iguais às da produção (royalty 6%, fundo 2%, planejamento 3%, comercial 6%; as quatro para a carteira da franqueadora; ficaram assim). Cobrança Pix de R$ 6,00 do LDN-00069 (responsável financeiro sem e-mail e sem telefone), emitida pelo caminho do servidor com a sessão da Recepcionista de teste e paga pela simulação do sandbox:
+- **Split gravado:** uma carteira (franqueadora), 17% + R$ 0,16, com o id do Asaas; "split habilitado" de Londrina confirmado sozinho.
+- **Avisos:** `PAYMENT_SPLIT_DONE` chegou **antes** do `PAYMENT_RECEIVED` e os dois foram processados sem erro (`split_liquidado`, `baixa`).
+- **Liquidado R$ 1,01 × devido R$ 1,02** (17% de R$ 5,01 = 0,8517 → 0,85 + 0,16): 1 centavo, absorvido (S5).
+- **Retido na origem:** as 4 taxas (R$ 0,36 + 0,12 + 0,18 + 0,36) retidas inteiras; as contas a pagar de taxa do mês ficaram **sem valor** — nada em dobro.
+- **Razão:** 8 lançamentos liquidados — despesa da unidade (2.6.01 a 2.6.04) e receita da franqueadora (1.3.01, 1.3.03, 1.3.05, 1.3.06).
+
 ### 18.6 Pendências com o Asaas que afetam a ASA3
 
 - [ ] Mensageria no `netValue` (produção) — perguntado pelo Jeferson em 13/11/2026.
 - [ ] Cartão de débito na fatura de cobrança `CREDIT_CARD` (se aceitar, a tarifa do débito entra como a menor).
-- [ ] Arredondamento do `percentualValue` × `netValue` (centavo mais próximo ou para baixo) — medir no sandbox.
+- [x] Arredondamento do `percentualValue` × `netValue` — **para baixo** (medido no sandbox em 13/11/2026, 18.5.1).
 - [ ] Split em chargeback (gerente de contas).

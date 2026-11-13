@@ -22,7 +22,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA2, entrega 1** — o aviso do Asaas vira baixa | ✅ **concluída: aprovada pelo dono em 11/11/2026, 4005 rodada na produção e `main` em 12/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; prova do pagamento atrasado ✅ em 12/11 (boleto de R$ 10,00 vencido em 11/11, pago com R$ 10,20 e baixa de R$ 10,20 = 10,00 + multa 0,20); produção conferida com o dono logado (Novidades 0.435.0, campo de arredondamento R$ 0,10 na Central, ficha do paciente sem erro) | **4005** |
 | ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças ("A receber do Asaas" e cobranças emitidas) | ✅ **aprovada pelo dono no treino em 12/11/2026** (core 0.437.0, Asaas 0.5.0; spec seção 17); 4006 no treino e na produção (o dono rodou em 12/11/2026; conferência bateu); ensaio 47/47 (provado quebrando o teto); no `main` | **4006** |
 | ASA2, entrega 3 — a régua (aba Cobrança e comunicação) e o comprovante | ✅ **na produção (13/11/2026)**: 4007 rodada pelo dono, conferência bateu; main na 0.439.0; prova de envio real no sandbox OK (core 0.439.0, Asaas 0.6.0; spec 17.4 e 17.5); ensaio 78/78 (provado quebrando o D7); prova no sandbox sem envio 17/17; 2º lembrete fixo no dia (D9, aprovado) | **4007** |
-| ASA3, entrega 1 — o split na emissão (aba Taxas da franquia) | 🟡 **construída, no treino** (core 0.440.0, Asaas 0.7.0; spec seção 18); ensaio 50/50 (provado quebrando a conta a pagar); prova no sandbox com cobrança paga aguardando a aprovação do dono | **4008** |
+| ASA3, entrega 1 — o split na emissão (aba Taxas da franquia) | 🟡 **construída, no treino** (core 0.440.0, Asaas 0.7.0; spec seção 18); ensaio 51/51 (provado quebrando a conta a pagar); **prova no sandbox OK (13/11)**: Pix, boleto e cartão, 1 centavo por carteira, Asaas arredonda para baixo; ponta a ponta no projeto de teste OK (spec 18.5.1); falta o dono testar | **4008** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -65,9 +65,9 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 
 ### Falta
 
-- Prova no sandbox com cobranças pagas (Pix, boleto, cartão; duas carteiras;
-  arredondamento do Asaas; `PAYMENT_SPLIT_DONE` com o valor) — **com a
-  aprovação do dono na hora**.
+- ✅ Prova no sandbox (13/11/2026, spec 18.5.1). O split precisa estar
+  HABILITADO na conta principal (o dono habilitou no sandbox); sem isso o Asaas
+  recusa a cobrança com split. Treino com as taxas iguais às da produção.
 - Entrega 2: fila de atualização do split nas cobranças em aberto; estorno
   (D13); bloqueio dentro dos 2 dias úteis. Entrega 3: Painel de repasses.
 

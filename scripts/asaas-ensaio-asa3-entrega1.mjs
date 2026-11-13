@@ -275,7 +275,9 @@ try {
   }
   const lB = await linhas(ch2);
   const naoRetido = lB.reduce((t, l) => t + (l.a - l.r), 0);
-  conf("S5: falta de R$ 0,50 (> R$ 0,10) volta para a conta a pagar", naoRetido >= 49 && naoRetido <= 52);
+  // Os R$ 0,50 + os centavos do arredondamento PARA BAIXO do Asaas (medido) e do
+  // rateio proporcional entre as taxas da carteira: de 50 a 55 centavos.
+  conf("S5: falta de R$ 0,50 (> R$ 0,10) volta para a conta a pagar", naoRetido >= 50 && naoRetido <= 55);
   // Acima da tolerância, a falta INTEIRA da cobrança vai para a conta a pagar —
   // inclusive o centavo de arredondamento do fundo.
   const fundoB = lB.find((l) => l.fee === "fundo");
