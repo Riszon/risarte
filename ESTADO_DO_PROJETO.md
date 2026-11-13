@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🔌 0.439.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (13/11/2026; migração 4007)
+> ## ✅ 0.439.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (13/11/2026; migração 4007)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na 17.4 e 17.5 da especificação.
 > Central → Cobrança e comunicação: régua única da rede (8 avisos, padrão D8),
@@ -12,7 +12,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > rede (D7). Comprovante na ficha. 2º lembrete fixo no dia (D9). Ensaio 78/78;
 > sandbox sem envio 17/17.
 > Prova de envio real no sandbox (13/11, aprovada pelo dono). EV-336.
-> 🟡 4007 aprovada; produção em andamento.
+> ✅ 4007 na produção (13/11, rodada pelo dono, conferência bateu); main e produção na 0.439.0.
 >
 > ## 🦷 0.438.0 — RECEBÍVEIS: AS COBRANÇAS DAS EMPRESAS DO EMPRESARIAL (12/11/2026; sem migração)
 >
