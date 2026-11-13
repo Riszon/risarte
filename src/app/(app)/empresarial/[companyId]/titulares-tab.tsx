@@ -15,8 +15,13 @@ import {
 } from "lucide-react";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import { BotaoCpfDeTeste } from "@/components/cpf-de-teste";
-import { reportFileName } from "@/lib/empresarial/filenames";
 import type { LinhaComErro } from "@/lib/empresarial/importacao";
+import {
+  abaDosDependentes,
+  abaDosTitulares,
+  lerDependentes,
+  lerTitulares,
+} from "@/lib/empresarial/planilha-titulares";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +34,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  DEPENDENT_PLANS,
   DEPENDENT_PLAN_LABELS,
   LEFT_REASONS,
   LEFT_REASON_LABELS,
@@ -113,10 +117,9 @@ export function ColaboradoresTab({
   canViewBenefitsReport = false,
   companyDocuments = [],
   employeeFiles = [],
-  companyName = "",
 }: {
   companyId: string;
-  /** Usado para nomear a planilha-modelo baixada. */
+  /** Sem uso desde a 0.103.0: a planilha modelo vem do servidor, com o nome lido do banco. */
   companyName?: string;
   employees: EmployeeView[];
   units: Unit[];
@@ -180,7 +183,6 @@ export function ColaboradoresTab({
           {canManage && (
             <ImportEmployeesDialog
               companyId={companyId}
-              companyName={companyName}
             />
           )}
         </div>
@@ -1103,68 +1105,7 @@ function UnitPickerDialog({
   );
 }
 
-const norm = (s: unknown) =>
-  String(s ?? "")
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .trim();
-
-const PLAN_BY_LABEL = new Map<string, string>(
-  DEPENDENT_PLANS.map((p) => [norm(DEPENDENT_PLAN_LABELS[p]), p])
-);
-/** I5b: "Cônjuge" → SPOUSE etc. (aceita o rótulo em pt-BR ou a chave). */
-// Parentesco na planilha: aceita o rótulo oficial, o valor do enum e as formas
-// que as pessoas realmente escrevem ("esposa", "filho", "mãe"...). Antes só o
-// rótulo exato passava e a linha era descartada em silêncio.
-const RELATIONSHIP_SYNONYMS: Record<string, string> = {
-  esposa: "SPOUSE",
-  esposo: "SPOUSE",
-  marido: "SPOUSE",
-  mulher: "SPOUSE",
-  companheiro: "SPOUSE",
-  companheira: "SPOUSE",
-  "companheiro(a)": "SPOUSE",
-  conjuge: "SPOUSE",
-  parceiro: "SPOUSE",
-  parceira: "SPOUSE",
-  filho: "CHILD",
-  filha: "CHILD",
-  filhos: "CHILD",
-  enteado: "CHILD",
-  enteada: "CHILD",
-  dependente: "CHILD",
-  pai: "PARENT",
-  mae: "PARENT",
-  genitor: "PARENT",
-  genitora: "PARENT",
-  sogro: "OTHER",
-  sogra: "OTHER",
-  irmao: "OTHER",
-  irma: "OTHER",
-  neto: "OTHER",
-  neta: "OTHER",
-  avo: "OTHER",
-  outros: "OTHER",
-};
-
-const RELATIONSHIP_BY_LABEL = new Map<string, string>([
-  ...RELATIONSHIPS.map(
-    (r) => [norm(RELATIONSHIP_LABELS[r]), r] as [string, string]
-  ),
-  ...RELATIONSHIPS.map((r) => [norm(r), r] as [string, string]),
-  ...Object.entries(RELATIONSHIP_SYNONYMS).map(
-    ([k, v]) => [norm(k), v] as [string, string]
-  ),
-]);
-
-function ImportEmployeesDialog({
-  companyId,
-  companyName = "",
-}: {
-  companyId: string;
-  companyName?: string;
-}) {
+function ImportEmployeesDialog({ companyId }: { companyId: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [rows, setRows] = useState<EmployeeImportRow[]>([]);
@@ -1176,46 +1117,6 @@ function ImportEmployeesDialog({
   // janela (não num toast que some) até a próxima planilha ser escolhida.
   const [erros, setErros] = useState<LinhaComErro[]>([]);
 
-  async function downloadTemplate() {
-    try {
-      const XLSX = await import("xlsx");
-      const headers = ["Nome", "CPF", "Telefone", "E-mail", "Plano de Dependentes"];
-      const examples = [
-        ["Maria Silva", "111.111.111-11", "(43) 99999-0000", "maria@empresa.com", "Sem dependentes"],
-        ["João Souza", "222.222.222-22", "(43) 98888-0000", "", "Dependente familiar"],
-      ];
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
-      ws["!cols"] = headers.map((h) => ({ wch: Math.max(16, h.length + 2) }));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Titulares");
-
-      // I5b: 2ª aba para já trazer os dependentes, ligados pelo CPF do titular.
-      const depHeaders = [
-        "CPF do Titular",
-        "CPF do Dependente",
-        "Nome",
-        "Parentesco",
-        "Telefone",
-      ];
-      const depExamples = [
-        ["222.222.222-22", "333.333.333-33", "Ana Souza", "Cônjuge", "(43) 97777-0000"],
-        ["222.222.222-22", "444.444.444-44", "Pedro Souza", "Filho(a)", ""],
-      ];
-      const depWs = XLSX.utils.aoa_to_sheet([depHeaders, ...depExamples]);
-      depWs["!cols"] = depHeaders.map((h) => ({ wch: Math.max(18, h.length + 2) }));
-      XLSX.utils.book_append_sheet(wb, depWs, "Dependentes");
-
-      XLSX.writeFile(
-        wb,
-        companyName
-          ? `${reportFileName("modelo-titulares", companyName)}.xlsx`
-          : "modelo-titulares.xlsx"
-      );
-    } catch {
-      toast.error("Não foi possível gerar o modelo.");
-    }
-  }
-
   async function onFile(file: File | undefined) {
     if (!file) return;
     setFileName(file.name);
@@ -1223,81 +1124,34 @@ function ImportEmployeesDialog({
       const XLSX = await import("xlsx");
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf);
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
-        defval: "",
-      });
-
-      // I5b: aba "Dependentes" (opcional), ligada pelo CPF do titular.
-      const depSheetName = wb.SheetNames.find((n) => norm(n).startsWith("depend"));
-      const depJson = depSheetName
-        ? XLSX.utils.sheet_to_json<Record<string, unknown>>(
-            wb.Sheets[depSheetName],
-            { defval: "" }
-          )
-        : [];
-      // ⚠️ A LINHA DA PLANILHA VIAJA JUNTO (AP97): a importação é tudo ou
-      // nada e devolve os erros por linha — a linha 1 é o cabeçalho, então a
-      // primeira pessoa está na 2. Linha com QUALQUER coisa preenchida vai ao
-      // servidor (é ele que diz o que falta); só a linha em branco é descartada.
-      const mappedDeps: DependentImportRow[] = depJson
-        .map((obj, i) => {
-          const m: Record<string, string> = {};
-          for (const k of Object.keys(obj)) m[norm(k)] = String(obj[k] ?? "").trim();
-          const get = (...keys: string[]) => {
-            for (const k of keys) if (m[k]) return m[k];
-            return "";
-          };
-          const rel = get("parentesco", "grau de parentesco", "vinculo");
-          return {
-            linha: i + 2,
-            holderCpf: get(
-              "cpf do titular",
-              "cpf titular",
-              "titular",
-              "cpf do titular",
-              "cpf titular"
-            ),
-            cpf: get(
-              "cpf do dependente",
-              "cpf dependente",
-              "cpf",
-              "documento"
-            ),
-            fullName: get("nome", "nome completo", "nome do dependente"),
-            // Parentesco não reconhecido não descarta a linha: entra como "Outro".
-            relationship: RELATIONSHIP_BY_LABEL.get(norm(rel)) ?? "OTHER",
-            phone: get("telefone", "celular", "whatsapp"),
-          };
-        })
-        .filter((d) => d.holderCpf || d.cpf || d.fullName);
-      setDepRows(mappedDeps);
+      // ⚠️ A aba é achada PELO NOME (o modelo novo abre com "Como
+      // preencher"); `header: 1` + `blankrows` mantêm a linha da planilha
+      // igual à que o RH vê no Excel (planilha-titulares.ts).
+      const celulasDa = (nome: string | null) =>
+        nome
+          ? XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[nome], {
+              header: 1,
+              defval: "",
+              blankrows: true,
+              raw: false,
+            })
+          : [];
+      const nomeTit = abaDosTitulares(wb.SheetNames);
+      const nomeDep = abaDosDependentes(wb.SheetNames);
+      const tit = lerTitulares(celulasDa(nomeTit));
+      const dep = lerDependentes(celulasDa(nomeDep), tit.linhas);
+      setRows(tit.linhas);
+      setDepRows(dep.linhas);
       setErros([]);
-      const mapped: EmployeeImportRow[] = json
-        .map((obj, i) => {
-          const m: Record<string, string> = {};
-          for (const k of Object.keys(obj)) m[norm(k)] = String(obj[k] ?? "").trim();
-          const get = (...keys: string[]) => {
-            for (const k of keys) if (m[k]) return m[k];
-            return "";
-          };
-          const planLabel = get("plano de dependentes", "plano");
-          return {
-            linha: i + 2,
-            fullName: get("nome", "nome completo"),
-            cpf: get("cpf"),
-            phone: get("telefone", "whatsapp", "celular"),
-            email: get("e-mail", "email"),
-            dependentPlan: planLabel
-              ? PLAN_BY_LABEL.get(norm(planLabel)) ?? "NONE"
-              : "NONE",
-          };
-        })
-        .filter((r) => r.fullName || r.cpf || r.phone || r.email);
-      setRows(mapped);
-      if (mapped.length === 0) toast.error("Nenhuma linha preenchida na aba Titulares.");
+      if (!tit.achouCabecalho) {
+        toast.error(
+          "Não achei os títulos da aba Titulares (Nome, CPF, Telefone). Baixe o Modelo e preencha nele."
+        );
+      } else if (tit.linhas.length === 0) {
+        toast.error("Nenhuma linha preenchida na aba Titulares.");
+      }
       // Sem a aba de dependentes o usuário achava que a planilha "não trouxe".
-      if (!depSheetName && mapped.length > 0) {
+      if (!nomeDep && tit.linhas.length > 0) {
         toast.info(
           "A planilha não tem a aba “Dependentes” — só os titulares foram lidos. Baixe o Modelo para incluir dependentes."
         );
@@ -1328,14 +1182,20 @@ function ImportEmployeesDialog({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Aba <strong>Titulares</strong>: Nome, CPF e Telefone
-              (obrigatórios), E-mail, Plano de Dependentes. Aba{" "}
-              <strong>Dependentes</strong> (opcional): CPF do Titular, CPF do
-              Dependente, Nome, Parentesco, Telefone. A planilha entra inteira
-              ou não entra: qualquer linha com problema recusa a importação e
-              a lista de erros aparece aqui.
+              Baixe o <strong>Modelo</strong> e envie à empresa: ele traz as
+              instruções, a aba <strong>Titulares</strong> (Nome, CPF e
+              Telefone obrigatórios) e a aba <strong>Dependentes</strong>, onde
+              o titular é escolhido numa lista. A planilha entra inteira ou
+              não entra: qualquer linha com problema recusa a importação e a
+              lista de erros aparece aqui.
             </p>
-            <Button size="sm" variant="outline" onClick={downloadTemplate}>
+            {/* Link comum (não <Link>): é um arquivo gerado no servidor. */}
+            <Button
+              size="sm"
+              variant="outline"
+              nativeButton={false}
+              render={<a href={`/empresarial/${companyId}/modelo-titulares`} download />}
+            >
               <Download className="mr-1 size-4" />
               Modelo
             </Button>

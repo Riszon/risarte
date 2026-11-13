@@ -400,6 +400,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/11/2026 (planilha modelo) — PC Administrador (Empresarial 0.102.0 → 0.103.0, sem migração)**
+
+- **Planilha modelo de titulares e dependentes** (bloco "EMPRESARIAL 0.103.0"
+  no ESTADO). ⚠️ **Gerador (`modelo-titulares-xlsx.ts`, servidor) e leitura
+  (`planilha-titulares.ts`, navegador) andam juntos**: título de coluna ou
+  formato "Nome — CPF" mudou num, muda no outro (régua). ⚠️ A aba é achada
+  pelo nome — nunca `SheetNames[0]`.
+
+
 **13/11/2026 (Asaas — ASA3, entrega 1) — PC Administrador (core 0.439.0 → 0.440.0, Asaas 0.7.0, migração 4008; worktree `wt-asaas`)**
 
 - **O split na emissão** (estado em `docs/asaas/ESTADO.md`; decisões na seção 18

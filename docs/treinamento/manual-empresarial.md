@@ -1151,18 +1151,37 @@ Aba **Titulares** da empresa.
 **Cadastrar um a um:** *Novo titular* — nome, CPF, telefone, plano de
 dependentes.
 
-**Cadastrar por planilha:** *Importar Excel* — baixe o modelo
-(`modelo-titulares.xlsx`), preencha e importe. Na aba **Titulares**, **Nome,
-CPF e Telefone são obrigatórios** em toda linha (o telefone é o que a
-recepção usa nas boas-vindas; sem ele o cadastro não serve). A aba
-**Dependentes** é opcional: cada linha precisa do CPF do titular (que esteja
-na planilha ou já na empresa), do CPF do dependente e do parentesco.
+**Cadastrar por planilha:** *Importar Excel* → **Modelo** baixa a planilha
+já com o nome da empresa, para enviar ao RH preencher *(desde a 0.103.0)*.
+Ela tem três abas:
+
+1. **Como preencher** — a logo do Risarte Empresarial, o passo a passo, o que
+   vai em cada coluna, um exemplo e uma lista para conferir antes de enviar.
+   A empresa não precisa de explicação à parte.
+2. **Titulares** — uma linha por colaborador. **Nome, CPF e Telefone são
+   obrigatórios** em toda linha (o telefone é o que a recepção usa nas
+   boas-vindas; sem ele o cadastro não serve). O **Plano de Dependentes** é
+   escolhido numa lista (em branco = sem dependentes).
+3. **Dependentes** (opcional) — na coluna **Titular**, o RH **escolhe o
+   colaborador numa lista** (aparece *"João Souza — 987.654.321-00"*, com
+   quem já foi preenchido na aba Titulares); não precisa digitar o CPF do
+   titular de novo. Depois, o CPF do dependente, o nome e o **Parentesco**
+   (também numa lista). Titular que já estava na empresa e não está na
+   planilha: digita-se o CPF dele na coluna Titular.
+
+Com a planilha preenchida, *Escolher planilha* e importar. Planilhas no
+formato antigo (com a coluna "CPF do Titular") continuam entrando.
+
+> A lista de titulares funciona no **Excel** e no **LibreOffice**. No Google
+> Planilhas ela pode não abrir; aí basta digitar o nome do titular (se houver
+> só um com esse nome na planilha) ou o CPF dele.
 
 > ⚠️ **A planilha entra inteira ou não entra.** Se qualquer linha tiver
 > problema (CPF incompleto, sem nome, sem telefone, CPF repetido, dependente
 > sem titular), **nada é gravado** e a janela mostra a lista: *"Titulares,
-> linha 7: sem telefone"*. Corrija na planilha e escolha o arquivo de novo. A
-> linha 1 é o cabeçalho, então a primeira pessoa é a linha 2. Antes, a linha
+> linha 7: sem telefone"*. Corrija na planilha e escolha o arquivo de novo. O
+> número é o da linha no Excel (no modelo, a primeira pessoa fica na linha 6,
+> logo abaixo dos títulos azuis). Antes, a linha
 > com problema era pulada em silêncio e o resto entrava — e ninguém sabia
 > quem tinha ficado de fora.
 

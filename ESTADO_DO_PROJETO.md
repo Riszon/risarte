@@ -44,6 +44,32 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > por carteira, Asaas arredonda para baixo (18.5.1). EV-337.
 > ✅ 4008 na produção (13/11, rodada pelo dono, conferência bateu); main e produção na 0.440.0.
 
+> ## 💼 EMPRESARIAL 0.103.0 — A PLANILHA MODELO DE TITULARES E DEPENDENTES (13/11/2026; sem migração)
+>
+> Pedido do dono: planilha que a empresa preenche, com instruções claras, a
+> logo e o titular do dependente escolhido numa lista.
+> - **Gerada no servidor** (`modelo-titulares-xlsx.ts`, ExcelJS; rota
+>   `/empresarial/[companyId]/modelo-titulares`, com o nome da empresa). Abas
+>   **Como preencher** (passo a passo, colunas, exemplo, conferência, LGPD),
+>   **Titulares** e **Dependentes**; logo embutida em `logo-planilha.ts`
+>   (recorte da horizontal clara de `docs/marca/extraido`). Exemplos SÓ na aba
+>   de instruções (no modelo antigo entravam como gente de verdade).
+> - **Lista de titulares:** coluna escondida G em Titulares (`Nome — CPF`) +
+>   validação `OFFSET`/`COUNTIF` em Dependentes!A, sem trava (titular já
+>   cadastrado entra pelo CPF digitado). Plano e Parentesco em lista fixa.
+> - ⚠️ **A leitura mora em `planilha-titulares.ts`** (pura): aba pelo NOME
+>   (não `SheetNames[0]`), cabeçalho achado nas 30 primeiras linhas, linha do
+>   erro = linha do Excel, titular por "Nome — CPF", CPF ou nome único.
+>   Planilha antiga continua entrando. Mudou um título de coluna no gerador?
+>   Muda a leitura junto (régua `planilha-titulares.test.ts`, provada
+>   quebrando: 4 caem).
+> - Aberta no Excel deste PC: abre sem reparo, a coluna da lista calcula e a
+>   lista traz só os titulares preenchidos. **Não visto:** o clique na setinha
+>   (a validação foi lida, não clicada), LibreOffice e Google Planilhas, e a
+>   importação pela tela.
+> - Manual do Empresarial, aba Titulares (cadastrar por planilha).
+>
+
 > ## 💼 EMPRESARIAL 0.102.0 / 1044 — INÍCIO DO CONTRATO NO 1º PAGAMENTO E O FUNIL ABERTO DO PAINEL (13/11/2026)
 >
 > Relato OC-00012 (PRODUÇÃO, dono). Feito no worktree `wt-oc12` (a pasta

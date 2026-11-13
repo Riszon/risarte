@@ -30,6 +30,12 @@ export type LinhaDaPlanilha = {
 
 export type DependenteDaPlanilha = {
   holderCpf: string;
+  /**
+   * O que estava escrito na célula do titular (o modelo novo traz
+   * "Nome — CPF", escolhido na lista). Só serve para a mensagem de erro
+   * dizer "titular não encontrado" em vez de "CPF incompleto".
+   */
+  holderTexto?: string;
   cpf: string;
   fullName?: string;
   relationship?: string;
@@ -144,7 +150,16 @@ export function conferirPlanilha(
     const cpf = soDigitos(d.cpf);
     const relationship = String(d.relationship ?? "").trim();
     const faltas: string[] = [];
-    if (holderCpf.length !== 11) faltas.push("CPF do titular incompleto");
+    if (holderCpf.length !== 11) {
+      // Digitou um nome que não está na aba Titulares (ou que aparece duas
+      // vezes): a frase manda escolher na lista, não "completar o CPF".
+      const texto = String(d.holderTexto ?? "").trim();
+      faltas.push(
+        texto && soDigitos(texto).length === 0
+          ? "titular não encontrado na aba Titulares (escolha o titular na lista)"
+          : "CPF do titular incompleto"
+      );
+    }
     else if (!titularesConhecidos.has(holderCpf)) {
       faltas.push("o CPF do titular não está na planilha nem na empresa");
     }
