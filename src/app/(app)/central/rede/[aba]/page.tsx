@@ -12,6 +12,7 @@ import { AbasDaCentral, AvisoSemMigracao } from "../../abas";
 import { AbaComercialDaRede } from "../../aba-comercial";
 import { AbaFinanceiroDaRede } from "../../aba-financeiro";
 import { AbaCobrancaDaRede } from "../../aba-cobranca";
+import { AbaTaxasDaRede } from "../../aba-taxas";
 import { HistoricoDaAba } from "../../conta-client";
 import { ContaETarifas } from "../../conta-e-tarifas";
 import { AvisosComErro } from "../../avisos-com-erro";
@@ -22,7 +23,7 @@ export const metadata: Metadata = { title: "Central de Configuração — Rede" 
  * O NÍVEL REDE: o padrão que as unidades herdam. Na aba Conta e tarifas, a
  * conta raiz da franqueadora e as carteiras que só recebem repasse.
  */
-export default async function CentralDaRedePage({ params }: PageProps<"/central/rede/[aba]">) {
+export default async function CentralDaRedePage({ params, searchParams }: PageProps<"/central/rede/[aba]">) {
   const { aba } = await params;
   const session = await getSessionContext();
   if (!podeVerAba(session, aba, "rede")) notFound();
@@ -33,7 +34,7 @@ export default async function CentralDaRedePage({ params }: PageProps<"/central/
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5 px-4 py-8">
+    <div className={cn("mx-auto space-y-5 px-4 py-8", aba === "taxas" ? "max-w-5xl" : "max-w-4xl")}>
       <CabecalhoDeModulo
         chapeu="Central de Configuração"
         icone={SlidersHorizontal}
@@ -48,6 +49,7 @@ export default async function CentralDaRedePage({ params }: PageProps<"/central/
       {aba === "financeiro" && <AbaFinanceiroDaRede supabase={supabase} session={session} franqueadoras={franqueadoras} />}
       {aba === "comercial" && <AbaComercialDaRede supabase={supabase} />}
       {aba === "cobranca" && <AbaCobrancaDaRede supabase={supabase} session={session} />}
+      {aba === "taxas" && <AbaTaxasDaRede supabase={supabase} session={session} params={await searchParams} />}
 
       <HistoricoDaAba aba={aba} clinicId={null} />
     </div>

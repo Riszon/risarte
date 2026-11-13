@@ -36,13 +36,14 @@ function sessao(p: Partial<SessionContext>): SessionContext {
 
 describe("Central por aba", () => {
   it("as abas existem nos dois níveis, na ordem da tela (a ASA2 acrescentou Cobrança e comunicação)", () => {
-    expect(ABAS_DA_CENTRAL.map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca"]);
-    for (const a of ABAS_DA_CENTRAL) expect(a.niveis).toEqual(["rede", "unidade"]);
+    expect(ABAS_DA_CENTRAL.map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca", "taxas"]);
+    // ASA3 (4008): Taxas da franquia é só da Rede (o acordo da unidade mora na própria tela de taxas).
+    for (const a of ABAS_DA_CENTRAL) expect(a.niveis).toEqual(a.id === "taxas" ? ["rede"] : ["rede", "unidade"]);
   });
 
   it("Admin Master vê todas as abas em todo lugar", () => {
     const admin = sessao({ isAdminMaster: true });
-    expect(abasVisiveis(admin, "rede").map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca"]);
+    expect(abasVisiveis(admin, "rede").map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca", "taxas"]);
     expect(abasVisiveis(admin, "unidade", "a").map((a) => a.id)).toEqual(["conta", "financeiro", "comercial", "cobranca"]);
     expect(podeVerCentral(admin)).toBe(true);
   });
@@ -65,7 +66,7 @@ describe("Central por aba", () => {
 
   it("Financeiro da Franqueadora: Financeiro e Cobrança e comunicação na rede e em todas as unidades; Comercial e conta, não", () => {
     const fin = sessao({ rolesByClinic: { f: ["finance_franchisor"] } });
-    expect(abasVisiveis(fin, "rede").map((x) => x.id)).toEqual(["financeiro", "cobranca"]);
+    expect(abasVisiveis(fin, "rede").map((x) => x.id)).toEqual(["financeiro", "cobranca", "taxas"]);
     expect(abasVisiveis(fin, "unidade", "qualquer").map((x) => x.id)).toEqual(["financeiro", "cobranca"]);
   });
 

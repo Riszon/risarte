@@ -60,6 +60,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   gateway_notification_rules: "Régua de avisos do Asaas (aviso)",
   gateway_notification_settings: "Régua de avisos do Asaas (termo de privacidade)",
   gateway_notification_units: "Régua de avisos do Asaas (unidade ligada ou desligada)",
+  gateway_split_settings: "Split das taxas (tolerância, multa e juros da cobrança à unidade)",
+  charge_splits: "Split de cobrança (o que foi enviado e liquidado)",
   payment_waivers: "Quitação por valor menor (dispensa)",
   network_fee_waiver: "Dispensa da taxa da rede mantida no estorno",
   gateway_charges_panel: "Planilha do Painel de cobranças",

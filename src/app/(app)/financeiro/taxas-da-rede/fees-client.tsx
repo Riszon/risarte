@@ -102,9 +102,6 @@ function RuleRow({
   const [dueDay, setDueDay] = useState(String(rule.dueDay));
   const [active, setActive] = useState(rule.active);
   const [note, setNote] = useState(rule.note);
-  const [punctuality, setPunctuality] = useState(
-    String(rule.punctualityDiscountPercent).replace(".", ",")
-  );
 
   if (!editing) {
     return (
@@ -138,11 +135,6 @@ function RuleRow({
           </span>
           <span className="w-24 text-right text-xs text-muted-foreground">
             vence dia {rule.dueDay}
-          </span>
-          <span className="w-28 text-right text-xs text-muted-foreground">
-            {rule.punctualityDiscountPercent > 0
-              ? `−${pct(rule.punctualityDiscountPercent)} em dia`
-              : ""}
           </span>
           {canEdit && (
             <>
@@ -202,14 +194,6 @@ function RuleRow({
             onChange={(e) => setDueDay(e.target.value)}
           />
         </label>
-        <label className="block">
-          <Label className="text-[11px]">Desconto se pagar em dia (%)</Label>
-          <Input
-            className="h-8 w-28"
-            value={punctuality}
-            onChange={(e) => setPunctuality(e.target.value)}
-          />
-        </label>
         <label className="flex items-center gap-1 pb-1 text-xs">
           <input
             type="checkbox"
@@ -247,7 +231,8 @@ function RuleRow({
               dueDay: Number(dueDay) || 10,
               active,
               note,
-              punctualityDiscountPercent: parseNumber(punctuality),
+              // ASA3 (S4, 4008): não existe desconto de pontualidade nas taxas da franquia.
+              punctualityDiscountPercent: 0,
             });
             setEditing(false);
           }}
@@ -657,7 +642,10 @@ export function NetworkFeesView({
   summary,
   campaigns,
   accounts,
+  basePath = "/financeiro/taxas-da-rede",
 }: {
+  /** ASA3: a mesma tela mora na aba Taxas da franquia da Central. */
+  basePath?: string;
   isNetworkAdmin: boolean;
   types: NetworkFeeType[];
   network: NetworkFeeRule[];
@@ -684,7 +672,7 @@ export function NetworkFeesView({
       mes: String(next.mes ?? month),
       unidade: next.unidade ?? unitId ?? "",
     });
-    startTransition(() => router.push(`/financeiro/taxas-da-rede?${params}`));
+    startTransition(() => router.push(`${basePath}?${params}`));
   }
 
   function run(fn: () => Promise<{ ok: boolean; error?: string; count?: number }>,
@@ -935,9 +923,10 @@ export function NetworkFeesView({
 
           <p className="pt-2 text-[10px] text-muted-foreground">
             Cada taxa vira <strong>uma conta a pagar por mês</strong>, que cresce
-            conforme os recebimentos entram. Hoje o split{" "}
-            <strong>não é retido pela adquirente</strong> (o ASAAS ainda não está
-            plugado): a unidade recebe tudo e paga a rede pela conta.
+            conforme os recebimentos entram. Nas cobranças emitidas pelo riSZon
+            com split, a taxa é <strong>retida na origem</strong> pelo Asaas e
+            não entra na conta a pagar; o resto (dinheiro, maquininha, cobrança
+            sem split) continua sendo pago pela conta.
           </p>
         </CardContent>
       </Card>

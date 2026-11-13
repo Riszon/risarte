@@ -107,6 +107,13 @@ export const ABAS_DA_CENTRAL: AbaDaCentral[] = [
     niveis: ["rede", "unidade"],
     fase: "ASA2",
   },
+  {
+    id: "taxas",
+    rotulo: "Taxas da franquia",
+    descricao: "As taxas que a rede cobra das unidades, para onde vai cada uma no split, a tolerância e a multa e os juros da cobrança à unidade.",
+    niveis: ["rede"],
+    fase: "ASA3",
+  },
 ];
 
 export function abasDoNivel(nivel: NivelDaCentral): AbaDaCentral[] {
@@ -140,6 +147,10 @@ export function podeVerAba(
       // Gerente e o Franqueado veem a da própria unidade (o banco decide de novo).
       if (podeEditarRegua(session)) return true;
       return nivel === "unidade" && (temPapel(session, "unit_manager", clinicId!) || temPapel(session, "franchisee", clinicId!));
+    case "taxas":
+      // ASA3 (4008): quem configura a rede (Admin Master e Financeiro da
+      // Franqueadora). Gerente e Franqueado continuam em Financeiro → Taxas da rede.
+      return canConfigureFinanceNetwork(session);
     default:
       return false;
   }
