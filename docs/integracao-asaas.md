@@ -834,3 +834,62 @@ Plano aprovado pelo Jeferson em 12/11/2026. Migração **4007**; core 0.439.0, A
 **Prova de envio real (13/11/2026):** na emissão, a régua foi aplicada antes da cobrança (contato, leitura dos avisos e gravação da régua, depois `POST /payments`), e o Jeferson recebeu por e-mail e SMS os avisos de "cobrança criada" e de "pagamento recebido". Os outros pagadores de Londrina, sem contato na lista de permitidos, não receberam nada.
 
 **Conferido no sandbox (13/11/2026, com a aprovação do Jeferson na hora):** cobrança Pix de R$ 8,00 do LDN-00068, com a régua aplicada (contato do Jeferson, e-mail e SMS ligados) antes da emissão, paga pela simulação do sandbox (`POST /v3/sandbox/payment/{id}/confirm`). O `netValue` veio R$ 7,01: só a taxa do Pix (R$ 0,99), igual às cobranças de teste com os avisos desligados. O extrato da conta (`GET /v3/financialTransactions`) tem só duas linhas para a cobrança ("Cobrança recebida" R$ 8,00 e "Taxa do Pix" −R$ 0,99): **nenhum débito de mensageria**, nem no `netValue` nem à parte. **Inconclusivo para a produção:** o sandbox pode não cobrar a mensageria. Antes do split da ASA3, o Jeferson pergunta ao Asaas se, na produção, a mensageria sai do `netValue` da cobrança (e entra na base do split) ou é debitada à parte no extrato.
+
+---
+
+## 18. Decisões da ASA3 — Split (13/11/2026)
+
+Plano aprovado pelo Jeferson em 13/11/2026, em **três entregas**: (1) o split na emissão; (2) as cobranças em aberto (fila de atualização, divergência, estorno, bloqueio); (3) o Painel de repasses (recebido com split × por fora, dispensas, repasses a receber). O teste real com valores mínimos fica para antes do piloto, com a aprovação do Jeferson.
+
+### 18.1 O que se mediu antes
+
+- **Taxas da franquia na produção (13/11/2026):** royalty 6%, fundo de propaganda 2%, centro de planejamento 3%, comercial 6% (**17%** sobre cada real recebido); sistema e suporte R$ 250,00 e SDR R$ 550,00 por mês. Londrina e Cambé seguem a rede. Nenhuma campanha.
+- **Tarifas do Asaas por conta** (`acquirer_rates`, com vigência): Pix e boleto R$ 0,99 até 10/02/2027 e R$ 1,99 depois (uma conta de teste já sem promoção); cartão à vista 2,99% + R$ 0,49 (promoção 1,99% + R$ 0,49).
+- **Documentação do Asaas:** o split incide sobre o `netValue`; a carteira da própria conta emissora não entra; o split de cobrança em aberto muda por `PUT /v3/payments/{id}` reenviando `splits` (lista vazia **desliga** o split); split acima do líquido bloqueia a cobrança por 2 dias úteis e depois é cancelado; avisos `PAYMENT_SPLIT_DONE`, `PAYMENT_SPLIT_DIVERGENCE_BLOCK` e `PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED`.
+
+### 18.2 A conta da compensação (S1, S2 e ajuste 1)
+
+Para cada carteira com percentual **p** e tarifa **T = a × V + b** (a = parte percentual, b = parte fixa):
+
+- `percentualValue` = **q = p ÷ (1 − a)**, arredondado **para baixo** em 4 casas;
+- `fixedValue` = **F = q × b**, arredondado **para baixo** no centavo.
+
+O Asaas transfere F + q × (V − aV − b) = p × V: **exato para qualquer valor pago**, com desconto ou com multa. Com tarifa fixa (Pix, boleto), a = 0 e a conta vira a da S1 (q = p, F = p × tarifa). **Boleto (S2):** usa a menor tarifa entre código de barras e QR Code Pix. **Tarifa percentual com mínimo e máximo:** a e b da faixa do menor valor possível.
+
+Comparação no cartão (17%, uma ou duas carteiras; método A = percentual p e F pela tarifa do menor valor; método B = o adotado acima, a escolher pelo Jeferson):
+
+| Parcela | Cenário | Diferença A | Diferença B |
+|---|---|---|---|
+| R$ 500 | no prazo | R$ 0,09 a 0,14 | R$ 0,01 a 0,02 |
+| R$ 500 | multa 2% + juros 1% (30 dias) | R$ 0,14 a 0,21 | R$ 0,01 a 0,02 |
+| R$ 5.000 | no prazo | R$ 0,85 a 1,28 | R$ 0,01 a 0,02 |
+| R$ 5.000 | multa 2% + juros 1% (30 dias) | R$ 1,36 a 2,04 | R$ 0,01 a 0,02 |
+
+As diferenças são sempre **a favor da unidade** (o repasse nunca passa do percentual). No método B o erro é de até 1 centavo por carteira (o arredondamento para baixo de F e de q); o do método A cresce com o valor e passa da tolerância da S5.
+
+### 18.3 Decisões
+
+- **S1.** F = percentual × tarifa, arredondado para baixo no centavo (generalizado em 18.2).
+- **S2.** Boleto: a menor tarifa entre código de barras e QR Code Pix.
+- **S3.** Mensageria **fora** do F até a resposta do Asaas (o Jeferson envia a pergunta em 13/11/2026).
+- **S4. Não existe desconto de pontualidade nas taxas da franquia.** O split retém o **percentual cheio**. O recebimento fora do split vira conta a pagar de taxa e entra na cobrança mensal da franqueadora à unidade (ASA6): paga em dia, valor cheio; em atraso, com multa e juros. A **multa e os juros da cobrança à unidade** ficam configuráveis na aba Taxas da franquia, **no nível da rede**; os percentuais são do Jeferson, conforme o contrato de franquia.
+  - **Hoje (13/11/2026):** o desconto de pontualidade está em `network_fees.punctuality_discount_percent` (rede e exceção da unidade), aplicado só no pagamento da conta a pagar até o vencimento (`payable_punctuality_discount`, 0235). Na produção, está **zerado** em todas as taxas (rede, Londrina e Cambé). As contas a pagar de taxa **não têm multa nem juros calculados**: só os campos para informar à mão o que foi pago (`paid_fee_cents`, `paid_interest_cents`, conta 4.2.01).
+- **S5.** Diferença **a menor** de até **R$ 0,10 por cobrança** é absorvida, sem conta a pagar; acima disso, vira conta a pagar da unidade. O limite é configuração da rede. Repasse **a maior** vira divergência para o Financeiro da Franqueadora. **O valor que vale é o liquidado no aviso `PAYMENT_SPLIT_DONE`**: o riSZon grava e compara com o esperado (ajuste 2).
+- **S6.** Só emite com split a unidade com o split habilitado declarado e a conta pronta; sem isso, a cobrança sai como hoje. O primeiro split aceito confirma o "split habilitado" na prontidão. A franqueadora não faz split para si mesma.
+- **S7.** As quatro taxas percentuais vão para a carteira da conta raiz; o fundo de propaganda tem carteira configurável (D6), começando na raiz; RisLife na ASA5.
+- **S8.** Data prevista dos "Repasses a receber": a data prevista de liquidação da cobrança de origem, conferida no sandbox.
+
+### 18.4 Entre a entrega 1 e a 2
+
+Enquanto a fila de atualização não existir, uma mudança de taxa (percentual, campanha ou tarifa do Asaas) com cobrança em aberto **não muda o split já enviado**: a diferença cai na S5 (a menor, conta a pagar acima de R$ 0,10; a maior, divergência). O manual diz isso.
+
+### 18.5 Prova
+
+Percentuais de exemplo **diferentes por taxa e não redondos** (para pegar erro de rateio e de arredondamento), com um caso de **duas carteiras** (o fundo de propaganda com carteira própria). Sandbox: os três meios, o formato da entrada e o arredondamento do Asaas.
+
+### 18.6 Pendências com o Asaas que afetam a ASA3
+
+- [ ] Mensageria no `netValue` (produção) — perguntado pelo Jeferson em 13/11/2026.
+- [ ] Cartão de débito na fatura de cobrança `CREDIT_CARD` (se aceitar, a tarifa do débito entra como a menor).
+- [ ] Arredondamento do `percentualValue` × `netValue` (centavo mais próximo ou para baixo) — medir no sandbox.
+- [ ] Split em chargeback (gerente de contas).
