@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🔒 0.440.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
+> ## 🔒 0.441.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
 >
 > Achado de 13/11 (teste do selo da 4006, sessões das contas de teste no
 > treino): ASB, TSB, SDR, Planner, Consultor, Assistente, Comprador e
@@ -31,6 +31,35 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   Franqueadora; o teste e2e do selo (branch do Asaas) virar asserção.
 > - ⏳ **0403 só no treino.** Produção: o dono roda no SQL Editor; conferência
 >   no fim do arquivo (5 linhas, `usa_helper = true`). Não visto na tela.
+>
+> ## ✅ 0.440.0 / ASAAS 0.7.0 — ASA3, ENTREGA 1: O SPLIT NA EMISSÃO (13/11/2026; migração 4008)
+>
+> Estado em `docs/asaas/ESTADO.md`; decisões na seção 18 da especificação.
+> Método B (q = p ÷ (1 − a), F = q × parte fixa, para baixo; menor tarifa da
+> janela) em `src/lib/asaas/split.ts`; teto de segurança; `charge_splits`;
+> retido na origem (`split_charges.retained_cents`) fora da conta a pagar e no
+> razão; avisos de split (tolerância S5 R$ 0,10; a maior = divergência); S4 sem
+> pontualidade (travada em zero); aba Taxas da franquia (Taxas da rede mudou
+> para lá). Ensaio 51/51 (provado quebrando). Prova no sandbox OK: 1 centavo
+> por carteira, Asaas arredonda para baixo (18.5.1). EV-337.
+> ✅ 4008 na produção (13/11, rodada pelo dono, conferência bateu); main e produção na 0.440.0.
+
+> ## 💼 EMPRESARIAL 0.102.0 / 1044 — INÍCIO DO CONTRATO NO 1º PAGAMENTO E O FUNIL ABERTO DO PAINEL (13/11/2026)
+>
+> Relato OC-00012 (PRODUÇÃO, dono). Feito no worktree `wt-oc12` (a pasta
+> principal tinha o commit 0.440.0 de outra sessão sem push).
+> - **Início do contrato = 1º pagamento** (decisão do dono). **1044:** gatilho
+>   blindado `empresarial.billing_starts_contract` em `adhesion_billing`
+>   (cobrança vira PAID → `companies.contract_started_at` = dia Brasil do
+>   `paid_at`, só se vazio) + acerto das empresas pagas sem início (produção:
+>   a Cooperativa Recicla Brasil → 11/11/2026). ⚠️ Caminho novo que dê baixa
+>   não precisa fazer nada: o gatilho mora na tabela. Ensaio no treino 3/3.
+> - **Funil aberto (Painel do programa)** passou a usar `isOpenStage` (a
+>   Implantação estava entrando na soma: R$ 818,00 em vez de R$ 379,10). Os
+>   dois painéis usam a mesma regra (régua `empresarial-oc-00012.test.ts`).
+> - Manual do Empresarial 6.1 e 16. **Não visto na tela.**
+> - ✅ **1044 aplicada nos dois bancos** (produção pelo dono em 13/11/2026,
+>   conferência 1·0; conferido de fora: a Cooperativa com início 11/11/2026).
 >
 > ## ✅ 0.439.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (13/11/2026; migração 4007)
 >

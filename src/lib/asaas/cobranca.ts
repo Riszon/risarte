@@ -15,6 +15,7 @@ import {
 } from "./api";
 import { AsaasError, mensagemDoAsaas, type AsaasRequestOptions } from "./client";
 import { aplicarReguaDoPagador } from "./regua-servidor";
+import { comIdsDoAsaas, decidirSplit, splitsParaOAsaas, type EntradaParaGravar, type PlanoDoSplit } from "./split";
 
 /**
  * A COBRANÇA NO ASAAS (ASA1, entrega 2) — só no servidor.
@@ -100,6 +101,14 @@ export type BancoDaEmissao = {
   salvarPagador: (c: CobrancaDoBanco, asaasCustomerId: string) => Promise<string>;
   /** ASA2 (4007): aplica a régua do pagador, se ele estiver na fila. */
   aplicarRegua?: (gatewayCustomerId: string) => Promise<void>;
+  /** ASA3 (4008): o plano do split desta cobrança (ausente = sem split). */
+  planoDoSplit?: () => Promise<PlanoDoSplit>;
+  /** ASA3: grava o split aceito pelo Asaas. */
+  gravarSplit?: (entradas: EntradaParaGravar[]) => Promise<void>;
+  /** ASA3: grava por que a cobrança saiu sem split. */
+  semSplit?: (motivo: string) => Promise<void>;
+  /** ASA3: avisa o Financeiro de que o teto de segurança recusou a cobrança. */
+  avisarTeto?: () => Promise<void>;
   gravarErro: (code: string) => Promise<void>;
   /** Devolve a mensagem de erro, ou nulo se gravou. */
   gravarEmissao: (r: {
@@ -116,6 +125,39 @@ function bancoDe(chargeId: string, cred: AsaasCredential, opts: AsaasRequestOpti
   const admin = createAdminClient();
   return {
     aplicarRegua: (id) => aplicarReguaDoPagador(id, cred, opts),
+    planoDoSplit: async () => {
+      const { data, error } = await admin.rpc("_charge_split_plan", { p_charge_id: chargeId });
+      if (error) {
+        // Banco sem a 4008: a emissão segue sem split, como antes.
+        if (/does not exist|schema cache/i.test(error.message)) return { elegivel: false, motivo: "sem_4008" };
+        throw new Error(`split plan failed: ${error.message}`);
+      }
+      return data as PlanoDoSplit;
+    },
+    gravarSplit: async (entradas) => {
+      const { error } = await admin.rpc("_charge_save_split", { p_charge_id: chargeId, p_entries: entradas });
+      if (error) throw new Error(`split save failed: ${error.message}`);
+    },
+    semSplit: async (motivo) => {
+      const { error } = await admin.rpc("_charge_mark_split_skipped", { p_charge_id: chargeId, p_reason: motivo });
+      if (error && !/does not exist|schema cache/i.test(error.message)) console.error("split skip mark failed:", error.message);
+    },
+    avisarTeto: async () => {
+      const c = await lerCobranca(chargeId);
+      if (!c) return;
+      await admin.rpc("_gateway_notify", {
+        p_account_id: c.gateway_account_id,
+        p_kind: "split_teto",
+        p_key: chargeId,
+        p_clinic_id: c.clinic_id,
+        p_managers: true,
+        p_finance: true,
+        p_admins: true,
+        p_title: "Cobrança não emitida: repasse acima do líquido",
+        p_body: "No pior caso (maior desconto e maior tarifa do Asaas), as taxas da rede passariam do valor líquido desta cobrança. Ela não foi emitida. Confira o valor da parcela ou as taxas.",
+        p_link: `/prontuarios/${c.client_id}`,
+      });
+    },
     salvarPagador: async (c, asaasId) => {
       const { data, error } = await admin.rpc("_gateway_customer_save", {
         p_account_id: c.gateway_account_id,
@@ -176,6 +218,7 @@ export async function emitirComOAsaas(
 ): Promise<ResultadoDaEmissao> {
   let pagador: { asaasId: string; localId: string } | null = null;
   let pagamento: AsaasPayment | null = null;
+  let entradas: EntradaParaGravar[] | null = null;
   try {
     // 1) Já existe? (tentativa anterior que criou sem saber)
     [pagamento] = await findPaymentsByReference(cred, c.charge_id, opts);
@@ -185,6 +228,22 @@ export async function emitirComOAsaas(
       // 2b) ASA2 (4007): a régua do pagador ANTES da cobrança, para o aviso
       // "cobrança criada" sair. Falha aqui não impede a emissão.
       if (banco.aplicarRegua) await banco.aplicarRegua(pagador.localId).catch(() => {});
+      // 2c) ASA3 (4008): o split. Teto estourado = a cobrança NÃO sai.
+      if (banco.planoDoSplit) {
+        const decisao = decidirSplit(await banco.planoDoSplit());
+        if (decisao.vai) {
+          entradas = decisao.entradas;
+        } else if (decisao.recusar) {
+          await banco.gravarErro("split_teto");
+          if (banco.avisarTeto) await banco.avisarTeto().catch(() => {});
+          return {
+            ok: false,
+            error: "A cobrança não foi emitida: as taxas da rede passariam do valor líquido no pior caso (desconto e tarifa). Avise o Financeiro.",
+          };
+        } else if (banco.semSplit) {
+          await banco.semSplit(decisao.motivo);
+        }
+      }
       // 3) A cobrança.
       try {
         pagamento = await createPayment(
@@ -199,6 +258,7 @@ export async function emitirComOAsaas(
             discountValue: reais(c.discount_cents),
             fineValue: reais(c.fine_cents ?? 0),
             interestPercent: Number(c.interest_percent),
+            ...(entradas ? { splits: splitsParaOAsaas(entradas) } : {}),
           },
           opts
         );
@@ -232,6 +292,21 @@ export async function emitirComOAsaas(
     if (c.billing_type === "BOLETO") linha = await getIdentificationField(cred, pagamento.id, opts);
   } catch {
     // o link da fatura basta; o Pix e a linha podem ser lidos depois
+  }
+
+  // 4b) ASA3: grava o split que o Asaas aceitou. Cobrança achada pela
+  // referência (tentativa anterior) com split: refaz o plano para gravar.
+  // Sem gravar o split, a taxa seria cobrada duas vezes (retida E na conta a
+  // pagar) — por isso a falha aqui impede marcar a cobrança como emitida.
+  try {
+    if (!entradas && pagamento.split?.length && banco.planoDoSplit) {
+      const decisao = decidirSplit(await banco.planoDoSplit());
+      if (decisao.vai) entradas = decisao.entradas;
+    }
+    if (entradas && banco.gravarSplit) await banco.gravarSplit(comIdsDoAsaas(entradas, pagamento.split));
+  } catch (e) {
+    console.error("charge split save failed:", e instanceof Error ? e.message : e);
+    return { ok: false, error: "A cobrança foi criada no Asaas, mas o split não foi gravado no riSZon. Use “Tentar de novo”: nada será duplicado." };
   }
 
   // 5) Grava.

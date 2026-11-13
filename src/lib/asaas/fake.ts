@@ -115,6 +115,16 @@ export const fakeAsaasFetch: typeof fetch = async (input, init) => {
       invoiceUrl: `https://sandbox.asaas.com/i/${id}`,
       bankSlipUrl: body.billingType === "BOLETO" ? `https://sandbox.asaas.com/b/pdf/${id}` : null,
       deleted: false,
+      // ASA3: devolve o split com id, como o Asaas.
+      ...(Array.isArray(body.split)
+        ? {
+            split: (body.split as Record<string, unknown>[]).map((s, i) => ({
+              ...s,
+              id: `split_fake_${id}_${i + 1}`,
+              status: "PENDING",
+            })),
+          }
+        : {}),
     };
     FAKE_PAYMENTS.set(id, p);
     return json(200, p);
@@ -147,6 +157,7 @@ type FakePayment = {
   invoiceUrl: string;
   bankSlipUrl: string | null;
   deleted: boolean;
+  split?: Record<string, unknown>[];
 };
 const FAKE_CUSTOMERS = new Map<string, string>();
 const FAKE_PAYMENTS = new Map<string, FakePayment>();

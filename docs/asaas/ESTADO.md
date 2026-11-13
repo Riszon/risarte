@@ -21,7 +21,8 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | **ASA1, entrega 2** — a cobrança de parcela, as travas e a quitação por valor menor | ✅ **concluída**: aprovada pelo dono e no `main` em 11/11/2026 (core 0.433.0, Asaas 0.3.0); 4004 nos dois bancos (produção pelo dono, conferência batida); testada pelo dono no projeto de teste | **4004** |
 | **ASA2, entrega 1** — o aviso do Asaas vira baixa | ✅ **concluída: aprovada pelo dono em 11/11/2026, 4005 rodada na produção e `main` em 12/11/2026** (core 0.435.0, Asaas 0.4.0); 4005 no treino; ensaio 63/63; sandbox de ponta a ponta com Pix, boleto e cartão (pago pelo dono) dando baixa sozinhos; prova do pagamento atrasado ✅ em 12/11 (boleto de R$ 10,00 vencido em 11/11, pago com R$ 10,20 e baixa de R$ 10,20 = 10,00 + multa 0,20); produção conferida com o dono logado (Novidades 0.435.0, campo de arredondamento R$ 0,10 na Central, ficha do paciente sem erro) | **4005** |
 | ASA2, entrega 2 — selo "Em atraso" e Painel de cobranças ("A receber do Asaas" e cobranças emitidas) | ✅ **aprovada pelo dono no treino em 12/11/2026** (core 0.437.0, Asaas 0.5.0; spec seção 17); 4006 no treino e na produção (o dono rodou em 12/11/2026; conferência bateu); ensaio 47/47 (provado quebrando o teto); no `main` | **4006** |
-| ASA2, entrega 3 — a régua (aba Cobrança e comunicação) e o comprovante | ✅ **na produção (13/11/2026)**: 4007 rodada pelo dono, conferência bateu; main na 0.439.0; prova de envio real no sandbox OK; (core 0.439.0, Asaas 0.6.0; spec 17.4 e 17.5); ensaio 78/78 (provado quebrando o D7); prova no sandbox sem envio 17/17; 2º lembrete fixo no dia (D9, aprovado); falta o dono testar | **4007** |
+| ASA2, entrega 3 — a régua (aba Cobrança e comunicação) e o comprovante | ✅ **na produção (13/11/2026)**: 4007 rodada pelo dono, conferência bateu; main na 0.439.0; prova de envio real no sandbox OK (core 0.439.0, Asaas 0.6.0; spec 17.4 e 17.5); ensaio 78/78 (provado quebrando o D7); prova no sandbox sem envio 17/17; 2º lembrete fixo no dia (D9, aprovado) | **4007** |
+| ASA3, entrega 1 — o split na emissão (aba Taxas da franquia) | ✅ **na produção (13/11/2026)**: 4008 rodada pelo dono, conferência bateu; main e produção na 0.440.0; (core 0.440.0, Asaas 0.7.0; spec seção 18); ensaio 51/51 (provado quebrando a conta a pagar); **prova no sandbox OK (13/11)**: Pix, boleto e cartão, 1 centavo por carteira, Asaas arredonda para baixo; ponta a ponta no projeto de teste OK (spec 18.5.1) | **4008** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -36,6 +37,41 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
+
+## ASA3, entrega 1 — o split na emissão (Asaas 0.7.0, core 0.440.0, 13/11/2026)
+
+### O que existe
+
+- **4008** — `network_fee_types.split_account_id` (destino de cada taxa; vazio
+  = conta raiz do mesmo ambiente); `gateway_split_settings` (tolerância S5,
+  multa e juros da cobrança à unidade, em branco); `charge_splits` (o enviado
+  por carteira, com rateio por taxa, id do Asaas e o **liquidado** do aviso);
+  `charges.split_applied/split_skip_reason`; `split_charges.retained_cents` e
+  `charge_id`; `refresh_network_fee_payable` soma só o NÃO retido; razão
+  `split_retained` (despesa da unidade) e `split_retained_revenue` (receita da
+  franqueadora). A taxa da baixa com split JÁ NASCE retida
+  (`_split_charge_born_retained`): a conta a pagar nem é criada; o apurado do
+  mês mostra "pago no split" (`network_fee_summary.retained_cents`). `_gateway_split_retention` (gatilho na baixa e nos avisos);
+  `_gateway_on_split_event` (gatilho em `gateway_webhook_events` ao processar
+  `PAYMENT_SPLIT_*`; os guardados antes foram reprocessados). Portas
+  `gateway_split_read/save`. S4: `network_fees_sem_pontualidade` (= 0).
+- **Servidor:** `src/lib/asaas/split.ts` (puro: tarifa da janela, método B,
+  teto, `decidirSplit`); `cobranca.ts` pede o plano (`_charge_split_plan`),
+  manda `split` no `POST /payments` e grava com os ids
+  (`_charge_save_split`). Split não gravado = cobrança NÃO marcada emitida
+  ("Tentar de novo" acha pela referência e grava). Teto estourado = erro
+  `split_teto` + aviso.
+- **Tela:** Central → Rede → Taxas da franquia (`aba-taxas.tsx`,
+  `split-form.tsx`); `/financeiro/taxas-da-rede` redireciona para lá quem
+  configura a rede.
+
+### Falta
+
+- ✅ Prova no sandbox (13/11/2026, spec 18.5.1). O split precisa estar
+  HABILITADO na conta principal (o dono habilitou no sandbox); sem isso o Asaas
+  recusa a cobrança com split. Treino com as taxas iguais às da produção.
+- Entrega 2: fila de atualização do split nas cobranças em aberto; estorno
+  (D13); bloqueio dentro dos 2 dias úteis. Entrega 3: Painel de repasses.
 
 ## ASA2, entrega 3 — a régua de avisos do Asaas e o comprovante (Asaas 0.6.0, core 0.439.0, 12/11/2026)
 

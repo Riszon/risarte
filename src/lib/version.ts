@@ -6,12 +6,12 @@
 // CLAUDE.md). Cada agente edita SÓ as suas duas linhas — nunca as do outro.
 
 // Core (MVP / riSZon) — faixa de migração 0106+ (0–999).
-export const APP_VERSION = "0.440.0";
+export const APP_VERSION = "0.441.0";
 export const LATEST_MIGRATION = "0403";
 
 // Risarte Empresarial (B2B) — faixa de migração 1000+.
-export const EMPRESARIAL_VERSION = "0.101.0";
-export const EMPRESARIAL_MIGRATION = "1043";
+export const EMPRESARIAL_VERSION = "0.102.0";
+export const EMPRESARIAL_MIGRATION = "1044";
 
 // Indica +Risos (programa de indicação) — faixa de migração 2000+.
 export const INDICA_VERSION = "0.9.0";
@@ -25,5 +25,5 @@ export const RITA_MIGRATION = "3006";
 // Integração Asaas e Central de Configuração — tabelas `gateway_*` e
 // `central_*` no schema `public`, faixa de migração 4000+.
 // Estado em `docs/asaas/ESTADO.md`; especificação em `docs/integracao-asaas.md`.
-export const ASAAS_VERSION = "0.6.0";
-export const ASAAS_MIGRATION = "4007";
+export const ASAAS_VERSION = "0.7.0";
+export const ASAAS_MIGRATION = "4008";

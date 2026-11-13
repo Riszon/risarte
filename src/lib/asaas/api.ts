@@ -209,7 +209,22 @@ export type AsaasPayment = {
   invoiceUrl?: string | null;
   bankSlipUrl?: string | null;
   deleted?: boolean | null;
+  /** ASA3: o split como o Asaas gravou (só vem se a cobrança tem split). */
+  split?: AsaasSplit[] | null;
 };
+
+/** Uma entrada de split devolvida pelo Asaas. */
+export type AsaasSplit = {
+  id?: string | null;
+  walletId?: string | null;
+  fixedValue?: number | null;
+  percentualValue?: number | null;
+  totalValue?: number | null;
+  status?: string | null;
+};
+
+/** O que o riSZon envia em `splits` (ASA3, método B — `split.ts`). */
+export type SplitParaEnviar = { walletId: string; percentualValue: number; fixedValue?: number };
 
 export type NovaCobranca = {
   customer: string;
@@ -229,6 +244,8 @@ export type NovaCobranca = {
   fineValue: number;
   /** Juros em % AO MÊS (0 = sem juros), já ajustados à proporção do valor cheio. */
   interestPercent: number;
+  /** ASA3: o split (ausente = sem split; NUNCA lista vazia, que desligaria). */
+  splits?: SplitParaEnviar[];
 };
 
 /** `POST /v3/payments` — multa e juros vão SEMPRE explícitos (nunca os padrões da conta). */
@@ -248,6 +265,7 @@ export function createPayment(cred: AsaasCredential, input: NovaCobranca, opts?:
         discount: { value: input.discountValue, dueDateLimitDays: 0, type: "FIXED" },
         fine: { value: input.fineValue, type: "FIXED" },
         interest: { value: input.interestPercent },
+        ...(input.splits && input.splits.length ? { split: input.splits } : {}),
       },
     },
     opts

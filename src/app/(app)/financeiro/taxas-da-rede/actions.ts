@@ -94,6 +94,7 @@ export async function saveFeeType(input: {
     entityId: key,
   });
   revalidatePath("/financeiro/taxas-da-rede");
+  revalidatePath("/central/rede/taxas");
   return { ok: true };
 }
 
@@ -117,6 +118,7 @@ export async function deleteFeeType(input: { key: string }): Promise<Result> {
     entityId: input.key,
   });
   revalidatePath("/financeiro/taxas-da-rede");
+  revalidatePath("/central/rede/taxas");
   return { ok: true };
 }
 
@@ -156,7 +158,8 @@ export async function saveNetworkFee(input: {
       amount_cents: input.kind === "fixed" ? Math.round(input.amountCents) : 0,
       due_day: input.dueDay,
       active: input.active,
-      punctuality_discount_percent: Math.max(0, Math.min(100, input.punctualityDiscountPercent)),
+      // ASA3 (S4, 4008): sem desconto de pontualidade nas taxas da franquia (o banco trava em zero).
+      punctuality_discount_percent: 0,
       note: input.note.trim() || null,
       updated_at: new Date().toISOString(),
       updated_by: session.userId,
@@ -175,6 +178,7 @@ export async function saveNetworkFee(input: {
     clinicId: input.clinicId ?? undefined,
   });
   revalidatePath("/financeiro/taxas-da-rede");
+  revalidatePath("/central/rede/taxas");
   return { ok: true };
 }
 
@@ -210,6 +214,7 @@ export async function clearNetworkFeeOverride(input: {
     clinicId: input.clinicId,
   });
   revalidatePath("/financeiro/taxas-da-rede");
+  revalidatePath("/central/rede/taxas");
   return { ok: true };
 }
 
@@ -276,6 +281,7 @@ export async function saveCampaign(input: {
     clinicId: input.clinicId ?? undefined,
   });
   revalidatePath("/financeiro/taxas-da-rede");
+  revalidatePath("/central/rede/taxas");
   return { ok: true };
 }
 
@@ -306,6 +312,7 @@ export async function deleteCampaign(input: { id: string }): Promise<Result> {
     entityId: input.id,
   });
   revalidatePath("/financeiro/taxas-da-rede");
+  revalidatePath("/central/rede/taxas");
   return { ok: true };
 }
 
@@ -334,5 +341,6 @@ export async function chargeFixedFeesNow(input: {
   }
 
   revalidatePath("/financeiro/taxas-da-rede");
+  revalidatePath("/central/rede/taxas");
   return { ok: true, count: Number(data ?? 0) };
 }

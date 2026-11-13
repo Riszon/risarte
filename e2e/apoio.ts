@@ -71,7 +71,10 @@ export function senhaDe(email: string): string {
 export async function entrarComo(
   context: BrowserContext,
   email: string,
-  clinicId?: string
+  clinicId?: string,
+  // O projeto de teste PUBLICADO (risarte-asaas.vercel.app) fala com o mesmo
+  // banco de treino: a sessão vale lá, só o domínio do biscoito muda.
+  dominio = "localhost"
 ) {
   const admin = createClient(
     AMBIENTE.NEXT_PUBLIC_SUPABASE_URL,
@@ -106,7 +109,7 @@ export async function entrarComo(
     [...pote]
       .map(([name, value]) => ({ name, value }))
       .concat(clinicId ? [{ name: "risarte_active_clinic", value: clinicId }] : [])
-      .map((c) => ({ ...c, domain: "localhost", path: "/" }))
+      .map((c) => ({ ...c, domain: dominio, path: "/" }))
   );
 }
 
