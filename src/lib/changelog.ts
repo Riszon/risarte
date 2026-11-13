@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.440.0",
+    data: "2026-11-13",
+    migracao: "0403",
+    titulo: "O financeiro do paciente só para quem trabalha com ele",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "As parcelas, os recebimentos, as renegociações e as cobranças dos pacientes passaram a ser entregues pelo sistema só a quem vê a aba Financeiro da ficha (Gerente, Recepção, Franqueado, Financeiro da Franqueadora e Admin). ASB, TSB e Comprador não recebem mais esses dados por trás da tela. O comercial, o Planner, o SDR e o Coordenador continuam vendo o parcelamento da venda em que trabalham. Nenhuma tela muda.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.439.0",
     data: "2026-11-13",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4007, ASAAS_MIGRATION).
