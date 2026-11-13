@@ -413,6 +413,14 @@ Syncthing se comportarem de forma estranha.**
   nas taxas da franquia (constraint `network_fees_sem_pontualidade`).
   ⚠️ Prova no sandbox com cobrança paga só com a aprovação do dono.
 
+**13/11/2026 (relato OC-00012) — PC Administrador (Empresarial 0.101.0 → 0.102.0, migração 1044; worktree `wt-oc12`)**
+
+- Bloco "EMPRESARIAL 0.102.0" no ESTADO. ⚠️ **O início do contrato da empresa
+  nasce no 1º pagamento** (gatilho `billing_starts_contract`, 1044; só
+  preenche o vazio). ⚠️ "Lead em aberto" = `isOpenStage` (funnel.ts) — não
+  repetir a lista de fases em tela nova.
+- ✅ 1044 aplicada nos dois bancos (produção pelo dono, 13/11/2026; 1·0).
+
 **12/11/2026 (Asaas — ASA2, entrega 3) — PC Administrador (core 0.438.0 → 0.439.0, Asaas 0.6.0, migração 4007; worktree `wt-asaas`)**
 
 - **Régua de avisos do Asaas e comprovante** (estado em `docs/asaas/ESTADO.md`;

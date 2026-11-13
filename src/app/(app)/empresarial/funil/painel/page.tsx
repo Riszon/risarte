@@ -1,4 +1,5 @@
 import { valoresDasPropostas } from "@/lib/empresarial/valor-da-proposta-servidor";
+import { isOpenStage } from "@/lib/empresarial/funnel";
 import { valorNoFunil } from "@/lib/empresarial/valor-da-proposta";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -156,9 +157,8 @@ export default async function PainelDoFunilPage() {
   const canais = porCanal(doPainel, CAPTURE_CHANNEL_LABELS);
   const nomeDoLead = new Map(doPainel.map((l) => [l.id, l.companyName]));
 
-  const emAberto = doPainel.filter(
-    (l) => l.stage !== "CLOSED_WON" && l.stage !== "CLOSED_LOST" && l.stage !== "IMPLEMENTATION"
-  );
+  // OC-00012: a mesma regra do Painel do programa (`isOpenStage`).
+  const emAberto = doPainel.filter((l) => isOpenStage(l.stage));
   const valorEmAberto = emAberto.reduce(
     (a, l) => a + (l.estimatedValueCents ?? 0),
     0

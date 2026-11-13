@@ -10,8 +10,8 @@ export const APP_VERSION = "0.440.0";
 export const LATEST_MIGRATION = "0402";
 
 // Risarte Empresarial (B2B) — faixa de migração 1000+.
-export const EMPRESARIAL_VERSION = "0.101.0";
-export const EMPRESARIAL_MIGRATION = "1043";
+export const EMPRESARIAL_VERSION = "0.102.0";
+export const EMPRESARIAL_MIGRATION = "1044";
 
 // Indica +Risos (programa de indicação) — faixa de migração 2000+.
 export const INDICA_VERSION = "0.9.0";

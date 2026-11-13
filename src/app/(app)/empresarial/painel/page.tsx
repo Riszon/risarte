@@ -1,4 +1,5 @@
 import { valoresDasPropostas } from "@/lib/empresarial/valor-da-proposta-servidor";
+import { isOpenStage } from "@/lib/empresarial/funnel";
 import { valorNoFunil } from "@/lib/empresarial/valor-da-proposta";
 import { ehValorFixo, mensalidadeDoFixo } from "@/lib/empresarial/mensalidade";
 import type { Metadata } from "next";
@@ -210,8 +211,11 @@ export default async function PainelPage() {
   const activeEmployees = employees?.length ?? 0;
   const activeDependents = dependents?.length ?? 0;
 
+  // OC-00012: "em aberto" é a MESMA regra do Painel do funil (`isOpenStage`):
+  // a Implantação também é venda ganha. Antes, ela entrava no valor em aberto
+  // e os dois painéis mostravam números diferentes.
   const openLeadValue = (leads ?? [])
-    .filter((l) => l.stage !== "CLOSED_WON" && l.stage !== "CLOSED_LOST")
+    .filter((l) => isOpenStage(l.stage))
     .reduce((a, l) => a + valorDoLead(l), 0);
   const funnelByStage = LEAD_STAGES.map((stage) => {
     const items = (leads ?? []).filter((l) => l.stage === stage);

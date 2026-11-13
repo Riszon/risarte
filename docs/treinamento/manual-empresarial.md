@@ -430,7 +430,13 @@ ver o estado da proposta inteira sem abrir passo nenhum.
 
 - **Validade da proposta** — quantos dias ela vale. Em branco, usa o padrão da
   rede (**15 dias**, configurável em Configurações → Proposta comercial).
-- **Carência da empresa** — contada do início do contrato.
+- **Carência da empresa** — contada do início do contrato. **O início do
+  contrato é o dia do 1º pagamento** (desde a Empresarial 0.102.0, relato
+  OC-00012; decisão do dono): quando a primeira cobrança da empresa é paga, o
+  sistema preenche sozinho o campo **Início do contrato** do cadastro — só se
+  ele estiver vazio. Uma data digitada à mão nunca é trocada. Antes, o campo só
+  era preenchido à mão, e a tela de Boas-vindas dizia "o contrato ainda não tem
+  data de início" mesmo com o contrato assinado e pago.
 - **Carência do titular** — contada da entrada de cada pessoa.
 
 As duas carências **viajam para o cadastro da empresa no fechamento** — não são
@@ -1695,7 +1701,11 @@ usaram **não mudam** — elas guardam os benefícios, não um atalho para o gru
 ## 16. Painéis e relatórios
 
 **Empresarial → Painel** — empresas ativas, titulares, **mensalidade (MRR)**,
-**economia gerada** e funil aberto, mais a tabela por empresa.
+**economia gerada** e funil aberto, mais a tabela por empresa. O **funil
+aberto** soma só as empresas ainda em negociação — Fechamento (ganho ou perda)
+e **Implantação** ficam de fora, a mesma regra do "Valor em aberto" do Painel do
+funil (desde a Empresarial 0.102.0, relato OC-00012; antes, a empresa em
+Implantação entrava na soma e os dois painéis divergiam).
 
 **Funil → Painel** — os indicadores e alertas da parte comercial.
 
