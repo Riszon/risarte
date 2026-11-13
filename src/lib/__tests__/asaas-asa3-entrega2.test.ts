@@ -62,10 +62,10 @@ describe("o motivo do Asaas na tela (pedido do dono, 13/11/2026)", () => {
         status: 400,
         headers: { "content-type": "application/json" },
       })) as unknown as typeof fetch;
-    const erro = await asaasRequest(
+    const erro = (await asaasRequest(
       { apiKey: "$aact_hmlg_" + "x".repeat(40), environment: "sandbox", method: "POST", path: "/payments/{id}/bankSlip/refund", params: { id: "pay_1" }, body: {} },
       { fetchImpl: f }
-    ).catch((e) => e);
+    ).catch((e: unknown) => e)) as InstanceType<typeof AsaasError>;
     expect(erro).toBeInstanceOf(AsaasError);
     expect(erro.messagePt).toBe(`O Asaas recusou: ${motivo}`);
     expect(erro.logMessage).not.toContain("e-mail");

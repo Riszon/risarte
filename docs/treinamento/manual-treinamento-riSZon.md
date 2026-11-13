@@ -6609,6 +6609,12 @@ pode. **O riSZon nunca pede, recebe nem guarda esse código.**
 **Quando o Asaas recusa**, a tela mostra o motivo que ele deu (ex.: "O Asaas
 recusou: … o seu cliente não possui um e-mail válido").
 
+**Baixa que veio do Asaas não se estorna à mão.** Nas baixas automáticas do
+Asaas, o botão **Estornar** do histórico de recebimentos dá lugar ao aviso
+*estorno pelo "Pedir estorno"*: o estorno manual desfaria a baixa só no riSZon,
+com o dinheiro ainda recebido no Asaas. As baixas feitas no balcão continuam
+podendo ser estornadas como antes.
+
 **Pedido parado:** o Asaas não deixa cancelar o pedido pelo riSZon. Para
 desistir, cancele no painel do Asaas ou simplesmente não autorize. Pedido
 parado há mais de 1 dia útil avisa quem pediu e o Financeiro; pedido cancelado

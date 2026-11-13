@@ -287,6 +287,11 @@ try {
   // --- 7) o ESTORNO: quem pode ----------------------------------------------------
   const C = await emitida(parcelas[3], 5);
   const pidC = await pagarELiquidar(C, parcelas[3], 1);
+  // Baixa que veio do Asaas não se estorna à mão (decisão do dono, 13/11/2026).
+  const recC = (await um("select receipt_id r from public.charges where id = $1", [C])).r;
+  const manual = await comoPessoa(P.gerente, "select public.reverse_payment_receipt($1, 'tentativa manual do ensaio')", [recC]);
+  conf("o 'Estornar baixa' manual é recusado na baixa que veio do Asaas", typeof manual === "string" && /GATEWAY_RECEIPT/.test(manual));
+  conf("a baixa continua valendo depois da recusa", (await um("select reversed from public.payment_receipts where id = $1", [recC])).reversed === false);
   const chk = (who) => comoPessoa(P[who], "select * from public.charge_refund_check($1, 'motivo do ensaio')", [C]);
   conf("o Franqueado (padrão) pode pedir estorno", Array.isArray(await chk("franqueado")));
   conf("o Gerente NÃO pode, sem a liberação do Admin", (await chk("gerente")) === "recusado");

@@ -1530,6 +1530,36 @@ end;
 $$;
 revoke execute on function public._charge_refund_mobile_cleared(uuid) from public, anon, authenticated;
 
+-- -----------------------------------------------------------------------------
+-- 12) BAIXA QUE VEIO DO ASAAS NÃO SE ESTORNA À MÃO (decisão do dono, 13/11/2026)
+-- -----------------------------------------------------------------------------
+-- O "Estornar baixa" manual desfazia só o riSZon: no Asaas o pagamento
+-- continuava recebido, e a parcela voltava a aceitar cobrança (risco de cobrar
+-- duas vezes). Uma PESSOA logada não estorna a baixa de uma cobrança paga pelo
+-- Asaas; o caminho é o "Pedir estorno". O aviso de estorno do Asaas (servidor,
+-- sem pessoa logada) continua desfazendo a baixa, como sempre.
+create or replace function public._payment_receipt_block_manual_gateway_reversal()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.reversed and not old.reversed and (select auth.uid()) is not null
+     and exists (select 1 from public.charges ch
+                  where ch.receipt_id = old.id and ch.status in ('paga', 'liquidada', 'em_contestacao')) then
+    raise exception 'GATEWAY_RECEIPT';
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public._payment_receipt_block_manual_gateway_reversal() from public, anon, authenticated;
+
+drop trigger if exists payment_receipts_block_manual_gateway_reversal on public.payment_receipts;
+create trigger payment_receipts_block_manual_gateway_reversal
+  before update of reversed on public.payment_receipts
+  for each row execute function public._payment_receipt_block_manual_gateway_reversal();
+
 -- A trilha de auditoria nas tabelas novas.
 select public.audit_attach_all();
 

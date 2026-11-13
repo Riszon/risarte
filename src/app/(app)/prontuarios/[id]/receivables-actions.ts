@@ -589,6 +589,13 @@ export async function reverseReceipt(input: {
     if (m.includes("REASON_REQUIRED")) {
       return { ok: false, error: "Escreva o motivo do estorno." };
     }
+    if (m.includes("GATEWAY_RECEIPT")) {
+      return {
+        ok: false,
+        error:
+          "Esta baixa veio do Asaas: o dinheiro continua recebido lá. Use “Pedir estorno” na cobrança, que devolve no Asaas e desfaz a baixa junto.",
+      };
+    }
     if (m.includes("NOT_ALLOWED")) {
       return {
         ok: false,

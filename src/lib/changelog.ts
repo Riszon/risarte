@@ -83,6 +83,13 @@ export const CHANGELOG: Versao[] = [
         manual: "13g.7. Pedir estorno",
       },
       {
+        tipo: "correcao",
+        texto:
+          "A baixa que veio do Asaas não pode mais ser estornada à mão no histórico de recebimentos: o estorno manual desfazia a baixa só no riSZon, com o dinheiro ainda recebido no Asaas, e a parcela voltava a aceitar cobrança. Agora é pelo \"Pedir estorno\". As baixas do balcão continuam como antes.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.7. Pedir estorno",
+      },
+      {
         tipo: "novidade",
         texto:
           "Central de Configuração → cada unidade → Taxas da franquia: se a unidade emite com split, a fila do split, quem pode pedir estorno e as taxas que valem para ela. O Gerente e o Franqueado veem a da própria unidade; a tela antiga de Taxas da rede saiu.",
