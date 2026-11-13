@@ -1187,4 +1187,5 @@ grant execute on function public.cash_overdue(uuid) to authenticated;
 --   public.account_outside_result('3.3.05') as custas_dentro,
 --   public.account_cash_activity('5.5.02') as atividade,
 --   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
---     where n.nspname = 'public' and pg_get_functiondef(p.oid) like '%account_outside_result(e.account_code)%') as leitores;
+--     where n.nspname = 'public' and (pg_get_functiondef(p.oid) like '%account_outside_result(e.account_code)%'
+--        or pg_get_functiondef(p.oid) like '%account_cash_activity(e.account_code)%')) as leitores;
