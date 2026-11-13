@@ -954,3 +954,28 @@ Percentuais de exemplo **diferentes por taxa e não redondos** (para pegar erro 
 7. **Histórico por cobrança:** na ficha, a cobrança mostra quando o split foi atualizado e por qual motivo (taxa, campanha, destino ou tarifa).
 
 **Mantido:** fila a cada 10 minutos com até 50 cobranças por conta, parando no limite de chamadas.
+
+**Prova do ajuste 1 (13/11/2026, sandbox):** `PUT /payments/{id}` só com o split, em Pix e boleto: link da fatura, PDF do boleto, nosso número, linha digitável, Pix copia e cola, vencimento e valor **iguais**, e **nenhum** `PAYMENT_UPDATED` (de onde nasce o aviso "cobrança alterada"); o boleto não foi registrado de novo. Controle (só o vencimento): veio `PAYMENT_UPDATED` e a linha digitável mudou. **Aprovado pelo Jeferson: a fila segue como planejada.** (`scripts/asaas-prova-split-put-sandbox.mjs --put`)
+
+**Achado do ajuste 4 (13/11/2026, sandbox):** o estorno pedido pela API fica **`AWAITING_CRITICAL_ACTION_AUTHORIZATION`** até alguém da conta autorizar com o código (SMS). Por isso:
+
+#### 18.7.1 O estorno nasce no riSZon (decisão do Jeferson, 13/11/2026)
+
+1. Na ficha do paciente, a pessoa autorizada pede o **estorno total** de uma cobrança paga, com **motivo obrigatório**.
+2. O riSZon envia o pedido ao Asaas pela API. A cobrança fica **"Estorno aguardando autorização"**, com a orientação de autorizar no Asaas (e o link para o lugar certo do painel, se houver).
+3. A pessoa autoriza no Asaas com o código que recebe.
+4. Com o aviso de estorno concluído, o riSZon aplica a **U6**: estorna a baixa e o retido no razão; a taxa volta a ser devida pela unidade (D13), com a dispensa manual do Financeiro e do Admin.
+
+- **O riSZon nunca pede, recebe nem guarda o código de autorização.** A tela diz isso.
+- **Permissão nova "Pedir estorno":** nasce com o Admin Master. Na Central, a unidade indica quem tem o acesso de autorização do Asaas — por padrão o **Franqueado**; o Admin Master pode liberar para o **Gerente** da unidade. Só essas pessoas veem o botão.
+- Estorno **aguardando autorização há mais de 1 dia útil**: aviso a quem pediu e ao Financeiro da Franqueadora. Quem pediu pode **cancelar o pedido** enquanto pendente, se o Asaas permitir.
+- Estorno **recusado ou com falha** (ex.: saldo insuficiente): a cobrança volta para "Paga"; aviso a quem pediu e ao Financeiro.
+- Estorno feito **direto no painel do Asaas** continua tratado pelos avisos, como hoje. Estorno parcial e chargeback continuam à mão.
+- **Auditoria:** pedido, autor, motivo e resultado.
+- **A verificar (documentação e sandbox):** onde o titular autoriza a ação crítica (painel, aplicativo); se o pedido pendente pode ser cancelado pela API; o estorno de boleto (dados bancários do pagador) e de cartão confirmado; os avisos do Asaas em cada etapa. **Prova:** duas cobranças pela conta principal do sandbox (split para a carteira de Londrina, com saldo; e para a do Fundo de teste, sem saldo); o Jeferson autoriza no painel — **o código nunca passa pelo riSZon nem pela sessão**.
+
+#### 18.7.2 Ritmo da fila (decisão do Jeferson, 13/11/2026)
+
+- **150 cobranças por rodada** (10 min), parando no limite de chamadas; **as vencidas e as de vencimento mais próximo primeiro**. Estimativa: unidade com ~3.600 cobranças em aberto (300 contratos × 12 parcelas) → ~4 h no fim da promoção (10/02/2027), usando menos da metade da cota do Asaas.
+- **Diferença causada por mudança de TARIFA do Asaas**, em cobrança paga enquanto ainda estava na fila aguardando atualização, é **absorvida** (sem conta a pagar). Vale **só para tarifa**; mudança de taxa da rede ou de campanha continua na S5.
+- A tela mostra o **andamento da fila por unidade**: quantas faltam e a previsão de término.
