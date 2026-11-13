@@ -409,6 +409,15 @@ Syncthing se comportarem de forma estranha.**
   pelo nome — nunca `SheetNames[0]`.
 
 
+**13/11/2026 (Levantamento de Dívidas — fase 2) — PC Administrador (core 0.442.0 → 0.443.0, migração 0405)**
+
+- **Restrições, propostas, contatos e anexos** (bloco 0.443.0 no ESTADO).
+  ⚠️ **Proposta só cresce** (a nova substitui a ativa; o proposto não muda).
+  ⚠️ **Totais = `totaisDaLista`**: sem proposta não é desconto; proposta e
+  custas de grupo rateadas (`linhasDaLista`). ⚠️ Anexo: pasta privada
+  `dividas`, caminho sem o nome do arquivo, registro por `debt_attach`.
+- ⏳ 0405 só no treino.
+
 **13/11/2026 (Levantamento de Dívidas — fase 1) — PC Administrador (core 0.441.0 → 0.442.0, migração 0404)**
 
 - **As dívidas da REDE com terceiros** (bloco 0.442.0 no ESTADO; plano e

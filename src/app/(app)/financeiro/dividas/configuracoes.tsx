@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { formatCnpj } from "@/lib/masks";
 import { campoDeCentavos, centavosDoCampo } from "@/lib/finance/dividas";
 import {
+  salvarCartorio,
   salvarCategoria,
   salvarEtiqueta,
   salvarImplantacao,
@@ -21,7 +22,7 @@ import {
   salvarRegra,
   voltarARegraDaRede,
 } from "./actions";
-import type { BaseDasDividas, Categoria, Regra } from "./dados";
+import type { BaseDasDividas, Cartorio, Categoria, Regra } from "./dados";
 import { SELECT_CLASS } from "./formulario-da-divida";
 
 const RECONHECIMENTO = [
@@ -77,6 +78,7 @@ export function Configuracoes({ base, podeConfigurar }: { base: BaseDasDividas; 
       <Categorias base={base} executar={executar} />
       <Naturezas base={base} executar={executar} />
       <Etiquetas base={base} executar={executar} />
+      <Cartorios cartorios={base.cartorios} executar={executar} />
     </div>
   );
 }
@@ -94,6 +96,7 @@ function RegraDaRede({ rede, executar }: { rede: Regra | null; executar: Executa
     limite: campoDeCentavos(rede?.agreementApprovalThresholdCents ?? null),
     discount_recognition: rede?.discountRecognition ?? "na_data_do_acordo",
     surcharge_recognition: rede?.surchargeRecognition ?? "na_data_do_acordo",
+    stale_check_days: ou(rede?.staleCheckDays ?? 60),
   });
   const muda = (p: Partial<typeof v>) => setV((x) => ({ ...x, ...p }));
   const campo = (rotulo: string, chave: keyof typeof v, ajuda?: string) => (
@@ -119,6 +122,7 @@ function RegraDaRede({ rede, executar }: { rede: Regra | null; executar: Executa
         agreement_approval_threshold_cents: limite,
         discount_recognition: v.discount_recognition,
         surcharge_recognition: v.surcharge_recognition,
+        stale_check_days: v.stale_check_days,
       }), "Regra da rede salva. A situação das dívidas foi recalculada."
     );
   };
@@ -136,6 +140,7 @@ function RegraDaRede({ rede, executar }: { rede: Regra | null; executar: Executa
         {campo("Prazo para a baixa da negativação (dias úteis)", "negativation_removal_bdays")}
         {campo("Checklist de encerramento parado (dias)", "closing_stale_days")}
         {campo("Tolerância para acordo quebrado (dias úteis)", "agreement_broken_tolerance_bdays", "Cada acordo pode ter a sua, conforme o termo.")}
+        {campo("Pedir nova conferência depois de (dias)", "stale_check_days", "Selo “Conferir” na dívida conferida há mais tempo.")}
         <label className="block">
           <Label className="text-[11px]">Acordo acima de (R$) precisa de aprovação do Admin Master</Label>
           <Input className="h-9" inputMode="decimal" placeholder="vazio = desligado" value={v.limite} onChange={(e) => muda({ limite: e.target.value.replace(/[^\d.,]/g, "") })} />
@@ -457,6 +462,91 @@ function Etiquetas({ base, executar }: { base: BaseDasDividas; executar: Executa
           </li>
         ))}
       </ul>
+    </Secao>
+  );
+}
+
+function Cartorios({ cartorios, executar }: { cartorios: Cartorio[]; executar: Executar }) {
+  const [edit, setEdit] = useState<{ id: string | null; nome: string; cidade: string; uf: string; telefone: string; email: string; ativo: boolean } | null>(null);
+  const abrir = (c: Cartorio | null) =>
+    setEdit({
+      id: c?.id ?? null,
+      nome: c?.nome ?? "",
+      cidade: c?.cidade ?? "",
+      uf: c?.uf ?? "",
+      telefone: c?.telefone ?? "",
+      email: c?.email ?? "",
+      ativo: c?.ativo ?? true,
+    });
+  const salvar = () => {
+    if (!edit?.nome.trim()) return toast.error("Informe o nome do cartório.");
+    executar(async () => {
+      const r = await salvarCartorio({
+        id: edit.id,
+        name: edit.nome,
+        city: edit.cidade,
+        state: edit.uf,
+        phone: edit.telefone,
+        email: edit.email,
+        active: edit.ativo,
+      });
+      if (r.ok) setEdit(null);
+      return r;
+    }, "Cartório salvo.");
+  };
+  return (
+    <Secao titulo="Cartórios de protesto" descricao="Cadastrados uma vez e escolhidos nos protestos. Também dá para cadastrar na hora, no protesto.">
+      {cartorios.length === 0 && <p className="text-sm text-muted-foreground">Nenhum cartório cadastrado.</p>}
+      <ul className="space-y-1 text-sm">
+        {cartorios.map((c) => (
+          <li key={c.id} className={cn("flex flex-wrap items-center gap-2", !c.ativo && "opacity-60")}>
+            <button type="button" className="hover:underline" onClick={() => abrir(c)}>
+              {c.nome}
+            </button>
+            <span className="text-xs text-muted-foreground">{[[c.cidade, c.uf].filter(Boolean).join("/"), c.telefone, c.email].filter(Boolean).join(" · ")}</span>
+            {!c.ativo && <span className="text-xs">(desativado)</span>}
+          </li>
+        ))}
+      </ul>
+      {edit && (
+        <div className="grid gap-2 rounded-md border bg-muted/30 p-2 text-sm sm:grid-cols-3">
+          <label className="block sm:col-span-2">
+            <Label className="text-[11px]">Nome *</Label>
+            <Input className="h-9" value={edit.nome} onChange={(e) => setEdit({ ...edit, nome: e.target.value })} />
+          </label>
+          <label className="block">
+            <Label className="text-[11px]">Cidade</Label>
+            <Input className="h-9" value={edit.cidade} onChange={(e) => setEdit({ ...edit, cidade: e.target.value })} />
+          </label>
+          <label className="block">
+            <Label className="text-[11px]">UF</Label>
+            <Input className="h-9" value={edit.uf} onChange={(e) => setEdit({ ...edit, uf: e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2) })} />
+          </label>
+          <label className="block">
+            <Label className="text-[11px]">Telefone</Label>
+            <Input className="h-9" inputMode="tel" value={edit.telefone} onChange={(e) => setEdit({ ...edit, telefone: e.target.value })} />
+          </label>
+          <label className="block">
+            <Label className="text-[11px]">E-mail</Label>
+            <Input className="h-9" inputMode="email" value={edit.email} onChange={(e) => setEdit({ ...edit, email: e.target.value })} />
+          </label>
+          {edit.id && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" className="accent-primary" checked={edit.ativo} onChange={(e) => setEdit({ ...edit, ativo: e.target.checked })} />
+              Ativo
+            </label>
+          )}
+          <div className="flex justify-end gap-2 sm:col-span-3">
+            <Button size="sm" variant="ghost" onClick={() => setEdit(null)}>Cancelar</Button>
+            <Button size="sm" onClick={salvar}>Salvar</Button>
+          </div>
+        </div>
+      )}
+      {!edit && (
+        <Button size="sm" variant="outline" onClick={() => abrir(null)}>
+          <Plus className="size-4" /> Novo cartório
+        </Button>
+      )}
     </Secao>
   );
 }

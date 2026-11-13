@@ -225,6 +225,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   debt_delete: "Dívida da rede excluída",
   debt_stage: "Situação da dívida",
   debt_category: "Categoria de dívida",
+  debt_proposal: "Proposta de quitação de dívida",
+  debt_attachment: "Anexo de dívida",
   purchase_request: "Requisição de compra",
   purchase_request_send: "Requisição de compra enviada",
   purchase_round: "Rodada de compra",

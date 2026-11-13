@@ -2,6 +2,37 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏦 0.443.0 — LEVANTAMENTO DE DÍVIDAS, FASE 2: RESTRIÇÕES, PROPOSTAS, CONTATOS E ANEXOS (13/11/2026; migração 0405)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (fase 2). No detalhe da dívida:
+> abas Restrições, Propostas, Contatos e Anexos; botões Registrar proposta,
+> Registrar contato e Conferida hoje. Na lista: selos, filtros por restrição e
+> proposta, coluna da proposta e os totais da regra 3.9.2. Manual 2.3; EV-339.
+> - ⚠️ **Proposta só cresce** (`debt_proposals_lock`): a nova substitui a ativa
+>   (`debt_save_proposal`; índices de uma ativa por dívida/grupo); aceitar é da
+>   fase 5. A rotina diária expira a vencida (`debt_daily_run` recriada).
+> - ⚠️ **Proposta e custas de GRUPO são rateadas** entre as dívidas
+>   (`linhasDaLista` + `ratear`): os totais respeitam o filtro. Dívida sem
+>   proposta NÃO entra na economia (`totaisDaLista`, régua da 3.9.2).
+> - ⚠️ **Restrição lançada por engano = `debt_remove_record`** (lógico, com
+>   motivo); contato com o credor só cresce (`debt_contacts_immutable`).
+> - ⚠️ **Anexos na pasta privada `dividas`**, caminho `<dívida>/<uuid>.<ext>`
+>   (sem o nome do arquivo); o navegador envia (regra `dividas_insert` =
+>   `debt_can_attach`), `debt_attach` registra conferindo o arquivo; ninguém
+>   apaga da pasta. Abrir = link assinado de 10 min (`linkDoAnexo`).
+> - Histórico (`debt_history`, recriada) inclui a trilha de restrições,
+>   protestos, anexos e propostas. `debts.last_checked_on` +
+>   `debt_settings.stale_check_days` (60) = selo "Conferir".
+> - Ensaio `scripts/dividas-ensaio-0405.mjs --confirmar` 45/45; `--quebrar` →
+>   14 falhas. 0405 no treino (`migrar:teste`, e reaplicada depois de incluir
+>   as propostas no histórico — antes da produção). Visto na tela (Financeiro
+>   de teste, DV-000011). Resíduo no treino: a DV-000011 com negativação,
+>   protesto, duas propostas, um contato, um PDF de teste e o cartório
+>   "Tabelionato de Protesto TESTE (pode apagar)".
+> - ⏳ **0405 só no treino.** Produção: o dono roda; conferência no fim do
+>   arquivo (`18 · 60 · true · 0`). Próxima: **fase 3** (Contas a Pagar), com
+>   OK do dono.
+>
 > ## 🏦 0.442.0 — LEVANTAMENTO DE DÍVIDAS, FASE 1: A BASE (13/11/2026; migração 0404)
 >
 > Pedido do dono: `docs/prompts/prompt-riszon-levantamento-dividas.md`. Plano,

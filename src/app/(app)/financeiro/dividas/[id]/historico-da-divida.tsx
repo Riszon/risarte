@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatBrDateTime } from "@/lib/dates";
 import { camposDaAlteracao, type Alteracao, type Autor } from "@/lib/auditoria-alteracoes";
+import { TABELAS } from "@/lib/auditoria-catalogo";
 import {
   DEBT_TYPE_LABELS,
   MANUAL_STAGES,
@@ -17,7 +18,10 @@ import {
 import { carregarHistorico, type LinhaDoHistorico } from "../actions";
 
 /** Campos que não dizem nada: quem/quando já aparece na linha. */
-const RUIDO = new Set(["updated_at", "updated_by", "created_at", "created_by", "id", "status_changed_at", "debt_id"]);
+const RUIDO = new Set([
+  "updated_at", "updated_by", "created_at", "created_by", "id", "status_changed_at", "debt_id",
+  "removed_by", "uploaded_by", "uploaded_at", "path", "status_changed_by",
+]);
 
 const EVENTOS: Record<string, string> = {
   criada: "Cadastrou a dívida",
@@ -25,6 +29,15 @@ const EVENTOS: Record<string, string> = {
   situacao: "A situação mudou",
   situacao_automatica: "A situação mudou sozinha (o prazo passou)",
   etapa_manual: "Mudou a situação à mão",
+  negativacao: "Lançou uma negativação",
+  protesto: "Lançou um protesto",
+  acao_judicial: "Lançou uma ação judicial",
+  notificacao: "Lançou uma notificação extrajudicial",
+  proposta: "Registrou uma proposta",
+  proposta_recusada: "Marcou a proposta como recusada",
+  proposta_expirada: "A proposta expirou",
+  anexo: "Anexou um documento",
+  registro_removido: "Removeu um registro lançado por engano",
 };
 
 const STAGE_LABEL = (v: unknown) =>
@@ -115,7 +128,7 @@ export function HistoricoDaDivida({ debtId, nomesDe }: { debtId: string; nomesDe
           actor: l.actor as Autor,
           auth_session_id: null,
           schema_name: "public",
-          table_name: "debts",
+          table_name: l.tableName ?? "debts",
           op: l.op ?? "U",
           row_id: null,
           row_label: null,
@@ -129,7 +142,11 @@ export function HistoricoDaDivida({ debtId, nomesDe }: { debtId: string; nomesDe
         return (
           <li key={`a${i}`} className="rounded-md border p-2">
             <p className="text-xs text-muted-foreground">{quando} · {quem}</p>
-            <p className="font-medium">{l.op === "I" ? "Dados do cadastro" : l.op === "D" ? "Apagou" : "Alterou"}</p>
+            <p className="font-medium">
+              {l.tableName && l.tableName !== "debts"
+                ? `${l.op === "I" ? "Lançou" : l.op === "D" ? "Apagou" : "Alterou"} · ${TABELAS[`public.${l.tableName}`] ?? l.tableName}`
+                : l.op === "I" ? "Dados do cadastro" : l.op === "D" ? "Apagou" : "Alterou"}
+            </p>
             <ul className="mt-1 space-y-0.5 text-xs">
               {campos.map((c) => (
                 <li key={c.campo}>

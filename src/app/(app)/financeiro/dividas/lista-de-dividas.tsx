@@ -22,7 +22,9 @@ import {
   STATUS_LABELS,
   STATUS_TONE,
   diasEmAtraso,
+  descontoDaProposta,
   filtrarDividas,
+  selosDaDivida,
   ordenarDividas,
   totaisDaLista,
   valorDevido,
@@ -42,11 +44,13 @@ export function ListaDeDividas({
   base,
   linhas,
   hoje,
+  prazos,
   podeLancar,
 }: {
   base: BaseDasDividas;
   linhas: DebtListRow[];
   hoje: string;
+  prazos: { alertaDaProposta: number; conferencia: number };
   podeLancar: boolean;
 }) {
   const [filtros, setFiltros] = useState<DebtFilters>(FILTROS_VAZIOS);
@@ -56,8 +60,8 @@ export function ListaDeDividas({
 
   const muda = (p: Partial<DebtFilters>) => setFiltros((f) => ({ ...f, ...p }));
   const visiveis = useMemo(
-    () => ordenarDividas(filtrarDividas(linhas, filtros, hoje), ordem),
-    [linhas, filtros, hoje, ordem]
+    () => ordenarDividas(filtrarDividas(linhas, filtros, hoje, prazos), ordem),
+    [linhas, filtros, hoje, ordem, prazos]
   );
   const totais = totaisDaLista(visiveis);
   const algumFiltro = Object.values(filtros).some((v) => v !== "");
@@ -102,6 +106,18 @@ export function ListaDeDividas({
           (v) => muda({ faixa: v }),
           [{ value: "a_vencer", label: "Ainda não venceu" }, ...AGING_BANDS.map((b) => ({ value: b, label: AGING_LABELS[b] }))]
         )}
+        {filtro("Restrição", filtros.restricao, (v) => muda({ restricao: v }), [
+          { value: "alguma", label: "Com alguma restrição" },
+          { value: "negativada", label: "Negativada" },
+          { value: "protestada", label: "Protestada" },
+          { value: "judicial", label: "Com ação judicial" },
+          { value: "nenhuma", label: "Sem restrição" },
+        ])}
+        {filtro("Proposta", filtros.proposta, (v) => muda({ proposta: v }), [
+          { value: "com", label: "Com proposta ativa" },
+          { value: "sem", label: "Sem proposta" },
+          { value: "vencendo", label: "Proposta vencendo" },
+        ])}
         <label className="block min-w-48">
           <Label className="text-[11px]">Ordenar por</Label>
           <select className={SELECT_CLASS} value={ordem} onChange={(e) => setOrdem(e.target.value as Ordenacao)}>
@@ -136,6 +152,10 @@ export function ListaDeDividas({
           {filtro("Etiqueta", filtros.etiqueta, (v) => muda({ etiqueta: v }), base.etiquetas.map((t) => ({ value: t.id, label: t.nome })))}
           {filtro("Prioridade", filtros.prioridade, (v) => muda({ prioridade: v }), PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABELS[p] })))}
           {filtro("Responsável", filtros.responsavel, (v) => muda({ responsavel: v }), base.responsaveis.map((p) => ({ value: p.id, label: p.nome })))}
+          <label className="flex items-center gap-2 self-end pb-2 text-sm">
+            <input type="checkbox" className="accent-primary" checked={filtros.conferir === "1"} onChange={(e) => muda({ conferir: e.target.checked ? "1" : "" })} />
+            Só as que pedem conferência
+          </label>
           <label className="block">
             <Label className="text-[11px]">Vence de</Label>
             <Input className="h-9" type="date" value={filtros.vencimentoDe} onChange={(e) => muda({ vencimentoDe: e.target.value })} />
@@ -165,11 +185,14 @@ export function ListaDeDividas({
                 <th className="px-2 py-2">Vencimento</th>
                 <th className="px-2 py-2">Situação</th>
                 <th className="px-2 py-2 text-right">Valor devido</th>
+                <th className="px-2 py-2 text-right">Proposta</th>
               </tr>
             </thead>
             <tbody>
               {visiveis.map((r) => {
                 const atraso = diasEmAtraso(r.dueDate, hoje);
+                const selos = selosDaDivida(r, hoje, prazos);
+                const desconto = descontoDaProposta(valorDevido(r), r.propostaCents);
                 return (
                   <tr key={r.id} className="border-t align-top hover:bg-muted/30">
                     <td className="whitespace-nowrap px-2 py-2">
@@ -184,13 +207,11 @@ export function ListaDeDividas({
                       <span className="block text-[11px] text-muted-foreground">
                         {[r.contractNumber, r.installmentLabel, r.description].filter(Boolean).join(" · ")}
                       </span>
-                      {(r.tagIds.length > 0 || r.needsSplit) && (
+                      {(r.tagIds.length > 0 || selos.length > 0) && (
                         <span className="mt-0.5 flex flex-wrap gap-1">
-                          {r.needsSplit && (
-                            <span className="rounded bg-amber-100 px-1.5 text-[10px] text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
-                              Desdobrar{r.bundledCount > 1 ? ` (${r.bundledCount})` : ""}
-                            </span>
-                          )}
+                          {selos.map((x) => (
+                            <span key={x.codigo} className={cn("rounded px-1.5 text-[10px] font-medium", x.tom)}>{x.rotulo}</span>
+                          ))}
                           {r.tagIds.map((t) => (
                             <span key={t} className="rounded bg-muted px-1.5 text-[10px]">{nomeDaEtiqueta.get(t) ?? "etiqueta"}</span>
                           ))}
@@ -206,12 +227,26 @@ export function ListaDeDividas({
                       {r.priority && <span className="block text-[11px] text-muted-foreground">Prioridade {PRIORITY_LABELS[r.priority].toLowerCase()}</span>}
                     </td>
                     <td className="whitespace-nowrap px-2 py-2 text-right tabular-nums">{formatBRL(valorDevido(r))}</td>
+                    <td className="whitespace-nowrap px-2 py-2 text-right tabular-nums">
+                      {r.propostaCents === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <>
+                          {formatBRL(r.propostaCents)}
+                          {desconto !== null && (
+                            <span className={cn("block text-[11px]", desconto < 0 ? "text-destructive" : "text-muted-foreground")}>
+                              {desconto < 0 ? "acima da dívida" : `${Math.round(desconto * 100)}% de desconto`}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {visiveis.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-2 py-6 text-center text-muted-foreground">
                     Nenhuma dívida com esses filtros.
                   </td>
                 </tr>
@@ -225,13 +260,35 @@ export function ListaDeDividas({
                   {totais.contestadaJudicialCents > 0 && ` · contestadas/judiciais ${formatBRL(totais.contestadaJudicialCents)}`}
                 </td>
                 <td className="whitespace-nowrap px-2 py-2 text-right font-semibold tabular-nums">{formatBRL(totais.devidoCents)}</td>
+                <td className="whitespace-nowrap px-2 py-2 text-right font-semibold tabular-nums">{formatBRL(totais.propostasCents)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
       )}
+      {linhas.length > 0 && (
+        <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              r: "Economia potencial",
+              v: formatBRL(totais.economiaCents),
+              d: totais.descontoMedio === null ? "nenhuma dívida com proposta" : `desconto médio de ${Math.round(totais.descontoMedio * 100)}% (só onde há proposta)`,
+            },
+            { r: "Sem proposta", v: formatBRL(totais.semPropostaCents), d: "pendência de negociação — não conta como desconto" },
+            { r: "Estimado para regularizar", v: formatBRL(totais.estimadoCents), d: "proposta, quando há; senão o valor devido" },
+            { r: "Custo total para regularizar", v: formatBRL(totais.custoTotalCents), d: `estimado + ${formatBRL(totais.custasCents)} de custas de cartório` },
+          ].map((c) => (
+            <div key={c.r} className="rounded-lg border p-3">
+              <p className="text-[11px] text-muted-foreground">{c.r}</p>
+              <p className="text-lg font-semibold tabular-nums">{c.v}</p>
+              <p className="text-[11px] text-muted-foreground">{c.d}</p>
+            </div>
+          ))}
+        </div>
+      )}
       <p className="text-[11px] text-muted-foreground">
-        Valor devido = o valor atualizado informado, senão o original. Pagamentos, propostas e economia entram nas próximas fases.
+        Valor devido = o valor atualizado informado, senão o original. Os totais respeitam os filtros; a
+        proposta de um grupo é repartida entre as dívidas dele. Pagamentos entram na próxima fase.
       </p>
 
       {novo && <FormularioDaDivida base={base} inicial={null} aberto={novo} onFechar={() => setNovo(false)} />}

@@ -230,3 +230,95 @@ export async function carregarHistorico(id: string): Promise<{ ok: boolean; linh
     })),
   };
 }
+
+// ------------------------------------------------------------- fase 2 (0405)
+
+async function porta(fn: string, args: Record<string, unknown>, padrao: string, refazer?: string): Promise<Result> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(fn, args);
+  if (error) {
+    console.error(`${fn} failed:`, error.message);
+    return { ok: false, error: mensagem(error, padrao) };
+  }
+  refresh(refazer);
+  return { ok: true, id: data === null || data === undefined ? undefined : String(data) };
+}
+
+export async function salvarNegativacao(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  return porta("debt_save_negativation", { p }, "Não foi possível salvar a negativação.", debtId);
+}
+
+export async function salvarProtesto(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  return porta("debt_save_protest", { p }, "Não foi possível salvar o protesto.", debtId);
+}
+
+export async function salvarAcaoJudicial(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  return porta("debt_save_lawsuit", { p }, "Não foi possível salvar a ação judicial.", debtId);
+}
+
+export async function salvarNotificacao(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  return porta("debt_save_notice", { p }, "Não foi possível salvar a notificação.", debtId);
+}
+
+export async function salvarCartorio(p: Record<string, unknown>): Promise<Result> {
+  return porta("debt_save_notary_office", { p }, "Não foi possível salvar o cartório.");
+}
+
+export async function removerRegistro(
+  debtId: string,
+  tipo: "negativacao" | "protesto" | "acao_judicial" | "notificacao" | "anexo",
+  id: string,
+  motivo: string
+): Promise<Result> {
+  if (motivo.trim().length < 5) return { ok: false, error: "Escreva o motivo da remoção." };
+  return porta("debt_remove_record", { p_kind: tipo, p_id: id, p_reason: motivo }, "Não foi possível remover.", debtId);
+}
+
+export async function registrarProposta(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  const r = await porta("debt_save_proposal", { p }, "Não foi possível registrar a proposta.", debtId);
+  if (r.ok && r.id) await logAudit({ action: "create", entityType: "debt_proposal", entityId: r.id });
+  return r;
+}
+
+export async function mudarSituacaoDaProposta(
+  debtId: string,
+  id: string,
+  situacao: "recusada" | "expirada",
+  motivo: string
+): Promise<Result> {
+  return porta("debt_set_proposal_status", { p_id: id, p_status: situacao, p_reason: motivo }, "Não foi possível mudar a proposta.", debtId);
+}
+
+export async function registrarContato(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  return porta("debt_log_contact", { p }, "Não foi possível registrar o contato.", debtId);
+}
+
+export async function marcarConferida(debtId: string, data: string | null): Promise<Result> {
+  return porta("debt_mark_checked", { p_debt_id: debtId, p_date: data }, "Não foi possível marcar a conferência.", debtId);
+}
+
+/** Registra o arquivo que o navegador já enviou para a pasta `dividas`. */
+export async function registrarAnexo(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  const r = await porta("debt_attach", { p: { ...p, debt_id: debtId } }, "Não foi possível registrar o anexo.", debtId);
+  if (r.ok && r.id) await logAudit({ action: "create", entityType: "debt_attachment", entityId: r.id });
+  return r;
+}
+
+/**
+ * Link de uso curto (10 min) para abrir um anexo. Gerado com a sessão da
+ * pessoa: a regra da pasta só entrega o arquivo de dívida que ela vê.
+ */
+export async function linkDoAnexo(anexoId: string): Promise<{ ok: boolean; url?: string; error?: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data: a, error } = await supabase.from("debt_attachments").select("path, debt_id").eq("id", anexoId).maybeSingle();
+  if (error || !a) return { ok: false, error: "Anexo não encontrado." };
+  const { data, error: e2 } = await supabase.storage.from("dividas").createSignedUrl(a.path as string, 600);
+  if (e2 || !data) {
+    console.error("linkDoAnexo failed:", e2?.message);
+    return { ok: false, error: "Não foi possível abrir o anexo." };
+  }
+  await logAudit({ action: "view", entityType: "debt_attachment", entityId: anexoId });
+  return { ok: true, url: data.signedUrl };
+}

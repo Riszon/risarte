@@ -3,9 +3,9 @@
 Pedido do dono: `docs/prompts/prompt-riszon-levantamento-dividas.md` (13/11/2026).
 
 **Situação:** plano **aprovado pelo dono em 13/11/2026, com ajustes** (seção 6
-traz cada decisão como ficou). Fases 0 e 1 entregues (1 = 0.442.0, migração
-0404, bloco no `ESTADO_DO_PROJETO.md`); **a fase 2 só começa com novo OK do
-dono.** Uma fase por vez. A carga real da planilha só acontece na
+traz cada decisão como ficou). Fases 0, 1 e 2 entregues (1 = 0.442.0,
+migração 0404; 2 = 0.443.0, migração 0405; blocos no `ESTADO_DO_PROJETO.md`);
+**a fase 3 só começa com novo OK do dono.** Uma fase por vez. A carga real da planilha só acontece na
 fase 4, depois que o dono confirmar as pendências dela.
 
 > **Dado real fica fora.** Este documento não traz nome de credor, valor nem
@@ -551,7 +551,7 @@ o próprio acordo (o Admin Master que registra precisa de outro Admin).
 |---|---|---|
 | **0. Preparo** ✅ | `_dados_importacao/` no `.gitignore` (commit `aab08519`); decisões registradas; CNPJs conferidos (seção 7) | — |
 | **1. Base** ✅ 0.442.0 | Configurações (categorias, subcategorias, naturezas, etiquetas, regra de inadimplência, tolerância, valor de aprovação, reconhecimento, data de implantação), credores (fornecedor + contatos de cobrança), cadastro/edição/exclusão lógica (origem gravada, ainda **sem gerar título**), grupos e "dívidas reunidas", situação + rotina diária, lista com filtros e totais, detalhe (Dados, Contatos, Histórico), auditoria, permissões e RLS | 0404 |
-| **2. Restrições, propostas e anexos** | Negativação, protesto (cartórios), judicial, notificação, histórico de propostas, anexos (bucket `dividas`), linha do tempo de contatos, selos, **data da última conferência** (sug. 2) | 0405 |
+| **2. Restrições, propostas e anexos** ✅ 0.443.0 | Negativação, protesto (cartórios), judicial, notificação, histórico de propostas, anexos (bucket `dividas`), linha do tempo de contatos, selos, **data da última conferência** (sug. 2) | 0405 |
 | **3. Integração com Contas a Pagar** | Contas novas (5.5.01, 5.5.02, 4.1.03, custas — "a validar com o contador"); **regra única "fora do resultado"** em todos os leitores do razão + **régua obrigatória** (incluindo indicadores da unidade inalterados e RLS do D1); `payables.debt_*` e situação `renegociada`; origens A/B/C com resumo do impacto e **sugestão de C por duplicidade**; gerar os títulos das dívidas já cadastradas; **selo e filtro "saldo de implantação"** (sug. 6) e **vencidas sem aviso por título** (linha única por CNPJ); Registrar pagamento pela dívida; edição/estorno; fluxo de caixa com **linha própria "Dívidas"** e faixa **vencido não pago**; relatório de saldo de abertura | 0406 |
 | **4. Importação** | Mapeamento + modelos, planilha-modelo, conferência, duplicidade (arquivo, dívidas e Contas a Pagar), origem pela coluna, "Grupo de dívidas", protestos, criação de credores/categorias, lote/desfazer, conferência por CNPJ, **etiqueta automática** (sug. 7), **tela Qualidade dos dados** (sug. 1); **fotografia mensal começa aqui**. Carga real só depois do OK do dono sobre as pendências da planilha | 0407 |
 | **5. Renegociação e encerramento** | Renegociar (3.2), parcelas como títulos, desconto/encargos com as duas formas de reconhecimento, **aprovação acima do valor**, aviso de parcela em atraso, **acordo quebrado com tolerância** (rede e por acordo), **credor restabeleceu a dívida** (estorno com data de hoje), desfazer, checklist de encerramento, aba Acordos | 0408 |

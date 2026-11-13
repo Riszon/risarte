@@ -19,6 +19,14 @@ import {
   situacaoDaDivida,
   totaisDaLista,
   type DebtListRow,
+  ANEXO_MAX_BYTES,
+  ANEXO_TIPOS,
+  descontoDaProposta,
+  faltaNaProposta,
+  pedeConferencia,
+  propostaVencendo,
+  ratear,
+  selosDaDivida,
 } from "@/lib/finance/dividas";
 
 const SQL = readFileSync("supabase/migrations/0404_dividas_base.sql", "utf8").replace(/\r\n/g, "\n");
@@ -159,7 +167,8 @@ describe("lista, filtros e totais", () => {
     natureCode: null, tagIds: [], status: "em_atraso", dueDate: "2026-11-01", originalCents: 1000,
     updatedCents: null, priority: null, ownerUserId: null, origin: "A", contractNumber: null,
     description: null, installmentLabel: null, needsSplit: false, bundledCount: 1, groupCode: null,
-    nextAction: null, nextActionOn: null, ...o,
+    nextAction: null, nextActionOn: null, negativada: false, protestada: false, judicial: false,
+    propostaCents: null, propostaValidade: null, custasCents: 0, lastCheckedOn: "2026-11-01", ...o,
   });
   const rows = [
     linha({ code: "DV-000001", updatedCents: 5000, priority: "baixa" }),
@@ -179,6 +188,23 @@ describe("lista, filtros e totais", () => {
   it("ordena por valor (o atualizado vale mais que o original) e por prioridade", () => {
     expect(ordenarDividas(rows, "valor").map((r) => r.code)).toEqual(["DV-000001", "DV-000002", "DV-000003"]);
     expect(ordenarDividas(rows, "prioridade")[0].code).toBe("DV-000002");
+  });
+
+  it("filtra por restrição, proposta e conferência", () => {
+    const hoje = "2026-11-20";
+    const rs = [
+      linha({ code: "A", negativada: true, propostaCents: 500, propostaValidade: "2026-11-25" }),
+      linha({ code: "B", protestada: true, lastCheckedOn: null }),
+      linha({ code: "C", judicial: true, propostaCents: 100, propostaValidade: "2026-12-30" }),
+    ];
+    const cods = (f: Partial<typeof FILTROS_VAZIOS>) =>
+      filtrarDividas(rs, { ...FILTROS_VAZIOS, ...f }, hoje).map((r) => r.code);
+    expect(cods({ restricao: "negativada" })).toEqual(["A"]);
+    expect(cods({ restricao: "alguma" })).toEqual(["A", "B", "C"]);
+    expect(cods({ restricao: "nenhuma" })).toEqual([]);
+    expect(cods({ proposta: "sem" })).toEqual(["B"]);
+    expect(cods({ proposta: "vencendo" })).toEqual(["A"]);
+    expect(cods({ conferir: "1" })).toEqual(["B"]);
   });
 
   it("totais: devido usa o atualizado quando há; contestada/judicial em subtotal à parte (D17)", () => {
@@ -225,5 +251,107 @@ describe("as permissões do módulo — tela e banco iguais, e o teto", () => {
     for (const f of grants) {
       expect(SQL).toMatch(new RegExp(`revoke execute on function ${f.replace(".", "\\.")}\\([^)]*\\) from public, anon, authenticated`));
     }
+  });
+});
+
+describe("propostas, rateio e selos (fase 2)", () => {
+  const base = (o: Partial<DebtListRow>): DebtListRow => ({
+    id: "x", code: "DV-1", clinicId: "c", clinicName: "C", supplierId: "s", supplierName: "S", supplierKind: null,
+    categoryId: null, subcategoryId: null, natureCode: null, tagIds: [], status: "em_atraso", dueDate: "2026-11-01",
+    originalCents: null, updatedCents: null, priority: null, ownerUserId: null, origin: "A", contractNumber: null,
+    description: null, installmentLabel: null, needsSplit: false, bundledCount: 1, groupCode: null, nextAction: null,
+    nextActionOn: null, negativada: false, protestada: false, judicial: false, propostaCents: null,
+    propostaValidade: null, custasCents: 0, lastCheckedOn: "2026-11-15", ...o,
+  });
+
+  it("DÍVIDA SEM PROPOSTA NÃO É 100% DE DESCONTO (3.9.2, o erro da planilha original)", () => {
+    const t = totaisDaLista([
+      base({ updatedCents: 100_000, propostaCents: 60_000 }),
+      base({ updatedCents: 200_000, propostaCents: null }),
+    ]);
+    expect(t.devidoCents).toBe(300_000);
+    expect(t.propostasCents).toBe(60_000);
+    expect(t.economiaCents).toBe(40_000); // não 240.000
+    expect(t.descontoMedio).toBeCloseTo(0.4);
+    expect(t.semPropostaCents).toBe(200_000);
+    expect(t.estimadoCents).toBe(260_000); // proposta + devido sem proposta
+  });
+
+  it("custo total para regularizar = estimado + custas do cartório", () => {
+    expect(totaisDaLista([base({ updatedCents: 100_000, propostaCents: 50_000, custasCents: 12_000 })]).custoTotalCents).toBe(62_000);
+  });
+
+  it("proposta maior que a dívida dá economia negativa (aparece, não some)", () => {
+    expect(totaisDaLista([base({ updatedCents: 50_000, propostaCents: 64_000 })]).economiaCents).toBe(-14_000);
+  });
+
+  it("sem proposta nenhuma, desconto médio é nulo (não zero)", () => {
+    expect(totaisDaLista([base({ updatedCents: 1000 })]).descontoMedio).toBeNull();
+    expect(descontoDaProposta(1000, null)).toBeNull();
+    expect(descontoDaProposta(1000, 750)).toBeCloseTo(0.25);
+  });
+
+  it("rateio: proporcional, a última parte absorve o resíduo, a soma bate", () => {
+    expect(ratear(100, [1, 1, 1])).toEqual([33, 33, 34]);
+    expect(ratear(120_000, [30_000, 70_000])).toEqual([36_000, 84_000]);
+    expect(ratear(99_999, [12_345, 67_890, 1]).reduce((a, b) => a + b, 0)).toBe(99_999);
+    expect(ratear(10, [0, 0])).toEqual([5, 5]);
+    expect(ratear(10, [])).toEqual([]);
+  });
+
+  it("proposta vencendo: dentro do aviso; vencida ou sem validade, não", () => {
+    const hoje = "2026-11-20";
+    expect(propostaVencendo({ propostaCents: 1, propostaValidade: "2026-11-27" }, hoje, 7)).toBe(true);
+    expect(propostaVencendo({ propostaCents: 1, propostaValidade: "2026-11-28" }, hoje, 7)).toBe(false);
+    expect(propostaVencendo({ propostaCents: 1, propostaValidade: "2026-11-19" }, hoje, 7)).toBe(false);
+    expect(propostaVencendo({ propostaCents: 1, propostaValidade: null }, hoje, 7)).toBe(false);
+    expect(propostaVencendo({ propostaCents: null, propostaValidade: "2026-11-21" }, hoje, 7)).toBe(false);
+  });
+
+  it("conferência: nunca conferida ou há mais de N dias pede conferir", () => {
+    expect(pedeConferencia(null, "2026-11-20", 60)).toBe(true);
+    expect(pedeConferencia("2026-09-21", "2026-11-20", 60)).toBe(false); // 60 dias
+    expect(pedeConferencia("2026-09-20", "2026-11-20", 60)).toBe(true);
+  });
+
+  it("selos na ordem da tela", () => {
+    const s = selosDaDivida(
+      base({ negativada: true, protestada: true, judicial: true, propostaCents: 1, propostaValidade: "2026-11-21", needsSplit: true, bundledCount: 3, lastCheckedOn: null }),
+      "2026-11-20",
+      { alertaDaProposta: 7, conferencia: 60 }
+    );
+    expect(s.map((x) => x.rotulo)).toEqual(["Negativada", "Protestada", "Judicial", "Proposta vencendo", "Desdobrar (3)", "Nunca conferida"]);
+  });
+
+  it("proposta: valor, parcelas e validade", () => {
+    const hoje = "2026-11-20";
+    expect(faltaNaProposta({ valor: "1.000,00", tipo: "a_vista", parcelas: "", validade: "", hoje })).toBeNull();
+    expect(faltaNaProposta({ valor: "", tipo: "a_vista", parcelas: "", validade: "", hoje })).toMatch(/valor/);
+    expect(faltaNaProposta({ valor: "100", tipo: "parcelado", parcelas: "", validade: "", hoje })).toMatch(/parcelas/);
+    expect(faltaNaProposta({ valor: "100", tipo: "a_vista", parcelas: "", validade: "2026-11-19", hoje })).toMatch(/passou/);
+  });
+});
+
+describe("0405 — tela e banco", () => {
+  const SQL5 = readFileSync("supabase/migrations/0405_dividas_restricoes_propostas_anexos.sql", "utf8").replace(/\r\n/g, "\n");
+
+  it("nenhuma tabela nova tem regra de escrita; na pasta, só enviar (nunca apagar)", () => {
+    const pol = [...SQL5.matchAll(/create policy "([^"]+)" on (public\.debt\w*|storage\.objects)\s+for (\w+)/gi)];
+    expect(pol.filter((p) => p[3].toLowerCase() !== "select").map((p) => p[1])).toEqual(["dividas_insert"]);
+    expect(SQL5).not.toMatch(/for delete/i);
+  });
+
+  it("toda função que responde a logados tira o anônimo antes", () => {
+    const grants = [...SQL5.matchAll(/grant execute on function (public\.\w+)\(/g)].map((m) => m[1]);
+    expect(grants.length).toBeGreaterThan(10);
+    for (const f of grants) {
+      expect(SQL5).toMatch(new RegExp(`revoke execute on function ${f.replace(".", "\\.")}\\([^)]*\\) from public, anon, authenticated`));
+    }
+  });
+
+  it("os tipos e o tamanho de arquivo da pasta são os da tela", () => {
+    const m = SQL5.match(/'dividas', 'dividas', false, (\d+),\s*array\[([^\]]+)\]/);
+    expect(Number(m![1])).toBe(ANEXO_MAX_BYTES);
+    expect(m![2].split(",").map((x) => x.replace(/['\s]/g, "")).sort()).toEqual([...ANEXO_TIPOS].sort());
   });
 });

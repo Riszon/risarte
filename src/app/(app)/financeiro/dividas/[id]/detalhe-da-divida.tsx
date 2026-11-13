@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { History, Pencil, Trash2 } from "lucide-react";
+import { CheckCheck, History, MessageSquarePlus, Pencil, Receipt, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +12,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr } from "@/lib/dates";
-import { formatCnpj, formatPhone } from "@/lib/masks";
+import { formatCnpj } from "@/lib/masks";
 import {
-  CONTACT_KIND_LABELS,
   DEBT_TYPE_LABELS,
   MANUAL_STAGES,
   ORIGIN_LABELS,
@@ -28,18 +27,39 @@ import {
   limiteDaNegativacao,
   valorDevido,
   AGING_LABELS,
+  selosDaDivida,
+  type DebtListRow,
   type ManualStage,
 } from "@/lib/finance/dividas";
-import type { BaseDasDividas, Divida } from "../dados";
+import type { BaseDasDividas, DetalheDaFase2, Divida } from "../dados";
 import { FormularioDaDivida, SELECT_CLASS, formularioDaDivida } from "../formulario-da-divida";
-import { excluirDivida, mudarEtapa } from "../actions";
+import { excluirDivida, marcarConferida, mudarEtapa } from "../actions";
 import { HistoricoDaDivida } from "./historico-da-divida";
+import { Restricoes } from "./restricoes";
+import { Propostas } from "./propostas";
+import { ContatosDaDivida } from "./contatos-da-divida";
+import { Anexos } from "./anexos";
+import { useAcao } from "./comum";
 
-type Aba = "dados" | "contatos" | "historico";
+const ABAS = ["dados", "restricoes", "propostas", "contatos", "anexos", "historico"] as const;
+type Aba = (typeof ABAS)[number];
+const ROTULO_DA_ABA: Record<Aba, string> = {
+  dados: "Dados",
+  restricoes: "Restrições",
+  propostas: "Propostas",
+  contatos: "Contatos",
+  anexos: "Anexos",
+  historico: "Histórico",
+};
 
 export function DetalheDaDivida({
   base,
   divida: d,
+  linha,
+  fase2,
+  devidoDoGrupoCents,
+  prazos,
+  abaInicial,
   excluida,
   nomes,
   hoje,
@@ -48,6 +68,11 @@ export function DetalheDaDivida({
 }: {
   base: BaseDasDividas;
   divida: Divida;
+  linha: DebtListRow;
+  fase2: DetalheDaFase2;
+  devidoDoGrupoCents: number | null;
+  prazos: { alertaDaProposta: number; conferencia: number };
+  abaInicial: string | null;
   excluida: { em: string; motivo: string } | null;
   nomes: Record<string, string>;
   hoje: string;
@@ -56,7 +81,16 @@ export function DetalheDaDivida({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [aba, setAba] = useState<Aba>("dados");
+  const [aba, setAba] = useState<Aba>((ABAS as readonly string[]).includes(abaInicial ?? "") ? (abaInicial as Aba) : "dados");
+  // Os botões do cabeçalho remontam a aba já com o formulário aberto.
+  const [abrir, setAbrir] = useState<{ aba: Aba; n: number } | null>(null);
+  const conferir = useAcao();
+  const irPara = (a: Aba) => {
+    setAba(a);
+    setAbrir((x) => ({ aba: a, n: (x?.n ?? 0) + 1 }));
+  };
+  const selos = selosDaDivida(linha, hoje, prazos);
+  const nomesDasPessoas = new Map(Object.entries(nomes));
   const [editando, setEditando] = useState(false);
   const [etapa, setEtapa] = useState<{ para: ManualStage | null; motivo: string } | null>(null);
   const [exclusao, setExclusao] = useState<string | null>(null);
@@ -137,11 +171,9 @@ export function DetalheDaDivida({
           <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
             {d.code}
             <span className={cn("rounded px-2 py-0.5 text-sm font-medium", STATUS_TONE[d.status])}>{STATUS_LABELS[d.status]}</span>
-            {d.needsSplit && (
-              <span className="rounded bg-amber-100 px-2 py-0.5 text-sm text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
-                Desdobrar{d.bundledCount > 1 ? ` (${d.bundledCount} dívidas)` : ""}
-              </span>
-            )}
+            {selos.map((x) => (
+              <span key={x.codigo} className={cn("rounded px-2 py-0.5 text-sm font-medium", x.tom)}>{x.rotulo}</span>
+            ))}
           </h1>
           <p className="text-sm">
             <span className="font-medium">{credor?.nome ?? "Credor"}</span>
@@ -177,6 +209,20 @@ export function DetalheDaDivida({
               <Button size="sm" variant="outline" onClick={() => setEtapa({ para: d.manualStage, motivo: "" })}>
                 Mudar situação
               </Button>
+              <Button size="sm" variant="outline" onClick={() => irPara("propostas")}>
+                <Receipt className="size-4" /> Registrar proposta
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => irPara("contatos")}>
+                <MessageSquarePlus className="size-4" /> Registrar contato
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={conferir.ocupado}
+                onClick={() => conferir.rodar(() => marcarConferida(d.id, hoje), "Marcada como conferida hoje.")}
+              >
+                <CheckCheck className="size-4" /> Conferida hoje
+              </Button>
             </>
           )}
           {podeExcluir && (
@@ -185,23 +231,26 @@ export function DetalheDaDivida({
             </Button>
           )}
           <span className="self-center text-[11px] text-muted-foreground">
-            Renegociar, propostas, pagamentos e contatos com o credor chegam nas próximas fases.
+            {d.lastCheckedOn ? `Última conferência: ${formatIsoDateBr(d.lastCheckedOn)}.` : "Nunca conferida."} Renegociar e
+            registrar pagamento chegam nas próximas fases.
           </span>
         </div>
       )}
 
       <div className="flex gap-1 border-b text-sm">
-        {(["dados", "contatos", "historico"] as const).map((a) => (
+        {ABAS.map((a) => (
           <button
             key={a}
             type="button"
             onClick={() => setAba(a)}
-            className={cn("-mb-px border-b-2 px-3 py-1.5", aba === a ? "border-gold font-semibold" : "border-transparent text-muted-foreground")}
+            className={cn("-mb-px whitespace-nowrap border-b-2 px-3 py-1.5", aba === a ? "border-gold font-semibold" : "border-transparent text-muted-foreground")}
           >
-            {a === "dados" ? "Dados" : a === "contatos" ? "Contatos" : (
+            {a === "historico" ? (
               <span className="inline-flex items-center gap-1">
                 <History className="size-3.5" /> Histórico
               </span>
+            ) : (
+              ROTULO_DA_ABA[a]
             )}
           </button>
         ))}
@@ -293,26 +342,53 @@ export function DetalheDaDivida({
         </div>
       )}
 
-      {aba === "contatos" && (
-        <Card>
-          <CardContent className="space-y-2 py-3 text-sm">
-            <p className="text-xs text-muted-foreground">
-              Contatos de cobrança de {credor?.nome ?? "este credor"} (editados na aba Credores). A linha do tempo das ligações e mensagens chega na fase 2.
-            </p>
-            {contatos.length === 0 && <p className="text-muted-foreground">Nenhum contato cadastrado.</p>}
-            <ul className="space-y-1">
-              {contatos.map((c) => (
-                <li key={c.id} className={cn("rounded-md border px-2 py-1", !c.active && "opacity-60")}>
-                  <span className="mr-2 rounded bg-muted px-1.5 text-[10px]">{CONTACT_KIND_LABELS[c.kind]}</span>
-                  {[c.organization, c.personName].filter(Boolean).join(" · ")}
-                  <span className="block text-xs text-muted-foreground">
-                    {[c.phone && `Tel. ${formatPhone(c.phone)}`, c.whatsapp && `WhatsApp ${formatPhone(c.whatsapp)}`, c.email].filter(Boolean).join(" · ")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+      {!fase2.ok && aba !== "dados" && aba !== "historico" && (
+        <p className="rounded-lg border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          Esta parte precisa da migração 0405, que ainda não foi aplicada neste banco.
+        </p>
+      )}
+
+      {aba === "restricoes" && fase2.ok && (
+        <Restricoes
+          debtId={d.id}
+          groupId={d.groupId}
+          groupLabel={grupo ? `${grupo.code} · ${grupo.label}` : null}
+          fase2={fase2}
+          cartorios={base.cartorios}
+          podeLancar={podeLancar && !excluida}
+        />
+      )}
+
+      {aba === "propostas" && fase2.ok && (
+        <Propostas
+          key={`p${abrir?.aba === "propostas" ? abrir.n : 0}`}
+          debtId={d.id}
+          groupId={d.groupId}
+          groupLabel={grupo ? `${grupo.code} · ${grupo.label}` : null}
+          devidoCents={valorDevido(d)}
+          devidoDoGrupoCents={devidoDoGrupoCents}
+          propostas={fase2.propostas}
+          hoje={hoje}
+          podeLancar={podeLancar && !excluida}
+          abrirNova={abrir?.aba === "propostas"}
+        />
+      )}
+
+      {aba === "contatos" && fase2.ok && (
+        <ContatosDaDivida
+          key={`c${abrir?.aba === "contatos" ? abrir.n : 0}`}
+          debtId={d.id}
+          credorNome={credor?.nome ?? "este credor"}
+          contatosDoCredor={contatos}
+          feitos={fase2.contatos}
+          nomes={nomesDasPessoas}
+          podeLancar={podeLancar && !excluida}
+          abrirNovo={abrir?.aba === "contatos"}
+        />
+      )}
+
+      {aba === "anexos" && fase2.ok && (
+        <Anexos debtId={d.id} anexos={fase2.anexos} nomes={nomesDasPessoas} podeLancar={podeLancar && !excluida} />
       )}
 
       {aba === "historico" && (

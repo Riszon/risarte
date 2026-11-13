@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.443.0",
+    data: "2026-11-13",
+    migracao: "0405",
+    titulo: "Levantamento de Dívidas: restrições, propostas, contatos e anexos",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No detalhe da dívida, quatro abas novas: Restrições (negativação, protesto com cartório, custas e anuência, ação judicial e notificação extrajudicial), Propostas (o histórico de propostas — a nova substitui a anterior e nada se apaga — com desconto e economia calculados), Contatos (cada ligação, mensagem ou e-mail com o credor) e Anexos (contrato, boleto, comprovante, quitação, anuência…). Botões Registrar proposta, Registrar contato e Conferida hoje no alto.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A lista de dívidas ganhou os selos Negativada, Protestada, Judicial, Proposta vencendo e Conferir, os filtros por restrição e por proposta, a coluna da proposta com o desconto e os totais de economia, sem proposta, estimado para regularizar e custo total (com as custas de cartório). Dívida sem proposta não conta como desconto.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.442.0",
     data: "2026-11-13",
     migracao: "0404",

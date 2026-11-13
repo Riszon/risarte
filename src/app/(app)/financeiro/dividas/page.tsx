@@ -5,7 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { podeConfigurarDividas, podeLancarDividas, podeVerDividas } from "@/lib/finance/dividas-acesso";
-import { carregarBase, carregarDividas, linhaDaLista } from "./dados";
+import { carregarBase, carregarDividas, carregarResumoDaFase2, linhasDaLista, prazosDosSelos } from "./dados";
 import { ListaDeDividas } from "./lista-de-dividas";
 import { Credores } from "./credores";
 import { Configuracoes } from "./configuracoes";
@@ -29,8 +29,9 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
   const { aba: abaPedida } = await searchParams;
   const aba: Aba = ABAS.some((a) => a.id === abaPedida) ? (abaPedida as Aba) : "dividas";
 
-  const [base, lista] = await Promise.all([carregarBase(), carregarDividas()]);
-  const linhas = lista.dividas.map((d) => linhaDaLista(d, base));
+  const [base, lista, fase2] = await Promise.all([carregarBase(), carregarDividas(), carregarResumoDaFase2()]);
+  const linhas = linhasDaLista(lista.dividas, base, fase2);
+  const prazos = prazosDosSelos(base);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-8">
@@ -68,6 +69,13 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
             ))}
           </nav>
 
+          {lista.ok && !fase2.ok && aba === "dividas" && (
+            <p className="rounded-lg border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+              Restrições e propostas não puderam ser lidas (falta a migração 0405 neste banco?). Selos e
+              totais de proposta aparecem vazios até lá.
+            </p>
+          )}
+
           {!lista.ok && aba !== "configuracoes" && (
             <p className="rounded-lg border border-destructive/40 p-3 text-sm text-destructive">
               Não foi possível ler as dívidas agora. Recarregue a página; se continuar, avise o suporte.
@@ -75,7 +83,7 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
           )}
 
           {aba === "dividas" && (
-            <ListaDeDividas base={base} linhas={linhas} hoje={todayInBrazil()} podeLancar={podeLancarDividas(session)} />
+            <ListaDeDividas base={base} linhas={linhas} hoje={todayInBrazil()} prazos={prazos} podeLancar={podeLancarDividas(session)} />
           )}
           {aba === "credores" && <Credores base={base} linhas={linhas} podeLancar={podeLancarDividas(session)} />}
           {aba === "configuracoes" && <Configuracoes base={base} podeConfigurar={podeConfigurarDividas(session)} />}

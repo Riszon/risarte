@@ -269,6 +269,19 @@ export type DebtListRow = {
   groupCode: string | null;
   nextAction: string | null;
   nextActionOn: string | null;
+  // ---- fase 2 (0405) ----
+  /** Negativação ativa (sem baixa confirmada e não removida). */
+  negativada: boolean;
+  /** Protesto ativo (da dívida ou do grupo; não cancelado nem removido). */
+  protestada: boolean;
+  /** Ação judicial em curso (sem data de encerramento). */
+  judicial: boolean;
+  /** Proposta ativa: a da dívida, ou a parte dela na proposta do grupo (rateio). */
+  propostaCents: number | null;
+  propostaValidade: string | null;
+  /** Custas para cancelar protestos ativos (a parte da dívida, se do grupo). */
+  custasCents: number;
+  lastCheckedOn: string | null;
 };
 
 export type DebtFilters = {
@@ -286,6 +299,12 @@ export type DebtFilters = {
   responsavel: string;
   vencimentoDe: string;
   vencimentoAte: string;
+  /** "negativada" | "protestada" | "judicial" | "alguma" | "nenhuma" */
+  restricao: string;
+  /** "com" | "sem" | "vencendo" */
+  proposta: string;
+  /** "1" = só as que pedem conferência */
+  conferir: string;
 };
 
 export const FILTROS_VAZIOS: DebtFilters = {
@@ -303,6 +322,9 @@ export const FILTROS_VAZIOS: DebtFilters = {
   responsavel: "",
   vencimentoDe: "",
   vencimentoAte: "",
+  restricao: "",
+  proposta: "",
+  conferir: "",
 };
 
 function semAcento(s: string): string {
@@ -310,7 +332,12 @@ function semAcento(s: string): string {
 }
 
 /** Aplica os filtros da 3.9 (os que existem na fase 1). */
-export function filtrarDividas(rows: DebtListRow[], f: DebtFilters, today: string): DebtListRow[] {
+export function filtrarDividas(
+  rows: DebtListRow[],
+  f: DebtFilters,
+  today: string,
+  prazos: { alertaDaProposta: number; conferencia: number } = { alertaDaProposta: 7, conferencia: 60 }
+): DebtListRow[] {
   const termo = semAcento(f.busca.trim());
   return rows.filter((r) => {
     if (f.devedor && r.clinicId !== f.devedor) return false;
@@ -325,6 +352,18 @@ export function filtrarDividas(rows: DebtListRow[], f: DebtFilters, today: strin
     if (f.responsavel && r.ownerUserId !== f.responsavel) return false;
     if (f.vencimentoDe && r.dueDate < f.vencimentoDe) return false;
     if (f.vencimentoAte && r.dueDate > f.vencimentoAte) return false;
+    if (f.restricao) {
+      const alguma = r.negativada || r.protestada || r.judicial;
+      if (f.restricao === "negativada" && !r.negativada) return false;
+      if (f.restricao === "protestada" && !r.protestada) return false;
+      if (f.restricao === "judicial" && !r.judicial) return false;
+      if (f.restricao === "alguma" && !alguma) return false;
+      if (f.restricao === "nenhuma" && alguma) return false;
+    }
+    if (f.proposta === "com" && r.propostaCents === null) return false;
+    if (f.proposta === "sem" && r.propostaCents !== null) return false;
+    if (f.proposta === "vencendo" && !propostaVencendo(r, today, prazos.alertaDaProposta)) return false;
+    if (f.conferir === "1" && !pedeConferencia(r.lastCheckedOn, today, prazos.conferencia)) return false;
     if (f.faixa) {
       const faixa = faixaDeAtraso(diasEmAtraso(r.dueDate, today));
       if (f.faixa === "a_vencer" ? faixa !== null : faixa !== f.faixa) return false;
@@ -341,13 +380,14 @@ export function filtrarDividas(rows: DebtListRow[], f: DebtFilters, today: strin
   });
 }
 
-export const ORDENACOES = ["vencimento", "valor", "atraso", "prioridade", "codigo"] as const;
+export const ORDENACOES = ["vencimento", "valor", "atraso", "prioridade", "desconto", "codigo"] as const;
 export type Ordenacao = (typeof ORDENACOES)[number];
 export const ORDENACAO_LABELS: Record<Ordenacao, string> = {
   vencimento: "Vencimento (mais antigo primeiro)",
   valor: "Valor (maior primeiro)",
   atraso: "Atraso (maior primeiro)",
   prioridade: "Prioridade (alta primeiro)",
+  desconto: "Desconto da proposta (maior primeiro)",
   codigo: "Código",
 };
 
@@ -358,6 +398,11 @@ export function ordenarDividas(rows: DebtListRow[], por: Ordenacao): DebtListRow
   const desempate = (a: DebtListRow, b: DebtListRow) => a.code.localeCompare(b.code);
   copia.sort((a, b) => {
     switch (por) {
+      case "desconto":
+        return (
+          (descontoDaProposta(valorDevido(b), b.propostaCents) ?? -1) - (descontoDaProposta(valorDevido(a), a.propostaCents) ?? -1) ||
+          desempate(a, b)
+        );
       case "valor":
         return valorDevido(b) - valorDevido(a) || desempate(a, b);
       case "atraso":
@@ -376,22 +421,217 @@ export function ordenarDividas(rows: DebtListRow[], por: Ordenacao): DebtListRow
   return copia;
 }
 
-/** Totais do rodapé (respeitam os filtros: recebem a lista já filtrada). */
-export function totaisDaLista(rows: DebtListRow[]): {
+export type TotaisDaLista = {
   quantidade: number;
   originalCents: number;
   devidoCents: number;
   contestadaJudicialCents: number;
-} {
-  let originalCents = 0;
-  let devidoCents = 0;
-  let contestadaJudicialCents = 0;
+  /** Só as dívidas COM proposta ativa (regra 3.9.2). */
+  comPropostaDevidoCents: number;
+  propostasCents: number;
+  /** Devido − proposta, só onde há proposta. Dívida sem proposta NÃO é 100% de desconto. */
+  economiaCents: number;
+  /** Economia ÷ devido das dívidas com proposta; nulo sem proposta nenhuma. */
+  descontoMedio: number | null;
+  /** O que ainda não tem proposta: pendência de negociação. */
+  semPropostaCents: number;
+  /** Proposta, quando há; senão o valor devido (3.9.2). */
+  estimadoCents: number;
+  custasCents: number;
+  /** Estimado + custas de cartório (3.10). */
+  custoTotalCents: number;
+};
+
+/** Totais do rodapé (respeitam os filtros: recebem a lista já filtrada). */
+export function totaisDaLista(rows: DebtListRow[]): TotaisDaLista {
+  const t: TotaisDaLista = {
+    quantidade: rows.length,
+    originalCents: 0,
+    devidoCents: 0,
+    contestadaJudicialCents: 0,
+    comPropostaDevidoCents: 0,
+    propostasCents: 0,
+    economiaCents: 0,
+    descontoMedio: null,
+    semPropostaCents: 0,
+    estimadoCents: 0,
+    custasCents: 0,
+    custoTotalCents: 0,
+  };
   for (const r of rows) {
-    originalCents += r.originalCents ?? 0;
-    devidoCents += valorDevido(r);
-    if (r.status === "contestada" || r.status === "judicial") contestadaJudicialCents += valorDevido(r);
+    const devido = valorDevido(r);
+    t.originalCents += r.originalCents ?? 0;
+    t.devidoCents += devido;
+    if (r.status === "contestada" || r.status === "judicial") t.contestadaJudicialCents += devido;
+    if (r.propostaCents !== null) {
+      t.comPropostaDevidoCents += devido;
+      t.propostasCents += r.propostaCents;
+      t.estimadoCents += r.propostaCents;
+    } else {
+      t.semPropostaCents += devido;
+      t.estimadoCents += devido;
+    }
+    t.custasCents += r.custasCents;
   }
-  return { quantidade: rows.length, originalCents, devidoCents, contestadaJudicialCents };
+  t.economiaCents = t.comPropostaDevidoCents - t.propostasCents;
+  t.descontoMedio = t.comPropostaDevidoCents > 0 ? t.economiaCents / t.comPropostaDevidoCents : null;
+  t.custoTotalCents = t.estimadoCents + t.custasCents;
+  return t;
+}
+
+// ---------------------------------------------------- propostas e selos (0405)
+
+/** Desconto da proposta sobre o devido (0,25 = 25%); nulo sem proposta ou sem valor. */
+export function descontoDaProposta(devidoCents: number, propostaCents: number | null): number | null {
+  if (propostaCents === null || devidoCents <= 0) return null;
+  return (devidoCents - propostaCents) / devidoCents;
+}
+
+/** A proposta vence em até N dias (inclusive hoje)? Sem validade, não. */
+export function propostaVencendo(
+  r: { propostaCents: number | null; propostaValidade: string | null },
+  today: string,
+  dias: number
+): boolean {
+  if (r.propostaCents === null || !r.propostaValidade) return false;
+  const faltam = -diasEmAtraso(r.propostaValidade, today);
+  return faltam >= 0 && faltam <= dias;
+}
+
+/** A dívida pede conferência (nunca conferida ou conferida há mais de N dias)? */
+export function pedeConferencia(lastCheckedOn: string | null, today: string, dias: number): boolean {
+  if (!lastCheckedOn) return true;
+  return diasEmAtraso(lastCheckedOn, today) > dias;
+}
+
+/**
+ * Reparte um valor entre partes proporcionais aos pesos; a ÚLTIMA parte
+ * absorve o resíduo (regra do Financeiro). Proposta e custas de um GRUPO
+ * viram a parte de cada dívida, para os totais respeitarem os filtros.
+ */
+export function ratear(totalCents: number, pesos: number[]): number[] {
+  if (pesos.length === 0) return [];
+  const soma = pesos.reduce((a, b) => a + Math.max(0, b), 0);
+  const partes = pesos.map((p) =>
+    soma > 0 ? Math.floor((totalCents * Math.max(0, p)) / soma) : Math.floor(totalCents / pesos.length)
+  );
+  partes[partes.length - 1] += totalCents - partes.reduce((a, b) => a + b, 0);
+  return partes;
+}
+
+export type Selo = { codigo: string; rotulo: string; tom: string };
+
+const TOM_VERMELHO = "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200";
+const TOM_ROXO = "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950/50 dark:text-fuchsia-200";
+const TOM_AMBAR = "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200";
+const TOM_CINZA = "bg-muted text-muted-foreground";
+
+/** Os selos da lista (seção 5 do pedido). "Acordo quebrado" chega na fase 5. */
+export function selosDaDivida(
+  r: DebtListRow,
+  today: string,
+  prazos: { alertaDaProposta: number; conferencia: number }
+): Selo[] {
+  const s: Selo[] = [];
+  if (r.negativada) s.push({ codigo: "negativada", rotulo: "Negativada", tom: TOM_VERMELHO });
+  if (r.protestada) s.push({ codigo: "protestada", rotulo: "Protestada", tom: TOM_VERMELHO });
+  if (r.judicial) s.push({ codigo: "judicial", rotulo: "Judicial", tom: TOM_ROXO });
+  if (propostaVencendo(r, today, prazos.alertaDaProposta))
+    s.push({ codigo: "proposta_vencendo", rotulo: "Proposta vencendo", tom: TOM_AMBAR });
+  if (r.needsSplit)
+    s.push({ codigo: "desdobrar", rotulo: r.bundledCount > 1 ? `Desdobrar (${r.bundledCount})` : "Desdobrar", tom: TOM_AMBAR });
+  if (pedeConferencia(r.lastCheckedOn, today, prazos.conferencia))
+    s.push({ codigo: "conferir", rotulo: r.lastCheckedOn ? "Conferir" : "Nunca conferida", tom: TOM_CINZA });
+  return s;
+}
+
+// Listas da fase 2 ---------------------------------------------------------------
+
+export const BUREAUS = ["serasa", "spc", "boa_vista", "outro"] as const;
+export type Bureau = (typeof BUREAUS)[number];
+export const BUREAU_LABELS: Record<Bureau, string> = { serasa: "Serasa", spc: "SPC", boa_vista: "Boa Vista", outro: "Outro" };
+
+export const CONSENT_LABELS = { pendente: "Pendente", solicitada: "Solicitada", recebida: "Recebida" } as const;
+export type ConsentLetter = keyof typeof CONSENT_LABELS;
+export const PROTEST_CANCEL_LABELS = { pendente: "Pendente", em_andamento: "Em andamento", cancelado: "Cancelado" } as const;
+export type ProtestCancel = keyof typeof PROTEST_CANCEL_LABELS;
+
+export const PAYMENT_KIND_LABELS = { a_vista: "À vista", parcelado: "Parcelado" } as const;
+export type PaymentKind = keyof typeof PAYMENT_KIND_LABELS;
+export const PAYMENT_METHOD_LABELS = {
+  pix: "Pix",
+  boleto: "Boleto",
+  debito: "Débito em conta",
+  cartao: "Cartão",
+  transferencia: "Transferência",
+  outro: "Outro",
+} as const;
+export type PaymentMethod = keyof typeof PAYMENT_METHOD_LABELS;
+export const PROPOSAL_SOURCE_LABELS = {
+  serasa_limpa_nome: "Serasa Limpa Nome",
+  credor: "Direto com o credor",
+  assessoria: "Assessoria de cobrança",
+  feirao: "Feirão",
+  advogado: "Advogado",
+  outro: "Outro",
+} as const;
+export type ProposalSource = keyof typeof PROPOSAL_SOURCE_LABELS;
+export const PROPOSAL_STATUS_LABELS = {
+  ativa: "Ativa",
+  substituida: "Substituída",
+  aceita: "Aceita",
+  expirada: "Expirada",
+  recusada: "Recusada",
+} as const;
+export type ProposalStatus = keyof typeof PROPOSAL_STATUS_LABELS;
+
+export const CHANNEL_LABELS = {
+  ligacao: "Ligação",
+  whatsapp: "WhatsApp",
+  email: "E-mail",
+  presencial: "Presencial",
+  carta: "Carta",
+  outro: "Outro",
+} as const;
+export type Channel = keyof typeof CHANNEL_LABELS;
+
+export const ATTACHMENT_KIND_LABELS = {
+  contrato: "Contrato",
+  boleto: "Boleto",
+  notificacao: "Notificação",
+  proposta: "Proposta",
+  comprovante: "Comprovante",
+  quitacao: "Carta / termo de quitação",
+  anuencia: "Carta de anuência",
+  termo_acordo: "Termo de acordo",
+  custas: "Custas do cartório",
+  outro: "Outro",
+} as const;
+export type AttachmentKind = keyof typeof ATTACHMENT_KIND_LABELS;
+
+/** Arquivos aceitos na pasta `dividas` (igual à 0405). */
+export const ANEXO_TIPOS = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+export const ANEXO_MAX_BYTES = 10 * 1024 * 1024;
+
+/**
+ * A proposta: o que falta para gravar. Alerta (não trava) quando ela é
+ * MAIOR que o devido — vem do pedido (3.9.1).
+ */
+export function faltaNaProposta(p: {
+  valor: string;
+  tipo: PaymentKind;
+  parcelas: string;
+  validade: string;
+  hoje: string;
+}): string | null {
+  const v = centavosDoCampo(p.valor);
+  if (v === null || Number.isNaN(v) || v <= 0) return "Informe o valor da proposta (use 1.234,56).";
+  if (p.tipo === "parcelado") {
+    const n = Number(p.parcelas);
+    if (!Number.isInteger(n) || n < 1) return "Informe o número de parcelas.";
+  }
+  if (p.validade && p.validade < p.hoje) return "A validade da proposta já passou.";
+  return null;
 }
 
 // ------------------------------------------------------------- formulário
