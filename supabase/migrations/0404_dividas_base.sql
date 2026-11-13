@@ -1382,7 +1382,7 @@ on conflict (schema_name, table_name) do nothing;
 select public.audit_attach_all();
 
 -- -----------------------------------------------------------------------------
--- CONFERÊNCIA (rodar à parte, depois): o esperado é 10 · 4 · 15+ · 3 · true
+-- CONFERÊNCIA (rodar à parte, depois): o esperado é 10 · 4 · 14 · 3 · true
 -- -----------------------------------------------------------------------------
 -- select
 --   (select count(*) from pg_tables where schemaname = 'public' and tablename like 'debt%') as tabelas,
