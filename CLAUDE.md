@@ -400,7 +400,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**12/11/2026 (Asaas — ASA2, entrega 3) — PC Administrador (core 0.437.0 → 0.438.0, Asaas 0.6.0, migração 4007; worktree `wt-asaas`)**
+**12/11/2026 (Asaas — ASA2, entrega 3) — PC Administrador (core 0.438.0 → 0.439.0, Asaas 0.6.0, migração 4007; worktree `wt-asaas`)**
 
 - **Régua de avisos do Asaas e comprovante** (estado em `docs/asaas/ESTADO.md`;
   decisões na 17.4 e 17.5 da especificação). ⚠️ **Nenhuma chamada ao Asaas sai
@@ -438,6 +438,15 @@ Syncthing se comportarem de forma estranha.**
   Histórico da 0401 lê de lá).
 - ✅ **0402 aplicada no treino e na produção** (o dono informou em
   12/11/2026; não conferido de fora).
+
+**12/11/2026 (empresas nos recebíveis) — PC Administrador (core 0.437.0 → 0.438.0, sem migração)**
+
+- **AP147** (bloco 0.438.0 no ESTADO). ⚠️ **Cobrança do Empresarial em
+  aberto numa tela do Financeiro = `recebiveisDoEmpresarial`**, em bloco
+  próprio; não somar no % de inadimplência dos pacientes (decisão do dono).
+- ⚠️ **Gerar link mágico para e-mail que não existe CRIA o login** (Supabase
+  `generateLink`): confira a conta de teste antes (a que sobrou no treino
+  foi apagada com autorização do dono). A do Financeiro é `financeiro@example.com`.
 
 **11/11/2026 (Asaas — ASA2, entrega 1) — PC Administrador (core 0.434.0 → 0.435.0, Asaas 0.4.0, migração 4005; worktree `wt-asaas`)**
 

@@ -599,6 +599,16 @@ lançou e quem deu baixa*, na seção 2.3).
 > com multa e juros, está na aba **Inadimplentes** e na coluna *Com multa e
 > juros* da tabela.
 
+**As empresas do Empresarial** *(desde a 0.438.0)*. Nos Recebíveis da
+**Franqueadora** e em **Recebíveis da rede**, no fim da tela, o bloco
+**Empresas (Empresarial)** mostra as mensalidades e implantações das empresas
+que ainda não foram pagas: quanto há a receber, quanto venceu, a
+**inadimplência das empresas** e a lista, com a empresa, a cobrança, o
+vencimento e há quantos dias está em atraso. Esses números são da Franqueadora
+e ficam **fora** da inadimplência dos pacientes e dos totais de cima. O valor é
+o da cobrança, sem multa nem juros. A baixa continua em **Empresarial →
+Cobranças**.
+
 **Duas escadas de prazo**, e elas não se misturam de propósito:
 
 | Escada | Responde | Para que serve |
@@ -6052,7 +6062,7 @@ foi preparado para a assistente. Avise o administrador.
 
 ## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.438.0)*
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.439.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
 financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão
@@ -6379,7 +6389,7 @@ produção, enquanto a integração está em testes, só o Admin Master.
 
 ### 13g.5. Régua de avisos do Asaas e comprovante
 
-*(desde a versão 0.438.0)*
+*(desde a versão 0.439.0)*
 
 A **régua** é o conjunto de avisos que o **Asaas** manda ao pagador da
 cobrança (o paciente ou o responsável financeiro): cobrança criada, lembretes

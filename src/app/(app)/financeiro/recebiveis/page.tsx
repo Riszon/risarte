@@ -18,6 +18,8 @@ import { AbasDeRecebiveis } from "./abas";
 import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
 import { dataDoFiltro, noPeriodo } from "@/lib/finance/collection";
 import { CampoDeBusca } from "@/components/campo-de-busca";
+import { isProgramFinance } from "@/lib/empresarial/access";
+import { BlocoDoEmpresarial } from "./bloco-do-empresarial";
 
 export const metadata: Metadata = { title: "Recebíveis e inadimplência" };
 
@@ -412,6 +414,12 @@ export default async function RecebiveisPage(
         paga, cancelada ou substituída por renegociação fica na ficha do
         cliente — aqui ela inflaria o total sem ser dívida.
       </p>
+
+      {/* AP147: as cobranças das empresas são da Franqueadora (decisão do
+          dono) e ficam num bloco próprio, fora dos números de cima. */}
+      {session.activeClinic?.type === "franchisor" && isProgramFinance(session) && (
+        <BlocoDoEmpresarial />
+      )}
     </div>
   );
 }

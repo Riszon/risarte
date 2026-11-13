@@ -62,8 +62,8 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.438.0",
-    data: "2026-11-12",
+    versao: "0.439.0",
+    data: "2026-11-13",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4007, ASAAS_MIGRATION).
     migracao: null,
     titulo: "Régua de avisos do Asaas e comprovante",
@@ -102,6 +102,21 @@ export const CHANGELOG: Versao[] = [
           "Cobrança paga pelo Asaas ganha \"Ver comprovante\" e \"Enviar comprovante pelo WhatsApp\", com a mensagem pronta. Vale mesmo com a régua desligada.",
         papeis: ["receptionist", "unit_manager", "finance_franchisor", "franchisee"],
         manual: "13g.5. Régua de avisos do Asaas e comprovante",
+      },
+    ],
+  },
+  {
+    versao: "0.438.0",
+    data: "2026-11-12",
+    migracao: null,
+    titulo: "Recebíveis: as cobranças das empresas do Empresarial",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "As mensalidades e implantações das empresas do Empresarial ainda não pagas passaram a aparecer em Financeiro → Recebíveis da Franqueadora e em Recebíveis da rede, num bloco próprio \"Empresas (Empresarial)\": quanto há a receber, quanto venceu, a inadimplência das empresas e a lista. Esses números ficam fora da inadimplência dos pacientes. A baixa continua em Empresarial → Cobranças.",
+        papeis: ["finance_franchisor"],
+        manual: "2.4. Recebíveis e inadimplência",
       },
     ],
   },

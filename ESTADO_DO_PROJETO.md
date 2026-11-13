@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🔌 0.438.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (12/11/2026; migração 4007)
+> ## 🔌 0.439.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (13/11/2026; migração 4007)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na 17.4 e 17.5 da especificação.
 > Central → Cobrança e comunicação: régua única da rede (8 avisos, padrão D8),
@@ -11,8 +11,28 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > saldo. Fila no banco aplicada a cada 10 min. "Não receber avisos" por CPF na
 > rede (D7). Comprovante na ficha. 2º lembrete fixo no dia (D9). Ensaio 78/78;
 > sandbox sem envio 17/17.
-> 🟡 4007 só no treino.
+> Prova de envio real no sandbox (13/11, aprovada pelo dono). EV-336.
+> 🟡 4007 aprovada; produção em andamento.
 >
+> ## 🦷 0.438.0 — RECEBÍVEIS: AS COBRANÇAS DAS EMPRESAS DO EMPRESARIAL (12/11/2026; sem migração)
+>
+> AP147 (relato OC-00166, escolhido com o dono). As cobranças em aberto das
+> empresas (`empresarial.adhesion_billing`) não apareciam no Financeiro.
+> - **Decisões do dono:** são da **Franqueadora** (nenhuma empresa tem
+>   unidade; a paga já entra lá desde a 1040) e ficam num **bloco próprio**
+>   "Empresas (Empresarial)", fora do % de inadimplência dos pacientes.
+> - ⚠️ **A conta é `recebiveisDoEmpresarial`** (vencido pela DATA, não pela
+>   situação OVERDUE; sem multa nem juros). O bloco aparece nos Recebíveis
+>   com a Franqueadora ativa (`isProgramFinance`) e em Recebíveis da rede.
+>   `clinic_overdue_rate` e `network_receivables` NÃO leem o Empresarial
+>   (régua `recebiveis-do-empresarial.test.ts`).
+> - Fora: relatório/planilha dos Recebíveis, Fluxo de caixa e Painel da rede
+>   continuam sem o Empresarial em aberto.
+> - Régua 9/9 e 8 de 8 quebrando; visto na tela no treino. EV-335.
+> - A conta `financeiro.franqueadora@example.com`, criada sem querer no treino
+>   (o gerador de link mágico cria o login quando o e-mail não existe), foi
+>   apagada com autorização do dono em 12/11/2026. O AP140 foi fechado junto.
+
 > ## ✅ 0.437.0 / ASAAS 0.5.0 — ASA2, ENTREGA 2: SELO "EM ATRASO" E PAINEL DE COBRANÇAS (12/11/2026; migração 4006)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na seção 17 da especificação.

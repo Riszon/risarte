@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { BotoesDeRelatorio } from "@/components/botoes-de-relatorio";
 import { AbasDeRecebiveis } from "../recebiveis/abas";
 import { BotaoAbrirNaUnidade } from "../abrir-na-unidade";
+import { BlocoDoEmpresarial } from "../recebiveis/bloco-do-empresarial";
 import { todayInBrazil, monthRangeOf } from "@/lib/dates";
 import { Card, CardContent } from "@/components/ui/card";
 import { AGING_LABELS } from "@/lib/finance/aging";
@@ -371,6 +372,10 @@ export default async function RecebiveisDaRedePage() {
         problema. Para ver cliente a cliente, entre na unidade e abra{" "}
         <strong>Financeiro → Recebíveis</strong>.
       </p>
+
+      {/* AP147: as empresas do Empresarial, em bloco próprio — fora dos
+          totais e da taxa da rede acima (decisão do dono, 12/11/2026). */}
+      <BlocoDoEmpresarial />
     </div>
   );
 }
