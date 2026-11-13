@@ -2,6 +2,21 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.102.0 / 1044 — INÍCIO DO CONTRATO NO 1º PAGAMENTO E O FUNIL ABERTO DO PAINEL (13/11/2026)
+>
+> Relato OC-00012 (PRODUÇÃO, dono). Feito no worktree `wt-oc12` (a pasta
+> principal tinha o commit 0.440.0 de outra sessão sem push).
+> - **Início do contrato = 1º pagamento** (decisão do dono). **1044:** gatilho
+>   blindado `empresarial.billing_starts_contract` em `adhesion_billing`
+>   (cobrança vira PAID → `companies.contract_started_at` = dia Brasil do
+>   `paid_at`, só se vazio) + acerto das empresas pagas sem início (produção:
+>   a Cooperativa Recicla Brasil → 11/11/2026). ⚠️ Caminho novo que dê baixa
+>   não precisa fazer nada: o gatilho mora na tabela. Ensaio no treino 3/3.
+> - **Funil aberto (Painel do programa)** passou a usar `isOpenStage` (a
+>   Implantação estava entrando na soma: R$ 818,00 em vez de R$ 379,10). Os
+>   dois painéis usam a mesma regra (régua `empresarial-oc-00012.test.ts`).
+> - Manual do Empresarial 6.1 e 16. **Não visto na tela.**
+>
 > ## ✅ 0.439.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (13/11/2026; migração 4007)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na 17.4 e 17.5 da especificação.
