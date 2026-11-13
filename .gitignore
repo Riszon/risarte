@@ -47,3 +47,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dados reais de importação (planilhas financeiras) — nunca no Git, seeds, migrações ou testes
+/_dados_importacao/
