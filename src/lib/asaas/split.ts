@@ -223,3 +223,32 @@ export function comIdsDoAsaas(
   const ids = new Map((doAsaas ?? []).filter((s) => s.walletId).map((s) => [s.walletId as string, s.id ?? null]));
   return entradas.map((e) => ({ ...e, asaasSplitId: ids.get(e.walletId) ?? null }));
 }
+
+/** ASA3 (4009): o split refeito é o MESMO que já está no Asaas? (então não chama). */
+export function mesmasEntradas(
+  a: { walletId: string; percentualValue: number; fixedCents: number }[],
+  b: { walletId: string; percentualValue: number; fixedCents: number }[]
+): boolean {
+  const chave = (x: { walletId: string; percentualValue: number; fixedCents: number }[]) =>
+    [...x]
+      .map((e) => `${e.walletId}|${Number(e.percentualValue).toFixed(4)}|${Math.round(Number(e.fixedCents))}`)
+      .sort()
+      .join(";");
+  return chave(a) === chave(b);
+}
+
+/**
+ * ASA3 (4009, U7): o BLOQUEIO por divergência — o split passou do líquido real
+ * da cobrança. Reduz cada entrada na mesma proporção, para baixo, até caber
+ * (com 1 centavo de folga). A falta em relação ao devido segue a S5.
+ */
+export function reduzirAoLiquido<T extends { percentualValue: number; fixedCents: number }>(entradas: T[], liquidoCents: number): T[] {
+  const total = entradas.reduce((s, e) => s + e.fixedCents + (liquidoCents * e.percentualValue) / 100, 0);
+  if (total <= liquidoCents - 1 || total <= 0) return entradas;
+  const k = (liquidoCents - 1) / total;
+  return entradas.map((e) => ({
+    ...e,
+    percentualValue: paraBaixo4(e.percentualValue * k),
+    fixedCents: Math.floor(e.fixedCents * k + EPS),
+  }));
+}

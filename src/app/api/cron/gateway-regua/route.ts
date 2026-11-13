@@ -1,5 +1,6 @@
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { rodarFilaDaRegua } from "@/lib/asaas/regua-servidor";
+import { conferirWebhooks, corrigirBloqueios, rodarFilaDoSplit } from "@/lib/asaas/split-servidor";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
 
 /**
@@ -20,7 +21,15 @@ export async function GET(request: Request) {
   if (!isAdminClientConfigured()) return Response.json({ ok: false, error: "not_configured" }, { status: 500 });
   try {
     const r = await rodarFilaDaRegua();
-    return Response.json({ ok: true, ...r });
+    // ASA3 (4009): a fila do split (150 por conta), o bloqueio por divergência
+    // e o webhook que se corrige sozinho. Falha de um não derruba os outros.
+    const split = await rodarFilaDoSplit().catch((e) => {
+      console.error("gateway split queue failed:", e instanceof Error ? e.message : e);
+      return null;
+    });
+    const bloqueios = await corrigirBloqueios().catch(() => 0);
+    const webhooks = await conferirWebhooks().catch(() => null);
+    return Response.json({ ok: true, ...r, split, bloqueios, webhooks });
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
     // Banco sem a 4007 (o código pode ir ao ar antes): não há fila.
