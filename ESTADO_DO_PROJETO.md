@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🔌 0.440.0 / ASAAS 0.7.0 — ASA3, ENTREGA 1: O SPLIT NA EMISSÃO (13/11/2026; migração 4008)
+> ## ✅ 0.440.0 / ASAAS 0.7.0 — ASA3, ENTREGA 1: O SPLIT NA EMISSÃO (13/11/2026; migração 4008)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na seção 18 da especificação.
 > Método B (q = p ÷ (1 − a), F = q × parte fixa, para baixo; menor tarifa da
@@ -12,7 +12,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > pontualidade (travada em zero); aba Taxas da franquia (Taxas da rede mudou
 > para lá). Ensaio 51/51 (provado quebrando). Prova no sandbox OK: 1 centavo
 > por carteira, Asaas arredonda para baixo (18.5.1). EV-337.
-> 🟡 4008 só no treino; falta o dono testar.
+> ✅ 4008 na produção (13/11, rodada pelo dono, conferência bateu); main e produção na 0.440.0.
 
 > ## 💼 EMPRESARIAL 0.102.0 / 1044 — INÍCIO DO CONTRATO NO 1º PAGAMENTO E O FUNIL ABERTO DO PAINEL (13/11/2026)
 >
