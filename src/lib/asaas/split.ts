@@ -1,0 +1,151 @@
+// ASA3, entrega 1 — A CONTA DO SPLIT (spec 18.2). Puro: sem banco, sem Asaas.
+//
+// O Asaas transfere a cada carteira `fixedValue + netValue × percentualValue / 100`,
+// e o netValue é o pago MENOS a tarifa (T = a × V + b). Para o repasse fechar
+// em p × V (o percentual da taxa sobre o valor PAGO, D4), cada carteira vai com
+//
+//   percentualValue = q = p ÷ (1 − a)      arredondado PARA BAIXO em 4 casas
+//   fixedValue      = F = q × b            arredondado PARA BAIXO no centavo
+//
+// e então F + q × (V − aV − b) = p × V para QUALQUER valor pago (com desconto,
+// multa ou juros). Com tarifa fixa (Pix, boleto) a = 0: q = p e F = p × tarifa
+// (S1). Os dois arredondamentos são para baixo: o erro é de até 1 centavo por
+// carteira (2 em parcelas grandes, pelo corte das 4 casas) e SEMPRE a favor da unidade — o repasse nunca passa do percentual.
+//
+// Tarifa (S2 e proteção contra repasse a maior): entre a emissão e o
+// vencimento, de TODAS as tarifas vigentes (início ou fim de promoção) e, no
+// boleto, também as do Pix (o pagador pode usar o QR Code), vale a MENOR parte
+// percentual e a MENOR parte fixa. Tarifa maior no pagamento = repasse um
+// pouco menor (a favor da unidade); a fila da entrega 2 corrige quando muda.
+
+export type MeioDoSplit = "PIX" | "BOLETO" | "CREDIT_CARD";
+
+/** Uma tarifa de `acquirer_rates` (só o que a conta usa). */
+export type TarifaVigente = {
+  modality: string;
+  fee_percent: number; // em %, ex.: 2.99
+  fixed_fee_cents: number;
+  valid_from: string | null; // AAAA-MM-DD; nulo = desde sempre
+  valid_to: string | null; // AAAA-MM-DD; nulo = sem fim
+  min_installments?: number | null;
+};
+
+/** A tarifa da conta: a = fração (0,0299), b = centavos fixos. */
+export type TarifaDoSplit = { a: number; bCents: number };
+
+/** Quais modalidades o pagador pode usar em cada meio emitido. */
+export function modalidadesDoMeio(meio: MeioDoSplit): string[] {
+  if (meio === "PIX") return ["pix"];
+  if (meio === "BOLETO") return ["boleto", "pix"];
+  return ["credito_avista"];
+}
+
+const dia = (s: string | null | undefined) => (s ? String(s).slice(0, 10) : null);
+
+/** As tarifas das modalidades do meio que valem em algum dia de [de, ate]. */
+export function tarifasNaJanela(
+  tarifas: TarifaVigente[],
+  meio: MeioDoSplit,
+  de: string,
+  ate: string
+): TarifaVigente[] {
+  const mods = new Set(modalidadesDoMeio(meio));
+  return tarifas.filter((t) => {
+    if (!mods.has(t.modality)) return false;
+    if (t.modality === "credito_avista" && t.min_installments != null && t.min_installments > 1) return false;
+    const ini = dia(t.valid_from);
+    const fim = dia(t.valid_to);
+    return (ini == null || ini <= ate) && (fim == null || fim >= de);
+  });
+}
+
+export class SemTarifa extends Error {
+  constructor(meio: MeioDoSplit) {
+    super(`Sem tarifa do Asaas para ${meio} na conta da unidade.`);
+    this.name = "SemTarifa";
+  }
+}
+
+/** A MENOR parte percentual e a MENOR parte fixa da janela (proteção contra repasse a maior). */
+export function tarifaParaOSplit(tarifas: TarifaVigente[], meio: MeioDoSplit, de: string, ate: string): TarifaDoSplit {
+  const ok = tarifasNaJanela(tarifas, meio, de, ate);
+  if (!ok.length) throw new SemTarifa(meio);
+  return {
+    a: Math.min(...ok.map((t) => Number(t.fee_percent) / 100)),
+    bCents: Math.min(...ok.map((t) => Math.round(Number(t.fixed_fee_cents)))),
+  };
+}
+
+/** A MAIOR parte percentual e a MAIOR parte fixa da janela (o pior caso do teto). */
+export function tarifaMaxima(tarifas: TarifaVigente[], meio: MeioDoSplit, de: string, ate: string): TarifaDoSplit {
+  const ok = tarifasNaJanela(tarifas, meio, de, ate);
+  if (!ok.length) throw new SemTarifa(meio);
+  return {
+    a: Math.max(...ok.map((t) => Number(t.fee_percent) / 100)),
+    bCents: Math.max(...ok.map((t) => Math.round(Number(t.fixed_fee_cents)))),
+  };
+}
+
+// Arredondamentos PARA BAIXO, à prova de 0,1 + 0,2 (o épsilon só corrige ruído
+// binário, nunca sobe um valor de verdade).
+const EPS = 1e-9;
+export const paraBaixo4 = (x: number) => Math.floor(x * 1e4 + EPS) / 1e4;
+export const centavosParaBaixo = (reais: number) => Math.floor(reais * 100 + EPS);
+
+/** Uma carteira com a soma dos percentuais das taxas que vão para ela. */
+export type CarteiraDoSplit = { walletId: string; percent: number };
+
+/** A entrada que vai ao Asaas (fixedValue em centavos aqui; reais só no envio). */
+export type EntradaDoSplit = { walletId: string; percent: number; percentualValue: number; fixedCents: number };
+
+export function entradasDoSplit(carteiras: CarteiraDoSplit[], tarifa: TarifaDoSplit): EntradaDoSplit[] {
+  if (!(tarifa.a >= 0 && tarifa.a < 1)) throw new Error("tarifa percentual inválida");
+  return carteiras
+    .filter((c) => Number(c.percent) > 0)
+    .map((c) => {
+      const q = paraBaixo4(Number(c.percent) / (1 - tarifa.a));
+      return {
+        walletId: c.walletId,
+        percent: Number(c.percent),
+        percentualValue: q,
+        fixedCents: centavosParaBaixo(((q / 100) * tarifa.bCents) / 100),
+      };
+    });
+}
+
+/** O que o Asaas recebe em `splits`. */
+export function splitsParaOAsaas(entradas: EntradaDoSplit[]) {
+  return entradas.map((e) => ({
+    walletId: e.walletId,
+    percentualValue: e.percentualValue,
+    ...(e.fixedCents > 0 ? { fixedValue: e.fixedCents / 100 } : {}),
+  }));
+}
+
+/**
+ * Quanto o Asaas transferiria a cada carteira se o pago fosse `pagoCents` com a
+ * tarifa `tarifa` (para a prova e o teto). Arredonda o percentual ao centavo
+ * mais próximo — o modo do Asaas é pendência (18.6), medido no sandbox.
+ */
+export function repasseSimulado(entradas: EntradaDoSplit[], pagoCents: number, tarifa: TarifaDoSplit) {
+  const tarifaCents = Math.round(tarifa.a * pagoCents + tarifa.bCents);
+  const liquido = pagoCents - tarifaCents;
+  return entradas.map((e) => ({
+    walletId: e.walletId,
+    cents: e.fixedCents + Math.round((liquido * e.percentualValue) / 100),
+    devidoCents: Math.round((pagoCents * e.percent) / 100),
+  }));
+}
+
+/**
+ * TETO DE SEGURANÇA (spec 4, item 6): no pior caso — o menor valor possível
+ * (com o maior desconto) e a MAIOR tarifa da janela — a soma dos repasses não
+ * pode passar do líquido. Se passar, a cobrança não sai.
+ */
+export function cabeNoLiquido(entradas: EntradaDoSplit[], valorCents: number, descontoCents: number, tarifaMax: TarifaDoSplit) {
+  const menor = Math.max(0, valorCents - Math.max(0, descontoCents));
+  const tarifaCents = Math.ceil(tarifaMax.a * menor + tarifaMax.bCents);
+  const liquido = menor - tarifaCents;
+  const total = entradas.reduce((s, e) => s + e.fixedCents + Math.ceil((Math.max(liquido, 0) * e.percentualValue) / 100), 0);
+  return { ok: liquido > 0 && total <= liquido, liquidoCents: liquido, repasseCents: total };
+}
