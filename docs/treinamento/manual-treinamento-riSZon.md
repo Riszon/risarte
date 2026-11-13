@@ -570,6 +570,104 @@ DRE, Fluxo de caixa, Recebíveis, Contas a pagar, Conciliação) e o resto entro
 em três menus: **Análise**, **Rede** (só na Franqueadora) e **Cadastros**. O
 menu fica aceso quando você está numa tela dele.
 
+#### Levantamento de Dívidas *(desde a 0.442.0)*
+
+Em **Financeiro → Rede → Levantamento de Dívidas** ficam as dívidas que a
+**rede deve** a terceiros — bancos, fornecedores, tributos, telefonia, aluguel
+— de cada unidade e da própria franqueadora. **Não é a inadimplência dos
+pacientes** (essa continua em Recebíveis). Só o **Financeiro da Franqueadora**
+e o **Admin Master** entram: mesmo marcando outra função em Permissões, o
+sistema não entrega esses dados a mais ninguém.
+
+**Três abas nesta primeira etapa:**
+
+| Aba | Para quê |
+|---|---|
+| **Dívidas** | A lista, com busca, filtros (devedor, situação, faixa de atraso, **restrição** e **proposta**; em **Mais filtros**, credor, tipo do credor, categoria, natureza, etiqueta, prioridade, responsável, período de vencimento e **só as que pedem conferência**), ordenação (inclusive pelo **desconto da proposta**), os **selos** e os totais — que **respeitam os filtros**. |
+| **Credores** | Quanto se deve a cada credor e **com quem se fala**: atendente, assessoria de cobrança, advogado ou cartório. |
+| **Configurações** | A regra de inadimplência, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas, etiquetas e os cartórios de protesto. |
+
+**Nova dívida.** Os campos obrigatórios são só quatro: **devedor** (a unidade
+ou a franqueadora que deve), **credor**, **valor** e **vencimento**; o resto se
+completa depois. O **credor é o mesmo cadastro de Fornecedores** — se ele não
+estiver na lista, **Credor não está na lista? Cadastrar** pede nome, CNPJ e
+tipo, e ele passa a existir em Financeiro → Cadastros → Fornecedores também.
+A **natureza** vem da categoria escolhida. As **etiquetas** se criam na hora,
+digitando e apertando Enter. Dívidas do mesmo contrato ou pedido (por exemplo,
+os boletos de uma compra) podem ficar num **grupo**. Uma linha que junta várias
+dívidas (uma oferta do Serasa, por exemplo) leva a **quantidade de dívidas
+reunidas** e a marca **Desdobrar depois**.
+
+**A origem do lançamento** diz de onde a dívida vem:
+
+- **A — Anterior à implantação:** a dívida nasceu antes de o riSZon ser
+  implantado naquele CNPJ (o saldo de abertura);
+- **B — Nova:** nasceu depois e ainda não foi lançada no Financeiro;
+- **C — Já está no Contas a Pagar.**
+
+O sistema **sugere** A ou B pela **data em que a dívida nasceu** (emissão ou,
+sem ela, a competência) comparada com a **data de implantação** — nunca pelo
+vencimento: uma dívida contratada antes da implantação é A mesmo que a parcela
+vença depois. Escolher diferente da sugestão pede uma **justificativa**, que
+fica no histórico. *Nesta etapa a origem fica registrada; os títulos no Contas
+a Pagar são gerados numa próxima atualização.*
+
+**A situação muda sozinha.** Pelo vencimento: **A vencer**; do 1º dia de atraso
+até o prazo da regra (padrão **30 dias**), **Em atraso**; depois,
+**Inadimplente**. A virada acontece toda madrugada e fica no histórico como
+"mudou sozinha". O prazo pode ser diferente **por tipo de credor** (ex.:
+tributos e bancos com prazo menor) e **por devedor**; o do tipo de credor vale
+mais. **Mudar situação** marca à mão o que só gente decide: **Em negociação**,
+**Contestada** (dívida não reconhecida), **Em discussão judicial** e
+**Baixada/Cancelada** — as três últimas pedem **motivo**, ao entrar e ao sair.
+
+**Os selos da lista** *(desde a 0.443.0)*: **Negativada**, **Protestada**,
+**Judicial**, **Proposta vencendo** (a validade termina nos próximos dias —
+o aviso da regra da rede, padrão 7), **Desdobrar** e **Conferir** / **Nunca
+conferida** (ninguém conferiu a dívida no Serasa ou com o credor há mais de 60
+dias — o prazo se muda em Configurações).
+
+**Os totais embaixo da lista** seguem a regra que a planilha antiga errava:
+**dívida sem proposta não é 100% de desconto.**
+
+| Total | Conta |
+|---|---|
+| **Economia potencial** | valor devido − proposta, **só das dívidas com proposta**; o desconto médio também |
+| **Sem proposta** | o que ainda não tem proposta — pendência de negociação |
+| **Estimado para regularizar** | a proposta, quando há; senão o valor devido |
+| **Custo total para regularizar** | o estimado + as custas para cancelar os protestos |
+
+A proposta (e as custas) de um **grupo** é repartida entre as dívidas dele pelo
+valor de cada uma; assim, ao filtrar, o total traz só a parte de cada dívida.
+
+**O detalhe da dívida** (clique no código **DV-…**) tem as abas **Dados**,
+**Restrições**, **Propostas**, **Contatos**, **Anexos** e **Histórico**, e no
+alto os botões **Registrar proposta**, **Registrar contato** e **Conferida
+hoje** (grava a data da última conferência).
+
+| Aba | O que se lança |
+|---|---|
+| **Restrições** | **Negativação** (órgão, data, valor, se está no Serasa Limpa Nome, no CNPJ ou no sócio — **só o nome** do sócio — e a data da baixa); **Protesto** (cartório, protocolo, data, valor, **custas para cancelar**, carta de anuência e o cancelamento; pode ser do **grupo inteiro**; o cartório se cadastra na hora); **Ação judicial** (processo, vara, comarca, fase, valor da causa, advogado, bloqueio, penhora, busca e apreensão, encerramento); **Notificação extrajudicial** (data). Corrigir = editar (vai para o histórico). Lançado por engano = **remover com motivo** — o registro fica guardado. |
+| **Propostas** | Cada proposta é um registro novo: a nova **substitui** a ativa e **nada se apaga nem se edita** — o histórico mostra a evolução das ofertas. Valor, à vista ou parcelado, forma, validade, origem (Serasa Limpa Nome, credor, assessoria, feirão, advogado) e a condição como veio. O desconto e a economia saem sozinhos; proposta **maior** que a dívida dá aviso. **Recusar** (com motivo) ou **Expirou**; a vencida sai de "ativa" sozinha na madrugada. |
+| **Contatos** | A linha do tempo com o credor: cada ligação, WhatsApp, e-mail, visita ou carta, com quem, quando e o resumo. **Só cresce** — para corrigir, registre outro. Marcar **Conferi a dívida neste contato** grava a conferência. Embaixo, os contatos de cobrança do credor. |
+| **Anexos** | Contrato, boleto, notificação, proposta, comprovante, quitação, anuência, termo de acordo, custas. PDF ou imagem até 10 MB, numa pasta **privada**: abrir gera um link que vale **10 minutos**. Remover pede motivo e o arquivo continua guardado. |
+
+O **Histórico** mostra tudo o que aconteceu, campo a campo — quem mudou,
+quando, o valor de antes e o de depois — inclusive restrições, propostas e
+anexos, e ninguém consegue editar nem apagar essa trilha. **Excluir** pede
+motivo e **não apaga**: a dívida sai da lista e continua guardada, com quem
+excluiu, quando e por quê.
+
+> **Configurações sem programação.** Categorias, subcategorias, naturezas e
+> etiquetas se criam, renomeiam, reordenam e **desativam**. Desativada some das
+> opções de novas dívidas e **continua aparecendo nas antigas**. As contas do
+> plano de contas de cada categoria e a forma de reconhecer desconto e encargos
+> de acordos estão marcadas **"a validar com o contador"**.
+
+*Chegam nas próximas etapas:* os títulos no Contas a Pagar e o registro de
+pagamentos; a importação da planilha; a renegociação com as parcelas do
+acordo; o painel com gráficos; os avisos.
+
 ### 2.4. Recebíveis e inadimplência
 
 A aba **Recebíveis** é o outro lado do Contas a pagar: o que a unidade tem **a
@@ -6062,7 +6160,7 @@ foi preparado para a assistente. Avise o administrador.
 
 ## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.439.0; Taxas da franquia desde a 0.440.0, na unidade desde a 0.442.0)*
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.439.0; Taxas da franquia desde a 0.440.0, na unidade desde a 0.444.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
 financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão
@@ -6536,7 +6634,7 @@ na conta a pagar, ao lado.
 franqueadora, por taxa, liquidada quando o Asaas avisa. O resultado (DRE) da
 unidade mostra o custo inteiro, retido ou pago pela conta.
 
-**A fila do split (desde a 0.442.0).** Quando uma taxa, campanha, destino
+**A fila do split (desde a 0.444.0).** Quando uma taxa, campanha, destino
 ou tarifa do Asaas muda, o riSZon **atualiza sozinho o split das cobranças em
 aberto**, a cada 10 minutos, **as vencidas e as de vencimento mais próximo
 primeiro** (até 150 por unidade a cada rodada). Só o split muda: o boleto, o
@@ -6563,7 +6661,7 @@ Pix e o link continuam os mesmos, e **o paciente não recebe aviso**.
 
 ### 13g.7. Pedir estorno
 
-*(desde a versão 0.442.0)*
+*(desde a versão 0.444.0)*
 
 **Para que serve:** devolver ao pagador uma cobrança paga pelo Asaas, pedindo
 pelo riSZon (estorno **total**; parcial e contestação no cartão continuam à mão).

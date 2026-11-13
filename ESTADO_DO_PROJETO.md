@@ -2,6 +2,85 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏦 0.443.0 — LEVANTAMENTO DE DÍVIDAS, FASE 2: RESTRIÇÕES, PROPOSTAS, CONTATOS E ANEXOS (13/11/2026; migração 0405)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (fase 2). No detalhe da dívida:
+> abas Restrições, Propostas, Contatos e Anexos; botões Registrar proposta,
+> Registrar contato e Conferida hoje. Na lista: selos, filtros por restrição e
+> proposta, coluna da proposta e os totais da regra 3.9.2. Manual 2.3; EV-339.
+> - ⚠️ **Proposta só cresce** (`debt_proposals_lock`): a nova substitui a ativa
+>   (`debt_save_proposal`; índices de uma ativa por dívida/grupo); aceitar é da
+>   fase 5. A rotina diária expira a vencida (`debt_daily_run` recriada).
+> - ⚠️ **Proposta e custas de GRUPO são rateadas** entre as dívidas
+>   (`linhasDaLista` + `ratear`): os totais respeitam o filtro. Dívida sem
+>   proposta NÃO entra na economia (`totaisDaLista`, régua da 3.9.2).
+> - ⚠️ **Restrição lançada por engano = `debt_remove_record`** (lógico, com
+>   motivo); contato com o credor só cresce (`debt_contacts_immutable`).
+> - ⚠️ **Anexos na pasta privada `dividas`**, caminho `<dívida>/<uuid>.<ext>`
+>   (sem o nome do arquivo); o navegador envia (regra `dividas_insert` =
+>   `debt_can_attach`), `debt_attach` registra conferindo o arquivo; ninguém
+>   apaga da pasta. Abrir = link assinado de 10 min (`linkDoAnexo`).
+> - Histórico (`debt_history`, recriada) inclui a trilha de restrições,
+>   protestos, anexos e propostas. `debts.last_checked_on` +
+>   `debt_settings.stale_check_days` (60) = selo "Conferir".
+> - Ensaio `scripts/dividas-ensaio-0405.mjs --confirmar` 45/45; `--quebrar` →
+>   14 falhas. 0405 no treino (`migrar:teste`, e reaplicada depois de incluir
+>   as propostas no histórico — antes da produção). Visto na tela (Financeiro
+>   de teste, DV-000011). Resíduo no treino: a DV-000011 com negativação,
+>   protesto, duas propostas, um contato, um PDF de teste e o cartório
+>   "Tabelionato de Protesto TESTE (pode apagar)".
+> - ✅ **0405 aplicada nos dois bancos** (produção pelo dono em 13/11/2026,
+>   `audit_attach_all` = 7 — as 8 tabelas novas menos `debt_contacts`, que fica
+>   fora de propósito; conferido de fora: as 8 tabelas respondem, prazo do selo
+>   60, `debts.last_checked_on` existe, pasta `dividas` privada de 10 MB;
+>   anônimo recusado em `debt_save_proposal` (42501), lê 0 propostas e 0
+>   arquivos; a chave de serviço para na validação antes de gravar). Próxima:
+>   **fase 3** (Contas a Pagar), com OK do dono.
+>
+> ## 🏦 0.442.0 — LEVANTAMENTO DE DÍVIDAS, FASE 1: A BASE (13/11/2026; migração 0404)
+>
+> Pedido do dono: `docs/prompts/prompt-riszon-levantamento-dividas.md`. Plano,
+> decisões D0–D18 e ajustes do dono em `docs/Financeiro/DIVIDAS-PLANO.md` —
+> **ler antes de mexer em dívidas**. Fase 0 (D0): `_dados_importacao/` no
+> `.gitignore` (commit aab08519). Fase 1 entregue: Financeiro → Rede →
+> Levantamento de Dívidas (abas Dívidas, Credores, Configurações; detalhe com
+> Dados, Contatos, Histórico). Manual 2.3; EV-338.
+> - ⚠️ **Devedor = `clinics` (unidade ou franqueadora); credor = `suppliers`**
+>   (D4). Contato de cobrança em `debt_creditor_contacts`, não no fornecedor.
+> - ⚠️ **Quem pode = `debt_can(cap, clinic)`** (matriz COM TETO: só
+>   `finance_franchisor`, além do Admin/Principal). Nenhuma `debt_*` tem regra
+>   de escrita; só as portas `debt_save*`, `debt_delete`, `debt_set_stage`,
+>   `debt_set_go_live`. Padrões de fábrica = `permissions.ts` (régua
+>   `dividas.test.ts`).
+> - ⚠️ **Situação = `_debt_compute_status`** (espelho `situacaoDaDivida`);
+>   prazo `_debt_days_to_default`: tipo do credor → devedor → rede → 30.
+>   Grava por `_debt_refresh_status` (gravações) e pela rotina
+>   `risarte-debts-daily` (00:10, evento `situacao_automatica`). As fases 3 e 5
+>   acrescentam quitação e acordo à precedência — mudar as duas juntas.
+> - ⚠️ **Origem pela data em que a dívida NASCEU** (`debt_suggest_origin`),
+>   nunca pelo vencimento; implantação `clinics.go_live_on` = 16/11/2026 em
+>   LDN, CBE e RF (a 0404 preenche pelo código da unidade). Nesta fase a dívida
+>   **não gera título**: `finance_synced_at` nulo = a fase 3 gera.
+> - Histórico = `debt_history` (trilha `audit_changes` + `debt_events`, que só
+>   cresce). Exclusão só lógica, com motivo.
+> - Ensaio `scripts/dividas-ensaio-0404.mjs --confirmar` (transação desfeita)
+>   51/51; `--quebrar` (guarda aberta) → 16 falhas. 0404 no treino por
+>   `migrar:teste`. Visto na tela pelo servidor local de teste (Financeiro de
+>   teste): cadastrar, contestar, histórico, contato, excluir; Gerente,
+>   Franqueado e Franqueadora/Rede mandados embora. Resíduo no treino: a
+>   DV-000001 de teste (excluída), a etiqueta "teste da tela" e o contato
+>   "Assessoria Teste (pode apagar)" no credor Empresa Teste.
+> - ⚠️ **Produção: a franqueadora (RF) está com o CNPJ de Londrina**
+>   (32.042.156/0001-21; o certo é 46.232.307/0001-19) — D3, aguarda o dono
+>   corrigir. Treino: só Londrina tem CNPJ.
+> - ✅ **0404 aplicada nos dois bancos** (produção pelo dono em 13/11/2026,
+>   `audit_attach_all` = 9; conferido de fora: 4 naturezas, 14 categorias e 14
+>   subcategorias, regra da rede, implantação 16/11/2026 em RF/CBE/LDN, as 4
+>   permissões só no Financeiro da Franqueadora; anônimo recusado em
+>   `debt_save` (42501) e lê 0 dívidas; a chave de serviço para em "Entre no
+>   sistema" antes de gravar). Próxima: **fase 2** (restrições, propostas,
+>   anexos, contatos com o credor), com OK do dono.
+>
 > ## 🔒 0.441.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
 >
 > Achado de 13/11 (teste do selo da 4006, sessões das contas de teste no
@@ -32,7 +111,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - ⏳ **0403 só no treino.** Produção: o dono roda no SQL Editor; conferência
 >   no fim do arquivo (5 linhas, `usa_helper = true`). Não visto na tela.
 >
-> ## 🔌 0.442.0 / ASAAS 0.8.0 — ASA3, ENTREGA 2: SPLIT DAS COBRANÇAS EM ABERTO E ESTORNO (13/11/2026; migração 4009)
+> ## 🔌 0.444.0 / ASAAS 0.8.0 — ASA3, ENTREGA 2: SPLIT DAS COBRANÇAS EM ABERTO E ESTORNO (13/11/2026; migração 4009)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões em 18.7 a 18.7.7 da especificação.
 > Fila do split (base em `charges.split_inputs`; gatilhos de taxa, campanha,
@@ -40,7 +119,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > primeiro); estorno pelo riSZon (Pix/cartão aguardando autorização; boleto com
 > o celular do pagador); saldo da franqueadora; webhook que se corrige (versão
 > 2); Taxas da franquia na unidade. Corrige o razão retido da 4008. Ensaio
-> 73/73. EV-338.
+> 76/76. EV-340.
 > 🟡 4009 só no treino.
 >
 > ## ✅ 0.440.0 / ASAAS 0.7.0 — ASA3, ENTREGA 1: O SPLIT NA EMISSÃO (13/11/2026; migração 4008)
@@ -54,6 +133,50 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > para lá). Ensaio 51/51 (provado quebrando). Prova no sandbox OK: 1 centavo
 > por carteira, Asaas arredonda para baixo (18.5.1). EV-337.
 > ✅ 4008 na produção (13/11, rodada pelo dono, conferência bateu); main e produção na 0.440.0.
+
+> ## 💼 EMPRESARIAL 0.104.0 — O PLANO DO TITULAR LIMITA OS DEPENDENTES NA PLANILHA (13/11/2026; sem migração)
+>
+> Pedido do dono, decisões: plano em branco = Sem dependentes; Familiar com
+> 1 dependente entra (o banco registra Individual pela 1002).
+> - ⚠️ **O limite mora em `LIMITE_DO_PLANO`** (`planilha-titulares.ts`: 0 · 1 ·
+>   3 · sem limite). O gerador escreve o mesmo nas fórmulas (coluna I
+>   escondida) e `conferirPlanilha` recusa quem passa — só quando a planilha
+>   tem a coluna do plano (`planoNaPlanilha`) e o titular veio nela.
+> - Titulares: colunas cinza **Dependentes preenchidos** e **Vagas**; escondidas
+>   H (chave "Nome — CPF"), I (limite), J (elegível), K (ordem), L (lista
+>   compacta, sem FILTER — funciona no Excel 2013). Dependentes: a lista lê L;
+>   coluna **Conferência** + linha vermelha (formatação condicional).
+> - Régua `planilha-titulares.test.ts` (14), provada quebrando (2 caem).
+>   Conferido no Excel deste PC preenchendo os 4 planos + em branco: lista,
+>   vagas, conferência e vermelho como esperado. **Não visto:** o clique na
+>   setinha, LibreOffice/Google, a importação pela tela.
+>
+
+> ## 💼 EMPRESARIAL 0.103.0 — A PLANILHA MODELO DE TITULARES E DEPENDENTES (13/11/2026; sem migração)
+>
+> Pedido do dono: planilha que a empresa preenche, com instruções claras, a
+> logo e o titular do dependente escolhido numa lista.
+> - **Gerada no servidor** (`modelo-titulares-xlsx.ts`, ExcelJS; rota
+>   `/empresarial/[companyId]/modelo-titulares`, com o nome da empresa). Abas
+>   **Como preencher** (passo a passo, colunas, exemplo, conferência, LGPD),
+>   **Titulares** e **Dependentes**; logo embutida em `logo-planilha.ts`
+>   (recorte da horizontal clara de `docs/marca/extraido`). Exemplos SÓ na aba
+>   de instruções (no modelo antigo entravam como gente de verdade).
+> - **Lista de titulares:** coluna escondida G em Titulares (`Nome — CPF`) +
+>   validação `OFFSET`/`COUNTIF` em Dependentes!A, sem trava (titular já
+>   cadastrado entra pelo CPF digitado). Plano e Parentesco em lista fixa.
+> - ⚠️ **A leitura mora em `planilha-titulares.ts`** (pura): aba pelo NOME
+>   (não `SheetNames[0]`), cabeçalho achado nas 30 primeiras linhas, linha do
+>   erro = linha do Excel, titular por "Nome — CPF", CPF ou nome único.
+>   Planilha antiga continua entrando. Mudou um título de coluna no gerador?
+>   Muda a leitura junto (régua `planilha-titulares.test.ts`, provada
+>   quebrando: 4 caem).
+> - Aberta no Excel deste PC: abre sem reparo, a coluna da lista calcula e a
+>   lista traz só os titulares preenchidos. **Não visto:** o clique na setinha
+>   (a validação foi lida, não clicada), LibreOffice e Google Planilhas, e a
+>   importação pela tela.
+> - Manual do Empresarial, aba Titulares (cadastrar por planilha).
+>
 
 > ## 💼 EMPRESARIAL 0.102.0 / 1044 — INÍCIO DO CONTRATO NO 1º PAGAMENTO E O FUNIL ABERTO DO PAINEL (13/11/2026)
 >

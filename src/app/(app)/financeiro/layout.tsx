@@ -6,6 +6,7 @@ import { FinanceNav } from "./finance-nav";
 import { FaixaVoltarParaRede } from "./abrir-na-unidade";
 import { marcaDaRedeAtiva } from "./marca-da-rede";
 import { podeVerPainelDeCobrancas } from "@/lib/finance/selo-atraso";
+import { podeVerDividas } from "@/lib/finance/dividas-acesso";
 
 /**
  * FIN0 — casca do módulo Financeiro. A navegação entre as telas fica aqui: sem
@@ -38,7 +39,11 @@ export default async function FinanceLayout({
 
   return (
     <div>
-      <FinanceNav veRede={veRede} veCobrancas={podeVerPainelDeCobrancas(session)} />
+      <FinanceNav
+        veRede={veRede}
+        veCobrancas={podeVerPainelDeCobrancas(session)}
+        veDividas={podeVerDividas(session)}
+      />
       {marca && session.activeClinic && (
         <div className="px-4">
           <FaixaVoltarParaRede unidade={session.activeClinic.name} />

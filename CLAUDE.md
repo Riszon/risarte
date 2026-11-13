@@ -400,7 +400,7 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-**13/11/2026 (Asaas — ASA3, entrega 2) — PC Administrador (core 0.441.0 → 0.442.0, Asaas 0.8.0, migração 4009; worktree `wt-asaas`)**
+**13/11/2026 (Asaas — ASA3, entrega 2) — PC Administrador (core 0.443.0 → 0.444.0, Asaas 0.8.0, migração 4009; worktree `wt-asaas`)**
 
 - **A fila do split e o estorno** (estado em `docs/asaas/ESTADO.md`; 18.7 a
   18.7.7). ⚠️ **A fila compara a BASE** (`charges.split_inputs` × `_charge_split_inputs`)
@@ -411,6 +411,43 @@ Syncthing se comportarem de forma estranha.**
   boleto exige o CELULAR do pagador no Asaas (vai na hora, com o termo e a
   trava; apagado no fim com a régua desligada). ⚠️ **Mudou a lista de avisos do
   webhook → suba `WEBHOOK_EVENTS_VERSION`**: a rotina de 10 min corrige as contas.
+
+**13/11/2026 (planilha modelo, o plano limita) — PC Administrador (Empresarial 0.103.0 → 0.104.0, sem migração)**
+
+- **O plano do titular limita os dependentes na planilha e na importação**
+  (bloco "EMPRESARIAL 0.104.0" no ESTADO). ⚠️ Limite = `LIMITE_DO_PLANO`;
+  mudou ele, a fórmula da planilha muda junto (régua).
+
+
+**13/11/2026 (planilha modelo) — PC Administrador (Empresarial 0.102.0 → 0.103.0, sem migração)**
+
+- **Planilha modelo de titulares e dependentes** (bloco "EMPRESARIAL 0.103.0"
+  no ESTADO). ⚠️ **Gerador (`modelo-titulares-xlsx.ts`, servidor) e leitura
+  (`planilha-titulares.ts`, navegador) andam juntos**: título de coluna ou
+  formato "Nome — CPF" mudou num, muda no outro (régua). ⚠️ A aba é achada
+  pelo nome — nunca `SheetNames[0]`.
+
+
+**13/11/2026 (Levantamento de Dívidas — fase 2) — PC Administrador (core 0.442.0 → 0.443.0, migração 0405)**
+
+- **Restrições, propostas, contatos e anexos** (bloco 0.443.0 no ESTADO).
+  ⚠️ **Proposta só cresce** (a nova substitui a ativa; o proposto não muda).
+  ⚠️ **Totais = `totaisDaLista`**: sem proposta não é desconto; proposta e
+  custas de grupo rateadas (`linhasDaLista`). ⚠️ Anexo: pasta privada
+  `dividas`, caminho sem o nome do arquivo, registro por `debt_attach`.
+- ✅ 0405 nos dois bancos (produção pelo dono em 13/11/2026; conferido de fora).
+
+**13/11/2026 (Levantamento de Dívidas — fase 1) — PC Administrador (core 0.441.0 → 0.442.0, migração 0404)**
+
+- **As dívidas da REDE com terceiros** (bloco 0.442.0 no ESTADO; plano e
+  decisões do dono em `docs/Financeiro/DIVIDAS-PLANO.md`). ⚠️ **A planilha
+  real fica em `_dados_importacao/` (no `.gitignore`)**: nunca em commit, seed,
+  migração ou teste. ⚠️ **Quem pode = `debt_can`** (teto: só Financeiro da
+  Franqueadora + Admin). ⚠️ **Situação = `_debt_compute_status`**, espelho
+  `situacaoDaDivida`. ⚠️ Fase 3: a regra "fora da DRE" vira UM lugar só,
+  usado por todos os leitores do razão (D5) — ler o plano antes.
+- ⚠️ Produção: a franqueadora está com o CNPJ de Londrina (AP168, aguarda o dono).
+- ✅ 0404 nos dois bancos (produção pelo dono em 13/11/2026; conferido de fora).
 
 **13/11/2026 (Asaas — ASA3, entrega 1) — PC Administrador (core 0.439.0 → 0.440.0, Asaas 0.7.0, migração 4008; worktree `wt-asaas`)**
 
