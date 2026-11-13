@@ -400,6 +400,13 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/11/2026 (planilha modelo, o plano limita) — PC Administrador (Empresarial 0.103.0 → 0.104.0, sem migração)**
+
+- **O plano do titular limita os dependentes na planilha e na importação**
+  (bloco "EMPRESARIAL 0.104.0" no ESTADO). ⚠️ Limite = `LIMITE_DO_PLANO`;
+  mudou ele, a fórmula da planilha muda junto (régua).
+
+
 **13/11/2026 (planilha modelo) — PC Administrador (Empresarial 0.102.0 → 0.103.0, sem migração)**
 
 - **Planilha modelo de titulares e dependentes** (bloco "EMPRESARIAL 0.103.0"

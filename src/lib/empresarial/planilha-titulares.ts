@@ -63,6 +63,23 @@ export function abaDosDependentes(nomes: readonly string[]): string | null {
   return nomes.find((n) => norm(n).startsWith("depend")) ?? null;
 }
 
+/**
+ * QUANTOS DEPENDENTES CADA PLANO DEIXA PREENCHER NA PLANILHA (pedido do dono,
+ * 13/11/2026). `null` = sem limite na planilha (o limite do contrato continua
+ * valendo na importação). Plano em branco = Sem dependentes (decisão do dono).
+ *
+ * ⚠️ O gerador (`modelo-titulares-xlsx.ts`) escreve este mesmo limite nas
+ * fórmulas da planilha, e a conferência (`importacao.ts`) recusa quem passa.
+ * É a régua da 1002 (`dependent_plan_for`): 1 = Individual, até 3 = Familiar,
+ * 4 ou mais = Familiar + extras.
+ */
+export const LIMITE_DO_PLANO: Record<(typeof DEPENDENT_PLANS)[number], number | null> = {
+  NONE: 0,
+  INDIVIDUAL: 1,
+  FAMILY: 3,
+  FAMILY_EXTRA: null,
+};
+
 const PLANO_PELO_ROTULO = new Map<string, string>([
   ...DEPENDENT_PLANS.map((p) => [norm(DEPENDENT_PLAN_LABELS[p]), p] as [string, string]),
   ...DEPENDENT_PLANS.map((p) => [norm(p), p] as [string, string]),
@@ -141,14 +158,14 @@ function linhaDoCabecalho(celulas: Celulas, conhecidas: readonly string[]): numb
   return -1;
 }
 
-type Leitura<T> = { linhas: T[]; achouCabecalho: boolean };
+type Leitura<T> = { linhas: T[]; achouCabecalho: boolean; cabecalho: string[] };
 
 function lerAba(
   celulas: Celulas,
   conhecidas: readonly string[]
 ): Leitura<{ linha: number; get: (...chaves: string[]) => string }> {
   const iCab = linhaDoCabecalho(celulas, conhecidas);
-  if (iCab < 0) return { linhas: [], achouCabecalho: false };
+  if (iCab < 0) return { linhas: [], achouCabecalho: false, cabecalho: [] };
   const cabecalho = (celulas[iCab] ?? []).map(norm);
   const linhas: { linha: number; get: (...chaves: string[]) => string }[] = [];
   for (let i = iCab + 1; i < celulas.length; i++) {
@@ -164,7 +181,7 @@ function lerAba(
     // A linha da planilha começa em 1.
     linhas.push({ linha: i + 1, get });
   }
-  return { linhas, achouCabecalho: true };
+  return { linhas, achouCabecalho: true, cabecalho };
 }
 
 const CABECALHO_DOS_TITULARES = [
@@ -194,12 +211,19 @@ const CABECALHO_DOS_DEPENDENTES = [
   "telefone",
 ];
 
-export type TitularesLidos = { linhas: LinhaDaPlanilha[]; achouCabecalho: boolean };
+export type TitularesLidos = {
+  linhas: LinhaDaPlanilha[];
+  achouCabecalho: boolean;
+  /** A aba tem a coluna "Plano de Dependentes": o limite do plano vale. */
+  temColunaDoPlano: boolean;
+};
 
 export function lerTitulares(celulas: Celulas): TitularesLidos {
-  const { linhas, achouCabecalho } = lerAba(celulas, CABECALHO_DOS_TITULARES);
+  const { linhas, achouCabecalho, cabecalho } = lerAba(celulas, CABECALHO_DOS_TITULARES);
+  const temColunaDoPlano = cabecalho.some((h) => h === "plano de dependentes" || h === "plano");
   return {
     achouCabecalho,
+    temColunaDoPlano,
     linhas: linhas
       .map(({ linha, get }) => ({
         linha,
@@ -208,6 +232,7 @@ export function lerTitulares(celulas: Celulas): TitularesLidos {
         phone: get("telefone", "whatsapp", "celular"),
         email: get("e-mail", "email"),
         dependentPlan: planoDaPlanilha(get("plano de dependentes", "plano")),
+        planoNaPlanilha: temColunaDoPlano,
       }))
       // Só a linha em branco é descartada: o resto vai à conferência, que diz
       // o que falta (AP97). O plano sozinho não conta — o modelo não o

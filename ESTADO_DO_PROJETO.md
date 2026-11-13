@@ -119,6 +119,24 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > por carteira, Asaas arredonda para baixo (18.5.1). EV-337.
 > ✅ 4008 na produção (13/11, rodada pelo dono, conferência bateu); main e produção na 0.440.0.
 
+> ## 💼 EMPRESARIAL 0.104.0 — O PLANO DO TITULAR LIMITA OS DEPENDENTES NA PLANILHA (13/11/2026; sem migração)
+>
+> Pedido do dono, decisões: plano em branco = Sem dependentes; Familiar com
+> 1 dependente entra (o banco registra Individual pela 1002).
+> - ⚠️ **O limite mora em `LIMITE_DO_PLANO`** (`planilha-titulares.ts`: 0 · 1 ·
+>   3 · sem limite). O gerador escreve o mesmo nas fórmulas (coluna I
+>   escondida) e `conferirPlanilha` recusa quem passa — só quando a planilha
+>   tem a coluna do plano (`planoNaPlanilha`) e o titular veio nela.
+> - Titulares: colunas cinza **Dependentes preenchidos** e **Vagas**; escondidas
+>   H (chave "Nome — CPF"), I (limite), J (elegível), K (ordem), L (lista
+>   compacta, sem FILTER — funciona no Excel 2013). Dependentes: a lista lê L;
+>   coluna **Conferência** + linha vermelha (formatação condicional).
+> - Régua `planilha-titulares.test.ts` (14), provada quebrando (2 caem).
+>   Conferido no Excel deste PC preenchendo os 4 planos + em branco: lista,
+>   vagas, conferência e vermelho como esperado. **Não visto:** o clique na
+>   setinha, LibreOffice/Google, a importação pela tela.
+>
+
 > ## 💼 EMPRESARIAL 0.103.0 — A PLANILHA MODELO DE TITULARES E DEPENDENTES (13/11/2026; sem migração)
 >
 > Pedido do dono: planilha que a empresa preenche, com instruções claras, a

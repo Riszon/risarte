@@ -1161,16 +1161,39 @@ Ela tem três abas:
 2. **Titulares** — uma linha por colaborador. **Nome, CPF e Telefone são
    obrigatórios** em toda linha (o telefone é o que a recepção usa nas
    boas-vindas; sem ele o cadastro não serve). O **Plano de Dependentes** é
-   escolhido numa lista (em branco = sem dependentes).
+   escolhido numa lista e **diz quantos dependentes o colaborador pode ter**
+   *(desde a 0.104.0)*:
+
+   | Plano | Dependentes na planilha |
+   |---|---|
+   | Sem dependentes (ou em branco) | nenhum — o colaborador nem aparece na aba Dependentes |
+   | Dependente individual | 1 |
+   | Dependente familiar | até 3 |
+   | Familiar + extras | 4 ou mais (o limite do contrato vale na importação) |
+
+   Duas colunas cinza se preenchem sozinhas: **Dependentes preenchidos** e
+   **Vagas** (*"1 de 3 livre(s)"*, *"Completo"*, ou *"Passou do limite"* em
+   vermelho).
 3. **Dependentes** (opcional) — na coluna **Titular**, o RH **escolhe o
-   colaborador numa lista** (aparece *"João Souza — 987.654.321-00"*, com
-   quem já foi preenchido na aba Titulares); não precisa digitar o CPF do
-   titular de novo. Depois, o CPF do dependente, o nome e o **Parentesco**
-   (também numa lista). Titular que já estava na empresa e não está na
-   planilha: digita-se o CPF dele na coluna Titular.
+   colaborador numa lista** (aparece *"João Souza — 987.654.321-00"*). A
+   lista mostra **só quem tem plano com dependentes e ainda tem vaga**:
+   quando o plano fica completo, o nome sai da lista. Não precisa digitar o
+   CPF do titular de novo. Depois, o CPF do dependente, o nome e o
+   **Parentesco** (também numa lista). A coluna cinza **Conferência** diz
+   *OK* ou fica **vermelha** quando a linha passa do plano. Titular que já
+   estava na empresa e não está na planilha: digita-se o CPF dele na coluna
+   Titular.
 
 Com a planilha preenchida, *Escolher planilha* e importar. Planilhas no
 formato antigo (com a coluna "CPF do Titular") continuam entrando.
+
+> **A importação confere a mesma regra do plano.** Dependente de quem está
+> como *Sem dependentes* (ou com o plano em branco), ou além do limite
+> (Individual com 2, Familiar com 4), recusa a planilha: *"Dependentes, linha
+> 8: passou do limite do plano do titular (Dependente individual: 1
+> dependente)"*. Ter **menos** do que o plano deixa não é erro — Familiar com
+> 1 dependente entra, e o sistema registra o titular como **Individual**,
+> porque o plano gravado segue sempre a quantidade real de dependentes.
 
 > A lista de titulares funciona no **Excel** e no **LibreOffice**. No Google
 > Planilhas ela pode não abrir; aí basta digitar o nome do titular (se houver

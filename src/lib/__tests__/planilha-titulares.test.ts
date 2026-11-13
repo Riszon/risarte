@@ -4,6 +4,8 @@ import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
 import { conferirPlanilha } from "@/lib/empresarial/importacao";
 import {
+  COLUNA_DA_CONFERENCIA,
+  COLUNAS_CALCULADAS_TITULARES,
   COLUNAS_DEPENDENTES,
   COLUNAS_TITULARES,
   LINHA_DO_CABECALHO,
@@ -17,6 +19,7 @@ import {
   abaDosDependentes,
   abaDosTitulares,
   cpfDoTitular,
+  LIMITE_DO_PLANO,
   lerDependentes,
   lerTitulares,
   textoDaLista,
@@ -91,21 +94,25 @@ describe("o modelo gerado", () => {
     expect(textos.join("\n")).toContain("Empresa: Padaria do Zé");
 
     const t = wb.getWorksheet(ABA_TITULARES)!;
-    expect(t.getRow(LINHA_DO_CABECALHO).values).toEqual([undefined, ...COLUNAS_TITULARES, undefined, expect.any(String)]);
+    expect((t.getRow(LINHA_DO_CABECALHO).values as unknown[]).slice(1, 8)).toEqual([
+      ...COLUNAS_TITULARES,
+      ...COLUNAS_CALCULADAS_TITULARES,
+    ]);
     expect(t.getCell(`E${PRIMEIRA_LINHA}`).dataValidation.type).toBe("list");
     // A coluna escondida monta "Nome — CPF" com o MESMO travessão da leitura.
-    const f = (t.getCell(`G${PRIMEIRA_LINHA}`).value as { formula: string }).formula;
+    const f = (t.getCell(`H${PRIMEIRA_LINHA}`).value as { formula: string }).formula;
     expect(f).toContain(`&" — "&`);
     expect(textoDaLista("A", "1")).toBe("A — 1");
-    expect(t.getColumn("G").hidden).toBe(true);
+    for (const c of ["H", "I", "J", "K", "L"]) expect(t.getColumn(c).hidden, c).toBe(true);
     // CPF e telefone como texto (o Excel não come o zero da frente).
     expect(t.getCell(`B${PRIMEIRA_LINHA}`).numFmt).toBe("@");
 
     const d = wb.getWorksheet(ABA_DEPENDENTES)!;
-    expect(d.getRow(LINHA_DO_CABECALHO).values).toEqual([undefined, ...COLUNAS_DEPENDENTES]);
+    expect(d.getRow(LINHA_DO_CABECALHO).values).toEqual([undefined, ...COLUNAS_DEPENDENTES, COLUNA_DA_CONFERENCIA]);
     const v = d.getCell(`A${PRIMEIRA_LINHA}`).dataValidation;
     expect(v.type).toBe("list");
-    expect(v.formulae?.[0]).toContain(`${ABA_TITULARES}!$G$${PRIMEIRA_LINHA}`);
+    // A lista é a coluna COMPACTA (L): só quem tem plano com dependente e vaga.
+    expect(v.formulae?.[0]).toContain(`${ABA_TITULARES}!$L$${PRIMEIRA_LINHA}`);
     // Sem trava: titular já cadastrado antes pode ser digitado pelo CPF.
     expect(v.showErrorMessage ?? false).toBe(false);
     expect(d.getCell(`D${PRIMEIRA_LINHA}`).dataValidation.type).toBe("list");
@@ -193,6 +200,83 @@ describe("a planilha do modelo ANTIGO continua entrando", () => {
     expect(abaDosTitulares([ABA_INSTRUCOES, ABA_TITULARES, ABA_DEPENDENTES])).toBe(ABA_TITULARES);
     expect(abaDosTitulares(["Planilha1"])).toBe("Planilha1");
     expect(abaDosDependentes([ABA_INSTRUCOES, ABA_TITULARES])).toBeNull();
+  });
+});
+
+describe("o plano do titular limita os dependentes (pedido do dono, 13/11/2026)", () => {
+  const tit = (cpf: string, plano: string) => ({
+    fullName: "T " + cpf,
+    cpf,
+    phone: "(43) 99999-0000",
+    email: "",
+    dependentPlan: plano,
+    planoNaPlanilha: true,
+  });
+  const dep = (holderCpf: string, cpf: string, linha: number) => ({
+    holderCpf,
+    cpf,
+    relationship: "CHILD",
+    linha,
+  });
+  const A = "11111111111";
+  const B = "22222222222";
+  const C = "33333333333";
+  const D = "44444444444";
+  const motivos = (c: ReturnType<typeof conferirPlanilha>) => c.erros.map((e) => [e.linha, e.motivo]);
+
+  it("os limites: sem = 0, individual = 1, familiar = 3, familiar + extras = sem limite", () => {
+    expect(LIMITE_DO_PLANO).toEqual({ NONE: 0, INDIVIDUAL: 1, FAMILY: 3, FAMILY_EXTRA: null });
+  });
+
+  it("recusa dependente de quem é Sem dependentes (ou deixou em branco) e quem passa do plano", () => {
+    const c = conferirPlanilha(
+      [tit(A, "NONE"), tit(B, "INDIVIDUAL"), tit(C, "FAMILY"), tit(D, "FAMILY_EXTRA")],
+      [
+        dep(A, "90000000001", 6),
+        dep(B, "90000000002", 7),
+        dep(B, "90000000003", 8),
+        dep(C, "90000000004", 9),
+        dep(C, "90000000005", 10),
+        dep(C, "90000000006", 11),
+        dep(C, "90000000007", 12),
+        ...[13, 14, 15, 16, 17].map((l) => dep(D, "9000000001" + (l - 13), l)),
+      ],
+      new Set()
+    );
+    expect(motivos(c)).toEqual([
+      [6, "o plano do titular na aba Titulares é Sem dependentes (escolha o plano dele)"],
+      [8, "passou do limite do plano do titular (Dependente individual: 1 dependente)"],
+      [12, "passou do limite do plano do titular (Dependente familiar: até 3 dependentes)"],
+    ]);
+  });
+
+  it("menos do que o plano deixa entra (Familiar com 1): o sistema registra pela quantidade", () => {
+    const c = conferirPlanilha([tit(C, "FAMILY")], [dep(C, "90000000004", 6)], new Set());
+    expect(c.erros).toEqual([]);
+  });
+
+  it("planilha sem a coluna do plano e titular que já estava na empresa não têm limite aqui", () => {
+    const semColuna = { ...tit(A, "NONE"), planoNaPlanilha: false };
+    expect(conferirPlanilha([semColuna], [dep(A, "90000000001", 6)], new Set()).erros).toEqual([]);
+    expect(conferirPlanilha([], [dep(B, "90000000002", 6)], new Set([B])).erros).toEqual([]);
+  });
+
+  it("a leitura marca a coluna do plano quando ela existe", () => {
+    const com = lerTitulares([["Nome", "CPF", "Plano de Dependentes"], ["A", A, ""]]);
+    expect(com.temColunaDoPlano).toBe(true);
+    expect(com.linhas[0]).toMatchObject({ dependentPlan: "NONE", planoNaPlanilha: true });
+    const sem = lerTitulares([["Nome", "CPF", "Telefone"], ["A", A, "43999990000"]]);
+    expect(sem.linhas[0].planoNaPlanilha).toBe(false);
+  });
+
+  it("a fórmula do limite na planilha usa os mesmos números e os mesmos rótulos", async () => {
+    const buf = await planilhaModeloDeTitulares({ empresa: "X", geradoEm: "13/11/2026" });
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf as unknown as ArrayBuffer);
+    const f = (wb.getWorksheet(ABA_TITULARES)!.getCell(`I${PRIMEIRA_LINHA}`).value as { formula: string }).formula;
+    expect(f).toBe(
+      `IF(E${PRIMEIRA_LINHA}="Dependente individual",1,IF(E${PRIMEIRA_LINHA}="Dependente familiar",3,IF(E${PRIMEIRA_LINHA}="Familiar + extras",999,0)))`
+    );
   });
 });
 

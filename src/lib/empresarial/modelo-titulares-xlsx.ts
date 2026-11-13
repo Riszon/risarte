@@ -2,7 +2,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 import { DEPENDENT_PLAN_LABELS, DEPENDENT_PLANS, RELATIONSHIP_LABELS, RELATIONSHIPS } from "./constants";
 import { LOGO_EMPRESARIAL_PNG_BASE64, LOGO_EMPRESARIAL_PROPORCAO } from "./logo-planilha";
-import { ABA_DEPENDENTES, ABA_INSTRUCOES, ABA_TITULARES } from "./planilha-titulares";
+import { ABA_DEPENDENTES, ABA_INSTRUCOES, ABA_TITULARES, LIMITE_DO_PLANO } from "./planilha-titulares";
 
 /**
  * A PLANILHA MODELO DE TITULARES E DEPENDENTES (pedido do dono, 13/11/2026).
@@ -30,6 +30,7 @@ const AREIA = "FFF6F2EA";
 const CINZA = "FF6B7280";
 const AMARELO = "FFFFF7D6";
 const BRANCO = "FFFFFFFF";
+const VERMELHO_CLARO = "FFFDE2E2";
 
 /** Primeira linha de dados e quantas linhas o modelo prepara (listas e formato). */
 export const LINHA_DO_CABECALHO = 5;
@@ -46,9 +47,10 @@ export const COLUNAS_DEPENDENTES = [
   "Parentesco",
   "Telefone",
 ] as const;
-/** A coluna escondida que monta o texto da lista ("Nome — CPF"). */
-const COLUNA_DA_LISTA = "G";
-const TITULO_DA_COLUNA_DA_LISTA = "Lista de titulares (não preencher)";
+/** Colunas preenchidas sozinhas (cinza): a leitura não as usa. */
+export const COLUNAS_CALCULADAS_TITULARES = ["Dependentes preenchidos", "Vagas"] as const;
+export const COLUNA_DA_CONFERENCIA = "Conferência";
+const TITULO_DA_COLUNA_DA_LISTA = "Titular (nome e CPF)";
 
 const borda: Partial<ExcelJS.Borders> = {
   top: { style: "thin", color: { argb: "FFD9D4C7" } },
@@ -101,7 +103,7 @@ function cabecalho(ws: ExcelJS.Worksheet, titulos: readonly string[]) {
     c.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
     c.border = borda;
   });
-  row.height = 26;
+  row.height = 32;
 }
 
 /** Bordas leves e formato de texto nas linhas que a empresa vai preencher. */
@@ -164,9 +166,9 @@ function abaDeInstrucoes(wb: ExcelJS.Workbook, empresa: string, geradoEm: string
   linha("Passo a passo", { bold: true, size: 13, color: { argb: VINHO } }, 22);
   const passos = [
     `Abra a aba “${ABA_TITULARES}” (embaixo, nas abas da planilha) e preencha uma linha para cada colaborador que vai entrar no programa. Comece na primeira linha em branco, logo abaixo dos títulos azuis.`,
-    "Na coluna “Plano de Dependentes”, clique na célula e depois na setinha ▼ para escolher o plano. Se deixar em branco, o colaborador entra sem dependentes.",
-    `Colaborador com dependentes? Abra a aba “${ABA_DEPENDENTES}”. Na coluna “Titular”, clique na setinha ▼ e escolha o colaborador na lista (aparece o nome e o CPF de quem você preencheu na aba ${ABA_TITULARES}). Não precisa digitar o CPF do titular de novo.`,
-    "Preencha uma linha para cada dependente: CPF, nome e parentesco (também na setinha ▼).",
+    "Na coluna “Plano de Dependentes”, clique na célula e na setinha ▼ e escolha o plano. É ele que diz quantos dependentes o colaborador pode ter: Dependente individual = 1; Dependente familiar = até 3; Familiar + extras = 4 ou mais. Sem dependentes (ou em branco) = o colaborador não aparece na aba Dependentes.",
+    `Abra a aba “${ABA_DEPENDENTES}”. Na coluna “Titular”, clique na setinha ▼ e escolha o colaborador (aparecem o nome e o CPF). A lista mostra só quem tem plano com dependentes e ainda tem vaga: quando o plano fica completo, o nome sai da lista. Não precisa digitar o CPF do titular de novo.`,
+    "Preencha uma linha para cada dependente: CPF, nome e parentesco (também na setinha ▼). As colunas cinza se preenchem sozinhas: “Vagas” (aba Titulares) mostra quantos dependentes ainda cabem, e “Conferência” fica vermelha se alguém passar do plano.",
     "Salve o arquivo do jeito que veio (Excel, .xlsx) e envie ao consultor. Não mude o nome das abas nem os títulos azuis das colunas — é por eles que o sistema lê a planilha.",
   ];
   passos.forEach((p, i) => {
@@ -198,9 +200,9 @@ function abaDeInstrucoes(wb: ExcelJS.Workbook, empresa: string, geradoEm: string
       ABA_TITULARES,
       "Plano de Dependentes",
       "Não",
-      `Escolha na lista: ${DEPENDENT_PLANS.map((p) => DEPENDENT_PLAN_LABELS[p]).join(", ")}. Em branco = sem dependentes.`,
+      "Escolha na lista. Individual = 1 dependente; Familiar = até 3; Familiar + extras = 4 ou mais. Em branco = sem dependentes (não aparece na aba Dependentes).",
     ],
-    [ABA_DEPENDENTES, "Titular", "Sim", "Escolha na lista o colaborador de quem a pessoa é dependente. Se o titular já foi cadastrado antes e não está nesta planilha, digite o CPF dele."],
+    [ABA_DEPENDENTES, "Titular", "Sim", "Escolha na lista o colaborador de quem a pessoa é dependente (só aparece quem tem plano com dependentes e vaga). Se o titular já foi cadastrado antes e não está nesta planilha, digite o CPF dele."],
     [ABA_DEPENDENTES, "CPF do Dependente", "Sim", "Os 11 números do CPF do dependente (criança também precisa de CPF)."],
     [ABA_DEPENDENTES, "Nome do Dependente", "Recomendado", "Nome completo do dependente."],
     [
@@ -263,7 +265,8 @@ function abaDeInstrucoes(wb: ExcelJS.Workbook, empresa: string, geradoEm: string
   for (const item of [
     "☐  Todo colaborador tem nome, CPF (11 números) e telefone com DDD.",
     "☐  Ninguém aparece duas vezes na mesma aba.",
-    "☐  Todo dependente tem o titular escolhido na lista.",
+    "☐  Todo dependente tem o titular escolhido na lista, e nenhuma linha da aba Dependentes está vermelha.",
+    "☐  O plano de cada colaborador combina com quantos dependentes ele tem.",
     "☐  Linhas que sobraram ficaram em branco (não precisa apagar nada).",
   ]) {
     linha(item, {}, 18);
@@ -282,6 +285,27 @@ function abaDeInstrucoes(wb: ExcelJS.Workbook, empresa: string, geradoEm: string
   );
 }
 
+/** "Sem limite" (Familiar + extras) dentro da planilha. */
+const SEM_LIMITE = 999;
+
+/** Fórmula do limite de dependentes do plano escrito na célula (em branco = 0). */
+function formulaDoLimite(celulaDoPlano: string): string {
+  // ⚠️ O mesmo limite de LIMITE_DO_PLANO (planilha-titulares.ts).
+  let f = "0";
+  for (const plano of [...DEPENDENT_PLANS].reverse()) {
+    const limite = LIMITE_DO_PLANO[plano];
+    if (limite === 0) continue;
+    f = `IF(${celulaDoPlano}="${DEPENDENT_PLAN_LABELS[plano]}",${limite ?? SEM_LIMITE},${f})`;
+  }
+  return f;
+}
+
+function cinza(cell: ExcelJS.Cell) {
+  cell.font = { color: { argb: CINZA } };
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: AREIA } };
+  cell.border = borda;
+}
+
 function montarTitulares(wb: ExcelJS.Workbook) {
   const ws = wb.addWorksheet(ABA_TITULARES, {
     properties: { tabColor: { argb: AZUL } },
@@ -292,46 +316,94 @@ function montarTitulares(wb: ExcelJS.Workbook) {
     { width: 38 },
     { width: 18 },
     { width: 18 },
-    { width: 32 },
-    { width: 26 },
-    { width: 3 },
+    { width: 30 },
+    { width: 24 },
+    { width: 14 },
+    { width: 30 },
+    // H..L: as contas da lista (escondidas).
+    { width: 40, hidden: true },
+    { width: 8, hidden: true },
+    { width: 40, hidden: true },
+    { width: 8, hidden: true },
     { width: 40, hidden: true },
   ];
   topo(
     wb,
     ws,
     "Titulares",
-    "Uma linha por colaborador. Colunas com * são obrigatórias. Comece na linha logo abaixo dos títulos azuis.",
-    "E"
+    "Uma linha por colaborador. Colunas com * são obrigatórias. Escolha o Plano de Dependentes: é ele que libera o titular na aba Dependentes.",
+    "G"
   );
-  cabecalho(ws, COLUNAS_TITULARES);
-  ws.getCell(`${COLUNA_DA_LISTA}${LINHA_DO_CABECALHO}`).value = TITULO_DA_COLUNA_DA_LISTA;
+  cabecalho(ws, [...COLUNAS_TITULARES, ...COLUNAS_CALCULADAS_TITULARES]);
+  const ocultas = [TITULO_DA_COLUNA_DA_LISTA, "Limite", "Pode receber dependente", "Ordem", "Lista da aba Dependentes"];
+  ["H", "I", "J", "K", "L"].forEach((c, i) => {
+    ws.getCell(`${c}${LINHA_DO_CABECALHO}`).value = ocultas[i];
+  });
   linhasDeDados(ws, COLUNAS_TITULARES.length, [2, 3]);
 
   const planos = DEPENDENT_PLANS.map((p) => DEPENDENT_PLAN_LABELS[p]);
-  for (let r = PRIMEIRA_LINHA; r <= ULTIMA_LINHA; r++) {
+  const deps = `${ABA_DEPENDENTES}!$A$${PRIMEIRA_LINHA}:$A$${ULTIMA_LINHA}`;
+  const i0 = PRIMEIRA_LINHA;
+  const iN = ULTIMA_LINHA;
+  const f = (formula: string) => ({ formula, result: "" });
+  for (let r = i0; r <= iN; r++) {
     ws.getCell(`E${r}`).dataValidation = {
       type: "list",
       allowBlank: true,
       formulae: [listaFixa(planos)],
       showInputMessage: true,
       promptTitle: "Plano de Dependentes",
-      prompt: "Clique na setinha e escolha. Em branco = sem dependentes.",
+      prompt: "Individual = 1 dependente; Familiar = até 3; Familiar + extras = 4 ou mais. Em branco = sem dependentes.",
       showErrorMessage: true,
       errorStyle: "stop",
       errorTitle: "Escolha na lista",
       error: `Use uma das opções: ${planos.join(", ")}.`,
     };
-    // O texto que a lista da aba Dependentes mostra: "Nome — CPF".
-    // ⚠️ Mesmo formato de `textoDaLista` (planilha-titulares.ts).
-    ws.getCell(`${COLUNA_DA_LISTA}${r}`).value = {
-      formula: `IF(OR(TRIM(A${r})="",TRIM(B${r})=""),"",TRIM(A${r})&" — "&TRIM(B${r}))`,
-      result: "",
-    };
+    // H: "Nome — CPF" (⚠️ mesmo formato de textoDaLista, planilha-titulares.ts).
+    ws.getCell(`H${r}`).value = f(`IF(OR(TRIM(A${r})="",TRIM(B${r})=""),"",TRIM(A${r})&" — "&TRIM(B${r}))`);
+    // I: o limite do plano.
+    ws.getCell(`I${r}`).value = f(formulaDoLimite(`E${r}`));
+    // F: quantos dependentes já apontam para este titular.
+    ws.getCell(`F${r}`).value = f(`IF(H${r}="","",COUNTIF(${deps},H${r}))`);
+    // G: as vagas, em português.
+    ws.getCell(`G${r}`).value = f(
+      `IF(H${r}="","",IF(I${r}=0,IF(F${r}>0,"Passou do limite (sem dependentes)","Sem dependentes"),` +
+        `IF(I${r}>=${SEM_LIMITE},F${r}&" preenchido(s) · sem limite",` +
+        `IF(F${r}>I${r},"Passou do limite (máximo "&I${r}&")",` +
+        `IF(F${r}=I${r},"Completo",(I${r}-F${r})&" de "&I${r}&" livre(s)")))))`
+    );
+    // J: entra na lista se o plano tem dependente e ainda há vaga.
+    ws.getCell(`J${r}`).value = f(`IF(H${r}="","",IF(AND(I${r}>0,N(F${r})<I${r}),H${r},""))`);
+    // K e L: a lista compacta (sem buracos), que a validação da aba Dependentes lê.
+    ws.getCell(`K${r}`).value = f(`IF(J${r}="","",COUNTIF($J$${i0}:J${r},"?*"))`);
+    ws.getCell(`L${r}`).value = f(
+      `IFERROR(INDEX($J$${i0}:$J$${iN},MATCH(ROW()-${i0 - 1},$K$${i0}:$K$${iN},0)),"")`
+    );
+    cinza(ws.getCell(`F${r}`));
+    cinza(ws.getCell(`G${r}`));
   }
+  ws.addConditionalFormatting({
+    ref: `G${i0}:G${iN}`,
+    rules: [
+      {
+        type: "expression",
+        priority: 1,
+        formulae: [`LEFT(G${i0},6)="Passou"`],
+        style: {
+          font: { color: { argb: "FF9B1C1C" }, bold: true },
+          fill: { type: "pattern", pattern: "solid", bgColor: { argb: VERMELHO_CLARO } },
+        },
+      },
+    ],
+  });
   ws.getCell(`A${LINHA_DO_CABECALHO}`).note = "Nome completo do colaborador, sem abreviar.";
   ws.getCell(`B${LINHA_DO_CABECALHO}`).note = "Os 11 números do CPF, com ou sem pontos e traço.";
   ws.getCell(`C${LINHA_DO_CABECALHO}`).note = "Celular com DDD. Ex.: (43) 99999-0000.";
+  ws.getCell(`E${LINHA_DO_CABECALHO}`).note =
+    "Individual = 1 dependente; Familiar = até 3; Familiar + extras = 4 ou mais. Em branco = sem dependentes (não aparece na aba Dependentes).";
+  ws.getCell(`F${LINHA_DO_CABECALHO}`).note =
+    "Preenchido sozinho: quantos dependentes a aba Dependentes tem para este titular.";
+  ws.getCell(`G${LINHA_DO_CABECALHO}`).note = "Preenchido sozinho: quantas vagas o plano ainda deixa.";
 }
 
 function montarDependentes(wb: ExcelJS.Workbook) {
@@ -340,30 +412,35 @@ function montarDependentes(wb: ExcelJS.Workbook) {
     views: [{ state: "frozen", ySplit: LINHA_DO_CABECALHO, showGridLines: false }],
     pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
   });
-  ws.columns = [{ width: 44 }, { width: 22 }, { width: 34 }, { width: 18 }, { width: 18 }];
+  ws.columns = [{ width: 44 }, { width: 22 }, { width: 34 }, { width: 18 }, { width: 18 }, { width: 46 }];
   topo(
     wb,
     ws,
     "Dependentes",
-    `Uma linha por dependente. Em “Titular”, clique na setinha ▼ e escolha o colaborador (a lista vem da aba ${ABA_TITULARES}).`,
-    "E"
+    `Uma linha por dependente. Em “Titular”, clique na setinha ▼: a lista mostra só quem tem plano com dependentes e ainda tem vaga (aba ${ABA_TITULARES}).`,
+    "F"
   );
-  cabecalho(ws, COLUNAS_DEPENDENTES);
+  cabecalho(ws, [...COLUNAS_DEPENDENTES, COLUNA_DA_CONFERENCIA]);
   linhasDeDados(ws, COLUNAS_DEPENDENTES.length, [1, 2, 5]);
 
-  // A lista cresce conforme a aba Titulares é preenchida: só os que já têm
-  // nome e CPF (o texto da coluna escondida não está vazio).
-  const faixa = `${ABA_TITULARES}!$${COLUNA_DA_LISTA}$${PRIMEIRA_LINHA}:$${COLUNA_DA_LISTA}$${ULTIMA_LINHA}`;
-  const listaDeTitulares = `OFFSET(${ABA_TITULARES}!$${COLUNA_DA_LISTA}$${PRIMEIRA_LINHA},0,0,MAX(1,COUNTIF(${faixa},"?*")),1)`;
+  // A lista cresce conforme a aba Titulares é preenchida e encolhe quando o
+  // plano de alguém fica completo: é a coluna L (compacta) de lá.
+  const i0 = PRIMEIRA_LINHA;
+  const iN = ULTIMA_LINHA;
+  const faixa = `${ABA_TITULARES}!$L$${i0}:$L$${iN}`;
+  const listaDeTitulares = `OFFSET(${ABA_TITULARES}!$L$${i0},0,0,MAX(1,COUNTIF(${faixa},"?*")),1)`;
+  const chaves = `${ABA_TITULARES}!$H$${i0}:$H$${iN}`;
+  const limites = `${ABA_TITULARES}!$I$${i0}:$I$${iN}`;
+  const planosDosTitulares = `${ABA_TITULARES}!$E$${i0}:$E$${iN}`;
   const parentescos = RELATIONSHIPS.map((x) => RELATIONSHIP_LABELS[x]);
-  for (let r = PRIMEIRA_LINHA; r <= ULTIMA_LINHA; r++) {
+  for (let r = i0; r <= iN; r++) {
     ws.getCell(`A${r}`).dataValidation = {
       type: "list",
       allowBlank: true,
       formulae: [listaDeTitulares],
       showInputMessage: true,
       promptTitle: "Titular",
-      prompt: `Escolha o colaborador na lista. Titular já cadastrado antes, fora desta planilha? Digite o CPF dele.`,
+      prompt: "Escolha o colaborador na lista. Titular já cadastrado antes, fora desta planilha? Digite o CPF dele.",
       // Sem trava: digitar o CPF de um titular que já está na empresa vale.
       showErrorMessage: false,
     };
@@ -379,10 +456,40 @@ function montarDependentes(wb: ExcelJS.Workbook) {
       errorTitle: "Escolha na lista",
       error: `Use uma das opções: ${parentescos.join(", ")}.`,
     };
+    // F: a conferência da linha (o limite do plano do titular).
+    const m = `MATCH(A${r},${chaves},0)`;
+    const lim = `INDEX(${limites},${m})`;
+    const ordem = `COUNTIF($A$${i0}:A${r},A${r})`;
+    const cell = ws.getCell(`F${r}`);
+    cell.value = {
+      formula:
+        `IF(TRIM(A${r})="","",IF(ISNA(${m}),"Titular fora desta planilha: o sistema confere ao importar",` +
+        `IF(${lim}=0,"O plano do titular é Sem dependentes",` +
+        `IF(${ordem}>${lim},"Passou do limite: plano "&INDEX(${planosDosTitulares},${m})&" ("&${lim}&")","OK"))))`,
+      result: "",
+    };
+    cinza(cell);
   }
+  // A linha inteira fica vermelha quando passa do limite ou o plano não tem dependente.
+  ws.addConditionalFormatting({
+    ref: `A${i0}:F${iN}`,
+    rules: [
+      {
+        type: "expression",
+        priority: 1,
+        formulae: [`OR(LEFT($F${i0},6)="Passou",LEFT($F${i0},9)="O plano d")`],
+        style: {
+          font: { color: { argb: "FF9B1C1C" }, bold: true },
+          fill: { type: "pattern", pattern: "solid", bgColor: { argb: VERMELHO_CLARO } },
+        },
+      },
+    ],
+  });
   ws.getCell(`A${LINHA_DO_CABECALHO}`).note =
-    "Escolha na lista o colaborador da aba Titulares (nome e CPF).";
+    "Escolha na lista o colaborador da aba Titulares (nome e CPF). Só aparece quem tem plano com dependentes e ainda tem vaga.";
   ws.getCell(`B${LINHA_DO_CABECALHO}`).note = "Os 11 números do CPF do dependente.";
+  ws.getCell(`F${LINHA_DO_CABECALHO}`).note =
+    "Preenchido sozinho: confere se o dependente cabe no plano do titular.";
 }
 
 export async function planilhaModeloDeTitulares(opcoes: {

@@ -16,7 +16,8 @@
 // número da linha e o motivo. A planilha é do RH; ele acha a linha.
 
 import { formatCpf, formatPhone } from "@/lib/masks";
-import { RELATIONSHIPS } from "./constants";
+import { DEPENDENT_PLAN_LABELS, RELATIONSHIPS, type DependentPlan } from "./constants";
+import { LIMITE_DO_PLANO } from "./planilha-titulares";
 
 export type LinhaDaPlanilha = {
   cpf: string;
@@ -24,6 +25,12 @@ export type LinhaDaPlanilha = {
   phone: string;
   email: string;
   dependentPlan: string;
+  /**
+   * A planilha tem a coluna "Plano de Dependentes" (o modelo tem). Só então
+   * o plano limita os dependentes deste titular — planilha feita à mão, sem
+   * a coluna, não é recusada por um plano que ninguém escolheu.
+   */
+  planoNaPlanilha?: boolean;
   /** A linha na planilha (a 1 é o cabeçalho). Sem ela, a posição na lista. */
   linha?: number;
 };
@@ -143,6 +150,19 @@ export function conferirPlanilha(
     ...cpfsJaNaEmpresa,
   ]);
   const dependentesVistos = new Map<string, number>();
+  // O plano escolhido na aba Titulares limita os dependentes daquele titular
+  // (pedido do dono, 13/11/2026; LIMITE_DO_PLANO). Titular que já estava na
+  // empresa e não veio na planilha não tem plano escolhido aqui: o limite do
+  // contrato (na gravação) é o que vale para ele.
+  const planoDoTitular = new Map<string, DependentPlan>();
+  for (const r of rows) {
+    if (!r.planoNaPlanilha) continue;
+    const cpf = soDigitos(r.cpf);
+    if (cpf.length !== 11 || planoDoTitular.has(cpf)) continue;
+    const plano = (r.dependentPlan in LIMITE_DO_PLANO ? r.dependentPlan : "NONE") as DependentPlan;
+    planoDoTitular.set(cpf, plano);
+  }
+  const contaPorTitular = new Map<string, number>();
   const dependentesConferidos: DependenteConferido[] = [];
   dependentes.forEach((d, i) => {
     const linha = d.linha ?? i + 2;
@@ -162,6 +182,19 @@ export function conferirPlanilha(
     }
     else if (!titularesConhecidos.has(holderCpf)) {
       faltas.push("o CPF do titular não está na planilha nem na empresa");
+    }
+    const plano = holderCpf.length === 11 ? planoDoTitular.get(holderCpf) : undefined;
+    if (plano) {
+      const limite = LIMITE_DO_PLANO[plano];
+      const n = (contaPorTitular.get(holderCpf) ?? 0) + 1;
+      contaPorTitular.set(holderCpf, n);
+      if (limite === 0) {
+        faltas.push("o plano do titular na aba Titulares é Sem dependentes (escolha o plano dele)");
+      } else if (limite != null && n > limite) {
+        faltas.push(
+          `passou do limite do plano do titular (${DEPENDENT_PLAN_LABELS[plano]}: ${limite === 1 ? "1 dependente" : `até ${limite} dependentes`})`
+        );
+      }
     }
     if (cpf.length !== 11) faltas.push("CPF do dependente incompleto");
     if (!(RELATIONSHIPS as readonly string[]).includes(relationship)) {
