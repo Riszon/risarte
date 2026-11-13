@@ -9,11 +9,13 @@ import {
   getWebhook,
   refundBankSlip,
   refundPayment,
+  updateCustomer,
   updatePaymentSplit,
   updateWebhookEvents,
   type AsaasCredential,
 } from "./api";
 import { AsaasError, mensagemDoAsaas, type AsaasRequestOptions } from "./client";
+import { VARIAVEL_DOS_PERMITIDOS, celularDoAsaas, lerPermitidos, travaForaDaProducao } from "./regua";
 import {
   comIdsDoAsaas,
   decidirSplit,
@@ -219,8 +221,42 @@ export async function pedirEstornoNoAsaas(args: {
     const opts = opcoesDaConta(args.accountId, "estorno");
     let status: string | null = null;
     let link: string | null = null;
+    let celularEnviado = false;
     if (kind === "boleto") {
-      link = await refundBankSlip(cred, args.asaasPaymentId, opts);
+      // 18.7.7: o Asaas só estorna boleto com o CELULAR do pagador cadastrado
+      // (manda SMS com o link). Vai o da ficha; os avisos ficam como estavam.
+      const { data: pg } = await admin.rpc("_charge_refund_payer", { p_charge_id: args.chargeId });
+      const pagador = (Array.isArray(pg) ? pg[0] : pg) as {
+        asaas_customer_id: string | null;
+        mobile: string | null;
+        avisos_ligados: boolean;
+        regua_da_unidade: boolean;
+        termo_declarado: boolean;
+      } | null;
+      const cel = celularDoAsaas(pagador?.mobile);
+      if (!pagador?.asaas_customer_id || !cel) return { ok: false, error: "O pagador não tem celular válido na ficha. Cadastre o celular antes de pedir o estorno do boleto." };
+      if (!pagador.termo_declarado) return { ok: false, error: "Falta o Admin Master declarar o termo de privacidade. Faça este estorno no painel do Asaas." };
+      // A trava fora da produção (D10): no sandbox, só número da lista de permitidos.
+      const trava = travaForaDaProducao({
+        ambiente: cred.environment,
+        modo: "on",
+        contato: { email: null, mobile: cel },
+        permitidos: lerPermitidos(process.env[VARIAVEL_DOS_PERMITIDOS]),
+      });
+      if (!trava.contato.mobile) {
+        return { ok: false, error: "Ambiente de teste: o celular do pagador só vai ao Asaas se estiver na lista de permitidos." };
+      }
+      await updateCustomer(cred, pagador.asaas_customer_id, { mobilePhone: cel, notificationDisabled: !pagador.avisos_ligados }, opts);
+      celularEnviado = true;
+      try {
+        link = await refundBankSlip(cred, args.asaasPaymentId, opts);
+      } catch (e) {
+        // O pedido não saiu: com a régua desligada, o celular sai de novo do Asaas.
+        if (!pagador.regua_da_unidade) {
+          await updateCustomer(cred, pagador.asaas_customer_id, { mobilePhone: "", notificationDisabled: !pagador.avisos_ligados }, opts).catch(() => {});
+        }
+        throw e;
+      }
       status = "AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION";
     } else {
       const p = await refundPayment(cred, args.asaasPaymentId, `Estorno pelo riSZon: ${args.reason}`, opts);
@@ -239,6 +275,7 @@ export async function pedirEstornoNoAsaas(args: {
       console.error("charge refund record failed:", error.message);
       return { ok: false, error: "O Asaas recebeu o pedido, mas o riSZon não conseguiu gravar. Avise o Financeiro antes de pedir de novo." };
     }
+    if (celularEnviado) await admin.rpc("_charge_refund_mobile_sent", { p_charge_id: args.chargeId, p_actor: args.actorId });
     return { ok: true, estado: kind === "boleto" ? "aguardando_pagador" : status === "DONE" ? "concluido" : "aguardando_autorizacao", link };
   } catch (e) {
     if (!(e instanceof AsaasError)) console.error("charge refund failed:", e instanceof Error ? e.message : e);
@@ -368,4 +405,30 @@ export async function conferirWebhooks(): Promise<{ ok: number; corrigidos: numb
     else r.falharam++;
   }
   return r;
+}
+
+/**
+ * 18.7.7: o estorno de boleto terminou (concluído, negado, cancelado) com a
+ * régua da unidade DESLIGADA: o celular enviado só para ele sai do Asaas (o
+ * método da D6: `mobilePhone: ""`). Roda na rotina de 10 minutos.
+ */
+export async function limparCelularesDeEstorno(): Promise<number> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("_charge_refund_mobiles_to_clear");
+  if (error) {
+    if (!/does not exist|schema cache/i.test(error.message)) console.error("refund mobiles to clear failed:", error.message);
+    return 0;
+  }
+  let n = 0;
+  for (const r of (data ?? []) as { refund_id: string; account_id: string; asaas_customer_id: string }[]) {
+    try {
+      const cred = await credencialDaConta(r.account_id, "estorno_limpeza", null);
+      await updateCustomer(cred, r.asaas_customer_id, { mobilePhone: "", notificationDisabled: true }, opcoesDaConta(r.account_id, "estorno_limpeza"));
+      await admin.rpc("_charge_refund_mobile_cleared", { p_refund_id: r.refund_id });
+      n++;
+    } catch (e) {
+      console.error("refund mobile clear failed:", codigo(e));
+    }
+  }
+  return n;
 }

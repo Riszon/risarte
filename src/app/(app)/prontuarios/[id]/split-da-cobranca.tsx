@@ -75,6 +75,10 @@ export function SplitDaCobranca({
 
   if (!dados) return null;
   const boleto = meio === "BOLETO";
+  const celular = dados.boleto?.celular ?? null;
+  const celularFormatado = celular ? celular.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3") : null;
+  // 18.7.7: no boleto, sem o termo declarado ou sem celular válido, não sai pelo riSZon.
+  const boletoBloqueado = boleto && (!dados.boleto?.termoDeclarado || !celular);
   const link = dados.refund?.status === "pedido" ? dados.refund.request_url : null;
   const wa = link
     ? linkDoWhatsApp(
@@ -138,9 +142,22 @@ export function SplitDaCobranca({
       )}
 
       {paga && dados.podePedirEstorno && (
-        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAbrir(true)}>
-          <Undo2 className="mr-1 size-3" /> Pedir estorno
-        </Button>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={boletoBloqueado} onClick={() => setAbrir(true)}>
+            <Undo2 className="mr-1 size-3" /> Pedir estorno
+          </Button>
+          {boleto && !dados.boleto?.termoDeclarado && (
+            <span className="text-muted-foreground">
+              O estorno de boleto pede o termo de privacidade declarado pelo Admin Master. Até lá, faça no painel do Asaas.
+            </span>
+          )}
+          {boleto && dados.boleto?.termoDeclarado && !celular && (
+            <span className="text-muted-foreground">
+              Para estornar boleto, o Asaas exige o celular do pagador. Cadastre um celular válido na ficha
+              {payerName ? ` (${payerName})` : ""} antes de pedir.
+            </span>
+          )}
+        </span>
       )}
 
       <Dialog open={abrir} onOpenChange={setAbrir}>
@@ -150,10 +167,17 @@ export function SplitDaCobranca({
           </DialogHeader>
           <div className="space-y-2 text-sm">
             {boleto ? (
-              <p>
-                O Asaas gera um <strong>link para o pagador</strong> informar os dados bancários e enviar os documentos. O
-                dinheiro só volta depois disso. O riSZon não recebe esses dados.
-              </p>
+              <>
+                <p>
+                  O Asaas gera um <strong>link para o pagador</strong> informar os dados bancários e enviar os documentos. O
+                  dinheiro só volta depois disso. O riSZon não recebe esses dados.
+                </p>
+                <p className="rounded border border-amber-300 bg-amber-50 p-2 text-amber-900">
+                  Para isso, o riSZon envia ao Asaas o celular do pagador{payerName ? ` (${payerName})` : ""}:{" "}
+                  <strong>{celularFormatado}</strong>. O Asaas vai mandar um <strong>SMS</strong> a esse número com o link.
+                  Os avisos de cobrança do pagador continuam como estão.
+                </p>
+              </>
             ) : (
               <p>
                 O pedido vai ao Asaas e fica <strong>aguardando a autorização</strong> de quem tem o acesso da conta da

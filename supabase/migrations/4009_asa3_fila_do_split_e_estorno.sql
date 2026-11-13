@@ -1167,6 +1167,360 @@ $$;
 revoke execute on function public.charge_split_history(uuid) from public, anon, authenticated;
 grant execute on function public.charge_split_history(uuid) to authenticated;
 
+-- -----------------------------------------------------------------------------
+-- 10) O ESTORNO DE BOLETO E O CELULAR DO PAGADOR (decisão do dono, 13/11/2026)
+-- -----------------------------------------------------------------------------
+-- O Asaas só estorna boleto com o CELULAR do pagador cadastrado nele (manda um
+-- SMS com o link para os dados bancários). Regras (18.7.7):
+--   * o celular é o do pagador da ficha (o responsável financeiro, quando há),
+--     mostrado na tela antes de confirmar; sem celular válido, não sai;
+--   * enviar o celular NÃO liga aviso: os avisos do pagador ficam como estavam;
+--   * exige a declaração do termo de privacidade (a mesma da régua);
+--   * com a régua da unidade DESLIGADA, o celular é apagado no Asaas quando o
+--     estorno termina (concluído, negado ou cancelado) — o método da D6;
+--   * auditoria: enviado e apagado, por quem e quando, SEM o número.
+alter table public.charge_refunds
+  add column if not exists mobile_sent_at timestamptz,
+  add column if not exists mobile_sent_by uuid references public.profiles (id),
+  add column if not exists mobile_clear_needed boolean not null default false,
+  add column if not exists mobile_cleared_at timestamptz;
+
+-- O pagador da cobrança e o que o estorno de boleto precisa saber dele.
+create or replace function public._charge_refund_payer(p_charge_id uuid)
+returns table (gateway_customer_id uuid, asaas_customer_id text, mobile text, avisos_ligados boolean,
+               regua_da_unidade boolean, termo_declarado boolean)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select k.id, k.asaas_customer_id,
+         (select x.mobile from public._gateway_customer_contact(k.id) x),
+         coalesce(k.regua_applied_on, false),
+         public._gateway_regua_unit_on(c.gateway_account_id),
+         exists (select 1 from public.gateway_notification_settings s where s.id and s.privacy_declared_at is not null)
+    from public.charges c
+    join public.gateway_customers k on k.id = c.gateway_customer_id
+   where c.id = p_charge_id;
+$$;
+revoke execute on function public._charge_refund_payer(uuid) from public, anon, authenticated;
+
+-- A PORTA (redefinida): no boleto, o termo e o celular válido são exigidos.
+create or replace function public.charge_refund_check(p_charge_id uuid, p_reason text)
+returns table (charge_id uuid, account_id uuid, asaas_payment_id text, billing_type text, clinic_id uuid)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c public.charges%rowtype;
+  p record;
+begin
+  select * into c from public.charges where id = p_charge_id;
+  if not found then raise exception 'CHARGE_NOT_FOUND'; end if;
+  if not public._charge_refund_can(c.clinic_id) then raise exception 'NOT_ALLOWED'; end if;
+  if length(btrim(coalesce(p_reason, ''))) < 5 then raise exception 'REASON_REQUIRED'; end if;
+  if c.status not in ('paga', 'liquidada') or c.asaas_payment_id is null or c.is_external then
+    raise exception 'NOT_REFUNDABLE';
+  end if;
+  if c.refund_state is not null or exists (select 1 from public.charge_refunds r where r.charge_id = c.id and r.status = 'pedido') then
+    raise exception 'REFUND_PENDING';
+  end if;
+  if c.billing_type = 'BOLETO' then
+    select * into p from public._charge_refund_payer(c.id);
+    if not coalesce(p.termo_declarado, false) then raise exception 'PRIVACY_NOT_DECLARED'; end if;
+    if p.asaas_customer_id is null or p.mobile is null then raise exception 'NO_MOBILE'; end if;
+  end if;
+  return query select c.id, c.gateway_account_id, c.asaas_payment_id, c.billing_type, c.clinic_id;
+end;
+$$;
+revoke execute on function public.charge_refund_check(uuid, text) from public, anon, authenticated;
+grant execute on function public.charge_refund_check(uuid, text) to authenticated;
+
+-- O celular foi enviado para o estorno (auditoria sem o número).
+create or replace function public._charge_refund_mobile_sent(p_charge_id uuid, p_actor uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_clinic uuid;
+begin
+  update public.charge_refunds set mobile_sent_at = now(), mobile_sent_by = p_actor
+   where charge_id = p_charge_id and status = 'pedido';
+  select clinic_id into v_clinic from public.charges where id = p_charge_id;
+  insert into public.audit_logs (user_id, clinic_id, action, entity_type, entity_id, details)
+  values (p_actor, v_clinic, 'update', 'charge_refund_mobile', p_charge_id::text, jsonb_build_object('celular', 'enviado ao Asaas para o estorno de boleto'));
+end;
+$$;
+revoke execute on function public._charge_refund_mobile_sent(uuid, uuid) from public, anon, authenticated;
+
+-- O estorno terminou: com a régua da unidade desligada, o celular enviado
+-- para ele precisa ser apagado no Asaas (a rotina de 10 minutos apaga).
+create or replace function public._charge_refund_mark_mobile_clear(p_charge_id uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.charge_refunds r set mobile_clear_needed = true
+    from public.charges c
+   where r.charge_id = p_charge_id and c.id = r.charge_id
+     and r.mobile_sent_at is not null and r.mobile_cleared_at is null
+     and r.status <> 'pedido'
+     and not public._gateway_regua_unit_on(c.gateway_account_id);
+$$;
+revoke execute on function public._charge_refund_mark_mobile_clear(uuid) from public, anon, authenticated;
+
+create or replace function public._charge_refund_mobiles_to_clear()
+returns table (refund_id uuid, account_id uuid, asaas_customer_id text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select r.id, c.gateway_account_id, k.asaas_customer_id
+    from public.charge_refunds r
+    join public.charges c on c.id = r.charge_id
+    join public.gateway_customers k on k.id = c.gateway_customer_id
+   where r.mobile_clear_needed and r.mobile_cleared_at is null and k.asaas_customer_id is not null;
+$$;
+revoke execute on function public._charge_refund_mobiles_to_clear() from public, anon, authenticated;
+
+create or replace function public._charge_refund_mobile_cleared(p_refund_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.charge_refunds%rowtype;
+begin
+  update public.charge_refunds set mobile_cleared_at = now(), mobile_clear_needed = false
+   where id = p_refund_id returning * into r;
+  if r.id is null then return; end if;
+  insert into public.audit_logs (user_id, clinic_id, action, entity_type, entity_id, details)
+  values (null, r.clinic_id, 'update', 'charge_refund_mobile', r.charge_id::text, jsonb_build_object('celular', 'apagado no Asaas depois do estorno'));
+end;
+$$;
+revoke execute on function public._charge_refund_mobile_cleared(uuid) from public, anon, authenticated;
+
+-- O fim do pedido (redefinido): marca a limpeza do celular.
+create or replace function public._charge_refund_closed(p_charge_id uuid, p_status text, p_note text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.charge_refunds%rowtype;
+  c public.charges%rowtype;
+  v_title text;
+begin
+  select * into r from public.charge_refunds where charge_id = p_charge_id and status = 'pedido' for update;
+  if not found then return; end if;
+  select * into c from public.charges where id = p_charge_id;
+  update public.charge_refunds set status = p_status, finished_at = now(), status_note = left(p_note, 200) where id = r.id;
+  update public.charges set refund_state = null where id = p_charge_id;
+  perform public._charge_refund_mark_mobile_clear(p_charge_id);
+  v_title := case p_status when 'negado' then 'Estorno negado pelo Asaas'
+                           when 'cancelado' then 'Pedido de estorno cancelado'
+                           else 'Estorno não concluído' end;
+  insert into public.notifications (user_id, clinic_id, title, body, link)
+  values (r.requested_by, c.clinic_id, v_title,
+          'O estorno pedido não aconteceu (' || coalesce(p_note, p_status) || '). A cobrança continua paga.',
+          '/prontuarios/' || c.client_id::text);
+  if p_status in ('negado', 'falhou') then
+    perform public._gateway_notify(c.gateway_account_id, 'estorno_' || p_status, r.id::text, c.clinic_id, false, true, false,
+      v_title, 'O estorno pedido no riSZon não aconteceu (' || coalesce(p_note, p_status) || '). A cobrança continua paga.',
+      '/prontuarios/' || c.client_id::text);
+  end if;
+  insert into public.audit_logs (user_id, clinic_id, action, entity_type, entity_id, details)
+  values (null, c.clinic_id, 'update', 'charge_refund', c.id::text, jsonb_build_object('result', p_status, 'note', p_note));
+end;
+$$;
+revoke execute on function public._charge_refund_closed(uuid, text, text) from public, anon, authenticated;
+
+-- O aviso do estorno (redefinido): o concluído também marca a limpeza.
+create or replace function public._gateway_event_refund()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  c public.charges%rowtype;
+  v_ref text := new.payload->'payment'->>'externalReference';
+begin
+  if v_ref is null or v_ref !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then return null; end if;
+  select * into c from public.charges where id = v_ref::uuid and gateway_account_id = new.account_id;
+  if not found then return null; end if;
+  if new.event = 'PAYMENT_REFUNDED' then
+    perform public._gateway_split_refunded(c.id);
+    update public.charge_refunds set status = 'concluido', finished_at = now(), asaas_status = 'DONE'
+     where charge_id = c.id and status = 'pedido';
+    update public.charges set refund_state = null where id = c.id;
+    perform public._charge_refund_mark_mobile_clear(c.id);
+    update public.gateway_webhook_events set result = coalesce(result, '') || '+split' where id = new.id and c.split_applied;
+  elsif new.event = 'PAYMENT_REFUND_DENIED' then
+    perform public._charge_refund_closed(c.id, 'negado', 'negado pelo Asaas');
+    update public.gateway_webhook_events set result = 'estorno_negado' where id = new.id;
+  end if;
+  return null;
+end;
+$$;
+revoke execute on function public._gateway_event_refund() from public, anon, authenticated;
+
+-- A ficha (redefinida): no boleto, qual celular será enviado e se o termo foi declarado.
+create or replace function public.charge_split_history(p_charge_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  c public.charges%rowtype;
+  v_pode boolean;
+  v_cel text;
+  v_termo boolean;
+begin
+  select * into c from public.charges where id = p_charge_id;
+  if not found or not (public.is_admin_master() or public.can_see_clinic_finance(c.clinic_id)) then
+    raise exception 'NOT_ALLOWED';
+  end if;
+  v_pode := public._charge_refund_can(c.clinic_id) and c.status in ('paga', 'liquidada')
+            and c.refund_state is null and c.asaas_payment_id is not null and not c.is_external;
+  if v_pode and c.billing_type = 'BOLETO' then
+    select x.mobile, x.termo_declarado into v_cel, v_termo from public._charge_refund_payer(c.id) x;
+  end if;
+  return jsonb_build_object(
+    'updates', (select coalesce(jsonb_agg(jsonb_build_object('at', u.at, 'reasons', u.reasons, 'outcome', u.outcome) order by u.at desc), '[]'::jsonb)
+                  from public.charge_split_updates u where u.charge_id = c.id),
+    'naFila', c.split_pending_since is not null,
+    'refundState', c.refund_state,
+    'refund', (select to_jsonb(r) - 'requested_by' - 'mobile_sent_by'
+                 from public.charge_refunds r where r.charge_id = c.id order by r.requested_at desc limit 1),
+    'podePedirEstorno', v_pode,
+    -- Só para quem pode pedir, só no boleto: o número que irá ao Asaas.
+    'boleto', case when v_pode and c.billing_type = 'BOLETO' then
+                jsonb_build_object('celular', v_cel, 'termoDeclarado', coalesce(v_termo, false))
+              end);
+end;
+$$;
+revoke execute on function public.charge_split_history(uuid) from public, anon, authenticated;
+grant execute on function public.charge_split_history(uuid) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 11) CORREÇÃO DA 4008: a receita retida vai para a clínica DONA da conta que
+--     recebeu o split (antes: "uma franqueadora qualquer" — com mais de uma
+--     clínica franqueadora, a conta bancária não batia e o razão recusava).
+-- -----------------------------------------------------------------------------
+create or replace function public._gateway_split_ledger(p_split_charge_id uuid, p_settled_on date)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  s public.split_charges%rowtype;
+  r public.payment_receipts%rowtype;
+  v_acc record;
+  v_label text;
+  v_accrual date;
+  v_status text;
+  v_expected date;
+  c public.charges%rowtype;
+  v_dest uuid;
+  v_dest_clinic uuid;
+begin
+  select * into s from public.split_charges where id = p_split_charge_id;
+  if not found then return; end if;
+  select * into r from public.payment_receipts where id = s.receipt_id;
+  select * into c from public.charges where id = s.charge_id;
+  select * into v_acc from public.network_fee_accounts(s.fee);
+  if v_acc is null then return; end if;
+  v_label := public.network_fee_label(s.fee) || ' retido no split — ' || to_char(s.period_month, 'MM/YYYY');
+  v_accrual := case when date_trunc('month', coalesce(r.received_at, s.period_month)) = s.period_month
+                    then coalesce(r.received_at, s.period_month) else s.period_month end;
+  v_status := case when s.retained_cents <= 0 or s.reversed then 'cancelled'
+                   when p_settled_on is not null then 'settled' else 'open' end;
+  v_expected := coalesce(p_settled_on, c.credit_date, r.settlement_date, r.received_at);
+
+  -- A conta que recebeu ESTA taxa no split; sem ela, a raiz do mesmo ambiente.
+  select cs.destination_account_id into v_dest
+    from public.charge_splits cs where cs.charge_id = c.id and cs.fees ? s.fee limit 1;
+  if v_dest is null then
+    select g.id into v_dest from public.gateway_accounts g
+     where g.owner_type = 'franchisor' and g.status = 'active'
+       and g.environment = (select environment from public.gateway_accounts where id = c.gateway_account_id)
+     order by g.created_at limit 1;
+  end if;
+  select g.clinic_id into v_dest_clinic from public.gateway_accounts g where g.id = v_dest;
+  -- Carteira recebedora sem clínica (ex.: fundo com conta própria): a receita é da franqueadora dona da raiz.
+  if v_dest_clinic is null then
+    select g.clinic_id into v_dest_clinic from public.gateway_accounts g
+     where g.owner_type = 'franchisor' and g.status = 'active' and g.clinic_id is not null
+       and g.environment = (select environment from public.gateway_accounts where id = c.gateway_account_id)
+     order by g.created_at limit 1;
+  end if;
+
+  insert into public.financial_entries (
+    clinic_id, account_code, accrual_date, cash_date, expected_settlement_date,
+    amount_cents, direction, status, source_type, source_id, description, bank_account_id
+  ) values (
+    s.clinic_id, v_acc.unit_account, v_accrual,
+    case when v_status = 'settled' then p_settled_on end, v_expected,
+    greatest(s.retained_cents, 1), 'outflow', v_status, 'split_retained', s.id, v_label,
+    public._gateway_bank_account(c.gateway_account_id)
+  )
+  on conflict (source_type, source_id) where source_type in ('split_retained', 'split_retained_revenue')
+  do update set amount_cents = excluded.amount_cents, status = excluded.status,
+                cash_date = excluded.cash_date, expected_settlement_date = excluded.expected_settlement_date,
+                updated_at = now();
+
+  if v_dest_clinic is not null and v_dest_clinic <> s.clinic_id then
+    insert into public.financial_entries (
+      clinic_id, account_code, accrual_date, cash_date, expected_settlement_date,
+      amount_cents, direction, status, source_type, source_id, description, bank_account_id
+    ) values (
+      v_dest_clinic, v_acc.franchisor_account, v_accrual,
+      case when v_status = 'settled' then p_settled_on end, v_expected,
+      greatest(s.retained_cents, 1), 'inflow', v_status, 'split_retained_revenue', s.id, v_label,
+      (select b.id from public.bank_accounts b
+        where b.id = public._gateway_bank_account(v_dest) and b.clinic_id = v_dest_clinic)
+    )
+    on conflict (source_type, source_id) where source_type in ('split_retained', 'split_retained_revenue')
+    do update set amount_cents = excluded.amount_cents, status = excluded.status,
+                  cash_date = excluded.cash_date, expected_settlement_date = excluded.expected_settlement_date,
+                  updated_at = now();
+  end if;
+end;
+$$;
+revoke execute on function public._gateway_split_ledger(uuid, date) from public, anon, authenticated;
+
+-- A limpeza do celular vale para todos os pedidos daquela cobrança (o
+-- celular apagado é um só).
+create or replace function public._charge_refund_mobile_cleared(p_refund_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.charge_refunds%rowtype;
+begin
+  select * into r from public.charge_refunds where id = p_refund_id;
+  if r.id is null then return; end if;
+  update public.charge_refunds set mobile_cleared_at = now(), mobile_clear_needed = false
+   where charge_id = r.charge_id and mobile_sent_at is not null and mobile_cleared_at is null;
+  insert into public.audit_logs (user_id, clinic_id, action, entity_type, entity_id, details)
+  values (null, r.clinic_id, 'update', 'charge_refund_mobile', r.charge_id::text, jsonb_build_object('celular', 'apagado no Asaas depois do estorno'));
+end;
+$$;
+revoke execute on function public._charge_refund_mobile_cleared(uuid) from public, anon, authenticated;
+
 -- A trilha de auditoria nas tabelas novas.
 select public.audit_attach_all();
 

@@ -13,7 +13,7 @@
 // funções internas fechadas. Percentuais de exemplo não redondos.
 import { readFileSync } from "node:fs";
 import { connect } from "./test-db.mjs";
-import { entradasDoSplit, repasseSimulado, tarifaParaOSplit } from "../src/lib/asaas/split.ts";
+import { entradasDoSplit, tarifaParaOSplit } from "../src/lib/asaas/split.ts";
 
 const ARQ = "supabase/migrations/4009_asa3_fila_do_split_e_estorno.sql";
 
@@ -339,6 +339,48 @@ try {
   const fim = await um("select count(*) filter (where r.status = 'concluido')::int conc, count(*) filter (where r.status = 'pedido')::int ped, max(c.refund_state) st from public.charge_refunds r join public.charges c on c.id = r.charge_id where r.charge_id = $1", [C]);
   conf("o pedido fica 'concluído' e a cobrança sem estorno pendente", fim.conc === 1 && fim.ped === 0 && fim.st === null);
 
+  // --- 8b) o ESTORNO DE BOLETO e o celular do pagador (18.7.7) ---------------------
+  const E = await emitida(parcelas[5], 6);
+  await c.query("update public.charges set billing_type = 'BOLETO' where id = $1", [E]);
+  const cliE = (await um("select client_id, (select cpf from public.clients where id = client_id) cpf from public.charges where id = $1", [E]));
+  const cusE = (await um("select public._gateway_customer_save($1, $2, 'cus_ensaio_4009', 'client', $3, null) id", [conta.id, String(cliE.cpf ?? "").replace(/D/g, "") || "12345678909", cliE.client_id])).id;
+  await c.query("update public.charges set gateway_customer_id = $2, status = 'liquidada' where id = $1", [E, cusE]);
+  await c.query("update public.clients set phone = '(43) 3333-4444' where id = $1", [cliE.client_id]);
+  await c.query("update public.client_guardians set is_financial = false where client_id = $1", [cliE.client_id]).catch(() => {});
+  await c.query("update public.gateway_notification_settings set privacy_declared_at = null where id");
+  const semTermo = await comoPessoa(P.franqueado, "select * from public.charge_refund_check($1, 'estorno de boleto do ensaio')", [E]);
+  conf("boleto: sem o termo declarado, o estorno não sai pelo riSZon", typeof semTermo === "string" && /PRIVACY_NOT_DECLARED/.test(semTermo));
+  await c.query("update public.gateway_notification_settings set privacy_declared_at = now() where id");
+  const semCel = await comoPessoa(P.franqueado, "select * from public.charge_refund_check($1, 'estorno de boleto do ensaio')", [E]);
+  conf("boleto: sem celular válido na ficha (só fixo), o estorno não sai", typeof semCel === "string" && /NO_MOBILE/.test(semCel));
+  const fichaSem = await comoPessoa(P.franqueado, "select public.charge_split_history($1) r", [E]);
+  conf("boleto: a ficha mostra que falta o celular", Array.isArray(fichaSem) && fichaSem[0].r.boleto && fichaSem[0].r.boleto.celular === null);
+  await c.query("update public.clients set phone = '(43) 99876-5432' where id = $1", [cliE.client_id]);
+  conf("boleto: com celular válido e termo, o estorno pode sair", Array.isArray(await comoPessoa(P.franqueado, "select * from public.charge_refund_check($1, 'estorno de boleto do ensaio')", [E])));
+  const fichaCom = await comoPessoa(P.franqueado, "select public.charge_split_history($1) r", [E]);
+  conf("boleto: a ficha mostra o número que irá ao Asaas, antes de confirmar", Array.isArray(fichaCom) && fichaCom[0].r.boleto?.celular === "43998765432");
+  conf("boleto: quem não pode pedir não recebe o número", (await comoPessoa(P.recepcao, "select public.charge_split_history($1) r", [E])) === "recusado" || (await comoPessoa(P.recepcao, "select public.charge_split_history($1) r", [E]))[0]?.r?.boleto == null);
+  const pg = await um("select * from public._charge_refund_payer($1)", [E]);
+  conf("o pagador é lido com os avisos como estão (desligados neste pagador)", pg.avisos_ligados === false && pg.asaas_customer_id === "cus_ensaio_4009");
+  await c.query("select public._charge_refund_requested($1, $2, 'estorno de boleto do ensaio', 'boleto', 'AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION', 'https://sandbox.asaas.com/link')", [E, P.franqueado]);
+  await c.query("select public._charge_refund_mobile_sent($1, $2)", [E, P.franqueado]);
+  conf("boleto: a cobrança fica 'aguardando o pagador'", (await um("select refund_state from public.charges where id = $1", [E])).refund_state === "aguardando_pagador");
+  const aud = await todos("select details::text d from public.audit_logs where entity_type = 'charge_refund_mobile' and entity_id = $1", [E]);
+  conf("auditoria: registra que o celular foi enviado, por quem e quando — SEM o número", aud.length === 1 && !aud[0].d.includes("99876") && !aud[0].d.includes("98765"));
+  // Régua da unidade LIGADA: o celular fica (não entra na limpeza).
+  await c.query("insert into public.gateway_notification_units (clinic_id, enabled) values ($1, true) on conflict (clinic_id) do update set enabled = true", [ldn]);
+  await c.query("select public._charge_refund_closed($1, 'negado', 'negado pelo Asaas (ensaio)')", [E]);
+  conf("régua ligada: o celular fica no Asaas (sem limpeza)", !(await todos("select * from public._charge_refund_mobiles_to_clear()")).some((x) => x.asaas_customer_id === "cus_ensaio_4009"));
+  // Régua DESLIGADA: entra na limpeza; apagado, fica na auditoria.
+  await c.query("update public.gateway_notification_units set enabled = false where clinic_id = $1", [ldn]);
+  await c.query("select public._charge_refund_requested($1, $2, 'segundo estorno de boleto do ensaio', 'boleto', 'AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION', 'https://sandbox.asaas.com/link2')", [E, P.franqueado]);
+  await c.query("select public._charge_refund_mobile_sent($1, $2)", [E, P.franqueado]);
+  await c.query("select public._charge_refund_closed($1, 'cancelado', 'cancelado no Asaas (ensaio)')", [E]);
+  const limpar = (await todos("select * from public._charge_refund_mobiles_to_clear()")).find((x) => x.asaas_customer_id === "cus_ensaio_4009");
+  conf("régua desligada: o celular entra na limpeza quando o estorno termina", !!limpar);
+  await c.query("select public._charge_refund_mobile_cleared($1)", [limpar.refund_id]);
+  conf("apagado: sai da limpeza e fica na auditoria (sem o número)", !(await todos("select * from public._charge_refund_mobiles_to_clear()")).some((x) => x.asaas_customer_id === "cus_ensaio_4009") && (await um("select count(*)::int n from public.audit_logs where entity_type = 'charge_refund_mobile' and entity_id = $1 and details::text like '%apagado%'", [E])).n === 1);
+
   // --- 9) saldo e webhook --------------------------------------------------------
   conf("a conta que recebeu o split entra na conferência de saldo", (await todos("select * from public._gateway_split_balance_accounts()")).some((x) => x.account_id === raiz.id));
   await c.query("update public.gateway_split_settings set min_balance_cents = 10000 where id");
@@ -364,6 +406,8 @@ try {
     "_charge_refund_requested(uuid,uuid,text,text,text,text)", "_charge_refund_closed(uuid,text,text)", "_gateway_split_refunded(uuid)",
     "_charge_refunds_open()", "_charge_refund_late(uuid)", "_gateway_split_balance_accounts()", "_gateway_webhook_accounts(integer)",
     "_gateway_webhook_events_mark(uuid,boolean,integer)", "_gateway_split_log_run(uuid,uuid,integer,integer)", "_charge_split_inputs(uuid)",
+    "_charge_refund_payer(uuid)", "_charge_refund_mobile_sent(uuid,uuid)", "_charge_refund_mark_mobile_clear(uuid)",
+    "_charge_refund_mobiles_to_clear()", "_charge_refund_mobile_cleared(uuid)",
   ];
   let fechadas = 0;
   for (const fn of internas) {
