@@ -979,3 +979,19 @@ Percentuais de exemplo **diferentes por taxa e não redondos** (para pegar erro 
 - **150 cobranças por rodada** (10 min), parando no limite de chamadas; **as vencidas e as de vencimento mais próximo primeiro**. Estimativa: unidade com ~3.600 cobranças em aberto (300 contratos × 12 parcelas) → ~4 h no fim da promoção (10/02/2027), usando menos da metade da cota do Asaas.
 - **Diferença causada por mudança de TARIFA do Asaas**, em cobrança paga enquanto ainda estava na fila aguardando atualização, é **absorvida** (sem conta a pagar). Vale **só para tarifa**; mudança de taxa da rede ou de campanha continua na S5.
 - A tela mostra o **andamento da fila por unidade**: quantas faltam e a previsão de término.
+
+#### 18.7.3 Prova do estorno com split (13/11/2026, sandbox, autorizado pelo Jeferson no painel)
+
+Conta principal do sandbox, duas cobranças Pix de R$ 20,00 pagas e estornadas por inteiro (`scripts/asaas-prova-estorno-raiz-sandbox.mjs`):
+
+| Caso | Split | Estorno | Split depois | Carteira que recebeu o split |
+|---|---|---|---|---|
+| E1 | 14,72% para Londrina (com saldo) | `DONE` | `REFUNDED` (R$ 2,79) | devolveu R$ 2,79 (2.739,44 → 2.736,65) |
+| E2 | 1,83% para o Fundo de teste (**sem saldo**) | `DONE` | `REFUNDED` (R$ 0,33) | **ficou negativa: −R$ 0,33** |
+
+- **Carteira recebedora sem saldo:** o estorno **não falha nem fica pendente**; o Asaas debita a carteira mesmo assim e ela **fica negativa**. Na rede, a carteira é a da franqueadora (conta raiz).
+- **Avisos:** `PAYMENT_REFUNDED` (o Pix foi direto, sem `PAYMENT_REFUND_IN_PROGRESS`); **nenhum** `PAYMENT_SPLIT_CANCELLED` — o split aparece como `REFUNDED` dentro da cobrança.
+- **Antes da autorização:** o pedido fica `AWAITING_CRITICAL_ACTION_AUTHORIZATION` e a cobrança continua `RECEIVED`. A autorização é pelo token SMS ou do aplicativo do Asaas.
+- **Cancelar pedido pendente pela API: não existe** na documentação (o cancelamento aparece no extrato como `REFUND_REQUEST_CANCELLED`, sem aviso pelo webhook).
+- **Boleto:** rota própria (`POST /payments/{id}/bankSlip/refund`) que devolve um link (`requestUrl`) para o **pagador** informar os dados bancários e enviar documentos; pode ser **negado** (`PAYMENT_REFUND_DENIED`, ainda não assinado pelo riSZon).
+- **Cartão:** estornável confirmado ou recebido; até 10 dias úteis na fatura do pagador.
