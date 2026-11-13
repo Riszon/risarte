@@ -29,9 +29,13 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   de teste, DV-000011). Resíduo no treino: a DV-000011 com negativação,
 >   protesto, duas propostas, um contato, um PDF de teste e o cartório
 >   "Tabelionato de Protesto TESTE (pode apagar)".
-> - ⏳ **0405 só no treino.** Produção: o dono roda; conferência no fim do
->   arquivo (`18 · 60 · true · 0`). Próxima: **fase 3** (Contas a Pagar), com
->   OK do dono.
+> - ✅ **0405 aplicada nos dois bancos** (produção pelo dono em 13/11/2026,
+>   `audit_attach_all` = 7 — as 8 tabelas novas menos `debt_contacts`, que fica
+>   fora de propósito; conferido de fora: as 8 tabelas respondem, prazo do selo
+>   60, `debts.last_checked_on` existe, pasta `dividas` privada de 10 MB;
+>   anônimo recusado em `debt_save_proposal` (42501), lê 0 propostas e 0
+>   arquivos; a chave de serviço para na validação antes de gravar). Próxima:
+>   **fase 3** (Contas a Pagar), com OK do dono.
 >
 > ## 🏦 0.442.0 — LEVANTAMENTO DE DÍVIDAS, FASE 1: A BASE (13/11/2026; migração 0404)
 >

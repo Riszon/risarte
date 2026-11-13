@@ -423,7 +423,7 @@ Syncthing se comportarem de forma estranha.**
   ⚠️ **Totais = `totaisDaLista`**: sem proposta não é desconto; proposta e
   custas de grupo rateadas (`linhasDaLista`). ⚠️ Anexo: pasta privada
   `dividas`, caminho sem o nome do arquivo, registro por `debt_attach`.
-- ⏳ 0405 só no treino.
+- ✅ 0405 nos dois bancos (produção pelo dono em 13/11/2026; conferido de fora).
 
 **13/11/2026 (Levantamento de Dívidas — fase 1) — PC Administrador (core 0.441.0 → 0.442.0, migração 0404)**
 
