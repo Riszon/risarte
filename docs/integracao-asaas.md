@@ -995,3 +995,17 @@ Conta principal do sandbox, duas cobranças Pix de R$ 20,00 pagas e estornadas p
 - **Cancelar pedido pendente pela API: não existe** na documentação (o cancelamento aparece no extrato como `REFUND_REQUEST_CANCELLED`, sem aviso pelo webhook).
 - **Boleto:** rota própria (`POST /payments/{id}/bankSlip/refund`) que devolve um link (`requestUrl`) para o **pagador** informar os dados bancários e enviar documentos; pode ser **negado** (`PAYMENT_REFUND_DENIED`, ainda não assinado pelo riSZon).
 - **Cartão:** estornável confirmado ou recebido; até 10 dias úteis na fatura do pagador.
+
+#### 18.7.4 Estorno — decisões finais (Jeferson, 13/11/2026)
+
+1. **Saldo negativo:** depois de cada estorno com split, o riSZon confere o saldo da conta que recebeu e avisa o Financeiro da Franqueadora se ficou negativo; a rotina diária também confere. **Aviso preventivo:** saldo da conta da franqueadora abaixo de um **mínimo configurável na rede** avisa o Financeiro — nasce em branco (sem aviso) até o Jeferson definir. **Pendência com o Asaas:** o que acontece com conta de saldo negativo na produção (tarifa, bloqueio ou prazo para cobrir).
+2. **Pedido pendente:** sem botão de cancelar (o Asaas não cancela pela API); a tela orienta a cancelar no painel do Asaas ou a não autorizar. A rotina diária consulta os pedidos pendentes: cancelado → a cobrança volta para "Paga" e avisa quem pediu; pendente há mais de 1 dia útil → o aviso de 18.7.1.
+3. **Boleto:** o pedido mostra o link do Asaas com "Copiar link" e "Enviar pelo WhatsApp"; a cobrança fica **"Estorno aguardando o pagador"**; negado (`PAYMENT_REFUND_DENIED`) → volta para "Paga" e avisa quem pediu e o Financeiro. A tela explica que o pagador informa os dados bancários direto no Asaas e que o riSZon não recebe esses dados. O pagador é o **responsável financeiro**, quando houver.
+4. **Pix e cartão:** pedido no riSZon, autorização no Asaas pelo titular, U6 com o aviso de concluído. O riSZon nunca pede o código.
+
+#### 18.7.5 Webhook sem recriação manual (Jeferson, 13/11/2026)
+
+- A verificação de cada conta compara os avisos assinados no Asaas com a lista que o riSZon espera e **corrige sozinha, pela API**.
+- A mesma correção roda **logo depois de cada entrega** que muda a lista (a rotina de 10 minutos confere a versão da lista).
+- Webhook desatualizado **derruba a prontidão** da unidade até ser corrigido, e a Central mostra o motivo.
+- O botão manual "Criar o webhook" continua, como recurso.
