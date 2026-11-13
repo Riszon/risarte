@@ -320,6 +320,7 @@ declare
   v_settled date;
   v_touched text[] := '{}';
   v_key text;
+  v_frozen boolean;
 begin
   select * into c from public.charges where id = p_charge_id;
   if not found or c.receipt_id is null or not c.split_applied then return; end if;
@@ -357,6 +358,13 @@ begin
       left join public.charge_splits cs on cs.charge_id = c.id and cs.fees ? sc.fee
      where sc.charge_id = c.id
   loop
+    -- CONGELADA: a carteira já liquidada tem o razão liquidado, que não muda de
+    -- valor (0185). O aviso de OUTRA carteira, que chega depois, decide só
+    -- sobre a própria carteira: a falta já absorvida não passa da tolerância.
+    v_frozen := s.w_status = 'liquidado' and exists (
+      select 1 from public.financial_entries f
+       where f.source_type = 'split_retained' and f.source_id = s.id and f.status = 'settled');
+    continue when v_frozen;
     v_new := case
       when s.reversed or s.w_status is null then 0                      -- taxa que não foi no split
       when s.w_status in ('cancelado', 'recusado') then 0               -- split desfeito: volta à conta a pagar

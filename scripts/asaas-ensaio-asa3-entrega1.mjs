@@ -108,8 +108,16 @@ try {
   const franq = (await um("select id from public.clinics where type = 'franchisor' order by created_at limit 1")).id;
   const conta = await um("select * from public.gateway_accounts where clinic_id = $1 and status = 'active'", [ldn]);
   const raiz = await um("select * from public.gateway_accounts where owner_type = 'franchisor' and status = 'active' and environment = $1 and wallet_id is not null order by created_at limit 1", [conta?.environment]);
-  const outra = await um("select * from public.gateway_accounts where owner_type = 'recipient' and status = 'active' and environment = $1 and wallet_id is not null order by created_at limit 1", [conta?.environment]);
-  if (!ldn || !conta || !raiz || !outra) throw new Error("NÃO MEDI: falta Londrina com conta, a conta raiz ou uma carteira recebedora.");
+  if (!ldn || !conta || !raiz) throw new Error("NÃO MEDI: falta Londrina com conta ou a conta raiz.");
+  // O caso de DUAS carteiras: o fundo de propaganda numa carteira PRÓPRIA (o
+  // futuro, D6). ⚠️ A RisLife NUNCA é destino de taxa de paciente (D7, só o
+  // Empresarial), nem em teste: a carteira do fundo é criada aqui, dentro da
+  // transação desfeita, e some no fim.
+  const outra = await um(
+    `insert into public.gateway_accounts (owner_type, label, environment, mode, status, wallet_id)
+     values ('recipient', 'Fundo de Propaganda (ensaio)', $1, 'linked', 'active', 'wallet-ensaio-fundo-4008') returning *`,
+    [conta.environment]
+  );
   await c.query("delete from public.user_clinic_roles_all where user_id = $1", [P.gerente]);
   await c.query("insert into public.user_clinic_roles_all (user_id, clinic_id, role) values ($1, $2, 'unit_manager')", [P.gerente, ldn]);
   await c.query("delete from public.user_clinic_roles_all where user_id = $1", [P.financeiro]);
@@ -316,6 +324,10 @@ try {
   conf("sem split: o motivo fica gravado na cobrança", (await um("select split_skip_reason r from public.charges where id = $1", [ch6])).r === "franqueadora");
   const lF = await todos("select retained_cents::int r from public.split_charges where source_type = 'receipt' and source_id = (select receipt_id from public.charges where id = $1)", [ch6]);
   conf("sem split: nada retido, a taxa vai inteira para a conta a pagar (como hoje)", lF.length === 4 && lF.every((l) => l.r === 0));
+
+  // --- 10b) a ordem dos avisos não importa (o razão liquidado não muda) --------
+  const erros = await um("select count(*)::int n from public.gateway_webhook_events where asaas_event_id like 'evt_ensaio_%' and (result = 'erro' or error is not null)");
+  conf("nenhum aviso do ensaio terminou em erro (inclusive carteira liquidada antes da outra)", erros.n === 0);
 
   // --- 11) as funções internas fechadas ----------------------------------------------
   const internas = ["_charge_split_plan(uuid)", "_charge_save_split(uuid,jsonb)", "_charge_mark_split_skipped(uuid,text)", "_gateway_split_retention(uuid)", "_gateway_on_split_event(bigint)", "_gateway_split_ledger(uuid,date)"];
