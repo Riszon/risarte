@@ -56,7 +56,7 @@ update public.debt_categories
 
 -- -----------------------------------------------------------------------------
 -- 2) A REGRA ÚNICA (espelho: `contaForaDoResultado` / `atividadeDoCaixa` em
---    src/lib/finance/accounts-regra.ts — régua `regra-fora-do-resultado.test.ts`)
+--    src/lib/finance/regra-do-resultado.ts — régua `regra-fora-do-resultado.test.ts`)
 -- -----------------------------------------------------------------------------
 -- Fora do resultado: ativos (6), compra de bens (5.1), empréstimo (5.3),
 -- distribuição (5.4) e dívidas — passivo (5.5). A DRE, o ponto de equilíbrio,
