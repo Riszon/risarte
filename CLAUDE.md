@@ -418,8 +418,8 @@ Syncthing se comportarem de forma estranha.**
   Franqueadora + Admin). ⚠️ **Situação = `_debt_compute_status`**, espelho
   `situacaoDaDivida`. ⚠️ Fase 3: a regra "fora da DRE" vira UM lugar só,
   usado por todos os leitores do razão (D5) — ler o plano antes.
-- ⚠️ Produção: a franqueadora está com o CNPJ de Londrina (aguarda o dono).
-- ⏳ 0404 só no treino.
+- ⚠️ Produção: a franqueadora está com o CNPJ de Londrina (AP168, aguarda o dono).
+- ✅ 0404 nos dois bancos (produção pelo dono em 13/11/2026; conferido de fora).
 
 **13/11/2026 (Asaas — ASA3, entrega 1) — PC Administrador (core 0.439.0 → 0.440.0, Asaas 0.7.0, migração 4008; worktree `wt-asaas`)**
 

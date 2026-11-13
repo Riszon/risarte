@@ -38,9 +38,13 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - ⚠️ **Produção: a franqueadora (RF) está com o CNPJ de Londrina**
 >   (32.042.156/0001-21; o certo é 46.232.307/0001-19) — D3, aguarda o dono
 >   corrigir. Treino: só Londrina tem CNPJ.
-> - ⏳ **0404 só no treino.** Produção: o dono roda no SQL Editor; conferência
->   no fim do arquivo. Próxima: **fase 2** (restrições, propostas, anexos,
->   contatos com o credor), com OK do dono.
+> - ✅ **0404 aplicada nos dois bancos** (produção pelo dono em 13/11/2026,
+>   `audit_attach_all` = 9; conferido de fora: 4 naturezas, 14 categorias e 14
+>   subcategorias, regra da rede, implantação 16/11/2026 em RF/CBE/LDN, as 4
+>   permissões só no Financeiro da Franqueadora; anônimo recusado em
+>   `debt_save` (42501) e lê 0 dívidas; a chave de serviço para em "Entre no
+>   sistema" antes de gravar). Próxima: **fase 2** (restrições, propostas,
+>   anexos, contatos com o credor), com OK do dono.
 >
 > ## 🔒 0.441.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
 >
