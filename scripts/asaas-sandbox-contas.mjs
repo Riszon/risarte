@@ -2,7 +2,8 @@
 //
 // No sandbox, a conta raiz representa a franqueadora. Este roteiro:
 //   1. registra a conta raiz na franqueadora "RISARTE Franchising" do treino;
-//   2. cria no sandbox três subcontas (Londrina, Cambé e RisLife) e as
+//   2. cria no sandbox as subcontas (Londrina, Cambé, RisLife e, desde a ASA3,
+//      Fundo de Propaganda Teste) e as
 //      registra como contas VINCULADAS — pelas mesmas funções do banco que a
 //      Central usa (`gateway_create_account`, `_gateway_store_credentials`).
 // O webhook, as tarifas e as conferências NÃO são feitos aqui: são do próprio
@@ -138,6 +139,9 @@ const SUBCONTAS = [
   { chave: "londrina", nome: "Risarte Londrina Teste", unidade: "Risarte Londrina - Centro", tipo: "unit" },
   { chave: "cambe", nome: "Risarte Cambe Teste", unidade: "Risarte Cambé - Centro", tipo: "unit" },
   { chave: "rislife", nome: "RisLife Teste", unidade: null, tipo: "recipient" },
+  // ASA3 (13/11/2026): só para provar o split com o fundo de propaganda em
+  // carteira PRÓPRIA (o futuro, D6). Hoje o fundo vai para a franqueadora.
+  { chave: "fundo", nome: "Fundo de Propaganda Teste", unidade: null, tipo: "recipient" },
 ];
 
 const c = await connect();
