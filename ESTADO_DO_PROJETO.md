@@ -2,6 +2,36 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🔒 0.441.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
+>
+> Achado de 13/11 (teste do selo da 4006, sessões das contas de teste no
+> treino): ASB, TSB, SDR, Planner, Consultor, Assistente, Comprador e
+> Coordenador liam pela API as parcelas, recebimentos e renegociações. A tela
+> não mostrava. Causa: as regras de leitura usavam `user_full_access_clinic_ids()`
+> (qualquer papel menos dentista e RisLife). Aprovado pelo dono, mantendo
+> SDR e Coordenador no parcelamento da venda direta.
+> - ⚠️ **Quem vê o financeiro do cliente = `can_see_receivables(clinic)`**
+>   (Admin, Fin. Franqueadora, equipe da Franqueadora, e na unidade Gerente,
+>   Recepção, Franqueado — o `canSeeReceivables` da ficha). Vale para
+>   `payment_receipts`, `payment_renegotiations`, `charges`, `payment_waivers`.
+> - ⚠️ **`payment_installments` = isso OU `can_see_sale_schedule`**: só linha
+>   de venda (`negotiation_id`/`direct_sale_id`), para Consultor e Assistente
+>   (escopo), Planner (negociação), SDR e Coordenador (venda direta).
+>   Tela comercial nova que leia parcela com a sessão da pessoa entra aqui.
+> - ⚠️ **`charges_select`/`payment_waivers_select` nasceram na 4004** e foram
+>   recriadas na 0403: reaplicar a 4004 reabre o vazamento. Régua
+>   `recebiveis-so-quem-ve-o-financeiro.test.ts` (provada quebrando).
+> - Ensaio `scripts/recebiveis-ensaio-0403.mjs` (transação desfeita): recria
+>   as regras antigas → 8 falhas; aplica 2× → 0 falhas. Treino: 0403 por
+>   `migrar:teste`; medido pela API com as sessões reais (ASB/TSB/Comprador 0;
+>   consultor 128, planner 111, SDR 17; financeiro igual). `test:indica` 246/0.
+> - Fora (backlog AP164–AP167): o comercial ainda vê situação/valor pago das parcelas
+>   da venda (corte por coluna exige porta própria); vendas, negociações e
+>   planos abertos a ASB/TSB/Comprador; escopo "específicas" da equipe da
+>   Franqueadora; o teste e2e do selo (branch do Asaas) virar asserção.
+> - ⏳ **0403 só no treino.** Produção: o dono roda no SQL Editor; conferência
+>   no fim do arquivo (5 linhas, `usa_helper = true`). Não visto na tela.
+>
 > ## ✅ 0.440.0 / ASAAS 0.7.0 — ASA3, ENTREGA 1: O SPLIT NA EMISSÃO (13/11/2026; migração 4008)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na seção 18 da especificação.
