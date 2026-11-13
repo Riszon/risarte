@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { cn } from "@/lib/utils";
 import { formatCnpj, isValidCnpj } from "@/lib/masks";
-import { formatIsoDateBr } from "@/lib/dates";
+import { formatIsoDateBr, todayInBrazil } from "@/lib/dates";
 import { EMPTY_SUPPLIER } from "@/lib/fornecedores";
 import {
   DEBT_TYPES,
@@ -24,6 +24,10 @@ import {
   PRIORITY_REASONS,
   PRIORITY_REASON_LABELS,
   campoDeCentavos,
+  centavosDoCampo,
+  fraseDoImpacto,
+  impactoNoFinanceiro,
+  titulosParecidos,
   faltaNoCadastro,
   origemPedeJustificativa,
   origemSugerida,
@@ -33,8 +37,9 @@ import {
   type Priority,
 } from "@/lib/finance/dividas";
 import { saveSupplier } from "../fornecedores/actions";
-import { criarEtiqueta, salvarDivida, salvarGrupo } from "./actions";
-import type { BaseDasDividas, Divida } from "./dados";
+import { contaForaDoResultado } from "@/lib/finance/regra-do-resultado";
+import { buscarTitulosLivres, criarEtiqueta, salvarDivida, salvarGrupo } from "./actions";
+import type { BaseDasDividas, Divida, TituloLivre } from "./dados";
 
 export const SELECT_CLASS =
   "mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm disabled:opacity-60";
@@ -96,11 +101,14 @@ export function FormularioDaDivida({
   inicial,
   aberto,
   onFechar,
+  jaNoFinanceiro = false,
 }: {
   base: BaseDasDividas;
   inicial: DebtForm | null;
   aberto: boolean;
   onFechar: () => void;
+  /** A dívida já tem título gerado: o título acompanha a edição sozinho. */
+  jaNoFinanceiro?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -133,6 +141,44 @@ export function FormularioDaDivida({
   const contaHerdada = f.origin === "A" ? categoria?.contaAbertura : f.origin === "B" ? categoria?.contaDespesa : null;
   const nomeDaConta = useMemo(() => new Map(base.contas.map((a) => [a.code, `${a.code} · ${a.name}`])), [base.contas]);
 
+  // Fase 3 (0406): o que vai para o Contas a Pagar, antes de salvar.
+  const [gerarJa, setGerarJa] = useState(false);
+  const impacto = impactoNoFinanceiro({
+    origin: f.origin,
+    contaDaDivida: f.accountCode || null,
+    contaDeAberturaDaCategoria: categoria?.contaAbertura ?? null,
+    contaDeDespesaDaCategoria: categoria?.contaDespesa ?? null,
+    updatedCents: centavosDoCampo(f.updated),
+    originalCents: centavosDoCampo(f.original),
+    implantacao: devedor?.implantacao ?? null,
+    hoje: todayInBrazil(),
+    competencia: f.accrualMonth || null,
+    emissao: f.issueDate || null,
+    vencimento: f.dueDate,
+    foraDoResultado: contaForaDoResultado,
+  });
+  const fraseDoTitulo = fraseDoImpacto(impacto, devedor?.nome ?? "o devedor", impacto.conta ? (base.contas.find((a) => a.code === impacto.conta)?.name ?? null) : null);
+
+  // Ajuste 2: título parecido já no Contas a Pagar → talvez seja origem C.
+  const [livres, setLivres] = useState<{ clinicId: string; titulos: TituloLivre[] } | null>(null);
+  useEffect(() => {
+    if (f.id || !f.clinicId) return;
+    let vale = true;
+    buscarTitulosLivres(f.clinicId).then((t) => vale && setLivres({ clinicId: f.clinicId, titulos: t })).catch(() => {});
+    return () => {
+      vale = false;
+    };
+  }, [f.id, f.clinicId]);
+  const parecidos =
+    !f.id && f.supplierId && f.dueDate && livres?.clinicId === f.clinicId
+      ? titulosParecidos(livres.titulos, {
+          fornecedorId: f.supplierId,
+          vencimento: f.dueDate,
+          valorCents: centavosDoCampo(f.updated) ?? centavosDoCampo(f.original),
+          contrato: f.contractNumber || null,
+        })
+      : [];
+
   const escolherCategoria = (id: string) => {
     const c = base.categorias.find((x) => x.id === id);
     muda({ categoryId: id, subcategoryId: "", natureCode: c?.natureza ?? f.natureCode });
@@ -145,9 +191,10 @@ export function FormularioDaDivida({
       return;
     }
     startTransition(async () => {
-      const r = await salvarDivida(f, sugerida);
+      const r = await salvarDivida(f, sugerida, gerarJa && f.origin !== "C" && !impacto.problema);
       if (r.ok) {
         toast.success(f.id ? "Dívida atualizada." : "Dívida cadastrada.");
+        if (r.aviso) toast.warning(r.aviso);
         onFechar();
         if (!f.id && r.id) router.push(`/financeiro/dividas/${r.id}`);
         else router.refresh();
@@ -496,13 +543,38 @@ export function FormularioDaDivida({
               {devedor?.implantacao
                 ? `Implantação do riSZon em ${devedor.nome}: ${formatIsoDateBr(devedor.implantacao)}. A sugestão olha a data em que a dívida nasceu (emissão, senão competência), não o vencimento.`
                 : "Este devedor ainda não tem data de implantação (aba Configurações): o sistema não sugere a origem."}{" "}
-              Os títulos no Contas a Pagar chegam na fase 3; por enquanto a origem fica registrada.
+              A origem decide o que vai para o Contas a Pagar da unidade (veja abaixo).
             </p>
             {pedeJustificativa && (
               <label className="mt-1 block">
                 <Label className="text-[11px]">Por que a origem difere da sugerida? *</Label>
                 <Input className="h-9" value={f.originOverrideReason} onChange={(e) => muda({ originOverrideReason: e.target.value })} />
               </label>
+            )}
+          </div>
+
+          <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-sm sm:col-span-2">
+            <p className="text-[11px] font-medium text-muted-foreground">No Contas a Pagar</p>
+            {jaNoFinanceiro ? (
+              <p>Esta dívida já tem título no Contas a Pagar: valor, conta e vencimento acompanham esta edição enquanto o título não tiver pagamento.</p>
+            ) : (
+              <>
+                <p className={impacto.problema ? "text-amber-700 dark:text-amber-300" : undefined}>{f.clinicId && f.dueDate ? fraseDoTitulo : "Escolha o devedor e o vencimento para ver o que será criado."}</p>
+                {f.origin !== "C" && !impacto.problema && f.clinicId && f.dueDate && (
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" className="accent-primary" checked={gerarJa} onChange={(e) => setGerarJa(e.target.checked)} />
+                    Gerar já no Contas a Pagar ao salvar
+                  </label>
+                )}
+                {!gerarJa && f.origin !== "C" && (
+                  <p className="text-[11px] text-muted-foreground">Sem marcar, o título pode ser gerado depois, na aba Contas a Pagar da dívida.</p>
+                )}
+              </>
+            )}
+            {parecidos.length > 0 && f.origin !== "C" && (
+              <p className="rounded border border-amber-500/50 bg-amber-50 p-2 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                {parecidos.length === 1 ? "Já existe 1 título parecido" : `Já existem ${parecidos.length} títulos parecidos`} no Contas a Pagar de {devedor?.nome ?? "este devedor"} (mesmo credor, vencimento e valor, ou o mesmo contrato). Se for a mesma dívida, use a origem C e vincule na aba Contas a Pagar, para não lançar em dobro.
+              </p>
             )}
           </div>
 

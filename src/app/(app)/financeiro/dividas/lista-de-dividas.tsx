@@ -287,8 +287,8 @@ export function ListaDeDividas({
         </div>
       )}
       <p className="text-[11px] text-muted-foreground">
-        Valor devido = o valor atualizado informado, senão o original. Os totais respeitam os filtros; a
-        proposta de um grupo é repartida entre as dívidas dele. Pagamentos entram na próxima fase.
+        Valor devido = o valor atualizado informado, senão o original, menos o que já foi pago no Contas a
+        Pagar. Os totais respeitam os filtros; a proposta de um grupo é repartida entre as dívidas dele.
       </p>
 
       {novo && <FormularioDaDivida base={base} inicial={null} aberto={novo} onFechar={() => setNovo(false)} />}

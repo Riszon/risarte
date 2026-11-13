@@ -39,12 +39,16 @@ import { Restricoes } from "./restricoes";
 import { Propostas } from "./propostas";
 import { ContatosDaDivida } from "./contatos-da-divida";
 import { Anexos } from "./anexos";
+import { NoFinanceiro, type PreviaDoFinanceiro } from "./no-financeiro";
+import type { TituloDaDivida } from "../dados";
+import type { ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
 import { useAcao } from "./comum";
 
-const ABAS = ["dados", "restricoes", "propostas", "contatos", "anexos", "historico"] as const;
+const ABAS = ["dados", "financeiro", "restricoes", "propostas", "contatos", "anexos", "historico"] as const;
 type Aba = (typeof ABAS)[number];
 const ROTULO_DA_ABA: Record<Aba, string> = {
   dados: "Dados",
+  financeiro: "Contas a Pagar",
   restricoes: "Restrições",
   propostas: "Propostas",
   contatos: "Contatos",
@@ -65,6 +69,9 @@ export function DetalheDaDivida({
   hoje,
   podeLancar,
   podeExcluir,
+  previa,
+  titulos,
+  contas,
 }: {
   base: BaseDasDividas;
   divida: Divida;
@@ -78,6 +85,9 @@ export function DetalheDaDivida({
   hoje: string;
   podeLancar: boolean;
   podeExcluir: boolean;
+  previa: PreviaDoFinanceiro | null;
+  titulos: TituloDaDivida[];
+  contas: ContaDaUnidade[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -186,9 +196,10 @@ export function DetalheDaDivida({
           </p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-semibold tabular-nums">{formatBRL(valorDevido(d))}</p>
+          <p className="text-2xl font-semibold tabular-nums">{formatBRL(valorDevido(linha))}</p>
           <p className="text-xs text-muted-foreground">
             {d.updatedCents !== null ? `atualizado${d.updatedRefDate ? ` em ${formatIsoDateBr(d.updatedRefDate)}` : ""}` : "valor original"}
+            {(linha.pagoCents ?? 0) > 0 && ` · já pago ${formatBRL(linha.pagoCents ?? 0)}`}
           </p>
         </div>
       </div>
@@ -231,8 +242,8 @@ export function DetalheDaDivida({
             </Button>
           )}
           <span className="self-center text-[11px] text-muted-foreground">
-            {d.lastCheckedOn ? `Última conferência: ${formatIsoDateBr(d.lastCheckedOn)}.` : "Nunca conferida."} Renegociar e
-            registrar pagamento chegam nas próximas fases.
+            {d.lastCheckedOn ? `Última conferência: ${formatIsoDateBr(d.lastCheckedOn)}.` : "Nunca conferida."} Pagamentos: aba Contas a
+            Pagar. Renegociar chega numa próxima fase.
           </span>
         </div>
       )}
@@ -348,6 +359,21 @@ export function DetalheDaDivida({
         </p>
       )}
 
+      {aba === "financeiro" && (
+        <NoFinanceiro
+          debtId={d.id}
+          clinicId={d.clinicId}
+          devedor={base.devedores.find((u) => u.id === d.clinicId)?.nome ?? "a unidade"}
+          origem={d.origin}
+          alvo={{ fornecedorId: d.supplierId, vencimento: d.dueDate, valorCents: d.updatedCents ?? d.originalCents, contrato: d.contractNumber }}
+          previa={previa}
+          titulos={titulos}
+          contas={contas}
+          hoje={hoje}
+          podeLancar={podeLancar && !excluida}
+        />
+      )}
+
       {aba === "restricoes" && fase2.ok && (
         <Restricoes
           debtId={d.id}
@@ -365,7 +391,7 @@ export function DetalheDaDivida({
           debtId={d.id}
           groupId={d.groupId}
           groupLabel={grupo ? `${grupo.code} · ${grupo.label}` : null}
-          devidoCents={valorDevido(d)}
+          devidoCents={valorDevido(linha)}
           devidoDoGrupoCents={devidoDoGrupoCents}
           propostas={fase2.propostas}
           hoje={hoje}
@@ -400,7 +426,7 @@ export function DetalheDaDivida({
       )}
 
       {editando && (
-        <FormularioDaDivida base={base} inicial={formularioDaDivida(d)} aberto={editando} onFechar={() => setEditando(false)} />
+        <FormularioDaDivida base={base} inicial={formularioDaDivida(d)} aberto={editando} onFechar={() => setEditando(false)} jaNoFinanceiro={!!d.financeSyncedAt} />
       )}
 
       <Dialog open={etapa !== null} onOpenChange={(o) => !o && setEtapa(null)}>

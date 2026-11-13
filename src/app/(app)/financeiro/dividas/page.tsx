@@ -4,8 +4,9 @@ import { Landmark } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { GerarPendentes } from "./gerar-pendentes";
 import { podeConfigurarDividas, podeLancarDividas, podeVerDividas } from "@/lib/finance/dividas-acesso";
-import { carregarBase, carregarDividas, carregarResumoDaFase2, linhasDaLista, prazosDosSelos } from "./dados";
+import { carregarBase, carregarDividas, carregarResumoDaFase2, carregarTitulosDasDividas, linhasDaLista, prazosDosSelos } from "./dados";
 import { ListaDeDividas } from "./lista-de-dividas";
 import { Credores } from "./credores";
 import { Configuracoes } from "./configuracoes";
@@ -29,9 +30,18 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
   const { aba: abaPedida } = await searchParams;
   const aba: Aba = ABAS.some((a) => a.id === abaPedida) ? (abaPedida as Aba) : "dividas";
 
-  const [base, lista, fase2] = await Promise.all([carregarBase(), carregarDividas(), carregarResumoDaFase2()]);
-  const linhas = linhasDaLista(lista.dividas, base, fase2);
+  const [base, lista, fase2, doFinanceiro] = await Promise.all([
+    carregarBase(),
+    carregarDividas(),
+    carregarResumoDaFase2(),
+    carregarTitulosDasDividas(),
+  ]);
+  const linhas = linhasDaLista(lista.dividas, base, fase2, doFinanceiro.titulos);
   const prazos = prazosDosSelos(base);
+  // Fase 3: as dívidas A/B cadastradas antes da 0406 (ou sem "gerar já").
+  const pendentes = lista.dividas
+    .filter((d) => d.origin !== "C" && !d.financeSyncedAt)
+    .map((d) => ({ id: d.id, code: d.code }));
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-8">
@@ -45,6 +55,11 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
           franqueadora — para enxergar o tamanho do problema, priorizar e negociar. Não é a
           inadimplência de pacientes (essa fica em Recebíveis).
         </p>
+        {!base.semMigracao && (
+          <Link href="/financeiro/dividas/saldo-de-abertura" className="mt-1 inline-block text-sm underline">
+            Saldo de abertura do passivo (para o contador)
+          </Link>
+        )}
       </div>
 
       {base.semMigracao ? (
@@ -82,6 +97,7 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
             </p>
           )}
 
+          {aba === "dividas" && podeLancarDividas(session) && pendentes.length > 0 && <GerarPendentes pendentes={pendentes} />}
           {aba === "dividas" && (
             <ListaDeDividas base={base} linhas={linhas} hoje={todayInBrazil()} prazos={prazos} podeLancar={podeLancarDividas(session)} />
           )}

@@ -84,6 +84,8 @@ type PayableRow = {
   status: string;
   approval_mode: string;
   requires_approval: boolean;
+  /** 0406: saldo de implantação (sem a 0406 no banco, vem indefinido). */
+  opening_balance?: boolean;
 };
 
 type PaymentRow = {
@@ -145,7 +147,7 @@ export async function carregarPagar(
       supabase
         .from("payables")
         .select(
-          "id, clinic_id, account_code, description, accrual_date, due_date, amount_cents, paid_amount_cents, paid_fee_cents, paid_interest_cents, status, approval_mode, requires_approval"
+          "id, clinic_id, account_code, description, accrual_date, due_date, amount_cents, paid_amount_cents, paid_fee_cents, paid_interest_cents, status, approval_mode, requires_approval, opening_balance"
         )
         .in("clinic_id", lote)
         .not("status", "in", "(paga,cancelada,recusada)")
@@ -172,9 +174,11 @@ export async function carregarPagar(
   return {
     ok: true,
     unidades: unidades.map((u) => {
-      const views = contas.linhas
-        .filter((r) => r.clinic_id === u.clinicId)
-        .map((r) => viewPayable(paraPayable(r), hoje));
+      const daUnidade = contas.linhas.filter((r) => r.clinic_id === u.clinicId);
+      const views = daUnidade.map((r) => viewPayable(paraPayable(r), hoje));
+      // 0406 (D1-c): título do saldo de implantação (dívida anterior ao riSZon)
+      // não pinta a unidade de vermelho como "conta vencida": fica à parte.
+      const saldoVencido = views.filter((v, i) => v.isOverdue && daUnidade[i].opening_balance === true);
       const pays: PayablePaymentEntry[] = pagamentos.linhas
         .filter((p) => p.clinic_id === u.clinicId)
         .map((p) => ({
@@ -198,8 +202,8 @@ export async function carregarPagar(
       return {
         ...u,
         aPagarCents: s.openCents,
-        vencidoCents: s.overdueCents,
-        vencidoQuantidade: s.overdueCount,
+        vencidoCents: s.overdueCents - saldoVencido.reduce((t, v) => t + v.balanceCents, 0),
+        vencidoQuantidade: s.overdueCount - saldoVencido.length,
         aAutorizarQuantidade: s.awaitingCount,
         aAutorizarCents: s.awaitingCents,
         venceNoMesCents: venceNoMes,

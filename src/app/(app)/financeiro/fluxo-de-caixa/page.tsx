@@ -106,7 +106,7 @@ export default async function CashFlowPage(
     day: r.day,
     kind: r.kind === "previsto" ? "previsto" : "realizado",
     activity:
-      r.activity === "investimento" || r.activity === "financiamento"
+      r.activity === "investimento" || r.activity === "financiamento" || r.activity === "dividas"
         ? r.activity
         : "operacional",
     inflowCents: Number(r.inflow_cents ?? 0),
@@ -129,6 +129,8 @@ export default async function CashFlowPage(
       receivable_count: number;
       payable_cents: number;
       payable_count: number;
+      opening_cents?: number;
+      opening_count?: number;
     }[]
   )[0];
 
@@ -167,6 +169,8 @@ export default async function CashFlowPage(
           receivableCount: Number(overdue?.receivable_count ?? 0),
           payableCents: Number(overdue?.payable_cents ?? 0),
           payableCount: Number(overdue?.payable_count ?? 0),
+          openingCents: Number(overdue?.opening_cents ?? 0),
+          openingCount: Number(overdue?.opening_count ?? 0),
         }}
         hasBankAccount={(bankRows ?? []).length > 0}
       />

@@ -400,6 +400,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/11/2026 (Levantamento de Dívidas — fase 3) — PC Administrador (core 0.443.0 → 0.444.0, migração 0406)**
+
+- **As dívidas no Contas a Pagar** (bloco 0.444.0 no ESTADO). ⚠️ **"Fora do
+  resultado" = `account_outside_result`** (espelho `contaForaDoResultado`):
+  leitor do razão novo ou recriado usa a função, nunca a lista de prefixos
+  (régua `regra-fora-do-resultado.test.ts`). ⚠️ **Título da dívida =
+  `_debt_title_spec`** (espelho `impactoNoFinanceiro`). ⚠️ Saldo de
+  implantação vencido fica fora do "vencido" por título (`cash_overdue.opening_*`).
+- ⏳ 0406 só no treino; o dono roda na produção.
+
+
 **13/11/2026 (planilha modelo, o plano limita) — PC Administrador (Empresarial 0.103.0 → 0.104.0, sem migração)**
 
 - **O plano do titular limita os dependentes na planilha e na importação**

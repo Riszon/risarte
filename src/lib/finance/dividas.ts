@@ -236,8 +236,93 @@ export const CONTACT_KIND_LABELS: Record<ContactKind, string> = {
 // ------------------------------------------------------------------- valores
 
 /** O valor que a tela usa como "devido" nesta fase: o atualizado, senão o original. */
-export function valorDevido(d: { updatedCents: number | null; originalCents: number | null }): number {
-  return d.updatedCents ?? d.originalCents ?? 0;
+export function valorDevido(d: {
+  updatedCents: number | null;
+  originalCents: number | null;
+  /** 0406: o que já foi pago nos títulos da dívida (Contas a Pagar). */
+  pagoCents?: number;
+}): number {
+  return Math.max(0, (d.updatedCents ?? d.originalCents ?? 0) - (d.pagoCents ?? 0));
+}
+
+// ------------------------------------------------- o impacto no Financeiro (0406)
+
+export type ImpactoNoFinanceiro = {
+  /** A conta do título (nula na origem C ou quando falta configurar). */
+  conta: string | null;
+  valorCents: number;
+  /** Competência do título: a implantação (A) ou a da dívida (B). */
+  competencia: string | null;
+  vencimento: string;
+  /** Entra na DRE? (B sim; A e C não). */
+  naDre: boolean;
+  saldoDeImplantacao: boolean;
+  /** O que impede gerar (a tela mostra e não oferece o botão). */
+  problema: string | null;
+};
+
+/**
+ * O que a dívida gera no Contas a Pagar — espelho de `_debt_title_spec`
+ * (0406). A tela mostra antes; o banco refaz a conta ao gravar.
+ */
+export function impactoNoFinanceiro(input: {
+  origin: DebtOrigin;
+  contaDaDivida: string | null;
+  contaDeAberturaDaCategoria: string | null;
+  contaDeDespesaDaCategoria: string | null;
+  updatedCents: number | null;
+  originalCents: number | null;
+  implantacao: string | null;
+  hoje: string;
+  competencia: string | null;
+  emissao: string | null;
+  vencimento: string;
+  foraDoResultado: (code: string) => boolean;
+}): ImpactoNoFinanceiro {
+  const base = { vencimento: input.vencimento, saldoDeImplantacao: false, naDre: false };
+  if (input.origin === "C") {
+    return { ...base, conta: null, valorCents: 0, competencia: null,
+      problema: "Origem C: vincule os títulos que já estão no Contas a Pagar." };
+  }
+  if (input.origin === "A") {
+    const conta = input.contaDaDivida ?? input.contaDeAberturaDaCategoria ?? "5.5.01";
+    const valor = input.updatedCents ?? input.originalCents ?? 0;
+    return {
+      ...base,
+      conta,
+      valorCents: valor,
+      competencia: input.implantacao ?? input.hoje,
+      saldoDeImplantacao: true,
+      problema: input.foraDoResultado(conta)
+        ? null
+        : "Dívida anterior à implantação precisa de conta de saldo (fora da DRE), como a 5.5.01. Troque a conta da dívida.",
+    };
+  }
+  const conta = input.contaDaDivida ?? input.contaDeDespesaDaCategoria;
+  const valor = input.originalCents ?? input.updatedCents ?? 0;
+  const competencia = input.competencia ? `${input.competencia.slice(0, 7)}-01` : (input.emissao ?? input.vencimento);
+  if (!conta) {
+    return { ...base, conta: null, valorCents: valor, competencia, naDre: true,
+      problema: "Dívida nova precisa da conta de despesa: escolha na dívida ou configure na categoria." };
+  }
+  return {
+    ...base,
+    conta,
+    valorCents: valor,
+    competencia,
+    naDre: true,
+    problema: input.foraDoResultado(conta) ? "Dívida nova é despesa: a conta não pode ser de saldo (fora da DRE)." : null,
+  };
+}
+
+/** A frase do resumo do impacto (3.13: "serão criados…"). */
+export function fraseDoImpacto(i: ImpactoNoFinanceiro, devedor: string, nomeDaConta: string | null): string {
+  if (i.problema) return i.problema;
+  const conta = `${i.conta}${nomeDaConta ? ` · ${nomeDaConta}` : ""}`;
+  const valor = (i.valorCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return i.naDre
+    ? `Será criado 1 título no Contas a Pagar de ${devedor}, de ${valor}, na conta ${conta}. A despesa entra na DRE do mês da competência.`
+    : `Será criado 1 título no Contas a Pagar de ${devedor}, de ${valor}, na conta ${conta}, marcado como saldo de implantação. Nenhum lançamento na DRE: a dívida é anterior ao riSZon (só juros, multa e descontos futuros entram).`;
 }
 
 // --------------------------------------------------------- lista e filtros
@@ -282,6 +367,11 @@ export type DebtListRow = {
   /** Custas para cancelar protestos ativos (a parte da dívida, se do grupo). */
   custasCents: number;
   lastCheckedOn: string | null;
+  // ---- fase 3 (0406) ----
+  /** O que já foi pago nos títulos da dívida (Contas a Pagar). */
+  pagoCents?: number;
+  /** A dívida já tem título no Contas a Pagar (gerado ou vinculado). */
+  noFinanceiro?: boolean;
 };
 
 export type DebtFilters = {
@@ -525,6 +615,7 @@ const TOM_VERMELHO = "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-2
 const TOM_ROXO = "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950/50 dark:text-fuchsia-200";
 const TOM_AMBAR = "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200";
 const TOM_CINZA = "bg-muted text-muted-foreground";
+const TOM_AZUL = "bg-sky-100 text-sky-900 dark:bg-sky-950/50 dark:text-sky-200";
 
 /** Os selos da lista (seção 5 do pedido). "Acordo quebrado" chega na fase 5. */
 export function selosDaDivida(
@@ -542,6 +633,8 @@ export function selosDaDivida(
     s.push({ codigo: "desdobrar", rotulo: r.bundledCount > 1 ? `Desdobrar (${r.bundledCount})` : "Desdobrar", tom: TOM_AMBAR });
   if (pedeConferencia(r.lastCheckedOn, today, prazos.conferencia))
     s.push({ codigo: "conferir", rotulo: r.lastCheckedOn ? "Conferir" : "Nunca conferida", tom: TOM_CINZA });
+  // 0406: a dívida já está no Contas a Pagar da unidade (gerada ou vinculada).
+  if (r.noFinanceiro) s.push({ codigo: "no_financeiro", rotulo: "No Contas a Pagar", tom: TOM_AZUL });
   return s;
 }
 
@@ -820,3 +913,24 @@ export function campoDeCentavos(c: number | null | undefined): string {
   return (c / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+
+/**
+ * Ajuste 2 do dono: antes de criar título novo, procurar no Contas a Pagar do
+ * MESMO CNPJ um título que já seja esta dívida — mesmo credor, vencimento e
+ * valor, ou o mesmo nº de contrato/nota. Achou: a tela sugere a origem C.
+ */
+export function titulosParecidos<T extends { fornecedorId: string | null; vencimento: string; valorCents: number; documento: string | null }>(
+  livres: T[],
+  alvo: { fornecedorId: string; vencimento: string; valorCents: number | null; contrato: string | null }
+): T[] {
+  const contrato = (alvo.contrato ?? "").trim().toLowerCase();
+  return livres.filter((t) => {
+    if (contrato && (t.documento ?? "").trim().toLowerCase() === contrato) return true;
+    return (
+      t.fornecedorId === alvo.fornecedorId &&
+      t.vencimento === alvo.vencimento &&
+      alvo.valorCents !== null &&
+      t.valorCents === alvo.valorCents
+    );
+  });
+}

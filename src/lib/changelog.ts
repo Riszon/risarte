@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.444.0",
+    data: "2026-11-13",
+    migracao: "0406",
+    titulo: "Levantamento de Dívidas: as dívidas no Contas a Pagar",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A dívida vira título no Contas a Pagar da unidade que deve: a anterior ao riSZon entra como saldo de implantação (sem passar pela DRE), a nova entra como despesa na competência, e a que já estava lançada é vinculada. Antes de salvar, o formulário mostra o que será criado e avisa quando já existe um título parecido. Nova aba Contas a Pagar no detalhe da dívida, com Gerar, Vincular e Registrar pagamento; o valor devido passa a descontar o que já foi pago.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Relatório Saldo de abertura do passivo, por CNPJ, para o contador: todas as dívidas anteriores à implantação com credor, categoria, conta e o que já foi pago, em PDF e planilha.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No Contas a pagar da unidade, os títulos de dívidas antigas aparecem com o selo Saldo de implantação e o código da dívida, com filtro próprio. O vencido deles fica numa linha à parte (não entra em Vencidas nem gera aviso por título), aparece no Painel como Dívidas antigas vencidas e, no Fluxo de caixa, numa coluna própria Dívidas. A DRE, o ponto de equilíbrio, as metas e a hora clínica não mudam.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.443.0",
     data: "2026-11-13",
     migracao: "0405",

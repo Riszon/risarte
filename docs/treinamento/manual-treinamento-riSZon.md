@@ -609,8 +609,8 @@ O sistema **sugere** A ou B pela **data em que a dívida nasceu** (emissão ou,
 sem ela, a competência) comparada com a **data de implantação** — nunca pelo
 vencimento: uma dívida contratada antes da implantação é A mesmo que a parcela
 vença depois. Escolher diferente da sugestão pede uma **justificativa**, que
-fica no histórico. *Nesta etapa a origem fica registrada; os títulos no Contas
-a Pagar são gerados numa próxima atualização.*
+fica no histórico. A origem decide o que vai para o Contas a Pagar da unidade
+(veja *A dívida no Contas a Pagar*, abaixo).
 
 **A situação muda sozinha.** Pelo vencimento: **A vencer**; do 1º dia de atraso
 até o prazo da regra (padrão **30 dias**), **Em atraso**; depois,
@@ -641,7 +641,7 @@ A proposta (e as custas) de um **grupo** é repartida entre as dívidas dele pel
 valor de cada uma; assim, ao filtrar, o total traz só a parte de cada dívida.
 
 **O detalhe da dívida** (clique no código **DV-…**) tem as abas **Dados**,
-**Restrições**, **Propostas**, **Contatos**, **Anexos** e **Histórico**, e no
+**Contas a Pagar**, **Restrições**, **Propostas**, **Contatos**, **Anexos** e **Histórico**, e no
 alto os botões **Registrar proposta**, **Registrar contato** e **Conferida
 hoje** (grava a data da última conferência).
 
@@ -664,9 +664,58 @@ excluiu, quando e por quê.
 > plano de contas de cada categoria e a forma de reconhecer desconto e encargos
 > de acordos estão marcadas **"a validar com o contador"**.
 
-*Chegam nas próximas etapas:* os títulos no Contas a Pagar e o registro de
-pagamentos; a importação da planilha; a renegociação com as parcelas do
-acordo; o painel com gráficos; os avisos.
+**A dívida no Contas a Pagar** *(desde a 0.444.0)*. Cada dívida vira título no
+**Contas a Pagar da unidade que deve** — e é por lá (ou pela aba **Contas a
+Pagar** da dívida) que se registra o pagamento. O que acontece depende da
+origem:
+
+| Origem | O título | Na DRE |
+|---|---|---|
+| **A — Anterior à implantação** | 1 título com o **valor atualizado**, na conta de saldo da categoria (**5.5.01 Saldo de implantação**, ou **5.3.01** para empréstimo, capital de giro e antecipação), com o selo **Saldo de implantação** | **Não entra.** A despesa é de antes do riSZon; só entram os juros e a multa pagos depois (conta 4.2.01) |
+| **B — Nova** | 1 título com o **valor original**, na conta de despesa da categoria, na competência da dívida | **Entra** no mês da competência |
+| **C — Já está no Contas a Pagar** | nenhum novo: na aba **Contas a Pagar** da dívida, **Buscar títulos em aberto**, marcar os que são desta dívida e **Vincular** | o que já estava |
+
+- **Antes de salvar**, o formulário mostra o que será criado (*"Será criado 1
+  título… na conta…"*). Marque **Gerar já no Contas a Pagar ao salvar**, ou
+  gere depois pelo botão **Gerar no Contas a Pagar** da aba. As dívidas A e B
+  que ainda não estão no Contas a Pagar (as cadastradas antes desta versão,
+  por exemplo) aparecem num aviso azul no alto da lista, com **Gerar no Contas
+  a Pagar** para todas de uma vez; a que não puder ser gerada (falta a conta,
+  mês fechado) fica listada com o motivo.
+- **Título parecido.** Se já existe no Contas a Pagar da unidade um título do
+  mesmo credor, com o mesmo vencimento e valor (ou o mesmo número de
+  contrato), o formulário avisa: se for a mesma dívida, use a **origem C** e
+  vincule — para não lançar em dobro.
+- **Editar a dívida** (valor, conta, vencimento, credor) **atualiza o título**
+  enquanto ele não tiver pagamento. Com pagamento, a mudança é recusada —
+  estorne o pagamento no Contas a Pagar antes. **A origem não muda** depois de
+  gerado o título: exclua a dívida e lance de novo.
+- **Registrar pagamento** na aba da dívida: valor pago, **juros e multa**
+  (vão para a despesa financeira do mês do pagamento), data, forma e a conta
+  de onde o dinheiro saiu. O **valor devido** da lista passa a descontar o
+  que já foi pago; pago tudo, a dívida vai para **Quitada — pendências de
+  baixa** (falta a carta de quitação ou a baixa da restrição).
+- **Excluir a dívida** cancela o título que ela gerou e solta os vinculados.
+  Se o título gerado já tiver pagamento, a exclusão é recusada.
+
+**No Financeiro da unidade.** O título aparece em **Contas a pagar** com o selo
+**Saldo de implantação** e o link **Dívida DV-…**, e o filtro **Com o saldo de
+implantação / Sem / Só o saldo** separa uns dos outros. Para não inundar a
+unidade de avisos, **o saldo de implantação vencido não entra no "Vencidas"**:
+aparece numa linha à parte (*"+ R$ X do saldo de implantação"*), no cartão
+**Dívidas antigas vencidas** do Painel e no aviso do **Fluxo de caixa**. No
+fluxo, o que se paga dessas dívidas fica na coluna própria **Dívidas
+(implantação e acordos)**, separada da operação. **A DRE, o ponto de
+equilíbrio, as metas, a hora clínica e o orçado × realizado não mudam** com o
+saldo de implantação.
+
+**Saldo de abertura do passivo** (link no alto do Levantamento): para o
+contador, por CNPJ, todas as dívidas de origem A com credor, categoria, conta,
+o saldo na implantação e o que já foi pago depois — **Ver e salvar em PDF** ou
+**Planilha**.
+
+*Chegam nas próximas etapas:* a importação da planilha; a renegociação com as
+parcelas do acordo; o painel com gráficos; os avisos.
 
 ### 2.4. Recebíveis e inadimplência
 

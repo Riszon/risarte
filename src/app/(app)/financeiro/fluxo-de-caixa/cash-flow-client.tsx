@@ -91,6 +91,9 @@ export function CashFlowView({
     receivableCount: number;
     payableCents: number;
     payableCount: number;
+    /** 0406: títulos vencidos do saldo de implantação (dívidas antigas), à parte (D1-c). */
+    openingCents: number;
+    openingCount: number;
   };
   hasBankAccount: boolean;
 }) {
@@ -224,6 +227,18 @@ export function CashFlowView({
             )}
             . Não somamos no saldo: a data já falhou uma vez, e contar de novo é
             como uma projeção de caixa mente para o lado otimista.
+          </p>
+        </div>
+      )}
+
+      {overdue.openingCount > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border p-3 text-sm">
+          <Clock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <p>
+            <strong>Saldo de implantação vencido:</strong> {formatBRL(overdue.openingCents)} em{" "}
+            {overdue.openingCount} {overdue.openingCount === 1 ? "título" : "títulos"} de dívidas anteriores à
+            implantação do riSZon. Ficam fora da projeção e do “a pagar vencido” — são acompanhados no
+            Levantamento de Dívidas.
           </p>
         </div>
       )}
@@ -378,7 +393,7 @@ export function CashFlowView({
           })}
 
           {/* -- POR ATIVIDADE ------------------------------------------- */}
-          <div className="mt-3 grid gap-2 border-t pt-3 text-xs sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 border-t pt-3 text-xs sm:grid-cols-4">
             <p>
               <span className="text-muted-foreground">Operacional</span>
               <br />
@@ -403,6 +418,13 @@ export function CashFlowView({
               <br />
               <strong className="tabular-nums">
                 {formatBRL(totals.activityCents.financiamento)}
+              </strong>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Dívidas (implantação e acordos)</span>
+              <br />
+              <strong className="tabular-nums">
+                {formatBRL(totals.activityCents.dividas)}
               </strong>
             </p>
           </div>

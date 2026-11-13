@@ -85,6 +85,11 @@ function stepFor(
   if (code.startsWith("5.4")) {
     return { key: "distribuicao", label: "Distribuição de lucros" };
   }
+  // 0406: dívida antiga (saldo de implantação) e acordo pagos — saem do caixa,
+  // não são despesa do período.
+  if (code.startsWith("5.5")) {
+    return { key: "dividas", label: "Dívidas antigas e acordos (principal)" };
+  }
   if (code.startsWith("6")) {
     return { key: "estoque_ativo", label: "Estoque e outros ativos" };
   }
