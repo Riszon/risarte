@@ -406,6 +406,7 @@ Syncthing se comportarem de forma estranha.**
   nasce no 1º pagamento** (gatilho `billing_starts_contract`, 1044; só
   preenche o vazio). ⚠️ "Lead em aberto" = `isOpenStage` (funnel.ts) — não
   repetir a lista de fases em tela nova.
+- ✅ 1044 aplicada nos dois bancos (produção pelo dono, 13/11/2026; 1·0).
 
 **12/11/2026 (Asaas — ASA2, entrega 3) — PC Administrador (core 0.438.0 → 0.439.0, Asaas 0.6.0, migração 4007; worktree `wt-asaas`)**
 

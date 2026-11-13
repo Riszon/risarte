@@ -16,6 +16,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   Implantação estava entrando na soma: R$ 818,00 em vez de R$ 379,10). Os
 >   dois painéis usam a mesma regra (régua `empresarial-oc-00012.test.ts`).
 > - Manual do Empresarial 6.1 e 16. **Não visto na tela.**
+> - ✅ **1044 aplicada nos dois bancos** (produção pelo dono em 13/11/2026,
+>   conferência 1·0; conferido de fora: a Cooperativa com início 11/11/2026).
 >
 > ## ✅ 0.439.0 / ASAAS 0.6.0 — ASA2, ENTREGA 3: RÉGUA DE AVISOS DO ASAAS E COMPROVANTE (13/11/2026; migração 4007)
 >
