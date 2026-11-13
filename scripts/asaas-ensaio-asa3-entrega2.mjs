@@ -355,10 +355,13 @@ try {
   conf("boleto: sem celular válido na ficha (só fixo), o estorno não sai", typeof semCel === "string" && /NO_MOBILE/.test(semCel));
   const fichaSem = await comoPessoa(P.franqueado, "select public.charge_split_history($1) r", [E]);
   conf("boleto: a ficha mostra que falta o celular", Array.isArray(fichaSem) && fichaSem[0].r.boleto && fichaSem[0].r.boleto.celular === null);
-  await c.query("update public.clients set phone = '(43) 99876-5432' where id = $1", [cliE.client_id]);
-  conf("boleto: com celular válido e termo, o estorno pode sair", Array.isArray(await comoPessoa(P.franqueado, "select * from public.charge_refund_check($1, 'estorno de boleto do ensaio')", [E])));
+  await c.query("update public.clients set phone = '(43) 99876-5432', email = null where id = $1", [cliE.client_id]);
+  const semEmail = await comoPessoa(P.franqueado, "select * from public.charge_refund_check($1, 'estorno de boleto do ensaio')", [E]);
+  conf("boleto: com celular e SEM e-mail, não sai (o Asaas exige os dois)", typeof semEmail === "string" && /NO_EMAIL/.test(semEmail));
+  await c.query("update public.clients set email = 'pagador.ensaio@example.com' where id = $1", [cliE.client_id]);
+  conf("boleto: com celular, e-mail e termo, o estorno pode sair", Array.isArray(await comoPessoa(P.franqueado, "select * from public.charge_refund_check($1, 'estorno de boleto do ensaio')", [E])));
   const fichaCom = await comoPessoa(P.franqueado, "select public.charge_split_history($1) r", [E]);
-  conf("boleto: a ficha mostra o número que irá ao Asaas, antes de confirmar", Array.isArray(fichaCom) && fichaCom[0].r.boleto?.celular === "43998765432");
+  conf("boleto: a ficha mostra o número e o e-mail que irão ao Asaas, antes de confirmar", Array.isArray(fichaCom) && fichaCom[0].r.boleto?.celular === "43998765432" && fichaCom[0].r.boleto?.email === "pagador.ensaio@example.com");
   conf("boleto: quem não pode pedir não recebe o número", (await comoPessoa(P.recepcao, "select public.charge_split_history($1) r", [E])) === "recusado" || (await comoPessoa(P.recepcao, "select public.charge_split_history($1) r", [E]))[0]?.r?.boleto == null);
   const pg = await um("select * from public._charge_refund_payer($1)", [E]);
   conf("o pagador é lido com os avisos como estão (desligados neste pagador)", pg.avisos_ligados === false && pg.asaas_customer_id === "cus_ensaio_4009");
@@ -366,7 +369,7 @@ try {
   await c.query("select public._charge_refund_mobile_sent($1, $2)", [E, P.franqueado]);
   conf("boleto: a cobrança fica 'aguardando o pagador'", (await um("select refund_state from public.charges where id = $1", [E])).refund_state === "aguardando_pagador");
   const aud = await todos("select details::text d from public.audit_logs where entity_type = 'charge_refund_mobile' and entity_id = $1", [E]);
-  conf("auditoria: registra que o celular foi enviado, por quem e quando — SEM o número", aud.length === 1 && !aud[0].d.includes("99876") && !aud[0].d.includes("98765"));
+  conf("auditoria: registra que celular e e-mail foram enviados, por quem e quando — SEM o número e SEM o e-mail", aud.length === 1 && !aud[0].d.includes("99876") && !aud[0].d.includes("98765") && !aud[0].d.includes("pagador.ensaio"));
   // Régua da unidade LIGADA: o celular fica (não entra na limpeza).
   await c.query("insert into public.gateway_notification_units (clinic_id, enabled) values ($1, true) on conflict (clinic_id) do update set enabled = true", [ldn]);
   await c.query("select public._charge_refund_closed($1, 'negado', 'negado pelo Asaas (ensaio)')", [E]);

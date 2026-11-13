@@ -78,7 +78,7 @@ export const CHANGELOG: Versao[] = [
       {
         tipo: "novidade",
         texto:
-          "Pedir estorno pela ficha: o estorno total de uma cobrança paga sai do riSZon. Pix e cartão ficam aguardando a autorização de quem tem o acesso da conta Asaas da unidade (o riSZon nunca pede o código); o boleto manda um link ao pagador para os dados bancários. Concluído o estorno, a baixa é desfeita e a taxa da rede continua devida.",
+          "Pedir estorno pela ficha: o estorno total de uma cobrança paga sai do riSZon. Pix e cartão ficam aguardando a autorização de quem tem o acesso da conta Asaas da unidade (o riSZon nunca pede o código); o boleto manda um link ao pagador para os dados bancários (o Asaas exige celular e e-mail do pagador). Quando o Asaas recusa, a tela mostra o motivo dele. Concluído o estorno, a baixa é desfeita e a taxa da rede continua devida.",
         papeis: ["franchisee", "unit_manager", "finance_franchisor"],
         manual: "13g.7. Pedir estorno",
       },

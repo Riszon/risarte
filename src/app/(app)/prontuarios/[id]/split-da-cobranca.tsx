@@ -76,9 +76,11 @@ export function SplitDaCobranca({
   if (!dados) return null;
   const boleto = meio === "BOLETO";
   const celular = dados.boleto?.celular ?? null;
+  const email = dados.boleto?.email ?? null;
   const celularFormatado = celular ? celular.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3") : null;
   // 18.7.7: no boleto, sem o termo declarado ou sem celular válido, não sai pelo riSZon.
-  const boletoBloqueado = boleto && (!dados.boleto?.termoDeclarado || !celular);
+  const boletoBloqueado = boleto && (!dados.boleto?.termoDeclarado || !celular || !email);
+  const falta = !celular && !email ? "o celular e o e-mail válidos" : !celular ? "o celular válido" : "o e-mail válido";
   const link = dados.refund?.status === "pedido" ? dados.refund.request_url : null;
   const wa = link
     ? linkDoWhatsApp(
@@ -151,10 +153,10 @@ export function SplitDaCobranca({
               O estorno de boleto pede o termo de privacidade declarado pelo Admin Master. Até lá, faça no painel do Asaas.
             </span>
           )}
-          {boleto && dados.boleto?.termoDeclarado && !celular && (
+          {boleto && dados.boleto?.termoDeclarado && (!celular || !email) && (
             <span className="text-muted-foreground">
-              Para estornar boleto, o Asaas exige o celular do pagador. Cadastre um celular válido na ficha
-              {payerName ? ` (${payerName})` : ""} antes de pedir.
+              Falta {falta} do pagador{payerName ? ` (${payerName})` : ""}. Para estornar boleto, o Asaas exige celular e
+              e-mail do pagador: cadastre na ficha antes de pedir.
             </span>
           )}
         </span>
@@ -173,9 +175,9 @@ export function SplitDaCobranca({
                   dinheiro só volta depois disso. O riSZon não recebe esses dados.
                 </p>
                 <p className="rounded border border-amber-300 bg-amber-50 p-2 text-amber-900">
-                  Para isso, o riSZon envia ao Asaas o celular do pagador{payerName ? ` (${payerName})` : ""}:{" "}
-                  <strong>{celularFormatado}</strong>. O Asaas vai mandar um <strong>SMS</strong> a esse número com o link.
-                  Os avisos de cobrança do pagador continuam como estão.
+                  Para isso, o riSZon envia ao Asaas o celular e o e-mail do pagador{payerName ? ` (${payerName})` : ""}:{" "}
+                  <strong>{celularFormatado}</strong> e <strong>{email}</strong>. O Asaas vai mandar o link a esse número
+                  (SMS) e a esse e-mail. Os avisos de cobrança do pagador continuam como estão.
                 </p>
               </>
             ) : (

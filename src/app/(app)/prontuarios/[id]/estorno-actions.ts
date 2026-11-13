@@ -25,7 +25,7 @@ export type SplitDaCobranca = {
   } | null;
   podePedirEstorno: boolean;
   /** Só no boleto e para quem pode pedir: o celular que irá ao Asaas (18.7.7). */
-  boleto: { celular: string | null; termoDeclarado: boolean } | null;
+  boleto: { celular: string | null; email: string | null; termoDeclarado: boolean } | null;
 };
 
 export async function lerSplitDaCobranca(chargeId: string): Promise<SplitDaCobranca | null> {
@@ -41,7 +41,8 @@ const MENSAGENS: Record<string, string> = {
   REASON_REQUIRED: "Escreva o motivo do estorno.",
   NOT_REFUNDABLE: "Esta cobrança não pode ser estornada pelo riSZon (não está paga pelo Asaas).",
   REFUND_PENDING: "Já existe um pedido de estorno para esta cobrança.",
-  NO_MOBILE: "O pagador não tem celular válido na ficha. Cadastre o celular antes de pedir o estorno do boleto.",
+  NO_MOBILE: "Falta o celular válido do pagador. Cadastre o celular na ficha antes de pedir o estorno do boleto.",
+  NO_EMAIL: "Falta o e-mail válido do pagador. Cadastre o e-mail na ficha antes de pedir o estorno do boleto.",
   PRIVACY_NOT_DECLARED: "Falta o Admin Master declarar o termo de privacidade. Faça este estorno no painel do Asaas.",
 };
 

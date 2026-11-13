@@ -1185,9 +1185,11 @@ alter table public.charge_refunds
   add column if not exists mobile_clear_needed boolean not null default false,
   add column if not exists mobile_cleared_at timestamptz;
 
--- O pagador da cobrança e o que o estorno de boleto precisa saber dele.
+-- O pagador da cobrança e o que o estorno de boleto precisa saber dele. O
+-- Asaas exige CELULAR E E-MAIL do pagador (provado em 13/11/2026).
+drop function if exists public._charge_refund_payer(uuid);
 create or replace function public._charge_refund_payer(p_charge_id uuid)
-returns table (gateway_customer_id uuid, asaas_customer_id text, mobile text, avisos_ligados boolean,
+returns table (gateway_customer_id uuid, asaas_customer_id text, mobile text, email text, avisos_ligados boolean,
                regua_da_unidade boolean, termo_declarado boolean)
 language sql
 stable
@@ -1196,6 +1198,7 @@ set search_path = ''
 as $$
   select k.id, k.asaas_customer_id,
          (select x.mobile from public._gateway_customer_contact(k.id) x),
+         (select x.email from public._gateway_customer_contact(k.id) x),
          coalesce(k.regua_applied_on, false),
          public._gateway_regua_unit_on(c.gateway_account_id),
          exists (select 1 from public.gateway_notification_settings s where s.id and s.privacy_declared_at is not null)
@@ -1230,6 +1233,7 @@ begin
     select * into p from public._charge_refund_payer(c.id);
     if not coalesce(p.termo_declarado, false) then raise exception 'PRIVACY_NOT_DECLARED'; end if;
     if p.asaas_customer_id is null or p.mobile is null then raise exception 'NO_MOBILE'; end if;
+    if p.email is null then raise exception 'NO_EMAIL'; end if;
   end if;
   return query select c.id, c.gateway_account_id, c.asaas_payment_id, c.billing_type, c.clinic_id;
 end;
@@ -1251,7 +1255,7 @@ begin
    where charge_id = p_charge_id and status = 'pedido';
   select clinic_id into v_clinic from public.charges where id = p_charge_id;
   insert into public.audit_logs (user_id, clinic_id, action, entity_type, entity_id, details)
-  values (p_actor, v_clinic, 'update', 'charge_refund_mobile', p_charge_id::text, jsonb_build_object('celular', 'enviado ao Asaas para o estorno de boleto'));
+  values (p_actor, v_clinic, 'update', 'charge_refund_mobile', p_charge_id::text, jsonb_build_object('contato', 'celular e e-mail enviados ao Asaas para o estorno de boleto'));
 end;
 $$;
 revoke execute on function public._charge_refund_mobile_sent(uuid, uuid) from public, anon, authenticated;
@@ -1301,7 +1305,7 @@ begin
    where id = p_refund_id returning * into r;
   if r.id is null then return; end if;
   insert into public.audit_logs (user_id, clinic_id, action, entity_type, entity_id, details)
-  values (null, r.clinic_id, 'update', 'charge_refund_mobile', r.charge_id::text, jsonb_build_object('celular', 'apagado no Asaas depois do estorno'));
+  values (null, r.clinic_id, 'update', 'charge_refund_mobile', r.charge_id::text, jsonb_build_object('contato', 'celular e e-mail apagados no Asaas depois do estorno'));
 end;
 $$;
 revoke execute on function public._charge_refund_mobile_cleared(uuid) from public, anon, authenticated;
@@ -1384,6 +1388,7 @@ declare
   c public.charges%rowtype;
   v_pode boolean;
   v_cel text;
+  v_email text;
   v_termo boolean;
 begin
   select * into c from public.charges where id = p_charge_id;
@@ -1393,7 +1398,7 @@ begin
   v_pode := public._charge_refund_can(c.clinic_id) and c.status in ('paga', 'liquidada')
             and c.refund_state is null and c.asaas_payment_id is not null and not c.is_external;
   if v_pode and c.billing_type = 'BOLETO' then
-    select x.mobile, x.termo_declarado into v_cel, v_termo from public._charge_refund_payer(c.id) x;
+    select x.mobile, x.email, x.termo_declarado into v_cel, v_email, v_termo from public._charge_refund_payer(c.id) x;
   end if;
   return jsonb_build_object(
     'updates', (select coalesce(jsonb_agg(jsonb_build_object('at', u.at, 'reasons', u.reasons, 'outcome', u.outcome) order by u.at desc), '[]'::jsonb)
@@ -1405,7 +1410,7 @@ begin
     'podePedirEstorno', v_pode,
     -- Só para quem pode pedir, só no boleto: o número que irá ao Asaas.
     'boleto', case when v_pode and c.billing_type = 'BOLETO' then
-                jsonb_build_object('celular', v_cel, 'termoDeclarado', coalesce(v_termo, false))
+                jsonb_build_object('celular', v_cel, 'email', v_email, 'termoDeclarado', coalesce(v_termo, false))
               end);
 end;
 $$;
@@ -1520,7 +1525,7 @@ begin
   update public.charge_refunds set mobile_cleared_at = now(), mobile_clear_needed = false
    where charge_id = r.charge_id and mobile_sent_at is not null and mobile_cleared_at is null;
   insert into public.audit_logs (user_id, clinic_id, action, entity_type, entity_id, details)
-  values (null, r.clinic_id, 'update', 'charge_refund_mobile', r.charge_id::text, jsonb_build_object('celular', 'apagado no Asaas depois do estorno'));
+  values (null, r.clinic_id, 'update', 'charge_refund_mobile', r.charge_id::text, jsonb_build_object('contato', 'celular e e-mail apagados no Asaas depois do estorno'));
 end;
 $$;
 revoke execute on function public._charge_refund_mobile_cleared(uuid) from public, anon, authenticated;

@@ -52,3 +52,23 @@ describe("a permissão nova e o webhook", () => {
     expect(WEBHOOK_EVENTS_VERSION).toBe(2);
   });
 });
+
+describe("o motivo do Asaas na tela (pedido do dono, 13/11/2026)", () => {
+  it("dado recusado (400): a mensagem traz o motivo do Asaas; o log continua só com o código", async () => {
+    const { asaasRequest, AsaasError } = await import("@/lib/asaas/client");
+    const motivo = "Não é possível efetuar o estorno pois o seu cliente não possui um e-mail válido.";
+    const f = (async () =>
+      new Response(JSON.stringify({ errors: [{ code: "invalid_action", description: motivo }] }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      })) as unknown as typeof fetch;
+    const erro = await asaasRequest(
+      { apiKey: "$aact_hmlg_" + "x".repeat(40), environment: "sandbox", method: "POST", path: "/payments/{id}/bankSlip/refund", params: { id: "pay_1" }, body: {} },
+      { fetchImpl: f }
+    ).catch((e) => e);
+    expect(erro).toBeInstanceOf(AsaasError);
+    expect(erro.messagePt).toBe(`O Asaas recusou: ${motivo}`);
+    expect(erro.logMessage).not.toContain("e-mail");
+    expect(erro.logMessage).toContain("invalid_action");
+  });
+});

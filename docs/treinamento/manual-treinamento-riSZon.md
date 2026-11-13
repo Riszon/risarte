@@ -6589,20 +6589,25 @@ pode. **O riSZon nunca pede, recebe nem guarda esse código.**
 
 1. Antes: o termo de privacidade precisa estar declarado pelo Admin Master (o
    mesmo da régua) e o **pagador** (o responsável financeiro, quando houver)
-   precisa ter **celular válido na ficha**. Sem isso, o botão explica o que
-   falta (e, sem o termo, o estorno é feito no painel do Asaas).
-2. **Pedir estorno**: a tela mostra **qual celular será enviado ao Asaas** e
-   avisa que o Asaas vai mandar um **SMS** a esse número com o link.
+   precisa ter **celular e e-mail válidos na ficha** — o Asaas exige os dois.
+   Sem isso, o botão diz o que falta (ex.: "Falta o e-mail válido do
+   pagador"); sem o termo, o estorno é feito no painel do Asaas.
+2. **Pedir estorno**: a tela mostra **qual celular e qual e-mail serão
+   enviados ao Asaas** e avisa que o Asaas vai mandar o link a esse número
+   (SMS) e a esse e-mail.
 3. A cobrança fica **"Estorno aguardando o pagador"**, com **Copiar link** e
    **Enviar pelo WhatsApp**.
-4. **O que o pagador recebe:** o SMS do Asaas com um link seguro, onde ele
+4. **O que o pagador recebe:** o SMS e o e-mail do Asaas com um link seguro, onde ele
    informa os dados bancários e envia os documentos pedidos. O riSZon **não
    recebe** esses dados. O dinheiro só volta depois disso.
 5. O Asaas pode **negar** o estorno do boleto: a cobrança volta para "Paga" e
    quem pediu e o Financeiro são avisados.
-6. **Os avisos de cobrança do pagador não mudam** por causa do celular. Se a
-   régua da unidade estiver **desligada**, o celular é **apagado** no Asaas
-   quando o estorno termina.
+6. **Os avisos de cobrança do pagador não mudam** por causa do celular e do
+   e-mail. Se a régua da unidade estiver **desligada**, os dois são
+   **apagados** no Asaas quando o estorno termina.
+
+**Quando o Asaas recusa**, a tela mostra o motivo que ele deu (ex.: "O Asaas
+recusou: … o seu cliente não possui um e-mail válido").
 
 **Pedido parado:** o Asaas não deixa cancelar o pedido pelo riSZon. Para
 desistir, cancele no painel do Asaas ou simplesmente não autorize. Pedido
@@ -6610,7 +6615,7 @@ parado há mais de 1 dia útil avisa quem pediu e o Financeiro; pedido cancelado
 no Asaas volta a cobrança para "Paga".
 
 **Auditoria:** o pedido, quem pediu, o motivo e o resultado; no boleto, quando
-o celular foi enviado e quando foi apagado (sem o número).
+o celular e o e-mail foram enviados e quando foram apagados (sem os dados).
 
 ## 14. Checklists
 

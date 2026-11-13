@@ -223,37 +223,47 @@ export async function pedirEstornoNoAsaas(args: {
     let link: string | null = null;
     let celularEnviado = false;
     if (kind === "boleto") {
-      // 18.7.7: o Asaas só estorna boleto com o CELULAR do pagador cadastrado
-      // (manda SMS com o link). Vai o da ficha; os avisos ficam como estavam.
+      // 18.7.7: o Asaas só estorna boleto com o CELULAR e o E-MAIL do pagador
+      // cadastrados (manda o link). Vão os da ficha; os avisos ficam como estavam.
       const { data: pg } = await admin.rpc("_charge_refund_payer", { p_charge_id: args.chargeId });
       const pagador = (Array.isArray(pg) ? pg[0] : pg) as {
         asaas_customer_id: string | null;
         mobile: string | null;
+        email: string | null;
         avisos_ligados: boolean;
         regua_da_unidade: boolean;
         termo_declarado: boolean;
       } | null;
       const cel = celularDoAsaas(pagador?.mobile);
-      if (!pagador?.asaas_customer_id || !cel) return { ok: false, error: "O pagador não tem celular válido na ficha. Cadastre o celular antes de pedir o estorno do boleto." };
+      if (!pagador?.asaas_customer_id || !cel) return { ok: false, error: "Falta o celular válido do pagador. Cadastre o celular na ficha antes de pedir o estorno do boleto." };
+      if (!pagador.email) return { ok: false, error: "Falta o e-mail válido do pagador. Cadastre o e-mail na ficha antes de pedir o estorno do boleto." };
       if (!pagador.termo_declarado) return { ok: false, error: "Falta o Admin Master declarar o termo de privacidade. Faça este estorno no painel do Asaas." };
       // A trava fora da produção (D10): no sandbox, só número da lista de permitidos.
       const trava = travaForaDaProducao({
         ambiente: cred.environment,
         modo: "on",
-        contato: { email: null, mobile: cel },
+        contato: { email: pagador.email, mobile: cel },
         permitidos: lerPermitidos(process.env[VARIAVEL_DOS_PERMITIDOS]),
       });
-      if (!trava.contato.mobile) {
-        return { ok: false, error: "Ambiente de teste: o celular do pagador só vai ao Asaas se estiver na lista de permitidos." };
+      if (!trava.contato.mobile || !trava.contato.email) {
+        return {
+          ok: false,
+          error: `Ambiente de teste: ${!trava.contato.mobile && !trava.contato.email ? "o celular e o e-mail" : !trava.contato.mobile ? "o celular" : "o e-mail"} do pagador não está na lista de permitidos; nada foi enviado ao Asaas.`,
+        };
       }
-      await updateCustomer(cred, pagador.asaas_customer_id, { mobilePhone: cel, notificationDisabled: !pagador.avisos_ligados }, opts);
+      await updateCustomer(
+        cred,
+        pagador.asaas_customer_id,
+        { email: pagador.email, mobilePhone: cel, notificationDisabled: !pagador.avisos_ligados },
+        opts
+      );
       celularEnviado = true;
       try {
         link = await refundBankSlip(cred, args.asaasPaymentId, opts);
       } catch (e) {
         // O pedido não saiu: com a régua desligada, o celular sai de novo do Asaas.
         if (!pagador.regua_da_unidade) {
-          await updateCustomer(cred, pagador.asaas_customer_id, { mobilePhone: "", notificationDisabled: !pagador.avisos_ligados }, opts).catch(() => {});
+          await updateCustomer(cred, pagador.asaas_customer_id, { email: "", mobilePhone: "", notificationDisabled: !pagador.avisos_ligados }, opts).catch(() => {});
         }
         throw e;
       }
@@ -409,8 +419,8 @@ export async function conferirWebhooks(): Promise<{ ok: number; corrigidos: numb
 
 /**
  * 18.7.7: o estorno de boleto terminou (concluído, negado, cancelado) com a
- * régua da unidade DESLIGADA: o celular enviado só para ele sai do Asaas (o
- * método da D6: `mobilePhone: ""`). Roda na rotina de 10 minutos.
+ * régua da unidade DESLIGADA: o celular e o e-mail enviados só para ele saem
+ * do Asaas (o método da D6: `email: ""` e `mobilePhone: ""`). Roda na rotina de 10 minutos.
  */
 export async function limparCelularesDeEstorno(): Promise<number> {
   const admin = createAdminClient();
@@ -423,7 +433,7 @@ export async function limparCelularesDeEstorno(): Promise<number> {
   for (const r of (data ?? []) as { refund_id: string; account_id: string; asaas_customer_id: string }[]) {
     try {
       const cred = await credencialDaConta(r.account_id, "estorno_limpeza", null);
-      await updateCustomer(cred, r.asaas_customer_id, { mobilePhone: "", notificationDisabled: true }, opcoesDaConta(r.account_id, "estorno_limpeza"));
+      await updateCustomer(cred, r.asaas_customer_id, { email: "", mobilePhone: "", notificationDisabled: true }, opcoesDaConta(r.account_id, "estorno_limpeza"));
       await admin.rpc("_charge_refund_mobile_cleared", { p_refund_id: r.refund_id });
       n++;
     } catch (e) {
