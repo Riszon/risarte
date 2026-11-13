@@ -570,6 +570,74 @@ DRE, Fluxo de caixa, Recebíveis, Contas a pagar, Conciliação) e o resto entro
 em três menus: **Análise**, **Rede** (só na Franqueadora) e **Cadastros**. O
 menu fica aceso quando você está numa tela dele.
 
+#### Levantamento de Dívidas *(desde a 0.442.0)*
+
+Em **Financeiro → Rede → Levantamento de Dívidas** ficam as dívidas que a
+**rede deve** a terceiros — bancos, fornecedores, tributos, telefonia, aluguel
+— de cada unidade e da própria franqueadora. **Não é a inadimplência dos
+pacientes** (essa continua em Recebíveis). Só o **Financeiro da Franqueadora**
+e o **Admin Master** entram: mesmo marcando outra função em Permissões, o
+sistema não entrega esses dados a mais ninguém.
+
+**Três abas nesta primeira etapa:**
+
+| Aba | Para quê |
+|---|---|
+| **Dívidas** | A lista, com busca, filtros (devedor, situação, faixa de atraso e, em **Mais filtros**, credor, tipo do credor, categoria, natureza, etiqueta, prioridade, responsável e período de vencimento), ordenação e os totais no rodapé — que **respeitam os filtros**. |
+| **Credores** | Quanto se deve a cada credor e **com quem se fala**: atendente, assessoria de cobrança, advogado ou cartório. |
+| **Configurações** | A regra de inadimplência, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas e etiquetas. |
+
+**Nova dívida.** Os campos obrigatórios são só quatro: **devedor** (a unidade
+ou a franqueadora que deve), **credor**, **valor** e **vencimento**; o resto se
+completa depois. O **credor é o mesmo cadastro de Fornecedores** — se ele não
+estiver na lista, **Credor não está na lista? Cadastrar** pede nome, CNPJ e
+tipo, e ele passa a existir em Financeiro → Cadastros → Fornecedores também.
+A **natureza** vem da categoria escolhida. As **etiquetas** se criam na hora,
+digitando e apertando Enter. Dívidas do mesmo contrato ou pedido (por exemplo,
+os boletos de uma compra) podem ficar num **grupo**. Uma linha que junta várias
+dívidas (uma oferta do Serasa, por exemplo) leva a **quantidade de dívidas
+reunidas** e a marca **Desdobrar depois**.
+
+**A origem do lançamento** diz de onde a dívida vem:
+
+- **A — Anterior à implantação:** a dívida nasceu antes de o riSZon ser
+  implantado naquele CNPJ (o saldo de abertura);
+- **B — Nova:** nasceu depois e ainda não foi lançada no Financeiro;
+- **C — Já está no Contas a Pagar.**
+
+O sistema **sugere** A ou B pela **data em que a dívida nasceu** (emissão ou,
+sem ela, a competência) comparada com a **data de implantação** — nunca pelo
+vencimento: uma dívida contratada antes da implantação é A mesmo que a parcela
+vença depois. Escolher diferente da sugestão pede uma **justificativa**, que
+fica no histórico. *Nesta etapa a origem fica registrada; os títulos no Contas
+a Pagar são gerados numa próxima atualização.*
+
+**A situação muda sozinha.** Pelo vencimento: **A vencer**; do 1º dia de atraso
+até o prazo da regra (padrão **30 dias**), **Em atraso**; depois,
+**Inadimplente**. A virada acontece toda madrugada e fica no histórico como
+"mudou sozinha". O prazo pode ser diferente **por tipo de credor** (ex.:
+tributos e bancos com prazo menor) e **por devedor**; o do tipo de credor vale
+mais. **Mudar situação** marca à mão o que só gente decide: **Em negociação**,
+**Contestada** (dívida não reconhecida), **Em discussão judicial** e
+**Baixada/Cancelada** — as três últimas pedem **motivo**, ao entrar e ao sair.
+
+**O detalhe da dívida** (clique no código **DV-…**) tem as abas **Dados**,
+**Contatos** e **Histórico**. O **Histórico** mostra tudo o que aconteceu, campo
+a campo — quem mudou, quando, o valor de antes e o de depois — e ninguém
+consegue editar nem apagar essa trilha. **Excluir** pede motivo e **não apaga**:
+a dívida sai da lista e continua guardada, com quem excluiu, quando e por quê.
+
+> **Configurações sem programação.** Categorias, subcategorias, naturezas e
+> etiquetas se criam, renomeiam, reordenam e **desativam**. Desativada some das
+> opções de novas dívidas e **continua aparecendo nas antigas**. As contas do
+> plano de contas de cada categoria e a forma de reconhecer desconto e encargos
+> de acordos estão marcadas **"a validar com o contador"**.
+
+*Chegam nas próximas etapas:* restrições (negativação, protesto, ação
+judicial), propostas e anexos; os títulos no Contas a Pagar e o registro de
+pagamentos; a importação da planilha; a renegociação com as parcelas do
+acordo; o painel com gráficos; os avisos.
+
 ### 2.4. Recebíveis e inadimplência
 
 A aba **Recebíveis** é o outro lado do Contas a pagar: o que a unidade tem **a

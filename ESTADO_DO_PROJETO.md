@@ -2,6 +2,46 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏦 0.442.0 — LEVANTAMENTO DE DÍVIDAS, FASE 1: A BASE (13/11/2026; migração 0404)
+>
+> Pedido do dono: `docs/prompts/prompt-riszon-levantamento-dividas.md`. Plano,
+> decisões D0–D18 e ajustes do dono em `docs/Financeiro/DIVIDAS-PLANO.md` —
+> **ler antes de mexer em dívidas**. Fase 0 (D0): `_dados_importacao/` no
+> `.gitignore` (commit aab08519). Fase 1 entregue: Financeiro → Rede →
+> Levantamento de Dívidas (abas Dívidas, Credores, Configurações; detalhe com
+> Dados, Contatos, Histórico). Manual 2.3; EV-338.
+> - ⚠️ **Devedor = `clinics` (unidade ou franqueadora); credor = `suppliers`**
+>   (D4). Contato de cobrança em `debt_creditor_contacts`, não no fornecedor.
+> - ⚠️ **Quem pode = `debt_can(cap, clinic)`** (matriz COM TETO: só
+>   `finance_franchisor`, além do Admin/Principal). Nenhuma `debt_*` tem regra
+>   de escrita; só as portas `debt_save*`, `debt_delete`, `debt_set_stage`,
+>   `debt_set_go_live`. Padrões de fábrica = `permissions.ts` (régua
+>   `dividas.test.ts`).
+> - ⚠️ **Situação = `_debt_compute_status`** (espelho `situacaoDaDivida`);
+>   prazo `_debt_days_to_default`: tipo do credor → devedor → rede → 30.
+>   Grava por `_debt_refresh_status` (gravações) e pela rotina
+>   `risarte-debts-daily` (00:10, evento `situacao_automatica`). As fases 3 e 5
+>   acrescentam quitação e acordo à precedência — mudar as duas juntas.
+> - ⚠️ **Origem pela data em que a dívida NASCEU** (`debt_suggest_origin`),
+>   nunca pelo vencimento; implantação `clinics.go_live_on` = 16/11/2026 em
+>   LDN, CBE e RF (a 0404 preenche pelo código da unidade). Nesta fase a dívida
+>   **não gera título**: `finance_synced_at` nulo = a fase 3 gera.
+> - Histórico = `debt_history` (trilha `audit_changes` + `debt_events`, que só
+>   cresce). Exclusão só lógica, com motivo.
+> - Ensaio `scripts/dividas-ensaio-0404.mjs --confirmar` (transação desfeita)
+>   51/51; `--quebrar` (guarda aberta) → 16 falhas. 0404 no treino por
+>   `migrar:teste`. Visto na tela pelo servidor local de teste (Financeiro de
+>   teste): cadastrar, contestar, histórico, contato, excluir; Gerente,
+>   Franqueado e Franqueadora/Rede mandados embora. Resíduo no treino: a
+>   DV-000001 de teste (excluída), a etiqueta "teste da tela" e o contato
+>   "Assessoria Teste (pode apagar)" no credor Empresa Teste.
+> - ⚠️ **Produção: a franqueadora (RF) está com o CNPJ de Londrina**
+>   (32.042.156/0001-21; o certo é 46.232.307/0001-19) — D3, aguarda o dono
+>   corrigir. Treino: só Londrina tem CNPJ.
+> - ⏳ **0404 só no treino.** Produção: o dono roda no SQL Editor; conferência
+>   no fim do arquivo. Próxima: **fase 2** (restrições, propostas, anexos,
+>   contatos com o credor), com OK do dono.
+>
 > ## 🔒 0.441.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
 >
 > Achado de 13/11 (teste do selo da 4006, sessões das contas de teste no

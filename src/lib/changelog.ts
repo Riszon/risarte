@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.442.0",
+    data: "2026-11-13",
+    migracao: "0404",
+    titulo: "Levantamento de Dívidas da rede (primeira etapa)",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Rede → Levantamento de Dívidas: as dívidas que a rede deve a bancos, fornecedores, tributos e outros credores, de cada unidade e da franqueadora. Nesta etapa: cadastrar e editar a dívida (devedor, credor, valor e vencimento são os únicos obrigatórios), categorias, naturezas e etiquetas, a origem do lançamento sugerida pela data de implantação do riSZon, a situação que vira sozinha de em atraso para inadimplente, a lista com filtros e totais, os contatos de cobrança de cada credor e o histórico campo a campo. Só o Financeiro da Franqueadora e o Admin Master entram.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.441.0",
     data: "2026-11-13",
     migracao: "0403",

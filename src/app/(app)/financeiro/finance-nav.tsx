@@ -42,7 +42,7 @@ import {
  * saiu do módulo.
  */
 
-type Item = { href: string; label: string };
+type Item = { href: string; label: string; soDividas?: boolean };
 type Aba =
   | { tipo: "direta"; href: string; label: string; icon: LucideIcon; soCobrancas?: boolean }
   | { tipo: "grupo"; label: string; icon: LucideIcon; itens: Item[]; soRede?: boolean };
@@ -110,6 +110,8 @@ const ABAS: Aba[] = [
       { href: "/financeiro/recebiveis-da-rede", label: "Recebíveis da rede" },
       { href: "/financeiro/consolidado", label: "Consolidado" },
       { href: "/financeiro/taxas-da-rede", label: "Taxas da rede" },
+      // 0404 — só para quem o banco deixa (Financeiro da Franqueadora e Admin).
+      { href: "/financeiro/dividas", label: "Levantamento de Dívidas", soDividas: true },
     ],
   },
   {
@@ -130,7 +132,15 @@ const ABAS: Aba[] = [
 const CLASSE_ABA =
   "flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm transition-colors";
 
-export function FinanceNav({ veRede, veCobrancas = false }: { veRede: boolean; veCobrancas?: boolean }) {
+export function FinanceNav({
+  veRede,
+  veCobrancas = false,
+  veDividas = false,
+}: {
+  veRede: boolean;
+  veCobrancas?: boolean;
+  veDividas?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -169,7 +179,10 @@ export function FinanceNav({ veRede, veCobrancas = false }: { veRede: boolean; v
               );
             }
 
-            const dentro = aba.itens.some((i) => pathname === i.href);
+            const itens = aba.itens.filter((i) => !i.soDividas || veDividas);
+            const dentro = itens.some(
+              (i) => pathname === i.href || (i.soDividas === true && pathname.startsWith(`${i.href}/`))
+            );
             return (
               <DropdownMenu key={aba.label}>
                 <DropdownMenuTrigger
@@ -190,7 +203,7 @@ export function FinanceNav({ veRede, veCobrancas = false }: { veRede: boolean; v
                   }
                 />
                 <DropdownMenuContent align="start" className="w-56">
-                  {aba.itens.map((item) => (
+                  {itens.map((item) => (
                     <DropdownMenuItem
                       key={item.href}
                       onClick={() => router.push(item.href)}

@@ -427,6 +427,44 @@ export const CAPACIDADES: Capability[] = [
     dependeDoBanco: true,
     padrao: ["finance_franchisor"],
   },
+  // ---- Levantamento de Dívidas (0404) --------------------------------------
+  // O que a REDE deve a terceiros. Dado sensível: o BANCO tem teto e só aceita
+  // o Financeiro da Franqueadora (e o Admin Master), mesmo que outro papel seja
+  // marcado aqui — por isso as quatro são `dependeDoBanco`.
+  {
+    id: "modulo.dividas",
+    rotulo: "Levantamento de Dívidas",
+    grupo: "Ações — Dívidas da rede",
+    descricao:
+      "Financeiro → Rede → Levantamento de Dívidas: as dívidas das unidades e da franqueadora com bancos, fornecedores e tributos. O banco só deixa o Financeiro da Franqueadora.",
+    dependeDoBanco: true,
+    padrao: ["finance_franchisor"],
+  },
+  {
+    id: "acao.dividas.lancar",
+    rotulo: "Lançar e editar dívidas",
+    grupo: "Ações — Dívidas da rede",
+    descricao: "Cadastrar e editar dívidas, grupos, etiquetas e contatos de cobrança do credor.",
+    dependeDoBanco: true,
+    padrao: ["finance_franchisor"],
+  },
+  {
+    id: "acao.dividas.excluir",
+    rotulo: "Excluir dívidas",
+    grupo: "Ações — Dívidas da rede",
+    descricao: "Excluir uma dívida (exclusão lógica, com motivo obrigatório; fica no histórico).",
+    dependeDoBanco: true,
+    padrao: ["finance_franchisor"],
+  },
+  {
+    id: "acao.dividas.configurar",
+    rotulo: "Configurar o Levantamento de Dívidas",
+    grupo: "Ações — Dívidas da rede",
+    descricao:
+      "Categorias, naturezas, etiquetas, regra de inadimplência e data de implantação do riSZon em cada CNPJ.",
+    dependeDoBanco: true,
+    padrao: ["finance_franchisor"],
+  },
   {
     id: "acao.estoque.gerir",
     rotulo: "Entrada e inventário de estoque",

@@ -409,6 +409,18 @@ Syncthing se comportarem de forma estranha.**
   pelo nome — nunca `SheetNames[0]`.
 
 
+**13/11/2026 (Levantamento de Dívidas — fase 1) — PC Administrador (core 0.441.0 → 0.442.0, migração 0404)**
+
+- **As dívidas da REDE com terceiros** (bloco 0.442.0 no ESTADO; plano e
+  decisões do dono em `docs/Financeiro/DIVIDAS-PLANO.md`). ⚠️ **A planilha
+  real fica em `_dados_importacao/` (no `.gitignore`)**: nunca em commit, seed,
+  migração ou teste. ⚠️ **Quem pode = `debt_can`** (teto: só Financeiro da
+  Franqueadora + Admin). ⚠️ **Situação = `_debt_compute_status`**, espelho
+  `situacaoDaDivida`. ⚠️ Fase 3: a regra "fora da DRE" vira UM lugar só,
+  usado por todos os leitores do razão (D5) — ler o plano antes.
+- ⚠️ Produção: a franqueadora está com o CNPJ de Londrina (aguarda o dono).
+- ⏳ 0404 só no treino.
+
 **13/11/2026 (Asaas — ASA3, entrega 1) — PC Administrador (core 0.439.0 → 0.440.0, Asaas 0.7.0, migração 4008; worktree `wt-asaas`)**
 
 - **O split na emissão** (estado em `docs/asaas/ESTADO.md`; decisões na seção 18
