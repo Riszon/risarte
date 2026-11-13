@@ -62,6 +62,43 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.440.0",
+    data: "2026-11-13",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4008, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Split das taxas da franquia nas cobranças do Asaas",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Central de Configuração → Rede → Taxas da franquia: as taxas que a rede cobra das unidades e o split. Nas cobranças emitidas pelo riSZon, royalty, fundo de propaganda, centro de planejamento e comercial saem da própria cobrança, na hora do pagamento, direto para a carteira da rede. A tela de Taxas da rede mudou para esta aba.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A taxa retida pelo split não entra mais na conta a pagar de taxa da unidade (nada é cobrado duas vezes). Recebimento fora do split, como dinheiro e maquininha, continua virando conta a pagar.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Não existe mais desconto por pagar em dia nas taxas da franquia: o campo saiu da tela de taxas. Pagamentos já registrados não mudam.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Por enquanto, se uma taxa mudar com a cobrança em aberto, o split já enviado não é atualizado: o que faltar acima de R$ 0,10 vira conta a pagar, e o que passar vira aviso ao Financeiro. A atualização automática vem na próxima entrega.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+    ],
+  },
+  {
     versao: "0.439.0",
     data: "2026-11-13",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4007, ASAAS_MIGRATION).

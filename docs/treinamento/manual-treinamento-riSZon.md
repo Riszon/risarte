@@ -6062,19 +6062,21 @@ foi preparado para a assistente. Avise o administrador.
 
 ## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.439.0)*
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.439.0; Taxas da franquia desde a 0.440.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
 financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão
 que toda unidade segue) e cada **unidade** (só o que for diferente do padrão).
-Hoje são quatro abas; as próximas etapas acrescentam outras (Taxas da franquia,
+Hoje são cinco abas; as próximas etapas acrescentam outras (Empresarial,
 Fiscal…).
 
 **Onde:** **Administração → Central de Configuração** para o Admin Master; no
 menu principal, **Central de Configuração**, para quem vê alguma aba. Os
 endereços antigos continuam funcionando e levam à aba nova:
 **Financeiro → Cadastros → Configuração** abre a aba **Financeiro**, e
-**Administração → Regras Comerciais** abre a aba **Comercial**.
+**Administração → Regras Comerciais** abre a aba **Comercial**, e, para o
+Admin Master e o Financeiro da Franqueadora, **Financeiro → Rede → Taxas da
+rede** abre a aba **Taxas da franquia**.
 
 **Quem vê cada aba:**
 
@@ -6084,6 +6086,7 @@ endereços antigos continuam funcionando e levam à aba nova:
 | **Financeiro** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade) | Admin Master e Financeiro da Franqueadora |
 | **Comercial** | Admin Master | Admin Master |
 | **Cobrança e comunicação** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade) | Admin Master e Financeiro da Franqueadora (o termo de privacidade, só o Admin Master) — ver 13g.5 |
+| **Taxas da franquia** (só na Rede) | Admin Master e Financeiro da Franqueadora. Gerente e Franqueado continuam vendo as taxas da própria unidade em Financeiro → Rede → Taxas da rede | Admin Master e Financeiro da Franqueadora — ver 13g.6 |
 
 **Aba Financeiro.** Multa, juros, arredondamento e o teto da inadimplência —
 o que antes ficava em Financeiro → Cadastros → Configuração.
@@ -6457,6 +6460,73 @@ só o **Gerente**, o **Financeiro** ou o **Admin**.
 a mensagem pronta para o telefone do pagador). Vale com a régua desligada e
 para quem pediu para não receber avisos: é a clínica quem envia, quando o
 paciente pede.
+
+### 13g.6. Taxas da franquia e o split
+
+*(desde a versão 0.440.0)*
+
+**Para que serve:** as taxas que a rede cobra das unidades e **o split**: nas
+cobranças emitidas pelo riSZon, as taxas percentuais (royalty, fundo de
+propaganda, centro de planejamento e comercial) saem **da própria cobrança do
+paciente, na hora do pagamento**, direto para a carteira da rede. O que é
+retido assim **não entra na conta a pagar** da unidade.
+
+**Onde:** Central de Configuração → **Rede** → aba **Taxas da franquia**. Em
+cima, o quadro **Split das taxas**; embaixo, a mesma tela de taxas de antes
+(padrão da rede, acordo da unidade, campanhas e o apurado do mês).
+
+**O quadro Split das taxas:**
+
+- **Para onde vai cada taxa.** Sem escolha, vai para a **conta raiz** da
+  franqueadora. O fundo de propaganda pode ter carteira própria, quando
+  existir.
+- **Tolerância por cobrança** (padrão **R$ 0,10**). O Asaas arredonda os
+  centavos; se ele repassar até este valor a menos, a diferença é absorvida.
+  Acima disso, **o que faltou vira conta a pagar da unidade**.
+- **Multa e juros da cobrança à unidade.** Para a cobrança mensal da
+  franqueadora à unidade (taxas fixas e taxas que não passaram pelo split),
+  quando paga em atraso. **Em branco = sem multa e sem juros.** Os
+  percentuais seguem o contrato de franquia.
+- **Não existe desconto por pagar em dia** nas taxas da franquia: o split
+  retém o percentual cheio. O campo antigo "Desconto se pagar em dia" saiu da
+  tela.
+
+**Quando a cobrança sai com split:** a unidade precisa ter o **split
+habilitado** no painel do Asaas (declarado na aba Conta e tarifas). O primeiro
+split aceito pelo Asaas confirma o item sozinho. A franqueadora não faz split
+para si mesma. Sem isso, a cobrança sai **sem split, como antes**, e a taxa
+vira conta a pagar.
+
+**A conta (para quem confere):** o Asaas desconta a tarifa dele antes de
+repassar. Para o repasse fechar **exatamente no percentual sobre o valor
+pago** (com desconto, multa ou juros), o riSZon ajusta o percentual e
+acrescenta uma pequena parte fixa. A diferença é de **até 2 centavos por
+carteira, sempre a favor da unidade** — o repasse nunca passa do percentual.
+
+**Teto de segurança:** se, no pior caso (maior desconto e maior tarifa), as
+taxas passassem do valor líquido da cobrança, ela **não sai** e o Gerente, o
+Financeiro e o Admin são avisados. Acontece em parcela muito pequena.
+
+**O que o Asaas avisa:**
+
+- **Split liquidado:** o riSZon grava o valor que caiu na carteira da rede e
+  compara com o devido (a tolerância decide).
+- **Split bloqueado por divergência:** aviso ao Gerente, ao Financeiro e ao
+  Admin. Há 2 dias úteis para corrigir; depois disso o Asaas cancela.
+- **Split cancelado:** a taxa daquela cobrança **volta para a conta a pagar**
+  da unidade.
+- **Repassado a mais** que o devido: aviso ao Financeiro e ao Admin, que
+  decidem entre abater e dispensar.
+
+⚠️ **Mudança de taxa com cobrança em aberto.** Por enquanto, quando uma taxa
+muda (percentual, campanha ou tarifa do Asaas), o split das cobranças já
+emitidas **não é atualizado**. O que vale é a taxa do dia do pagamento: se o
+repasse ficar abaixo, a diferença acima da tolerância vira conta a pagar; se
+ficar acima, vira aviso ao Financeiro. A atualização automática do split das
+cobranças em aberto vem na próxima entrega.
+
+**No razão:** a taxa retida aparece como despesa da unidade e receita da
+franqueadora, por taxa, liquidada quando o Asaas avisa.
 
 ## 14. Checklists
 
