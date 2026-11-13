@@ -408,7 +408,9 @@ Syncthing se comportarem de forma estranha.**
   `/api/cron/gateway-regua` (10 min) aplica. ⚠️ **Canal só com o contato** (o
   Asaas recusa e-mail sem e-mail). ⚠️ **Prova no sandbox só sem envio** (o
   sandbox envia de verdade): pagador sem celular, avisos desligados,
-  `example.com`.
+  `example.com`. ⚠️ **Trava fora da produção (D10):** conta sandbox só manda
+  ao Asaas o contato da lista `ASAAS_SANDBOX_CONTATOS_PERMITIDOS` (começa
+  vazia); nunca enfraquecer `travaForaDaProducao`.
 - 🟡 4007 só no treino; 2º lembrete fixo no dia (D9, aprovado); falta o dono
   testar.
 

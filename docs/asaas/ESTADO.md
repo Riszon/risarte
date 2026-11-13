@@ -62,6 +62,13 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   insistir no 429. Saldo na rotina diária (`GET /finance/balance`) para quem
   tem WhatsApp na régua; zerado avisa Gerente e Admin. Tarifas de aviso
   gravadas na verificação da conta.
+- ⚠️ **TRAVA FORA DA PRODUÇÃO (D10):** em conta sandbox, só o contato da lista
+  `ASAAS_SANDBOX_CONTATOS_PERMITIDOS` (servidor; começa vazia) vai ao Asaas;
+  sem contato permitido, o pagador fica com os avisos desligados. Está em
+  `aplicarNoAsaas` (o único ponto que chama `updateCustomer`), para a fila e
+  para a emissão. Depois de incluir um contato na lista, é preciso pôr o
+  pagador na fila de novo (alterar o contato na ficha, ou desligar e ligar a
+  unidade).
 - ⚠️ **Canal só com o contato** (provado no sandbox): o Asaas recusa ligar
   e-mail de pagador sem e-mail. E-mail só com e-mail; SMS, WhatsApp e ligação
   só com celular.

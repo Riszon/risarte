@@ -6430,6 +6430,12 @@ resposta **não chega à clínica**. O WhatsApp só sai se houver **saldo** na
 conta Asaas da unidade; quando a conta fica sem saldo, o Gerente e o Admin
 recebem um aviso e a aba mostra o alerta.
 
+**No treino:** o ambiente de teste usa o sandbox do Asaas, que envia e-mail e
+SMS de verdade. Por isso, no treino, só recebem avisos os contatos de uma
+lista de permitidos do servidor, que começa vazia; a aba da unidade avisa
+quantos contatos estão na lista. Os demais pagadores ficam com os avisos
+desligados, mesmo com a régua ligada.
+
 **"Não receber avisos de cobrança"** (ficha do paciente → aba **Financeiro**):
 quando o paciente (ou o responsável) pede para não receber, a **Recepcionista**,
 o **Gerente**, o **Financeiro da Franqueadora** ou o **Admin Master** registra,

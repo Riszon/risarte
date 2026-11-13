@@ -17,7 +17,9 @@ import {
   celularDoAsaas,
   contatoParaOAsaas,
   estimativaDoCusto,
+  lerPermitidos,
   pacoteDosAvisos,
+  travaForaDaProducao,
   tarifasDeAvisoDoAsaas,
   type AvisoDaRegua,
 } from "@/lib/asaas/regua";
@@ -255,5 +257,59 @@ describe("o comprovante (ajuste 4)", () => {
     const card = ler("src/app/(app)/prontuarios/[id]/cobranca-da-parcela.tsx");
     expect(card).toMatch(/Ver comprovante/);
     expect(card).toMatch(/Enviar comprovante pelo WhatsApp/);
+  });
+});
+
+describe("a trava fora da produção (o sandbox envia de verdade)", () => {
+  const vazia = lerPermitidos(undefined);
+  const contato = { email: "Real@Pessoa.com", mobile: "(43) 99999-8888" };
+  it("a lista começa vazia: ninguém recebe, e 'ligar' vira 'desligar' no Asaas", () => {
+    expect(vazia.emails.size + vazia.celulares.size).toBe(0);
+    expect(travaForaDaProducao({ ambiente: "sandbox", modo: "on", contato, permitidos: vazia })).toEqual({
+      modo: "off",
+      contato: { email: null, mobile: null },
+      barrado: true,
+    });
+  });
+  it("só o contato permitido vai: e-mail sim, celular não (ou o contrário)", () => {
+    const soEmail = lerPermitidos("real@pessoa.com");
+    expect(travaForaDaProducao({ ambiente: "sandbox", modo: "on", contato, permitidos: soEmail })).toEqual({
+      modo: "on",
+      contato: { email: "Real@Pessoa.com", mobile: null },
+      barrado: true,
+    });
+    const soCel = lerPermitidos("+55 (43) 99999-8888");
+    expect(travaForaDaProducao({ ambiente: "sandbox", modo: "on", contato, permitidos: soCel }).contato).toEqual({
+      email: null,
+      mobile: "43999998888",
+    });
+    const os2 = lerPermitidos("real@pessoa.com; 43999998888");
+    expect(travaForaDaProducao({ ambiente: "sandbox", modo: "on", contato, permitidos: os2 }).barrado).toBe(false);
+  });
+  it("telefone fixo na lista não libera nada", () => {
+    expect(lerPermitidos("(43) 3333-4444").celulares.size).toBe(0);
+  });
+  it("desligar e apagar o contato passam sempre (nunca levam contato)", () => {
+    expect(travaForaDaProducao({ ambiente: "sandbox", modo: "off", contato, permitidos: vazia }).modo).toBe("off");
+    expect(travaForaDaProducao({ ambiente: "sandbox", modo: "clear", contato, permitidos: vazia }).modo).toBe("clear");
+  });
+  it("na produção a trava não se aplica", () => {
+    expect(travaForaDaProducao({ ambiente: "production", modo: "on", contato, permitidos: vazia })).toEqual({
+      modo: "on",
+      contato,
+      barrado: false,
+    });
+  });
+  it("o servidor passa TODO pagador pela trava antes de falar com o Asaas, e grava o modo que de fato aplicou", () => {
+    const src = ler("src/lib/asaas/regua-servidor.ts");
+    const fn = src.slice(src.indexOf("export async function aplicarNoAsaas("));
+    const trava = fn.indexOf("travaForaDaProducao(");
+    expect(trava).toBeGreaterThan(0);
+    expect(trava).toBeLessThan(fn.indexOf("updateCustomer("));
+    expect(fn).toMatch(/ambiente: cred\.environment/);
+    expect(fn).toMatch(/contatoParaOAsaas\(trava\.modo, trava\.contato\)/);
+    expect(src.match(/await devolver\(item, r\.modo, r\.levouContato, null\)/g)?.length).toBe(2);
+    // Nenhum outro caminho manda contato ao Asaas.
+    expect(src.match(/updateCustomer\(/g)?.length).toBe(1);
   });
 });

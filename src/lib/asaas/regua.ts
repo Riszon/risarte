@@ -212,3 +212,53 @@ export function contatoParaOAsaas(
   if (cel) body.mobilePhone = cel;
   return { body, levouContato: !!(body.email || body.mobilePhone) };
 }
+
+// ---- a trava fora da produção (pedido do dono, 12/11/2026) ---------------------
+//
+// O sandbox do Asaas ENVIA e-mail e SMS de verdade, e o treino tem pacientes com
+// contato que pode ser de gente real. Por isso, em toda conta que não é de
+// PRODUÇÃO, o riSZon só manda ao Asaas o e-mail e o celular que estiverem na
+// lista de permitidos (`ASAAS_SANDBOX_CONTATOS_PERMITIDOS`, separados por
+// vírgula). A lista começa VAZIA: ninguém recebe nada. Pagador sem nenhum
+// contato permitido fica com os avisos DESLIGADOS no Asaas
+// (`notificationDisabled: true`), mesmo com a régua da unidade ligada.
+
+export const VARIAVEL_DOS_PERMITIDOS = "ASAAS_SANDBOX_CONTATOS_PERMITIDOS";
+
+export type ContatosPermitidos = { emails: Set<string>; celulares: Set<string> };
+
+/** Lê a lista de permitidos (e-mails e celulares, separados por vírgula ou ponto e vírgula). */
+export function lerPermitidos(bruto: string | null | undefined): ContatosPermitidos {
+  const emails = new Set<string>();
+  const celulares = new Set<string>();
+  for (const parte of String(bruto ?? "").split(/[,;\n]/)) {
+    const v = parte.trim();
+    if (!v) continue;
+    if (v.includes("@")) emails.add(v.toLowerCase());
+    else {
+      const cel = celularDoAsaas(v);
+      if (cel) celulares.add(cel);
+    }
+  }
+  return { emails, celulares };
+}
+
+/**
+ * O que REALMENTE vai ao Asaas. Na produção, o que a fila pediu. Fora dela,
+ * só o contato permitido; sem nenhum permitido, "ligar" vira "desligar".
+ * "Desligar" e "apagar o contato" passam sempre (nunca mandam contato).
+ */
+export function travaForaDaProducao(args: {
+  ambiente: "sandbox" | "production";
+  modo: "on" | "off" | "clear";
+  contato: { email: string | null; mobile: string | null };
+  permitidos: ContatosPermitidos;
+}): { modo: "on" | "off" | "clear"; contato: { email: string | null; mobile: string | null }; barrado: boolean } {
+  const { ambiente, modo, contato, permitidos } = args;
+  if (ambiente === "production" || modo !== "on") return { modo, contato, barrado: false };
+  const email = contato.email && permitidos.emails.has(contato.email.toLowerCase()) ? contato.email : null;
+  const cel = celularDoAsaas(contato.mobile);
+  const mobile = cel && permitidos.celulares.has(cel) ? cel : null;
+  if (!email && !mobile) return { modo: "off", contato: { email: null, mobile: null }, barrado: true };
+  return { modo: "on", contato: { email, mobile }, barrado: email !== contato.email || mobile !== cel };
+}

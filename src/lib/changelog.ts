@@ -83,6 +83,13 @@ export const CHANGELOG: Versao[] = [
         manual: "13g.5. Régua de avisos do Asaas e comprovante",
       },
       {
+        tipo: "aviso",
+        texto:
+          "Fora da produção (treino), o riSZon só manda ao Asaas o e-mail e o celular de uma lista de permitidos, que começa vazia: o sandbox do Asaas envia de verdade. Os demais pagadores ficam com os avisos desligados.",
+        papeis: [],
+        manual: "13g.5. Régua de avisos do Asaas e comprovante",
+      },
+      {
         tipo: "novidade",
         texto:
           "Na ficha do paciente, aba Financeiro: \"Não receber avisos de cobrança\", para quando o paciente ou o responsável pedir. Vale para o CPF em todas as unidades, com o motivo registrado. Voltar a receber é com o Gerente ou o Financeiro.",

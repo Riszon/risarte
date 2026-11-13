@@ -3,7 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { MessageCircle, TriangleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SessionContext } from "@/lib/auth";
-import { estimativaDoCusto, type AvisoDaRegua, type SlotDaRegua } from "@/lib/asaas/regua";
+import { isProductionAllowed } from "@/lib/asaas/env";
+import {
+  VARIAVEL_DOS_PERMITIDOS,
+  estimativaDoCusto,
+  lerPermitidos,
+  type AvisoDaRegua,
+  type SlotDaRegua,
+} from "@/lib/asaas/regua";
 import { rotaDaRede, rotaDaUnidade } from "@/lib/central/central";
 import { formatBRL } from "@/lib/pricing";
 import { AvisoSemMigracao } from "./abas";
@@ -224,6 +231,28 @@ function Numero({ rotulo, valor, alerta }: { rotulo: string; valor: number; aler
 
 const reais = (c: number | null) => (c == null ? "a conferir" : formatBRL(c));
 
+/**
+ * Fora da produção, quem recebe aviso é só quem está na lista de permitidos
+ * (a trava do servidor, `travaForaDaProducao`). A tela diz isso, com a
+ * contagem — nunca os contatos.
+ */
+function AvisoDoAmbienteDeTeste() {
+  const p = lerPermitidos(process.env[VARIAVEL_DOS_PERMITIDOS]);
+  const n = p.emails.size + p.celulares.size;
+  return (
+    <p className="flex gap-2 rounded-md border border-sky-500/40 bg-sky-500/5 p-3 text-sm">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0 text-sky-600" />
+      <span>
+        <strong>Ambiente de teste (sandbox do Asaas).</strong> O sandbox envia e-mail e SMS de verdade, por isso aqui só
+        recebem avisos os contatos da <strong>lista de permitidos</strong> do servidor.{" "}
+        {n === 0
+          ? "A lista está vazia: nenhum pagador recebe nada, mesmo com a régua ligada."
+          : `A lista tem ${p.emails.size} e-mail(s) e ${p.celulares.size} celular(es); os demais pagadores ficam com os avisos desligados no Asaas.`}
+      </span>
+    </p>
+  );
+}
+
 export async function AbaCobrancaDaUnidade({
   supabase,
   clinicId,
@@ -273,6 +302,7 @@ export async function AbaCobrancaDaUnidade({
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
+          {!isProductionAllowed() && <AvisoDoAmbienteDeTeste />}
           {p.account_status !== "active" && (
             <p className="flex gap-2 text-sm text-muted-foreground">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" />

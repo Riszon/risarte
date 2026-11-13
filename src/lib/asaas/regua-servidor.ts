@@ -3,7 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { credencialDaConta, opcoesDaConta } from "./account";
 import { getBalance, getCustomerNotifications, updateCustomer, updateNotificationsBatch, type AsaasCredential } from "./api";
 import { AsaasError, type AsaasRequestOptions } from "./client";
-import { contatoParaOAsaas, pacoteDosAvisos, type AvisoDaRegua } from "./regua";
+import {
+  VARIAVEL_DOS_PERMITIDOS,
+  contatoParaOAsaas,
+  lerPermitidos,
+  pacoteDosAvisos,
+  travaForaDaProducao,
+  type AvisoDaRegua,
+} from "./regua";
 
 /**
  * A RÉGUA NO ASAAS (ASA2, entrega 3; 4007) — só no servidor.
@@ -14,6 +21,10 @@ import { contatoParaOAsaas, pacoteDosAvisos, type AvisoDaRegua } from "./regua";
  *   - ligado:    contato + avisos ligados; lê os 8 avisos; grava a régua (3 chamadas);
  *   - desligado: avisos desligados (1 chamada; o contato fica no Asaas, 17.3);
  *   - apagar:    conta desativada — e-mail e celular em branco (1 chamada, D6).
+ *
+ * ⚠️ FORA DA PRODUÇÃO (sandbox), só o contato da lista de permitidos
+ * (`ASAAS_SANDBOX_CONTATOS_PERMITIDOS`, começa vazia) vai ao Asaas; pagador sem
+ * contato permitido fica com os avisos DESLIGADOS. O sandbox envia de verdade.
  *
  * Cota do Asaas: 25.000 chamadas por CONTA a cada 12 h. A rotina roda a cada
  * 10 min com até 50 pagadores por conta (pior caso 10.800 em 12 h). No 429, a
@@ -34,11 +45,27 @@ export type ItemDaFila = {
 
 export const PAGADORES_POR_CONTA = 50;
 
-/** Aplica um pagador no Asaas. Devolve se o contato foi junto. Lança o erro do Asaas. */
-export async function aplicarNoAsaas(item: ItemDaFila, cred: AsaasCredential, opts: AsaasRequestOptions): Promise<boolean> {
-  const { body, levouContato } = contatoParaOAsaas(item.mode, { email: item.email, mobile: item.mobile });
+export type Aplicado = { modo: "on" | "off" | "clear"; levouContato: boolean; barrado: boolean };
+
+/**
+ * Aplica um pagador no Asaas. Devolve o que de fato foi (a trava pode
+ * transformar "ligar" em "desligar"). Lança o erro do Asaas.
+ */
+export async function aplicarNoAsaas(
+  item: ItemDaFila,
+  cred: AsaasCredential,
+  opts: AsaasRequestOptions,
+  env: Record<string, string | undefined> = process.env
+): Promise<Aplicado> {
+  const trava = travaForaDaProducao({
+    ambiente: cred.environment,
+    modo: item.mode,
+    contato: { email: item.email, mobile: item.mobile },
+    permitidos: lerPermitidos(env[VARIAVEL_DOS_PERMITIDOS]),
+  });
+  const { body, levouContato } = contatoParaOAsaas(trava.modo, trava.contato);
   await updateCustomer(cred, item.asaas_customer_id, body, opts);
-  if (item.mode === "on") {
+  if (trava.modo === "on") {
     const atuais = await getCustomerNotifications(cred, item.asaas_customer_id, opts);
     const pacote = pacoteDosAvisos(atuais, item.rules ?? [], {
       temEmail: !!body.email,
@@ -46,14 +73,14 @@ export async function aplicarNoAsaas(item: ItemDaFila, cred: AsaasCredential, op
     });
     await updateNotificationsBatch(cred, item.asaas_customer_id, pacote, opts);
   }
-  return levouContato;
+  return { modo: trava.modo, levouContato, barrado: trava.barrado };
 }
 
-async function devolver(item: ItemDaFila, levouContato: boolean, erro: string | null) {
+async function devolver(item: ItemDaFila, modo: "on" | "off" | "clear", levouContato: boolean, erro: string | null) {
   const admin = createAdminClient();
   const { error } = await admin.rpc("_gateway_regua_done", {
     p_customer_id: item.customer_id,
-    p_mode: item.mode,
+    p_mode: modo,
     p_rules_version: item.rules_version,
     p_contact_sent: levouContato,
     p_started_at: item.started_at,
@@ -91,11 +118,11 @@ export async function rodarFilaDaRegua(): Promise<ResultadoDaFila> {
     const opts = { ...opcoesDaConta(conta, "regua"), rateLimitRetries: 0 };
     for (const item of lista) {
       try {
-        const levou = await aplicarNoAsaas(item, cred, opts);
-        await devolver(item, levou, null);
+        const r = await aplicarNoAsaas(item, cred, opts);
+        await devolver(item, r.modo, r.levouContato, null);
         r.aplicados++;
       } catch (e) {
-        await devolver(item, false, codigoDoErro(e));
+        await devolver(item, item.mode, false, codigoDoErro(e));
         r.falharam++;
         if (e instanceof AsaasError && (e.code === "rate_limited" || e.code === "unauthorized")) {
           r.contasParadas++;
@@ -127,10 +154,10 @@ export async function aplicarReguaDoPagador(
   const item = ((Array.isArray(data) ? data[0] : data) ?? null) as ItemDaFila | null;
   if (!item) return;
   try {
-    const levou = await aplicarNoAsaas(item, cred, opts);
-    await devolver(item, levou, null);
+    const r = await aplicarNoAsaas(item, cred, opts);
+    await devolver(item, r.modo, r.levouContato, null);
   } catch (e) {
-    await devolver(item, false, codigoDoErro(e));
+    await devolver(item, item.mode, false, codigoDoErro(e));
   }
 }
 
