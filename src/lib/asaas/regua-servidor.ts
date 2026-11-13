@@ -118,8 +118,8 @@ export async function rodarFilaDaRegua(): Promise<ResultadoDaFila> {
     const opts = { ...opcoesDaConta(conta, "regua"), rateLimitRetries: 0 };
     for (const item of lista) {
       try {
-        const r = await aplicarNoAsaas(item, cred, opts);
-        await devolver(item, r.modo, r.levouContato, null);
+        const feito = await aplicarNoAsaas(item, cred, opts);
+        await devolver(item, feito.modo, feito.levouContato, null);
         r.aplicados++;
       } catch (e) {
         await devolver(item, item.mode, false, codigoDoErro(e));

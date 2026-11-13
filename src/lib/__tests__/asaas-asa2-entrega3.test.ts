@@ -308,7 +308,7 @@ describe("a trava fora da produção (o sandbox envia de verdade)", () => {
     expect(trava).toBeLessThan(fn.indexOf("updateCustomer("));
     expect(fn).toMatch(/ambiente: cred\.environment/);
     expect(fn).toMatch(/contatoParaOAsaas\(trava\.modo, trava\.contato\)/);
-    expect(src.match(/await devolver\(item, r\.modo, r\.levouContato, null\)/g)?.length).toBe(2);
+    expect(src.match(/await devolver\(item, (r|feito)\.modo, (r|feito)\.levouContato, null\)/g)?.length).toBe(2);
     // Nenhum outro caminho manda contato ao Asaas.
     expect(src.match(/updateCustomer\(/g)?.length).toBe(1);
   });
