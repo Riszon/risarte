@@ -50,6 +50,8 @@ export type FeeSummaryRow = {
   amountCents: number;
   receipts: number;
   payableStatus: string | null;
+  /** ASA3 (4008): quanto do valor já foi pago no split (retido na origem). */
+  retainedCents: number;
 };
 
 type AccountOption = { code: string; name: string; scope: string };
@@ -877,7 +879,7 @@ export function NetworkFeesView({
                   <span className="w-20 text-right">Base recebida</span>
                   <span className="w-16 text-right">Baixas</span>
                   <span className="w-24 text-right">Valor</span>
-                  <span className="w-20 text-right">Conta</span>
+                  <span className="w-36 text-right">Conta a pagar / split</span>
                 </span>
               </div>
               {summary.map((s) => (
@@ -908,8 +910,16 @@ export function NetworkFeesView({
                     <span className="w-24 text-right">
                       {formatBRL(s.amountCents)}
                     </span>
-                    <span className="w-20 text-right text-muted-foreground">
-                      {s.payableStatus ?? "—"}
+                    <span className="w-36 text-right text-muted-foreground">
+                      {/* ASA3: o retido pelo split JÁ ESTÁ PAGO — o custo existe. */}
+                      {s.retainedCents > 0 && (
+                        <span className="block text-emerald-700 dark:text-emerald-400">
+                          pago no split {formatBRL(s.retainedCents)}
+                        </span>
+                      )}
+                      {s.retainedCents > 0 && s.retainedCents >= s.amountCents
+                        ? null
+                        : (s.payableStatus ?? "—")}
                     </span>
                   </span>
                 </div>

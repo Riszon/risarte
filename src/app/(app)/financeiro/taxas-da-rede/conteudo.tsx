@@ -173,6 +173,7 @@ export async function TaxasDaRedeConteudo({
       amount_cents: number;
       receipts: number;
       payable_status: string | null;
+      retained_cents?: number | null;
     }[]
   ).map((s) => ({
     fee: s.fee,
@@ -185,6 +186,7 @@ export async function TaxasDaRedeConteudo({
     amountCents: Number(s.amount_cents ?? 0),
     receipts: Number(s.receipts ?? 0),
     payableStatus: s.payable_status,
+    retainedCents: Number(s.retained_cents ?? 0),
   }));
 
   const campaigns: FeeCampaign[] = (

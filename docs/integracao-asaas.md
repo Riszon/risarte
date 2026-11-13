@@ -881,6 +881,10 @@ As diferenças são sempre **a favor da unidade** (o repasse nunca passa do perc
 - **S7.** As quatro taxas percentuais vão para a carteira da conta raiz; o fundo de propaganda tem carteira configurável (D6), começando na raiz; RisLife na ASA5.
 - **S8.** Data prevista dos "Repasses a receber": a data prevista de liquidação da cobrança de origem, conferida no sandbox.
 
+### 18.3.1 A taxa retida já nasce paga (pedido do Jeferson, 13/11/2026)
+
+A baixa de uma cobrança com split nasce com a taxa **retida** (`_split_charge_born_retained`, pela referência "Asaas <id>" da baixa): a conta a pagar de taxa do mês **nem é criada** quando tudo foi retido. Antes ela nascia e era cancelada logo depois ("sem valor apurado no mês"), dando a impressão de que o custo não existia. O apurado do mês (`network_fee_summary.retained_cents`) mostra **"pago no split"** em cada taxa; o custo está no razão (despesa da unidade, liquidada) e no resultado.
+
 ### 18.4 Entre a entrega 1 e a 2
 
 Enquanto a fila de atualização não existir, uma mudança de taxa (percentual, campanha ou tarifa do Asaas) com cobrança em aberto **não muda o split já enviado**: a diferença cai na S5 (a menor, conta a pagar acima de R$ 0,10; a maior, divergência). O manual diz isso.

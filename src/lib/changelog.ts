@@ -78,7 +78,7 @@ export const CHANGELOG: Versao[] = [
       {
         tipo: "melhoria",
         texto:
-          "A taxa retida pelo split não entra mais na conta a pagar de taxa da unidade (nada é cobrado duas vezes). Recebimento fora do split, como dinheiro e maquininha, continua virando conta a pagar.",
+          "A taxa retida pelo split já nasce paga: não entra na conta a pagar de taxa da unidade (nada é cobrado duas vezes) e aparece no apurado do mês como \"pago no split\". O custo continua no resultado da unidade. Recebimento fora do split, como dinheiro e maquininha, continua virando conta a pagar.",
         papeis: ["finance_franchisor", "unit_manager", "franchisee"],
         manual: "13g.6. Taxas da franquia e o split",
       },

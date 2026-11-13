@@ -411,6 +411,90 @@ create trigger charges_split_on_receipt
   after update of receipt_id on public.charges
   for each row execute function public._gateway_charge_split_on_receipt();
 
+-- A TAXA JÁ NASCE PAGA (pedido do dono, 13/11/2026): a baixa de uma cobrança
+-- com split nasce com a taxa RETIDA, para a conta a pagar do mês nem ser criada
+-- (antes ela nascia e era cancelada logo depois, "sem valor apurado", dando a
+-- impressão de que o custo não existia). O custo está no razão, liquidado.
+-- A cobrança é achada pela referência da baixa ("Asaas <id>", 4005), porque
+-- `charges.receipt_id` só é gravado depois.
+create or replace function public._split_charge_born_retained()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_ref text;
+  v_charge uuid;
+begin
+  if new.source_type <> 'receipt' or new.receipt_id is null or new.reversed then return new; end if;
+  select r.reference into v_ref from public.payment_receipts r where r.id = new.receipt_id;
+  if v_ref is null or v_ref not like 'Asaas %' then return new; end if;
+  select ch.id into v_charge
+    from public.charges ch
+   where ch.asaas_payment_id = substr(v_ref, 7) and ch.split_applied
+     and exists (select 1 from public.charge_splits cs
+                  where cs.charge_id = ch.id and cs.fees ? new.fee
+                    and cs.status not in ('cancelado', 'recusado'))
+   limit 1;
+  if v_charge is not null then
+    new.charge_id := v_charge;
+    new.retained_cents := new.amount_cents;
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public._split_charge_born_retained() from public, anon, authenticated;
+
+drop trigger if exists split_charges_born_retained on public.split_charges;
+create trigger split_charges_born_retained
+  before insert on public.split_charges
+  for each row execute function public._split_charge_born_retained();
+
+-- O apurado do mês da tela de taxas mostra quanto foi PAGO NO SPLIT (retido na
+-- origem) ao lado da conta a pagar. Ganha coluna no retorno: drop + create.
+drop function if exists public.network_fee_summary(uuid, integer, integer);
+create or replace function public.network_fee_summary(p_clinic_id uuid, p_year integer, p_month integer)
+returns table(fee text, label text, kind text, percent numeric, is_override boolean, campaign_name text,
+              base_cents bigint, amount_cents bigint, receipts integer, payable_status text, retained_cents bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $fn$
+  with period as (select make_date(p_year, p_month, 1) as p)
+  select
+    t.key,
+    t.label,
+    cfg.kind,
+    cfg.percent,
+    cfg.is_override,
+    cfg.campaign_name,
+    coalesce(s.base, 0)::bigint,
+    case when cfg.kind = 'percent' then coalesce(s.total, 0)
+         when cfg.active then cfg.amount_cents else 0 end::bigint,
+    coalesce(s.n, 0)::integer,
+    case when pay.status = 'cancelada' and coalesce(s.retido, 0) > 0 then null else pay.status end,
+    coalesce(s.retido, 0)::bigint
+  from public.network_fee_types t
+  cross join period per
+  left join lateral public.network_fee_for(p_clinic_id, t.key, per.p) cfg on true
+  left join lateral (
+    select sum(c.amount_cents) as total, sum(c.base_cents) as base,
+           count(*) as n, sum(c.retained_cents) as retido
+    from public.split_charges c
+    where c.clinic_id = p_clinic_id and c.fee = t.key
+      and c.period_month = per.p and not c.reversed
+  ) s on true
+  left join public.payables pay
+    on pay.clinic_id = p_clinic_id and pay.network_fee = t.key
+   and pay.fee_period = per.p
+  where public.can_see_clinic_finance(p_clinic_id)
+  order by t.sort_order, t.key;
+$fn$;
+revoke execute on function public.network_fee_summary(uuid, integer, integer) from public, anon, authenticated;
+grant execute on function public.network_fee_summary(uuid, integer, integer) to authenticated;
+
 -- -----------------------------------------------------------------------------
 -- 6) OS AVISOS DE SPLIT
 -- -----------------------------------------------------------------------------

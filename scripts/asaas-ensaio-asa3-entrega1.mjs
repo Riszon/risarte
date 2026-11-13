@@ -237,7 +237,13 @@ try {
   };
 
   // --- 5) A — dentro da tolerância -------------------------------------------------
+  const per0 = (await um("select date_trunc('month', public.today_br())::date::text p")).p;
+  const contasAntes = await todos("select network_fee, status, amount_cents::int a from public.payables where clinic_id = $1 and fee_period = $2 and network_fee = any($3) order by 1", [ldn, per0, Object.keys(TAXAS)]);
   const a = await emitirEPagar(ch1, parcelas[0]);
+  const contasDepois = await todos("select network_fee, status, amount_cents::int a from public.payables where clinic_id = $1 and fee_period = $2 and network_fee = any($3) order by 1", [ldn, per0, Object.keys(TAXAS)]);
+  conf("A TAXA JÁ NASCE PAGA: a baixa com split não cria (nem cancela) conta a pagar", JSON.stringify(contasAntes) === JSON.stringify(contasDepois));
+  const resumo = await comoPessoa(P.financeiro, "select fee, retained_cents::int r, payable_status from public.network_fee_summary($1, extract(year from public.today_br())::int, extract(month from public.today_br())::int)", [ldn]);
+  conf("o apurado do mês mostra o pago no split de cada taxa", Array.isArray(resumo) && Object.keys(TAXAS).every((fee) => (resumo.find((x) => x.fee === fee)?.r ?? 0) > 0));
   conf("o split gravado confirma o 'split habilitado' da conta", !!(await um("select split_enabled_confirmed_at from public.gateway_accounts where id = $1", [conta.id])).split_enabled_confirmed_at);
   conf("o aviso de pagamento dá baixa", a.r === "baixa");
   const lA = await linhas(ch1);

@@ -49,7 +49,9 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   `charges.split_applied/split_skip_reason`; `split_charges.retained_cents` e
   `charge_id`; `refresh_network_fee_payable` soma só o NÃO retido; razão
   `split_retained` (despesa da unidade) e `split_retained_revenue` (receita da
-  franqueadora). `_gateway_split_retention` (gatilho na baixa e nos avisos);
+  franqueadora). A taxa da baixa com split JÁ NASCE retida
+  (`_split_charge_born_retained`): a conta a pagar nem é criada; o apurado do
+  mês mostra "pago no split" (`network_fee_summary.retained_cents`). `_gateway_split_retention` (gatilho na baixa e nos avisos);
   `_gateway_on_split_event` (gatilho em `gateway_webhook_events` ao processar
   `PAYMENT_SPLIT_*`; os guardados antes foram reprocessados). Portas
   `gateway_split_read/save`. S4: `network_fees_sem_pontualidade` (= 0).

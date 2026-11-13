@@ -6525,8 +6525,16 @@ repasse ficar abaixo, a diferença acima da tolerância vira conta a pagar; se
 ficar acima, vira aviso ao Financeiro. A atualização automática do split das
 cobranças em aberto vem na próxima entrega.
 
+**A taxa retida já nasce paga.** O custo existe — só não passa pela conta a
+pagar. No **apurado do mês** (aba Taxas da franquia e Financeiro → Rede →
+Taxas da rede), a coluna **Conta a pagar / split** mostra **"pago no split
+ R$ X"** em cada taxa; quando o mês todo foi retido, não existe conta a pagar
+de taxa naquele mês (ela nem é criada). O que não passou pelo split continua
+na conta a pagar, ao lado.
+
 **No razão:** a taxa retida aparece como despesa da unidade e receita da
-franqueadora, por taxa, liquidada quando o Asaas avisa.
+franqueadora, por taxa, liquidada quando o Asaas avisa. O resultado (DRE) da
+unidade mostra o custo inteiro, retido ou pago pela conta.
 
 ## 14. Checklists
 
