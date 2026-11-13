@@ -62,6 +62,50 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.442.0",
+    data: "2026-11-13",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4009, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Split das cobranças em aberto, estorno pelo riSZon e Taxas da franquia na unidade",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando uma taxa, campanha, destino ou tarifa do Asaas muda, o riSZon atualiza sozinho o split das cobranças em aberto (a cada 10 minutos, as vencidas primeiro). Só o split muda: o boleto, o Pix e o link continuam os mesmos, e o paciente não recebe aviso. A ficha mostra quando e por quê.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Pedir estorno pela ficha: o estorno total de uma cobrança paga sai do riSZon. Pix e cartão ficam aguardando a autorização de quem tem o acesso da conta Asaas da unidade (o riSZon nunca pede o código); o boleto manda um link ao pagador para os dados bancários. Concluído o estorno, a baixa é desfeita e a taxa da rede continua devida.",
+        papeis: ["franchisee", "unit_manager", "finance_franchisor"],
+        manual: "13g.7. Pedir estorno",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Central de Configuração → cada unidade → Taxas da franquia: se a unidade emite com split, a fila do split, quem pode pedir estorno e as taxas que valem para ela. O Gerente e o Franqueado veem a da própria unidade; a tela antiga de Taxas da rede saiu.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Saldo da conta da franqueadora: aviso quando fica negativo (um estorno devolve o split) e, se definido, quando fica abaixo do mínimo da rede.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.6. Taxas da franquia e o split",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O webhook de cada conta Asaas se corrige sozinho quando o riSZon passa a ouvir um aviso novo; webhook desatualizado aparece na prontidão da unidade até ser corrigido.",
+        papeis: [],
+        manual: "13g.1. Aba Conta e tarifas (Admin Master)",
+      },
+    ],
+  },
+  {
     versao: "0.441.0",
     data: "2026-11-13",
     migracao: "0403",

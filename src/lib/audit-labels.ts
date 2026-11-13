@@ -65,6 +65,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   charge_split_updates: "Split de cobrança atualizado pela fila",
   charge_refunds: "Pedido de estorno",
   charge_refund: "Pedido de estorno",
+  charge_refund_mobile: "Celular do pagador enviado ou apagado no Asaas (estorno de boleto)",
   gateway_split_run: "Split: \"Atualizar agora\"",
   gateway_split_zero: "Split retirado (todas as taxas em zero)",
   payment_waivers: "Quitação por valor menor (dispensa)",

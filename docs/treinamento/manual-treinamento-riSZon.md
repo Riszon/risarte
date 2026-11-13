@@ -6062,7 +6062,7 @@ foi preparado para a assistente. Avise o administrador.
 
 ## 13g. A Central de Configuração
 
-*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.439.0; Taxas da franquia desde a 0.440.0)*
+*(desde a versão 0.423.0; abas Financeiro e Comercial desde a 0.427.0; Cobrança e comunicação desde a 0.439.0; Taxas da franquia desde a 0.440.0, na unidade desde a 0.442.0)*
 
 **Para que serve:** reunir num lugar só toda a configuração comercial e
 financeira da rede e de cada unidade. Ela tem dois níveis: a **Rede** (o padrão
@@ -6074,9 +6074,9 @@ Fiscal…).
 menu principal, **Central de Configuração**, para quem vê alguma aba. Os
 endereços antigos continuam funcionando e levam à aba nova:
 **Financeiro → Cadastros → Configuração** abre a aba **Financeiro**, e
-**Administração → Regras Comerciais** abre a aba **Comercial**, e, para o
-Admin Master e o Financeiro da Franqueadora, **Financeiro → Rede → Taxas da
-rede** abre a aba **Taxas da franquia**.
+**Administração → Regras Comerciais** abre a aba **Comercial**, e
+**Financeiro → Rede → Taxas da rede** abre a aba **Taxas da franquia** (da Rede,
+para quem a configura; da própria unidade, para o Gerente e o Franqueado).
 
 **Quem vê cada aba:**
 
@@ -6086,7 +6086,7 @@ rede** abre a aba **Taxas da franquia**.
 | **Financeiro** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade) | Admin Master e Financeiro da Franqueadora |
 | **Comercial** | Admin Master | Admin Master |
 | **Cobrança e comunicação** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade) | Admin Master e Financeiro da Franqueadora (o termo de privacidade, só o Admin Master) — ver 13g.5 |
-| **Taxas da franquia** (só na Rede) | Admin Master e Financeiro da Franqueadora. Gerente e Franqueado continuam vendo as taxas da própria unidade em Financeiro → Rede → Taxas da rede | Admin Master e Financeiro da Franqueadora — ver 13g.6 |
+| **Taxas da franquia** | Admin Master e Financeiro da Franqueadora (rede e todas as unidades); Gerente e Franqueado (só a própria unidade, só leitura) | Admin Master e Financeiro da Franqueadora — ver 13g.6 |
 
 **Aba Financeiro.** Multa, juros, arredondamento e o teto da inadimplência —
 o que antes ficava em Financeiro → Cadastros → Configuração.
@@ -6535,6 +6535,82 @@ na conta a pagar, ao lado.
 **No razão:** a taxa retida aparece como despesa da unidade e receita da
 franqueadora, por taxa, liquidada quando o Asaas avisa. O resultado (DRE) da
 unidade mostra o custo inteiro, retido ou pago pela conta.
+
+**A fila do split (desde a 0.442.0).** Quando uma taxa, campanha, destino
+ou tarifa do Asaas muda, o riSZon **atualiza sozinho o split das cobranças em
+aberto**, a cada 10 minutos, **as vencidas e as de vencimento mais próximo
+primeiro** (até 150 por unidade a cada rodada). Só o split muda: o boleto, o
+Pix e o link continuam os mesmos, e **o paciente não recebe aviso**.
+
+- **Na aba da unidade** (Central → a unidade → Taxas da franquia): se a unidade
+  emite com split (e, se não, por quê), quantas cobranças esperam o split novo e
+  a previsão, as que tiveram erro no Asaas (tentam de novo sozinhas) e as
+  últimas atualizações. O Admin Master e o Financeiro têm **Atualizar agora**
+  (cada uso fica na auditoria). Na Rede, a mesma fila por unidade.
+- **Na ficha**, a cobrança mostra quando o split foi atualizado e por quê
+  (taxa, campanha, destino, tarifa).
+- **Todas as taxas da unidade em zero** (isenção ou campanha): o split só é
+  retirado com a confirmação do Financeiro ou do Admin, com motivo. Sem
+  confirmar, fica o que está.
+- **Paga antes da fila chegar:** se só a **tarifa do Asaas** mudou, a diferença
+  é absorvida. Se mudou uma **taxa da rede ou campanha**, vale a tolerância
+  (acima de R$ 0,10, conta a pagar).
+- **Cartão já confirmado** perto do crédito: o Asaas não deixa mudar; vale a
+  tolerância.
+- **Saldo da conta da franqueadora:** um estorno devolve o split, e a conta
+  pode ficar **negativa** — o Financeiro é avisado. Com um **saldo mínimo**
+  definido na aba (em branco = sem aviso), o aviso vem antes.
+
+### 13g.7. Pedir estorno
+
+*(desde a versão 0.442.0)*
+
+**Para que serve:** devolver ao pagador uma cobrança paga pelo Asaas, pedindo
+pelo riSZon (estorno **total**; parcial e contestação no cartão continuam à mão).
+
+**Quem pode:** quem tem o **acesso de autorização da conta Asaas da unidade**
+(o código que o Asaas manda por SMS ou pelo aplicativo). Por padrão o
+**Franqueado**; o Admin Master pode liberar o **Gerente**, na aba Taxas da
+franquia da unidade (bloco **Quem pode pedir estorno**). O Admin Master sempre
+pode. **O riSZon nunca pede, recebe nem guarda esse código.**
+
+**Pix e cartão — passo a passo:**
+
+1. Na ficha do paciente, aba **Financeiro**, na parcela paga, **Pedir
+   estorno**. Escreva o motivo (obrigatório) e confirme.
+2. A cobrança fica **"Estorno aguardando autorização"**.
+3. Quem tem o acesso da conta Asaas **autoriza no Asaas** (painel ou
+   aplicativo) com o código que recebe.
+4. Quando o Asaas avisa que o estorno foi feito, o riSZon **desfaz a baixa** (a
+   parcela volta a ficar em aberto) e **a taxa da rede continua devida** pela
+   unidade (o Financeiro pode dispensá-la, com motivo).
+
+**Boleto — passo a passo:**
+
+1. Antes: o termo de privacidade precisa estar declarado pelo Admin Master (o
+   mesmo da régua) e o **pagador** (o responsável financeiro, quando houver)
+   precisa ter **celular válido na ficha**. Sem isso, o botão explica o que
+   falta (e, sem o termo, o estorno é feito no painel do Asaas).
+2. **Pedir estorno**: a tela mostra **qual celular será enviado ao Asaas** e
+   avisa que o Asaas vai mandar um **SMS** a esse número com o link.
+3. A cobrança fica **"Estorno aguardando o pagador"**, com **Copiar link** e
+   **Enviar pelo WhatsApp**.
+4. **O que o pagador recebe:** o SMS do Asaas com um link seguro, onde ele
+   informa os dados bancários e envia os documentos pedidos. O riSZon **não
+   recebe** esses dados. O dinheiro só volta depois disso.
+5. O Asaas pode **negar** o estorno do boleto: a cobrança volta para "Paga" e
+   quem pediu e o Financeiro são avisados.
+6. **Os avisos de cobrança do pagador não mudam** por causa do celular. Se a
+   régua da unidade estiver **desligada**, o celular é **apagado** no Asaas
+   quando o estorno termina.
+
+**Pedido parado:** o Asaas não deixa cancelar o pedido pelo riSZon. Para
+desistir, cancele no painel do Asaas ou simplesmente não autorize. Pedido
+parado há mais de 1 dia útil avisa quem pediu e o Financeiro; pedido cancelado
+no Asaas volta a cobrança para "Paga".
+
+**Auditoria:** o pedido, quem pediu, o motivo e o resultado; no boleto, quando
+o celular foi enviado e quando foi apagado (sem o número).
 
 ## 14. Checklists
 

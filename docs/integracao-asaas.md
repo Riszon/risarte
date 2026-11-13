@@ -1015,3 +1015,16 @@ Conta principal do sandbox, duas cobranças Pix de R$ 20,00 pagas e estornadas p
 - **Webhook que se corrige sozinho:** a rotina conferiu as 4 contas de teste com webhook e corrigiu a lista pela API (versão 2, com `PAYMENT_REFUND_DENIED`); o webhook de Londrina passou a ouvir o estorno negado. Sem clique de ninguém.
 - **A fila:** cobrança de boleto do LDN-00066 emitida pelo caminho da tela (17% + R$ 0,16). Royalty do treino de 6% → 6,5%: a cobrança entrou na fila (motivo taxa); a rodada mudou o split no Asaas para **17,5% + R$ 0,17**; de volta a 6%, voltou para 17% + R$ 0,16. Link da fatura, nosso número, vencimento e valor **iguais**; nenhum `PAYMENT_UPDATED`; o histórico da cobrança registrou as duas atualizações. A mesma rodada **acrescentou o split (U3)** às 3 cobranças de teste de Londrina emitidas antes do split habilitado.
 - **Estorno de boleto: LACUNA.** O Asaas recusou: *"Não é possível efetuar o estorno pois o seu cliente não possui um celular válido."* O estorno de boleto exige o **celular do pagador cadastrado no Asaas** (o riSZon cria o pagador só com nome e CPF; o celular só vai pela régua). **Parado para decisão do Jeferson** antes de adaptar.
+
+#### 18.7.7 Estorno de boleto com o celular do pagador (Jeferson, 13/11/2026)
+
+1. No pedido de estorno de boleto, o riSZon envia ao Asaas o **celular do pagador** que está na ficha (o responsável financeiro, quando houver). A tela mostra, antes de confirmar, **qual número** será enviado e avisa que o Asaas vai mandar um **SMS** com o link.
+2. Sem celular válido na ficha, o botão fica desabilitado e explica que é preciso cadastrar antes.
+3. Enviar o celular **não liga avisos**: os avisos do pagador ficam como estavam (`notificationDisabled` mantido). **Prova no sandbox com o celular do Jeferson, com a aprovação dele na hora.**
+4. **Limpeza:** com a régua da unidade **desligada**, o celular é apagado no Asaas (`mobilePhone: ""`, o método da D6) quando o estorno é concluído, negado ou cancelado; com a régua ligada, fica.
+5. Exige a **declaração do termo de privacidade** (a da régua). Sem ela, o estorno de boleto não sai pelo riSZon e a tela orienta a fazer no painel do Asaas.
+6. No sandbox vale a **lista de permitidos** (D10).
+7. **Auditoria:** celular enviado (por quem, quando) e apagado — **sem o número**.
+8. O manual (13g.7) explica o passo a passo e o que o pagador recebe.
+
+**Correção da 4008 dentro da 4009 (13/11/2026):** o razão da taxa retida lançava a receita numa "franqueadora qualquer" (com mais de uma clínica do tipo franqueadora, a conta bancária não batia e o aviso de split dava erro); e uma carteira recebedora **sem clínica** (o fundo com conta própria) fazia o razão recusar. Agora a receita vai para a clínica dona da conta que recebeu o split (sem clínica: a da conta raiz). Na produção ainda não há cobrança com split, então nada foi afetado.

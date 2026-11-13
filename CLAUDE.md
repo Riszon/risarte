@@ -400,6 +400,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/11/2026 (Asaas — ASA3, entrega 2) — PC Administrador (core 0.441.0 → 0.442.0, Asaas 0.8.0, migração 4009; worktree `wt-asaas`)**
+
+- **A fila do split e o estorno** (estado em `docs/asaas/ESTADO.md`; 18.7 a
+  18.7.7). ⚠️ **A fila compara a BASE** (`charges.split_inputs` × `_charge_split_inputs`)
+  — mudança que não altera a conta não chama o Asaas. ⚠️ **PUT só com o split**
+  (provado: não muda fatura, boleto, Pix nem gera PAYMENT_UPDATED); **nunca
+  lista vazia** sem a confirmação do Financeiro/Admin (U4). ⚠️ **Estorno:** o
+  riSZon nunca pede o código; Pix/cartão ficam AWAITING_CRITICAL_ACTION_AUTHORIZATION;
+  boleto exige o CELULAR do pagador no Asaas (vai na hora, com o termo e a
+  trava; apagado no fim com a régua desligada). ⚠️ **Mudou a lista de avisos do
+  webhook → suba `WEBHOOK_EVENTS_VERSION`**: a rotina de 10 min corrige as contas.
+
 **13/11/2026 (Asaas — ASA3, entrega 1) — PC Administrador (core 0.439.0 → 0.440.0, Asaas 0.7.0, migração 4008; worktree `wt-asaas`)**
 
 - **O split na emissão** (estado em `docs/asaas/ESTADO.md`; decisões na seção 18

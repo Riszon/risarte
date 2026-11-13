@@ -32,6 +32,17 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - ⏳ **0403 só no treino.** Produção: o dono roda no SQL Editor; conferência
 >   no fim do arquivo (5 linhas, `usa_helper = true`). Não visto na tela.
 >
+> ## 🔌 0.442.0 / ASAAS 0.8.0 — ASA3, ENTREGA 2: SPLIT DAS COBRANÇAS EM ABERTO E ESTORNO (13/11/2026; migração 4009)
+>
+> Estado em `docs/asaas/ESTADO.md`; decisões em 18.7 a 18.7.7 da especificação.
+> Fila do split (base em `charges.split_inputs`; gatilhos de taxa, campanha,
+> destino, tarifa, split habilitado e a virada do dia; 150 por conta; vencidas
+> primeiro); estorno pelo riSZon (Pix/cartão aguardando autorização; boleto com
+> o celular do pagador); saldo da franqueadora; webhook que se corrige (versão
+> 2); Taxas da franquia na unidade. Corrige o razão retido da 4008. Ensaio
+> 73/73. EV-338.
+> 🟡 4009 só no treino.
+>
 > ## ✅ 0.440.0 / ASAAS 0.7.0 — ASA3, ENTREGA 1: O SPLIT NA EMISSÃO (13/11/2026; migração 4008)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões na seção 18 da especificação.
