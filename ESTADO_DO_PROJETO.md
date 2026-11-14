@@ -127,7 +127,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   sistema" antes de gravar). Próxima: **fase 2** (restrições, propostas,
 >   anexos, contatos com o credor), com OK do dono.
 >
-> ## 🔒 0.441.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
+> ## ✅ 0.441.0 — O FINANCEIRO DO PACIENTE SÓ PARA QUEM TRABALHA COM ELE (13/11/2026; migração 0403)
 >
 > Achado de 13/11 (teste do selo da 4006, sessões das contas de teste no
 > treino): ASB, TSB, SDR, Planner, Consultor, Assistente, Comprador e
@@ -154,8 +154,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   da venda (corte por coluna exige porta própria); vendas, negociações e
 >   planos abertos a ASB/TSB/Comprador; escopo "específicas" da equipe da
 >   Franqueadora; o teste e2e do selo (branch do Asaas) virar asserção.
-> - ⏳ **0403 só no treino.** Produção: o dono roda no SQL Editor; conferência
->   no fim do arquivo (5 linhas, `usa_helper = true`). Não visto na tela.
+> - ✅ **0403 nos dois bancos**: produção pelo dono no SQL Editor em 14/11/2026,
+>   conferência batida (5 linhas, `usa_helper = true`). Não visto na tela da produção.
 >
 > ## 🟡 0.446.0 / ASAAS 0.9.0 — ASA3, ENTREGA 3: REPASSES DA FRANQUIA (13/11/2026; migração 4010)
 >
