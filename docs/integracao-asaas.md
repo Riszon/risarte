@@ -1034,3 +1034,30 @@ Conta principal do sandbox, duas cobranças Pix de R$ 20,00 pagas e estornadas p
 **Prova do estorno de boleto concluída (13/11/2026, 19:25, com o celular e o e-mail do Jeferson, aprovada na hora):** boleto de R$ 6,00 do LDN-00066 (pagador: o responsável financeiro, com "Não receber avisos" ativo). O riSZon enviou celular e e-mail ao Asaas mantendo os avisos **desligados**; o Asaas aceitou o estorno (`AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION`) e devolveu o link; a ficha mostra "Estorno aguardando o pagador" com "Copiar link" e "Enviar pelo WhatsApp". O Jeferson recebeu **o link por e-mail** (nenhum SMS, nenhum aviso de cobrança). Auditoria sem os dados. Régua de Londrina ligada: o contato fica no Asaas (regra 4). **Cartão (R$ 7,00, mesmo paciente):** o estorno foi concluído na hora no sandbox, **sem pedir autorização do titular** (o Pix ficou aguardando o código); o riSZon desfez a baixa e marcou a cobrança como estornada.
 
 **Achado (13/11/2026):** o "Estornar baixa" manual do riSZon desfaz a baixa de uma parcela **paga pelo Asaas** só no riSZon — no Asaas o pagamento continua recebido. A parcela fica "Em aberto" e "Paga pelo Asaas" ao mesmo tempo, com "Gerar cobrança no Asaas" de novo (risco de cobrar duas vezes). **Decisão do Jeferson (13/11/2026): bloquear.** Pessoa logada não estorna a baixa de cobrança paga pelo Asaas (gatilho `payment_receipts_block_manual_gateway_reversal`, erro `GATEWAY_RECEIPT`; a tela troca o botão pelo aviso); o aviso de estorno do Asaas continua desfazendo a baixa. A parcela de 16/11 do LDN-00066 teve a baixa refeita no treino.
+
+### 18.8 Entrega 3 — Repasses da franquia (plano aprovado pelo Jeferson em 13/11/2026; migração 4010)
+
+Painel da franqueadora e de cada unidade (9.2, 14.5 e 16.8.2) que lê o que as entregas 1 e 2 gravam. Quase sem tabela nova: portas de leitura, a tela e a planilha. **Nome: "Repasses da franquia"**, para não confundir com o "Repasses" dos dentistas.
+
+**Partes do painel** (período, filtro de unidade):
+
+0. **Resumo no topo (ajuste 3).** Uma linha por unidade: taxa devida no período, paga no split, a receber, em conta a pagar aberta e em conta a pagar vencida. Na visão da rede, com o total. **(ajuste 6)** No topo da visão da rede, o saldo atual da conta Asaas da franqueadora, com alerta de saldo negativo ou abaixo do mínimo.
+1. **Recebido com split × por fora.** Por unidade: com split; Asaas sem split (com o motivo); por fora (dinheiro; maquininha e outros cartões; depósito e Pix manual; cobrança externa). Para cada parte: taxa devida, paga no split e na conta a pagar. **(ajuste 2)** O percentual de cada parte sobre o total recebido da unidade, comparado com a média da rede.
+2. **Liquidado por unidade e taxa, conferido contra o percentual.** **(ajuste 1)** A conferência é **por cobrança**: o devido e o liquidado das MESMAS cobranças, nunca o total devido do período contra o total liquidado do período. O filtro é pela **data do pagamento**; o que ainda não foi liquidado aparece como "a receber", não como diferença. Falta dentro da tolerância (S5) = "absorvida". **(ajuste 5)** Enquanto o Asaas não responder se a mensageria sai do `netValue`, uma falta sistemática de até p × R$ 0,99 nas unidades com e-mail ou SMS ligados aparece com nota própria, não como divergência.
+3. **Repasses a receber (16.8.2).** Splits de cobranças pagas ainda não liquidados, por data prevista (a data de crédito da cobrança, S8), unidade e taxa; depois da data prevista, marca "atrasado".
+4. **Divergências e ocorrências.** Falta acima da tolerância (virou conta a pagar), repasse a maior, split cancelado ou bloqueado, estorno com a taxa de volta à conta a pagar (D13), dispensa de taxa no estorno. Cada linha com link para a ficha; nada se abate nem se dispensa aqui (ASA6).
+5. **Dispensas do período (14.5).** Quitações por valor menor e arredondamentos: valor por natureza (principal, benefício, multa, juros), autor, data e motivo.
+6. **Planilha** de cada parte; cada download na auditoria (quem, quando, filtros).
+
+**Decisões:**
+- **P1.** "Repasses da franquia", em Financeiro → Rede; Gerente e Franqueado veem a mesma tela só com a própria unidade.
+- **P2.** Admin Master e Financeiro da Franqueadora: a rede inteira. Gerente e Franqueado: a própria unidade. Na produção nasce visível **só para o Admin Master** enquanto a integração estiver em testes; o dono libera em Administração → Permissões.
+- **P3.** Mês atual por padrão; outro mês ou intervalo. Recebido pela data do pagamento; liquidado pela data em que o Asaas liquidou o split.
+- **P4.** "A receber" pela data prevista de crédito; "atrasado" depois dela.
+- **P5.** Divergências só mostram e levam à ficha.
+- **P6.** Download da planilha na auditoria.
+- **P7.** Categorias de "por fora": dinheiro; maquininha e outros cartões; depósito e Pix manual; cobrança externa; Asaas sem split.
+
+**Provas:**
+- Ensaio no treino (transação desfeita), provado quebrando: cada parte com números conhecidos (taxas não redondas, duas carteiras, falta acima da tolerância, repasse a maior, estorno, dispensa); quem vê o quê; planilha na auditoria. **(ajuste 4)** Os totais do painel batem com o razão (despesa da unidade e receita da franqueadora por taxa) e com o Painel de cobranças no mesmo período; divergência entre eles **reprova** o ensaio.
+- Teste no projeto de teste com as cobranças já pagas das provas anteriores (sem nova cobrança paga no sandbox).

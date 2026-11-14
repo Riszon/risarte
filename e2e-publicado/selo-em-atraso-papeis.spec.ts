@@ -57,6 +57,19 @@ function selo(raiz: Page | ReturnType<Page["locator"]>) {
   return raiz.locator('[aria-label^="Em atraso há"]').or(raiz.getByText(/Em atraso há \d+ dias?|atraso \d+d/));
 }
 
+/**
+ * Captura de tela de cada papel (pedido do dono, 13/11/2026). Fica em
+ * `test-results/capturas-papeis/`. Contatos (e-mail e telefone) saem tarjados.
+ */
+async function capturar(page: Page, email: string, onde: string) {
+  const quem = email.split("@")[0];
+  await page.waitForTimeout(1500);
+  await page.screenshot({
+    path: `test-results/capturas-papeis/${quem}-${onde}.png`,
+    mask: [page.getByText(/[\w.+-]+@[\w-]+\.[\w.]+/), page.getByText(/\(?\d{2}\)?\s?9?\d{4}-?\d{4}/)],
+  });
+}
+
 async function abrir(page: Page, caminho: string) {
   const resposta = await page.goto(caminho, { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("load");
@@ -97,6 +110,7 @@ async function olharComo(context: BrowserContext, page: Page, email: string): Pr
     .last();
   v.cardDaAgenda = await card.isVisible().catch(() => false);
   v.seloNaAgenda = v.cardDaAgenda ? await selo(card).count() : 0;
+  await capturar(page, email, "1-agenda");
   v.seloNaJanela = null;
   if (v.cardDaAgenda) {
     await card.getByRole("button", { name: "Ver informações" }).first().click();
@@ -113,6 +127,7 @@ async function olharComo(context: BrowserContext, page: Page, email: string): Pr
   v.seloNaFicha = await selo(page.locator("main")).count();
   v.avisoNaFicha = await page.getByText(/\d+ cobranças? em atraso/).count();
   v.numeroNaAba = await page.locator('[title="Cobranças em atraso"]').count();
+  await capturar(page, email, "2-ficha");
 
   // 3) Cockpit da avaliação: o quadro Financeiro com o atraso.
   await abrir(page, `/avaliacao/${cenario.clientId}`);
@@ -123,6 +138,7 @@ async function olharComo(context: BrowserContext, page: Page, email: string): Pr
   await abrir(page, `/prontuarios?q=${encodeURIComponent(CODIGO)}`);
   v.filtroNaLista = await page.locator('select[name="cobranca"]').count();
   v.marcaNaLista = await page.getByText(/\d+ cobranças? em atraso/).count();
+  await capturar(page, email, "3-lista");
 
   // 5) Painel de cobranças: o item do menu Financeiro e o endereço digitado.
   await page.goto("/financeiro", { waitUntil: "domcontentloaded" });
@@ -131,6 +147,7 @@ async function olharComo(context: BrowserContext, page: Page, email: string): Pr
   await page.goto("/financeiro/cobrancas", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("load");
   v.painelAbriu = new URL(page.url()).pathname === "/financeiro/cobrancas";
+  await capturar(page, email, "4-painel-de-cobrancas");
 
   console.log(`  ${email}: ${JSON.stringify(v)}`);
   return v;
