@@ -25,6 +25,10 @@ export function podeExcluirDividas(session: SessionContext): boolean {
   return podeVerDividas(session) && comTeto(session, "acao.dividas.excluir");
 }
 
+export function podeImportarDividas(session: SessionContext): boolean {
+  return podeVerDividas(session) && comTeto(session, "acao.dividas.importar");
+}
+
 export function podeConfigurarDividas(session: SessionContext): boolean {
   return podeVerDividas(session) && comTeto(session, "acao.dividas.configurar");
 }

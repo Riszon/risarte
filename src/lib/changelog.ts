@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.448.0",
+    data: "2026-11-14",
+    migracao: "0407",
+    titulo: "Levantamento de Dívidas: importar a planilha",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Importar planilha: a planilha de dívidas (e a de protestos) é conferida linha a linha antes de gravar — CNPJ errado, devedor não achado, credor a identificar, credores e categorias novos, dívida repetida no arquivo ou já cadastrada, título parecido no Contas a Pagar, protesto ligado à dívida ou que vira dívida nova. Cada linha se corrige ou se ignora; a conferência fica guardada; gravar é um lote só, com etiqueta do dia e os títulos no Contas a Pagar; os totais por CNPJ conferem o que entrou; e dá para desfazer enquanto nada foi pago. Há uma planilha-modelo para baixar.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Nova aba Qualidade dos dados no Levantamento: as dívidas com credor sem CNPJ completo, “A classificar”, vencimento igual à data do levantamento, sem contrato, sem valor original, para desdobrar ou sem conferência recente, cada uma com o link para completar.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.447.0",
     data: "2026-11-14",
     migracao: null,

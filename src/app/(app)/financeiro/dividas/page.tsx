@@ -1,19 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Landmark } from "lucide-react";
+import { Download, FileUp, Landmark } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { GerarPendentes } from "./gerar-pendentes";
-import { podeConfigurarDividas, podeLancarDividas, podeVerDividas } from "@/lib/finance/dividas-acesso";
+import { podeConfigurarDividas, podeImportarDividas, podeLancarDividas, podeVerDividas } from "@/lib/finance/dividas-acesso";
 import { carregarBase, carregarDividas, carregarResumoDaFase2, carregarTitulosDasDividas, linhasDaLista, prazosDosSelos } from "./dados";
 import { ListaDeDividas } from "./lista-de-dividas";
 import { Credores } from "./credores";
 import { Configuracoes } from "./configuracoes";
+import { Qualidade } from "./qualidade";
+import { LINK_DA_PLANILHA_MODELO } from "@/lib/finance/dividas-importacao";
 
 const ABAS = [
   { id: "dividas", label: "Dívidas" },
   { id: "credores", label: "Credores" },
+  { id: "qualidade", label: "Qualidade dos dados" },
   { id: "configuracoes", label: "Configurações" },
 ] as const;
 type Aba = (typeof ABAS)[number]["id"];
@@ -56,9 +59,21 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
           inadimplência de pacientes (essa fica em Recebíveis).
         </p>
         {!base.semMigracao && (
-          <Link href="/financeiro/dividas/saldo-de-abertura" className="mt-1 inline-block text-sm underline">
-            Saldo de abertura do passivo (para o contador)
-          </Link>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <Link href="/financeiro/dividas/saldo-de-abertura" className="underline">
+              Saldo de abertura do passivo (para o contador)
+            </Link>
+            {podeImportarDividas(session) && (
+              <Link href="/financeiro/dividas/importar" className="inline-flex items-center gap-1 underline">
+                <FileUp className="size-4" />
+                Importar planilha
+              </Link>
+            )}
+            <a href={LINK_DA_PLANILHA_MODELO} download className="inline-flex items-center gap-1 underline">
+              <Download className="size-4" />
+              Baixar planilha-modelo
+            </a>
+          </div>
         )}
       </div>
 
@@ -102,6 +117,7 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
             <ListaDeDividas base={base} linhas={linhas} hoje={todayInBrazil()} prazos={prazos} podeLancar={podeLancarDividas(session)} />
           )}
           {aba === "credores" && <Credores base={base} linhas={linhas} podeLancar={podeLancarDividas(session)} />}
+          {aba === "qualidade" && <Qualidade base={base} dividas={lista.dividas} hoje={todayInBrazil()} prazoDaConferencia={prazos.conferencia} />}
           {aba === "configuracoes" && <Configuracoes base={base} podeConfigurar={podeConfigurarDividas(session)} />}
         </>
       )}

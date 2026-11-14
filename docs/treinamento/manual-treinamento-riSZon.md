@@ -579,12 +579,13 @@ pacientes** (essa continua em Recebíveis). Só o **Financeiro da Franqueadora**
 e o **Admin Master** entram: mesmo marcando outra função em Permissões, o
 sistema não entrega esses dados a mais ninguém.
 
-**Três abas nesta primeira etapa:**
+**As abas:**
 
 | Aba | Para quê |
 |---|---|
 | **Dívidas** | A lista, com busca, filtros (devedor, situação, faixa de atraso, **restrição** e **proposta**; em **Mais filtros**, credor, tipo do credor, categoria, natureza, etiqueta, prioridade, responsável, período de vencimento e **só as que pedem conferência**), ordenação (inclusive pelo **desconto da proposta**), os **selos** e os totais — que **respeitam os filtros**. |
 | **Credores** | Quanto se deve a cada credor e **com quem se fala**: atendente, assessoria de cobrança, advogado ou cartório. |
+| **Qualidade dos dados** | O que falta completar nas dívidas *(desde a 0.448.0; veja Importar planilha, abaixo)*. |
 | **Configurações** | A regra de inadimplência, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas, etiquetas e os cartórios de protesto. |
 
 **Nova dívida.** Os campos obrigatórios são só quatro: **devedor** (a unidade
@@ -714,8 +715,72 @@ contador, por CNPJ, todas as dívidas de origem A com credor, categoria, conta,
 o saldo na implantação e o que já foi pago depois — **Ver e salvar em PDF** ou
 **Planilha**.
 
-*Chegam nas próximas etapas:* a importação da planilha; a renegociação com as
-parcelas do acordo; o painel com gráficos; os avisos.
+**Importar planilha** *(desde a 0.448.0)*. No alto do Levantamento,
+**Importar planilha** traz muitas dívidas de uma vez — a primeira carga é a
+planilha que o Financeiro já usava. **Baixar planilha-modelo** entrega uma
+planilha vazia com as mesmas colunas, as listas de escolha (devedor,
+categoria, natureza, situação, origem) e uma aba **Como preencher**. Só o
+Financeiro da Franqueadora (e o Admin Master) importa.
+
+1. **Escolha o arquivo** (.xlsx, .xls ou .csv). O sistema lê a planilha no seu
+   computador, acha as abas das **dívidas** e dos **protestos** e diz qual
+   coluna vai para qual campo, pelo **modelo** escolhido (o padrão é o da
+   planilha da rede). Coluna com outro nome? Escolha na lista ao lado de cada
+   campo e, se quiser, **Salvar modelo** com um nome, para a próxima vez. As
+   colunas **Desconto**, **Economia**, **Tem proposta?** e **Valor estimado**
+   não entram: o sistema calcula.
+2. **Conferir.** Nada é gravado ainda: abre a **conferência linha a linha**,
+   que fica guardada (dá para fechar e voltar depois, em **Importações**). Cada
+   linha aparece com ✔ (certa), ⚠ (aviso) ou ✖ (erro ou decisão pendente):
+
+| O que a conferência pega | O que fazer |
+|---|---|
+| **CNPJ do devedor errado** (o dígito não confere — o "arrastar" do Excel) ou **devedor não achado** | **Corrigir** e escolher o devedor; a conferência mostra o cadastrado mais parecido |
+| **Dois cadastros com o mesmo CNPJ** | corrigir o cadastro das unidades; a linha não entra enquanto isso |
+| **Credor a identificar** ("Detalhar", ou a própria Risarte como credor) | **Corrigir** com o credor real ou **Ignorar** |
+| **Credor novo** | ele é cadastrado em Fornecedores ao gravar; com **só a raiz do CNPJ** (8 dígitos) ou sem CNPJ, fica a pendência de completar |
+| **Categoria ou subcategoria nova** | é criada ao gravar (aparece no resumo) |
+| **Repetida** no próprio arquivo ou **igual a uma dívida já cadastrada** | a já cadastrada vem sugerida como **Ignorar** |
+| **Título parecido no Contas a Pagar** da unidade | se for a mesma conta, **Vincular** (origem C) em vez de lançar de novo |
+| **Vencimento igual à data de referência** | parece a data do levantamento: confira o vencimento real |
+| **Grupo de dívidas** | entra como **uma** dívida marcada **Desdobrar**; informe a quantidade reunida |
+| **Proposta** | vira a primeira do histórico; vencida entra como **expirada**; maior que a dívida avisa |
+| **Protesto** com "Já está" = Sim e o nº da dívida | fica ligado àquela dívida |
+| **Protesto** com "Não" | vira **dívida nova**, protestada (e avisa se o mesmo credor está na aba Dívidas, para não somar duas vezes) |
+| **Protesto "Verificar"** | segura a gravação até você decidir: **Vincular**, **Criar dívida nova** ou **Ignorar** |
+
+   Em cada linha, a coluna **Decisão** troca a sugerida (Importar, Vincular,
+   Ignorar…), e **Corrigir** muda o devedor, o credor, valores, datas, a origem,
+   os títulos a vincular ou a dívida do protesto — só nesta importação; a
+   planilha não muda. **Ignorar as linhas com erro** marca todas de uma vez.
+   **Conferir de novo** refaz tudo com o cadastro de agora (por exemplo,
+   depois de corrigir o CNPJ de uma unidade). **Descartar o lote** desiste.
+3. **O resumo** mostra quantas linhas vão entrar, quantas são origem A (saldo
+   de implantação, **fora da DRE**), B (despesa) e C (vinculam), os credores e
+   categorias que serão criados e os **totais por CNPJ**: total no arquivo,
+   ignorado e a importar — para comparar com a aba *Resumo por CNPJ* da
+   planilha.
+4. **Gravar a importação.** Só com nenhuma linha pendente. É **um lote só**:
+   se o sistema recusar uma linha, nada é gravado e a mensagem diz qual. Cada
+   dívida leva a etiqueta **Importação dd/mm/aaaa** e, no histórico, *"Entrou
+   pela importação da planilha"*. Marcando **Gerar já os títulos no Contas a
+   Pagar**, as dívidas A e B viram título na hora (a que não puder fica
+   listada com o motivo). Depois de gravar, a coluna **Entrou no sistema**
+   confere, por CNPJ, se o que entrou **bate** com o que estava para entrar.
+5. **Desfazer a importação** (com motivo): exclui todas as dívidas do lote,
+   cancela os títulos gerados e solta os vinculados. **Só enquanto nenhum
+   título do lote tem pagamento.** Credores e categorias criados ficam no
+   cadastro.
+
+**Qualidade dos dados** (aba nova do Levantamento): o que falta completar nas
+dívidas — credor **sem CNPJ completo**, **"A classificar"**, **vencimento igual
+à data do levantamento**, **sem nº de contrato**, **sem valor original**,
+**grupo para desdobrar** e **sem conferência recente**. Cada item abre a lista,
+com o link para a dívida. Quitadas e baixadas não entram.
+
+*Chegam nas próximas etapas:* a renegociação com as parcelas do acordo; o
+painel com gráficos (a "fotografia" de cada dívida no fim do mês começa a ser
+guardada nesta versão); os avisos.
 
 ### 2.4. Recebíveis e inadimplência
 

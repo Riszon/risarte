@@ -483,6 +483,15 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["finance_franchisor"],
   },
   {
+    id: "acao.dividas.importar",
+    rotulo: "Importar planilha de dívidas",
+    grupo: "Ações — Dívidas da rede",
+    descricao:
+      "Importar dívidas de uma planilha (conferência linha a linha, gravação em lote) e desfazer a importação enquanto nada foi pago.",
+    dependeDoBanco: true,
+    padrao: ["finance_franchisor"],
+  },
+  {
     id: "acao.dividas.configurar",
     rotulo: "Configurar o Levantamento de Dívidas",
     grupo: "Ações — Dívidas da rede",
