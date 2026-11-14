@@ -47,13 +47,24 @@ export function PaymentScheduleEditor({
   totalCents,
   minInstallmentCents,
   readOnly,
+  meios,
+  meioPadrao,
 }: {
   entries: ScheduleEntry[];
   onChange: (entries: ScheduleEntry[]) => void;
   totalCents: number;
   minInstallmentCents?: number | null;
   readOnly?: boolean;
+  /**
+   * 4011 (venda direta nova): a coluna "Como paga". Sem ela, o editor fica
+   * como sempre foi (negociação, renegociação, venda antiga).
+   */
+  meios?: { valor: string; rotulo: string }[];
+  /** O meio da venda: vale para a parcela que não escolheu outro. */
+  meioPadrao?: string | null;
 }) {
+  const rotuloDoMeio = (m: string | null | undefined) =>
+    meios?.find((x) => x.valor === (m || meioPadrao))?.rotulo ?? null;
   const [editing, setEditing] = useState(false);
   // Mudou a data de uma cobrança que tem outras depois — perguntar se as
   // seguintes acompanham a nova sequência ou se a mudança é só nesta.
@@ -138,8 +149,15 @@ export function PaymentScheduleEditor({
                   {fmtDate(e.dueDate)}
                 </span>
               </span>
-              <span className="font-medium tabular-nums">
-                {formatBRL(e.amountCents)}
+              <span className="flex items-center gap-1.5">
+                {meios && rotuloDoMeio(e.paymentMethod) && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {rotuloDoMeio(e.paymentMethod)}
+                  </span>
+                )}
+                <span className="font-medium tabular-nums">
+                  {formatBRL(e.amountCents)}
+                </span>
               </span>
             </li>
           ))}
@@ -175,6 +193,29 @@ export function PaymentScheduleEditor({
                   onBlur={(ev) => changeAmount(i, ev.target.value)}
                 />
               </div>
+              {meios && (
+                <div className="w-48">
+                  {i === 0 && <Label className="text-[10px]">Como paga</Label>}
+                  <select
+                    aria-label={`Como paga a cobrança ${i + 1}`}
+                    className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                    value={e.paymentMethod || meioPadrao || ""}
+                    onChange={(ev) =>
+                      onChange(
+                        entries.map((x, idx) =>
+                          idx === i ? { ...x, paymentMethod: ev.target.value || null } : x
+                        )
+                      )
+                    }
+                  >
+                    {meios.map((m) => (
+                      <option key={m.valor} value={m.valor}>
+                        {m.rotulo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <Button
                 type="button"
                 variant="ghost"

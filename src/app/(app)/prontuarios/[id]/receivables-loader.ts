@@ -244,6 +244,15 @@ export async function loadClientReceivables(
   for (const s of sales) codeById.set(s.id, s.code);
   for (const r of renegotiations) codeById.set(r.id, r.code);
 
+  // 4011: quais vendas diretas seguem a regra nova. Banco sem a 4011: a
+  // leitura falha e tudo segue a regra antiga.
+  const regraDaVenda = new Map<string, string | null>();
+  const vendasDiretas = [...new Set((instRows ?? []).map((r) => r.direct_sale_id).filter((x): x is string => Boolean(x)))];
+  if (vendasDiretas.length > 0) {
+    const { data: regras, error: semRegra } = await supabase.from("direct_sales").select("id, method_rule").in("id", vendasDiretas);
+    if (!semRegra) for (const v of (regras ?? []) as { id: string; method_rule: string | null }[]) regraDaVenda.set(v.id, v.method_rule);
+  }
+
   const installments: Installment[] = (instRows ?? []).map((r) => ({
     id: r.id,
     seq: r.seq,
@@ -275,6 +284,7 @@ export async function loadClientReceivables(
     renegotiatedById: r.renegotiated_by_id,
     wasOverdue: r.was_overdue,
     clinicId: r.clinic_id,
+    methodRule: r.direct_sale_id ? (regraDaVenda.get(r.direct_sale_id) ?? null) : null,
   }));
 
   const boletos: Record<string, BoletoIssue> = {};

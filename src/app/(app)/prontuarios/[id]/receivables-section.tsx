@@ -71,6 +71,14 @@ import { RenegotiationDialog } from "./renegotiation-dialog";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { contaPadrao, type ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
 import { CampoDaConta } from "../../financeiro/campo-da-conta";
+import {
+  ROTULO_METODO_VENDA_NOVA,
+  ehPeloAsaas,
+  ehVendaNova,
+  meiosDaBaixaVendaNova,
+  trocasPossiveis,
+} from "@/lib/venda-direta-meios";
+import { trocarMeioDaParcela } from "./cobranca-actions";
 
 const STATUS_STYLE: Record<InstallmentStatus, string> = {
   em_aberto: "border-border bg-muted text-muted-foreground",
@@ -92,6 +100,7 @@ const METHODS: (PaymentMethod | "dinheiro")[] = [
 function methodLabel(m: string | null): string {
   if (!m) return "—";
   if (m === "dinheiro") return "Dinheiro";
+  if (m === "permuta") return "Permuta";
   return PAYMENT_METHOD_LABELS[m as PaymentMethod] ?? m;
 }
 
@@ -257,6 +266,38 @@ export function ReceivablesSection({
   );
 
   const paying = allViews.find((v) => v.id === payingId) ?? null;
+  // 4011: os meios da baixa. Venda direta nova: dinheiro, permuta (na parcela
+  // de permuta, Gerente/Admin) e cartão parcelado (na parcela de maquininha).
+  // Nas demais, os de sempre, e a permuta para o Gerente/Admin.
+  const metodosDaBaixa: string[] = paying
+    ? ehVendaNova(paying.methodRule)
+      ? meiosDaBaixaVendaNova(paying.paymentMethod, canAuthorize)
+      : [...METHODS, ...(canAuthorize ? ["permuta"] : [])]
+    : [...METHODS];
+  // Troca de meio (venda direta nova).
+  const [trocandoId, setTrocandoId] = useState<string | null>(null);
+  const [trocaMeio, setTrocaMeio] = useState<string>("");
+  const [trocaMotivo, setTrocaMotivo] = useState("");
+  const trocando = allViews.find((v) => v.id === trocandoId) ?? null;
+  function salvarTroca() {
+    if (!trocando || !trocaMeio) return;
+    startTransition(async () => {
+      const r = await trocarMeioDaParcela({
+        clientId,
+        installmentId: trocando.id,
+        method: trocaMeio as "pix" | "boleto" | "cartao" | "dinheiro" | "permuta",
+        reason: trocaMotivo,
+      });
+      if (!r.ok) {
+        toast.error(r.error);
+        return;
+      }
+      if (r.aviso) toast.warning(r.aviso, { duration: 12000 });
+      else toast.success(r.emitida ? "Meio trocado e cobrança gerada no Asaas." : "Meio da parcela trocado.");
+      setTrocandoId(null);
+      router.refresh();
+    });
+  }
   const amountCents = parseBRLToCents(amount) ?? 0;
   const errors = paying
     ? receiptErrors({
@@ -299,8 +340,14 @@ export function ReceivablesSection({
     // recebeu menos (o que vira baixa parcial, nunca quitação).
     setAmount(centsToInput(v.updatedBalanceCents));
     setReceivedAt(today);
-    setMethod(v.paymentMethod ?? "pix");
-    setConta(contaPadrao(contas, v.clinicId ?? clinicIdPadrao, v.paymentMethod ?? "pix"));
+    // 4011: na venda direta nova, o meio da baixa sai da lista dela.
+    const inicial = ehVendaNova(v.methodRule)
+      ? (meiosDaBaixaVendaNova(v.paymentMethod, canAuthorize).includes(v.paymentMethod ?? "")
+          ? (v.paymentMethod as string)
+          : "dinheiro")
+      : (v.paymentMethod ?? "pix");
+    setMethod(inicial);
+    setConta(contaPadrao(contas, v.clinicId ?? clinicIdPadrao, inicial));
     setReference("");
     setNotes("");
     setWaive(false);
@@ -787,13 +834,28 @@ export function ReceivablesSection({
                           Registrar emissão
                         </Button>
                       )}
-                    {v.isOpen && canReceive && !activeGatewayCharge.has(v.id) && (
+                    {v.isOpen && canReceive && (!activeGatewayCharge.has(v.id) || ehVendaNova(v.methodRule)) && (
                       <Button
                         size="sm"
                         className="h-8"
                         onClick={() => openPayment(v.id)}
                       >
                         Dar baixa
+                      </Button>
+                    )}
+                    {v.isOpen && canReceive && ehVendaNova(v.methodRule) && v.status === "em_aberto" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs"
+                        title="Trocar como esta parcela é paga (Asaas, dinheiro ou permuta)"
+                        onClick={() => {
+                          setTrocandoId(v.id);
+                          setTrocaMeio("");
+                          setTrocaMotivo("");
+                        }}
+                      >
+                        Trocar meio
                       </Button>
                     )}
                     {hist.length > 0 && (
@@ -1484,7 +1546,7 @@ export function ReceivablesSection({
                     }}
                     className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
                   >
-                    {METHODS.map((m) => (
+                    {metodosDaBaixa.map((m) => (
                       <option key={m} value={m}>
                         {methodLabel(m)}
                       </option>
@@ -1513,15 +1575,27 @@ export function ReceivablesSection({
 
               <label className="block">
                 <span className="text-[11px] font-medium text-muted-foreground">
-                  Observação
+                  {method === "permuta" ? "Descrição da permuta (obrigatória)" : "Observação"}
                 </span>
                 <input
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="opcional"
+                  placeholder={method === "permuta" ? "o que foi trocado e com quem" : "opcional"}
                   className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
                 />
               </label>
+              {method === "dinheiro" && activeGatewayCharge.has(paying.id) && (
+                <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+                  Esta parcela tem cobrança no Asaas. Ao registrar o dinheiro, a cobrança é
+                  cancelada no Asaas (se ainda não foi paga lá). Receba o valor devido, sem desconto.
+                </p>
+              )}
+              {method === "permuta" && (
+                <p className="rounded-lg border border-border bg-muted/30 p-2 text-xs">
+                  A permuta entra na conta &quot;Permutas&quot; da unidade, fora do caixa. As taxas da rede
+                  incidem sobre o valor e vão para a conta a pagar da unidade.
+                </p>
+              )}
 
               {errors.length > 0 && (
                 <ul className="space-y-0.5 rounded-lg border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
@@ -1625,6 +1699,67 @@ export function ReceivablesSection({
       </Dialog>
 
       {/* Estorno. */}
+      {/* 4011: troca de meio da parcela da venda direta nova (19.11 ajuste C). */}
+      <Dialog open={trocando !== null} onOpenChange={(o) => { if (!o) setTrocandoId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Trocar como a parcela é paga</DialogTitle>
+          </DialogHeader>
+          {trocando && (
+            <div className="space-y-2 text-sm">
+              <p className="text-xs text-muted-foreground">
+                Parcela de {fmtDate(trocando.dueDate)} ({formatBRL(trocando.updatedBalanceCents)}), hoje{" "}
+                {ROTULO_METODO_VENDA_NOVA[trocando.paymentMethod as keyof typeof ROTULO_METODO_VENDA_NOVA] ?? methodLabel(trocando.paymentMethod)}.
+              </p>
+              <label className="block">
+                <span className="text-[11px] font-medium text-muted-foreground">Novo meio</span>
+                <select
+                  value={trocaMeio}
+                  onChange={(e) => setTrocaMeio(e.target.value)}
+                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">Escolher...</option>
+                  {trocasPossiveis(trocando.paymentMethod, canAuthorize).map((m) => (
+                    <option key={m} value={m}>
+                      {ROTULO_METODO_VENDA_NOVA[m]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {trocaMeio === "permuta" ? "Descrição da permuta (obrigatória)" : "Motivo (opcional)"}
+                </span>
+                <input
+                  value={trocaMotivo}
+                  onChange={(e) => setTrocaMotivo(e.target.value)}
+                  placeholder={trocaMeio === "permuta" ? "o que será trocado e com quem" : ""}
+                  className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+                />
+              </label>
+              {activeGatewayCharge.has(trocando.id) && (
+                <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+                  A cobrança desta parcela no Asaas será cancelada antes da troca (se já foi paga lá, a troca é recusada).
+                </p>
+              )}
+              {ehPeloAsaas(trocaMeio) && (
+                <p className="rounded-lg border border-border bg-muted/30 p-2 text-xs">
+                  A cobrança no Asaas é gerada na hora, com o vencimento da parcela.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTrocandoId(null)} disabled={isPending}>
+              Voltar
+            </Button>
+            <Button onClick={salvarTroca} disabled={isPending || !trocaMeio}>
+              Trocar meio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog
         open={reversingId !== null}
         onOpenChange={(o) => !o && setReversingId(null)}

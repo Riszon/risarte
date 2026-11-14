@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Banknote,
   BarChart3,
   ChevronDown,
   Gauge,
@@ -74,6 +75,13 @@ const ABAS: Aba[] = [
     label: "Cobranças",
     icon: Receipt,
     soCobrancas: true,
+  },
+  // 4011 — o dinheiro do balcão ainda não depositado, e os depósitos.
+  {
+    tipo: "direta",
+    href: "/financeiro/dinheiro",
+    label: "Dinheiro no caixa",
+    icon: Banknote,
   },
   {
     tipo: "direta",

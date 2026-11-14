@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import type { ScheduleEntry } from "@/lib/payments";
+import { mensagemDoErroDeMeio } from "@/lib/venda-direta-meios";
 
 export type ScheduleResult = { ok: boolean; error?: string };
 
@@ -30,6 +31,8 @@ export async function savePaymentSchedule(input: {
       kind: e.kind,
       due_date: e.dueDate,
       amount_cents: e.amountCents,
+      // 4011: o meio da parcela (venda direta nova); vazio = o da venda.
+      ...(e.paymentMethod ? { payment_method: e.paymentMethod } : {}),
     })),
   });
   if (error) {
@@ -50,6 +53,8 @@ export async function savePaymentSchedule(input: {
         error: "Você não pode definir o pagamento desta venda.",
       };
     }
+    const meio = mensagemDoErroDeMeio(m);
+    if (meio) return { ok: false, error: meio };
     // FIN2: reescrever o plano apagaria as parcelas — e as baixas junto.
     if (m.includes("SCHEDULE_LOCKED")) {
       return {

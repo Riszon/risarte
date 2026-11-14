@@ -58,6 +58,15 @@ export default async function RepassesDaFranquia(props: PageProps<"/financeiro/r
     p_export: null,
   });
 
+  // 4011: a lista das permutas do período (descrição, quem, taxa devida).
+  // Banco sem a 4011: a porta não existe e a parte não aparece.
+  const { data: permutasData, error: semPermutas } = await supabase.rpc("franchise_payouts_permutas", {
+    p_from: filtros.de,
+    p_to: filtros.ate,
+    p_clinic_id: unidade,
+  });
+  const permutas = semPermutas ? null : ((permutasData ?? []) as Permuta[]);
+
   let unidades: { id: string; name: string }[] = [];
   if (daRede) {
     const { data: rows } = await supabase
@@ -129,11 +138,26 @@ export default async function RepassesDaFranquia(props: PageProps<"/financeiro/r
           Não foi possível ler os repasses. Tente de novo em instantes.
         </p>
       ) : (
-        <Conteudo r={data as Repasses} planilha={planilha} />
+        <Conteudo r={data as Repasses} planilha={planilha} permutas={permutas} />
       )}
     </div>
   );
 }
+
+/** 4011: uma permuta do período (`franchise_payouts_permutas`). */
+type Permuta = {
+  receipt_id: string;
+  unidade: string;
+  data: string;
+  valor: number;
+  estornado: boolean;
+  descricao: string | null;
+  cliente: string | null;
+  codigo: string | null;
+  client_id: string;
+  quem: string | null;
+  taxa: number;
+};
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
@@ -195,7 +219,7 @@ function Paciente({ id, nome, codigo }: { id: string | null; nome: string | null
   );
 }
 
-function Conteudo({ r, planilha }: { r: Repasses; planilha: (p: Parte) => string }) {
+function Conteudo({ r, planilha, permutas }: { r: Repasses; planilha: (p: Parte) => string; permutas: Permuta[] | null }) {
   const total = totalDoResumo(r.resumo);
   const varias = r.resumo.length > 1;
   const un = (id: string) => r.unidades[id] ?? "—";
@@ -575,6 +599,52 @@ function Conteudo({ r, planilha }: { r: Repasses; planilha: (p: Parte) => string
           </div>
         )}
       </Secao>
+
+      {/* 4011 — as permutas do período (19.11). */}
+      {permutas && (
+        <Secao
+          titulo="Permutas do período"
+          descricao="Parcelas pagas em permuta: o que foi trocado, por quem e a taxa da rede devida (vira conta a pagar da unidade)."
+        >
+          {permutas.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma no período.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] overflow-hidden rounded-lg border text-sm">
+                <thead className="bg-muted/40 text-xs text-muted-foreground">
+                  <tr>
+                    <th className={cn(TH, "text-left")}>Data</th>
+                    <th className={cn(TH, "text-left")}>Unidade</th>
+                    <th className={cn(TH, "text-left")}>Paciente</th>
+                    <th className={cn(TH, "text-left")}>O que foi trocado</th>
+                    <th className={cn(TH, "text-right")}>Valor</th>
+                    <th className={cn(TH, "text-right")}>Taxa devida</th>
+                    <th className={cn(TH, "text-left")}>Quem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {permutas.map((p) => (
+                    <tr key={p.receipt_id} className="border-t">
+                      <td className={TD}>{fmtData(p.data)}</td>
+                      <td className={TD}>{p.unidade}</td>
+                      <td className={TD}>
+                        <Paciente id={p.client_id} nome={p.cliente} codigo={p.codigo} />
+                      </td>
+                      <td className={cn(TD, "text-xs")}>
+                        {p.descricao ?? "—"}
+                        {p.estornado && " (estornada)"}
+                      </td>
+                      <td className={NUM}>{brl(p.valor)}</td>
+                      <td className={NUM}>{brl(p.taxa)}</td>
+                      <td className={cn(TD, "text-xs")}>{p.quem ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Secao>
+      )}
 
       {/* PARTE 5 — dispensas (14.5) */}
       <Secao

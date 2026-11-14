@@ -38,6 +38,8 @@ export function PaymentFields({
   firstDue,
   onFirstDueChange,
   disabled,
+  methodLabels,
+  cashHint = "à vista: PIX ou depósito",
 }: {
   payMode: PayMode;
   onPayModeChange: (mode: PayMode) => void;
@@ -48,10 +50,14 @@ export function PaymentFields({
   maxInstallments: number;
   method: PaymentMethod | "";
   onMethodChange: (value: PaymentMethod | "") => void;
-  methodOptions: PaymentMethod[];
+  /** 4011: a venda direta nova oferece também dinheiro e permuta. */
+  methodOptions: readonly string[];
   firstDue: string;
   onFirstDueChange: (value: string) => void;
   disabled?: boolean;
+  /** 4011: rótulos próprios (ex.: "Pix pelo Asaas"). */
+  methodLabels?: Record<string, string>;
+  cashHint?: string;
 }) {
   const isCash = payMode === "avista";
   const options = Array.from(
@@ -134,13 +140,13 @@ export function PaymentFields({
             <option value="">Escolher...</option>
             {methodOptions.map((m) => (
               <option key={m} value={m}>
-                {PAYMENT_METHOD_LABELS[m]}
+                {methodLabels?.[m] ?? PAYMENT_METHOD_LABELS[m as PaymentMethod] ?? m}
               </option>
             ))}
           </select>
           {isCash && (
             <span className="text-[10px] text-muted-foreground">
-              à vista: PIX ou depósito
+              {cashHint}
             </span>
           )}
         </label>

@@ -187,7 +187,7 @@ export default async function VendasDiretasPage(
   if (saleIds.length > 0) {
     const { data: instRows } = await supabase
       .from("payment_installments")
-      .select("direct_sale_id, seq, kind, due_date, amount_cents")
+      .select("direct_sale_id, seq, kind, due_date, amount_cents, payment_method")
       .in("direct_sale_id", saleIds)
       .order("seq")
       .returns<
@@ -197,6 +197,7 @@ export default async function VendasDiretasPage(
           kind: string;
           due_date: string;
           amount_cents: number;
+          payment_method: string | null;
         }[]
       >();
     for (const r of instRows ?? []) {
@@ -206,9 +207,23 @@ export default async function VendasDiretasPage(
         kind: r.kind === "entrada" ? "entrada" : "parcela",
         dueDate: r.due_date,
         amountCents: r.amount_cents,
+        paymentMethod: r.payment_method,
       });
       scheduleBySale.set(r.direct_sale_id, list);
     }
+  }
+  // 4011: venda direta nova (meio por parcela) e a chave da maquininha no
+  // cartão parcelado. Banco sem a 4011: as leituras falham e vale a regra antiga.
+  const methodRuleBySale = new Map<string, string | null>();
+  let cardMachine = true;
+  if (saleIds.length > 0) {
+    const { data: regras, error: semRegra } = await supabase
+      .from("direct_sales")
+      .select("id, method_rule")
+      .in("id", saleIds);
+    if (!semRegra) for (const r of (regras ?? []) as { id: string; method_rule: string | null }[]) methodRuleBySale.set(r.id, r.method_rule);
+    const { data: ajuste } = await supabase.from("sale_method_settings").select("card_machine_direct_sale").maybeSingle();
+    if (ajuste) cardMachine = Boolean((ajuste as { card_machine_direct_sale: boolean }).card_machine_direct_sale);
   }
 
   /**
@@ -303,6 +318,8 @@ export default async function VendasDiretasPage(
         (s.client_id ? pprConditions.get(s.client_id) : null) ?? null,
       canClose,
       isManager,
+      methodRule: methodRuleBySale.get(s.id) ?? null,
+      cardMachine,
       // Proxy na lista: se a venda teve desconto de programa, é membro.
       isProgramMember: (s.program_discount_cents ?? 0) > 0,
       contractSignedByName: s.contract_signed_by

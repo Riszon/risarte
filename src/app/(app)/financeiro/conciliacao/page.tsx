@@ -52,6 +52,8 @@ export default async function ReconciliationPage() {
         "id, alias, bank_name, agency, account_number, kind, opening_balance_cents, opening_date, active"
       )
       .eq("clinic_id", clinicId)
+      // 4011: a conta "Permutas" fica fora da conciliação (não é dinheiro).
+      .neq("kind", "permuta")
       .order("alias"),
     // OC-00108: a API corta cada resposta em 1.000 linhas — o extrato e o
     // razão são lidos INTEIROS, em páginas (senão os saldos ficariam pela metade).

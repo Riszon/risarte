@@ -81,6 +81,8 @@ export type Installment = {
    * que entrou (não soma em "pago"), mas deixa de faltar.
    */
   waivedPrincipalCents?: number;
+  /** 4011: 'asa4' = parcela de venda direta nova (baixa à mão só em dinheiro/permuta). */
+  methodRule?: string | null;
 };
 
 export type InstallmentView = Installment & {

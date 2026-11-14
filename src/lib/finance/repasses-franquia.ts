@@ -146,11 +146,13 @@ export type Repasses = {
 
 // --- os rótulos -----------------------------------------------------------------
 
-export type Categoria = "split" | "asaas_sem_split" | "dinheiro" | "cartao" | "deposito_pix" | "externa" | "estornado";
+export type Categoria = "split" | "asaas_sem_split" | "dinheiro" | "permuta" | "cartao" | "deposito_pix" | "externa" | "estornado";
 export const CATEGORIAS: { valor: Categoria; rotulo: string }[] = [
   { valor: "split", rotulo: "Asaas com split" },
   { valor: "asaas_sem_split", rotulo: "Asaas sem split" },
   { valor: "dinheiro", rotulo: "Dinheiro" },
+  // 4011: a permuta tem categoria própria (taxa devida, sem dinheiro).
+  { valor: "permuta", rotulo: "Permuta" },
   { valor: "cartao", rotulo: "Maquininha e outros cartões" },
   { valor: "deposito_pix", rotulo: "Depósito e Pix manual" },
   { valor: "externa", rotulo: "Cobrança externa" },

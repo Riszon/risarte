@@ -6,6 +6,51 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { modalityOf } from "@/lib/finance/acquirers";
 import { erroDaConta, portaAusente } from "@/lib/finance/conta-do-dinheiro";
+import { cancelarNoAsaas } from "@/lib/asaas/cobranca";
+import { mensagemDoErroDeMeio } from "@/lib/venda-direta-meios";
+
+/**
+ * 4011 (19.11 ajuste C, item 1): parcela com cobrança ativa no Asaas e o
+ * paciente paga EM DINHEIRO no balcão — a própria baixa cancela a cobrança.
+ * Ordem: confere no Asaas; se já foi paga lá, recusa; senão cancela, grava o
+ * cancelamento e só então a baixa segue. Nunca fica "baixa em dinheiro com
+ * cobrança viva" (a trava do banco, CHARGE_IN_GATEWAY, continua valendo).
+ */
+async function cancelarCobrancaParaDinheiro(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  installmentId: string,
+  actorId: string
+): Promise<{ ok: true; cancelou: boolean } | { ok: false; error: string }> {
+  const { data: ativas } = await supabase
+    .from("charges")
+    .select("id")
+    .eq("payment_installment_id", installmentId)
+    .eq("is_external", false)
+    .in("status", ["emitindo", "emitida", "vencida", "erro_emissao"]);
+  const lista = (ativas ?? []) as { id: string }[];
+  for (const ch of lista) {
+    const { data, error } = await supabase.rpc("charge_cancel_check", { p_charge_id: ch.id, p_purpose: "counter" });
+    if (error) return { ok: false, error: "Esta parcela tem cobrança ativa no Asaas e sua função não pode cancelá-la." };
+    const chk = (Array.isArray(data) ? data[0] : data) as { asaas_payment_id: string | null; gateway_account_id: string | null } | null;
+    const r = await cancelarNoAsaas({
+      chargeId: ch.id,
+      accountId: chk?.gateway_account_id ?? null,
+      asaasPaymentId: chk?.asaas_payment_id ?? null,
+      actorId,
+      reason: "pagou em dinheiro no balcão",
+    });
+    if (!r.ok) {
+      return {
+        ok: false,
+        error: r.jaPaga
+          ? "Esta parcela já foi paga pelo Asaas. A baixa vem do Asaas; não registre o dinheiro."
+          : (r.error ?? "Não foi possível cancelar a cobrança no Asaas."),
+      };
+    }
+    await logAudit({ action: "update", entityType: "charge", entityId: ch.id, details: { cancel: "counter", motivo: "dinheiro no balcão", ok: true } });
+  }
+  return { ok: true, cancelou: lista.length > 0 };
+}
 
 export type ReceivableResult = { ok: boolean; error?: string };
 
@@ -149,8 +194,16 @@ export async function registerReceipt(input: {
 }): Promise<
   ReceivableResult & { fee?: FeeOutcome; feeSkipped?: FeeSkipReason }
 > {
-  await getSessionContext();
+  const session = await getSessionContext();
   const supabase = await createClient();
+
+  // 4011: dinheiro no balcão em parcela que estava no Asaas — cancela antes.
+  let cancelouNoAsaas = false;
+  if (input.paymentMethod === "dinheiro") {
+    const c = await cancelarCobrancaParaDinheiro(supabase, input.installmentId, session.userId);
+    if (!c.ok) return { ok: false, error: c.error };
+    cancelouNoAsaas = c.cancelou;
+  }
 
   const args = {
     p_installment_id: input.installmentId,
@@ -187,6 +240,9 @@ export async function registerReceipt(input: {
   }
   if (error) {
     const m = error.message;
+    const aviso = cancelouNoAsaas ? " A cobrança do Asaas já foi cancelada: gere outra se o paciente for pagar por lá." : "";
+    const meio = mensagemDoErroDeMeio(m);
+    if (meio) return { ok: false, error: meio + aviso };
     if (m.includes("CHARGE_IN_GATEWAY")) {
       return {
         ok: false,

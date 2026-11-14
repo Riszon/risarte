@@ -43,6 +43,11 @@ import {
 } from "@/components/commercial/payment-fields";
 import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { savePaymentSchedule } from "../payment-schedule-actions";
+import {
+  ROTULO_METODO_VENDA_NOVA,
+  ehVendaNova,
+  meiosDaVendaNova,
+} from "@/lib/venda-direta-meios";
 import { todayInBrazil, BRAZIL_TIME_ZONE } from "@/lib/dates";
 
 export type DirectSaleRow = {
@@ -90,6 +95,10 @@ export type DirectSaleRow = {
   } | null;
   canClose: boolean;
   isManager: boolean;
+  /** 4011: 'asa4' = venda direta nova (Asaas, dinheiro ou permuta, por parcela). */
+  methodRule?: string | null;
+  /** 4011: maquininha ainda permitida no cartão parcelado da venda direta. */
+  cardMachine?: boolean;
   /** Cliente de programa com desconto automático → sem desconto manual (§7.5). */
   isProgramMember: boolean;
   /** Quem fez cada passo do fechamento (para o detalhe). */
@@ -246,17 +255,38 @@ export function SaleItem({
   const installmentsNum = Math.max(1, Number.parseInt(installments, 10) || 1);
   // À VISTA = 1×, e só em PIX ou depósito (regra do dono, 26/07/2026).
   const isCash = installmentsNum === 1;
-  const methodOptions = useMemo(
+  // 4011: venda direta nova — Asaas (Pix, boleto, cartão), dinheiro ou
+  // permuta; à vista só Pix, dinheiro ou permuta (19.11).
+  const vendaNova = ehVendaNova(sale.methodRule);
+  const methodOptions: readonly string[] = useMemo(
     () =>
-      isCash
-        ? methods.filter((m) => m === "pix" || m === "deposito_avista")
-        : methods,
-    [isCash, methods]
+      vendaNova
+        ? meiosDaVendaNova({
+            installments: installmentsNum,
+            isManager: sale.isManager,
+            cardMachine: sale.cardMachine ?? true,
+            allowed: sale.rule.allowedMethods ?? null,
+          })
+        : isCash
+          ? methods.filter((m) => m === "pix" || m === "deposito_avista")
+          : methods,
+    [vendaNova, installmentsNum, sale.isManager, sale.cardMachine, sale.rule.allowedMethods, isCash, methods]
   );
   // Forma que não vale para o parcelamento atual simplesmente não conta.
-  const effectiveMethod = methodOptions.includes(method as PaymentMethod)
-    ? method
-    : "";
+  const effectiveMethod = methodOptions.includes(method) ? method : "";
+  // A coluna "Como paga" do parcelamento (venda nova).
+  const meiosDaParcela = useMemo(
+    () =>
+      vendaNova
+        ? meiosDaVendaNova({
+            installments: installmentsNum,
+            isManager: sale.isManager,
+            cardMachine: sale.cardMachine ?? true,
+            allowed: sale.rule.allowedMethods ?? null,
+          }).map((m) => ({ valor: m, rotulo: ROTULO_METODO_VENDA_NOVA[m] }))
+        : undefined,
+    [vendaNova, installmentsNum, sale.isManager, sale.cardMachine, sale.rule.allowedMethods]
+  );
 
   /** Faixas do plano em texto claro: "à vista 10% · 2× a 6× 15% · ...". */
   const tierLabels = useMemo(() => {
@@ -325,9 +355,11 @@ export function SaleItem({
     // e o painel com outro, sem explicação, e o plano de cobranças recusado
     // por não fechar com a venda (bug do dono, 05/08/2026).
     // O manual maior que o automático prevalece, igual ao servidor.
-    const autoPercent = sale.isProgramMember
-      ? 0
-      : automaticDiscountPercent(sale.rule, installmentsNum);
+    // 4011: permuta não tem desconto à vista automático.
+    const autoPercent =
+      sale.isProgramMember || (vendaNova && effectiveMethod === "permuta")
+        ? 0
+        : automaticDiscountPercent(sale.rule, installmentsNum);
     const autoCents =
       autoPercent > 0 ? Math.round((payableCents * autoPercent) / 100) : 0;
     const isAuto = autoCents > 0 && autoCents >= discountCents;
@@ -345,6 +377,8 @@ export function SaleItem({
     baseCents,
     payableCents,
     installmentsNum,
+    vendaNova,
+    effectiveMethod,
   ]);
 
   /**
@@ -686,6 +720,8 @@ export function SaleItem({
                   method={effectiveMethod as PaymentMethod | ""}
                   onMethodChange={(m) => setMethod(m)}
                   methodOptions={methodOptions}
+                  methodLabels={vendaNova ? ROTULO_METODO_VENDA_NOVA : undefined}
+                  cashHint={vendaNova ? "à vista: Pix, dinheiro ou permuta" : undefined}
                   firstDue={firstDue}
                   onFirstDueChange={setFirstDue}
                 />
@@ -815,6 +851,8 @@ export function SaleItem({
                     onChange={(next) => setCustom({ sig, entries: next })}
                     totalCents={preview.final}
                     minInstallmentCents={sale.minInstallmentCents ?? null}
+                    meios={meiosDaParcela}
+                    meioPadrao={effectiveMethod || null}
                   />
                 )}
 

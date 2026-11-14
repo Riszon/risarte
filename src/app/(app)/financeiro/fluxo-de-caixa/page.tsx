@@ -91,6 +91,7 @@ export default async function CashFlowPage(
       // AP51: o Caixa (criado sozinho na 1ª baixa em dinheiro) não é conta
       // bancária — sem ele, o aviso "sem conta cadastrada" continua valendo.
       .neq("kind", "caixa")
+      .neq("kind", "permuta")
       .limit(1),
   ]);
 

@@ -25,6 +25,8 @@ export async function carregarContasDaUnidade(
       .from("bank_accounts")
       .select("id, clinic_id, alias, kind, active")
       .in("clinic_id", ids)
+      // 4011: a conta "Permutas" não recebe dinheiro escolhido na tela.
+      .neq("kind", "permuta")
       .order("alias"),
     supabase.from("bank_accounts").select("id, is_default").in("clinic_id", ids),
   ]);

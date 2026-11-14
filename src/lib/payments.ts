@@ -11,6 +11,12 @@ export type ScheduleEntry = {
   /** YYYY-MM-DD. */
   dueDate: string;
   amountCents: number;
+  /**
+   * 4011 (venda direta nova): COMO esta parcela é paga — Asaas (pix, boleto,
+   * cartao), dinheiro, permuta ou cartão parcelado (maquininha). Vazio = o meio
+   * da venda.
+   */
+  paymentMethod?: string | null;
 };
 
 /** Soma de um plano de pagamento. */

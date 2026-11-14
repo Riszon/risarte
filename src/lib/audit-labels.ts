@@ -72,6 +72,11 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   network_fee_waiver: "Dispensa da taxa da rede mantida no estorno",
   gateway_charges_panel: "Planilha do Painel de cobranças",
   franchise_payouts: "Planilha dos Repasses da franquia",
+  // 4011 (ASA4, entrega 1): meio por parcela, dinheiro e permuta.
+  cash_deposit: "Depósito do dinheiro do Caixa",
+  cash_deposit_proof: "Comprovante de depósito aberto",
+  installment_method: "Troca de meio da parcela",
+  sale_method_settings: "Meios da venda direta (maquininha e prazo do dinheiro)",
   gateway_payment_surpluses: "Pagamento em duplicidade pelo Asaas",
   // ------------------------------------------------ assinaturas digitais (0340)
   signature_settings: "Configuração das assinaturas digitais",

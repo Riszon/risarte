@@ -1775,4 +1775,4 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
     - mesmo que o Asaas use uma fila que só olha a configuração na hora de enviar, ela encontraria o aviso desligado;
     - o risco de fila era do caminho "desligar, criar e religar", descartado em 19.10.
   - **Se o Jeferson quiser a janela completa:** repetir com o mesmo script e limpar só depois de 30 minutos.
-- **Conclusão:** o cadastro do carnê serve para a forma 2 (entrega 1B / 4014).
+- **Conclusão:** o cadastro do carnê serve para a forma 2 (entrega 1B / 4014). **Prova aceita pelo Jeferson com a janela curta (14/11/2026).**

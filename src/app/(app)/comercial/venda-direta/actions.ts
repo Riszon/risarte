@@ -16,6 +16,12 @@ import { loadEmpresarialConditions } from "@/lib/empresarial/conditions";
 import { directSaleViolations } from "@/lib/direct-sale";
 import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { loadPprConditionsForClients } from "@/lib/ppr/benefits";
+import {
+  ehVendaNova,
+  erroDoMeioDaVendaNova,
+  meioParaARegra,
+  mensagemDoErroDeMeio,
+} from "@/lib/venda-direta-meios";
 
 export type DirectSaleResult = { ok: boolean; error?: string; closed?: boolean };
 
@@ -27,6 +33,8 @@ async function saleClinic(saleId: string): Promise<{
   subtotalCents: number;
   programDiscountCents: number;
   isProgramMember: boolean;
+  /** 4011: 'asa4' = venda direta nova (meio por parcela). */
+  methodRule: string | null;
 } | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -38,6 +46,12 @@ async function saleClinic(saleId: string): Promise<{
     .single();
   if (!data) return null;
   const client = Array.isArray(data.client) ? data.client[0] : data.client;
+  // Banco sem a 4011: a coluna ainda não existe — vale a regra antiga.
+  const { data: regra } = await supabase
+    .from("direct_sales")
+    .select("method_rule")
+    .eq("id", saleId)
+    .maybeSingle();
   return {
     clinicId: data.clinic_id as string,
     clientId: (data.client_id as string | null) ?? null,
@@ -48,6 +62,7 @@ async function saleClinic(saleId: string): Promise<{
     isProgramMember: Boolean(
       client?.empresarial_company_id && client?.empresarial_active !== false
     ),
+    methodRule: ((regra as { method_rule?: string | null } | null)?.method_rule as string | null) ?? null,
   };
 }
 
@@ -82,8 +97,16 @@ export async function setDirectSaleConditions(
     : 0;
   const installments = Math.max(1, Math.floor(input.installments) || 1);
 
+  const vendaNova = ehVendaNova(info.methodRule);
+  if (vendaNova) {
+    // 4011: Asaas (Pix, boleto, cartão), dinheiro ou permuta; à vista só Pix,
+    // dinheiro ou permuta (19.11). O banco confere de novo.
+    const erroMeio = erroDoMeioDaVendaNova(input.paymentMethod || null, installments, isManager);
+    if (erroMeio) return { ok: false, error: erroMeio };
+  }
   // À VISTA (1×) só é liberado em PIX ou depósito (regra do dono, 26/07/2026).
   if (
+    !vendaNova &&
     installments === 1 &&
     input.paymentMethod &&
     input.paymentMethod !== "pix" &&
@@ -146,7 +169,7 @@ export async function setDirectSaleConditions(
       info.subtotalCents - info.programDiscountCents - coveredCents
     );
     discountCents = Math.round((base * Math.max(0, pct)) / 100);
-  } else if (!info.isProgramMember && installments <= 1) {
+  } else if (!info.isProgramMember && installments <= 1 && input.paymentMethod !== "permuta") {
     // I8: cliente SEM programa — à vista ganha o desconto automático da regra
     // comercial (ex.: 5%). No parcelado não há automático: vale só o manual.
     const auto = automaticDiscountPercent(rule, installments);
@@ -175,9 +198,9 @@ export async function setDirectSaleConditions(
       discountCents,
       surchargeCents,
       installments,
-      paymentMethod: input.paymentMethod
-        ? (input.paymentMethod as never)
-        : null,
+      // 4011: o dinheiro segue o "depósito à vista" da regra; a permuta não
+      // depende da regra comercial.
+      paymentMethod: (vendaNova ? meioParaARegra(input.paymentMethod || null) : input.paymentMethod || null) as never,
     },
     rule,
     { isManager }
@@ -205,6 +228,8 @@ export async function setDirectSaleConditions(
       };
     if (m.includes("ALREADY_CLOSED"))
       return { ok: false, error: "Venda já concluída." };
+    const meio = mensagemDoErroDeMeio(m);
+    if (meio) return { ok: false, error: meio };
     // AP79 (0386): o banco confere a faixa de cada procedimento e devolve a
     // lista já em português ("Fulano abaixo do mínimo: R$ … (mínimo R$ …)").
     const faixa = m.match(/PRICE_OUT_OF_RANGE:([\s\S]*)$/);

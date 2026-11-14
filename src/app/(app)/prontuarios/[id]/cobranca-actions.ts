@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { cancelarNoAsaas, emitirNoAsaas } from "@/lib/asaas/cobranca";
 import { mensagemDaCobranca, type MeioDaCobranca } from "@/lib/cobrancas";
+import { mensagemDoErroDeMeio } from "@/lib/venda-direta-meios";
 
 /**
  * AS AÇÕES DA COBRANÇA NA FICHA (ASA1, entrega 2).
@@ -267,5 +268,69 @@ export async function dispensarTaxaDaRede(input: {
   if (error) return { ok: false, error: mensagemDaCobranca(error.message) };
   revalidatePath(`/prontuarios/${input.clientId}`);
   revalidatePath("/financeiro");
+  return { ok: true };
+}
+
+/**
+ * 4011 (19.11 ajuste C): TROCA DE MEIO da parcela da venda direta nova.
+ * - cobrança ativa no Asaas: é cancelada antes (mesma porta do "recebeu no
+ *   balcão"); paga no Asaas → recusa;
+ * - permuta: só o Gerente da unidade ou o Admin Master, com descrição (o banco
+ *   confere);
+ * - o meio novo é pelo Asaas (Pix, boleto, cartão): a cobrança é gerada NA HORA.
+ */
+export async function trocarMeioDaParcela(input: {
+  clientId: string;
+  installmentId: string;
+  method: "pix" | "boleto" | "cartao" | "dinheiro" | "permuta";
+  reason: string;
+}): Promise<ResultadoDaCobranca & { emitida?: boolean; aviso?: string }> {
+  const session = await getSessionContext();
+  const clinicId = await clinicaDaParcela(input.installmentId);
+  if (!clinicId) return SEM_PERMISSAO;
+  const supabase = await createClient();
+
+  const { data: ativas } = await supabase
+    .from("charges")
+    .select("id")
+    .eq("payment_installment_id", input.installmentId)
+    .eq("is_external", false)
+    .in("status", ["emitindo", "emitida", "vencida", "erro_emissao"]);
+  for (const ch of (ativas ?? []) as { id: string }[]) {
+    const { data, error } = await supabase.rpc("charge_cancel_check", { p_charge_id: ch.id, p_purpose: "counter" });
+    if (error) return { ok: false, error: mensagemDaCobranca(error.message) };
+    const chk = (Array.isArray(data) ? data[0] : data) as { asaas_payment_id: string | null; gateway_account_id: string | null } | null;
+    const r = await cancelarNoAsaas({
+      chargeId: ch.id,
+      accountId: chk?.gateway_account_id ?? null,
+      asaasPaymentId: chk?.asaas_payment_id ?? null,
+      actorId: session.userId,
+      reason: `troca de meio para ${input.method}`,
+    });
+    if (!r.ok) return { ok: false, error: r.error ?? "Não foi possível cancelar a cobrança no Asaas." };
+  }
+
+  const { error } = await supabase.rpc("installment_set_method", {
+    p_installment_id: input.installmentId,
+    p_method: input.method,
+    p_reason: input.reason || null,
+  });
+  if (error) {
+    const meio = mensagemDoErroDeMeio(error.message);
+    if (meio) return { ok: false, error: meio };
+    if (error.message.includes("NOT_ALLOWED")) return SEM_PERMISSAO;
+    if (error.message.includes("CHARGE_ACTIVE")) return { ok: false, error: "A parcela ainda tem cobrança ativa no Asaas. Recarregue a tela." };
+    if (error.message.includes("INSTALLMENT_CLOSED")) return { ok: false, error: "Esta parcela já foi paga, cancelada ou renegociada." };
+    console.error("installment_set_method failed:", error.message);
+    return { ok: false, error: "Não foi possível trocar o meio da parcela." };
+  }
+  revalidatePath(`/prontuarios/${input.clientId}`);
+
+  const billing: Record<string, MeioDaCobranca> = { pix: "PIX", boleto: "BOLETO", cartao: "CREDIT_CARD" };
+  if (billing[input.method]) {
+    const e = await emitirCobranca({ clientId: input.clientId, installmentId: input.installmentId, billingType: billing[input.method], dueDate: null });
+    if (!e.ok) return { ok: true, emitida: false, aviso: `Meio trocado, mas a cobrança não foi gerada: ${e.error ?? "tente pelo botão da parcela."}` };
+    return { ok: true, emitida: true };
+  }
   return { ok: true };
 }
