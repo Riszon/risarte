@@ -2,6 +2,50 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏦 0.448.0 — LEVANTAMENTO DE DÍVIDAS, FASE 4: A IMPORTAÇÃO DA PLANILHA (14/11/2026; migração 0407)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (3.4, 4.5, fase 4; sugestões 1 e
+> 7; D2, D11, D16, D18). **Importar planilha** (`/financeiro/dividas/importar`):
+> o arquivo é lido no navegador, o modelo de mapeamento casa as colunas
+> (`debt_import_templates`; o padrão é a estrutura da planilha da rede), a
+> conferência abre um lote (IMP-) guardado linha a linha, a pessoa corrige ou
+> ignora, e gravar é uma transação só; desfazer enquanto nada foi pago.
+> Planilha-modelo para baixar. Aba **Qualidade dos dados**. Fotografia mensal
+> (`debt_month_positions`) começa aqui. Manual 2.3; EV-343.
+> - ⚠️ **A conferência é código puro: `src/lib/finance/dividas-importacao.ts`**
+>   (`conferirPlanilha`). Ela roda NO SERVIDOR (ação), com o cadastro de agora,
+>   e de novo a cada correção (uma linha muda a outra: o protesto aponta pelo
+>   "#"). O banco guarda `computed`/avisos/decisão e grava pelas **portas do
+>   cadastro à mão** — a importação não tem regra própria de dívida
+>   (`_debt_import_debt` chama `debt_save`, `debt_save_proposal`,
+>   `debt_save_negativation`, `debt_save_protest`, `debt_link_payables`).
+>   Campo novo de dívida que a importação deva trazer: CAMPOS_DIVIDAS + o
+>   `debt` de `DadosDaDivida` + o seed do modelo padrão (régua compara).
+> - ⚠️ **Lote gravado mostra a FOTO** guardada (`conferenciaGuardada`), nunca
+>   a conferência refeita: com o banco de agora, as dívidas do próprio lote
+>   pareceriam repetidas (achado na tela).
+> - ⚠️ Linha com erro ou "Verificar" segura a gravação (`blocking`), a não ser
+>   marcada "Ignorar". Credor só com a raiz do CNPJ entra com os 8 dígitos em
+>   `suppliers.document` (D18), escopo `rede`. Credor com o MESMO nome de dois
+>   fornecedores sem CNPJ na linha = erro (achado no ensaio: o treino tem
+>   nomes repetidos).
+> - ⚠️ **Fotografia mensal**: `_debt_snapshot_month` grava UMA vez por mês
+>   (`on conflict do nothing`), chamada pela `debt_daily_run` (recriada na
+>   0407, a partir da 0405). Ao recriar a rotina, levar a fotografia junto.
+> - Permissão nova `acao.dividas.importar` (padrão e teto Financeiro da
+>   Franqueadora; `_debt_cap_default_roles`/`_debt_cap_ceiling` recriadas).
+> - Ensaio `scripts/dividas-ensaio-0407.mjs --confirmar` 33/33 (planilha
+>   inventada pela conferência de verdade, via jiti); `--quebrar` reprova.
+>   0407 no treino (`migrar:teste` + reaplicada depois da correção da porta
+>   `debt_import_stage`). Visto na tela (Financeiro de teste, IMP-00007,
+>   gravado e desfeito). Resíduo no treino: os fornecedores "Banco Inventado
+>   de Teste", "Fornecedor Inventado" e "Outro Credor Inventado", o cartório
+>   "Cartório Inventado", a etiqueta "Importação 14/11/2026" e as dívidas
+>   DV-000110 a DV-000112 (excluídas pelo desfazer) — todos de teste.
+> - ⏳ **0407 só no treino**: o dono roda na produção. A carga REAL da planilha
+>   espera o dono conferir as pendências dela (aba "Pendências") e o CNPJ da
+>   franqueadora na produção (AP168).
+>
 > ## 🏦 0.445.0 — LEVANTAMENTO DE DÍVIDAS, FASE 3: AS DÍVIDAS NO CONTAS A PAGAR (13/11/2026; migração 0406)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (fase 3; D1, D5, ajustes 2–4,

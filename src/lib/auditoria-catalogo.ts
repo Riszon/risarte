@@ -47,6 +47,8 @@ export const TABELAS: Record<string, string> = {
   "public.debt_creditor_contacts": "Contato de cobrança do credor",
   "public.debt_default_rules": "Prazo de inadimplência por tipo de credor",
   "public.debt_groups": "Grupo de dívidas",
+  "public.debt_import_batches": "Lote de importação de dívidas",
+  "public.debt_import_templates": "Modelo de importação de dívidas",
   "public.debt_natures": "Natureza da dívida",
   "public.debt_settings": "Regra do Levantamento de Dívidas",
   "public.debt_tag_links": "Etiqueta da dívida",
@@ -615,6 +617,12 @@ export const CAMPOS: Record<string, string> = {
   next_action_on: "Data da próxima ação",
   finance_synced_at: "Títulos gerados no Contas a Pagar",
   deleted_reason: "Motivo da exclusão",
+  // Levantamento de Dívidas, fase 4 (0407) — e os da proposta (0405) que faltavam
+  import_batch_id: "Lote de importação",
+  proposed_on: "Data da proposta",
+  valid_until: "Válida até",
+  condition_text: "Condição da proposta",
+  payment_kind: "À vista ou parcelado",
   // Levantamento de Dívidas, fase 2 (0405)
   bureau: "Órgão (Serasa, SPC…)",
   included_on: "Data da inclusão",

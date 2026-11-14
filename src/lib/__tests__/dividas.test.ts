@@ -220,16 +220,18 @@ describe("lista, filtros e totais", () => {
 });
 
 describe("as permissões do módulo — tela e banco iguais, e o teto", () => {
+  // A definição mais nova dos padrões (a 0407 acrescentou "importar").
+  const SQL_CAPS = readFileSync("supabase/migrations/0407_dividas_importacao.sql", "utf8").replace(/\r\n/g, "\n");
   const doBanco = (cap: string): string[] => {
-    const m = SQL.match(new RegExp(`when '${cap.replace(/\./g, "\\.")}' then array\\[([^\\]]*)\\]`));
+    const m = SQL_CAPS.match(new RegExp(`when '${cap.replace(/\./g, "\\.")}' then array\\[([^\\]]*)\\]`));
     if (!m) return [];
     return m[1].split(",").map((s) => s.replace(/['\s]/g, "")).filter(Boolean).sort();
   };
   const caps = CAPACIDADES.filter((c) => c.id === "modulo.dividas" || c.id.startsWith("acao.dividas."));
 
-  it("são as 4 da fase 1", () => {
+  it("são as 4 da fase 1 + importar (0407)", () => {
     expect(caps.map((c) => c.id).sort()).toEqual([
-      "acao.dividas.configurar", "acao.dividas.excluir", "acao.dividas.lancar", "modulo.dividas",
+      "acao.dividas.configurar", "acao.dividas.excluir", "acao.dividas.importar", "acao.dividas.lancar", "modulo.dividas",
     ]);
   });
 
@@ -238,7 +240,8 @@ describe("as permissões do módulo — tela e banco iguais, e o teto", () => {
   });
 
   it("o teto do banco é só o Financeiro da Franqueadora", () => {
-    const teto = SQL.slice(SQL.indexOf("function public._debt_cap_ceiling"), SQL.indexOf("revoke execute on function public._debt_cap_ceiling"));
+    const teto = SQL_CAPS.slice(SQL_CAPS.indexOf("function public._debt_cap_ceiling"), SQL_CAPS.indexOf("revoke execute on function public._debt_cap_ceiling"));
+    expect(teto).toContain("'acao.dividas.importar'");
     expect(teto).toMatch(/then array\['finance_franchisor'\]/);
     expect(teto).not.toMatch(/unit_manager|franchisee|franchisor_staff/);
   });

@@ -410,6 +410,17 @@ Syncthing se comportarem de forma estranha.**
   com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
   ⚠️ "Repasses" sozinho é o dos DENTISTAS.
 
+**14/11/2026 (Levantamento de Dívidas — fase 4) — PC Administrador (core 0.447.0 → 0.448.0, migração 0407)**
+
+- **Importar planilha e Qualidade dos dados** (bloco 0.448.0 no ESTADO).
+  ⚠️ **Conferência = `conferirPlanilha`** (`dividas-importacao.ts`, pura,
+  roda no servidor a cada correção); o banco grava pelas portas do cadastro
+  (`_debt_import_debt`). ⚠️ **Lote gravado mostra a foto guardada**
+  (`conferenciaGuardada`), nunca a refeita. ⚠️ Ao recriar `debt_daily_run`,
+  levar a fotografia (`_debt_snapshot_month`). ⚠️ A planilha real NÃO foi
+  importada: espera o dono conferir as pendências dela e o AP168.
+- ⏳ 0407 só no treino (o dono roda na produção).
+
 **13/11/2026 (Levantamento de Dívidas — fase 3) — PC Administrador (core 0.444.0 → 0.445.0, migração 0406)**
 
 - **As dívidas no Contas a Pagar** (bloco 0.445.0 no ESTADO). ⚠️ **"Fora do

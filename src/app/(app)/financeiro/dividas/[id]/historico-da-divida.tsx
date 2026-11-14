@@ -38,6 +38,10 @@ const EVENTOS: Record<string, string> = {
   proposta_expirada: "A proposta expirou",
   anexo: "Anexou um documento",
   registro_removido: "Removeu um registro lançado por engano",
+  titulo_gerado: "Gerou o título no Contas a Pagar",
+  titulo_atualizado: "Atualizou o título no Contas a Pagar",
+  titulo_vinculado: "Vinculou títulos que já estavam no Contas a Pagar",
+  importada: "Entrou pela importação da planilha",
 };
 
 const STAGE_LABEL = (v: unknown) =>
