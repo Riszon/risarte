@@ -1061,3 +1061,165 @@ Painel da franqueadora e de cada unidade (9.2, 14.5 e 16.8.2) que lê o que as e
 **Provas:**
 - Ensaio no treino (transação desfeita), provado quebrando: cada parte com números conhecidos (taxas não redondas, duas carteiras, falta acima da tolerância, repasse a maior, estorno, dispensa); quem vê o quê; planilha na auditoria. **(ajuste 4)** Os totais do painel batem com o razão (despesa da unidade e receita da franqueadora por taxa) e com o Painel de cobranças no mesmo período; divergência entre eles **reprova** o ensaio.
 - Teste no projeto de teste com as cobranças já pagas das provas anteriores (sem nova cobrança paga no sandbox).
+
+## 19. ASA4 — Gatilhos de contrato: PLANO (14/11/2026, aguardando aprovação do Jeferson)
+
+Pedido do Jeferson (14/11/2026): entregas pequenas, cada uma com migração, ensaio e teste; envio da primeira cobrança automático e reenvio por quem fechou a venda; contratos assinados antes da ASA4 continuam manuais; contrato com muitas parcelas sem disparar o aviso de todas; idempotência do aviso da ZapSign.
+
+### 19.1 O que a documentação do Asaas diz (conferido em 14/11/2026): três pontos que mudam o pedido
+
+1. **"Cobrança criada" sai para TODA cobrança criada, na hora.**
+   - O aviso é configurado por cliente (pagador), não por cobrança.
+   - Não tem prazo: `scheduleOffset` só existe no lembrete antes do vencimento (0, 5, 10, 15, 30 dias) e no de vencida.
+   - A cobrança não tem campo para calar o aviso. Só o cliente tem `notificationDisabled`, que cala tudo.
+   - Fontes: docs.asaas.com/docs/notificacoes-padroes, /reference/criar-nova-cobranca, /reference/atualizar-notificacao-existente.
+   - **Consequência:** criar todas as parcelas na assinatura com o aviso ligado manda o link de todas de uma vez. A alternativa está em 19.4.
+2. **Não há histórico de envio por cobrança.**
+   - Nenhum endpoint lista as mensagens enviadas de uma cobrança, e não há aviso (webhook) de mensagem enviada.
+   - Existe só a **visualização**: `GET /payments/{id}/viewingInfo` (data em que o pagador abriu a fatura ou o boleto) e os avisos `PAYMENT_CHECKOUT_VIEWED` / `PAYMENT_BANK_SLIP_VIEWED`.
+   - Também **não há endpoint de reenvio** da notificação.
+   - Fontes: /reference/informacoes-sobre-visualizacao-da-cobranca, /docs/webhook-para-cobrancas.
+   - A proposta está em 19.3.
+3. **Existe um limite diário de criação de cobranças por conta.**
+   - Ele é consultável em `GET /payments/limits`. O exemplo da documentação mostra 10; o valor real é definido por conta.
+   - Além dele, a cota geral é de 25.000 chamadas por conta a cada 12 h.
+   - Fontes: /reference/recuperando-limites-de-cobrancas-1, /reference/rate-e-quota-limit.
+   - O impacto está em 19.5.
+
+### 19.2 As entregas (cada uma com migração, ensaio no treino, prova no sandbox e teste na tela)
+
+| Entrega | O que entrega | Migração |
+|---|---|---|
+| **1** | Cobrança nascendo na **assinatura do contrato de tratamento** (ZapSign) e na **venda direta**. A **primeira** é enviada pelo Asaas; as seguintes são criadas perto do vencimento (19.4). Também: registro de "link enviado"; avisos de link não enviado (régua desligada); **Cobranças da venda** no comercial (Copiar link, WhatsApp, Pix, situação e "venda fechada" pela D21). | 4011 |
+| **2** | **Renegociação assinada**: o termo vai pela ZapSign; as cobranças antigas só são canceladas depois da assinatura do termo; as novas nascem pela mesma regra da entrega 1. | 4012 |
+| **3** | **Cartão parcelado**: um pagamento no cartão cobrindo o tratamento (parcelamento do Asaas, split por parcela). Prova no sandbox das datas de crédito de cada parcela (pendência da seção 17). | 4013 |
+| **4** | **Mensalidades do PPR+ e da Ortodontia** (`ppr_charges`, `ortho_charges`): criadas perto do vencimento pela mesma rotina da entrega 1. | 4014 |
+| **5** | **Reemissão de cobrança externa**: a que foi paga por fora volta a ser cobrada pelo Asaas, sem duplicar. | 4015 |
+| **6** | **Distrato com checklist** (D12): nada é cancelado no Asaas antes de o Gerente concluir a checklist; ao efetivar, cancela as cobranças em aberto de todos os tipos acima. | 4016 |
+
+**Por que essa ordem:**
+- A 2 reaproveita o gatilho da assinatura logo em seguida.
+- A 3 é o meio de pagamento mais usado depois de boleto e Pix.
+- A 4 reaproveita a rotina "criar perto do vencimento".
+- A 5 é pequena.
+- O distrato fica por último porque precisa cancelar cobranças de todos os tipos.
+
+### 19.3 Entrega 1: o envio, o reenvio e o registro
+
+**Quem é "quem fechou a venda":**
+- no contrato, o **Consultor da negociação** (`plan_negotiations.consultant_id`);
+- na venda direta, **quem a registrou** (`direct_sales.created_by`).
+
+**Régua ligada na unidade:**
+- O aviso "cobrança criada" continua **ligado no padrão da rede** (já é assim desde a 4007), e o Asaas manda a **primeira** cobrança logo após a criação.
+- A cobrança mostra **"Enviada pelo Asaas (e-mail/SMS) em DD/MM HH:MM"**. É o que o riSZon sabe com certeza: no momento da criação, a régua estava ligada, o pagador tinha contato e não estava na lista de recusa.
+- **Não é confirmação de entrega**, porque o Asaas não expõe histórico (19.1 item 2).
+- Quando o pagador abre a fatura, aparece **"Aberta pelo pagador em DD/MM"** (avisos `PAYMENT_CHECKOUT_VIEWED`/`PAYMENT_BANK_SLIP_VIEWED`).
+
+**Régua desligada na unidade:** o Asaas não envia, e o primeiro envio fica com quem fechou a venda.
+
+**Reenvio e primeiro envio pelo riSZon:**
+- Botões: **Copiar link**, **Enviar pelo WhatsApp** (abre o WhatsApp com a mensagem pronta e o link), **Copiar Pix** e a **linha digitável**.
+- Cada um **registra o envio** (cobrança, canal, quem, quando) numa tabela nova, `charge_link_sends`.
+- A cobrança mostra o último envio: "Enviada pelo riSZon por Fulano (WhatsApp) em DD/MM HH:MM".
+
+**Avisos de link não enviado (só com a régua desligada):**
+- (a) **1 dia útil** depois da criação sem nenhum envio registrado → aviso para quem fechou a venda.
+- (b) faltando **2 dias úteis** para o vencimento sem envio → aviso também para o **Gerente da unidade**, que pode enviar no lugar.
+- Dias úteis contam os feriados nacionais (função do banco já existente, `_payout_add_business_days`).
+- Roda na rotina que já passa a cada 10 minutos.
+
+**Permissão de quem fechou a venda (conferido):**
+- Hoje o Consultor, inclusive o da Franqueadora com escopo em todas as unidades, **lê as parcelas** da venda dele (0403, `can_see_sale_schedule`), mas **NÃO lê as cobranças** (`charges_select` = só quem vê o financeiro).
+- A entrega 1 abre **uma porta própria**, `sale_charges_read`. Ela devolve, **só das cobranças daquela venda**: a situação, o vencimento, o valor, o link, o Pix, a linha digitável e o registro de envio.
+- Quem passa por ela: quem fechou a venda, o Gerente da unidade, o Admin Master e o Financeiro da Franqueadora.
+- **A regra de leitura das cobranças (0403) não muda.**
+- O envio passa por outra porta, `charge_link_sent`, que confere a mesma coisa.
+
+**Onde aparece:**
+- Um bloco **Cobranças da venda** na tela do comercial do cliente (o cockpit atual, por cliente) e na venda direta.
+- Situação por cobrança: *Agendada para DD/MM* (ainda não criada no Asaas, 19.4), *Aguardando pagamento*, *Paga*, *Vencida*, *Cancelada*.
+- "**Venda fechada**" quando a D21 fechou a venda. O fechamento já existe: `_gateway_confirm_sale`, 4005.
+
+### 19.4 Contrato com muitas parcelas: a alternativa (precisa da aprovação antes de construir)
+
+Como o Asaas não permite calar o "cobrança criada" por cobrança (19.1 item 1), **criar todas as cobranças no Asaas na assinatura** faria o pagador receber o link de todas de uma vez.
+
+**Proposta A (recomendada): criar no Asaas só a primeira na assinatura; as seguintes, por uma rotina diária, X dias antes de cada vencimento.**
+- Na assinatura, **todas as parcelas já existem no riSZon** (como hoje) e aparecem na venda como *Agendada para DD/MM*.
+- A **primeira** (a de vencimento mais próximo, e qualquer outra que vença dentro do prazo X) é criada na hora → o Asaas manda o link.
+- As **seguintes** são criadas pela rotina diária **X dias antes do vencimento**. O "cobrança criada" do Asaas chega então perto do vencimento, que é exatamente o "link perto do vencimento" pedido. Depois vêm os lembretes normais da régua (10 dias antes e no dia).
+- **X = 15 dias** no padrão da rede, configurável de 11 a 30.
+  - X precisa ser **maior que o 1º lembrete** (10 dias); senão o pagador recebe dois avisos no mesmo dia.
+  - O banco recusa X ≤ lembrete 1.
+- O split, a multa, os juros e o desconto de pontualidade são calculados **no dia da criação**, com as taxas vigentes. A fila da ASA3 já trata mudança depois disso.
+- Se a rotina falhar, a cobrança fica *Agendada* e o Financeiro é avisado; a próxima rodada tenta de novo (idempotente, 19.6).
+- Vale também para a venda direta e, na entrega 4, para as mensalidades do PPR+ e da Ortodontia.
+
+**Alternativas descartadas** (nenhuma das duas cumpre o pedido com segurança):
+- **B:** criar todas com o pagador calado (`notificationDisabled`). O Asaas não mandaria nem a primeira, nem os lembretes.
+- **C:** ligar o aviso, criar a primeira, desligar e criar as demais.
+  - O momento em que o Asaas dispara o aviso não está documentado; desligar logo depois pode calar a primeira.
+  - A troca vale para todas as cobranças do pagador, inclusive de outras vendas.
+
+**A provar no sandbox antes de construir:**
+- Sem envio real (pagador sem celular, e-mail example.com): o "cobrança criada" de uma cobrança com vencimento distante sai na criação, confirmando 19.1.
+- Com aprovação na hora: um envio real para o e-mail do Jeferson, para ver a mensagem.
+
+### 19.5 Cota e limite do Asaas num dia com muitas assinaturas
+
+**Chamadas por cobrança criada: de 3 a 8.**
+- procurar o pagador por CPF;
+- aplicar a régua do pagador (3 chamadas, só quando muda);
+- procurar pela referência antes de criar;
+- criar;
+- ler o QR Code do Pix.
+
+**Com a proposta A:**
+- Um dia com **30 assinaturas** numa unidade dá ≈ 30 cobranças × 8 = **240 chamadas**.
+- Soma-se a rotina diária: as parcelas que chegam a X dias, cerca de 1 por contrato ativo por mês.
+- Tudo muito abaixo das **25.000 a cada 12 h**.
+
+**Sem a proposta A (todas na assinatura):**
+- 30 contratos × 24 parcelas = **720 cobranças criadas no dia** (~2.300 chamadas).
+- Cabe na cota, mas pode **estourar o limite diário de criação de cobranças** da conta (19.1 item 3).
+
+**Proteção:**
+- Antes de criar em lote, a rotina lê `GET /payments/limits`. Se faltar limite, para, deixa *Agendada* e avisa o Financeiro.
+- Em resposta 429/403 do Asaas, espera e tenta na rodada seguinte, sem martelar.
+
+**A conferir:**
+- o limite diário real da conta sandbox (só leitura);
+- o limite da produção (pergunta ao gerente de contas, para a ASA7).
+
+### 19.6 Idempotência: o aviso da ZapSign duas vezes não gera cobrança em dobro
+
+Três travas, todas no ensaio:
+1. **ZapSign:** o evento repetido já é recusado pela chave do evento (`signature_events.event_key`, 0397). Volta `duplicate` e nada acontece.
+2. **Gatilho:** a emissão automática é registrada **uma vez por venda** (índice único na negociação / venda direta). Um segundo pacote assinado da mesma venda (reenvio) não emite de novo.
+3. **Cobrança:** continuam valendo o índice único "uma cobrança ativa por parcela" (4004) e a procura pela referência no Asaas antes de criar (4005).
+
+O ensaio manda o mesmo aviso **duas vezes**, dois avisos **ao mesmo tempo** e um **segundo pacote** assinado da mesma negociação. Espera **uma** cobrança por parcela.
+
+### 19.7 O que NÃO muda / regras
+
+- **Contratos assinados antes da ASA4 continuam com emissão manual.**
+  - A emissão automática só vale para pacote **assinado depois** da data em que a 4011 for ligada na unidade (gravada na configuração).
+  - Nada é emitido em lote para os antigos.
+- Só emite se a **unidade estiver pronta** (conta Asaas ativa) e a parcela for de **boleto ou Pix**.
+  - Cartão parcelado fica para a entrega 3.
+  - Parcela em dinheiro, maquininha ou depósito não vai ao Asaas.
+- Continuam as travas da emissão manual: contrato assinado, pagador e CPF, carência zero e teto do split.
+- Continua a **trava fora da produção**: o sandbox só envia para os contatos permitidos.
+- A emissão automática roda **sem usuário**; o banco registra "assinatura do contrato" como origem.
+- A emissão manual da ficha continua para os casos fora da regra.
+- A RisLife nunca é destino de taxa de paciente.
+- ⚠️ A 4004 recria `charges_select` com a regra antiga. A 4011 **não toca** nas regras de leitura, e o ensaio confere que a 0403 continua valendo.
+
+### 19.8 Decisões pedidas ao Jeferson
+
+1. **Proposta A** (19.4): criar no Asaas só a primeira na assinatura e as seguintes X dias antes do vencimento, no lugar de "todas na assinatura".
+2. **X = 15 dias** no padrão da rede.
+3. **"Enviada pelo Asaas"** = régua ligada + contato + sem recusa no momento da criação, com "Aberta pelo pagador" quando o Asaas avisar, já que não há histórico de envio na API (19.1 item 2).
+4. **Venda direta:** a cobrança nasce quando o parcelamento da venda direta é salvo **e** o contrato está marcado como assinado na venda. A venda direta não passa pela ZapSign, e a emissão exige contrato assinado.
+5. A **ordem das entregas 2 a 6** (19.2).
