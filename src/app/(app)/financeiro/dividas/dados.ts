@@ -384,7 +384,12 @@ export async function carregarResumoDaFase2(): Promise<ResumoDaFase2> {
  * parte dela, nunca a proposta inteira. Proposta da própria dívida ganha da
  * do grupo.
  */
-export function linhasDaLista(dividas: Divida[], base: BaseDasDividas, f2: ResumoDaFase2): DebtListRow[] {
+export function linhasDaLista(
+  dividas: Divida[],
+  base: BaseDasDividas,
+  f2: ResumoDaFase2,
+  titulos: Map<string, TituloDaDivida[]> = new Map()
+): DebtListRow[] {
   const propostaDaDivida = new Map<string, { amountCents: number; validUntil: string | null }>();
   const propostaDoGrupo = new Map<string, { amountCents: number; validUntil: string | null }>();
   for (const p of f2.propostas) {
@@ -466,6 +471,8 @@ export function linhasDaLista(dividas: Divida[], base: BaseDasDividas, f2: Resum
       propostaValidade: proposta?.validade ?? null,
       custasCents: (custasDaDivida.get(d.id) ?? 0) + (parteDasCustas.get(d.id) ?? 0),
       lastCheckedOn: d.lastCheckedOn,
+      pagoCents: (titulos.get(d.id) ?? []).reduce((t, x) => t + x.pagoCents, 0),
+      noFinanceiro: (titulos.get(d.id) ?? []).length > 0,
     };
   });
 }
@@ -676,4 +683,97 @@ export async function carregarDetalheDaFase2(debtId: string, groupId: string | n
       uploadedAt: r.uploaded_at as string,
     })),
   };
+}
+
+// ------------------------------------------------------------- fase 3 (0406)
+
+/** Um título do Contas a Pagar que é de uma dívida (gerado ou vinculado). */
+export type TituloDaDivida = {
+  id: string;
+  debtId: string;
+  link: "gerado" | "vinculado";
+  saldoDeImplantacao: boolean;
+  conta: string;
+  descricao: string;
+  valorCents: number;
+  pagoCents: number;
+  vencimento: string;
+  status: string;
+};
+
+const tituloDaLinha = (r: Linha): TituloDaDivida => ({
+  id: r.id as string,
+  debtId: r.debt_id as string,
+  link: r.debt_link === "vinculado" ? "vinculado" : "gerado",
+  saldoDeImplantacao: r.opening_balance === true,
+  conta: r.account_code as string,
+  descricao: r.description as string,
+  valorCents: Number(r.amount_cents),
+  pagoCents: Number(r.paid_amount_cents ?? 0),
+  vencimento: r.due_date as string,
+  status: r.status as string,
+});
+
+const COLUNAS_DO_TITULO = "id, debt_id, debt_link, opening_balance, account_code, description, amount_cents, paid_amount_cents, due_date, status";
+
+/** Os títulos ativos de todas as dívidas (cancelado e recusado não contam). */
+export async function carregarTitulosDasDividas(): Promise<{ ok: boolean; titulos: Map<string, TituloDaDivida[]> }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("payables")
+    .select(COLUNAS_DO_TITULO)
+    .not("debt_id", "is", null)
+    .not("status", "in", "(cancelada,recusada)");
+  const titulos = new Map<string, TituloDaDivida[]>();
+  if (error) return { ok: false, titulos };
+  for (const r of (data ?? []) as Linha[]) {
+    const t = tituloDaLinha(r);
+    titulos.set(t.debtId, [...(titulos.get(t.debtId) ?? []), t]);
+  }
+  return { ok: true, titulos };
+}
+
+/** Os títulos de UMA dívida, inclusive os cancelados (para o histórico da tela). */
+export async function carregarTitulosDaDivida(debtId: string): Promise<{ ok: boolean; titulos: TituloDaDivida[] }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("payables")
+    .select(COLUNAS_DO_TITULO)
+    .eq("debt_id", debtId)
+    .order("due_date");
+  if (error) return { ok: false, titulos: [] };
+  return { ok: true, titulos: ((data ?? []) as Linha[]).map(tituloDaLinha) };
+}
+
+/** Títulos em aberto do mesmo CNPJ que ainda não são de nenhuma dívida:
+ * para vincular (origem C) e para avisar de duplicidade (ajuste 2). */
+export type TituloLivre = {
+  id: string;
+  fornecedorId: string | null;
+  descricao: string;
+  valorCents: number;
+  vencimento: string;
+  status: string;
+  documento: string | null;
+};
+
+export async function carregarTitulosLivres(clinicId: string): Promise<TituloLivre[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("payables")
+    .select("id, supplier_id, description, amount_cents, due_date, status, document_number")
+    .eq("clinic_id", clinicId)
+    .is("debt_id", null)
+    .in("status", ["aberta", "parcial", "aguardando_autorizacao"])
+    .order("due_date")
+    .limit(500);
+  return ((data ?? []) as Linha[]).map((r) => ({
+    id: r.id as string,
+    fornecedorId: s(r.supplier_id),
+    descricao: r.description as string,
+    valorCents: Number(r.amount_cents),
+    vencimento: r.due_date as string,
+    status: r.status as string,
+    documento: s(r.document_number),
+  }));
 }

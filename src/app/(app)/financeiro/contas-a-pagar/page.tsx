@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fornecedoresDaUnidade } from "@/lib/fornecedores-db";
 import { canViewFinance } from "@/lib/finance/access";
 import { sortAccounts, type ChartAccount } from "@/lib/finance/accounts";
+import { contaSoPorDivida } from "@/lib/finance/regra-do-resultado";
 import type {
   ApprovalMode,
   ApprovalRule,
@@ -18,8 +19,13 @@ import { RelatorioDePagas } from "./relatorio-de-pagas";
 import { todayInBrazil } from "@/lib/dates";
 
 /** FIN3 — contas a pagar da unidade: o outro lado do caixa. */
-export default async function PayablesPage() {
+export default async function PayablesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saldo?: string }>;
+}) {
   const session = await getSessionContext();
+  const { saldo } = await searchParams;
   if (!canViewFinance(session)) redirect("/");
 
   const clinicId = session.activeClinic?.id ?? null;
@@ -46,6 +52,7 @@ export default async function PayablesPage() {
     { data: recurrenceRows },
     { data: discountRows },
     { data: cancelRows },
+    { data: debtRows },
   ] = await Promise.all([
     supabase
       .from("payables")
@@ -98,7 +105,25 @@ export default async function PayablesPage() {
       .select("id, cancelled_at, canceller:profiles!payables_cancelled_by_fkey ( full_name )")
       .eq("clinic_id", clinicId)
       .eq("status", "cancelada"),
+    // 0406 — o título é de dívida? Lido À PARTE (sem a 0406 a coluna não
+    // existe e a lista abre como antes). O código DV- só vem para quem enxerga
+    // a dívida (a regra de linha de `debts`); os outros veem "dívida da rede".
+    supabase
+      .from("payables")
+      .select("id, debt_id, opening_balance, debt:debts!payables_debt_id_fkey ( code )")
+      .eq("clinic_id", clinicId)
+      .not("debt_id", "is", null),
   ]);
+  const deDivida = new Map(
+    ((debtRows ?? []) as unknown as { id: string; debt_id: string; opening_balance: boolean; debt: { code: string } | { code: string }[] | null }[]).map((r) => [
+      r.id,
+      {
+        debtId: r.debt_id,
+        debtCode: Array.isArray(r.debt) ? (r.debt[0]?.code ?? null) : (r.debt?.code ?? null),
+        openingBalance: r.opening_balance === true,
+      },
+    ])
+  );
 
   type Embed = { name: string } | { name: string }[] | null;
   const one = (v: Embed): string | null =>
@@ -155,6 +180,7 @@ export default async function PayablesPage() {
     automatic: Boolean(r.network_fee),
     notes: (r.notes as string | null) ?? null,
     recurrenceId: (r.recurrence_id as string | null) ?? null,
+    ...(deDivida.get(r.id as string) ?? {}),
   }));
 
   const payments: PaymentRow[] = (
@@ -204,6 +230,8 @@ export default async function PayablesPage() {
         (a) =>
           a.isAnalytic &&
           a.kind === "expense" &&
+          // 0406: as contas de dívida (5.5) só recebem título pelo Levantamento de Dívidas.
+          !contaSoPorDivida(a.code) &&
           (a.scope === "both" ||
             a.scope === (isFranchisorClinic ? "franchisor" : "unit"))
       )
@@ -303,6 +331,7 @@ export default async function PayablesPage() {
         canConfigureNetworkRules={canConfigureNetworkRules}
         currentUserId={session.userId}
         isFinanceStaff={isFinanceStaff}
+        saldoInicial={saldo === "so" || saldo === "oculto" ? saldo : "todos"}
       />
     </div>
   );

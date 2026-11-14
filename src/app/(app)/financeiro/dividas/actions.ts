@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { carregarTitulosLivres } from "./dados";
 import {
   debtToPayload,
   faltaNoCadastro,
@@ -28,7 +29,17 @@ function mensagem(error: { code?: string; message?: string }, padrao: string): s
   return error.code === "P0001" && error.message ? error.message : padrao;
 }
 
-export async function salvarDivida(form: DebtForm, sugerida: "A" | "B" | null): Promise<Result> {
+/**
+ * Salva a dívida e, se pedido, gera o título no Contas a Pagar (0406). A
+ * edição de dívida JÁ gerada atualiza o título no próprio banco (gatilho,
+ * mesma transação). Se a geração falhar, a dívida fica salva e a tela avisa
+ * — o título se gera depois, pelo detalhe.
+ */
+export async function salvarDivida(
+  form: DebtForm,
+  sugerida: "A" | "B" | null,
+  gerarNoFinanceiro = false
+): Promise<Result & { aviso?: string }> {
   await getSessionContext();
   const falta = faltaNoCadastro(form, sugerida);
   if (falta) return { ok: false, error: falta };
@@ -36,12 +47,93 @@ export async function salvarDivida(form: DebtForm, sugerida: "A" | "B" | null): 
   const { data, error } = await supabase.rpc("debt_save", { p: debtToPayload(form) });
   if (error) {
     console.error("salvarDivida failed:", error.message);
-    return { ok: false, error: mensagem(error, "Não foi possível salvar a dívida.") };
+    return { ok: false, error: mensagemDoFinanceiro(error, "Não foi possível salvar a dívida.") };
   }
   const id = String(data);
   await logAudit({ action: form.id ? "update" : "create", entityType: "debt", entityId: id });
+  let aviso: string | undefined;
+  if (gerarNoFinanceiro && form.origin !== "C") {
+    const g = await supabase.rpc("debt_sync_finance", { p_debt_id: id });
+    if (g.error) {
+      aviso = `A dívida foi salva, mas o título não foi gerado: ${mensagemDoFinanceiro(g.error, "erro ao gerar.")}`;
+    } else {
+      await logAudit({ action: "create", entityType: "debt_payable", entityId: id });
+    }
+  }
   refresh(id);
-  return { ok: true, id };
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true, id, aviso };
+}
+
+/** Traduz também a recusa do fechamento de competência (título B em mês fechado). */
+function mensagemDoFinanceiro(error: { code?: string; message?: string }, padrao: string): string {
+  if (error.message?.includes("PERIOD_CLOSED"))
+    return "o mês da competência está fechado no Financeiro: peça a reabertura à Franqueadora ou mude a competência.";
+  return mensagem(error, padrao);
+}
+
+/** Gera (ou atualiza) o título da dívida no Contas a Pagar — origens A e B. */
+export async function gerarNoFinanceiro(id: string): Promise<Result> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("debt_sync_finance", { p_debt_id: id });
+  if (error) {
+    console.error("gerarNoFinanceiro failed:", error.message);
+    return { ok: false, error: mensagemDoFinanceiro(error, "Não foi possível gerar o título.") };
+  }
+  await logAudit({ action: "create", entityType: "debt_payable", entityId: id });
+  refresh(id);
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true };
+}
+
+/** Origem C: vincula títulos que já existem no Contas a Pagar. */
+export async function vincularTitulos(id: string, titulos: string[]): Promise<Result> {
+  await getSessionContext();
+  if (titulos.length === 0) return { ok: false, error: "Escolha ao menos um título." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("debt_link_payables", { p_debt_id: id, p_payable_ids: titulos });
+  if (error) {
+    console.error("vincularTitulos failed:", error.message);
+    return { ok: false, error: mensagem(error, "Não foi possível vincular os títulos.") };
+  }
+  await logAudit({ action: "update", entityType: "debt_payable", entityId: id });
+  refresh(id);
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true };
+}
+
+/** Títulos em aberto do CNPJ que ainda não são de dívida (formulário e origem C). */
+/**
+ * Gera os títulos das dívidas já cadastradas que ainda não estão no Contas a
+ * Pagar (fase 3). Uma por vez pela mesma porta: a que falha (sem conta, mês
+ * fechado…) não impede as outras, e volta com o código e o motivo.
+ */
+export async function gerarPendentesNoFinanceiro(
+  ids: string[]
+): Promise<{ ok: boolean; geradas: number; falhas: { id: string; motivo: string }[]; error?: string }> {
+  await getSessionContext();
+  if (ids.length === 0) return { ok: false, geradas: 0, falhas: [], error: "Nenhuma dívida para gerar." };
+  if (ids.length > 500) return { ok: false, geradas: 0, falhas: [], error: "Gere no máximo 500 de cada vez." };
+  const supabase = await createClient();
+  let geradas = 0;
+  const falhas: { id: string; motivo: string }[] = [];
+  for (const id of ids) {
+    const { error } = await supabase.rpc("debt_sync_finance", { p_debt_id: id });
+    if (error) falhas.push({ id, motivo: mensagemDoFinanceiro(error, "erro ao gerar.") });
+    else {
+      geradas += 1;
+      await logAudit({ action: "create", entityType: "debt_payable", entityId: id });
+    }
+  }
+  refresh();
+  revalidatePath("/financeiro/contas-a-pagar");
+  return { ok: true, geradas, falhas };
+}
+
+export async function buscarTitulosLivres(clinicId: string) {
+  await getSessionContext();
+  return carregarTitulosLivres(clinicId);
 }
 
 export async function excluirDivida(id: string, motivo: string): Promise<Result> {

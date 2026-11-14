@@ -2,6 +2,52 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏦 0.445.0 — LEVANTAMENTO DE DÍVIDAS, FASE 3: AS DÍVIDAS NO CONTAS A PAGAR (13/11/2026; migração 0406)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (fase 3; D1, D5, ajustes 2–4,
+> sugestão 6). A dívida gera (A/B) ou vincula (C) títulos no Contas a Pagar da
+> unidade devedora; aba Contas a Pagar no detalhe; prévia, "gerar já" e aviso
+> de título parecido no formulário; relatório Saldo de abertura do passivo
+> (PDF e planilha); aviso na lista com **Gerar no Contas a Pagar** em lote para
+> as A/B ainda sem título (`gerarPendentesNoFinanceiro`, uma por vez pela
+> porta; a que falha volta com o motivo). Manual 2.3; EV-341. A situação
+> `renegociada` do título ficou para a fase 5 (registrado no plano).
+> - ⚠️ **"Fora do resultado" mora em UM lugar: `account_outside_result`**
+>   (6, 5.1, 5.3, 5.4, 5.5; espelho `contaForaDoResultado` em
+>   `src/lib/finance/regra-do-resultado.ts`). Os 9 leitores do razão a usam.
+>   **Leitor novo do razão (ou recriação de um dos 9) usa a função**, nunca
+>   `account_code not like '5.x%'` — régua `regra-fora-do-resultado.test.ts`
+>   reprova migração depois da 0406 e `startsWith("5.…")` no TS.
+> - ⚠️ **O título é `_debt_title_spec`** (espelho `impactoNoFinanceiro`; as
+>   frases de "problema" são iguais nos dois — teste). A: valor atualizado,
+>   conta de saldo, competência = implantação, `opening_balance`. B: valor
+>   original, conta de despesa, competência da dívida. C: só vincula.
+> - ⚠️ **`payables.debt_*` só muda pela porta** (`payables_debt_guard`,
+>   liberada por `risarte.debt_sync`). Com pagamento, a dívida não muda valor,
+>   conta, credor nem vencimento, e não se exclui. A origem não muda depois de
+>   gerada. Todos os títulos pagos → `quitada_pendencias`
+>   (`payables_debt_status_sync`).
+> - ⚠️ **Saldo de implantação vencido não entra em "vencido" por título**
+>   (`cash_overdue.opening_*`, painel, painel da rede, Contas a Pagar): uma
+>   linha por CNPJ (D1). No caixa, a atividade `dividas` (5.5) tem coluna
+>   própria.
+> - Ensaio `scripts/dividas-ensaio-0406.mjs --confirmar` 37/37 (corpos iguais
+>   aos vivos com só a regra trocada, 302 linhas iguais, indicadores iguais com
+>   títulos A, RLS); `--quebrar` muda DRE, PE, orçado, consolidado e resumo.
+>   0406 no treino (`migrar:teste`). Visto na tela (Financeiro de teste,
+>   DV-000011). Resíduo no treino (Londrina): o título da DV-000011 (5.5.01,
+>   R$ 3.100,00) com um pagamento de R$ 1.000,00 + R$ 50,00 de juros; a
+>   DV-000056 (A, com título de R$ 800,00) e a DV-000057 (B sem conta, sem
+>   título — prova da falha do lote), todas "pode excluir".
+> - ✅ **0406 aplicada nos dois bancos** (produção pelo dono em 13/11/2026;
+>   conferido de fora: as 5 contas novas, `account_outside_result` e
+>   `account_cash_activity` respondem certo, as 14 categorias com conta de
+>   saldo, `payables.debt_*` existe; sem login `debt_sync_finance`,
+>   `debt_finance_preview` e `cash_overdue` recusam (42501); a produção tem
+>   0 dívidas. Não medido de fora: a contagem das 9 leitoras e as colunas
+>   novas de `cash_overdue` (exigem login com Financeiro).) A 0.444.0 é do
+>   Asaas (ASA3, entrega 2); esta entrega virou 0.445.0 ao juntar o `main`.
+>
 > ## 🏦 0.443.0 — LEVANTAMENTO DE DÍVIDAS, FASE 2: RESTRIÇÕES, PROPOSTAS, CONTATOS E ANEXOS (13/11/2026; migração 0405)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (fase 2). No detalhe da dívida:

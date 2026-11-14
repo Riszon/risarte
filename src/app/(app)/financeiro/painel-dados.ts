@@ -264,6 +264,8 @@ export async function montarPendenciasFinanceiras(
       receivable_count: number;
       payable_cents: number;
       payable_count: number;
+      opening_cents?: number;
+      opening_count?: number;
     }[]
   )[0];
 
@@ -304,6 +306,20 @@ export async function montarPendenciasFinanceiras(
       titulo: "A pagar vencido",
       linha: `${atraso?.payable_count ?? 0} conta(s) passaram do vencimento.`,
       href: "/financeiro/contas-a-pagar",
+      tom: "atencao",
+    });
+  }
+
+  // 0406 (D1-c): os títulos de dívidas ANTERIORES à implantação ficam fora do
+  // "a pagar vencido" e aparecem numa linha só por CNPJ — nunca um a um.
+  const saldoVencido = Number(atraso?.opening_cents ?? 0);
+  if (saldoVencido > 0) {
+    lista.push({
+      chave: "saldo-implantacao-vencido",
+      valor: reais(saldoVencido),
+      titulo: "Dívidas antigas vencidas",
+      linha: `${atraso?.opening_count ?? 0} título(s) do saldo de implantação (dívidas de antes do riSZon). Acompanhados no Levantamento de Dívidas.`,
+      href: "/financeiro/contas-a-pagar?saldo=so",
       tom: "atencao",
     });
   }

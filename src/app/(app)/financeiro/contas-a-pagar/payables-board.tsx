@@ -125,7 +125,10 @@ export function PayablesBoard({
   currentUserId,
   isFinanceStaff,
   contas = [],
+  saldoInicial = "todos",
 }: {
+  /** 0406: filtro do saldo de implantação vindo do endereço (?saldo=so|oculto). */
+  saldoInicial?: "todos" | "so" | "oculto";
   clinicId: string;
   payables: Payable[];
   payments: PaymentRow[];
@@ -148,6 +151,8 @@ export function PayablesBoard({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [filter, setFilter] = useState<PayableFilter>("todas");
+  const [saldo, setSaldo] = useState<"todos" | "so" | "oculto">(saldoInicial);
+  const temSaldo = payables.some((p) => p.openingBalance);
   const [preset, setPreset] = useState<PeriodPreset>("tudo");
   const [customStart, setCustomStart] = useState(today.slice(0, 8) + "01");
   const [customEnd, setCustomEnd] = useState(today);
@@ -213,10 +218,17 @@ export function PayablesBoard({
       allViews.filter(
         (v) =>
           (!period || (v.dueDate >= period.start && v.dueDate < period.end)) &&
-          (!supplierFilter || v.supplierId === supplierFilter)
+          (!supplierFilter || v.supplierId === supplierFilter) &&
+          (saldo === "todos" || (saldo === "so" ? !!v.openingBalance : !v.openingBalance))
       ),
-    [allViews, period, supplierFilter]
+    [allViews, period, supplierFilter, saldo]
   );
+  // 0406 (D1-c): o saldo de implantação vencido não entra no card "Vencidas"
+  // título a título — aparece numa linha à parte.
+  const saldoVencido = useMemo(() => {
+    const vs = views.filter((v) => v.openingBalance && v.isOverdue);
+    return { cents: vs.reduce((t, v) => t + v.balanceCents, 0), n: vs.length };
+  }, [views]);
   const counts = useMemo(() => countPayablesByFilter(views), [views]);
   const shown = useMemo(
     () => views.filter((v) => matchesPayableFilter(v, filter)),
@@ -466,6 +478,18 @@ export function PayablesBoard({
             />
           </>
         )}
+        {temSaldo && (
+          <select
+            value={saldo}
+            onChange={(e) => setSaldo(e.target.value as "todos" | "so" | "oculto")}
+            aria-label="Saldo de implantação"
+            className="h-8 rounded-lg border border-input bg-background px-2 text-xs"
+          >
+            <option value="todos">Com o saldo de implantação</option>
+            <option value="oculto">Sem o saldo de implantação</option>
+            <option value="so">Só o saldo de implantação</option>
+          </select>
+        )}
         {suppliers.length > 0 && (
           <ListaComBusca
             value={supplierFilter}
@@ -535,16 +559,21 @@ export function PayablesBoard({
         <Card className={cn(summary.overdueCents > 0 && "border-destructive/50")}>
           <CardContent className="p-3">
             <p className="text-[11px] font-medium text-muted-foreground">
-              Vencidas {summary.overdueCount > 0 && `(${summary.overdueCount})`}
+              Vencidas {summary.overdueCount - saldoVencido.n > 0 && `(${summary.overdueCount - saldoVencido.n})`}
             </p>
             <p
               className={cn(
                 "text-xl font-semibold tabular-nums",
-                summary.overdueCents > 0 && "text-destructive"
+                summary.overdueCents - saldoVencido.cents > 0 && "text-destructive"
               )}
             >
-              {formatBRL(summary.overdueCents)}
+              {formatBRL(summary.overdueCents - saldoVencido.cents)}
             </p>
+            {saldoVencido.n > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                + {formatBRL(saldoVencido.cents)} do saldo de implantação ({saldoVencido.n})
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card className={cn(summary.awaitingCount > 0 && "border-amber-300")}>
@@ -624,6 +653,25 @@ export function PayablesBoard({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="min-w-0 flex-1">
                     <span className="font-medium">{v.description}</span>
+                    {v.openingBalance && (
+                      <span className="ml-2 rounded bg-slate-200 px-1.5 text-[10px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        Saldo de implantação
+                      </span>
+                    )}
+                    {v.debtId && (
+                      v.debtCode ? (
+                        <a
+                          href={`/financeiro/dividas/${v.debtId}`}
+                          className="ml-2 rounded bg-indigo-100 px-1.5 text-[10px] font-medium text-indigo-800 underline-offset-2 hover:underline dark:bg-indigo-950/50 dark:text-indigo-200"
+                        >
+                          Dívida {v.debtCode}
+                        </a>
+                      ) : (
+                        <span className="ml-2 rounded bg-indigo-100 px-1.5 text-[10px] font-medium text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
+                          Dívida da rede
+                        </span>
+                      )
+                    )}
                     <span className="ml-2 text-xs text-muted-foreground">
                       venc. {fmtDate(v.dueDate)}
                       {v.supplierName && ` · ${v.supplierName}`}

@@ -145,6 +145,12 @@ export type Payable = {
   recurrenceId: string | null;
   /** A compra (nota) de onde a conta veio — junta as parcelas dela (OC-00109). */
   stockPurchaseId?: string | null;
+  /** 0406 — o título é de uma dívida do Levantamento de Dívidas. */
+  debtId?: string | null;
+  /** O código DV- (só para quem enxerga a dívida; os outros veem "dívida da rede"). */
+  debtCode?: string | null;
+  /** Saldo de implantação: dívida anterior ao riSZon (origem A). */
+  openingBalance?: boolean;
 };
 
 export type PayableView = Payable & {

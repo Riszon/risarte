@@ -71,8 +71,18 @@ describe("a transferência entre contas próprias (0301)", () => {
         expect(raw, `_${nome}_raw`).not.toBe("");
         corpo = raw;
       }
+      // Desde a 0406 a lista de prefixos mora em UM lugar
+      // (`account_outside_result`); antes, estava repetida em cada função.
+      if (corpo.includes("public.account_outside_result(")) continue;
       expect(corpo, nome).toContain("not like '6%'");
     }
+    // A regra única ainda tira o grupo 6 do resultado.
+    const pasta2 = join(RAIZ, "supabase", "migrations");
+    let regra = "";
+    const reRegra = /create\s+or\s+replace\s+function\s+public\.account_outside_result\s*\([\s\S]*?\bas\s+(\$\w*\$)([\s\S]*?)\1/gi;
+    for (const f of readdirSync(pasta2).filter((x) => /^\d{4}_.*\.sql$/.test(x)).sort())
+      for (const m of readFileSync(join(pasta2, f), "utf8").matchAll(reRegra)) regra = m[2];
+    expect(regra, "account_outside_result").toMatch(/like '6%'/);
   });
 
   it("no fluxo de caixa conta como INVESTIMENTO (resgate não é dinheiro da operação)", () => {

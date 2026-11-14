@@ -13,7 +13,8 @@
 import { addDays } from "@/lib/payments";
 
 export type CashKind = "realizado" | "previsto";
-export type CashActivity = "operacional" | "investimento" | "financiamento";
+// "dividas" (0406): dívidas antigas e acordos em linha própria (ajuste 3 do dono).
+export type CashActivity = "operacional" | "investimento" | "financiamento" | "dividas";
 export type CashGroupBy = "dia" | "semana" | "mes";
 
 /** Uma linha do `cash_flow_series` — um dia, um tipo, uma atividade. */
@@ -53,6 +54,7 @@ const EMPTY_ACTIVITY = (): Record<CashActivity, number> => ({
   operacional: 0,
   investimento: 0,
   financiamento: 0,
+  dividas: 0,
 });
 
 /** Segunda-feira da semana da data (a semana comercial começa na segunda). */
@@ -215,6 +217,7 @@ export function cashTotals(
     t.activityCents.operacional += p.activityCents.operacional;
     t.activityCents.investimento += p.activityCents.investimento;
     t.activityCents.financiamento += p.activityCents.financiamento;
+    t.activityCents.dividas += p.activityCents.dividas;
     t.endBalanceCents = p.balanceCents;
   }
   t.netCents = t.inflowCents - t.outflowCents;

@@ -11,15 +11,18 @@ import {
   carregarBase,
   carregarDetalheDaFase2,
   carregarResumoDaFase2,
+  carregarTitulosDaDivida,
   dividaDaLinha,
   linhasDaLista,
   prazosDosSelos,
 } from "../dados";
+import { carregarContasDaUnidade } from "../../contas-da-unidade";
 import { DetalheDaDivida } from "./detalhe-da-divida";
+import type { PreviaDoFinanceiro } from "./no-financeiro";
 
 /**
  * O detalhe de uma dívida: Dados · Restrições · Propostas · Contatos ·
- * Anexos · Histórico (0404 + 0405).
+ * Anexos · Histórico (0404 + 0405) e Contas a Pagar (0406).
  */
 export default async function DividaPage({
   params,
@@ -48,9 +51,31 @@ export default async function DividaPage({
     ? await supabase.from("debts").select(COLUNAS_DA_DIVIDA).eq("group_id", divida.groupId).is("deleted_at", null)
     : { data: null };
   const dividasDoGrupo = ((doGrupo ?? []) as unknown as Record<string, unknown>[]).map(dividaDaLinha);
-  const [fase2, resumo] = await Promise.all([carregarDetalheDaFase2(divida.id, divida.groupId), carregarResumoDaFase2()]);
-  const linhaDaLista = linhasDaLista(dividasDoGrupo.length ? dividasDoGrupo : [divida], base, resumo).find((l) => l.id === divida.id)
-    ?? linhasDaLista([divida], base, resumo)[0];
+  const [fase2, resumo, doFinanceiro, contas, previaLida] = await Promise.all([
+    carregarDetalheDaFase2(divida.id, divida.groupId),
+    carregarResumoDaFase2(),
+    carregarTitulosDaDivida(divida.id),
+    carregarContasDaUnidade(supabase, [divida.clinicId]),
+    supabase.rpc("debt_finance_preview", { p_debt_id: divida.id }),
+  ]);
+  const titulosPorDivida = new Map([[divida.id, doFinanceiro.titulos.filter((t) => t.status !== "cancelada" && t.status !== "recusada")]]);
+  const linhaDaLista = linhasDaLista(dividasDoGrupo.length ? dividasDoGrupo : [divida], base, resumo, titulosPorDivida).find((l) => l.id === divida.id)
+    ?? linhasDaLista([divida], base, resumo, titulosPorDivida)[0];
+  // Sem a 0406 no banco a prévia não existe: a aba diz que falta a migração.
+  const p = ((previaLida.data ?? []) as Record<string, unknown>[])[0];
+  const previa: PreviaDoFinanceiro | null = p
+    ? {
+        conta: (p.account_code as string | null) ?? null,
+        nomeDaConta: (p.account_name as string | null) ?? null,
+        valorCents: Number(p.amount_cents ?? 0),
+        competencia: (p.accrual_date as string | null) ?? null,
+        vencimento: (p.due_date as string | null) ?? null,
+        saldoDeImplantacao: p.opening_balance === true,
+        naDre: p.in_result === true,
+        problema: (p.problem as string | null) ?? null,
+        jaGerada: p.already_synced === true,
+      }
+    : null;
 
   const pessoas = [
     divida.createdBy,
@@ -82,6 +107,9 @@ export default async function DividaPage({
         hoje={todayInBrazil()}
         podeLancar={podeLancarDividas(session)}
         podeExcluir={podeExcluirDividas(session)}
+        previa={previa}
+        titulos={doFinanceiro.titulos}
+        contas={contas}
       />
     </div>
   );

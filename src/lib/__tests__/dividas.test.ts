@@ -27,6 +27,10 @@ import {
   propostaVencendo,
   ratear,
   selosDaDivida,
+  impactoNoFinanceiro,
+  fraseDoImpacto,
+  valorDevido,
+  titulosParecidos,
 } from "@/lib/finance/dividas";
 
 const SQL = readFileSync("supabase/migrations/0404_dividas_base.sql", "utf8").replace(/\r\n/g, "\n");
@@ -323,6 +327,14 @@ describe("propostas, rateio e selos (fase 2)", () => {
     expect(s.map((x) => x.rotulo)).toEqual(["Negativada", "Protestada", "Judicial", "Proposta vencendo", "Desdobrar (3)", "Nunca conferida"]);
   });
 
+  it("selo 'No Contas a Pagar' só com título (0406)", () => {
+    const prazos = { alertaDaProposta: 7, conferencia: 60 };
+    const com = selosDaDivida(base({ noFinanceiro: true, lastCheckedOn: "2026-11-20" }), "2026-11-20", prazos);
+    const sem = selosDaDivida(base({ lastCheckedOn: "2026-11-20" }), "2026-11-20", prazos);
+    expect(com.map((x) => x.codigo)).toEqual(["no_financeiro"]);
+    expect(sem).toEqual([]);
+  });
+
   it("proposta: valor, parcelas e validade", () => {
     const hoje = "2026-11-20";
     expect(faltaNaProposta({ valor: "1.000,00", tipo: "a_vista", parcelas: "", validade: "", hoje })).toBeNull();
@@ -353,5 +365,82 @@ describe("0405 — tela e banco", () => {
     const m = SQL5.match(/'dividas', 'dividas', false, (\d+),\s*array\[([^\]]+)\]/);
     expect(Number(m![1])).toBe(ANEXO_MAX_BYTES);
     expect(m![2].split(",").map((x) => x.replace(/['\s]/g, "")).sort()).toEqual([...ANEXO_TIPOS].sort());
+  });
+});
+
+describe("impacto no Financeiro (fase 3, espelho de _debt_title_spec)", () => {
+  const fora = (c: string) => ["6", "5.1", "5.3", "5.4", "5.5"].some((p) => c.startsWith(p));
+  const base = {
+    origin: "A" as const, contaDaDivida: null, contaDeAberturaDaCategoria: null, contaDeDespesaDaCategoria: null,
+    updatedCents: 130_000, originalCents: 100_000, implantacao: "2026-11-16", hoje: "2026-11-20",
+    competencia: null, emissao: "2025-02-01", vencimento: "2026-08-10", foraDoResultado: fora,
+  };
+
+  it("A: conta de saldo 5.5.01, valor ATUALIZADO (D7), competência na implantação, fora da DRE", () => {
+    const i = impactoNoFinanceiro(base);
+    expect(i).toMatchObject({ conta: "5.5.01", valorCents: 130_000, competencia: "2026-11-16", naDre: false, saldoDeImplantacao: true, problema: null });
+  });
+
+  it("A em categoria de empréstimo usa a conta da categoria (5.3.01)", () => {
+    expect(impactoNoFinanceiro({ ...base, contaDeAberturaDaCategoria: "5.3.01" }).conta).toBe("5.3.01");
+  });
+
+  it("A com conta de despesa escolhida na dívida: problema (não pode entrar na DRE)", () => {
+    expect(impactoNoFinanceiro({ ...base, contaDaDivida: "3.3.01" }).problema).toMatch(/conta de saldo/);
+  });
+
+  it("B: conta de despesa, valor ORIGINAL, competência da dívida, entra na DRE", () => {
+    const i = impactoNoFinanceiro({ ...base, origin: "B", contaDeDespesaDaCategoria: "3.4.01", competencia: "2026-11" });
+    expect(i).toMatchObject({ conta: "3.4.01", valorCents: 100_000, competencia: "2026-11-01", naDre: true, saldoDeImplantacao: false, problema: null });
+  });
+
+  it("B sem conta de despesa ou com conta de saldo: problema", () => {
+    expect(impactoNoFinanceiro({ ...base, origin: "B" }).problema).toMatch(/conta de despesa/);
+    expect(impactoNoFinanceiro({ ...base, origin: "B", contaDaDivida: "5.5.01" }).problema).toMatch(/saldo/);
+  });
+
+  it("C não gera título", () => {
+    expect(impactoNoFinanceiro({ ...base, origin: "C" }).problema).toMatch(/vincule/);
+  });
+
+  it("a frase do resumo diz quantos títulos, onde, quanto e o efeito na DRE", () => {
+    expect(fraseDoImpacto(impactoNoFinanceiro(base), "Risarte Cambé", "Saldo de implantação")).toMatch(
+      /1 título no Contas a Pagar de Risarte Cambé, de R\$\s?1\.300,00, na conta 5\.5\.01 · Saldo de implantação.*Nenhum lançamento na DRE/
+    );
+  });
+
+  it("valor devido desconta o que já foi pago nos títulos (e nunca fica negativo)", () => {
+    expect(valorDevido({ updatedCents: 130_000, originalCents: 100_000, pagoCents: 65_000 })).toBe(65_000);
+    expect(valorDevido({ updatedCents: 1000, originalCents: null, pagoCents: 5000 })).toBe(0);
+  });
+});
+
+describe("0406 — a prévia do código e a do banco têm as mesmas frases de problema", () => {
+  const SQL6 = readFileSync("supabase/migrations/0406_dividas_contas_a_pagar.sql", "utf8");
+  it.each([
+    "Origem C: vincule os títulos que já estão no Contas a Pagar.",
+    "Dívida anterior à implantação precisa de conta de saldo (fora da DRE), como a 5.5.01. Troque a conta da dívida.",
+    "Dívida nova precisa da conta de despesa: escolha na dívida ou configure na categoria.",
+    "Dívida nova é despesa: a conta não pode ser de saldo (fora da DRE).",
+  ])("%s", (frase) => {
+    expect(SQL6).toContain(frase);
+    expect(readFileSync("src/lib/finance/dividas.ts", "utf8")).toContain(frase);
+  });
+});
+
+describe("títulos parecidos no Contas a Pagar (ajuste 2: sugerir a origem C)", () => {
+  const livres = [
+    { id: "1", fornecedorId: "s1", vencimento: "2026-10-01", valorCents: 22_200, documento: null },
+    { id: "2", fornecedorId: "s1", vencimento: "2026-10-01", valorCents: 22_201, documento: null },
+    { id: "3", fornecedorId: "s2", vencimento: "2026-09-01", valorCents: 1, documento: "NF 123" },
+  ];
+  it("mesmo credor + vencimento + valor", () => {
+    expect(titulosParecidos(livres, { fornecedorId: "s1", vencimento: "2026-10-01", valorCents: 22_200, contrato: null }).map((t) => t.id)).toEqual(["1"]);
+  });
+  it("ou o mesmo nº de contrato/nota (sem diferença de maiúscula)", () => {
+    expect(titulosParecidos(livres, { fornecedorId: "x", vencimento: "2020-01-01", valorCents: 5, contrato: " nf 123 " }).map((t) => t.id)).toEqual(["3"]);
+  });
+  it("valor diferente em um centavo não é o mesmo título", () => {
+    expect(titulosParecidos(livres, { fornecedorId: "s1", vencimento: "2026-10-01", valorCents: 22_199, contrato: null })).toEqual([]);
   });
 });
