@@ -1062,7 +1062,7 @@ Painel da franqueadora e de cada unidade (9.2, 14.5 e 16.8.2) que lê o que as e
 - Ensaio no treino (transação desfeita), provado quebrando: cada parte com números conhecidos (taxas não redondas, duas carteiras, falta acima da tolerância, repasse a maior, estorno, dispensa); quem vê o quê; planilha na auditoria. **(ajuste 4)** Os totais do painel batem com o razão (despesa da unidade e receita da franqueadora por taxa) e com o Painel de cobranças no mesmo período; divergência entre eles **reprova** o ensaio.
 - Teste no projeto de teste com as cobranças já pagas das provas anteriores (sem nova cobrança paga no sandbox).
 
-## 19. ASA4 — Gatilhos de contrato: PLANO (14/11/2026, aguardando aprovação do Jeferson)
+## 19. ASA4 — Gatilhos de contrato: PLANO (14/11/2026, APROVADO com ajustes — 19.9)
 
 Pedido do Jeferson (14/11/2026): entregas pequenas, cada uma com migração, ensaio e teste; envio da primeira cobrança automático e reenvio por quem fechou a venda; contratos assinados antes da ASA4 continuam manuais; contrato com muitas parcelas sem disparar o aviso de todas; idempotência do aviso da ZapSign.
 
@@ -1223,3 +1223,111 @@ O ensaio manda o mesmo aviso **duas vezes**, dois avisos **ao mesmo tempo** e um
 3. **"Enviada pelo Asaas"** = régua ligada + contato + sem recusa no momento da criação, com "Aberta pelo pagador" quando o Asaas avisar, já que não há histórico de envio na API (19.1 item 2).
 4. **Venda direta:** a cobrança nasce quando o parcelamento da venda direta é salvo **e** o contrato está marcado como assinado na venda. A venda direta não passa pela ZapSign, e a emissão exige contrato assinado.
 5. A **ordem das entregas 2 a 6** (19.2).
+
+### 19.9 APROVAÇÃO (Jeferson, 14/11/2026)
+
+**Plano aprovado**, com as cinco decisões de 19.8 como propostas:
+1. A **proposta A** é o padrão.
+2. O prazo padrão é de **15 dias**, configurável de 11 a 30.
+3. "Enviada pelo Asaas" segue a regra de 19.3, e a tela diz que **não é confirmação de entrega**.
+4. Na venda direta, a cobrança nasce com o parcelamento salvo e o contrato marcado como assinado.
+5. A ordem das entregas 2 a 6 é a de 19.2.
+
+**Ajustes:**
+1. **Janela na assinatura.** Além da primeira, nasce na hora toda parcela que já vence dentro do prazo (15 dias).
+2. **Meio de pagamento.**
+   - A emissão automática vale só para **boleto, Pix ou cartão à vista**.
+   - Dinheiro, maquininha ou depósito não geram cobrança no Asaas: nem na assinatura, nem na venda direta, nem na rotina.
+   - Ver 19.10 item 1.
+3. **Pagamento adiantado.** Uma parcela futura ainda sem cobrança continua podendo ser cobrada à mão pelo botão "Gerar cobrança no Asaas" da ficha.
+4. **Reenvio guiado pelo "Aberta pelo pagador".**
+   - Com a régua ligada: se a primeira cobrança não foi aberta até **1 dia útil antes do vencimento**, quem fechou a venda recebe um aviso para reenviar.
+   - Com a régua desligada, valem os avisos de 19.3.
+5. **Mudança do prazo.** O prazo novo vale só para as cobranças ainda não criadas.
+
+**Acréscimo A: duas formas de emitir, escolhidas no fechamento da venda (só boleto).**
+- **Forma 1, "Um boleto por mês"** (padrão): a proposta A.
+- **Forma 2, "Todos os boletos agora"**:
+  - Todas as parcelas em boleto são emitidas na assinatura, **sem nenhum aviso de criação**.
+  - Os lembretes, o aviso do dia, o de vencida e a confirmação de pagamento continuam normais.
+  - A entrega é feita por quem fechou a venda, numa mensagem só pelo riSZon.
+- **Quem escolhe:** quem fechou a venda, o Gerente, o Financeiro da Franqueadora e o Admin Master. A escolha fica na auditoria.
+- **Limite diário:** a emissão respeita o limite de criação de cobranças; o que passar sai no dia seguinte, com aviso na tela.
+- **Troca de forma:**
+  - de 1 para 2: emite o que falta;
+  - de 2 para 1: cancela as não pagas, com confirmação.
+- **Textos da tela** (para quem fecha e para o cliente): os do Jeferson, de 14/11/2026. O manual traz a mesma explicação, com o exemplo de um contrato de 12 parcelas.
+
+**Acréscimo B: rotina diária em camadas.**
+- Dois agendadores independentes.
+- A folga do prazo recupera a falha, começando pelo vencimento mais próximo.
+- Um vigia separado.
+- A lista de pendências com o motivo, para o Gerente e o Financeiro.
+- O botão "Rodar agora" na Central, com auditoria.
+- A parada perto do limite diário.
+- O mesmo desenho nas outras rotinas de que a cobrança depende.
+
+### 19.10 O que a conferência de 14/11/2026 achou (antes de codificar)
+
+**1. Venda direta paga na hora, no balcão: o parcelamento não diz onde a parcela é paga.**
+- Os meios da parcela são: `pix`, `boleto`, `cartao`, `cartao_parcelado`, `credito_recorrente` e `deposito_avista` (0178).
+- Não existe "dinheiro" nem "maquininha": dinheiro hoje é só meio do **recebimento**, não da parcela.
+- `pix` e `cartao` tanto podem ser pagos pelo link do Asaas quanto no balcão (Pix na conta, maquininha).
+- **Proposta:** cada parcela ganha **"Onde paga: Asaas (link) / Balcão"**.
+  - Boleto é sempre Asaas.
+  - Depósito é sempre Balcão.
+  - Em Pix e cartão, quem monta o parcelamento escolhe; o padrão é Asaas no contrato e **Balcão na venda direta**.
+- Na venda direta paga na hora: o parcelamento é salvo com "Balcão" → nenhuma cobrança vai ao Asaas → a Recepção dá a baixa como hoje (dinheiro, maquininha, Pix na conta).
+
+**2. Forma 2: a prova "desligar, criar e religar não envia nada" NÃO dá para fazer sem envio real.**
+- A API não tem histórico de mensagens enviadas (19.1 item 2).
+- A documentação não diz se o aviso de criação sai na hora ou vai para uma fila que só olha a configuração no momento do disparo.
+- Se for fila, religar cedo demais pode deixar sair todos os avisos.
+- Desligar o aviso **do pagador** também cala a cobrança de **outra venda** dele criada no intervalo.
+- **Alternativa proposta: um "cadastro do carnê" no Asaas.**
+  - Na forma 2, o riSZon cria no Asaas um **segundo cadastro do mesmo pagador**, só para os boletos daquele contrato.
+  - Nesse cadastro, o aviso "cobrança criada" nasce e **fica desligado para sempre**; os demais avisos seguem a régua.
+  - Não há liga-desliga, não há corrida e outra venda do pagador não é afetada.
+  - O que precisa ser provado no sandbox, **sem envio**: que o Asaas aceita dois cadastros com o mesmo CPF na mesma conta (pagador sem contato).
+- **Prova com envio real, só com aprovação na hora, só para o e-mail do Jeferson (sem celular):**
+  - uma cobrança de controle com o aviso ligado (o e-mail deve chegar);
+  - três cobranças pelo caminho escolhido (nenhum e-mail de "cobrança criada" pode chegar em 30 minutos).
+- Vale para os dois caminhos e prova também 19.1 item 1.
+
+**3. Entrega dos boletos da forma 2: o Asaas não junta cobranças avulsas.**
+- O carnê em PDF (`GET /installments/{id}/paymentBook`) só existe para o **parcelamento** do Asaas, que exige parcelas de valor igual. Não há carnê para cobranças avulsas, nem criação em lote.
+- Cada cobrança devolve `bankSlipUrl` (o PDF do boleto) e `invoiceUrl`. A documentação não diz se são públicos nem se expiram.
+- **Proposta: uma página do riSZon com a lista** (vencimento, valor, "Abrir boleto" e linha digitável de cada parcela).
+  - O endereço é impossível de adivinhar e expira depois do último vencimento.
+  - A página mostra só o primeiro nome do paciente.
+  - Quem fechou a venda manda esse link numa mensagem só (WhatsApp ou cópia).
+- Se o sandbox mostrar que o `bankSlipUrl` abre sem login, a página ganha **"Baixar todos em PDF"**: o riSZon junta os PDFs na hora, com o mesmo recurso que já junta os PDFs das assinaturas.
+
+**4. Limite diário de criação de cobranças.**
+- **Sandbox (lido em 14/11/2026, só leitura):** 5.000 por dia em cada conta (Franqueadora, Londrina, Cambé, Fundo de Propaganda Teste, RisLife Teste).
+- **Produção:** pergunta do Jeferson ao Asaas, para Administração, Londrina e Cambé.
+- Script: `scripts/asaas-prova-limites-sandbox.mjs`.
+
+**5. Os agendadores.**
+- **Treino:** o `pg_cron` está instalado (1.6.4), com 17 rotinas do banco; o `pg_net` (chamada HTTP de dentro do banco) está **disponível, mas não instalado**. Na produção, a conferir pelo Jeferson no SQL Editor.
+- **Segundo agendador:** o `pg_cron` chama, pelo `pg_net`, o **mesmo endereço** da rotina na aplicação, em outro horário.
+  - A senha da chamada é gerada pelo banco e guardada no Vault; ninguém a vê nem a copia.
+  - **Ele não depende do cron da Vercel**, mas o trabalho (as chamadas ao Asaas) roda na aplicação, que está na Vercel.
+  - Se a Vercel inteira cair, nenhum dos dois cria cobranças. Por isso existe o vigia.
+- **O vigia é só banco** (`pg_cron`, sem Vercel). Ele confere a rodada do dia e as parcelas na janela sem cobrança e sem motivo, e avisa o Admin Master e o Financeiro da Franqueadora.
+- Rodar a criação **inteiramente sem a Vercel** exigiria reescrever as chamadas ao Asaas numa função do Supabase, com dois códigos para o mesmo dinheiro. **Não recomendado.**
+- **As rotinas de que a cobrança depende, hoje:**
+
+| Rotina | Hoje | Proposta |
+|---|---|---|
+| Fila do split e virada do dia das campanhas (`gateway-split-diario`, 00:05) | só o cron da Vercel | 2º disparo pelo `pg_cron` às 01:35 + vigia |
+| Fila da régua (`gateway-regua`, a cada 10 min) | só o cron da Vercel (a próxima rodada cobre a falha de uma) | vigia: sem rodada há 1 hora → aviso |
+| Verificação das contas (`gateway-accounts`, diária às 06:40, cada conta a cada 7 dias) | só o cron da Vercel | 2º disparo pelo `pg_cron` às 08:10 + vigia |
+| Preços agendados (`risarte-precos-agendados`, 00:05) | só `pg_cron` (banco) | vigia |
+| **Nova:** criação das cobranças da proposta A | — | cron da Vercel às 07:00 + `pg_cron` às 09:30 + vigia às 11:00 |
+
+- Toda rodada passa a ser gravada numa tabela de rodadas (rotina, início, fim, origem: Vercel, banco ou "Rodar agora", e números). É dela que o vigia lê.
+
+**6. Em qual entrega entra a forma 2.**
+- **Entrega 1:** o resto do plano, sem a forma 2.
+- **Entrega 1B, logo depois:** a forma 2, com o caminho que passar na prova de 19.10 item 2.
