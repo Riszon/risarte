@@ -348,6 +348,18 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["franchisee", "unit_manager"],
   },
   {
+    // 4010 — Repasses da franquia (ASA3, entrega 3; spec 18.8). Nasce só com o
+    // Admin Master enquanto a integração está em testes. Teto no BANCO: Gerente e
+    // Franqueado (a própria unidade) e Financeiro da Franqueadora (a rede).
+    id: "modulo.repasses_franquia",
+    rotulo: "Repasses da franquia",
+    grupo: "Módulos",
+    descricao:
+      "Financeiro → Rede → Repasses da franquia: as taxas da rede pagas no split do Asaas, a receber e na conta a pagar, com divergências, dispensas e planilha. Não é o repasse dos dentistas.",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
     // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
     // cada um enxerga (as que cria, as das unidades que gere, e aquelas em
     // que participa).

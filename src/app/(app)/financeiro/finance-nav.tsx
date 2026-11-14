@@ -42,7 +42,7 @@ import {
  * saiu do módulo.
  */
 
-type Item = { href: string; label: string; soDividas?: boolean };
+type Item = { href: string; label: string; soDividas?: boolean; soRepasses?: boolean };
 type Aba =
   | { tipo: "direta"; href: string; label: string; icon: LucideIcon; soCobrancas?: boolean }
   | { tipo: "grupo"; label: string; icon: LucideIcon; itens: Item[]; soRede?: boolean };
@@ -110,6 +110,9 @@ const ABAS: Aba[] = [
       { href: "/financeiro/recebiveis-da-rede", label: "Recebíveis da rede" },
       { href: "/financeiro/consolidado", label: "Consolidado" },
       { href: "/financeiro/taxas-da-rede", label: "Taxas da rede" },
+      // 4010 — as taxas da rede pagas no split. Gerente e Franqueado também
+      // entram (só a própria unidade), quando o Admin libera a permissão.
+      { href: "/financeiro/repasses-da-franquia", label: "Repasses da franquia", soRepasses: true },
       // 0404 — só para quem o banco deixa (Financeiro da Franqueadora e Admin).
       { href: "/financeiro/dividas", label: "Levantamento de Dívidas", soDividas: true },
     ],
@@ -136,10 +139,12 @@ export function FinanceNav({
   veRede,
   veCobrancas = false,
   veDividas = false,
+  veRepasses = false,
 }: {
   veRede: boolean;
   veCobrancas?: boolean;
   veDividas?: boolean;
+  veRepasses?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -155,7 +160,7 @@ export function FinanceNav({
     >
       <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4">
         {ABAS.filter(
-          (a) => (a.tipo === "grupo" ? !a.soRede || veRede : !a.soCobrancas || veCobrancas)
+          (a) => (a.tipo === "grupo" ? !a.soRede || veRede || veRepasses : !a.soCobrancas || veCobrancas)
         ).map(
           (aba) => {
             const Icon = aba.icon;
@@ -179,7 +184,14 @@ export function FinanceNav({
               );
             }
 
-            const itens = aba.itens.filter((i) => !i.soDividas || veDividas);
+            // Quem não vê a rede (Gerente, Franqueado) vê no grupo só os Repasses da franquia.
+            const itens = aba.itens.filter(
+              (i) =>
+                (!i.soDividas || veDividas) &&
+                (!i.soRepasses || veRepasses) &&
+                (veRede || !aba.soRede || i.soRepasses === true)
+            );
+            if (!itens.length) return null;
             const dentro = itens.some(
               (i) => pathname === i.href || (i.soDividas === true && pathname.startsWith(`${i.href}/`))
             );
