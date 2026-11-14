@@ -157,6 +157,18 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - ⏳ **0403 só no treino.** Produção: o dono roda no SQL Editor; conferência
 >   no fim do arquivo (5 linhas, `usa_helper = true`). Não visto na tela.
 >
+> ## 🟡 0.446.0 / ASAAS 0.9.0 — ASA3, ENTREGA 3: REPASSES DA FRANQUIA (13/11/2026; migração 4010)
+>
+> Estado em `docs/asaas/ESTADO.md`; plano e decisões na seção 18.8 da
+> especificação. Financeiro → Rede → Repasses da franquia: resumo por unidade,
+> recebido com split × por fora (com a média da rede), liquidado conferido POR
+> COBRANÇA (rateio do liquidado pelo maior resto), a receber (atrasado),
+> divergências, dispensas, saldo da franqueadora; planilha por parte na
+> auditoria. Permissão `modulo.repasses_franquia` (nasce só com o Admin).
+> Ensaio 59/59 (bate com o razão, a conta a pagar e o Painel de cobranças;
+> provado quebrando). EV-342.
+> ⏳ 4010 só no treino. Produção: o dono roda no SQL Editor.
+
 > ## ✅ 0.444.0 / ASAAS 0.8.0 — ASA3, ENTREGA 2: SPLIT DAS COBRANÇAS EM ABERTO E ESTORNO (13/11/2026; migração 4009)
 >
 > Estado em `docs/asaas/ESTADO.md`; decisões em 18.7 a 18.7.7 da especificação.

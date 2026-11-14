@@ -6770,6 +6770,63 @@ no Asaas volta a cobrança para "Paga".
 **Auditoria:** o pedido, quem pediu, o motivo e o resultado; no boleto, quando
 o celular e o e-mail foram enviados e quando foram apagados (sem os dados).
 
+### 13g.8. Repasses da franquia
+
+*(desde a versão 0.446.0; em testes: nasce só com o Admin Master)*
+
+**Onde:** **Financeiro → Rede → Repasses da franquia**. Não é o "Repasses" dos
+dentistas (Financeiro → Análise → Repasses): aqui estão as **taxas da rede**
+(royalty, fundo de propaganda, centro de planejamento e comercial) que a
+unidade paga.
+
+**O período:** o mês atual por padrão; escolha outro **Mês** ou um intervalo
+**De / Até** (até 400 dias). Tudo conta pela **data do pagamento**; o
+"liquidado no período" conta pela data em que o Asaas liquidou.
+
+**As partes da tela, de cima para baixo:**
+
+- **Saldo da franqueadora** (só para quem vê a rede): o saldo da conta Asaas da
+  franqueadora, conferido pela rotina diária, com alerta quando está
+  **negativo** (um estorno pode ter tirado dela) ou **abaixo do mínimo**.
+- **Resumo:** uma linha por unidade, com o total da rede: a **taxa devida** no
+  período, quanto foi **paga no split**, quanto está **a receber**, quanto
+  **foi para a conta a pagar** e a conta a pagar de taxa **aberta** e
+  **vencida**.
+- **Recebido com split × por fora:** como o dinheiro entrou (Asaas com split,
+  Asaas sem split com o motivo, dinheiro, maquininha e outros cartões, depósito
+  e Pix manual, cobrança externa), a **fatia** de cada forma no total da
+  unidade e a **média da rede** ao lado. Fatia "por fora" 10 pontos acima da
+  média fica destacada. Recebimento estornado não conta como recebido; a taxa
+  dele, se continua devida, aparece em **Estornado (taxa mantida)**.
+- **Liquidado por unidade e taxa:** a conferência é **por cobrança**: o devido
+  e o liquidado das **mesmas** cobranças. O que o Asaas ainda não liquidou fica
+  em **A receber**, não vira diferença. Diferença até a tolerância (R$ 0,10 por
+  cobrança) é **absorvida**. **Provável mensageria:** se a unidade tem os avisos
+  do Asaas ligados e a falta é do tamanho da tarifa de mensageria, aparece uma
+  nota, não uma divergência, enquanto o Asaas não confirmar se essa tarifa sai
+  do valor líquido. Em **Cobrança por cobrança**, cada linha com a carteira, a
+  taxa, o devido, o liquidado e a situação.
+- **Repasses a receber:** as taxas de cobranças já pagas que o Asaas ainda não
+  liquidou, de **qualquer período**, pela **data prevista** de crédito (no
+  cartão, cerca de 32 dias depois). Passou da data: **atrasado**.
+- **Divergências e ocorrências:** falta acima da tolerância (foi para a conta a
+  pagar), repasse a maior, split cancelado ou bloqueado, estorno (a taxa
+  continua devida) e taxa dispensada depois do estorno. **Só para conferir:**
+  cada linha leva à ficha; abater ou dispensar fica para a cobrança mensal da
+  franquia.
+- **Dispensas do período:** as quitações por valor menor e os arredondamentos,
+  com o valor de cada natureza (principal, benefício, multa, juros), quem
+  dispensou e o motivo.
+
+**Planilha:** cada parte tem o botão **Planilha** (Excel). Cada download fica na
+**Auditoria** com quem baixou, quando, qual parte e o período.
+
+**Quem vê:** a permissão **Repasses da franquia**. O **Admin Master** e o
+**Financeiro da Franqueadora** veem a rede, com filtro por unidade; o **Gerente
+de Unidade** e o **Franqueado**, a própria unidade. A **Recepcionista nunca
+vê**, mesmo marcada. Na produção, enquanto a integração está em testes, só o
+Admin Master; o Admin libera em **Administração → Permissões**.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

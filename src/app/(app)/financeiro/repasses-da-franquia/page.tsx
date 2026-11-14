@@ -560,7 +560,7 @@ function Conteudo({ r, planilha }: { r: Repasses; planilha: (p: Parte) => string
                       <Paciente id={d.client_id} nome={d.cliente} codigo={d.codigo} />
                       {varias && <span className="ml-1 text-[11px] text-muted-foreground">· {un(d.clinic_id)}</span>}
                     </td>
-                    <td className={NUM}>{brl(d.valor)}</td>
+                    <td className={NUM}>{d.tipo === "estorno" && !d.valor ? "sem taxa da rede" : brl(d.valor)}</td>
                     <td className={cn(TD, "text-xs")}>
                       {[d.detalhe, d.autor && `por ${d.autor}`, d.motivo && `“${d.motivo}”`].filter(Boolean).join(" · ")}
                     </td>

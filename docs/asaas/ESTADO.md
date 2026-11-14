@@ -24,7 +24,7 @@ com as decisões do dono) é `docs/integracao-asaas.md` — hoje na **versão 3*
 | ASA2, entrega 3 — a régua (aba Cobrança e comunicação) e o comprovante | ✅ **na produção (13/11/2026)**: 4007 rodada pelo dono, conferência bateu; main na 0.439.0; prova de envio real no sandbox OK (core 0.439.0, Asaas 0.6.0; spec 17.4 e 17.5); ensaio 78/78 (provado quebrando o D7); prova no sandbox sem envio 17/17; 2º lembrete fixo no dia (D9, aprovado) | **4007** |
 | ASA3, entrega 1 — o split na emissão (aba Taxas da franquia) | ✅ **na produção (13/11/2026)**: 4008 rodada pelo dono, conferência bateu; main e produção na 0.440.0; (core 0.440.0, Asaas 0.7.0; spec seção 18); ensaio 51/51 (provado quebrando a conta a pagar); **prova no sandbox OK (13/11)**: Pix, boleto e cartão, 1 centavo por carteira, Asaas arredonda para baixo; ponta a ponta no projeto de teste OK (spec 18.5.1) | **4008** |
 | ASA3, entrega 2 — a fila do split, o estorno pelo riSZon, o saldo, o webhook que se corrige e Taxas da franquia na unidade | ✅ **na produção (13/11/2026)**: 4009 rodada pelo dono, conferência bateu; main na 0.444.0; (core 0.444.0, Asaas 0.8.0; spec 18.7 a 18.7.7); ensaio 73/73 (provado quebrando); sandbox: fila, webhook e estornos (Pix, cartão e boleto com o celular e o e-mail do dono) OK; testada pelo dono no projeto de teste | **4009** |
-| ASA3, entrega 3 — Repasses da franquia | 📝 **plano aprovado pelo dono em 13/11/2026** (spec 18.8, com os ajustes 1 a 6); construção depois do quadro de situação | **4010** |
+| ASA3, entrega 3 — Repasses da franquia | 🟡 **construída (13/11/2026)**: core 0.446.0, Asaas 0.9.0; spec 18.8; 4010 no treino (2×); ensaio 59/59 (bate com o razão, a conta a pagar e o Painel de cobranças; provado quebrando o rateio e o resumo); falta o teste do dono no projeto de teste e a produção | **4010** |
 
 ⚠️ **Antes de planejar qualquer fase, ler a seção 13 da especificação**: a
 resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
@@ -39,6 +39,32 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
+
+## ASA3, entrega 3 — Repasses da franquia (Asaas 0.9.0, core 0.446.0, 13/11/2026)
+
+### O que existe
+
+- **4010** — só leitura, nenhuma tabela nova. Porta `franchise_payouts_read(de,
+  ate, unidade, p_export)` devolve tudo num jsonb (resumo, saldo, recebido,
+  media_rede, motivos_sem_split, taxas, cobrancas, a_receber,
+  liquidado_no_periodo, divergencias, dispensas, unidades); com `p_export` grava
+  `audit_logs` (`franchise_payouts`). Internas fechadas:
+  `_franchise_payout_charge_fees` (cobrança × carteira × taxa, pela data do
+  pagamento; rateio do `settled_cents` pelo maior resto; situação) e
+  `_franchise_payout_receipts` (categoria de cada recebimento; `estornado` =
+  recebido 0 com a taxa mantida). Permissão `modulo.repasses_franquia`
+  (padrão vazio; teto Gerente, Franqueado, Financeiro da Franqueadora).
+- **Tela:** `financeiro/repasses-da-franquia` (página e `planilha/route.ts`);
+  modelo puro `src/lib/finance/repasses-franquia.ts`; item no grupo Rede
+  (`soRepasses`; Gerente e Franqueado veem só ele no grupo).
+- ⚠️ **Mensageria (ajuste 5):** falta acima da tolerância e ≤ Σp × R$ 0,99 (+1
+  centavo por carteira) com a régua da unidade ligada = `mensageria` (nota).
+
+### Provas
+
+- `node scripts/asaas-ensaio-asa3-entrega3.mjs --confirmar` (treino, desfeito):
+  59/59; `--quebrar=rateio` e `--quebrar=resumo` reprovam.
+- `src/lib/__tests__/asaas-asa3-entrega3.test.ts`.
 
 ## ASA3, entrega 1 — o split na emissão (Asaas 0.7.0, core 0.440.0, 13/11/2026)
 

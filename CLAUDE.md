@@ -400,6 +400,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**13/11/2026 (Asaas — ASA3, entrega 3) — PC Administrador (core 0.445.0 → 0.446.0, Asaas 0.9.0, migração 4010; worktree `wt-asaas`)**
+
+- **Repasses da franquia** (estado em `docs/asaas/ESTADO.md`; 18.8). ⚠️ **A
+  conferência é POR COBRANÇA** (`_franchise_payout_charge_fees`): o liquidado
+  da carteira é rateado entre as taxas pelo maior resto; nunca comparar total
+  devido do período com total liquidado do período. ⚠️ **Estorno no razão não
+  apaga o liquidado**: soma líquida com `*_estorno`. ⚠️ Recebimento estornado
+  com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
+  ⚠️ "Repasses" sozinho é o dos DENTISTAS.
+
 **13/11/2026 (Levantamento de Dívidas — fase 3) — PC Administrador (core 0.444.0 → 0.445.0, migração 0406)**
 
 - **As dívidas no Contas a Pagar** (bloco 0.445.0 no ESTADO). ⚠️ **"Fora do

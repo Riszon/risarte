@@ -62,6 +62,29 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.446.0",
+    data: "2026-11-13",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4010, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Repasses da franquia",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Rede → Repasses da franquia: as taxas da rede que cada unidade paga, no período. O resumo por unidade (devida, paga no split, a receber, conta a pagar aberta e vencida), como o dinheiro entrou (com split e por fora, com a média da rede), o liquidado pelo Asaas conferido cobrança a cobrança, o que ainda está a receber (com o atrasado marcado), as divergências e as dispensas, cada parte com planilha registrada na auditoria. Para quem vê a rede, o saldo da conta Asaas da franqueadora com alerta. Não é o repasse dos dentistas.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.8. Repasses da franquia",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Nasce só para o Admin Master enquanto a integração com o Asaas está em testes. O Gerente e o Franqueado (a própria unidade) e o Financeiro da Franqueadora (a rede) entram quando o Admin liberar a permissão Repasses da franquia.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.8. Repasses da franquia",
+      },
+    ],
+  },
+  {
     versao: "0.445.0",
     data: "2026-11-13",
     migracao: "0406",
