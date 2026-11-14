@@ -1887,3 +1887,55 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
   - A cobrança Pix nasce assim mesmo, com o link da fatura (o paciente paga por ele), mas sem o "copia e cola".
   - É o comportamento da emissão de sempre (ASA1), não da 4012.
   - **Proposta para depois:** a rotina de 10 minutos tenta buscar de novo o QR Code que faltou.
+
+### 19.19 Entrega 2 — cartão parcelado pelo Asaas: PLANO (14/11/2026, para aprovar)
+
+**A prova no sandbox** (`scripts/asaas-prova-cartao-parcelado-sandbox.mjs`, pagador sem contato, cartão de teste do Asaas pela API) **responde a pendência da seção 17:**
+
+| Pergunta | O que o Asaas fez |
+|---|---|
+| Valor de cada parcela (3× de R$ 150,01) | R$ 50,00, R$ 50,00 e **R$ 50,01**: a sobra fica na **última** |
+| Vencimentos | Mês a mês, no mesmo dia, a partir do 1º vencimento (17/11, 17/12, 17/01) |
+| Situação depois do pagamento | As 3 ficam **confirmadas no mesmo dia** (o cartão é cobrado uma vez) |
+| Crédito | **Mês a mês**, cerca de 30 dias depois de cada vencimento (16/12, 18/01, 18/02) |
+| Tarifa | Por parcela: R$ 50,00 → líquido R$ 48,60 no sandbox |
+| Split | **Em cada parcela**, sobre o líquido dela (17% de 48,60 = 8,26), creditado com a parcela |
+| Cancelar antes de pagar | `DELETE /installments/{id}` apaga o parcelamento inteiro |
+| Estorno depois de pago | `POST /installments/{id}/refund`: as 3 parcelas ficam estornadas |
+
+**O que a entrega 2 faz (migração 4013):**
+1. **Meio novo, "Cartão parcelado pelo Asaas"** (`cartao_parcelado_asaas`), separado da maquininha (`cartao_parcelado`).
+   - Na venda direta nova, ele entra na coluna "Como paga".
+   - No contrato de tratamento, ele fica **ao lado** da maquininha, como aprovado em 19.13.
+2. **Um bloco por venda:** as parcelas com esse meio formam **um** parcelamento no Asaas.
+   - O riSZon acerta os valores como o Asaas faz: iguais, com a sobra na última.
+   - O riSZon acerta as datas como o Asaas faz: mês a mês, no dia do 1º vencimento.
+   - A tela mostra isso antes de salvar.
+3. **Quando nasce:** **inteiro, na assinatura**. Não segue a proposta A, porque o cartão é cobrado uma vez só.
+   - O paciente paga pelo link da fatura do Asaas e digita o cartão lá, nunca no riSZon.
+   - O link vai pelo bloco "Cobranças da venda".
+4. **A baixa:** todas as parcelas do bloco recebem a baixa quando o Asaas confirma o cartão (`PAYMENT_CONFIRMED`), com o meio "cartão parcelado".
+   - A **data prevista de crédito** de cada uma vem do Asaas, e o Painel de cobranças e os Repasses passam a mostrá-la mês a mês.
+   - O cartão parcelado deixa de aparecer vazio nessa visão (seção 17).
+   - A baixa da 1ª parcela fecha a venda (D21).
+5. **Tarifa:** a unidade absorve (D10), pelas faixas do cartão parcelado que a Central já lê da conta (`/myAccount/fees`). O paciente não paga juros.
+6. **Split:** em cada parcela, pelo mesmo cálculo da ASA3 (o percentual com a compensação da tarifa), liquidado com cada crédito.
+7. **Máximo de parcelas:** o da regra comercial ou do programa, limitado a **21× para Visa e Mastercard** e **12× para as demais bandeiras**. Acima de 12×, a tela avisa que só vale para Visa e Mastercard.
+8. **Cancelar e estornar:**
+   - **Não pago:** o cancelamento apaga o parcelamento inteiro no Asaas, com a mesma permissão de hoje.
+   - **Pago:** estorno do **parcelamento inteiro**, pela porta do estorno da ASA3 (Gerente, Franqueado, Financeiro e Admin), com motivo.
+   - Estorno parcial fica para o distrato (entrega 6).
+9. **A maquininha na venda direta:**
+   - depois do seu teste e da sua aprovação, o Admin Master desliga a chave "maquininha no cartão parcelado", numa tela nova da Central;
+   - as vendas antigas na maquininha continuam até a última parcela.
+10. **Provas:**
+    - ensaio no treino, provado quebrando;
+    - de ponta a ponta no sandbox: a venda direta com 3× no cartão, pago com o cartão de teste, baixa das 3, datas de crédito, split por parcela, estorno e cancelamento.
+
+**Decisões pedidas ao Jeferson:**
+1. **O aviso de criação do Asaas no parcelamento:** a documentação não diz se sai **um** e-mail ou **um por parcela**.
+   - **Proposta:** prova com envio real só para o seu e-mail (3×), com o seu "pode" na hora.
+   - Se sair um por parcela, o parcelamento usa o **cadastro do carnê** (aviso de criação desligado; 19.10 item 2), e o link vai uma vez, por quem fechou a venda.
+2. **Meio novo separado da maquininha** (`cartao_parcelado_asaas`), em vez de reaproveitar `cartao_parcelado`.
+   - **Proposta:** separado, porque as vendas antigas e o contrato continuam com a maquininha e os dois não podem se confundir na baixa, na tarifa e nos repasses.
+3. **Cancelar ou estornar só o parcelamento inteiro nesta entrega**, e parcial no distrato.
