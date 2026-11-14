@@ -1331,3 +1331,12 @@ O ensaio manda o mesmo aviso **duas vezes**, dois avisos **ao mesmo tempo** e um
 **6. Em qual entrega entra a forma 2.**
 - **Entrega 1:** o resto do plano, sem a forma 2.
 - **Entrega 1B, logo depois:** a forma 2, com o caminho que passar na prova de 19.10 item 2.
+
+**7. Prova sem envio do "cadastro do carnê" (14/11/2026): 6/6.**
+- Script: `scripts/asaas-prova-cadastro-duplo-sandbox.mjs`. Londrina, sandbox, pagador sem contato, sem cobrança.
+- O que passou:
+  - o Asaas aceita um segundo cadastro com o mesmo CPF na mesma conta;
+  - "cobrança criada" desligado só nele, com os demais avisos intactos;
+  - o cadastro principal fica intocado.
+- **Cuidado que entra no código:** a busca por CPF devolve **os dois**. A emissão normal precisa usar sempre o cadastro principal gravado em `gateway_customers` e nunca o do carnê, que é marcado como tal.
+- **Falta, com envio real:** a prova de que nenhum e-mail de "cobrança criada" sai pelo cadastro do carnê.
