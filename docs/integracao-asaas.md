@@ -1776,3 +1776,52 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
     - o risco de fila era do caminho "desligar, criar e religar", descartado em 19.10.
   - **Se o Jeferson quiser a janela completa:** repetir com o mesmo script e limpar só depois de 30 minutos.
 - **Conclusão:** o cadastro do carnê serve para a forma 2 (entrega 1B / 4014). **Prova aceita pelo Jeferson com a janela curta (14/11/2026).**
+
+### 19.17 Construção da entrega 1, parte 1 (4011), em 14/11/2026
+
+**Situação:**
+- Construída, aplicada no treino e enviada ao projeto de teste.
+- A produção espera a parte 2 (4012): as duas sobem juntas, com um teste só (19.13).
+
+**Provas:**
+- **Ensaio no treino** (`scripts/asaas-ensaio-asa4-entrega1-meios.mjs`): **60 de 60**, numa transação desfeita.
+- **Provado quebrando:**
+  - `--quebrar=fechamento`: 6 falhas;
+  - `--quebrar=permuta`: 6 falhas.
+- **Testes:** 26 novos (`asaas-asa4-entrega1-meios.test.ts`).
+- **Bateria:** `npm test` (com as réguas de auditoria e de tema escuro), lint e `npm run verificar` passaram.
+
+**O que entrou:**
+- Venda direta nova (`method_rule = 'asa4'`):
+  - meio por parcela, com a coluna "Como paga";
+  - à vista em Pix, dinheiro ou permuta;
+  - depósito à vista e crédito recorrente recusados;
+  - maquininha só no cartão parcelado, pela chave da rede;
+  - adquirente só nessa parcela.
+- Baixa à mão na venda nova só em dinheiro ou permuta (e cartão parcelado na parcela de maquininha).
+- A baixa em dinheiro ou permuta **fecha a venda** (origem "balcão" ou "permuta"). Sem contrato assinado, é recusada.
+- A baixa em dinheiro **cancela antes** a cobrança ativa no Asaas e é recusada se a cobrança já foi paga lá.
+- **Troca de meio** ("Trocar meio" na ficha):
+  - para permuta, só o Gerente ou o Admin Master, com descrição;
+  - para Pix, boleto ou cartão, a cobrança é gerada na hora.
+- **Permuta:**
+  - entra na conta "Permutas";
+  - fica **fora do fluxo de caixa, do saldo e da conciliação**;
+  - não leva cota de benefício;
+  - tem categoria própria e lista "Permutas do período" nos Repasses.
+- **Dinheiro no caixa** (Financeiro → Dinheiro no caixa):
+  - os recebimentos não depositados, com a marca "parado" depois de 2 dias úteis;
+  - aviso diário pelo `pg_cron` (09:00) ao Gerente e ao Financeiro da Franqueadora;
+  - "Registrar depósito" com comprovante obrigatório (pasta privada `depositos`) e motivo para diferença;
+  - "Desfazer" pelo Gerente ou Admin Master, com motivo; recusado se já conciliado.
+  - A tela avisa "agência" a partir de R$ 10.000 (Resolução CMN 4.648/2018) e "prefira a agência" acima de R$ 5.000.
+
+**Decisões de construção, para o Jeferson conferir no teste:**
+1. O cancelamento automático da cobrança na baixa em dinheiro vale para **qualquer** parcela com cobrança no Asaas, não só para a venda nova. Antes era preciso clicar em "Recebeu no balcão".
+2. O fechamento pela baixa em dinheiro ou permuta vale para **toda** venda direta e todo contrato aceito.
+3. Nas vendas antigas, a permuta também pode ser registrada, pelo Gerente ou pelo Admin Master, com descrição.
+4. **Pagamento parcial em dinheiro de parcela que estava no Asaas:** a cobrança é cancelada, e o restante fica na parcela.
+   - Na parte 1, a cobrança nova do restante sai pelo botão "Gerar cobrança no Asaas".
+   - Na parte 2, sai sozinha (na hora, se vence dentro do prazo, ou pela rotina).
+5. A tela "Dinheiro no caixa" fica no módulo Financeiro: Gerente, Financeiro da Franqueadora e Admin Master. A Recepção registra o dinheiro na ficha, como hoje.
+6. A chave "maquininha no cartão parcelado" e o prazo do dinheiro parado já existem no banco (`sale_method_settings`), mas ainda **sem tela**. A chave só é desligada na entrega 2, e a tela entra com ela.
