@@ -25,6 +25,7 @@ import {
   type Parte,
   type Repasses,
 } from "@/lib/finance/repasses-franquia";
+import { AtualizarSaldo } from "./atualizar-saldo";
 
 export const metadata: Metadata = { title: "Repasses da franquia" };
 
@@ -218,20 +219,23 @@ function Conteudo({ r, planilha }: { r: Repasses; planilha: (p: Parte) => string
             </p>
             <p className="text-[11px] text-muted-foreground">
               {r.saldo.conferido_em
-                ? `Conferido em ${new Date(r.saldo.conferido_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} (rotina diária)`
-                : "A rotina diária confere o saldo."}
+                ? `Conferido no Asaas em ${new Date(r.saldo.conferido_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
+                : "A rotina diária confere o saldo às 00:05; o botão confere agora."}
               {" · "}
               Mínimo: {r.saldo.minimo_cents == null ? "não definido" : brl(r.saldo.minimo_cents)}
             </p>
           </div>
-          {r.saldo.alerta && (
-            <p className="flex items-center gap-1.5 font-medium">
-              <AlertTriangle className="size-4" />
-              {r.saldo.alerta === "negativo"
-                ? "Saldo NEGATIVO: um estorno pode ter tirado da franqueadora."
-                : "Saldo abaixo do mínimo definido."}
-            </p>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            {r.saldo.alerta && (
+              <p className="flex items-center gap-1.5 font-medium">
+                <AlertTriangle className="size-4" />
+                {r.saldo.alerta === "negativo"
+                  ? "Saldo NEGATIVO: um estorno pode ter tirado da franqueadora."
+                  : "Saldo abaixo do mínimo definido."}
+              </p>
+            )}
+            <AtualizarSaldo />
+          </div>
         </div>
       )}
 

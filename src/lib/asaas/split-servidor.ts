@@ -330,6 +330,45 @@ export async function conferirEstornos(): Promise<{ consultados: number; cancela
 
 // ---- O SALDO DE QUEM RECEBE O SPLIT (18.7.4) ----------------------------------
 
+type ContaDoSaldo = { account_id: string; label: string; min_balance_cents: number | null };
+
+/**
+ * Lê o saldo de UMA conta no Asaas, grava e avisa o Financeiro se ficou
+ * negativo ou abaixo do mínimo (uma vez por dia por conta: a chave é `hoje`).
+ * Devolve o saldo em centavos (null se o Asaas não respondeu) e se avisou.
+ */
+async function conferirSaldoDaConta(
+  c: ContaDoSaldo,
+  hoje: string,
+  purpose: string,
+  actorId: string | null
+): Promise<{ cents: number | null; avisou: boolean }> {
+  const admin = createAdminClient();
+  const cred = await credencialDaConta(c.account_id, purpose, actorId);
+  const saldo = await getBalance(cred, opcoesDaConta(c.account_id, purpose));
+  if (saldo == null) return { cents: null, avisou: false };
+  const cents = Math.round(saldo * 100);
+  await admin.rpc("_gateway_save_balance", { p_account_id: c.account_id, p_balance_cents: cents });
+  const negativo = cents < 0;
+  const abaixo = c.min_balance_cents != null && cents < Number(c.min_balance_cents);
+  if (!negativo && !abaixo) return { cents, avisou: false };
+  await admin.rpc("_gateway_notify", {
+    p_account_id: c.account_id,
+    p_kind: negativo ? "saldo_negativo" : "saldo_abaixo_do_minimo",
+    p_key: hoje,
+    p_clinic_id: null,
+    p_managers: false,
+    p_finance: true,
+    p_admins: true,
+    p_title: negativo ? `Asaas: saldo NEGATIVO em ${c.label}` : `Asaas: saldo abaixo do mínimo em ${c.label}`,
+    p_body: negativo
+      ? "A conta que recebe o split ficou com saldo negativo (provavelmente um estorno devolveu o split). Cubra o saldo no Asaas."
+      : "O saldo da conta que recebe o split está abaixo do mínimo definido na aba Taxas da franquia. Estornos devolvem o split dessa conta.",
+    p_link: "/central/rede/taxas",
+  });
+  return { cents, avisou: true };
+}
+
 export async function conferirSaldosDoSplit(hoje: string): Promise<number> {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("_gateway_split_balance_accounts");
@@ -338,36 +377,48 @@ export async function conferirSaldosDoSplit(hoje: string): Promise<number> {
     return 0;
   }
   let avisos = 0;
-  for (const c of (data ?? []) as { account_id: string; label: string; min_balance_cents: number | null }[]) {
+  for (const c of (data ?? []) as ContaDoSaldo[]) {
     try {
-      const cred = await credencialDaConta(c.account_id, "balance_check", null);
-      const saldo = await getBalance(cred, opcoesDaConta(c.account_id, "balance_check"));
-      if (saldo == null) continue;
-      const cents = Math.round(saldo * 100);
-      await admin.rpc("_gateway_save_balance", { p_account_id: c.account_id, p_balance_cents: cents });
-      const negativo = cents < 0;
-      const abaixo = c.min_balance_cents != null && cents < Number(c.min_balance_cents);
-      if (!negativo && !abaixo) continue;
-      avisos++;
-      await admin.rpc("_gateway_notify", {
-        p_account_id: c.account_id,
-        p_kind: negativo ? "saldo_negativo" : "saldo_abaixo_do_minimo",
-        p_key: hoje,
-        p_clinic_id: null,
-        p_managers: false,
-        p_finance: true,
-        p_admins: true,
-        p_title: negativo ? `Asaas: saldo NEGATIVO em ${c.label}` : `Asaas: saldo abaixo do mínimo em ${c.label}`,
-        p_body: negativo
-          ? "A conta que recebe o split ficou com saldo negativo (provavelmente um estorno devolveu o split). Cubra o saldo no Asaas."
-          : "O saldo da conta que recebe o split está abaixo do mínimo definido na aba Taxas da franquia. Estornos devolvem o split dessa conta.",
-        p_link: "/central/rede/taxas",
-      });
+      if ((await conferirSaldoDaConta(c, hoje, "balance_check", null)).avisou) avisos++;
     } catch (e) {
       console.error("split balance check failed:", codigo(e));
     }
   }
   return avisos;
+}
+
+/**
+ * O botão "Atualizar saldo" dos Repasses da franquia: lê AGORA o saldo da conta
+ * da franqueadora (a mesma que a tela mostra). Quem pode já foi conferido pelo
+ * banco na ação; aqui a chave sai do Vault com o autor registrado.
+ */
+export async function atualizarSaldoDaFranqueadora(
+  actorId: string,
+  hoje: string
+): Promise<{ ok: true; cents: number } | { ok: false; motivo: "sem_conta" | "sem_resposta" | "erro" }> {
+  const admin = createAdminClient();
+  const { data: conta } = await admin
+    .from("gateway_accounts")
+    .select("id, label")
+    .eq("owner_type", "franchisor")
+    .is("disabled_at", null)
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  if (!conta) return { ok: false, motivo: "sem_conta" };
+  const { data: cfg } = await admin.from("gateway_split_settings").select("min_balance_cents").eq("id", true).maybeSingle();
+  try {
+    const r = await conferirSaldoDaConta(
+      { account_id: conta.id, label: conta.label, min_balance_cents: cfg?.min_balance_cents ?? null },
+      hoje,
+      "balance_check_manual",
+      actorId
+    );
+    return r.cents == null ? { ok: false, motivo: "sem_resposta" } : { ok: true, cents: r.cents };
+  } catch (e) {
+    console.error("franchisor balance refresh failed:", codigo(e));
+    return { ok: false, motivo: "erro" };
+  }
 }
 
 // ---- O WEBHOOK QUE SE CORRIGE SOZINHO (18.7.5) ----------------------------------

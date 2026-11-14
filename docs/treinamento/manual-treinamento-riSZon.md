@@ -6786,8 +6786,10 @@ unidade paga.
 **As partes da tela, de cima para baixo:**
 
 - **Saldo da franqueadora** (só para quem vê a rede): o saldo da conta Asaas da
-  franqueadora, conferido pela rotina diária, com alerta quando está
-  **negativo** (um estorno pode ter tirado dela) ou **abaixo do mínimo**.
+  franqueadora, com alerta quando está **negativo** (um estorno pode ter tirado
+  dela) ou **abaixo do mínimo**. A rotina diária confere o saldo às 00:05; o
+  botão **Atualizar saldo** *(desde a versão 0.447.0)* confere na hora. Embaixo
+  do valor aparece quando foi a última conferência. Cada leitura fica registrada.
 - **Resumo:** uma linha por unidade, com o total da rede: a **taxa devida** no
   período, quanto foi **paga no split**, quanto está **a receber**, quanto
   **foi para a conta a pagar** e a conta a pagar de taxa **aberta** e

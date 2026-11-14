@@ -21,6 +21,9 @@ const SQL = readFileSync("supabase/migrations/4010_asa3_repasses_da_franquia.sql
 const PAGINA = readFileSync("src/app/(app)/financeiro/repasses-da-franquia/page.tsx", "utf8");
 const ROTA = readFileSync("src/app/(app)/financeiro/repasses-da-franquia/planilha/route.ts", "utf8");
 const NAV = readFileSync("src/app/(app)/financeiro/finance-nav.tsx", "utf8");
+const ACAO_SALDO = readFileSync("src/app/(app)/financeiro/repasses-da-franquia/actions.ts", "utf8");
+const BOTAO_SALDO = readFileSync("src/app/(app)/financeiro/repasses-da-franquia/atualizar-saldo.tsx", "utf8");
+const SPLIT_SERVIDOR = readFileSync("src/lib/asaas/split-servidor.ts", "utf8");
 
 const U1 = "11111111-1111-4111-8111-111111111111";
 const U2 = "22222222-2222-4222-8222-222222222222";
@@ -151,3 +154,25 @@ describe("quem vê (P2) e as réguas", () => {
     expect(PAGINA).not.toMatch(/RisLife/i);
   });
 });
+
+describe("o botão Atualizar saldo (0.447.0)", () => {
+  it("só quem vê a rede: o banco decide (rede = true na porta), antes de falar com o Asaas", () => {
+    expect(ACAO_SALDO).toContain('"use server"');
+    expect(ACAO_SALDO).toContain("podeVerRepassesDaFranquia(session)");
+    expect(ACAO_SALDO).toMatch(/rpc\("franchise_payouts_read"[\s\S]*\.rede !== true\)[\s\S]*atualizarSaldoDaFranqueadora\(/);
+  });
+  it("a leitura sai do servidor, com a chave do Vault e o autor registrado", () => {
+    expect(SPLIT_SERVIDOR.startsWith('import "server-only"')).toBe(true);
+    expect(SPLIT_SERVIDOR).toMatch(/atualizarSaldoDaFranqueadora[\s\S]*"balance_check_manual",\s*actorId/);
+    expect(SPLIT_SERVIDOR).toContain("credencialDaConta(c.account_id, purpose, actorId)");
+  });
+  it("o botão só chama a ação; nenhuma chave ou chamada ao Asaas no navegador", () => {
+    expect(BOTAO_SALDO).toContain('"use client"');
+    expect(BOTAO_SALDO).toContain("atualizarSaldo()");
+    expect(BOTAO_SALDO).not.toMatch(/asaas\.com|api_key|ASAAS_|fetch\(/i);
+  });
+  it("o botão aparece só no cartão do saldo (que só existe para quem vê a rede)", () => {
+    expect(PAGINA).toMatch(/r\.rede && r\.saldo && \([\s\S]*<AtualizarSaldo \/>/);
+  });
+});
+

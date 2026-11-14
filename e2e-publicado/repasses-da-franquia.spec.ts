@@ -43,6 +43,19 @@ test("Admin Master — a tela inteira, com o saldo e as partes", async ({ contex
   await expect(page.getByText(/Não foi possível ler/)).toHaveCount(0);
   await page.screenshot({ path: `${CAPTURAS}/admin-1-topo.png`, fullPage: true });
 
+  // 0.447.0 — o botão lê o saldo na hora (GET /finance/balance no sandbox: só leitura).
+  const db0 = await banco();
+  const conferidoAntes = (await db0.query("select balance_checked_at from public.gateway_accounts where owner_type = 'franchisor' and disabled_at is null order by created_at limit 1")).rows[0]?.balance_checked_at ?? null;
+  await page.getByRole("button", { name: "Atualizar saldo" }).click();
+  await expect(page.getByText("Saldo atualizado com o Asaas.")).toBeVisible({ timeout: 20000 });
+  const conferidoDepois = (await db0.query("select balance_checked_at from public.gateway_accounts where owner_type = 'franchisor' and disabled_at is null order by created_at limit 1")).rows[0].balance_checked_at;
+  const usos = Number((await db0.query("select count(*) n from public.gateway_key_usage where purpose = 'balance_check_manual' and actor is not null and used_at > now() - interval '2 minutes'")).rows[0].n);
+  await db0.end();
+  expect(conferidoAntes == null || new Date(conferidoDepois) > new Date(conferidoAntes), "a conferência fica com a hora nova").toBe(true);
+  expect(usos, "o uso da chave fica registrado com o autor").toBeGreaterThan(0);
+  await expect(page.getByText(/Conferido no Asaas em/)).toBeVisible();
+  await page.screenshot({ path: `${CAPTURAS}/admin-1b-saldo-atualizado.png` });
+
   // O mês com as cobranças das provas (novembro de 2026), só Londrina.
   await abrir(page, `/financeiro/repasses-da-franquia?mes=2026-11&unidade=${ldn}`);
   await page.getByText(/Cobrança por cobrança/).click();

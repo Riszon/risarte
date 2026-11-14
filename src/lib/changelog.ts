@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.447.0",
+    data: "2026-11-14",
+    migracao: null,
+    titulo: "Repasses da franquia: atualizar o saldo na hora",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Repasses da franquia: o botão Atualizar saldo lê na hora, no Asaas, o saldo da conta da franqueadora (antes, só a leitura da rotina diária das 00:05). Embaixo do valor aparece quando foi a última conferência. Só para quem vê a rede; cada leitura fica registrada.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.8. Repasses da franquia",
+      },
+    ],
+  },
+  {
     versao: "0.446.0",
     data: "2026-11-13",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4010, ASAAS_MIGRATION).
