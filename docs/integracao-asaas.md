@@ -1062,7 +1062,7 @@ Painel da franqueadora e de cada unidade (9.2, 14.5 e 16.8.2) que lê o que as e
 - Ensaio no treino (transação desfeita), provado quebrando: cada parte com números conhecidos (taxas não redondas, duas carteiras, falta acima da tolerância, repasse a maior, estorno, dispensa); quem vê o quê; planilha na auditoria. **(ajuste 4)** Os totais do painel batem com o razão (despesa da unidade e receita da franqueadora por taxa) e com o Painel de cobranças no mesmo período; divergência entre eles **reprova** o ensaio.
 - Teste no projeto de teste com as cobranças já pagas das provas anteriores (sem nova cobrança paga no sandbox).
 
-## 19. ASA4 — Gatilhos de contrato: PLANO (14/11/2026, APROVADO com ajustes — 19.9; revisão de 19.11 a 19.15 aguardando aprovação)
+## 19. ASA4 — Gatilhos de contrato: PLANO (14/11/2026, APROVADO com ajustes — 19.9; revisão de 19.11 a 19.15 APROVADA em 14/11/2026 — 19.16)
 
 Pedido do Jeferson (14/11/2026): entregas pequenas, cada uma com migração, ensaio e teste; envio da primeira cobrança automático e reenvio por quem fechou a venda; contratos assinados antes da ASA4 continuam manuais; contrato com muitas parcelas sem disparar o aviso de todas; idempotência do aviso da ZapSign.
 
@@ -1614,7 +1614,7 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
 - **Conferência do Jeferson antes da 1C:** no painel do Asaas da produção, Minha conta → Taxas → "Boleto pago". Ou a pergunta vai junto com a do F2.
 - A 1C não começa sem esse valor anotado aqui.
 
-### 19.13 Nova ordem das entregas e das migrações (ajuste A, PROPOSTA)
+### 19.13 Nova ordem das entregas e das migrações (ajuste A, APROVADA)
 
 **Pedido:** o cartão parcelado pelo Asaas vem logo depois da entrega 1, antes da renegociação. Até ele estar pronto e aprovado, a maquininha continua na venda direta **só para o cartão parcelado**.
 
@@ -1645,7 +1645,7 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
   - As vendas antigas na maquininha continuam como estão até a última parcela.
 - **No contrato de tratamento:** a entrega 2 também oferece o cartão parcelado pelo Asaas, **ao lado** da maquininha. Tirar a maquininha do contrato continua sendo decisão própria (19.11).
 
-### 19.14 Agendador do banco na produção: o `pg_net` (ajuste G, PROPOSTA)
+### 19.14 Agendador do banco na produção: o `pg_net` (ajuste G, APROVADO; instalação só com o "pode" na hora)
 
 **Situação:** a produção tem o `pg_cron` e **não tem** o `pg_net` (conferido pelo Jeferson). Nada é instalado na produção sem a aprovação dele na hora.
 
@@ -1730,3 +1730,33 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
   - não chegou nem o de R$ 5,00 → a prova não vale (envio do sandbox), e repete com o "pode" do Jeferson.
 
 **Fora da conta:** mensagens do Asaas sobre a própria conta (não de cobrança), se houver.
+
+**Ensaio sem envio (14/11/2026):**
+- Script: `scripts/asaas-prova-envio-real-sandbox.mjs --ensaio`.
+- Resultado: **3 de 3**.
+- O que confirmou:
+  - os dois cadastros nascem sem celular nem telefone;
+  - no controle, só "cobrança criada" fica ligado, e só por e-mail;
+  - no carnê, "cobrança criada" fica desligado.
+- O ensaio usou um e-mail example.com e não criou cobrança, então nada foi enviado.
+- O disparo real (`--disparar`) espera o "pode" do Jeferson.
+
+### 19.16 APROVAÇÃO da revisão (Jeferson, 14/11/2026)
+
+- **Aprovadas as seções 19.11 a 19.15:**
+  - venda direta;
+  - desconto à vista;
+  - troca de meio e fechamento da venda;
+  - boleto de depósito com os pontos F1 a F6;
+  - nova ordem das entregas;
+  - agendador do banco;
+  - prova com envio real.
+- O Jeferson respondeu "segue" à pergunta "aprova a revisão de 19.11 a 19.15, ou tem ajustes?".
+- **Continuam dependendo do Jeferson na hora:**
+  - o "pode" do disparo real (19.15);
+  - a instalação do `pg_net` na produção (19.14);
+  - a migração no SQL Editor.
+- **Continuam dependendo do Asaas:**
+  - a pergunta F2;
+  - a tarifa F6, que é condição da 1C.
+- **A construção começa pela 4011** (entrega 1, parte 1).
