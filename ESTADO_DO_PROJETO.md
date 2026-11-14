@@ -168,7 +168,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > Ensaio 59/59 (bate com o razão, a conta a pagar e o Painel de cobranças;
 > provado quebrando). EV-342.
 > ✅ 4010 nos dois bancos: produção pelo dono no SQL Editor em 14/11/2026, conferência batida (funcoes 3, `{}`, 0, 0). No `main` e na produção (0.446.0) em 14/11/2026.
-> 🟡 **0.447.0 / Asaas 0.9.1 (14/11, sem migração):** botão "Atualizar saldo" — lê o saldo da franqueadora na hora (servidor, chave do Vault, uso `balance_check_manual` com autor; quem pode = `rede = true` da porta). ⚠️ A rotina diária só confere contas que já têm split (`_gateway_split_balance_accounts`): na produção, sem split, o saldo fica "ainda não conferido" até alguém usar o botão. No branch; falta o teste do dono.
+> 🟡 **0.447.0 / Asaas 0.9.1 (14/11, sem migração):** botão "Atualizar saldo" — lê o saldo da franqueadora na hora (servidor, chave do Vault, uso `balance_check_manual` com autor; quem pode = `rede = true` da porta). ⚠️ A rotina diária só confere contas que já têm split (`_gateway_split_balance_accounts`): na produção, sem split, o saldo fica "ainda não conferido" até alguém usar o botão. No `main` e na produção (0.447.0) em 14/11/2026, levado a pedido do dono sem o teste dele.
 
 > ## ✅ 0.444.0 / ASAAS 0.8.0 — ASA3, ENTREGA 2: SPLIT DAS COBRANÇAS EM ABERTO E ESTORNO (13/11/2026; migração 4009)
 >
