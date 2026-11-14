@@ -1871,3 +1871,19 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
 3. **Endereço da aplicação e `pg_net`:**
    - o endereço só vale com o `pg_net`;
    - o `pg_net` da produção só com o "pode" do Jeferson (19.14), e depois `select public.routine_second_dispatch_enable();`.
+
+**Prova de ponta a ponta no sandbox (14/11/2026, a pedido do Jeferson): 3 de 3, nada enviado a ninguém.**
+- **Teste:** `src/lib/__tests__/asaas-asa4-entrega1.integracao.test.ts`, com `ASAAS_INTEGRACAO=sim`, banco de treino, conta sandbox de Londrina.
+- **Pagador:** um cliente novo, com CPF de teste gerado na hora, **sem e-mail e sem celular**. O Asaas não tinha para onde mandar.
+- **O que confirmou:**
+  - o caminho real do servidor (`criarCobrancasAutomaticas` → `_charge_prepare_system` → `emitirNoAsaas`) criou no Asaas **só as 2 parcelas do prazo** (boleto em 5 dias e Pix em 10 dias); a de 40 dias ficou agendada;
+  - cada uma com a referência do riSZon (`externalReference`), origem "venda_direta", sem usuário;
+  - nenhuma marcou "Enviada pelo Asaas", porque o pagador não tinha contato;
+  - **rodar de novo não criou nada** (idempotente);
+  - as rodadas ficaram gravadas (origem "gatilho");
+  - o limite diário foi lido antes (`GET /payments/limits`, 200).
+- **Limpeza:** todas as cobranças da prova foram apagadas no Asaas (6 de 6, em 3 execuções), e a chave da unidade voltou como estava (desligada). Ficaram no treino 3 vendas de prova canceladas e 3 clientes "Prova ASA4 sem contato".
+- ⚠️ **O sandbox do Asaas falhou hoje no QR Code do Pix para QUALQUER cobrança, inclusive uma antiga de 11/11:** "Ocorreu um erro desconhecido", depois de 30 segundos.
+  - A cobrança Pix nasce assim mesmo, com o link da fatura (o paciente paga por ele), mas sem o "copia e cola".
+  - É o comportamento da emissão de sempre (ASA1), não da 4012.
+  - **Proposta para depois:** a rotina de 10 minutos tenta buscar de novo o QR Code que faltou.
