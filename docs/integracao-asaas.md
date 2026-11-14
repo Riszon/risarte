@@ -1340,3 +1340,126 @@ O ensaio manda o mesmo aviso **duas vezes**, dois avisos **ao mesmo tempo** e um
   - o cadastro principal fica intocado.
 - **Cuidado que entra no código:** a busca por CPF devolve **os dois**. A emissão normal precisa usar sempre o cadastro principal gravado em `gateway_customers` e nunca o do carnê, que é marcado como tal.
 - **Falta, com envio real:** a prova de que nenhum e-mail de "cobrança criada" sai pelo cadastro do carnê.
+
+### 19.11 Venda direta: Asaas, dinheiro ou permuta (pedido do Jeferson, 14/11/2026). PROPOSTA
+
+**Regra pedida:**
+- O Asaas é o canal oficial de pagamento.
+- Na venda direta, toda parcela é paga pelo Asaas (boleto, Pix ou cartão), com duas exceções: **dinheiro** e **permuta**.
+- Pix e cartão no balcão passam pelo Asaas: Pix pelo QR Code na tela, cartão pelo link da fatura.
+- Maquininha de outra empresa deixa de ser opção.
+- Esta proposta substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
+
+**Como é hoje (conferido no código):**
+- **O meio é da venda, não da parcela.**
+  - O editor do parcelamento só mexe em data e valor (`payment-schedule-editor.tsx`), e a parcela herda o meio da venda (0200, 0374).
+  - Na venda direta o meio é escolhido em `direct-sale-item.tsx`; em 1× só aparecem Pix e Depósito.
+- **A maquininha não é escolhida na baixa.**
+  - O adquirente é gravado **na parcela** ao salvar a venda, por escolha automática: o padrão da unidade, senão outro da unidade, senão o da rede (0199).
+  - A taxa da maquininha é calculada pelo **meio da baixa** (`applyFeeToReceipt`).
+  - A baixa (aba Financeiro da ficha) oferece Pix, dinheiro, boleto, cartão, cartão parcelado e depósito para **qualquer** parcela, inclusive de venda direta. O banco não amarra o meio da baixa ao da parcela.
+  - **É ali que hoje se registra a maquininha numa venda direta:** baixa com "cartão" → taxa da maquininha da parcela.
+- **"Depósito à vista"** (`deposito_avista`) significa "à vista fora do cartão".
+  - Dá desconto à vista igual ao Pix (10 migrações).
+  - Não vai ao Asaas (`METHOD_NOT_SUPPORTED`).
+  - Nos repasses, cai em "Depósito/Pix".
+- **Permuta não existe** em lugar nenhum: nem meio, nem baixa, nem conta, nem regra de taxa.
+- **O dinheiro já tem conta própria:**
+  - "Caixa (dinheiro)", uma por unidade, criada sozinha (0317). Toda baixa em dinheiro entra nela.
+  - A transferência do Caixa para o banco já existe na Conciliação (conta 6.3.01, fora do resultado).
+  - Não há painel de dinheiro parado.
+- **As taxas da rede incidem sobre toda baixa, de qualquer meio** (`_apply_fee_split`), inclusive dinheiro.
+  - O que não foi retido no split vira conta a pagar da unidade (`amount − retained`, 4008).
+
+**A proposta para a venda direta (entrega 1):**
+1. **O meio passa a ser escolhido por parcela no parcelamento**, com uma coluna "Como paga":
+   - **Asaas** (padrão), com o tipo da venda: boleto, Pix ou cartão à vista;
+   - **Dinheiro**;
+   - **Permuta**.
+   - Assim a entrada em dinheiro e o resto no boleto cabem na mesma venda.
+2. **Novos valores** `dinheiro` e `permuta` nos meios da parcela e da venda (e `permuta` no da baixa).
+   - Só **acrescentar**: nada é apagado, porque há dados antigos com os valores atuais.
+3. **Deixam de ser oferecidos na venda direta nova:** depósito à vista, cartão parcelado, crédito recorrente e cartão de maquininha.
+   - Vendas e baixas antigas ficam como estão.
+   - O valor "depósito à vista" continua no banco só para as vendas antigas, e nada novo nasce com ele na venda direta.
+4. **Baixa manual de parcela de venda direta nova:** só **dinheiro** e **permuta**.
+   - As parcelas pelo Asaas têm baixa pelo aviso do Asaas.
+   - O banco recusa outro meio só para linhas novas (gatilho em `payment_receipts`).
+   - A venda direta nova não recebe adquirente.
+   - As baixas já registradas não mudam.
+5. **Venda direta paga na hora, no balcão:**
+   - **Dinheiro**: baixa na hora, com recibo, e entra no Caixa.
+   - **Pix**: a cobrança nasce na hora e a tela mostra o QR Code; o paciente paga ali mesmo; o aviso do Asaas dá a baixa e fecha a venda (D21).
+   - **Cartão**: a tela abre o link da fatura do Asaas, e o paciente digita o cartão ali, no celular dele ou no da unidade, **nunca** no riSZon.
+
+**Permuta (entrega 1):**
+- **Baixa:** o meio "Permuta" é aceito só do **Gerente da unidade** ou do **Admin Master**.
+  - Descrição obrigatória: o que foi trocado e com quem. Tudo vai para a auditoria.
+- **Taxas:** as quatro percentuais incidem sobre o valor da parcela, como em toda baixa.
+  - Nada é retido, então a taxa vira conta a pagar da unidade e entra na cobrança mensal (ASA6).
+  - É o caminho que já existe para o dinheiro.
+- **Contabilidade:**
+  - A receita é lançada como em qualquer baixa.
+  - O "recebido" entra numa conta **"Permutas"** por unidade, fora do caixa e da conciliação bancária, com a descrição do que foi recebido.
+  - O Financeiro dá destino ao bem ou serviço como hoje faz com uma despesa, sem gerar dinheiro.
+- **Painel de repasses:** categoria própria, **Permuta**, separada de dinheiro, com o valor e a taxa devida, e a lista das permutas do período para o Financeiro da Franqueadora.
+
+**Se a mesma regra valer para o contrato de tratamento: o que muda (NÃO alterar sem decisão):**
+- **Cartão parcelado e crédito recorrente** hoje são maquininha.
+  - Com a regra, passariam ao Asaas: o cartão parcelado na entrega 3, o recorrente na ASA4B (que espera a resposta do Asaas sobre o token).
+  - **Antes da entrega 3, o contrato ficaria sem opção de cartão parcelado.**
+- **Outros pontos que leem o meio** e precisam ser revistos:
+  - o benefício de pontualidade "sem risco" para cartão (`BENEFIT_SAFE_METHODS`);
+  - as condições do Empresarial (`CARD`);
+  - as mensalidades da Ortodontia e do PPR+ (crédito recorrente);
+  - a renegociação;
+  - o painel do comercial, que agrupa por meio;
+  - as categorias dos repasses.
+- **Recomendação:** aplicar ao contrato **depois da entrega 3** (cartão parcelado pelo Asaas), numa decisão própria.
+
+### 19.12 Dinheiro: boleto de depósito (PROPOSTA; entrega própria, 1C)
+
+**Na entrega 1:**
+- O dinheiro fica como **baixa manual no Caixa da unidade** (a conta que já existe, "Caixa (dinheiro)"), com recibo.
+- Entram também o **painel do dinheiro parado** e o aviso de 2 dias úteis.
+
+**O boleto de depósito, na entrega 1C:**
+1. **"Gerar boleto de depósito"** para um ou vários recebimentos em dinheiro ainda não depositados (o caixa do dia). Valor = a soma.
+   - Gerado pela Recepcionista ou pelo Gerente, com auditoria.
+2. **Pagador: a própria unidade**, com o CNPJ da conta, num cadastro sem e-mail e sem celular, com `notificationDisabled`.
+   - O paciente nunca aparece.
+   - **Por que a unidade:** o Asaas limita o boleto a **R$ 5.000 para pessoa física** e **R$ 500.000 para empresa** (asaas.com/boleto-bancario).
+   - **Prova no sandbox, 8/8** (`scripts/asaas-prova-pagador-deposito-sandbox.mjs`): o Asaas aceita a própria unidade e também um cadastro interno; o boleto sai com split; nada foi enviado; os boletos de prova foram apagados.
+   - O `notificationDisabled` desliga todas as notificações de cobrança do cliente (docs.asaas.com/docs/notificacoes), e o cadastro não tem contato.
+3. **Quando o Asaas confirma o pagamento:**
+   - os recebimentos ficam "depositados";
+   - o valor sai do Caixa e entra na conta Asaas da unidade (transferência 6.3.01, fora do resultado, como a da Conciliação).
+   - Boleto cancelado ou vencido → os recebimentos voltam a "não depositado".
+4. **Split no depósito: retém a taxa da rede devida sobre aqueles recebimentos e quita a conta a pagar, sem cobrar em dobro.**
+   - O split vai em **valor fixo por carteira**, não em percentual: a soma das taxas ainda não pagas daqueles recebimentos.
+   - Assim a tarifa do boleto não mexe na taxa.
+   - Na liquidação, cada taxa fica **retida** como na ASA3 (`retained_cents`, lançamentos `split_retained` / `split_retained_revenue`), e a conta a pagar do mês cai no mesmo valor.
+   - Taxa de mês com conta a pagar já paga (ou em pagamento) **não** entra no split.
+   - **Exemplo** (taxas de teste 6,37 / 1,83 / 2,91 / 5,44 = 16,55%):
+     - caixa do dia **R$ 1.000,00** em dinheiro → taxa devida R$ 165,50 (royalty 63,70; planejamento 29,10; comercial 54,40 → conta raiz; fundo 18,30 → carteira do fundo);
+     - boleto de R$ 1.000,00 com split fixo de R$ 165,50 e tarifa de R$ 0,99;
+     - a unidade recebe **R$ 833,51** na conta Asaas;
+     - **razão da unidade:** saída do Caixa de 1.000,00 e entrada na conta Asaas de 1.000,00 (fora do resultado); taxa retida de 165,50 (saída, `split_retained`); tarifa de 0,99 (despesa bancária);
+     - **franqueadora e fundo:** receita de 165,50 (`split_retained_revenue`);
+     - **conta a pagar de taxa da unidade:** 165,50 a menos;
+     - **total cobrado de taxa: 165,50, uma vez só.**
+5. **Tarifa:** a do boleto pago na conta.
+   - **Sandbox:** R$ 0,99 (promoção até 10/02/2027), depois R$ 1,99.
+   - **Produção:** a conferir na conta.
+   - Emitir e cancelar boleto não pago é grátis.
+   - Um depósito por dia útil ≈ R$ 20 a R$ 45 por mês por unidade.
+6. **Limites do pagamento em dinheiro:**
+   - Lotérica: até **R$ 5.000** por boleto (notícia de 2021; a CAIXA não publica o valor atual).
+   - Agência: sem limite publicado.
+   - O banco comunica ao COAF pagamento em espécie a partir de **R$ 50.000** (Circular BCB 3.978/2020, art. 49).
+   - **Atenção:** quebrar o dinheiro em vários boletos pequenos para caber no limite é **indício de suspeita** para o Banco Central (Carta Circular 4.001/2020).
+   - Por isso: **um boleto por depósito**, sem quebrar automaticamente, e um aviso na tela acima de R$ 5.000: "pague na agência, não na lotérica".
+7. **Controle:**
+   - painel por unidade com o dinheiro ainda não depositado, por recebimento e por dias parado;
+   - dinheiro parado além do prazo da rede (padrão: 2 dias úteis) → aviso ao Gerente e ao Financeiro da Franqueadora;
+   - no Painel de repasses, o valor em caixa não depositado aparece separado.
