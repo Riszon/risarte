@@ -347,7 +347,10 @@ describe("webhook e rotina", () => {
 
   it("a rotina está no vercel.json e a rota exige o segredo", () => {
     expect(ler("vercel.json")).toContain("/api/cron/gateway-accounts");
-    expect(ler("src/app/api/cron/gateway-accounts/route.ts")).toContain("isCronRequestAuthorized(request)");
+    // 4012: a guarda passou a aceitar também o 2º disparo do banco (senha do
+    // Vault); o segredo da Vercel continua obrigatório para a Vercel.
+    expect(ler("src/app/api/cron/gateway-accounts/route.ts")).toContain("origemDaRotina(request)");
+    expect(ler("src/lib/cron-auth.ts")).toContain("if (isCronRequestAuthorized(request)) return \"vercel\";");
   });
 });
 

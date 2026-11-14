@@ -1,5 +1,6 @@
 "use client";
 
+import { CobrancasDaVenda } from "@/components/commercial/cobrancas-da-venda";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -917,6 +918,8 @@ export function SaleItem({
                     />
                   )}
                 </div>
+                {/* ASA4 (4012): as cobranças da venda direta nova, com envio. */}
+                {vendaNova && sale.contractSigned && <CobrancasDaVenda directSaleId={sale.id} />}
               </FlowSection>
 
               {/* Ação destrutiva: discreta e no fim. */}

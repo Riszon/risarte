@@ -49,7 +49,8 @@ describe("a permissão nova e o webhook", () => {
   });
   it("o webhook passa a ouvir o estorno negado, e a versão da lista subiu (a rotina corrige as contas)", () => {
     expect(WEBHOOK_EVENTS).toContain("PAYMENT_REFUND_DENIED");
-    expect(WEBHOOK_EVENTS_VERSION).toBe(2);
+    // A 4012 subiu de novo (avisos de visualização); a 4009 subiu para 2.
+    expect(WEBHOOK_EVENTS_VERSION).toBeGreaterThanOrEqual(2);
   });
 });
 

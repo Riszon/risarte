@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import type { ScheduleEntry } from "@/lib/payments";
 import { mensagemDoErroDeMeio } from "@/lib/venda-direta-meios";
+import { criarCobrancasAutomaticas } from "@/lib/asaas/cobrancas-automaticas";
 
 export type ScheduleResult = { ok: boolean; error?: string };
 
@@ -71,6 +72,13 @@ export async function savePaymentSchedule(input: {
     entityType: "payment_schedule",
     entityId: input.negotiationId ?? input.directSaleId ?? "",
   });
+  // ASA4 (4012): venda direta nova já assinada → as parcelas pelo Asaas que
+  // vencem dentro do prazo nascem agora (o banco decide quais; idempotente).
+  if (input.directSaleId) {
+    await criarCobrancasAutomaticas({ origem: "gatilho", directSaleId: input.directSaleId }).catch((e) =>
+      console.error("auto charge on schedule failed:", e instanceof Error ? e.message : e)
+    );
+  }
   revalidatePath("/comercial");
   revalidatePath("/comercial/venda-direta");
   return { ok: true };

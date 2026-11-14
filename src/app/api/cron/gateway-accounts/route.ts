@@ -1,4 +1,5 @@
-import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { origemDaRotina } from "@/lib/cron-auth";
+import { comecarRodada, terminarRodada } from "@/lib/asaas/rodadas";
 import { rodarRotinaDosAvisos, rodarVerificacaoDasContas } from "@/lib/asaas/rotina";
 import { conferirSaldoDaRegua } from "@/lib/asaas/regua-servidor";
 import { todayInBrazil } from "@/lib/dates";
@@ -15,10 +16,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
-  if (!isCronRequestAuthorized(request)) {
-    return new Response(null, { status: 401 });
-  }
+  // 4012: a Vercel ou o 2º disparo do banco (pg_cron + pg_net).
+  const origem = await origemDaRotina(request);
+  if (!origem) return new Response(null, { status: 401 });
   if (!isAdminClientConfigured()) return Response.json({ ok: false, error: "not_configured" }, { status: 500 });
+  const rodada = await comecarRodada("contas", origem);
   try {
     const stats = await rodarVerificacaoDasContas();
     // ASA2: avisos pendentes, resumo das vencidas e fila pausada. Banco sem a
@@ -32,6 +34,7 @@ export async function GET(request: Request) {
       console.error("gateway regua balance failed:", e instanceof Error ? e.message : e);
       return 0;
     });
+    await terminarRodada(rodada, { ok: true, detalhes: { ...stats } });
     return Response.json({ ok: true, ...stats, ...avisos, saldosZerados });
   } catch (e) {
     // Banco sem as migrações 4000+ (o código pode ir ao ar antes): não é erro
@@ -41,6 +44,7 @@ export async function GET(request: Request) {
       return Response.json({ ok: true, contas: 0, verificadas: 0, semMigracao: true });
     }
     console.error("gateway accounts check failed:", m);
+    await terminarRodada(rodada, { ok: false, motivo: m.slice(0, 120) });
     return Response.json({ ok: false }, { status: 500 });
   }
 }

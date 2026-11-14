@@ -76,6 +76,9 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   cash_deposit: "Depósito do dinheiro do Caixa",
   cash_deposit_proof: "Comprovante de depósito aberto",
   installment_method: "Troca de meio da parcela",
+  // 4012 (ASA4, entrega 1): a cobrança nasce sozinha.
+  auto_charge_settings: "Cobranças automáticas (prazo, unidades, vigia)",
+  auto_charge_run: "Cobranças automáticas: \"Rodar agora\"",
   sale_method_settings: "Meios da venda direta (maquininha e prazo do dinheiro)",
   gateway_payment_surpluses: "Pagamento em duplicidade pelo Asaas",
   // ------------------------------------------------ assinaturas digitais (0340)

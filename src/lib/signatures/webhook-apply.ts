@@ -63,8 +63,23 @@ export async function aplicarWebhook(
     // e-mail ligado e o PDF guardado, sai na hora (senão a rotina manda).
     const fila = await enfileirarCopias(admin, r.package_id, { registrarSemEmail: true });
     out.copy = fila === "queued" && isEmailConfigured() && out.signedFile === "saved" ? await mandarCopiasDoPacote(admin, r.package_id) : fila;
+    // ASA4 (4012): contrato do plano assinado → as cobranças que já vencem
+    // dentro do prazo nascem no Asaas agora (a marca da venda é do banco; o
+    // aviso repetido da ZapSign não marca de novo). Nunca derruba o 200.
+    if (!deps.admin) await cobrarNaAssinatura(admin, r.package_id);
   }
   return out;
+}
+
+async function cobrarNaAssinatura(admin: SupabaseClient, packageId: string): Promise<void> {
+  try {
+    const { data: pkg } = await admin.from("signature_packages").select("origin_type, origin_id").eq("id", packageId).maybeSingle();
+    if (pkg?.origin_type !== "plan_negotiation" || !pkg.origin_id) return;
+    const { criarCobrancasAutomaticas } = await import("@/lib/asaas/cobrancas-automaticas");
+    await criarCobrancasAutomaticas({ origem: "gatilho", negotiationId: pkg.origin_id as string });
+  } catch (e) {
+    console.error("auto charge on signature failed:", e instanceof Error ? e.message : e);
+  }
 }
 
 /** Também usada pela rotina de hora em hora (ZS6) para o PDF que faltou. */

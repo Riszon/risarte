@@ -18,3 +18,19 @@ export function isCronRequestAuthorized(request: Request): boolean {
   // AP158 (item 5): comparação em tempo constante, como o webhook (AP99).
   return segredoConfere(header, `Bearer ${secret}`);
 }
+
+/**
+ * 4012 (spec 19.14): o SEGUNDO DISPARO vem do banco (pg_cron + pg_net), com a
+ * senha que o próprio banco gerou e guarda no Vault. A aplicação confere pela
+ * porta do servidor `_db_cron_token_ok` — ninguém copia a senha para a Vercel.
+ * Devolve a origem da chamada, ou null se não for autorizada.
+ */
+export async function origemDaRotina(request: Request): Promise<"vercel" | "banco" | null> {
+  if (isCronRequestAuthorized(request)) return "vercel";
+  const header = request.headers.get("authorization") ?? "";
+  if (!header.startsWith("Bearer ") || request.headers.get("x-riszon-origem") !== "banco") return null;
+  const { createAdminClient, isAdminClientConfigured } = await import("@/lib/supabase/admin");
+  if (!isAdminClientConfigured()) return null;
+  const { data, error } = await createAdminClient().rpc("_db_cron_token_ok", { p_token: header.slice(7) });
+  return !error && data === true ? "banco" : null;
+}

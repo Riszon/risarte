@@ -1,4 +1,5 @@
-import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { origemDaRotina } from "@/lib/cron-auth";
+import { comecarRodada, terminarRodada } from "@/lib/asaas/rodadas";
 import { conferirEstornos, conferirSaldosDoSplit } from "@/lib/asaas/split-servidor";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { todayInBrazil } from "@/lib/dates";
@@ -18,11 +19,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
-  if (!isCronRequestAuthorized(request)) return new Response(null, { status: 401 });
+  // 4012: a Vercel ou o 2º disparo do banco (pg_cron + pg_net).
+  const origem = await origemDaRotina(request);
+  if (!origem) return new Response(null, { status: 401 });
   if (!isAdminClientConfigured()) return Response.json({ ok: false, error: "not_configured" }, { status: 500 });
   const admin = createAdminClient();
+  const rodada = await comecarRodada("split_diario", origem);
   const fila = await admin.rpc("_gateway_split_enqueue_daily");
   if (fila.error && /does not exist|schema cache/i.test(fila.error.message)) {
+    await terminarRodada(rodada, { ok: true, motivo: "sem_migracao" });
     return Response.json({ ok: true, semMigracao: true });
   }
   if (fila.error) console.error("gateway split daily enqueue failed:", fila.error.message);
@@ -34,5 +39,6 @@ export async function GET(request: Request) {
     console.error("gateway split balance routine failed:", e instanceof Error ? e.message : e);
     return 0;
   });
+  await terminarRodada(rodada, { ok: !fila.error, criadas: Number(fila.data ?? 0), detalhes: { avisosDeSaldo: saldos } });
   return Response.json({ ok: true, naFila: fila.data ?? 0, estornos, avisosDeSaldo: saldos });
 }

@@ -313,6 +313,24 @@ export async function registerReceipt(input: {
     entityId: input.installmentId,
     ...(quitaMenor ? { details: { quitacaoPorValorMenor: true } } : {}),
   });
+  // ASA4 (4012; 4011 decisão 4): pagou PARTE em dinheiro de uma parcela que
+  // estava no Asaas — o restante volta ao Asaas agora, se vence no prazo.
+  if (cancelouNoAsaas) {
+    const { data: inst } = await supabase
+      .from("payment_installments")
+      .select("negotiation_id, direct_sale_id, status")
+      .eq("id", input.installmentId)
+      .maybeSingle<{ negotiation_id: string | null; direct_sale_id: string | null; status: string }>();
+    if (inst && inst.status === "parcial") {
+      const { criarCobrancasAutomaticas } = await import("@/lib/asaas/cobrancas-automaticas");
+      await criarCobrancasAutomaticas({
+        origem: "gatilho",
+        negotiationId: inst.negotiation_id,
+        directSaleId: inst.direct_sale_id,
+        origemDaCobranca: "restante",
+      }).catch((e) => console.error("auto charge remainder failed:", e instanceof Error ? e.message : e));
+    }
+  }
   revalidatePath(`/prontuarios/${input.clientId}`);
   revalidatePath("/financeiro");
   return {

@@ -95,6 +95,9 @@ export const fakeAsaasFetch: typeof fetch = async (input, init) => {
     const body = JSON.parse(String(init?.body ?? "{}")) as { notifications?: unknown[] };
     return json(200, { notifications: body.notifications ?? [] });
   }
+  if (method === "GET" && path === "/payments/limits") {
+    return json(200, { creation: { daily: { limit: 5000, used: 0, wasReached: false } } });
+  }
   if (method === "GET" && path === "/finance/balance") {
     return json(200, { balance: 0 });
   }

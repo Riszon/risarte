@@ -1,4 +1,6 @@
 import { isCronRequestAuthorized } from "@/lib/cron-auth";
+import { comecarRodada, terminarRodada } from "@/lib/asaas/rodadas";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { rodarFilaDaRegua } from "@/lib/asaas/regua-servidor";
 import { conferirWebhooks, corrigirBloqueios, limparCelularesDeEstorno, rodarFilaDoSplit } from "@/lib/asaas/split-servidor";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
@@ -19,6 +21,7 @@ export async function GET(request: Request) {
     return new Response(null, { status: 401 });
   }
   if (!isAdminClientConfigured()) return Response.json({ ok: false, error: "not_configured" }, { status: 500 });
+  const rodada = await comecarRodada("regua", "vercel");
   try {
     const r = await rodarFilaDaRegua();
     // ASA3 (4009): a fila do split (150 por conta), o bloqueio por divergência
@@ -30,7 +33,12 @@ export async function GET(request: Request) {
     const bloqueios = await corrigirBloqueios().catch(() => 0);
     const webhooks = await conferirWebhooks().catch(() => null);
     const celularesApagados = await limparCelularesDeEstorno().catch(() => 0);
-    return Response.json({ ok: true, ...r, split, bloqueios, webhooks, celularesApagados });
+    // ASA4 (4012): avisos de link não enviado e de primeira cobrança não aberta.
+    const avisosDeLink = await createAdminClient()
+      .rpc("charge_link_alerts_run")
+      .then((x) => (x.error ? 0 : Number(x.data ?? 0)));
+    await terminarRodada(rodada, { ok: true, detalhes: { avisosDeLink } });
+    return Response.json({ ok: true, ...r, split, bloqueios, webhooks, celularesApagados, avisosDeLink });
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
     // Banco sem a 4007 (o código pode ir ao ar antes): não há fila.
@@ -38,6 +46,7 @@ export async function GET(request: Request) {
       return Response.json({ ok: true, pagadores: 0, semMigracao: true });
     }
     console.error("gateway regua queue failed:", m);
+    await terminarRodada(rodada, { ok: false, motivo: m.slice(0, 120) });
     return Response.json({ ok: false }, { status: 500 });
   }
 }

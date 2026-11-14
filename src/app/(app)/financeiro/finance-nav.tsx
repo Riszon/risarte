@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Banknote,
   BarChart3,
+  CalendarClock,
   ChevronDown,
   Gauge,
   HandCoins,
@@ -75,6 +76,13 @@ const ABAS: Aba[] = [
     label: "Cobranças",
     icon: Receipt,
     soCobrancas: true,
+  },
+  // 4012 — a criação automática das cobranças: pendências, rodadas, "Rodar agora".
+  {
+    tipo: "direta",
+    href: "/financeiro/cobrancas-automaticas",
+    label: "Cobranças automáticas",
+    icon: CalendarClock,
   },
   // 4011 — o dinheiro do balcão ainda não depositado, e os depósitos.
   {

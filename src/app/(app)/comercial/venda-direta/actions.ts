@@ -14,6 +14,7 @@ import {
 } from "@/lib/commercial";
 import { loadEmpresarialConditions } from "@/lib/empresarial/conditions";
 import { directSaleViolations } from "@/lib/direct-sale";
+import { criarCobrancasAutomaticas } from "@/lib/asaas/cobrancas-automaticas";
 import { effectiveRuleWithPpr } from "@/lib/ppr/rules";
 import { loadPprConditionsForClients } from "@/lib/ppr/benefits";
 import {
@@ -292,6 +293,13 @@ export async function closeDirectSaleStep(
     entityId: saleId,
     clinicId: info.clinicId,
   });
+  // ASA4 (4012): contrato assinado na venda direta nova → as parcelas pelo
+  // Asaas que vencem dentro do prazo nascem agora (o banco decide; idempotente).
+  if (step === "contract" && value && ehVendaNova(info.methodRule)) {
+    await criarCobrancasAutomaticas({ origem: "gatilho", directSaleId: saleId }).catch((e) =>
+      console.error("auto charge on direct sale failed:", e instanceof Error ? e.message : e)
+    );
+  }
   revalidatePath("/comercial/venda-direta");
   revalidatePath("/comercial");
   return { ok: true, closed: Boolean((data as { closed?: boolean } | null)?.closed) };

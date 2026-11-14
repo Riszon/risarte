@@ -114,6 +114,9 @@ export const WEBHOOK_EVENTS = [
   "PAYMENT_SPLIT_CANCELLED",
   "PAYMENT_SPLIT_DIVERGENCE_BLOCK",
   "PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED",
+  // ASA4 (4012): "Aberta pelo pagador" (19.3).
+  "PAYMENT_CHECKOUT_VIEWED",
+  "PAYMENT_BANK_SLIP_VIEWED",
   "ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED",
   "ACCOUNT_STATUS_COMMERCIAL_INFO_EXPIRING_SOON",
   "ACCOUNT_STATUS_COMMERCIAL_INFO_EXPIRED",
@@ -128,7 +131,7 @@ export const WEBHOOK_EVENTS = [
  * minutos confere cada conta e corrige o webhook pela API (18.7.5).
  * 1 = ASA0 a ASA3 entrega 1; 2 = + PAYMENT_REFUND_DENIED (4009).
  */
-export const WEBHOOK_EVENTS_VERSION = 2;
+export const WEBHOOK_EVENTS_VERSION = 3;
 
 /** `PUT /v3/webhooks/{id}` — troca os avisos assinados, sem recriar o webhook. */
 export function updateWebhookEvents(cred: AsaasCredential, id: string, events: readonly string[], opts?: Opts): Promise<AsaasWebhook> {
@@ -428,4 +431,21 @@ export function updateNotificationsBatch(
 export async function getBalance(cred: AsaasCredential, opts?: Opts): Promise<number | null> {
   const r = await asaasRequest<{ balance?: number | null }>({ ...cred, method: "GET", path: "/finance/balance" }, opts);
   return typeof r?.balance === "number" && Number.isFinite(r.balance) ? r.balance : null;
+}
+
+/**
+ * 4012 (spec 19.5): `GET /v3/payments/limits` — o limite diário de criação de
+ * cobranças da conta. Devolve null quando o Asaas não informa.
+ */
+export async function getPaymentLimits(
+  cred: AsaasCredential,
+  opts?: Opts
+): Promise<{ limite: number; usado: number; atingido: boolean } | null> {
+  const r = await asaasRequest<{ creation?: { daily?: { limit?: number; used?: number; wasReached?: boolean } } }>(
+    { ...cred, method: "GET", path: "/payments/limits" },
+    opts
+  );
+  const d = r?.creation?.daily;
+  if (!d || typeof d.limit !== "number") return null;
+  return { limite: d.limit, usado: Number(d.used ?? 0), atingido: Boolean(d.wasReached) };
 }

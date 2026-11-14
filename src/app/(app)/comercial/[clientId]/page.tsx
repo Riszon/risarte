@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CobrancasDaVenda } from "@/components/commercial/cobrancas-da-venda";
 import { URL_DO_COMPLEMENTO, lerApresentacao, lerComplemento } from "@/lib/complemento-comercial";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -670,6 +671,8 @@ export default async function CommercialCockpitPage(
                     presentationSummary: negotiationBlock.presentationSummary,
                   }}
                 />
+                {/* ASA4 (4012): as cobranças da venda, com envio e reenvio. */}
+                <CobrancasDaVenda negotiationId={negotiationBlock.negotiation.id} />
                 {!veAssinaturas && (
                   <p className="text-xs text-muted-foreground">
                     A situação da assinatura digital não aparece para a sua função
