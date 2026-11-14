@@ -42,9 +42,14 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   de Teste", "Fornecedor Inventado" e "Outro Credor Inventado", o cartório
 >   "Cartório Inventado", a etiqueta "Importação 14/11/2026" e as dívidas
 >   DV-000110 a DV-000112 (excluídas pelo desfazer) — todos de teste.
-> - ⏳ **0407 só no treino**: o dono roda na produção. A carga REAL da planilha
->   espera o dono conferir as pendências dela (aba "Pendências") e o CNPJ da
->   franqueadora na produção (AP168).
+> - ✅ **0407 aplicada nos dois bancos** (produção pelo dono em 14/11/2026,
+>   `audit_attach_all` = 2; conferido de fora: o modelo padrão existe, a
+>   permissão está nos padrões e na matriz, as tabelas novas respondem vazias;
+>   sem login `debt_import_stage`, `debt_import_commit` e `debt_import_undo`
+>   recusam (42501; a de controle, inexistente, responde "não encontrada"); a
+>   chave de serviço, que não é pessoa, para em "sem permissão"). A carga REAL
+>   da planilha espera o dono conferir as pendências dela (aba "Pendências")
+>   e o CNPJ da franqueadora na produção (AP168).
 >
 > ## 🏦 0.445.0 — LEVANTAMENTO DE DÍVIDAS, FASE 3: AS DÍVIDAS NO CONTAS A PAGAR (13/11/2026; migração 0406)
 >

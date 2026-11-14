@@ -419,7 +419,7 @@ Syncthing se comportarem de forma estranha.**
   (`conferenciaGuardada`), nunca a refeita. ⚠️ Ao recriar `debt_daily_run`,
   levar a fotografia (`_debt_snapshot_month`). ⚠️ A planilha real NÃO foi
   importada: espera o dono conferir as pendências dela e o AP168.
-- ⏳ 0407 só no treino (o dono roda na produção).
+- ✅ 0407 nos dois bancos (produção pelo dono em 14/11/2026; conferido de fora).
 
 **13/11/2026 (Levantamento de Dívidas — fase 3) — PC Administrador (core 0.444.0 → 0.445.0, migração 0406)**
 
