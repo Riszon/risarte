@@ -6894,6 +6894,113 @@ de Unidade** e o **Franqueado**, a própria unidade. A **Recepcionista nunca
 vê**, mesmo marcada. Na produção, enquanto a integração está em testes, só o
 Admin Master; o Admin libera em **Administração → Permissões**.
 
+### 13g.9. Venda direta: como cada parcela é paga, dinheiro e permuta
+
+*(desde a versão 0.449.0; vale para a venda direta criada a partir dessa versão)*
+
+**A regra:**
+- O Asaas é o canal oficial de pagamento. Na venda direta nova, cada parcela é paga:
+  - **pelo Asaas**: Pix, boleto ou cartão à vista;
+  - **em dinheiro**;
+  - **em permuta**.
+- Provisório: a **maquininha** continua só para o **cartão parcelado**, até o cartão parcelado pelo Asaas ficar pronto.
+- A venda direta nova não oferece mais **depósito à vista** nem **crédito recorrente**. As vendas antigas ficam como estão.
+
+**No parcelamento:** em **Personalizar**, cada cobrança tem a coluna **Como paga**.
+- Assim cabe, por exemplo, uma entrada em dinheiro e o resto no boleto.
+- **À vista (1×):** Pix, dinheiro ou permuta.
+- O **dinheiro à vista** tem exatamente o desconto à vista que o "depósito à vista" tinha. A **permuta** não tem desconto à vista automático.
+
+**A baixa na ficha (aba Financeiro):**
+- Na venda direta nova, a baixa à mão é só em **dinheiro** ou **permuta**; na parcela de maquininha, também em cartão parcelado. Pix, boleto e cartão recebem a baixa pelo aviso do Asaas.
+- **Paciente pagou em dinheiro uma parcela que estava no Asaas:**
+  - ao registrar o dinheiro, o riSZon cancela a cobrança no Asaas. Se ela já foi paga lá, a baixa é recusada.
+  - Receba o valor devido, sem desconto.
+  - Se recebeu só uma parte, a cobrança do **restante** volta para o Asaas sozinha, quando vence dentro do prazo.
+- **A baixa em dinheiro ou permuta fecha a venda,** como a confirmação do Asaas. Sem o contrato assinado, ela é recusada: assine antes.
+
+**Trocar meio** (botão na parcela da venda direta nova):
+- Para Pix, boleto ou cartão: a cobrança é gerada na hora no Asaas.
+- Para permuta: só o **Gerente** ou o **Admin Master**, com a descrição (o que foi trocado e com quem).
+- Se a parcela tem cobrança no Asaas, ela é cancelada antes da troca.
+
+**Permuta:**
+- Só o Gerente ou o Admin Master registram, com a descrição obrigatória.
+- O valor entra na conta **Permutas** da unidade, que fica **fora** do caixa, do fluxo de caixa e da Conciliação.
+- As taxas da rede incidem sobre o valor e vão para a conta a pagar da unidade.
+- A parcela de permuta não perde benefício por atraso.
+- Nos **Repasses da franquia**, a permuta tem categoria própria e a lista **Permutas do período**.
+
+### 13g.10. Dinheiro no caixa
+
+*(desde a versão 0.449.0)*
+
+**Onde:** **Financeiro → Dinheiro no caixa**. É para o Gerente, o Financeiro da Franqueadora e o Admin Master. A Recepção continua registrando o dinheiro na ficha.
+
+**O que mostra:**
+- O dinheiro recebido no balcão que ainda está no **Caixa (dinheiro)**, por recebimento.
+- Depois de **2 dias úteis** sem depósito, o recebimento fica marcado **parado**. Todo dia, às 09:00, o Gerente e o Financeiro da Franqueadora recebem aviso.
+
+**Registrar depósito:**
+1. Marque os recebimentos depositados.
+2. Clique em **Registrar depósito**.
+3. Escolha a conta bancária da unidade, a data e o valor, e anexe o **comprovante** (obrigatório, PDF ou foto).
+
+- O dinheiro sai do Caixa e entra no banco. É transferência, fora do resultado.
+- Valor diferente da soma: escreva o motivo.
+- Quando o extrato do banco for importado, a Conciliação liga a linha a esse lançamento, sem lançar de novo.
+- **Desfazer** (Gerente ou Admin Master, com motivo): os recebimentos voltam a "não depositado". Depósito já conciliado não se desfaz.
+
+**Cuidado com o valor:**
+- Boleto de **R$ 10.000 ou mais** não pode ser pago em dinheiro (Resolução CMN 4.648/2018): deposite na agência, direto na conta da unidade.
+- Acima de R$ 5.000, prefira a agência à lotérica.
+- **Nunca divida o dinheiro em vários depósitos menores.**
+
+### 13g.11. Cobranças automáticas e Cobranças da venda
+
+*(desde a versão 0.449.0)*
+
+**Como a cobrança nasce:**
+- Com a unidade **ligada** (Financeiro → Cobranças automáticas), o contrato assinado (ZapSign ou papel) ou a venda direta nova marcada como assinada cria no Asaas, na hora, as parcelas pelo Asaas que vencem dentro do **prazo** (padrão: 15 dias).
+- As outras nascem pela **rotina diária**, 15 dias antes de cada vencimento.
+- No contrato, entram o boleto e o Pix. Na venda direta nova, o boleto, o Pix e o cartão à vista.
+- Contrato assinado **antes** de ligar a unidade continua manual (botão "Gerar cobrança no Asaas" da ficha, que vale também para adiantar uma parcela).
+- Cobrança cancelada à mão não volta sozinha.
+
+**Exemplo: contrato de 12 parcelas de boleto, assinado em 10/03, com a 1ª vencendo em 20/03:**
+- na assinatura, nasce no Asaas a de 20/03, que vence dentro dos 15 dias;
+- a de 20/04 nasce em 05/04, a de 20/05 em 05/05, e assim por diante;
+- cada uma traz o aviso de criação do Asaas perto do próprio vencimento, e não as 12 de uma vez.
+
+**Cobranças da venda** (no comercial do cliente, aba **Fechamento**, e na venda direta):
+- **A situação de cada parcela:** Agendada para DD/MM, Aguardando pagamento, Paga, Vencida, Cancelada.
+- **Enviada pelo Asaas em…** quando a régua da unidade estava ligada e o pagador tinha contato. **Não é confirmação de entrega.**
+- **Aberta pelo pagador em…** quando o Asaas avisa que o pagador abriu a fatura ou o boleto.
+- **Os botões:** **Copiar link**, **WhatsApp** (mensagem pronta com o link), **Copiar Pix** e **Linha digitável**. Cada envio fica registrado: "Enviada pelo riSZon por Fulano (WhatsApp) em…".
+- **Quem vê:** quem fechou a venda (o Consultor da negociação; na venda direta, quem a registrou), o Gerente da unidade, o Financeiro da Franqueadora e o Admin Master.
+
+**Os avisos para quem fechou a venda:**
+- **Régua desligada:**
+  - 1 dia útil depois da criação sem nenhum envio, aviso para quem fechou a venda;
+  - faltando 2 dias úteis para o vencimento, aviso também para o Gerente, que pode enviar no lugar.
+- **Régua ligada:** se a primeira cobrança não foi aberta até 1 dia útil antes do vencimento, aviso para reenviar.
+
+**Financeiro → Cobranças automáticas:**
+- As **unidades** (ligar e desligar: Admin Master).
+- O **prazo**: de 11 a 30 dias, sempre maior que o 1º lembrete da régua. Vale para as cobranças ainda não criadas.
+- As **parcelas no prazo ainda sem cobrança**, com o motivo: na fila, cancelada à mão, unidade não pronta, CPF inválido, erro do Asaas…
+- As **rodadas** de cada rotina (criação das cobranças, split diário, verificação das contas), com a origem: Vercel, banco, "Rodar agora" ou assinatura.
+- O botão **Rodar agora** (Admin Master), que fica registrado na Auditoria.
+
+**Proteções:**
+- A rotina lê o **limite diário** de cobranças do Asaas antes de criar e para perto dele. O que sobrar sai no dia seguinte.
+- Um **vigia**, que roda no próprio banco, de hora em hora, avisa o Admin Master e o Financeiro da Franqueadora quando:
+  - a criação das cobranças não rodou até as 11:00;
+  - há parcela que já devia ter cobrança;
+  - a rotina do split ou a das contas não rodou;
+  - a fila da régua parou há mais de 1 hora.
+- O **segundo disparo** pelo banco (01:35, 08:10 e 09:30) só funciona depois de instalado o pg_net. Na produção, isso só acontece com a aprovação do dono.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

@@ -62,6 +62,57 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.449.0",
+    data: "2026-11-14",
+    // Sem migração do CORE: as desta entrega são da integração Asaas (4011 e 4012, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Venda direta pelo Asaas, dinheiro no caixa e cobrança que nasce sozinha",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Venda direta: cada parcela diz como é paga — pelo Asaas (Pix, boleto ou cartão à vista), em dinheiro ou em permuta. O dinheiro à vista tem o mesmo desconto do antigo depósito à vista. A maquininha fica só no cartão parcelado, até o cartão parcelado pelo Asaas ficar pronto.",
+        papeis: ["receptionist", "unit_manager", "commercial_consultant", "sdr"],
+        manual: "13g.9. Venda direta: como cada parcela é paga, dinheiro e permuta",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Baixa em dinheiro de uma parcela que estava no Asaas: o próprio registro cancela a cobrança no Asaas (e é recusado se ela já foi paga lá). A baixa em dinheiro ou permuta fecha a venda, como a confirmação do Asaas. Novo botão Trocar meio na parcela da venda direta.",
+        papeis: ["receptionist", "unit_manager", "finance_franchisor"],
+        manual: "13g.9. Venda direta: como cada parcela é paga, dinheiro e permuta",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Permuta: só o Gerente ou o Admin Master registram, com a descrição do que foi trocado. Entra na conta Permutas, fora do caixa, do fluxo de caixa e da Conciliação, e aparece numa lista própria nos Repasses da franquia.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.9. Venda direta: como cada parcela é paga, dinheiro e permuta",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro → Dinheiro no caixa: o dinheiro do balcão ainda não depositado, com aviso depois de 2 dias úteis, e o Registrar depósito com comprovante.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.10. Dinheiro no caixa",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A cobrança nasce sozinha: com a unidade ligada, o contrato assinado cria no Asaas as parcelas que vencem nos próximos 15 dias, e as seguintes nascem 15 dias antes de cada vencimento. Cobranças da venda (no Fechamento e na venda direta) mostra a situação, se o Asaas enviou, se o pagador abriu, e tem Copiar link, WhatsApp, Copiar Pix e linha digitável, com o envio registrado.",
+        papeis: ["commercial_consultant", "unit_manager", "finance_franchisor"],
+        manual: "13g.11. Cobranças automáticas e Cobranças da venda",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Em testes: a criação automática nasce desligada em todas as unidades. O Admin Master liga em Financeiro → Cobranças automáticas, que também mostra as pendências, as rodadas das rotinas e o Rodar agora.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.11. Cobranças automáticas e Cobranças da venda",
+      },
+    ],
+  },
+  {
     versao: "0.448.0",
     data: "2026-11-14",
     migracao: "0407",

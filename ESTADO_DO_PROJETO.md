@@ -2,6 +2,29 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💳 0.449.0 — ASA4, ENTREGA 1: VENDA DIRETA PELO ASAAS, DINHEIRO NO CAIXA E A COBRANÇA QUE NASCE SOZINHA (14/11/2026; Asaas 0.10.0, migrações 4011 e 4012)
+>
+> Spec `docs/integracao-asaas.md` 19.11 a 19.18; estado em `docs/asaas/ESTADO.md`.
+>
+> - **4011:**
+>   - meio por parcela na venda direta nova (Asaas, dinheiro, permuta; maquininha só no cartão parcelado);
+>   - a baixa em dinheiro cancela a cobrança do Asaas e fecha a venda;
+>   - Trocar meio;
+>   - permuta fora do caixa;
+>   - Dinheiro no caixa com Registrar depósito.
+> - **4012:**
+>   - a cobrança nasce na assinatura (proposta A, prazo 15 dias);
+>   - rotina diária com limite do Asaas;
+>   - rodadas e vigia no banco;
+>   - 2º disparo só com pg_net;
+>   - Cobranças da venda com envio registrado e avisos.
+> - **Provas:** ensaios 60/60 e 44/44 no treino (provados quebrando).
+> - **Na produção, nesta ordem:**
+>   1. o dono roda a 4011;
+>   2. o dono roda a 4012;
+>   3. sobe o `main`.
+> - **A criação automática nasce desligada** em todas as unidades.
+
 > ## 🏦 0.448.0 — LEVANTAMENTO DE DÍVIDAS, FASE 4: A IMPORTAÇÃO DA PLANILHA (14/11/2026; migração 0407)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (3.4, 4.5, fase 4; sugestões 1 e

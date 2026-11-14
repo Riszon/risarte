@@ -1825,3 +1825,49 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
    - Na parte 2, sai sozinha (na hora, se vence dentro do prazo, ou pela rotina).
 5. A tela "Dinheiro no caixa" fica no módulo Financeiro: Gerente, Financeiro da Franqueadora e Admin Master. A Recepção registra o dinheiro na ficha, como hoje.
 6. A chave "maquininha no cartão parcelado" e o prazo do dinheiro parado já existem no banco (`sale_method_settings`), mas ainda **sem tela**. A chave só é desligada na entrega 2, e a tela entra com ela.
+
+### 19.18 Construção da entrega 1, parte 2 (4012), em 14/11/2026
+
+**Situação:**
+- Construída, aplicada no treino e enviada ao projeto de teste, junto com a parte 1.
+- **Versão:** core 0.449.0, Asaas 0.10.0.
+
+**Provas:**
+- **Ensaio no treino** (`scripts/asaas-ensaio-asa4-entrega1-gatilhos.mjs`): **44 de 44**, numa transação desfeita.
+- **Provado quebrando:**
+  - `--quebrar=marca`: 6 falhas;
+  - `--quebrar=cancelada`: 1 falha.
+- **O 2º disparo foi provado no ensaio criando o `pg_net` dentro da transação e desfazendo depois.** O treino continua sem o `pg_net`.
+- **Testes:** 20 novos (`asaas-asa4-entrega1-gatilhos.test.ts`). A bateria inteira, o lint e o `npm run verificar` passaram.
+
+**O que entrou:**
+- **A marca da venda** (`sale_auto_charges`, uma por venda):
+  - nasce quando o contrato é assinado (ZapSign ou papel) ou quando a venda direta nova é marcada como assinada;
+  - só se a unidade já estava **ligada**. Venda assinada antes continua manual.
+- **Proposta A:**
+  - na hora, nascem as parcelas que vencem dentro do prazo (15 dias);
+  - as seguintes nascem pela rotina (Vercel às 07:00; banco às 09:30, com o `pg_net`).
+  - Contrato: boleto e Pix. Venda direta nova: boleto, Pix e cartão à vista.
+  - Cobrança cancelada à mão não volta sozinha. O restante de um pagamento parcial em dinheiro volta.
+- **Limite diário:** lido antes de criar (`GET /payments/limits`), com reserva de 10% (no mínimo 20) para a emissão manual. A rotina para depois de 3 erros seguidos na mesma conta.
+- **Rodadas** gravadas (cobranças, split diário, contas, régua), lista de pendências com o motivo e "Rodar agora", na tela **Financeiro → Cobranças automáticas**.
+- **Vigia** só no banco, de hora em hora.
+- **Segundo disparo:**
+  - `routine_second_dispatch_enable()` cria as rotinas onde o `pg_net` existe;
+  - a senha é gerada no Vault e conferida pelo servidor;
+  - o endereço da aplicação é configurado na tela.
+- **Cobranças da venda:**
+  - "Enviada pelo Asaas", "Aberta pelo pagador" e o registro dos envios;
+  - avisos de link não enviado (régua desligada) e de primeira cobrança não aberta (régua ligada).
+
+**O que falta antes da produção:**
+1. **Teste do Jeferson no projeto de teste.** Para não enviar nada a ninguém:
+   - ligar Londrina em Financeiro → Cobranças automáticas;
+   - usar uma venda direta nova de um cliente com CPF e **sem** e-mail e celular.
+2. **Na produção, nesta ordem:**
+   1. a 4011;
+   2. a 4012;
+   3. o `main`.
+3. **Endereço da aplicação e `pg_net`:**
+   - o endereço só vale com o `pg_net`;
+   - o `pg_net` da produção só com o "pode" do Jeferson (19.14), e depois `select public.routine_second_dispatch_enable();`.
