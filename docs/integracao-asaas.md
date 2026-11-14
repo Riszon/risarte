@@ -1760,3 +1760,19 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
   - a pergunta F2;
   - a tarifa F6, que é condição da 1C.
 - **A construção começa pela 4011** (entrega 1, parte 1).
+
+**Resultado da prova com envio real (14/11/2026):**
+- **Disparo:** às 18:24:44, com o "pode" do Jeferson.
+- **O que chegou:** só o e-mail de **R$ 5,00** (controle). Nenhum de R$ 5,01, 5,02 ou 5,03 (carnê).
+- **Limpeza:** às 18:26:43, 5 de 5. Os cadastros foram calados e depois as cobranças e os cadastros foram removidos.
+- **⚠️ Janela observada: ~2 minutos, e não os 30 previstos.**
+  - A resposta do Jeferson chegou cedo, e a limpeza rodou sem conferir o horário.
+  - **O que a prova mostra mesmo assim:**
+    - o aviso de criação sai em menos de 2 minutos, com vencimento a 45 dias (confirma 19.1 item 1);
+    - no mesmo intervalo, o cadastro do carnê não mandou nada.
+  - **Por que o resultado vale para o carnê:**
+    - no cadastro do carnê, o aviso nasce desligado e nunca é religado;
+    - mesmo que o Asaas use uma fila que só olha a configuração na hora de enviar, ela encontraria o aviso desligado;
+    - o risco de fila era do caminho "desligar, criar e religar", descartado em 19.10.
+  - **Se o Jeferson quiser a janela completa:** repetir com o mesmo script e limpar só depois de 30 minutos.
+- **Conclusão:** o cadastro do carnê serve para a forma 2 (entrega 1B / 4014).
