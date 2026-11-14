@@ -167,7 +167,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > auditoria. Permissão `modulo.repasses_franquia` (nasce só com o Admin).
 > Ensaio 59/59 (bate com o razão, a conta a pagar e o Painel de cobranças;
 > provado quebrando). EV-342.
-> ⏳ 4010 só no treino. Produção: o dono roda no SQL Editor.
+> ✅ 4010 nos dois bancos: produção pelo dono no SQL Editor em 14/11/2026, conferência batida (funcoes 3, `{}`, 0, 0). Falta: teste do dono no projeto de teste e o `main`.
 
 > ## ✅ 0.444.0 / ASAAS 0.8.0 — ASA3, ENTREGA 2: SPLIT DAS COBRANÇAS EM ABERTO E ESTORNO (13/11/2026; migração 4009)
 >
