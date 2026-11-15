@@ -1888,54 +1888,274 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
   - É o comportamento da emissão de sempre (ASA1), não da 4012.
   - **Proposta para depois:** a rotina de 10 minutos tenta buscar de novo o QR Code que faltou.
 
-### 19.19 Entrega 2 — cartão parcelado pelo Asaas: PLANO (14/11/2026, para aprovar)
+### 19.19 Entrega 2 — cartão parcelado pelo Asaas: PLANO REVISADO (14/11/2026; aprovado com os ajustes A a E; revisão para aprovar antes de codificar)
 
-**A prova no sandbox** (`scripts/asaas-prova-cartao-parcelado-sandbox.mjs`, pagador sem contato, cartão de teste do Asaas pela API) **responde a pendência da seção 17:**
+**Aprovado pelo Jeferson (14/11/2026):**
+- a prova com envio real, só para o e-mail dele, sem celular, num 3×, com aviso antes e o "pode" na hora (19.19.8);
+- o meio separado da maquininha (`cartao_parcelado_asaas`);
+- cancelar ou estornar só o parcelamento inteiro nesta entrega, com o ajuste E (19.19.5).
+
+#### 19.19.1 O que o sandbox mostrou
+
+Primeira prova (`scripts/asaas-prova-cartao-parcelado-sandbox.mjs`), que fecha a pendência da seção 17:
 
 | Pergunta | O que o Asaas fez |
 |---|---|
 | Valor de cada parcela (3× de R$ 150,01) | R$ 50,00, R$ 50,00 e **R$ 50,01**: a sobra fica na **última** |
-| Vencimentos | Mês a mês, no mesmo dia, a partir do 1º vencimento (17/11, 17/12, 17/01) |
-| Situação depois do pagamento | As 3 ficam **confirmadas no mesmo dia** (o cartão é cobrado uma vez) |
-| Crédito | **Mês a mês**, cerca de 30 dias depois de cada vencimento (16/12, 18/01, 18/02) |
-| Tarifa | Por parcela: R$ 50,00 → líquido R$ 48,60 no sandbox |
-| Split | **Em cada parcela**, sobre o líquido dela (17% de 48,60 = 8,26), creditado com a parcela |
+| Vencimentos | Mês a mês, no mesmo dia, a partir do 1º vencimento |
+| Situação depois do pagamento | As parcelas ficam **confirmadas no mesmo dia** (o cartão é cobrado uma vez) |
+| Crédito | **Mês a mês**, cerca de 30 dias depois de cada vencimento |
+| Split | **Em cada parcela**, sobre o líquido dela, creditado com a parcela |
 | Cancelar antes de pagar | `DELETE /installments/{id}` apaga o parcelamento inteiro |
-| Estorno depois de pago | `POST /installments/{id}/refund`: as 3 parcelas ficam estornadas |
+| Estorno depois de pago | `POST /installments/{id}/refund`: todas as parcelas ficam estornadas |
 
-**O que a entrega 2 faz (migração 4013):**
-1. **Meio novo, "Cartão parcelado pelo Asaas"** (`cartao_parcelado_asaas`), separado da maquininha (`cartao_parcelado`).
-   - Na venda direta nova, ele entra na coluna "Como paga".
-   - No contrato de tratamento, ele fica **ao lado** da maquininha, como aprovado em 19.13.
-2. **Um bloco por venda:** as parcelas com esse meio formam **um** parcelamento no Asaas.
-   - O riSZon acerta os valores como o Asaas faz: iguais, com a sobra na última.
-   - O riSZon acerta as datas como o Asaas faz: mês a mês, no dia do 1º vencimento.
-   - A tela mostra isso antes de salvar.
-3. **Quando nasce:** **inteiro, na assinatura**. Não segue a proposta A, porque o cartão é cobrado uma vez só.
-   - O paciente paga pelo link da fatura do Asaas e digita o cartão lá, nunca no riSZon.
-   - O link vai pelo bloco "Cobranças da venda".
-4. **A baixa:** todas as parcelas do bloco recebem a baixa quando o Asaas confirma o cartão (`PAYMENT_CONFIRMED`), com o meio "cartão parcelado".
-   - A **data prevista de crédito** de cada uma vem do Asaas, e o Painel de cobranças e os Repasses passam a mostrá-la mês a mês.
-   - O cartão parcelado deixa de aparecer vazio nessa visão (seção 17).
-   - A baixa da 1ª parcela fecha a venda (D21).
-5. **Tarifa:** a unidade absorve (D10), pelas faixas do cartão parcelado que a Central já lê da conta (`/myAccount/fees`). O paciente não paga juros.
-6. **Split:** em cada parcela, pelo mesmo cálculo da ASA3 (o percentual com a compensação da tarifa), liquidado com cada crédito.
-7. **Máximo de parcelas:** o da regra comercial ou do programa, limitado a **21× para Visa e Mastercard** e **12× para as demais bandeiras**. Acima de 12×, a tela avisa que só vale para Visa e Mastercard.
-8. **Cancelar e estornar:**
-   - **Não pago:** o cancelamento apaga o parcelamento inteiro no Asaas, com a mesma permissão de hoje.
-   - **Pago:** estorno do **parcelamento inteiro**, pela porta do estorno da ASA3 (Gerente, Franqueado, Financeiro e Admin), com motivo.
-   - Estorno parcial fica para o distrato (entrega 6).
-9. **A maquininha na venda direta:**
-   - depois do seu teste e da sua aprovação, o Admin Master desliga a chave "maquininha no cartão parcelado", numa tela nova da Central;
+**Prova da tarifa** (`scripts/asaas-prova-tarifa-parcelado-sandbox.mjs`, ajuste A):
+- 3×, 6×, 12× e 21× de R$ 3.000,00, todos pagos com o cartão de teste;
+- 8 parcelamentos, todos estornados no fim; pagador sem contato, apagado no fim.
+
+**Prova do cartão recusado** (`scripts/asaas-prova-cartao-recusado-sandbox.mjs`): ver 19.19.7.
+
+#### 19.19.2 Ajuste A — a conta do split no parcelado
+
+**A parte fixa da tarifa (R$ 0,49) sai UMA vez por parcelamento, rateada entre as parcelas.** Medido no sandbox:
+
+| Parcelamento | Soma das tarifas medida | Se a parte fixa saísse uma vez | Se saísse em cada parcela |
+|---|---|---|---|
+| 3× | R$ 75,18 | R$ 75,19 | R$ 76,17 |
+| 6× | R$ 75,18 | R$ 75,19 | R$ 77,64 |
+| 12× | R$ 90,12 | R$ 90,19 | R$ 95,58 |
+| 21× | R$ 98,92 | R$ 99,19 | R$ 108,99 |
+
+**A regra exata, conferida centavo a centavo nas 42 parcelas.** Para a parcela de valor **V**, num parcelamento de **n** parcelas, com a tarifa da faixa **a% + b**:
+
+- tarifa da parcela = **a × V cortado no centavo + b ÷ n cortado no centavo**;
+- líquido da parcela = V − tarifa da parcela.
+- Exemplo, 3× a 2,49% + R$ 0,49: R$ 24,90 + R$ 0,16 = R$ 25,06 → líquido R$ 974,94.
+
+**O Método B no parcelado.** É a fórmula da 18.2, com a parte fixa da parcela no lugar de b. A mesma entrada vale para todas as parcelas.
+- `percentualValue` = **q = p ÷ (1 − a)**, cortado em 4 casas;
+- `fixedValue` = **F = q × (b ÷ n cortado no centavo)**, cortado no centavo;
+- o Asaas transfere, em cada parcela: F + q × líquido da parcela.
+
+**A tabela pedida** (R$ 3.000,00, 17% para a franqueadora):
+- as tarifas são as **cheias** do Asaas, que valem na produção sem promoção: 3,49% (2× a 6×), 3,99% (7× a 12×) e 4,29% (13× a 21×), sempre + R$ 0,49;
+- a mesma conta com a promoção do sandbox (2,49%, 2,99% e 3,29%) **deu exatamente o que o Asaas cobrou e mandou para a franqueadora** em cada parcela.
+
+| Parcelas | Valor da parcela | Tarifa da parcela | Líquido | q / F | A franqueadora recebe | 17% da parcela | Diferença (a favor da unidade) |
+|---|---|---|---|---|---|---|---|
+| 3× | R$ 1.000,00 | R$ 35,06 | R$ 964,94 | 17,6147% / R$ 0,02 | R$ 169,99 | R$ 170,00 | R$ 0,01 |
+| 6× | R$ 500,00 | R$ 17,53 | R$ 482,47 | 17,6147% / R$ 0,01 | R$ 84,99 | R$ 85,00 | R$ 0,01 |
+| 12× | R$ 250,00 | R$ 10,01 | R$ 239,99 | 17,7064% / R$ 0,00 | R$ 42,49 | R$ 42,50 | R$ 0,01 |
+| 21× (1ª a 20ª) | R$ 142,85 | R$ 6,14 | R$ 136,71 | 17,7619% / R$ 0,00 | R$ 24,28 | R$ 24,28 | R$ 0,00 |
+| 21× (21ª, com a sobra) | R$ 143,00 | R$ 6,15 | R$ 136,85 | 17,7619% / R$ 0,00 | R$ 24,30 | R$ 24,31 | R$ 0,01 |
+
+- **Diferença:** de R$ 0,00 a R$ 0,01 por parcela, sempre a favor da unidade, dentro da tolerância de R$ 0,10 (S5). Medido no sandbox: o mesmo, nas 42 parcelas.
+- **Custo da tarifa para a unidade em R$ 3.000,00:**
+
+  | Parcelas | Com a tarifa cheia | Com a promoção do sandbox |
+  |---|---|---|
+  | 2× a 6× | R$ 105,18 | R$ 75,18 |
+  | 12× | R$ 120,12 | R$ 90,12 |
+  | 21× | R$ 128,95 | R$ 98,92 |
+
+**De onde vêm as tarifas por faixa e onde ficam:**
+- vêm da consulta de tarifas de cada conta no Asaas (`GET /myAccount/fees`, campos `upToSixInstallmentsPercentage`, `upToTwelveInstallmentsPercentage`, `upToTwentyOneInstallmentsPercentage`, as promoções `discount…` com `discountExpiration` e a parte fixa `operationValue`);
+- ficam gravadas em `acquirer_rates`, por faixa (2–6, 7–12, 13–21), com a vigência: a promoção até o fim, e a cheia a partir do dia seguinte;
+- aparecem na **Central → aba Conta e tarifas → "Tarifas do Asaas por meio de pagamento"** e em **Financeiro → Adquirentes**;
+- ninguém digita: a Central lê da conta.
+- **A tarifa que vale:** a da data da **aprovação do cartão**, porque o Asaas cobra o parcelamento inteiro de uma vez. Se a promoção acabar entre a criação e o pagamento, vale a proteção da 18.2: a menor parte percentual. A diferença fica a favor da unidade e cai na S5.
+- ⚠️ **As tarifas reais de cada unidade na produção** só aparecem depois que a conta dela for lida pela Central. Os números cheios acima são os da tabela pública do Asaas.
+
+#### 19.19.3 Ajuste B — a mensageria
+
+O sandbox não mostrou nenhuma cobrança de mensageria: os pagadores não tinham contato, então nada foi enviado. A documentação pública só diz que o pacote de e-mail e SMS é descontado depois que o cliente paga. Ela **não diz**:
+- se a mensageria sai uma vez ou por parcela;
+- se entra no líquido usado no split.
+
+**Na prova com envio real (19.19.8) eu meço três coisas:**
+- o líquido de cada parcela contra a regra da 19.19.2;
+- os lançamentos da conta (`GET /financialTransactions`), à procura da tarifa de mensageria;
+- se ela aparece uma vez ou em cada parcela.
+
+**O que muda conforme o resultado:**
+- **Se a mensageria sair por parcela:**
+  - o cartão parcelado usa sempre o **cadastro sem avisos** (o do carnê, 19.10 item 2);
+  - o link vai **uma vez**, por quem fechou a venda (Cobranças da venda);
+  - o comprovante ao paciente é o **do riSZon**.
+- **Se sair uma vez:** o parcelamento usa o cadastro normal, com a régua da unidade.
+- **Se o sandbox não cobrar mensageria:** eu digo isso, e o cartão parcelado fica no cadastro sem avisos até a resposta do Asaas. É o lado seguro: nunca se paga a mensageria em dobro.
+  - **Pergunta para o Asaas:** "No parcelamento no cartão de crédito (`installmentCount`), a tarifa de mensageria (e-mail/SMS, R$ 0,99) é cobrada uma vez por parcelamento ou em cada parcela? Ela é descontada do `netValue` da parcela, e por isso entra na base do split, ou sai à parte do saldo da conta?"
+
+#### 19.19.4 Ajuste C — a taxa das parcelas ainda não creditadas
+
+**O problema:**
+- as parcelas recebem a baixa todas juntas, na aprovação do cartão;
+- o split só retém a taxa no crédito de cada uma, mês a mês;
+- hoje a baixa com split já nasce com a taxa "retida" (18.3.1). No parcelado, isso diria "retida" para parcelas que só serão creditadas daqui a 20 meses.
+
+**Três situações para a taxa de cada parcela (uma linha por parcela e por taxa, nunca duas):**
+
+| Situação | Quando | Vira conta a pagar? | Entra na cobrança mensal (ASA6)? | Onde aparece |
+|---|---|---|---|---|
+| **a reter pelo split** | parcela confirmada, crédito no futuro, split agendado no Asaas | não | não | Painel de repasses, em "a receber pelo split", com a data prevista de cada crédito |
+| **retida** | o Asaas liquidou o split da parcela (`PAYMENT_SPLIT_DONE`, valor gravado e comparado, S5) | não | não | Painel de repasses, "recebido com split"; no apurado do mês, "pago no split" |
+| **a cobrar da unidade** | o split da parcela não aconteceu ou foi revertido: estorno, contestação perdida, divergência cancelada pelo Asaas, ou diferença acima de R$ 0,10 | sim | sim | Contas a pagar de taxa da unidade |
+
+**Regras, para que nenhuma parcela seja cobrada duas vezes:**
+1. A taxa da parcela é **uma linha por parcela e por taxa**. Um índice único no banco impede uma segunda linha.
+2. A situação só anda para frente: "a reter" vira "retida" ou "a cobrar"; "retida" só vira "a cobrar" no estorno ou na contestação perdida. Nunca volta para trás.
+3. A conta a pagar de taxa nasce **só** da situação "a cobrar", e uma vez só (ligada à linha).
+4. O aviso repetido do Asaas não muda nada (a mesma idempotência dos avisos de hoje).
+5. **Dispensa:** só o Financeiro da Franqueadora ou o Admin Master, à mão, com motivo, na auditoria (a porta da ASA3).
+
+**O ensaio prova, quebrando** (ensaio no treino):
+- um 12× aprovado gera 12 linhas "a reter" e nenhuma conta a pagar;
+- o 1º crédito deixa 1 "retida", e o mesmo aviso de novo não muda nada;
+- um split cancelado deixa 1 "a cobrar" e 1 conta a pagar; o aviso repetido não gera a segunda;
+- o estorno no 5º mês: 4 "retidas" e 8 "a reter" viram "a cobrar" (19.19.5), sem nenhuma em dobro.
+
+#### 19.19.5 Ajuste E — estorno e contestação
+
+**A desistência no meio do tratamento, até a entrega 6.** Só existe o estorno inteiro. Proponho:
+- **O caminho, sem mexer no cartão:**
+  - o parcelamento continua;
+  - a unidade devolve ao paciente a parte não usada, por **Pix da conta da unidade**;
+  - a devolução fica registrada no riSZon como **devolução ao paciente**: conta a pagar paga, ligada à venda, com o comprovante.
+- **Quem autoriza:** o Gerente pede, com o motivo e o valor; o **Financeiro da Franqueadora ou o Admin Master** autorizam.
+- **A taxa da rede:** continua devida sobre o valor recebido, pelo split de cada parcela, normalmente.
+- **O ônus da unidade:** devolve agora e recebe as parcelas mês a mês.
+- **Alternativa:** a API do Asaas **aceita estorno parcial** do parcelamento (`POST /installments/{id}/refund` com `value`), e ele pode vir já nesta entrega, com a mesma autorização. Isso mudaria a decisão 3. **Recomendo o caminho acima**, e o estorno parcial na entrega 6, junto com o distrato.
+
+**Estorno inteiro depois de meses, com a regra travada (a taxa continua devida).** Exemplo: 12× de R$ 250,00, tarifa cheia, estornado depois do 4º crédito.
+
+| | Parcelas 1 a 4 (creditadas) | Parcelas 5 a 12 (ainda não creditadas) |
+|---|---|---|
+| A unidade já recebeu | 4 × R$ 239,99 = R$ 959,96 | nada |
+| O split já repassou | 4 × R$ 42,49 = R$ 169,96 | nada (agendado) |
+| No estorno, o Asaas | debita das contas que receberam, e reverte o split da franqueadora (R$ 169,96) | cancela o crédito e o split agendado |
+| Tarifa do Asaas | não volta (R$ 40,04) | não volta (R$ 80,08) |
+| Taxa da rede no riSZon | 4 × R$ 42,50 = **R$ 170,00 a cobrar da unidade** | 8 × R$ 42,50 = **R$ 340,00 a cobrar da unidade** |
+
+- **Total a cobrar da unidade: R$ 510,00**, que são os 17% do valor confirmado.
+- A unidade também perde a tarifa do Asaas: R$ 120,12.
+- Se a conta da unidade não tiver saldo para o estorno, o Asaas recusa. O riSZon mostra "saldo insuficiente na conta da unidade", e nada muda.
+- **Dispensa:** só o Financeiro da Franqueadora ou o Admin Master, à mão, com motivo.
+- ⚠️ **Li a regra "a taxa continua devida" sobre o valor confirmado inteiro** (R$ 510,00). Se valer só para o que já foi creditado, seriam R$ 170,00.
+
+**Contestação pelo titular do cartão (chargeback):**
+- **Como chega:** avisos do Asaas `PAYMENT_CHARGEBACK_REQUESTED`, `PAYMENT_CHARGEBACK_DISPUTE` e `PAYMENT_AWAITING_CHARGEBACK_REVERSAL`.
+  - A contestação perdida termina em `PAYMENT_REFUNDED`.
+  - O prazo para mandar documentos vem em `deadlineToSendDisputeDocuments`.
+- **O que o riSZon faz:**
+  - marca as parcelas como **"em contestação"**, sem desfazer a baixa;
+  - mostra o prazo;
+  - avisa o Gerente da unidade, quem fechou a venda, o Financeiro da Franqueadora e o Admin Master: no aviso e de novo 2 dias úteis antes do prazo.
+- **A defesa:** nesta entrega, pelo painel do Asaas, com o link na tela. O envio dos documentos pelo riSZon (`POST /chargebacks/{id}/dispute`, até 11 arquivos) fica para depois.
+- **Perdida:** igual ao estorno inteiro, com a taxa a cobrar da unidade e a dispensa só à mão.
+- **Ganha:** as parcelas voltam ao normal.
+- **A documentação não diz:**
+  - se a contestação é por parcela ou do parcelamento inteiro;
+  - se o Asaas reverte o split já repassado.
+  - **Pergunta para o Asaas:** "Num parcelamento no cartão com split, a contestação (chargeback) vem por parcela ou pelo parcelamento inteiro? Se o titular ganha, o Asaas reverte o split já creditado na carteira de destino (como no estorno) ou debita tudo da conta emissora? E as parcelas ainda não creditadas?"
+
+#### 19.19.6 Ajuste D — antecipação de recebíveis
+
+**O que a documentação diz** (docs.asaas.com, "Split em cobranças antecipadas"):
+- na parcela antecipada, o split é calculado sobre o **líquido depois da antecipação**: a tarifa do Asaas e a taxa da antecipação saem antes;
+- com antecipação automática e split de valor fixo, o Asaas usa a maior tarifa do cartão;
+- o split de cobrança confirmada não muda depois de antecipada.
+
+**O efeito na conta:**
+- a franqueadora recebe **menos** que os 17%, porque a base cai;
+- exemplo: parcela de R$ 250,00, antecipada 6 meses a cerca de 1,15% ao mês, perde cerca de R$ 17 de base. A franqueadora recebe uns R$ 3,00 a menos.
+
+**Proposta:**
+- a antecipação é escolha e custo da unidade;
+- a diferença acima de R$ 0,10 vira "a cobrar da unidade" (S5), pelo valor liquidado no `PAYMENT_SPLIT_DONE`;
+- a Central lê se a antecipação automática está ligada (`GET /anticipations/configurations`) e mostra o aviso na prontidão da unidade.
+
+**A documentação não diz:**
+- se o split da parcela antecipada é pago no dia da antecipação ou na data original;
+- se a data prevista de crédito muda.
+
+Na construção, eu tento a antecipação no sandbox (simulação e pedido). Se não der, fica a pergunta:
+- **Pergunta para o Asaas:** "Numa parcela de cartão parcelado com split, antecipada (automática ou pedida), o split é creditado na carteira de destino no dia da antecipação ou na data original de crédito? O `estimatedCreditDate`/`creditDate` da cobrança muda? Qual evento avisa a liquidação do split nesse caso?"
+
+#### 19.19.7 Os outros pontos
+
+1. **Custo do parcelamento no fechamento.** Antes de confirmar, o Consultor vê uma tabela por número de parcelas:
+   - a tarifa do Asaas que a unidade absorve;
+   - os 17% da rede;
+   - o que sobra para a unidade.
+   - A conta usa a regra da 19.19.2 e as tarifas vigentes da conta da unidade.
+2. **Teto de parcelas.**
+   - O máximo vem da regra comercial (`max_installments` do plano, e a regra da rede e da unidade), que já existe e pode ser **menor** que o do Asaas.
+   - O riSZon usa o menor entre a regra e 21×. Acima de 12×, avisa que só vale para Visa e Mastercard (confirmado na documentação).
+   - O Asaas não tem um teto por conta (não está na documentação), e não precisa: o riSZon manda o número exato de parcelas.
+3. **Link não pago.**
+   - O link vale até ser pago ou cancelado. O cartão vencido continua pagável: a documentação mostra o caminho vencida → confirmada.
+   - **Avisos:** os da entrega 1 (1 dia útil sem envio; 2 dias úteis antes do vencimento; não aberta). E mais: **vencido sem pagamento**, aviso no dia útil seguinte para quem fechou a venda e o Gerente.
+   - **Sem cancelamento automático:** o Gerente cancela ou troca o meio.
+   - **A venda só fecha com a aprovação do cartão** (`PAYMENT_CONFIRMED`, D21). Nenhum outro aviso fecha.
+4. **Cartão recusado** (provado no sandbox):
+   - no parcelamento criado sem cartão, como o do link, duas tentativas recusadas (número inválido e cartão vencido) não criaram nada;
+   - a terceira, com o cartão aprovado, confirmou as 3 parcelas, com **o mesmo parcelamento e as mesmas parcelas** (3 cobranças no total).
+   - ⚠️ O sandbox não tem um cartão "recusado pelo banco"; as recusas foram de validação. O limite de tentativas não está na documentação.
+5. **Entrada em Pix ou dinheiro, e o resto no cartão parcelado:** funciona.
+   - Só as parcelas com o meio "cartão parcelado pelo Asaas" formam o bloco. A entrada é uma cobrança à parte (Pix ou boleto, pela regra da entrega 1) ou dinheiro.
+   - O editor exige que o bloco tenha parcelas seguidas, mês a mês, e mostra os valores iguais, com a sobra na última.
+6. **Maquininha na venda direta:**
+   - só o Admin Master desliga, na Central, depois do teste e da aprovação do Jeferson;
+   - a chave `card_machine_direct_sale` (4011) muda por `sale_method_settings_set` (só Admin), com a auditoria;
+   - a entrega 2 só põe a chave na tela;
    - as vendas antigas na maquininha continuam até a última parcela.
-10. **Provas:**
-    - ensaio no treino, provado quebrando;
-    - de ponta a ponta no sandbox: a venda direta com 3× no cartão, pago com o cartão de teste, baixa das 3, datas de crédito, split por parcela, estorno e cancelamento.
 
-**Decisões pedidas ao Jeferson:**
-1. **O aviso de criação do Asaas no parcelamento:** a documentação não diz se sai **um** e-mail ou **um por parcela**.
-   - **Proposta:** prova com envio real só para o seu e-mail (3×), com o seu "pode" na hora.
-   - Se sair um por parcela, o parcelamento usa o **cadastro do carnê** (aviso de criação desligado; 19.10 item 2), e o link vai uma vez, por quem fechou a venda.
-2. **Meio novo separado da maquininha** (`cartao_parcelado_asaas`), em vez de reaproveitar `cartao_parcelado`.
-   - **Proposta:** separado, porque as vendas antigas e o contrato continuam com a maquininha e os dois não podem se confundir na baixa, na tarifa e nos repasses.
-3. **Cancelar ou estornar só o parcelamento inteiro nesta entrega**, e parcial no distrato.
+#### 19.19.8 Prova com envio real (autorizada; dispara só com o "pode" na hora)
+
+**Como:**
+- na conta de teste de Londrina, um pagador com **só o e-mail do Jeferson** (vindo de `PROVA_EMAIL`, nunca no código), **sem celular**;
+- os avisos do pagador ficam só em **e-mail**, com SMS, WhatsApp e voz desligados;
+- um parcelamento **3× de R$ 15,00**, pago pela API com o cartão de teste do Asaas. O e-mail do titular do cartão fica `@example.com`, que ninguém recebe;
+- **Medido:**
+  - quantos e-mails de "nova cobrança" saem;
+  - quantos de "pagamento confirmado" saem;
+  - a mensageria (19.19.3).
+- **Limpeza:** desligo os avisos do pagador antes de estornar, para não sair e-mail de estorno; depois estorno e apago o pagador.
+
+**O que o Jeferson deve receber:** **de 2 a 6 e-mails do Asaas**:
+- "nova cobrança": 1, se for um por parcelamento, ou 3, se for um por parcela;
+- "pagamento confirmado": 1 ou 3.
+
+**O que NÃO deve receber:** nenhum SMS nem WhatsApp, nenhum e-mail de estorno ou de cancelamento, e nenhum lembrete de vencimento (as parcelas já nascem pagas).
+
+#### 19.19.9 O que a entrega 2 faz (migração 4013)
+
+1. **O meio novo:** `cartao_parcelado_asaas` nas regras de meio da 4011.
+   - Na venda direta nova, na coluna "Como paga".
+   - No contrato, ao lado da maquininha.
+2. **Um bloco por venda:**
+   - um parcelamento no Asaas, com valores iguais e a sobra na última;
+   - datas mês a mês, no dia do 1º vencimento;
+   - nasce **inteiro na assinatura**, pela mesma porta da entrega 1. O cartão é cobrado uma vez.
+3. **A baixa:**
+   - todas as parcelas do bloco recebem a baixa na aprovação, com a data prevista de crédito de cada uma vinda do Asaas;
+   - a taxa nasce "a reter pelo split" (19.19.4);
+   - a 1ª parcela fecha a venda.
+4. **O split por parcela,** pela 19.19.2.
+5. **O cálculo do custo no fechamento** (19.19.7, item 1).
+6. **Cancelar e estornar só o parcelamento inteiro,** com a taxa "a cobrar" pela 19.19.5. A devolução ao paciente fica registrada.
+7. **A contestação:** as parcelas ficam "em contestação", com os avisos e o prazo.
+8. **A antecipação:** a leitura da configuração e o aviso na prontidão.
+9. **O aviso do link vencido** sem pagamento.
+10. **A chave da maquininha** na Central.
+11. **Provas:**
+    - o ensaio no treino, provado quebrando: as três situações da taxa, sem nada em dobro;
+    - a prova de ponta a ponta no sandbox: venda direta com entrada em Pix e 3× no cartão, a baixa das 3, as datas de crédito, o split por parcela, o estorno e o cancelamento;
+    - a prova com envio real (19.19.8).
+
+#### 19.19.10 Decisões pedidas ao Jeferson
+
+1. **Desistência até a entrega 6:** devolução por Pix da conta da unidade, registrada e autorizada pelo Financeiro da Franqueadora ou pelo Admin Master (recomendado)? Ou trazer o estorno parcial do Asaas já para esta entrega?
+2. **Estorno inteiro:** a taxa continua devida sobre o **valor confirmado inteiro** (no exemplo, R$ 510,00), ou só sobre as parcelas **já creditadas** (R$ 170,00)?
+3. **Link vencido:** sem cancelamento automático, só avisos, e o Gerente decide?
+4. **O "pode" da prova com envio real (19.19.8):** de 2 a 6 e-mails para você, e nada no celular.
