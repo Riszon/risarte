@@ -11,7 +11,12 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - a venda direta só sem pago no acordo;
 > - os acordos de várias vendas ficam para o distrato.
 >
-> Ensaio 39/39, provado quebrando. **Falta:** teste do dono, a 4017a na produção e o `main`. Spec 19.30 a 19.31; manual 13g.15; EV-353.
+> Ensaio 39/39, provado quebrando. **Na produção em 15/11/2026:**
+> - o dono rodou a 4017a, e a conferência vista bateu: 7 funções, 1 tabela, 3 colunas, true;
+> - `main` em 530914c2, produção mostrando 0.455.1 (a outra sessão publicou a core 0.455.0 antes);
+> - conferido de fora: as portas novas barram o anônimo.
+>
+> **Falta:** o teste do dono pela tela. Spec 19.30 a 19.31; manual 13g.15; EV-353.
 
 > ## 💳 0.454.1 — ASA4, ENTREGA 3: RENEGOCIAÇÃO ASSINADA PELA ZAPSIGN (15/11/2026; Asaas 0.14.0, migração 4017)
 >
