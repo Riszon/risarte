@@ -36,6 +36,7 @@ import {
   setDirectSaleConditions,
 } from "./actions";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
+import { AcordosDaVenda } from "@/components/commercial/acordos-da-venda";
 import { CustoDoParcelado } from "@/components/commercial/custo-do-parcelado";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
@@ -474,13 +475,18 @@ export function SaleItem({
     });
   }
 
+  // 4017a: a recusa por acordo de renegociação mostra os acordos e o caminho.
+  const [comAcordo, setComAcordo] = useState(false);
   function cancel() {
     startTransition(async () => {
-      const r = await cancelDirectSale(sale.id);
+      const r = await comConfirmacaoDeBoletos((confirmar) => cancelDirectSale(sale.id, confirmar));
       if (r.ok) {
         toast.success("Venda cancelada.");
         router.refresh();
-      } else toast.error(r.error ?? "Algo deu errado.");
+      } else {
+        if ("acordo" in r && r.acordo) setComAcordo(true);
+        toast.error(r.error ?? "Algo deu errado.");
+      }
     });
   }
 
@@ -955,6 +961,11 @@ export function SaleItem({
                 >
                   Cancelar venda
                 </button>
+                {comAcordo && sale.clientId && (
+                  <div className="mt-2">
+                    <AcordosDaVenda clientId={sale.clientId} directSaleId={sale.id} />
+                  </div>
+                )}
               </div>
             </>
           )}

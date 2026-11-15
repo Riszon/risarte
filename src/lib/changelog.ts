@@ -84,6 +84,29 @@ export const CHANGELOG: Versao[] = [
     ],
   },
   {
+    versao: "0.455.1",
+    data: "2026-11-15",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4017a, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Cancelar venda com acordo de renegociação",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Quando o cancelamento da venda é recusado por um acordo de renegociação, a tela mostra os acordos e o caminho: o acordo que ainda não vale pode ser cancelado ali mesmo; o assinado, só desta venda, pede a exceção ao Financeiro da Franqueadora (o Gerente ou o Admin Master pede; quem pediu não autoriza).",
+        papeis: ["unit_manager", "finance_franchisor", "receptionist"],
+        manual: "13g.15. Cancelar venda com acordo de renegociação",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Com a exceção autorizada (vale 7 dias, uma vez), o termo de cancelamento conta o que o cliente já pagou no acordo, e as parcelas abertas do acordo são canceladas junto. Os pedidos ficam em Financeiro › Cobranças automáticas.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.15. Cancelar venda com acordo de renegociação",
+      },
+    ],
+  },
+  {
     versao: "0.455.0",
     data: "2026-11-15",
     migracao: "0409",

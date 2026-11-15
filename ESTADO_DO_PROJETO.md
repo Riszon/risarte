@@ -2,6 +2,17 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💳 0.455.1 — EXCEÇÃO: CANCELAR VENDA COM ACORDO DE RENEGOCIAÇÃO (15/11/2026; Asaas 0.15.0, migração 4017a)
+>
+> O cancelamento recusado pela 4015a passa a mostrar os acordos da venda e o caminho de cada um:
+> - o acordo pendente se cancela ali mesmo;
+> - o assinado, de uma venda só, pede a exceção: o Gerente ou o Admin pede; o Financeiro da Franqueadora ou o Admin autoriza, nunca quem pediu; vale 7 dias, uma vez, e cai se o acordo mudar;
+> - com a exceção, o acerto conta o pago no acordo, e as parcelas abertas dele caem junto;
+> - a venda direta só sem pago no acordo;
+> - os acordos de várias vendas ficam para o distrato.
+>
+> Ensaio 39/39, provado quebrando. **Falta:** teste do dono, a 4017a na produção e o `main`. Spec 19.30 a 19.31; manual 13g.15; EV-353.
+
 > ## 💳 0.454.1 — ASA4, ENTREGA 3: RENEGOCIAÇÃO ASSINADA PELA ZAPSIGN (15/11/2026; Asaas 0.14.0, migração 4017)
 >
 > Salvar a renegociação não muda mais nada nas parcelas de hoje: o acordo fica "aguardando assinatura", e o termo vai pela ZapSign, assinado pelo responsável financeiro se houver. Assinado, os boletos antigos são cancelados no Asaas e as parcelas novas nascem com cobrança automática, com a forma; na forma 2, aparecem no mesmo link da lista da venda, só do mesmo pagador.
@@ -13,7 +24,12 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - desconto por componente (juros, multa, benefício e principal);
 > - foto das parcelas e histórico da situação, para o futuro painel AP169.
 >
-> 4017 aplicada no TREINO; ensaio 73/73, provado quebrando; `test:indica` 246/0. **Falta:** teste do dono, o envio real do termo (com o "pode"), a 4017 na produção e o `main`. Spec 19.28 a 19.29; manual 13g.14; EV-350.
+> Ensaio 73/73, provado quebrando; `test:indica` 246/0. **Na produção em 15/11/2026:**
+> - o dono rodou a 4017, e a conferência vista bateu: 24 funções, 2 tabelas, 0 antigas, 0 aguardando, pasta privada;
+> - `main` em 231d0671, produção mostrando 0.454.1 (a outra sessão publicou a core 0.454.0 antes);
+> - conferido de fora: as portas novas barram o anônimo.
+>
+> **Falta:** o teste do dono pela tela e o envio real do termo (com o "pode"). Spec 19.28 a 19.29; manual 13g.14; EV-352.
 
 > ## 💳 0.453.1 — CORREÇÃO: VENDA COM ACORDO DE RENEGOCIAÇÃO EM ABERTO NÃO É CANCELADA (15/11/2026; Asaas 0.13.1, migração 4015a)
 >

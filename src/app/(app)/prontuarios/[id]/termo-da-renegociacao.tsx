@@ -48,7 +48,7 @@ export function TermoDaRenegociacao({
   if (r.flow !== "assinatura") return null;
 
   if (!esperando) {
-    if (["nao_assinada", "expirada", "cancelada_pagamento", "cancelada"].includes(r.status) && r.endReason) {
+    if (["nao_assinada", "expirada", "cancelada_pagamento", "cancelada", "encerrada"].includes(r.status) && r.endReason) {
       return <p className="mt-1 text-[11px] text-muted-foreground">{r.endReason}</p>;
     }
     if (r.status === "aplicada" && r.signedVia) {

@@ -8,6 +8,7 @@ import { Ban, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { openPlanCancellation } from "@/app/(app)/apresentacao/[clientId]/cancellation-actions";
+import { AcordosDaVenda } from "@/components/commercial/acordos-da-venda";
 import {
   CANCELLATION_DESTINATIONS,
   CANCELLATION_DESTINATION_LABELS,
@@ -60,6 +61,8 @@ export function CancelPlanCard({
   );
   const [returnDate, setReturnDate] = useState("");
   const [notes, setNotes] = useState("");
+  // 4017a: a recusa por acordo de renegociação mostra os acordos e o caminho.
+  const [comAcordo, setComAcordo] = useState(false);
 
   const pedeDestino = exigeDestino ?? wasClosed;
   const errors = cancellationErrors({
@@ -82,7 +85,10 @@ export function CancelPlanCard({
       if (r.ok && r.cancellationId) {
         toast.success("Termo gerado — confira e colha a assinatura.");
         router.push(`/cancelamentos/${r.cancellationId}/termo`);
-      } else toast.error(r.error ?? "Algo deu errado.");
+      } else {
+        if (r.acordo) setComAcordo(true);
+        toast.error(r.error ?? "Algo deu errado.");
+      }
     });
   }
 
@@ -261,7 +267,8 @@ export function CancelPlanCard({
             Gerar termo de cancelamento
           </Button>
         </div>
-      </CardContent>
+        {comAcordo && <AcordosDaVenda clientId={clientId} negotiationId={negotiationId} />}
+          </CardContent>
     </Card>
   );
 }

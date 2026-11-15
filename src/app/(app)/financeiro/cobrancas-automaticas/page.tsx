@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canViewFinance } from "@/lib/finance/access";
 import { PainelDasCobrancasAutomaticas, type DadosDoPainel } from "./painel";
 import { OperacoesInterrompidas, type OperacaoInterrompida } from "./operacoes-interrompidas";
+import { PedidosDeExcecao, type PedidoDeExcecao } from "./pedidos-de-excecao";
 
 export const metadata: Metadata = { title: "Cobranças automáticas" };
 
@@ -25,6 +26,8 @@ export default async function CobrancasAutomaticasPage() {
   const { data, error } = await supabase.rpc("auto_charge_panel_read", { p_clinic_id: unidade });
   // 4015: as operações interrompidas (boleto cancelado sem a mudança).
   const { data: interrompidas } = await supabase.rpc("boleto_op_failures_read", { p_clinic_id: unidade });
+  // 4017a: os pedidos de exceção (a rede para o Financeiro e o Admin; a unidade para o Gerente).
+  const { data: pedidosDeExcecao } = await supabase.rpc("sale_cancel_exceptions_read");
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
@@ -48,6 +51,7 @@ export default async function CobrancasAutomaticasPage() {
         </p>
       ) : (
         <>
+          <PedidosDeExcecao itens={((pedidosDeExcecao ?? []) as PedidoDeExcecao[])} />
           <OperacoesInterrompidas itens={((interrompidas ?? []) as OperacaoInterrompida[])} />
           <PainelDasCobrancasAutomaticas dados={data as DadosDoPainel} />
         </>

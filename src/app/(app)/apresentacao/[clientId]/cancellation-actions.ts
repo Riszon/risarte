@@ -1,6 +1,7 @@
 "use server";
 
 import { mensagemDoAcordoEmAberto } from "@/lib/acordo-em-aberto";
+import { prepararParcelasDoAcordo } from "@/lib/renegociacao/excecao";
 import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
@@ -11,6 +12,8 @@ import type { CancellationDestination } from "@/lib/finance/cancellation";
 export type CancellationResult = {
   ok: boolean;
   error?: string;
+  /** 4017a: a recusa foi por acordo de renegociação (a tela mostra os acordos). */
+  acordo?: boolean;
   /** Id do termo criado — a tela navega para ele. */
   cancellationId?: string;
 };
@@ -45,7 +48,7 @@ export async function openPlanCancellation(input: {
   if (error) {
     const m = error.message;
     const acordo = mensagemDoAcordoEmAberto(m);
-    if (acordo) return { ok: false, error: acordo };
+    if (acordo) return { ok: false, error: acordo, acordo: true };
     if (m.includes("ALREADY_OPEN")) {
       return {
         ok: false,
@@ -135,14 +138,20 @@ export async function applyPlanCancellation(input: {
 
   // 4015: aplicar o cancelamento cancela no Asaas os boletos vivos das parcelas
   // em aberto da venda, na mesma operação (com a confirmação da tela).
-  const { data: canc } = await supabase.from("plan_cancellations").select("negotiation_id").eq("id", input.id).maybeSingle();
+  const { data: canc } = await supabase.from("plan_cancellations").select("negotiation_id, exception_id").eq("id", input.id).maybeSingle();
   const { data: abertas } = canc?.negotiation_id
     ? await supabase.from("payment_installments").select("id").eq("negotiation_id", canc.negotiation_id).eq("status", "em_aberto")
     : { data: [] as { id: string }[] };
+  // 4017a: com a exceção, as parcelas do acordo em aberto também caem (os
+  // boletos delas no Asaas; o cartão parcelado ainda não aprovado, inteiro).
+  const doAcordo = canc?.exception_id && canc.negotiation_id
+    ? await prepararParcelasDoAcordo({ negotiationId: canc.negotiation_id as string, directSaleId: null, actorId: session.userId })
+    : { ok: true as const, installmentIds: [] as string[] };
+  if (!doAcordo.ok) return { ok: false, error: doAcordo.error };
   const op = await comBoletosCancelados<unknown>({
     operacao: "cancelamento do plano",
     motivo: "cancelamento do plano",
-    installmentIds: (abertas ?? []).map((x) => x.id as string),
+    installmentIds: [...(abertas ?? []).map((x) => x.id as string), ...doAcordo.installmentIds],
     actorId: session.userId,
     confirmar: Boolean(input.confirmarCancelamento),
     venda: { negotiationId: (canc?.negotiation_id as string | undefined) ?? null },
@@ -166,6 +175,13 @@ export async function applyPlanCancellation(input: {
     }
     if (m.includes("ALREADY_APPLIED")) {
       return { ok: false, error: "Este cancelamento já foi efetivado." };
+    }
+    if (m.includes("EXCEPTION_INVALID")) {
+      return {
+        ok: false,
+        error:
+          "A exceção autorizada não vale mais (venceu, já foi usada ou o acordo mudou). Peça de novo ao Financeiro e abra um novo termo.",
+      };
     }
     if (m.includes("NOT_ALLOWED")) {
       return {
