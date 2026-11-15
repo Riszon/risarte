@@ -2370,3 +2370,71 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
 - **O que o sandbox não deixa provar:**
   - **A antecipação** (`scripts/asaas-prova-antecipacao-parcelado-sandbox.mjs`): o Asaas recusou a simulação e o pedido, porque a conta de teste não é aprovada para antecipar (`cannotAnticipate`). A pergunta 2 da 19.22 continua.
   - **A contestação:** o sandbox não simula. O prazo real só aparece na homologação (ASA7).
+
+### 19.25 Entrega 1B — forma 2, "Todos os boletos agora": PLANO (15/11/2026, para aprovar; migração 4015)
+
+**O que já estava aprovado:** o acréscimo A da 19.9, o cadastro do carnê (19.10 item 2, provado em 19.16) e a página com a lista (19.10 item 3).
+
+**O que conferi antes de escrever:**
+- **A fatura** (`invoiceUrl`) abre **sem login** no sandbox: HTML, 200.
+- **O PDF do boleto** (`bankSlipUrl`) falhou no sandbox: 504 em 4 tentativas, durante cerca de 80 segundos (`scripts/asaas-prova-pdf-do-boleto-sandbox.mjs`). É a mesma instabilidade do QR do Pix (19.18). **Não dá para provar o "Baixar todos em PDF" agora.**
+- **Seus textos da tela de 14/11** estão guardados e entram como estão.
+
+**1. A escolha no fechamento:**
+- Aparece quando a venda tem parcelas em **boleto** e a unidade está ligada em Cobranças automáticas.
+- Vale no contrato (Fechamento) e na venda direta nova.
+- **Forma 1, "Um boleto por mês"**, é o padrão: a entrega 1, como hoje.
+- **Quem escolhe:** quem fechou a venda, o Gerente da unidade, o Financeiro da Franqueadora e o Admin Master. A escolha fica na auditoria.
+- **Os textos** são os seus, para quem fecha e para o cliente, com o prazo da rede no lugar dos "15 dias".
+
+**2. A emissão da forma 2:**
+- Na assinatura, ou na hora da escolha se já assinado, nascem **todos os boletos em aberto** da venda.
+- **O cadastro do carnê:** os boletos nascem num cadastro próprio no Asaas, o **cadastro do carnê**, um por pagador e por conta.
+  - Nele, o "cobrança criada" fica **desligado para sempre**.
+  - Os outros avisos (lembretes, aviso do dia, vencida e confirmação de pagamento) seguem a régua da unidade, com o mesmo contato do cadastro principal.
+  - Quando a régua ou o contato do pagador mudam, a fila da régua aplica nos dois cadastros.
+- **O cadastro principal** continua intocado: as outras vendas do pagador seguem normais.
+- **A busca pelo CPF** ignora o cadastro do carnê, como já ignora o do cartão parcelado.
+- **Pix e cartão da mesma venda** continuam na forma 1, pelo prazo.
+
+**3. O limite diário:** cada boleto conta no limite. O que passar sai na rodada seguinte, sozinho, e a tela diz "N boletos saem amanhã (limite diário)".
+
+**4. A entrega ao cliente, numa mensagem só:**
+- **A página da lista** no riSZon:
+  - **O endereço:** impossível de adivinhar (só o resumo do código fica gravado). Expira **5 dias depois do último vencimento**.
+  - **O conteúdo:** só o primeiro nome do paciente e, para cada boleto, vencimento, valor, situação (a pagar, pago, vencido), **Abrir boleto** (a fatura do Asaas) e a linha digitável com "Copiar".
+  - **Nunca mostra** CPF, endereço nem outra venda.
+- **Nas Cobranças da venda,** quem fechou a venda tem:
+  - **Copiar link da lista** e **WhatsApp**, com a mensagem pronta;
+  - **Gerar novo link**, que invalida o anterior.
+- **O envio fica registrado**, e cada boleto mostra "Na lista enviada por Fulano em…".
+- **"Baixar todos em PDF":** fica **fora** até o PDF do boleto abrir sem login, no sandbox ou na homologação (ASA7).
+
+**5. Trocar de forma** (as mesmas pessoas, com confirmação, na auditoria):
+- **De 1 para 2:** emite pelo cadastro do carnê os boletos que faltam. Os já emitidos continuam onde estão.
+- **De 2 para 1:**
+  - cancela no Asaas os boletos **não pagos que vencem fora do prazo**;
+  - os que vencem dentro do prazo ficam; a rotina recria os outros, um por mês, com o aviso de criação;
+  - esse cancelamento não conta como "cancelado à mão";
+  - a confirmação diz quantos serão cancelados.
+
+**6. As Cobranças da venda e o painel:**
+- **Cobranças da venda:** mostram a forma escolhida, a lista e o link.
+- **A lista de pendências** (Financeiro → Cobranças automáticas): aponta o boleto da forma 2 que ficou para depois, com o motivo (limite diário, erro do Asaas…).
+
+**7. As provas:**
+- **Ensaio no treino**, provado quebrando: a escolha e quem pode; os 12 boletos de um contrato de 12 parcelas no cadastro do carnê; Pix e cartão fora; o limite diário deixando o resto para o dia seguinte; a troca de 2 para 1 cancelando só os de fora do prazo, sem marcar "à mão"; a página expirando e o link novo invalidando o antigo.
+- **Ponta a ponta no sandbox,** sem envio (pagador sem contato):
+  - 12 boletos no cadastro do carnê, com o "cobrança criada" desligado nele;
+  - o cadastro principal intocado;
+  - a página com os 12;
+  - a troca de 2 para 1;
+  - no fim, tudo cancelado.
+- **Prova com envio real:** a do carnê já foi feita e aceita (19.16). Se você quiser, repito com 12 boletos para o seu e-mail, com a janela de 30 minutos completa. **Proposta: não repetir.**
+
+**Decisões pedidas ao Jeferson:**
+1. **De 2 para 1:** cancelar só os boletos **fora do prazo** (recomendado: não cancela e recria o que já vence logo)? Ou **todos os não pagos**, e os do prazo renascem com o aviso de criação?
+2. **"Baixar todos em PDF"** fica fora até o PDF do boleto abrir sem login (recomendado)?
+3. **A página expira 5 dias depois do último vencimento**, e "Gerar novo link" invalida o anterior?
+4. **A forma 2 só para venda com a unidade ligada** (automática; recomendado)? Para a venda assinada antes de ligar, continua o botão manual por parcela.
+5. **A prova com envio real de 12 boletos:** não repetir (recomendado), ou repetir com a janela de 30 minutos?
