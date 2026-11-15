@@ -3379,3 +3379,27 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
 4. **Onde fica a fila de pedidos:**
    - (a) em Financeiro › Cobranças automáticas, junto das operações interrompidas, com aviso a cada pedido (recomendado);
    - (b) numa tela própria.
+
+#### 19.30.7 APROVAÇÃO com ajuste e as confirmações (Jeferson, 15/11/2026)
+
+**Decisões: 1a, 2a, 3b, 4a.**
+1. **A autorização** vale por 7 dias e para um uso só.
+2. **Venda direta em que o cliente já pagou parcela do acordo:** fica para o distrato. Até lá, o caso vai para o Jeferson.
+3. **Quem pede a exceção**, no contrato e na venda direta: só o Gerente da unidade ou o Admin Master. A Recepção vê a mensagem com o motivo e a orientação de chamar o Gerente.
+4. **A fila de pedidos** fica em Financeiro › Cobranças automáticas, com aviso a cada pedido.
+   - **Confirmado:** o Financeiro da Franqueadora é papel da rede (`is_finance_franchisor`), então vê os pedidos de **todas as unidades**. Cada pedido gera aviso para todos os usuários do Financeiro da Franqueadora e para os Admin Master, como os avisos da 4015.
+   - O Gerente vê só os pedidos da sua unidade.
+
+**As confirmações pedidas:**
+- **Parcela do acordo no cartão parcelado pelo Asaas:**
+  - **Conta como paga no acerto desde a aprovação do cartão.** Confirmado no código: o aviso `PAYMENT_CONFIRMED` de cada parcela grava a baixa na aprovação (`_gateway_on_paid`, situação "paga"). O crédito mês a mês só muda para "liquidada", e a baixa já existe. Por isso o "pago no acordo" do acerto inclui o parcelamento aprovado inteiro.
+  - **A devolução,** se o acerto der devolução: sai como **conta a pagar de devolução ao paciente (1.9.03), por Pix**, como no cancelamento de hoje e na devolução por Pix do cartão parcelado (4014). **Não se estorna o cartão:** o estorno devolveria o valor inteiro e o acerto contaria duas vezes.
+  - **O cuidado:** a unidade recebe o cartão mês a mês, mas a devolução vence em 15 dias, como hoje. A tela do termo avisa: "Parte do pago no acordo foi no cartão parcelado: a unidade ainda vai receber R$ X nos próximos meses."
+  - **Cartão do acordo ainda não aprovado** (o parcelamento existe, sem pagamento): na efetivação, ele é **cancelado inteiro no Asaas** (`DELETE /installments/{id}`, o mesmo de "Cancelar parcelamento" da 4013). Ele não tem pagamento, então nada entra no acerto.
+- **Boleto do acordo pago no Asaas durante o cancelamento:** vale a regra da 1B. O servidor consulta cada boleto no Asaas antes de cancelar. Se algum já estiver pago, **nada é cancelado**, e a tela explica: "Um dos boletos já foi pago no Asaas: nada foi mudado. A baixa vem pelo aviso do Asaas." Com a baixa, o acordo mudou, e a autorização cai (19.30.2): é preciso abrir o termo de novo, com o novo pago.
+- **Quem pediu não autoriza o próprio pedido, inclusive o Admin Master.** Quando quem pediu é o Admin Master, quem autoriza é o Financeiro da Franqueadora. O banco recusa a autorização por quem pediu (`SELF_APPROVAL`), seja qual for o papel.
+
+**A situação das entregas anteriores (15/11/2026):**
+- **4015a: rodada na produção.** O Jeferson rodou a pré-conferência (0 travados) e a 4015a, e a conferência vista bateu: 2 funções, 3 gatilhos, 0 planos, 0 termos. Produção na 0.453.1, conferida de fora.
+- **4017: rodada na produção.** A conferência vista bateu: 24 funções, 2 tabelas, 0 antigas, 0 aguardando, pasta privada. Produção na 0.454.1, conferida de fora.
+  - **Falta:** o teste do Jeferson pelas telas (o roteiro da 19.29) e o envio real do termo pela ZapSign, que só sai com o "pode" dele, para o e-mail dele.
