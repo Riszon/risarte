@@ -3443,3 +3443,83 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
 - **Não provado aqui:**
   - as telas pelo navegador;
   - o cancelamento do cartão parcelado do acordo no Asaas (o caminho é o da 4013, já provado no sandbox).
+
+### 19.32 Entrega 4 — mensalidades do PPR+ e da Ortodontia pelo Asaas: PLANO (15/11/2026; migração 4018; AGUARDA APROVAÇÃO)
+
+**O que a especificação já decidiu:**
+- D15 e a seção 6: "Mensalidade do PPR+ e da Ortodontia | Automático, no ciclo mensal | Unidade | Uma cobrança por mensalidade, com split".
+- A 19.2: elas são "criadas perto do vencimento pela mesma rotina da entrega 1" (a proposta A, com a janela da rede).
+- O pagador é o responsável financeiro, se houver; senão, o cliente.
+- Pix Automático e cartão recorrente são da ASA4B. Não há débito recorrente (D20).
+
+#### 19.32.1 Como é hoje (conferido no código)
+
+| | PPR+ (`ppr_charges`) | Ortodontia (`ortho_charges`) |
+|---|---|---|
+| **Como nasce** | Botão "Gerar mensalidades" do mês (`ppr_generate_charges`), à mão, sem rotina. A 1ª mensalidade não vira linha: o 1º pagamento é uma marca à mão. | No início do tratamento, o lote inteiro de uma vez (`_ortho_emit_batch`), e a renovação por lote. |
+| **Meio** | A adesão só aceita **crédito, débito ou Pix recorrente**, todos da ASA4B. Não há boleto nem Pix avulso. | O caso tem `billing_method`: boleto (o padrão), Pix/débito/crédito recorrente, cartão parcelado ou à vista do período. |
+| **Baixa** | À mão (`ppr_mark_charge_paid`): ativa a adesão no 1º pagamento, reativa a suspensa e credita os pontos do Riso+ Social. | À mão (`ortho_mark_charge_paid`), com o desconto de pontualidade até o vencimento. |
+| **Atraso** | Botão à mão: marca atrasada, suspende em 30 dias e cancela em 90. | Só marca atrasada. |
+| **Razão e taxa da rede** | Já entram: o razão (1.2.01) e a taxa da rede no pagamento (`_apply_fee_split`, origem `ppr_charge`). | Já entram (1.1.04 e a taxa, origem `ortho_charge`). |
+| **Cancelamento** | Cancelar a adesão **não cancela** as mensalidades em aberto. | Finalizar, suspender ou interromper cancela as futuras. |
+
+- **No Asaas:** a tabela `charges` já aceita a origem `ppr_charge` e `ortho_charge`, mas todo o resto (a lista, a emissão, a baixa pelo aviso, o split retido, as travas) só conhece a **parcela de venda**. Nada de PPR+ ou de Ortodontia vai ao Asaas hoje.
+
+#### 19.32.2 O que a 4018 faz
+
+1. **A ligação:** `charges.ppr_charge_id` e `charges.ortho_charge_id`, com:
+   - uma cobrança viva por mensalidade;
+   - a leitura (RLS) para quem vê o PPR+ ou a Ortodontia da unidade.
+2. **A lista da rotina:** a mesma rotina das cobranças automáticas passa a incluir as mensalidades.
+   - Mensalidade em aberto, da unidade ligada em Cobranças automáticas e com a Central pronta.
+   - Dentro da mesma janela da rede (15 dias por padrão).
+   - Só as que vencem a partir do dia em que a unidade foi ligada.
+3. **A emissão:** o mesmo caminho da entrega 1.
+   - O pagador é o responsável financeiro, se houver, senão o cliente; a régua do Asaas é a do cadastro.
+   - O split vai com a taxa do dia.
+   - A descrição: "Mensalidade PPR+ nov/2026" ou "Mensalidade da Ortodontia 3/24".
+   - **Ortodontia:** o desconto de pontualidade vai como desconto do Asaas até o vencimento.
+4. **A baixa pelo aviso do Asaas** (`_gateway_on_paid` ganha o ramo da mensalidade).
+   - Faz o mesmo da baixa à mão, sem pedir usuário: ativa e reativa a adesão, credita os pontos e aplica o desconto de pontualidade.
+   - A tarifa do Asaas vai como despesa bancária.
+   - Restaurar, duplicidade e estorno seguem as regras da 4005 para essa origem.
+5. **Sem taxa em dobro (D22):** a taxa da rede da mensalidade paga pelo Asaas com split nasce "retida", como a da parcela (hoje só a parcela é reconhecida). Sem isso, a unidade pagaria a taxa no split e de novo na conta a pagar.
+6. **As travas:** com a cobrança viva no Asaas, a mensalidade não aceita baixa à mão, mudança nem cancelamento sem cancelar antes a cobrança. Vale o caminho da 4015, com a confirmação na tela.
+   - Cancelar, suspender ou finalizar a adesão ou o caso cancela no Asaas as cobranças vivas das mensalidades que deixam de valer, na mesma operação.
+   - **Corrige o achado:** cancelar a adesão do PPR+ passa a cancelar as mensalidades em aberto.
+7. **A rotina:** a geração das mensalidades do PPR+ do mês passa a ser automática, no dia 1, na rotina das cobranças (hoje é um botão). A verificação de atraso do PPR+ também roda todo dia.
+8. **A tela:** a situação da cobrança e o link aparecem nas Mensalidades do PPR+ e da Ortodontia, com "Copiar link" e "Enviar pelo WhatsApp", como nas Cobranças da venda.
+
+#### 19.32.3 Decisões para o Jeferson
+
+1. **O meio do PPR+.** Hoje a adesão só aceita meios recorrentes, que são da ASA4B.
+   - (a) recomendado: a adesão passa a aceitar **boleto** e **Pix** (avulsos, um por mês, pelo Asaas). A recorrência entra na ASA4B. As adesões de hoje continuam com o meio delas, e a mensalidade sai por boleto até a ASA4B.
+   - (b) o PPR+ espera a ASA4B, e a 4018 é só a Ortodontia.
+2. **O meio da Ortodontia.**
+   - (a) recomendado: **boleto e Pix** pelo Asaas. Os outros ficam como hoje, de fora, com baixa à mão:
+     - o recorrente vai na ASA4B;
+     - o cartão parcelado e o à vista do período não têm mensalidade a cobrar.
+   - (b) só boleto.
+3. **Multa e juros da mensalidade.** O PPR+ e a Ortodontia não têm multa nem juros configurados.
+   - (a) recomendado: a cobrança sai **sem multa nem juros**, como é hoje. A regra de atraso do PPR+ (suspender e cancelar) e o desconto de pontualidade da Ortodontia continuam sendo o incentivo.
+   - (b) usar a multa e os juros da unidade (2% e 1% ao mês, por padrão).
+4. **A 1ª mensalidade do PPR+** (a que ativa a adesão).
+   - (a) recomendado: na assinatura da adesão, a 1ª mensalidade nasce e vai ao Asaas, e o pagamento dela ativa a adesão sozinho.
+   - (b) continua a marca à mão.
+5. **O lote da Ortodontia na forma 2.**
+   - (a) recomendado: as mensalidades da Ortodontia seguem a janela (um boleto por mês), sem a forma 2.
+   - (b) oferecer "Todos os boletos agora" no lote.
+
+#### 19.32.4 Provas
+
+- **Ensaio no treino, provado quebrando:**
+  - a lista da rotina, a emissão e a baixa pelo aviso;
+  - a taxa da rede retida, sem duplicar;
+  - as travas e os cancelamentos;
+  - a ativação da adesão e os pontos.
+  - **Modos de quebra:**
+    - `--quebrar=retida`: a taxa volta a ser cobrada em dobro;
+    - `--quebrar=baixa`: o aviso não dá baixa na mensalidade;
+    - `--quebrar=trava`: a baixa à mão passa com a cobrança viva.
+- **Sandbox, sem envio:** uma mensalidade de cada programa, emitida e paga pela simulação do sandbox, com o split.
+- `npm run test:indica`, porque os pontos do Riso+ Social entram na baixa.
