@@ -1,4 +1,4 @@
-Olá! Somos a Risarte, uma rede de clínicas com uma conta Asaas por unidade (subcontas da conta da franqueadora). O nosso sistema, o riSZon, emite as cobranças pela API, com split para a conta da franqueadora. Já testamos tudo no sandbox e temos as perguntas abaixo antes de ir para a produção. Para cada uma, a primeira linha é o contexto.
+Olá! Somos a Risarte, uma rede de clínicas em que cada unidade tem a sua própria conta Asaas, no CNPJ da unidade (conta vinculada), operada pelo nosso sistema pela chave de API, com autorização do franqueado. O nosso sistema, o riSZon, emite as cobranças pela API, com split para a conta da franqueadora. Já testamos tudo no sandbox e temos as perguntas abaixo antes de ir para a produção. Para cada uma, a primeira linha é o contexto.
 
 PARTE A — PERGUNTAS TÉCNICAS (equipe de integrações)
 
@@ -43,12 +43,12 @@ Contexto: emitimos cobranças CREDIT_CARD para o pagador pagar na fatura do Asaa
 Pergunta: o pagador consegue pagar com cartão de débito nessa fatura? Se sim, qual tarifa vale: a do débito ou a do crédito?
 
 11. A unidade como pagadora do próprio boleto (depósito do dinheiro do caixa)
-Contexto: cada unidade recebe dinheiro em espécie no balcão e precisa levá-lo à sua conta Asaas. A ideia é emitir, uma vez por dia, um boleto na subconta da unidade em que o pagador é a própria unidade (o mesmo CNPJ titular), sem notificações (notificationDisabled), com split para a conta da franqueadora, e pagá-lo em dinheiro na agência ou na lotérica. No sandbox, a API aceitou.
+Contexto: cada unidade recebe dinheiro em espécie no balcão e precisa levá-lo à sua conta Asaas. A ideia é emitir, uma vez por dia, um boleto na conta da unidade em que o pagador é a própria unidade (o mesmo CNPJ titular), sem notificações (notificationDisabled), com split para a conta da franqueadora, e pagá-lo em dinheiro na agência ou na lotérica. No sandbox, a API aceitou.
 Perguntas: (a) Na produção, a API aceita cobrança em que o CPF/CNPJ do pagador é o do titular da conta? (b) Esse uso é permitido pelos termos e pela análise de risco do Asaas, ou pode gerar bloqueio da conta? (c) O valor recebido cai como receita de cobrança normal, com a tarifa de boleto pago da nossa conta? (d) Se não for permitido, qual é o meio recomendado pelo Asaas para levar dinheiro em espécie para a conta (depósito, Pix a partir de outra conta, outro produto)?
 
 12. Limite diário de criação de cobranças na produção
 Contexto: no sandbox, GET /payments/limits mostra 5.000 por dia em cada conta; a nossa rotina lê esse limite antes de criar em lote.
-Pergunta: qual é o limite diário de criação de cobranças na produção para a conta da franqueadora e para as subcontas de Londrina e Cambé? Ele pode ser aumentado?
+Pergunta: qual é o limite diário de criação de cobranças na produção para a conta da franqueadora e para as contas de Londrina e Cambé? Ele pode ser aumentado?
 
 13. Token do cartão pela fatura do Asaas
 Contexto: queremos a recorrência no cartão sem que os dados do cartão passem pelo nosso sistema.
@@ -58,25 +58,29 @@ Pergunta: quando o paciente digita o cartão na fatura do Asaas, o creditCardTok
 Contexto: a cobrança com token é criada pelo nosso servidor, sem o paciente presente.
 Pergunta: qual IP devemos informar em remoteIp nesse caso: o do nosso servidor ou o do paciente na primeira compra?
 
+15. Split em assinatura
+Contexto: as mensalidades (PPR+, Ortodontia, plano empresarial) serão assinaturas com split, e as taxas da rede podem mudar durante a assinatura.
+Pergunta: dá para alterar o split de uma assinatura ativa? A mudança vale também para as cobranças já geradas e ainda não pagas, ou só para as próximas? Se não valer, dá para alterar o split de cada uma dessas cobranças?
+
 PARTE B — PERGUNTAS COMERCIAIS E CONTRATUAIS (gerente de contas)
 
-15. Chave de API entre CNPJs diferentes
-Contexto: a franqueadora (um CNPJ) opera, pelo riSZon, a conta Asaas de cada unidade (outro CNPJ), com autorização do franqueado.
+16. Chave de API entre CNPJs diferentes
+Contexto: a franqueadora (um CNPJ) opera, pelo riSZon, a conta Asaas vinculada de cada unidade (outro CNPJ), com autorização do franqueado.
 Pergunta: esse uso da chave de API da unidade pela franqueadora é permitido pelo contrato e pela regulação?
 
-16. Subcontas de CNPJs diferentes
-Contexto: as unidades são empresas de outros donos, abertas como subcontas da conta da franqueadora.
-Pergunta: subcontas geridas pela franqueadora podem ter CNPJ e titular diferentes dos dela?
+17. Subcontas para as novas unidades (futuro)
+Contexto: hoje todas as unidades são contas vinculadas; a criação de subconta está pronta no nosso sistema, mas desligada.
+Pergunta: no futuro, podemos abrir as contas das novas unidades como subcontas da franqueadora, mesmo com CNPJ e titular diferentes dos dela?
 
-17. Tabelas de tarifas e negociação pelo volume da rede
+18. Tabelas de tarifas e negociação pelo volume da rede
 Contexto: cada unidade tem a sua tabela de tarifas, e a rede soma o volume de todas.
 Pergunta: podemos negociar as tarifas pelo volume da rede inteira? Qual é a tabela vigente de cada conta (franqueadora, Londrina e Cambé), inclusive a de boleto pago?
 
-18. Pix Automático em Londrina e Cambé
+19. Pix Automático em Londrina e Cambé
 Contexto: o Pix Automático exige conta PJ aprovada e CNPJ ativo há pelo menos 6 meses.
 Pergunta: as contas de Londrina e Cambé já podem usar o Pix Automático? Qual é a tarifa?
 
-19. Repasse de 100% à parceira no plano empresarial
+20. Repasse de 100% à parceira no plano empresarial
 Contexto: no plano empresarial, a Risarte emite a cobrança da implantação e repassa 100% (ou 50%, na mensalidade) à RisLife, outra empresa, por split.
 Pergunta: o Asaas vê algum impedimento num split de 100% do valor para outra empresa?
 

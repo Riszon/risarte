@@ -540,7 +540,9 @@ ferramenta de edição, nunca por script de terminal.
 
 ### Perguntas ao gerente de contas do Asaas (do dono)
 
-Estão na Parte A da especificação: subcontas para CNPJ diferente, base do
+Lista única enviada pelo dono em 15/11/2026: `docs/asaas/perguntas-ao-asaas.txt`
+(20 perguntas; 19.22). Hoje todas as unidades são contas vinculadas (D2); a
+pergunta das subcontas é para o futuro. Antes estavam na Parte A: base do
 percentual com desconto/multa, split em chargeback, tarifas e liberação do Pix
 Automático e da tokenização, IP do pagador na cobrança com token, token
 devolvido pela fatura.

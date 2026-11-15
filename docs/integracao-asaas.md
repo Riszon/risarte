@@ -412,7 +412,7 @@ Toda ação de cobrança grava autor, data e motivo na auditoria.
 | Lista de IPs autorizados | O Asaas recomenda restringir a chave por IP. Sem IP fixo de saída na Vercel, ativar a lista derruba a integração: **não ativar**. IP fixo custa US$ 100/mês por projeto e é compartilhado entre clientes; decisão de custo na ASA7 (seção 13.2, item 2). |
 | Vault | O Supabase Vault nunca foi usado no riSZon. Conferir a extensão nos dois projetos antes da ASA0. A função que lê a chave responde só à chave de serviço. |
 | Dados de cartão | Nunca passam pelo banco nem pelos logs do riSZon; só o token do Asaas é guardado. |
-| Contas de teste | No sandbox, a conta raiz representa a franqueadora. Um script cria três subcontas (Londrina, Cambé e RisLife) e as registra como vinculadas. Recusa rodar fora do sandbox e do banco de treino. |
+| Contas de teste | No sandbox, a conta raiz representa a franqueadora. Só no sandbox, um script cria as contas de teste de Londrina, Cambé e RisLife como subcontas da conta raiz, porque o sandbox não tem as contas reais, e as registra como contas vinculadas. Na produção, Londrina e Cambé são contas vinculadas (D2), não subcontas. Recusa rodar fora do sandbox e do banco de treino. |
 | Enviar pelo WhatsApp | Enquanto o WhatsApp da Risarte não estiver integrado, o botão abre o WhatsApp com a mensagem e o link prontos. |
 
 ---
@@ -432,7 +432,7 @@ Toda ação de cobrança grava autor, data e motivo na auditoria.
 - [x] **Equipe Sucesso de Integrações do Asaas — respostas técnicas por escrito (11/11/2026).** Registro completo na seção 13.
 - [ ] **Gerente de contas do Asaas — ainda em aberto:**
   - Uso da chave de API da unidade pela franqueadora entre CNPJs distintos (contratual e regulatório).
-  - Subcontas geridas pela franqueadora entre CNPJs distintos.
+  - **Para o futuro:** abrir as contas das novas unidades como subcontas da franqueadora, mesmo com CNPJ e titular diferentes. Hoje todas as unidades são contas vinculadas (D2); a criação de subconta está construída, mas desligada.
   - O split é revertido em caso de chargeback?
   - Tabelas de tarifas de cada conta e negociação pelo volume da rede.
   - Elegibilidade de Londrina e Cambé ao Pix Automático.
@@ -475,7 +475,7 @@ Método: plano aprovado antes do código, uma fase por vez, testes de cada fluxo
 - [x] **Base do percentual com desconto, multa e juros** — confirmado pelo Asaas (11/11/2026). Falta só o teste real com valores mínimos antes do piloto.
 - [x] **Tarifa do boleto pago pelo QR Code Pix** — tarifado como PIX; pelo código de barras, como boleto (Asaas, 11/11/2026).
 - [ ] **Compensação da tarifa nos três casos (ASA3):** cálculos e diferença máxima por meio de pagamento, apresentados ao Jeferson antes de implementar (seção 13).
-- [ ] **Uso da chave e subcontas entre CNPJs distintos (gerente de contas).**
+- [ ] **Uso da chave entre CNPJs distintos e, para o futuro, subcontas de CNPJ e titular diferentes (gerente de contas).** Hoje todas as unidades são contas vinculadas (D2).
 - [ ] **Split em chargeback (gerente de contas).** Estorno total reverte o split (Asaas, 11/11/2026).
 - [ ] **Pix Automático (ASA4B):** a jornada sem pagamento inicial e o split com valor variável estão confirmados; faltam a elegibilidade de Londrina e Cambé (gerente de contas), a tarifa e o teste em sandbox.
 - [ ] **Cartão recorrente (ASA4B):** a tokenização é nativa; em aberto, o token pela fatura do Asaas (sem o cartão passar pelo riSZon) e o IP da cobrança automática.
@@ -532,7 +532,7 @@ A equipe Sucesso de Integrações do Asaas respondeu por escrito às dúvidas t�
 ### 13.3 Ainda com o gerente de contas do Asaas
 
 - Uso da chave de API entre CNPJs distintos (contratual e regulatório).
-- Subcontas entre CNPJs distintos.
+- Para o futuro: subcontas para as novas unidades, com CNPJ e titular diferentes (hoje todas são contas vinculadas, D2).
 - Split em chargeback.
 - Tabelas de tarifas e negociação.
 - Elegibilidade de Londrina e Cambé ao Pix Automático.
@@ -1569,7 +1569,7 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
 - O sandbox aceitou. A produção pode recusar, ou a área de risco pode estranhar, uma cobrança em que o pagador é o próprio dono da conta.
 - **Pergunta para o Jeferson enviar ao Asaas:**
 
-> Somos uma rede de clínicas com subcontas Asaas (uma por unidade). Cada unidade recebe pagamentos em dinheiro no balcão e precisa levar esse dinheiro à sua conta Asaas. Queremos emitir, uma vez por dia, um boleto na subconta da unidade em que o **pagador é a própria unidade** (o mesmo CNPJ titular da subconta), sem notificações (`notificationDisabled`), com split para a conta da franqueadora, e pagá-lo em dinheiro na agência ou na lotérica. Perguntas: (1) Na produção, a API aceita cobrança em que o CPF/CNPJ do pagador é o do titular da conta? (2) Esse uso (depósito do próprio caixa por boleto) é permitido pelos termos e pela análise de risco do Asaas, ou pode gerar bloqueio da conta? (3) O valor recebido cai como receita de cobrança normal, com a tarifa de boleto pago da nossa conta? (4) Se não for permitido, qual é o meio recomendado pelo Asaas para levar dinheiro em espécie para a conta (depósito, Pix a partir de outra conta, outro produto)?
+> Somos uma rede de clínicas em que cada unidade tem a sua própria conta Asaas, no CNPJ da unidade (conta vinculada), operada pelo nosso sistema pela chave de API, com autorização do franqueado. Cada unidade recebe pagamentos em dinheiro no balcão e precisa levar esse dinheiro à sua conta Asaas. Queremos emitir, uma vez por dia, um boleto na conta da unidade em que o **pagador é a própria unidade** (o mesmo CNPJ titular da conta), sem notificações (`notificationDisabled`), com split para a conta da franqueadora, e pagá-lo em dinheiro na agência ou na lotérica. Perguntas: (1) Na produção, a API aceita cobrança em que o CPF/CNPJ do pagador é o do titular da conta? (2) Esse uso (depósito do próprio caixa por boleto) é permitido pelos termos e pela análise de risco do Asaas, ou pode gerar bloqueio da conta? (3) O valor recebido cai como receita de cobrança normal, com a tarifa de boleto pago da nossa conta? (4) Se não for permitido, qual é o meio recomendado pelo Asaas para levar dinheiro em espécie para a conta (depósito, Pix a partir de outra conta, outro produto)?
 
 - **Se a resposta for "não":** a 1C não sai como boleto.
   - O dinheiro é depositado na **conta bancária da unidade**, e o Gerente registra o depósito com o comprovante (entrega 1).
@@ -2241,7 +2241,10 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
 
 ### 19.22 Perguntas ao Asaas (lista única, pronta para enviar)
 
-**Lista completa e atualizada (15/11/2026):** `docs/asaas/perguntas-ao-asaas.txt`, com 19 perguntas, cada uma com o contexto em uma linha. Pronta para o Jeferson copiar e enviar por e-mail e WhatsApp.
+**Lista completa e atualizada (15/11/2026):** `docs/asaas/perguntas-ao-asaas.txt`, com **20 perguntas** (1 a 15 para a equipe de integrações, 16 a 20 para o gerente de contas), cada uma com o contexto em uma linha. **Enviada pelo Jeferson** depois de corrigi-la:
+- as unidades são **contas vinculadas** (conta própria no CNPJ da unidade, operada pela chave de API com autorização do franqueado), e não subcontas;
+- acrescentou a pergunta 15, **split em assinatura**: dá para alterar o split de uma assinatura ativa e das cobranças já geradas e ainda não pagas?;
+- a pergunta das subcontas (17) passou a ser sobre o futuro: abrir as contas das novas unidades como subcontas, mesmo com CNPJ e titular diferentes.
 - Juntou as 8 perguntas abaixo e as outras que estavam espalhadas na especificação:
   - a mensageria nas cobranças avulsas (18.6);
   - o cartão de débito na fatura (18.6);
@@ -2250,7 +2253,7 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
   - o token e o IP do cartão recorrente (ASA4B);
   - as perguntas ao gerente de contas (13.3).
 - O split na contestação (13.3 e 18.6) entrou na pergunta 5 da lista.
-- A tarifa de "Boleto pago" (F6) entrou na pergunta 17, mas o Jeferson vai lê-la no painel.
+- A tarifa de "Boleto pago" (F6) entrou na pergunta 18, mas o Jeferson vai lê-la no painel.
 - **Numeração nova:** a lista de baixo é a antiga. Vale a numeração do arquivo.
 
 **A lista antiga (as 8 perguntas da entrega 2 e da 1B):**
@@ -2967,3 +2970,77 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
   - A taxa das baixas feitas antes da renegociação não muda.
 
 **6. O ensaio:** os quatro modos de quebra pedidos e o `npm run test:indica` estão em 19.28.8.
+
+#### 19.28.11 Várias vendas: decisão 3a com a condição do pagador e as respostas às dúvidas (15/11/2026)
+
+**Decisão do Jeferson: 3a, com uma condição.**
+- **A regra:** na renegociação de duas ou mais vendas, os boletos novos aparecem na lista de cada venda de origem, e todas recebem o aviso "A lista mudou".
+- **A condição:** o boleto novo só aparece na lista de uma venda se o pagador dessa venda for o mesmo pagador da renegociação.
+  - Se forem pagadores diferentes, a lista daquela venda mostra só as parcelas antigas como "Substituído pela renegociação — não pague", sem os boletos novos e sem valores do acordo.
+  - O ensaio prova esse caso.
+- **Aprovados como estão:**
+  - os avisos do Asaas ligados entre salvar e assinar, com a frase no termo;
+  - a maquininha sai da renegociação junto com a chave da venda direta;
+  - o benefício de pontualidade e o desconto no principal seguem as regras de hoje.
+
+**Como o riSZon sabe quem é o pagador (conferido):**
+- O responsável financeiro é **do cliente**, não da venda: `client_guardians.is_financial`, no máximo um por cliente (4003).
+- Cada cobrança grava o pagador do dia em que foi emitida: `charges.payer_kind`, `payer_guardian_id` e `payer_cpf` (4004).
+- A renegociação exige o mesmo cliente (`CLIENT_MISMATCH`). Por isso, hoje, as vendas de uma mesma renegociação têm o mesmo pagador.
+  - **A exceção real** é a troca do responsável financeiro entre a venda e a renegociação: os boletos da venda saíram no nome do responsável antigo, e os novos saem no nome do atual.
+- **Na 4017:**
+  - a lista guarda o pagador dela (`boleto_lists.payer_kind` e `payer_cpf`), o dos boletos da venda quando o link é gerado;
+  - um boleto novo só entra na lista se o pagador dele for igual;
+  - o ensaio troca o responsável financeiro e confere que a lista antiga não mostra os boletos novos nem valores do acordo.
+
+**Dúvida 1. Quantas vendas uma renegociação pode juntar?**
+- **Qualquer quantidade.** `save_renegotiation` não tem limite.
+  - Ela exige o mesmo cliente, a mesma unidade e parcelas em aberto ou parciais.
+  - Ela mistura vendas de plano, vendas diretas e parcelas de renegociações anteriores.
+- **Achado:** ela **não confere se a venda de origem está fechada.** Dá para renegociar parcela de uma proposta que ainda não virou venda.
+
+**Dúvida 2. Clientes diferentes com o mesmo responsável financeiro?**
+- **Não dá hoje** (`CLIENT_MISMATCH`).
+- **O que seria preciso** (não construir):
+  1. a renegociação passar a ser **do pagador**, não do cliente, com a lista dos clientes de cada parcela;
+  2. cada parcela nova ganhar um cliente, porque a ficha, o razão e as Cobranças da venda são por cliente. Ou as parcelas novas ficam divididas por cliente, uma linha de cada para cada vencimento, ou vem um conceito novo de "conta do responsável";
+  3. o termo assinado pelo responsável, citando cada cliente e cada venda;
+  4. no Asaas, o cadastro do pagador já é o do responsável, então a cobrança não muda. Muda a referência: hoje uma cobrança é de uma parcela de um cliente;
+  5. a lista por venda (19.28.5) continua valendo, e a condição do pagador já cobre esse caso.
+- É uma entrega à parte, com plano próprio, se você quiser.
+
+**Dúvida 3. Como o valor pago na parcela nova é atribuído às vendas de origem?**
+- **Hoje, não é atribuído a nenhuma venda**, e a 4017 não muda isso. A parcela de renegociação, por regra do banco (0189), não pertence a uma venda, porque pode juntar várias.
+- **Comissão de quem vendeu:** o riSZon **não tem comissão de vendedor**.
+  - O repasse do dentista é por procedimento realizado, por competência, e não lê pagamento nenhum.
+  - As metas creditam o vendedor no fechamento, pelo valor da venda.
+  - A "receita recebida" das metas é coletiva e conta todo pagamento, inclusive os da renegociação.
+- **Indica +Risos:**
+  - os pontos nascem no fechamento da venda de plano, pelo valor fechado, e ficam em carência;
+  - a carência termina pela data ou mais cedo, quando a 1ª parcela da venda é paga;
+  - a renegociação não muda pontos, nem com desconto;
+  - **o efeito de hoje, que a 4017 mantém:** se a 1ª parcela da venda foi renegociada, ela nunca fica "paga". A liberação antecipada deixa de acontecer, e os pontos saem só pela data da carência;
+  - o pagamento das parcelas novas não mexe no Indica.
+  - O ensaio confere isso, e o `npm run test:indica` roda junto.
+- **Relatórios por venda:**
+  - nas Cobranças da venda, as parcelas antigas aparecem como "renegociada", e as novas aparecem na ficha, separadas, com o código da renegociação (RN-…);
+  - o Painel de recebíveis e a taxa de atraso da unidade contam as novas e ignoram as "renegociada", para não contar a dívida duas vezes;
+  - as taxas da rede contam todo pagamento recebido, sem olhar a venda.
+
+**Dúvida 4. A venda cancelada depois da renegociação.**
+- **Hoje há uma falha, e ela já existe na produção:**
+  - o cancelamento do plano (`apply_plan_cancellation`, 0360) só cancela as parcelas "em aberto" da própria venda. As parcelas novas da renegociação que vieram dela **continuam em aberto e continuam sendo cobradas**;
+  - o acerto conta só o dinheiro pago nas parcelas da própria venda e **ignora o que foi pago nas parcelas da renegociação**. O cliente pode ficar com uma parcela de acerto e com as parcelas da renegociação ao mesmo tempo: **cobrança em dobro**;
+  - a venda direta fechada não tem cancelamento, e nenhuma função desfaz uma renegociação aplicada.
+- Com a 4017, as parcelas novas passam a ter cobrança automática no Asaas, e essa falha fica mais grave.
+
+**O que muda no desenho da 4017 (espera a sua aprovação):**
+
+| | Proposta | Alternativa |
+|---|---|---|
+| **A. Cancelar venda com parcelas renegociadas** | **(a) recomendado:** o cancelamento do plano é **recusado** enquanto a venda tiver parcelas numa renegociação aplicada com parcelas novas em aberto (`RENEGOTIATED_OPEN`). A tela diz: "Esta venda tem parcelas no acordo RN-…, ainda em aberto. O cancelamento dela fica para o distrato." A solução completa vai para a entrega do distrato (4020). | **(b)** a 4017 resolve: o cancelamento cancela a parte das parcelas novas que veio dessa venda, na proporção, e o acerto conta o que foi pago nelas. Com uma venda só, é direto; com várias vendas, o acordo teria de ser dividido, e a renegociação muda de tamanho. |
+| **B. Renegociar parcela de venda não fechada** | **(a) recomendado:** recusado (`SALE_NOT_CLOSED`). Só entra parcela de venda fechada ou de renegociação aplicada. | **(b)** deixar como hoje. |
+| **C. A condição do pagador** | a lista guarda o pagador e só mostra boleto novo do mesmo pagador (acima). Já é a sua regra; está aqui só para registro. | — |
+
+- **Hoje, na produção:** a recusa de A também protege a renegociação manual que já existe, porque a falha não depende da 4017.
+  - Ela entra na 4017 e sobe junto.
