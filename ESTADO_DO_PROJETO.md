@@ -2,6 +2,31 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.105.0 / 1045 — AS VAGAS DO CONTRATO CONFERIDAS PELO BANCO (15/11/2026)
+>
+> Levantamento do módulo pedido pelo dono, grupo A. Decisão dele: a trava no
+> BANCO, seguindo a regra de sempre (contratado + termos de inclusão aceitos;
+> passou disso, termo de inclusão).
+> - **1045:** gatilhos `employees_vagas_do_contrato` e
+>   `dependents_vagas_do_contrato` conferem toda pessoa que PASSA A ATIVA
+>   (cadastro, reativação, planilha, API). Antes, **reativar** titular
+>   (`set_employee_active`) ou dependente (update direto) passava por cima do
+>   limite. Só a transição conta: empresa já acima do limite segue funcionando.
+>   Titular que volta traz os dependentes ativos dele para a conta.
+> - ⚠️ **A conta do limite mora em `_limite_de_titulares_raw` /
+>   `_limite_de_dependentes_raw` / `_dependentes_ativos_raw`**; as portas da
+>   1031 (mesma guarda) chamam elas. Recusa
+>   `VAGAS_<TITULARES|DEPENDENTES>:<LIMIT|MAX>:<teto>:<ativos antes>` →
+>   `recusaDasVagas` (`vagas.ts`), mesmas frases do cadastro.
+> - **Cancelar contrato** filtra pela empresa da tela, diz quando nada foi
+>   cancelado e grava na auditoria; reativar dependente também.
+> - O item "limite do plano no cadastro um a um" do levantamento NÃO era
+>   defeito: ali o plano é calculado pelo banco, não escolhido.
+> - Ensaio no treino 28/28 (`scripts/empresarial-ensaio-1045.mjs`, transação
+>   desfeita) e quebrando 3 vezes; régua `vagas-no-banco.test.ts` (17),
+>   provada quebrando. Manual do Empresarial 11 e 11.1. **Não visto na tela.**
+> - ⏳ **1045 só no treino**; o dono roda na produção antes do push.
+
 > ## 🏦 0.453.0 — LEVANTAMENTO DE DÍVIDAS, FASE 5: RENEGOCIAÇÃO E ENCERRAMENTO (15/11/2026; migração 0408)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (1.3 "Renegociação no razão",

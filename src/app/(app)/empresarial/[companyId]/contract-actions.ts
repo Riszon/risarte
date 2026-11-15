@@ -35,11 +35,24 @@ export async function cancelContract(
   const session = await getSessionContext();
   if (!canUse(session)) return { ok: false, error: "Sem permissão." };
   const db = await empresarialDb();
-  const { error } = await db
+  // Só o contrato DESTA empresa (a da tela): um id de outra empresa não
+  // cancela nada. Sem linha cancelada, a tela diz isso — nunca "pronto".
+  const { data, error } = await db
     .from("contracts")
     .update({ status: "CANCELLED" })
-    .eq("id", contractId);
+    .eq("id", contractId)
+    .eq("company_id", companyId)
+    .select("id");
   if (error) return { ok: false, error: "Não foi possível cancelar." };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Contrato não encontrado nesta empresa. Nada foi cancelado." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_contract",
+    entityId: contractId,
+    details: { status: "CANCELLED" },
+  });
   revalidatePath(`/empresarial/${companyId}`);
   return { ok: true };
 }

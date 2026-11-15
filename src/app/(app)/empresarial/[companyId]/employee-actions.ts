@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { naoConseguiConferir } from "@/lib/contagem";
 import { recusaDoDependente, vagasDisponiveis } from "@/lib/empresarial/excedente";
-import { vagasParaTitulares } from "@/lib/empresarial/vagas";
+import { recusaDasVagas, vagasParaTitulares } from "@/lib/empresarial/vagas";
 import {
   conferirPlanilha,
   recusaDaImportacao,
@@ -109,6 +109,9 @@ export async function createEmployee(
     if (error.code === "23505") {
       return { ok: false, error: "Este CPF já está cadastrado nesta empresa." };
     }
+    // 1045: o banco confere a vaga também (corrida entre dois cadastros).
+    const recusa = recusaDasVagas(error.message);
+    if (recusa) return { ok: false, error: recusa };
     console.error("createEmployee failed:", error.message);
     return { ok: false, error: "Não foi possível cadastrar o titular." };
   }
@@ -217,6 +220,10 @@ export async function setEmployeeStatus(
     p_reason: validReason,
   });
   if (error) {
+    // 1045: reativar ocupa vaga — o banco recusa quando o contrato está
+    // cheio (o caminho é o termo de inclusão, como no cadastro novo).
+    const recusa = recusaDasVagas(error.message);
+    if (recusa) return { ok: false, error: recusa };
     console.error("setEmployeeStatus failed:", error.message);
     return { ok: false, error: "Não foi possível atualizar a situação." };
   }
@@ -384,6 +391,8 @@ export async function addDependent(
     if (error.code === "23505") {
       return { ok: false, error: "Este CPF já é dependente deste titular." };
     }
+    const recusa = recusaDasVagas(error.message);
+    if (recusa) return { ok: false, error: recusa };
     console.error("addDependent failed:", error.message);
     return { ok: false, error: "Não foi possível adicionar o dependente." };
   }
@@ -456,9 +465,18 @@ export async function setDependentStatus(
     .update({ status: active ? "ACTIVE" : "INACTIVE" })
     .eq("id", dependentId);
   if (error) {
+    // 1045: reativar dependente ocupa vaga do teto de dependentes.
+    const recusa = recusaDasVagas(error.message);
+    if (recusa) return { ok: false, error: recusa };
     console.error("setDependentStatus failed:", error.message);
     return { ok: false, error: "Não foi possível atualizar." };
   }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_dependent",
+    entityId: dependentId,
+    details: { active },
+  });
   revalidatePath(`/empresarial/${companyId}`);
   return { ok: true };
 }

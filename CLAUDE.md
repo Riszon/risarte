@@ -400,6 +400,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**15/11/2026 (vagas no banco) — PC Administrador (Empresarial 0.104.0 → 0.105.0, migração 1045)**
+
+- **As vagas do contrato conferidas pelo banco** (bloco "EMPRESARIAL 0.105.0"
+  no ESTADO). ⚠️ **Toda pessoa que passa a ATIVA no Empresarial passa pelos
+  gatilhos da 1045**: caminho novo não precisa conferir vaga para estar
+  certo, mas precisa traduzir a recusa com `recusaDasVagas`. ⚠️ Conta do
+  limite = as funções `_*_raw` da 1045 (as portas chamam elas).
+- ⏳ 1045 só no treino.
+
 **13/11/2026 (Asaas — ASA3, entrega 3) — PC Administrador (core 0.445.0 → 0.446.0, Asaas 0.9.0, migração 4010; worktree `wt-asaas`)**
 
 - **Repasses da franquia** (estado em `docs/asaas/ESTADO.md`; 18.8). ⚠️ **A

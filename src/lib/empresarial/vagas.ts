@@ -19,7 +19,7 @@
 
 import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import type { empresarialDb } from "./db";
-import { recusaDoCadastro, vagasDisponiveis } from "./excedente";
+import { recusaDoCadastro, recusaDoDependente, vagasDisponiveis } from "./excedente";
 
 type Db = Awaited<ReturnType<typeof empresarialDb>>;
 
@@ -159,4 +159,29 @@ export async function vagasParaTitulares(
   }
 
   return conferirVagasParaTitulares(limite, teto ?? null, ativos, quantosNovos);
+}
+
+/**
+ * A RECUSA DO BANCO, em português (1045).
+ *
+ * Desde a 1045 o banco confere a vaga de TODA pessoa que passa a ativa —
+ * cadastro, reativação, planilha ou API — pelos gatilhos
+ * `employees_vagas_do_contrato` e `dependents_vagas_do_contrato`. A recusa vem
+ * como `VAGAS_TITULARES:<LIMIT|MAX>:<teto>:<ativos antes>` (ou
+ * `VAGAS_DEPENDENTES`). As frases são as MESMAS da conferência do app: quem já
+ * viu a recusa do cadastro reconhece a da reativação.
+ *
+ * Devolve `null` quando a mensagem não é dessa recusa (outro erro).
+ */
+export function recusaDasVagas(mensagem: string | null | undefined): string | null {
+  const m = String(mensagem ?? "").match(/VAGAS_(TITULARES|DEPENDENTES):(LIMIT|MAX):(\d+):(\d+)/);
+  if (!m) return null;
+  const [, quem, tipo, tetoTexto, ativosTexto] = m;
+  const teto = Number(tetoTexto);
+  const ativos = Number(ativosTexto);
+  if (tipo === "LIMIT") {
+    return quem === "TITULARES" ? recusaDoCadastro(teto, ativos) : recusaDoDependente(teto, ativos);
+  }
+  const rotulo = quem === "TITULARES" ? "titular(es)" : "dependente(s)";
+  return `Esta empresa já tem ${ativos} ${rotulo} ativos, e o máximo combinado na proposta é ${teto}. Renegocie o limite antes de incluir mais.`;
 }

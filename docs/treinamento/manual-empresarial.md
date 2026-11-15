@@ -1293,6 +1293,14 @@ usa a mesma conta** (seção 9): os CPFs novos da planilha precisam caber de
 uma vez; se não couberem, nada entra e a mensagem diz quantos vieram e quantas
 vagas há. **Só titulares ocupam vaga** — dependentes têm o teto deles (11.1).
 
+**Reativar também ocupa vaga.** Quem foi inativado devolveu a vaga; para
+voltar, precisa caber de novo. Com o contrato cheio, **Reativar** é recusado
+com a mesma frase do cadastro, e o caminho é o mesmo: o termo de inclusão. A
+conferência é feita pelo **banco**, então vale para qualquer caminho — tela,
+planilha ou integração. Quem já está ativo não é afetado: uma empresa que hoje
+está acima do limite continua funcionando, só não inclui nem reativa mais
+ninguém sem termo aceito.
+
 **Incluir mais titulares** gera o **termo de inclusão** (código `TI-`):
 
 1. Informe quantos titulares e dependentes entram.
@@ -1354,6 +1362,10 @@ O termo de inclusão resolve os dois: informe quantos **titulares** e quantos
 > ⚠️ **Inativar um titular devolve as vagas dos dependentes dele.** É de
 > propósito: senão a empresa que trocou de funcionário ficaria travada por gente
 > que não está mais no programa.
+
+> **Reativar um dependente, ou um titular que volta com dependentes ativos,
+> também confere o teto de dependentes.** Sem vaga, a reativação é recusada
+> com a frase dos dependentes; o termo de inclusão libera.
 
 > **O teto é da empresa, não de cada titular.** O acordo combina "até 50
 > dependentes"; como eles se distribuem entre as famílias é decisão dela.
@@ -1768,7 +1780,8 @@ daquela empresa.
 
 | O que você vê | O que é | O que fazer |
 |---|---|---|
-| *"Esta empresa já tem N titular(es) ativos, e o contrato fechou N"* | A trava da quantidade contratada | Gere e aceite um termo de inclusão (seção 11) |
+| *"Esta empresa já tem N titular(es) ativos, e o contrato fechou N"* | A trava da quantidade contratada — no cadastro **e ao reativar** | Gere e aceite um termo de inclusão (seção 11) |
+| *"Contrato não encontrado nesta empresa. Nada foi cancelado."* | O contrato não é desta empresa (ou já não existe) | Recarregue a ficha e confira a empresa |
 | *"A planilha tem N titular(es) novo(s) e a empresa tem só M vaga(s); renegocie o limite ou reduza a lista"* | A mesma trava, na importação por planilha — nada foi gravado | Termo de inclusão (seção 11) ou uma planilha menor; importe de novo |
 | *"A planilha tem N dependente(s) novo(s); a empresa já tem M ativo(s) e o contrato fechou X…"* | O teto de dependentes do contrato, na importação por planilha — nada foi gravado | Termo de inclusão (seção 11) ou uma planilha com menos dependentes; importe de novo |
 | *"A planilha não foi importada: N linha(s) com problema. Nada foi gravado"* + a lista de linhas | Linha com CPF incompleto, sem nome, sem telefone, CPF repetido ou dependente sem titular | Corrija as linhas apontadas (a linha 1 é o cabeçalho) e escolha o arquivo de novo (seção 9) |

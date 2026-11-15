@@ -261,6 +261,20 @@ export function recusaDaImportacao(mensagem: string | null | undefined): string 
       `(${vagas} vaga(s)). Gere um termo de inclusão ou reduza a lista. Nada foi gravado.`
     );
   }
+  // 1045: o gatilho do banco recusa na linha que passou do limite.
+  const vagas = m.match(/VAGAS_(TITULARES|DEPENDENTES):(LIMIT|MAX):(\d+):(\d+)/);
+  if (vagas) {
+    const [, quem, tipo, teto] = vagas;
+    const rotulo = quem === "TITULARES" ? "titulares" : "dependentes";
+    const origem =
+      tipo === "LIMIT"
+        ? `o limite de ${rotulo} do contrato (${teto})`
+        : `o máximo de ${rotulo} combinado na proposta (${teto})`;
+    return (
+      `A planilha passa do ${origem}. ` +
+      `Gere um termo de inclusão ou reduza a lista. Nada foi gravado.`
+    );
+  }
   if (/HOLDER_NOT_FOUND/.test(m)) {
     return (
       "Há dependente(s) na planilha cujo titular não está na empresa. " +
