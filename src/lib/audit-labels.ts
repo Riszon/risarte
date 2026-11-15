@@ -66,6 +66,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   charge_refunds: "Pedido de estorno",
   charge_refund: "Pedido de estorno",
   charge_block: "Cartão parcelado pelo Asaas: gerar, cancelar e estornar o parcelamento",
+  card_block_return: "Devolução por Pix no cartão parcelado (pedido e autorização)",
+  card_block_return_term: "Termo de devolução assinado (aberto)",
   charge_refund_mobile: "Celular do pagador enviado ou apagado no Asaas (estorno de boleto)",
   gateway_split_run: "Split: \"Atualizar agora\"",
   gateway_split_zero: "Split retirado (todas as taxas em zero)",

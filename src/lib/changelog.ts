@@ -62,6 +62,43 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.451.0",
+    data: "2026-11-15",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4014, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Cartão parcelado pelo Asaas: devolução, contestação e avisos",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Desistência no cartão parcelado pelo Asaas: o Gerente registra a devolução por Pix nas Cobranças da venda, com o valor, o motivo e o distrato ou termo assinado anexado (sem o anexo, não registra). Só o Financeiro da Franqueadora ou o Admin Master autorizam; autorizada, vira conta a pagar da unidade. O parcelamento continua pago e a taxa da rede continua devida.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Contestação no cartão: o riSZon lê no Asaas o prazo para mandar os documentos, mostra o prazo nas Cobranças da venda e avisa o Gerente, quem fechou a venda, o Financeiro e o Admin Master quando chega e 2 dias úteis antes do prazo.",
+        papeis: ["unit_manager", "commercial_consultant", "finance_franchisor"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Cartão parcelado vencido sem pagamento: aviso para quem fechou a venda e para o Gerente no dia útil seguinte e de 7 em 7 dias. O link continua valendo; o Gerente decide se cancela ou troca o meio.",
+        papeis: ["unit_manager", "commercial_consultant", "receptionist"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O split do cartão parcelado passa a seguir a tarifa do Asaas do dia da aprovação do cartão, em todas as parcelas. A Central explica o que muda quando a antecipação está ligada e quanto ela custa a mais.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+    ],
+  },
+  {
     versao: "0.450.0",
     data: "2026-11-14",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4013, ASAAS_MIGRATION).

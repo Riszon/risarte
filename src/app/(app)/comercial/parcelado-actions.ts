@@ -102,6 +102,51 @@ export async function cancelarParcelamento(input: { blockId: string; reason: str
   return r;
 }
 
+/**
+ * 4014 (19.20, 1a): o pedido de DEVOLUÇÃO POR PIX na desistência. O termo
+ * assinado já foi enviado à pasta privada `devolucoes` (o banco confere que ele
+ * existe e é da unidade). Só o Financeiro da Franqueadora ou o Admin Master autorizam.
+ */
+export async function pedirDevolucao(input: { blockId: string; amountCents: number; reason: string; termPath: string; termName: string }): Promise<Resultado> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("card_block_return_request", {
+    p: { block: input.blockId, amount_cents: input.amountCents, reason: input.reason, term_path: input.termPath, term_name: input.termName },
+  });
+  if (error) return { ok: false, error: mensagemDaDevolucao(error.message) };
+  revalidatePath("/comercial", "layout");
+  return { ok: true };
+}
+
+export async function decidirDevolucao(input: { id: string; approve: boolean; note: string }): Promise<Resultado> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("card_block_return_decide", { p_id: input.id, p_approve: input.approve, p_note: input.note });
+  if (error) return { ok: false, error: mensagemDaDevolucao(error.message) };
+  revalidatePath("/comercial", "layout");
+  return { ok: true };
+}
+
+/** Link curto (10 min) para abrir o termo; a regra da pasta decide quem vê. */
+export async function linkDoTermo(path: string): Promise<{ ok: boolean; url?: string; error?: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.storage.from("devolucoes").createSignedUrl(path, 600);
+  if (error || !data) return { ok: false, error: "Não foi possível abrir o termo." };
+  await logAudit({ action: "view", entityType: "card_block_return_term", entityId: path });
+  return { ok: true, url: data.signedUrl };
+}
+
+const mensagemDaDevolucao = (m: string) => {
+  if (m.includes("TERM_REQUIRED")) return "Anexe o distrato ou o termo de devolução assinado. Sem o anexo, a devolução não é registrada.";
+  if (m.includes("AMOUNT_OVER_BALANCE")) return "O valor passa do que ainda pode ser devolvido neste parcelamento.";
+  if (m.includes("PARCELADO_ASAAS_NAO_PAGO")) return "A devolução por Pix é só para o parcelamento já pago no cartão.";
+  if (m.includes("RETURN_ALREADY_DECIDED")) return "Este pedido já foi decidido.";
+  if (m.includes("REASON_REQUIRED")) return "Escreva o motivo (pelo menos 5 letras).";
+  if (m.includes("NOT_ALLOWED")) return "Você não tem permissão para isto (pedir: Gerente; autorizar: Financeiro da Franqueadora ou Admin Master).";
+  return mensagem(m);
+};
+
 export type PreviaDoEstorno = {
   parcelas: number;
   creditadas: number;

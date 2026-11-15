@@ -7,16 +7,18 @@ import {
   deleteInstallment,
   findCustomerByReference,
   findPaymentsByReference,
+  getChargeback,
   listInstallmentPayments,
   refundInstallment,
   REFERENCIA_DO_CADASTRO_DO_PARCELADO,
+  updateInstallmentSplits,
   updatePaymentReference,
   type AsaasCredential,
   type AsaasPayment,
 } from "./api";
 import { AsaasError, mensagemDoAsaas, type AsaasRequestOptions } from "./client";
 import { bancoDe, lerCobranca, type CobrancaDoBanco, type ResultadoDaEmissao } from "./cobranca";
-import { comIdsDoAsaas, decidirSplit, splitsParaOAsaas } from "./split";
+import { comIdsDoAsaas, decidirSplit, mesmasEntradas, splitsParaOAsaas, type EntradaParaGravar, type PlanoDoSplit } from "./split";
 
 /**
  * O CARTÃO PARCELADO PELO ASAAS (ASA4, entrega 2; 4013) — só no servidor.
@@ -277,4 +279,112 @@ export async function estornarParcelamentoNoAsaas(args: {
     }
   }
   return { ok: true };
+}
+
+/**
+ * ASA4 (4014, 19.20 3a): O SPLIT NA APROVAÇÃO. O Asaas cobra a tarifa do
+ * parcelamento inteiro no dia da aprovação. Para cada parcelamento aprovado e
+ * ainda não conferido, refaz o split pela tarifa vigente NESSE dia; se for
+ * diferente do enviado, troca o split do parcelamento inteiro
+ * (`PUT /installments/{id}/splits`) e grava a nova entrada em cada parcela.
+ * Parcela já com split liquidado (ou antecipada) fica de fora: o Asaas não muda.
+ */
+export async function conferirSplitDosParcelamentos(limite = 30): Promise<{ conferidos: number; trocados: number; falharam: number }> {
+  const admin = createAdminClient();
+  const out = { conferidos: 0, trocados: 0, falharam: 0 };
+  const { data, error } = await admin.rpc("_card_blocks_split_to_check", { p_limit: limite });
+  if (error) {
+    if (!/does not exist|schema cache/i.test(error.message)) console.error("block split list failed:", error.message);
+    return out;
+  }
+  for (const b of (data ?? []) as { installment_block: string; account_id: string; asaas_installment_id: string; paid_on: string; charge_ids: string[] }[]) {
+    try {
+      const purpose = "split_do_parcelamento";
+      const cred = await credencialDaConta(b.account_id, purpose, null);
+      const opts = opcoesDaConta(b.account_id, purpose);
+      const planos: { id: string; plano: PlanoDoSplit; gravado: EntradaParaGravar[] }[] = [];
+      for (const id of b.charge_ids) {
+        const { data: plano } = await admin.rpc("_charge_split_plan", { p_charge_id: id });
+        const { data: gravado } = await admin
+          .from("charge_splits")
+          .select("walletId:wallet_id, percent, percentualValue:percentual_value, fixedCents:fixed_cents, accountId:destination_account_id, fees, tariffPercent:tariff_percent, tariffFixedCents:tariff_fixed_cents, asaasSplitId:asaas_split_id")
+          .eq("charge_id", id);
+        // A janela da tarifa é SÓ o dia da aprovação.
+        const p = plano as PlanoDoSplit;
+        planos.push({
+          id,
+          plano: p.elegivel ? { ...p, hoje: b.paid_on, vencimento: b.paid_on } : p,
+          gravado: ((gravado ?? []) as Record<string, unknown>[]).map((g) => ({
+            ...g,
+            percent: Number(g.percent),
+            percentualValue: Number(g.percentualValue),
+            fixedCents: Number(g.fixedCents),
+          })) as unknown as EntradaParaGravar[],
+        });
+      }
+      const d0 = decidirSplit(planos[0].plano);
+      if (!d0.vai) {
+        await admin.rpc("_card_block_split_checked", { p_block: b.installment_block });
+        out.conferidos += 1;
+        continue;
+      }
+      const iguais = planos.every((x) => {
+        const d = decidirSplit(x.plano);
+        return d.vai && mesmasEntradas(d.entradas, x.gravado);
+      });
+      if (!iguais) {
+        await updateInstallmentSplits(cred, b.asaas_installment_id, splitsParaOAsaas(d0.entradas), opts);
+        const parcelas = await listInstallmentPayments(cred, b.asaas_installment_id, opts);
+        for (const x of planos) {
+          const d = decidirSplit(x.plano);
+          if (!d.vai) continue;
+          const p = parcelas.find((q) => q.externalReference === x.id);
+          const { error: e } = await admin.rpc("_charge_save_split", { p_charge_id: x.id, p_entries: comIdsDoAsaas(d.entradas, p?.split ?? null) });
+          if (e) throw new Error(`split save failed: ${e.message}`);
+        }
+        out.trocados += 1;
+      }
+      await admin.rpc("_card_block_split_checked", { p_block: b.installment_block });
+      out.conferidos += 1;
+    } catch (e) {
+      out.falharam += 1;
+      console.error("block split check failed:", e instanceof Error ? e.message : e);
+    }
+  }
+  return out;
+}
+
+/**
+ * ASA4 (4014, ajuste E): o PRAZO DA CONTESTAÇÃO. Para cada cobrança "em
+ * contestação" sem prazo conhecido, lê no Asaas (`GET /payments/{id}/chargeback`)
+ * o prazo para mandar os documentos e grava. Os avisos saem pelo banco
+ * (`chargeback_alerts_run`): quando chega e 2 dias úteis antes do prazo.
+ */
+export async function conferirContestacoes(limite = 30): Promise<{ lidas: number; falharam: number }> {
+  const admin = createAdminClient();
+  const out = { lidas: 0, falharam: 0 };
+  const { data, error } = await admin.rpc("_chargebacks_to_check", { p_limit: limite });
+  if (error) {
+    if (!/does not exist|schema cache/i.test(error.message)) console.error("chargeback list failed:", error.message);
+    return out;
+  }
+  for (const c of (data ?? []) as { charge_id: string; account_id: string; asaas_payment_id: string }[]) {
+    try {
+      const purpose = "prazo_da_contestacao";
+      const cred = await credencialDaConta(c.account_id, purpose, null);
+      const cb = await getChargeback(cred, c.asaas_payment_id, opcoesDaConta(c.account_id, purpose));
+      await admin.rpc("_chargeback_save", {
+        p_charge_id: c.charge_id,
+        p_deadline: cb?.deadlineToSendDisputeDocuments ? String(cb.deadlineToSendDisputeDocuments).slice(0, 10) : null,
+        p_status: cb?.status ?? null,
+      });
+      out.lidas += 1;
+    } catch (e) {
+      out.falharam += 1;
+      // Lida, mesmo sem prazo: tenta de novo em 6 horas.
+      await admin.rpc("_chargeback_save", { p_charge_id: c.charge_id, p_deadline: null, p_status: null });
+      console.error("chargeback read failed:", e instanceof Error ? e.message : e);
+    }
+  }
+  return out;
 }

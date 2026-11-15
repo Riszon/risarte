@@ -7049,6 +7049,25 @@ Admin Master; o Admin libera em **Administração → Permissões**.
 
 **Maquininha na venda direta:** depois do teste do cartão parcelado pelo Asaas, o Admin Master desliga a maquininha em **Central de Configuração › Rede › Comercial**. A mudança fica na Auditoria, e as vendas antigas na maquininha continuam até a última parcela.
 
+**Desistência no meio do tratamento: devolução por Pix** *(desde a versão 0.451.0; até o distrato chegar)*:
+- Nas **Cobranças da venda**, no parcelamento pago: **Registrar devolução por Pix (desistência)**. Quem pede: o **Gerente**.
+- Preencha o valor (até o que ainda não foi devolvido), o motivo e anexe o **distrato ou termo de devolução assinado** (PDF ou foto). **Sem o anexo, a devolução não é registrada.**
+- ⚠️ **Risco:** depois de receber o Pix, o paciente ainda pode contestar a compra no cartão.
+- **Quem autoriza:** só o **Financeiro da Franqueadora** ou o **Admin Master**. Para negar, é preciso escrever o motivo.
+- **Autorizada:** vira **conta a pagar da unidade** (Cancelamentos e estornos). Pague pelo Pix da conta da unidade, em Contas a pagar, e anexe o comprovante.
+- As parcelas do cartão **continuam pagas** e a taxa da rede **continua devida**.
+
+**Contestação pelo titular do cartão:**
+- As parcelas ficam "em contestação" (a baixa continua), e as Cobranças da venda mostram o **prazo** para mandar os documentos, lido do Asaas.
+- O aviso vai para o Gerente, para quem fechou a venda, para o Financeiro da Franqueadora e para o Admin Master: quando chega e de novo **2 dias úteis antes do prazo**.
+- A defesa é feita no painel do Asaas, com os documentos da venda. Perdida, é tratada como o estorno inteiro (a taxa continua devida).
+
+**Link vencido sem pagamento:** aviso para quem fechou a venda e para o Gerente no dia útil seguinte ao 1º vencimento, e de **7 em 7 dias**. O link continua valendo; o Gerente decide se cancela ou troca o meio.
+
+**A tarifa do dia da aprovação:** o Asaas cobra a tarifa do parcelamento inteiro no dia da aprovação do cartão. O riSZon confere e, se a tarifa mudou desde a criação (fim de promoção), troca o split de todas as parcelas no Asaas.
+
+**Antecipação:** com a antecipação ligada (ou pedida à mão no painel do Asaas), a franqueadora recebe menos no split da parcela antecipada, e a diferença vira conta a pagar da unidade. A Central mostra o aviso com um exemplo.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

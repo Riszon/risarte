@@ -401,6 +401,21 @@ export function refundInstallment(cred: AsaasCredential, id: string, opts?: Opts
   );
 }
 
+/**
+ * ASA4 (4014): troca o split do parcelamento INTEIRO (`PUT /installments/{id}/splits`).
+ * Provado no sandbox (19.20): muda as parcelas todas, e aceita depois do cartão
+ * aprovado (enquanto nenhuma foi antecipada nem teve o split liquidado).
+ */
+export function updateInstallmentSplits(cred: AsaasCredential, id: string, splits: SplitParaEnviar[], opts?: Opts): Promise<unknown> {
+  return asaasRequest<unknown>({ ...cred, method: "PUT", path: "/installments/{id}/splits", params: { id }, body: { splits } }, opts);
+}
+
+/** ASA4 (4014): a contestação de uma cobrança (`GET /payments/{id}/chargeback`) — o prazo dos documentos. */
+export type AsaasChargeback = { status?: string | null; reason?: string | null; deadlineToSendDisputeDocuments?: string | null; disputeStatus?: string | null };
+export function getChargeback(cred: AsaasCredential, id: string, opts?: Opts): Promise<AsaasChargeback> {
+  return asaasRequest<AsaasChargeback>({ ...cred, method: "GET", path: "/payments/{id}/chargeback", params: { id } }, opts);
+}
+
 /** `GET /v3/payments?externalReference=` — o que já foi criado com esta referência. */
 export async function findPaymentsByReference(cred: AsaasCredential, externalReference: string, opts?: Opts): Promise<AsaasPayment[]> {
   const r = await asaasRequest<Lista<AsaasPayment>>(

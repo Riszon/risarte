@@ -122,6 +122,7 @@ export const TABELAS: Record<string, string> = {
   "public.gateway_routine_runs": "Rodada de rotina (cobranças, split, contas, régua)",
   "public.routine_notices": "Aviso do vigia das rotinas e de link de cobrança (um por vez)",
   "public.charge_link_sends": "Envio do link de cobrança pelo riSZon",
+  "public.card_block_returns": "Devolução por Pix no cartão parcelado pelo Asaas",
   "public.charge_splits": "Split de cobrança (o que foi enviado e liquidado)",
   "public.charge_split_updates": "Split de cobrança atualizado pela fila",
   "public.charge_refunds": "Pedido de estorno",

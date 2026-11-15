@@ -16,6 +16,7 @@ import {
   type PreviaDoEstorno,
 } from "@/app/(app)/comercial/parcelado-actions";
 import { mensagemDoParcelamento, ROTULO_DO_PARCELAMENTO, type ParcelamentoDaVenda } from "@/lib/asaas/cobrancas-da-venda";
+import { DevolucaoDoParcelamento } from "@/components/commercial/devolucao-do-parcelamento";
 
 const TOM: Record<string, string> = {
   pago: "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200",
@@ -105,6 +106,14 @@ export function ParcelamentoDaVendaBloco({
           <span className="text-[11px] text-muted-foreground">{p.creditadas} de {p.parcelas} parcela(s) já creditada(s)</span>
         )}
       </div>
+      {p.situacao === "em_contestacao" && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
+          O titular do cartão contestou a compra. A defesa é no painel do Asaas, com os documentos da venda.
+          {p.contestacao_prazo
+            ? ` Prazo para mandar os documentos: ${p.contestacao_prazo.slice(8, 10)}/${p.contestacao_prazo.slice(5, 7)}/${p.contestacao_prazo.slice(0, 4)}.`
+            : " O prazo dos documentos ainda vai ser lido do Asaas."}
+        </p>
+      )}
       <p className="text-[11px] text-muted-foreground">
         O paciente paga pelo link, no cartão, sem juros (a unidade absorve a tarifa). O Asaas não manda aviso: envie o link uma vez, por aqui.
         A venda só fecha com a aprovação do cartão.
@@ -154,6 +163,8 @@ export function ParcelamentoDaVendaBloco({
           </Button>
         )}
       </div>
+
+      <DevolucaoDoParcelamento p={p} aoMudar={aoMudar} />
 
       {modo === "cancelar" && p.block && (
         <div className="space-y-1.5 rounded-md border border-dashed p-2">

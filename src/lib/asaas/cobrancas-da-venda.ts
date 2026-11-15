@@ -49,7 +49,41 @@ export type ParcelamentoDaVenda = {
   gerar_permitido: boolean;
   cancelar_permitido: boolean;
   estornar_permitido: boolean;
+  /** 4014: a unidade (pasta do termo), a contestação e a devolução por Pix. */
+  clinic?: string | null;
+  contestacao_prazo?: string | null;
+  pago_cents?: number;
+  pode_pedir_devolucao?: boolean;
+  pode_decidir_devolucao?: boolean;
+  devolucoes?: DevolucaoDoParcelamento[];
 };
+
+/** 4014 (19.20, 1a): a devolução por Pix ao paciente, com o termo assinado. */
+export type DevolucaoDoParcelamento = {
+  id: string;
+  valor: number;
+  motivo: string;
+  situacao: "pedida" | "autorizada" | "negada";
+  termo: string;
+  termo_nome: string | null;
+  pedida_em: string;
+  quem_pediu: string | null;
+  decidida_em: string | null;
+  nota: string | null;
+  conta_a_pagar: string | null;
+};
+
+export const ROTULO_DA_DEVOLUCAO: Record<DevolucaoDoParcelamento["situacao"], string> = {
+  pedida: "Esperando a autorização",
+  autorizada: "Autorizada: conta a pagar da unidade",
+  negada: "Negada",
+};
+
+/** O quanto ainda dá para devolver (o pago menos o já pedido ou autorizado). */
+export function saldoParaDevolver(p: { pago_cents?: number; devolucoes?: DevolucaoDoParcelamento[] }): number {
+  const ja = (p.devolucoes ?? []).filter((d) => d.situacao !== "negada").reduce((s, d) => s + Number(d.valor), 0);
+  return Math.max(0, Number(p.pago_cents ?? 0) - ja);
+}
 
 export type CobrancasDaVenda = {
   automatica: boolean;

@@ -2322,3 +2322,51 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
 | Mensalidades | 4018 |
 | Reemissão | 4019 |
 | Distrato | 4020 |
+
+### 19.24 Construção da entrega 2, parte 2 (4014), em 15/11/2026
+
+**O que a 4014 faz:**
+1. **A devolução por Pix (1a):**
+   - tabela `card_block_returns`; pasta privada `devolucoes` (ver e enviar: quem cuida das contas a pagar da unidade, o Financeiro e o Admin; apagar: ninguém);
+   - **pedir:** `card_block_return_request` (Gerente, Financeiro ou Admin):
+     - só no parcelamento pago;
+     - o valor até o pago menos o já pedido ou autorizado;
+     - o motivo;
+     - o **termo assinado obrigatório**, conferido na pasta e da mesma unidade;
+     - avisa o Financeiro e o Admin;
+   - **decidir:** `card_block_return_decide` (só o Financeiro da Franqueadora ou o Admin Master):
+     - autorizada vira conta a pagar 1.9.03, aberta, para pagar pelo Pix da unidade com o comprovante;
+     - negada exige o motivo;
+     - avisa quem pediu;
+   - o parcelamento continua pago e a taxa da rede continua devida.
+2. **A contestação com prazo:**
+   - colunas `chargeback_deadline`, `chargeback_status` e `chargeback_checked_at`;
+   - o servidor (`conferirContestacoes`) lê `GET /payments/{id}/chargeback` → `deadlineToSendDisputeDocuments`;
+   - `chargeback_alerts_run` avisa uma vez por parcelamento: Gerente, quem fechou a venda, Financeiro e Admin. Avisa quando chega e 2 dias úteis antes do prazo.
+3. **O link vencido:** `card_block_overdue_alerts_run` avisa quem fechou a venda e o Gerente no dia útil seguinte ao 1º vencimento e de 7 em 7 dias. Não cancela sozinho.
+4. **O split na aprovação:**
+   - `_card_blocks_split_to_check` lista os parcelamentos aprovados, ainda não conferidos e sem split liquidado;
+   - o servidor (`conferirSplitDosParcelamentos`) refaz o split pela tarifa **do dia da aprovação**. Se for diferente do enviado, troca o split do parcelamento inteiro (`PUT /installments/{id}/splits`) e grava em cada parcela;
+   - `split_checked_at` marca o parcelamento conferido.
+5. **As telas:**
+   - Cobranças da venda: a devolução (pedir com o anexo, autorizar ou negar, abrir o termo) e o prazo da contestação;
+   - Central › Conta e tarifas: o aviso da antecipação ligada, com o que muda e o exemplo de custo.
+6. **A rotina de 10 em 10 minutos** (`api/cron/gateway-regua`) roda o split na aprovação, a leitura das contestações e os dois avisos.
+
+**Provas:**
+- **Ensaio no treino** em transação desfeita (`scripts/asaas-ensaio-asa4-entrega2-parte2.mjs --confirmar`): **31/31**.
+- **Provado quebrando:**
+
+  | Modo | Resultado |
+  |---|---|
+  | `--quebrar=termo` | 7 falhas |
+  | `--quebrar=autoriza` | 2 falhas |
+  | `--quebrar=aviso` | 6 falhas |
+
+- **Sandbox, pelo caminho real do servidor** (`asaas-asa4-entrega2-parte2.integracao.test.ts`, pagador sem contato): **2/2**.
+  - **O split:** parcelamento emitido com a tarifa cheia (17,6147%) e aprovado na promoção. A conferência trocou o split das 3 parcelas no Asaas para 17,4341% e gravou no riSZon; rodar de novo não mexe.
+  - **A contestação:** a leitura não quebra.
+  - **Limpeza:** o parcelamento estornado no fim.
+- **O que o sandbox não deixa provar:**
+  - **A antecipação** (`scripts/asaas-prova-antecipacao-parcelado-sandbox.mjs`): o Asaas recusou a simulação e o pedido, porque a conta de teste não é aprovada para antecipar (`cannotAnticipate`). A pergunta 2 da 19.22 continua.
+  - **A contestação:** o sandbox não simula. O prazo real só aparece na homologação (ASA7).
