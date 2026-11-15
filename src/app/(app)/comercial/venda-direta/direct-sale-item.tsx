@@ -35,6 +35,7 @@ import {
   setDirectSaleConditions,
 } from "./actions";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
+import { CustoDoParcelado } from "@/components/commercial/custo-do-parcelado";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
 import { MarginAlert } from "@/components/commercial/margin-alert";
@@ -856,6 +857,23 @@ export function SaleItem({
                     meioPadrao={effectiveMethod || null}
                   />
                 )}
+
+                {/* ASA4 (4013): o custo do cartão parcelado pelo Asaas, antes de confirmar. */}
+                {preview.final > 0 &&
+                  (effectiveMethod === "cartao_parcelado_asaas" ||
+                    schedule.some((e) => (e.paymentMethod ?? effectiveMethod) === "cartao_parcelado_asaas")) && (
+                    <CustoDoParcelado
+                      clinicId={sale.clinicId}
+                      totalCents={schedule
+                        .filter((e) => (e.paymentMethod || effectiveMethod) === "cartao_parcelado_asaas")
+                        .reduce((s, e) => s + e.amountCents, 0)}
+                      teto={maxInstallments}
+                      linhas={schedule
+                        .filter((e) => (e.paymentMethod || effectiveMethod) === "cartao_parcelado_asaas")
+                        .map((e) => ({ due_date: e.dueDate, amount_cents: e.amountCents }))}
+                      escolhido={schedule.filter((e) => (e.paymentMethod || effectiveMethod) === "cartao_parcelado_asaas").length}
+                    />
+                  )}
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Button

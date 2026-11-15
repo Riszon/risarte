@@ -30,8 +30,8 @@ describe("venda direta nova: os meios oferecidos (19.11)", () => {
     expect(meiosDaVendaNova({ ...base, installments: 1 })).toEqual(["pix", "dinheiro"]);
     expect(meiosDaVendaNova({ ...base, installments: 1, isManager: true })).toEqual(["pix", "dinheiro", "permuta"]);
   });
-  it("parcelado: Asaas (boleto, Pix, cartão), dinheiro e, provisório, a maquininha no cartão parcelado", () => {
-    expect(meiosDaVendaNova({ ...base, installments: 3 })).toEqual(["boleto", "pix", "cartao", "dinheiro", "cartao_parcelado"]);
+  it("parcelado: Asaas (boleto, Pix, cartão, cartão parcelado — 4013), dinheiro e, provisório, a maquininha", () => {
+    expect(meiosDaVendaNova({ ...base, installments: 3 })).toEqual(["boleto", "pix", "cartao", "cartao_parcelado_asaas", "dinheiro", "cartao_parcelado"]);
   });
   it("com a chave da rede desligada, sai a maquininha (entrega 2)", () => {
     expect(meiosDaVendaNova({ ...base, installments: 3, cardMachine: false })).not.toContain("cartao_parcelado");

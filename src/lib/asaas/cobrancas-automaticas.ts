@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { credencialDaConta, opcoesDaConta } from "@/lib/asaas/account";
 import { getPaymentLimits } from "@/lib/asaas/api";
 import { emitirNoAsaas } from "@/lib/asaas/cobranca";
+import { emitirParcelamentoNoAsaas } from "@/lib/asaas/parcelamento";
 import { comecarRodada, terminarRodada, type OrigemDaRodada } from "@/lib/asaas/rodadas";
 import { folgaDoLimite, origemDaCobranca, type ResumoDaCriacao } from "@/lib/asaas/cobrancas-automaticas-regras";
 
@@ -55,19 +56,28 @@ export async function criarCobrancasAutomaticas(opts: {
   const porUnidade = new Map<string, typeof itens>();
   for (const it of itens) porUnidade.set(it.clinic_id, [...(porUnidade.get(it.clinic_id) ?? []), it]);
 
-  for (const [clinicId, daUnidade] of porUnidade) {
+  // A folga do limite diário de cada conta (lida uma vez por rodada).
+  const folgas = new Map<string, number>();
+  const folgaDa = async (clinicId: string) => {
+    if (folgas.has(clinicId)) return folgas.get(clinicId)!;
     const { data: conta } = await admin.rpc("_gateway_account_of", { p_clinic_id: clinicId });
-    let folga = Number.POSITIVE_INFINITY;
+    let f = Number.POSITIVE_INFINITY;
     if (typeof conta === "string") {
       try {
         const purpose = "limite_de_cobrancas";
         const cred = await credencialDaConta(conta, purpose, opts.ator ?? null);
         const lim = await getPaymentLimits(cred, opcoesDaConta(conta, purpose));
-        if (lim) folga = folgaDoLimite(lim);
+        if (lim) f = folgaDoLimite(lim);
       } catch (e) {
         console.error("payment limits read failed:", e instanceof Error ? e.message : e);
       }
     }
+    folgas.set(clinicId, f);
+    return f;
+  };
+
+  for (const [clinicId, daUnidade] of porUnidade) {
+    let folga = await folgaDa(clinicId);
     let seguidas = 0;
     for (const it of daUnidade) {
       if (folga <= 0) {
@@ -104,6 +114,49 @@ export async function criarCobrancasAutomaticas(opts: {
       } else {
         resumo.falhas += 1;
         seguidas += 1;
+        resumo.erros.push(r.error.slice(0, 80));
+      }
+    }
+    folgas.set(clinicId, folga);
+  }
+
+  // ASA4 (4013): o CARTÃO PARCELADO PELO ASAAS nasce INTEIRO (o cartão é cobrado
+  // uma vez): o bloco da venda marcada, sem prazo. Cada parcela conta no limite.
+  if (!opts.origemDaCobranca) {
+    const { data: blocos, error: eb } = await admin.rpc("_card_blocks_due", {
+      p_clinic_id: opts.clinicId ?? null,
+      p_negotiation_id: opts.negotiationId ?? null,
+      p_direct_sale_id: opts.directSaleId ?? null,
+      p_limit: 100,
+    });
+    if (eb && !/does not exist|schema cache/i.test(eb.message)) console.error("card blocks list failed:", eb.message);
+    for (const b of (blocos ?? []) as { clinic_id: string; negotiation_id: string | null; direct_sale_id: string | null; parcelas: number; origem: string }[]) {
+      const folga = await folgaDa(b.clinic_id);
+      if (folga < b.parcelas) {
+        resumo.puladas += b.parcelas;
+        resumo.motivo = "limite_diario";
+        continue;
+      }
+      const prep = await admin.rpc("_card_block_prepare_system", {
+        p_negotiation_id: b.negotiation_id,
+        p_direct_sale_id: b.direct_sale_id,
+        p_origin: origemDaCobranca(opts.origem, b.origem),
+      });
+      if (prep.error || typeof prep.data !== "string") {
+        const m = prep.error?.message ?? "";
+        if (/NOT_DUE|CHARGE_ALREADY_ACTIVE|duplicate key|charges_one_active/i.test(m)) resumo.puladas += b.parcelas;
+        else {
+          resumo.falhas += 1;
+          resumo.erros.push(m.slice(0, 80));
+        }
+        continue;
+      }
+      const r = await emitirParcelamentoNoAsaas(prep.data, opts.ator ?? null);
+      if (r.ok) {
+        resumo.criadas += b.parcelas;
+        folgas.set(b.clinic_id, folga - b.parcelas);
+      } else {
+        resumo.falhas += 1;
         resumo.erros.push(r.error.slice(0, 80));
       }
     }

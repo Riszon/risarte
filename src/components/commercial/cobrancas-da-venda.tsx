@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import { lerCobrancasDaVenda, registrarEnvio } from "@/app/(app)/comercial/cobrancas-da-venda-actions";
+import { ParcelamentoDaVendaBloco } from "@/components/commercial/parcelamento-da-venda";
 import {
   linhasDeEnvio,
   mensagemDoWhatsApp,
@@ -78,11 +79,15 @@ export function CobrancasDaVenda({ negotiationId, directSaleId }: { negotiationI
           {dados.automatica && ` · as próximas nascem ${dados.prazo} dias antes do vencimento`}
         </span>
       </div>
+      {dados.parcelamento && (
+        <ParcelamentoDaVendaBloco p={dados.parcelamento} negotiationId={negotiationId} directSaleId={directSaleId} aoMudar={carregar} />
+      )}
       <ul className="divide-y text-sm">
         {dados.parcelas.map((p) => {
           const s = situacaoDaParcela(p);
           const c = p.cobranca;
-          const podeEnviar = c && ["emitida", "vencida"].includes(c.status);
+          // A parcela do parcelado é enviada pelo link do parcelamento (acima), não sozinha.
+          const podeEnviar = c && !p.parcelado && ["emitida", "vencida"].includes(c.status);
           return (
             <li key={p.installment_id} className="space-y-1 py-2">
               <div className="flex flex-wrap items-center gap-2">

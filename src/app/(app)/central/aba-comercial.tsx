@@ -5,6 +5,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/commercial";
 import { formatBRL } from "@/lib/pricing";
 import { FollowupCadenceEditor, type FollowupRowUi } from "../admin/regras-comerciais/followup-editor";
 import { CommercialRulesEditor, type RuleRowUi } from "../admin/regras-comerciais/rules-editor";
+import { MaquininhaDaVendaDireta } from "./maquininha-form";
 
 /**
  * A ABA COMERCIAL (ASA1, entrega 1), nos dois níveis. Era Administração ›
@@ -107,6 +108,8 @@ async function CondicoesDosProgramas({ supabase }: { supabase: SupabaseClient })
 
 export async function AbaComercialDaRede({ supabase }: { supabase: SupabaseClient }) {
   const { regras, cadencia, validadePronta } = await lerRegras(supabase);
+  // ASA4 (4013): a chave da maquininha na venda direta (sem a 4011, a seção some).
+  const { data: metodos } = await supabase.from("sale_method_settings").select("card_machine_direct_sale").eq("id", true).maybeSingle();
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -115,6 +118,7 @@ export async function AbaComercialDaRede({ supabase }: { supabase: SupabaseClien
         impresso.
       </p>
       <CommercialRulesEditor rows={regras} clinics={[]} validadePronta={validadePronta} escopo="rede" />
+      {metodos && <MaquininhaDaVendaDireta ligada={Boolean(metodos.card_machine_direct_sale)} />}
       <div className="border-t pt-6">
         <FollowupCadenceEditor rows={cadencia} clinics={[]} escopo="rede" />
       </div>

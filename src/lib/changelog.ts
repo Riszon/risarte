@@ -62,6 +62,50 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.450.0",
+    data: "2026-11-14",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4013, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Cartão parcelado pelo Asaas",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cartão parcelado pelo Asaas, ao lado da maquininha, na venda direta e no contrato: o paciente paga pelo link, em até 21 vezes, sem juros. O parcelamento nasce inteiro na assinatura e todas as parcelas recebem a baixa na aprovação do cartão; o dinheiro cai mês a mês.",
+        papeis: ["commercial_consultant", "receptionist", "unit_manager", "finance_franchisor"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Antes de confirmar a venda no cartão parcelado pelo Asaas, uma tabela mostra quanto o parcelamento custa à unidade em cada número de parcelas: a tarifa do Asaas, as taxas da rede e o que fica para a unidade.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cobranças da venda: o parcelamento no cartão tem um link só (Copiar link e WhatsApp), Gerar parcelamento no Asaas, Cancelar parcelamento e Estornar parcelamento — sempre inteiro. O estorno mostra antes o valor devolvido, a tarifa que não volta e a taxa da rede que continua devida.",
+        papeis: ["commercial_consultant", "unit_manager", "finance_franchisor"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Taxas da rede: a taxa das parcelas do cartão que ainda vão ser creditadas aparece como \"a reter pelo split\", separada do que já foi pago no split. Ela não vira conta a pagar.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Central de Configuração › Rede › Comercial: a chave da maquininha na venda direta. Só o Admin Master desliga, depois do teste do cartão parcelado pelo Asaas; fica na Auditoria.",
+        papeis: ["franchisor_staff", "finance_franchisor"],
+        manual: "13g.12. Cartão parcelado pelo Asaas",
+      },
+    ],
+  },
+  {
     versao: "0.449.0",
     data: "2026-11-14",
     // Sem migração do CORE: as desta entrega são da integração Asaas (4011 e 4012, ASAAS_MIGRATION).

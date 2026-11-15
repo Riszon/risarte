@@ -618,6 +618,7 @@ export default async function CommercialCockpitPage(
                 </div>
               )}
               <NegotiationPanel
+                clinicId={clinicId}
                 clientId={clientId}
                 planId={negotiationBlock.planId}
                 options={negotiationBlock.options}

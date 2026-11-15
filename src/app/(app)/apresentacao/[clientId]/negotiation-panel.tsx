@@ -43,6 +43,7 @@ import {
 } from "@/lib/commercial";
 import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
+import { CustoDoParcelado } from "@/components/commercial/custo-do-parcelado";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
 import { MarginAlert } from "@/components/commercial/margin-alert";
@@ -185,7 +186,10 @@ export function NegotiationPanel({
   ortho = null,
   ehComplemento = false,
   presente = null,
+  clinicId = null,
 }: {
+  /** ASA4 (4013): a unidade do cliente (tabela de custo do cartão parcelado pelo Asaas). */
+  clinicId?: string | null;
   /** AP24 (0363/2011): o presente de boas-vindas do Indica (nulo = não indicado). */
   presente?: PresenteDaNegociacao | null;
   /** AP64 (0357): negociação de plano complementar (cliente na Fase 5). */
@@ -464,7 +468,12 @@ export function NegotiationPanel({
   // À VISTA = 1×, e só em PIX ou depósito (regra do dono, 26/07/2026).
   const isCash = installmentsNum === 1;
   const methodOptions = useMemo(() => {
-    const allowed = rule.allowedMethods ?? [...PAYMENT_METHODS];
+    const regra = rule.allowedMethods ?? [...PAYMENT_METHODS];
+    // ASA4 (4013): a regra que libera o cartão parcelado libera também o pelo Asaas.
+    const allowed =
+      regra.includes("cartao_parcelado") && !regra.includes("cartao_parcelado_asaas")
+        ? [...regra, "cartao_parcelado_asaas" as const]
+        : regra;
     return isCash
       ? allowed.filter((m) => m === "pix" || m === "deposito_avista")
       : allowed;
@@ -1289,6 +1298,19 @@ export function NegotiationPanel({
               totalCents={finalCents}
               minInstallmentCents={minInstallmentCents}
               readOnly={locked || scheduleLocked}
+            />
+          )}
+
+          {/* ASA4 (4013): o custo do cartão parcelado pelo Asaas, antes de confirmar. */}
+          {clinicId && finalCents > 0 && effectiveMethod === "cartao_parcelado_asaas" && (
+            <CustoDoParcelado
+              clinicId={clinicId}
+              totalCents={schedule.filter((e) => (e.paymentMethod || effectiveMethod) === "cartao_parcelado_asaas").reduce((s, e) => s + e.amountCents, 0)}
+              teto={maxInstallmentsAllowed}
+              linhas={schedule
+                .filter((e) => (e.paymentMethod || effectiveMethod) === "cartao_parcelado_asaas")
+                .map((e) => ({ due_date: e.dueDate, amount_cents: e.amountCents }))}
+              escolhido={installmentsNum}
             />
           )}
 

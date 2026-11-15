@@ -129,6 +129,7 @@ export function CobrancaDaParcela({
   const podeTerCobranca =
     parcela.isOpen &&
     !METODOS_SEM_COBRANCA_NA_ASA1.has(parcela.paymentMethod ?? "") &&
+    parcela.paymentMethod !== "cartao_parcelado_asaas" &&
     parcela.terms.graceDays === 0 &&
     unidadePronta === true;
 

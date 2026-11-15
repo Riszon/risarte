@@ -7001,6 +7001,54 @@ Admin Master; o Admin libera em **Administração → Permissões**.
   - a fila da régua parou há mais de 1 hora.
 - O **segundo disparo** pelo banco (01:35, 08:10 e 09:30) só funciona depois de instalado o pg_net. Na produção, isso só acontece com a aprovação do dono.
 
+### 13g.12. Cartão parcelado pelo Asaas
+
+*(desde a versão 0.450.0)*
+
+**O que é:**
+- Um meio novo, **Cartão parcelado pelo Asaas**, ao lado da maquininha.
+- O paciente paga no cartão de crédito pelo link do Asaas, em até 21 vezes (acima de 12, só Visa e Mastercard). Não paga juros: a unidade absorve a tarifa.
+- O cartão é cobrado **uma vez**, e todas as parcelas ficam pagas na aprovação. O dinheiro cai na conta da unidade **mês a mês**, cerca de 30 dias depois de cada vencimento.
+
+**Onde se escolhe:**
+- **Venda direta nova:** em **Personalizar**, na coluna **Como paga**. Pode haver uma entrada em Pix ou em dinheiro e o resto no cartão parcelado.
+- **Contrato:** no meio de pagamento, ao lado do "Cartão de crédito parcelado" (maquininha).
+
+**As parcelas precisam ser como o Asaas faz:**
+- valores iguais, com a sobra dos centavos na **última**;
+- vencimentos mês a mês, no mesmo dia do 1º, com o 1º vencimento até o dia 28;
+- de 2 a 21 parcelas.
+- O parcelamento automático do riSZon já sai assim. Se você mexer, a tela avisa, e o salvamento é recusado até ficar certo.
+
+**Antes de confirmar:** a tabela **"Cartão parcelado pelo Asaas: quanto custa à unidade"** mostra, por número de parcelas, a tarifa do Asaas, as taxas da rede e o que fica para a unidade.
+
+**Quando nasce:**
+- Com a unidade ligada em **Cobranças automáticas**, o parcelamento nasce **inteiro** no Asaas na assinatura do contrato (ou quando a venda direta é marcada como assinada).
+- Venda assinada antes de ligar a unidade: **Gerar parcelamento no Asaas**, nas Cobranças da venda.
+
+**O link:**
+- O Asaas **não manda aviso** ao paciente no cartão parcelado.
+- Quem fechou a venda envia o link **uma vez**, nas **Cobranças da venda** (Copiar link ou WhatsApp). O envio fica registrado.
+- A venda só fecha com a aprovação do cartão.
+- Se o cartão for recusado, o paciente tenta de novo no mesmo link, sem criar outro parcelamento.
+
+**A baixa:**
+- Todas as parcelas recebem a baixa sozinhas, na aprovação, como "cartão parcelado", cada uma com a sua data de crédito.
+- **Não há baixa à mão** nem troca de meio na parcela do cartão parcelado pelo Asaas.
+
+**A taxa da rede:**
+- O split retém a taxa de cada parcela **no crédito dela**, mês a mês.
+- Até lá, ela aparece como **"a reter pelo split"** em Taxas da rede e como "a receber" nos Repasses da franquia. Não vira conta a pagar.
+
+**Cancelar e estornar (sempre o parcelamento inteiro):**
+- **Não pago:** **Cancelar parcelamento** (Gerente, Financeiro da Franqueadora ou Admin Master), com motivo.
+- **Pago:** **Estornar parcelamento**, com motivo, por quem a unidade indicou para pedir estorno.
+  - Antes de confirmar, a tela mostra o que a unidade perde: o valor devolvido, a tarifa do Asaas que não volta e a taxa da rede que **continua devida** sobre o valor inteiro.
+  - Essa taxa vira conta a pagar da unidade. Só o Financeiro da Franqueadora ou o Admin Master dispensam, à mão.
+- Não existe estornar uma parcela só. O estorno parcial chega com o distrato.
+
+**Maquininha na venda direta:** depois do teste do cartão parcelado pelo Asaas, o Admin Master desliga a maquininha em **Central de Configuração › Rede › Comercial**. A mudança fica na Auditoria, e as vendas antigas na maquininha continuam até a última parcela.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

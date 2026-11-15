@@ -28,13 +28,19 @@ export type TarifaVigente = {
   valid_from: string | null; // AAAA-MM-DD; nulo = desde sempre
   valid_to: string | null; // AAAA-MM-DD; nulo = sem fim
   min_installments?: number | null;
+  /** ASA4 (4013): a faixa do cartão parcelado (2–6, 7–12, 13–21). */
+  max_installments?: number | null;
 };
 
 /** A tarifa da conta: a = fração (0,0299), b = centavos fixos. */
 export type TarifaDoSplit = { a: number; bCents: number };
 
-/** Quais modalidades o pagador pode usar em cada meio emitido. */
-export function modalidadesDoMeio(meio: MeioDoSplit): string[] {
+/**
+ * Quais modalidades o pagador pode usar em cada meio emitido. ASA4 (4013): a
+ * parcela do cartão parcelado pelo Asaas (`parcelas` > 1) usa a faixa do parcelado.
+ */
+export function modalidadesDoMeio(meio: MeioDoSplit, parcelas = 1): string[] {
+  if (meio === "CREDIT_CARD" && parcelas > 1) return ["credito_parcelado"];
   if (meio === "PIX") return ["pix"];
   if (meio === "BOLETO") return ["boleto", "pix"];
   return ["credito_avista"];
@@ -47,12 +53,14 @@ export function tarifasNaJanela(
   tarifas: TarifaVigente[],
   meio: MeioDoSplit,
   de: string,
-  ate: string
+  ate: string,
+  parcelas = 1
 ): TarifaVigente[] {
-  const mods = new Set(modalidadesDoMeio(meio));
+  const mods = new Set(modalidadesDoMeio(meio, parcelas));
   return tarifas.filter((t) => {
     if (!mods.has(t.modality)) return false;
     if (t.modality === "credito_avista" && t.min_installments != null && t.min_installments > 1) return false;
+    if (parcelas > 1 && (parcelas < Number(t.min_installments ?? 1) || parcelas > Number(t.max_installments ?? 99))) return false;
     const ini = dia(t.valid_from);
     const fim = dia(t.valid_to);
     return (ini == null || ini <= ate) && (fim == null || fim >= de);
@@ -66,23 +74,29 @@ export class SemTarifa extends Error {
   }
 }
 
+/**
+ * ASA4 (4013, 19.19.2, medido no sandbox): no parcelado, a parte fixa sai UMA vez
+ * por parcelamento, rateada — cada parcela leva b ÷ n cortado no centavo.
+ */
+export const parteFixaDaParcela = (bCents: number, parcelas = 1) => (parcelas > 1 ? Math.floor(bCents / parcelas) : bCents);
+
 /** A MENOR parte percentual e a MENOR parte fixa da janela (proteção contra repasse a maior). */
-export function tarifaParaOSplit(tarifas: TarifaVigente[], meio: MeioDoSplit, de: string, ate: string): TarifaDoSplit {
-  const ok = tarifasNaJanela(tarifas, meio, de, ate);
+export function tarifaParaOSplit(tarifas: TarifaVigente[], meio: MeioDoSplit, de: string, ate: string, parcelas = 1): TarifaDoSplit {
+  const ok = tarifasNaJanela(tarifas, meio, de, ate, parcelas);
   if (!ok.length) throw new SemTarifa(meio);
   return {
     a: Math.min(...ok.map((t) => Number(t.fee_percent) / 100)),
-    bCents: Math.min(...ok.map((t) => Math.round(Number(t.fixed_fee_cents)))),
+    bCents: parteFixaDaParcela(Math.min(...ok.map((t) => Math.round(Number(t.fixed_fee_cents)))), parcelas),
   };
 }
 
 /** A MAIOR parte percentual e a MAIOR parte fixa da janela (o pior caso do teto). */
-export function tarifaMaxima(tarifas: TarifaVigente[], meio: MeioDoSplit, de: string, ate: string): TarifaDoSplit {
-  const ok = tarifasNaJanela(tarifas, meio, de, ate);
+export function tarifaMaxima(tarifas: TarifaVigente[], meio: MeioDoSplit, de: string, ate: string, parcelas = 1): TarifaDoSplit {
+  const ok = tarifasNaJanela(tarifas, meio, de, ate, parcelas);
   if (!ok.length) throw new SemTarifa(meio);
   return {
     a: Math.max(...ok.map((t) => Number(t.fee_percent) / 100)),
-    bCents: Math.max(...ok.map((t) => Math.round(Number(t.fixed_fee_cents)))),
+    bCents: parteFixaDaParcela(Math.max(...ok.map((t) => Math.round(Number(t.fixed_fee_cents)))), parcelas),
   };
 }
 
@@ -162,6 +176,8 @@ export type PlanoDoSplit =
       valorCents: number;
       descontoCents: number;
       meio: MeioDoSplit;
+      /** ASA4 (4013): número de parcelas do cartão parcelado pelo Asaas (1 = à vista). */
+      parcelas?: number;
     };
 
 /** A entrada como o banco grava (`_charge_save_split`). */
@@ -189,8 +205,9 @@ export function decidirSplit(plano: PlanoDoSplit): DecisaoDoSplit {
   let tarifa: TarifaDoSplit;
   let maxima: TarifaDoSplit;
   try {
-    tarifa = tarifaParaOSplit(plano.tarifas, plano.meio, de, ate);
-    maxima = tarifaMaxima(plano.tarifas, plano.meio, de, ate);
+    const n = Number(plano.parcelas ?? 1);
+    tarifa = tarifaParaOSplit(plano.tarifas, plano.meio, de, ate, n);
+    maxima = tarifaMaxima(plano.tarifas, plano.meio, de, ate, n);
   } catch (e) {
     if (e instanceof SemTarifa) return { vai: false, motivo: "sem_tarifa", recusar: false };
     throw e;

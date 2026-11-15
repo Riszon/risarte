@@ -187,7 +187,13 @@ export function deleteWebhook(cred: AsaasCredential, id: string, opts?: Opts): P
 // ---- Clientes (ASA1) -------------------------------------------------------------
 // Conferido em docs.asaas.com (criar-novo-cliente, listar-clientes) em 11/11/2026.
 
-export type AsaasCustomer = { id?: string | null; name?: string | null; cpfCnpj?: string | null; deleted?: boolean | null };
+export type AsaasCustomer = { id?: string | null; name?: string | null; cpfCnpj?: string | null; deleted?: boolean | null; externalReference?: string | null };
+
+/**
+ * ASA4 (4013, 19.19.3): o cadastro SEM AVISOS do cartão parcelado leva esta
+ * referência; nunca é "o" pagador da régua (a busca pelo CPF o ignora).
+ */
+export const REFERENCIA_DO_CADASTRO_DO_PARCELADO = "riszon-parcelado:";
 
 /** `GET /v3/customers?cpfCnpj=` — o pagador que já existe na conta (o primeiro não apagado). */
 export async function findCustomerByCpfCnpj(cred: AsaasCredential, cpfCnpj: string, opts?: Opts): Promise<AsaasCustomer | null> {
@@ -195,7 +201,37 @@ export async function findCustomerByCpfCnpj(cred: AsaasCredential, cpfCnpj: stri
     { ...cred, method: "GET", path: "/customers", query: { cpfCnpj, limit: 10 } },
     opts
   );
-  return (r?.data ?? []).find((c) => c?.id && !c.deleted) ?? null;
+  return (r?.data ?? []).find((c) => c?.id && !c.deleted && !String(c.externalReference ?? "").startsWith(REFERENCIA_DO_CADASTRO_DO_PARCELADO)) ?? null;
+}
+
+/** ASA4 (4013): o cadastro sem avisos de um parcelamento (`GET /customers?externalReference=`). */
+export async function findCustomerByReference(cred: AsaasCredential, externalReference: string, opts?: Opts): Promise<AsaasCustomer | null> {
+  const r = await asaasRequest<Lista<AsaasCustomer>>(
+    { ...cred, method: "GET", path: "/customers", query: { externalReference, limit: 10 } },
+    opts
+  );
+  return (r?.data ?? []).find((c) => c?.id && !c.deleted && c.externalReference === externalReference) ?? null;
+}
+
+/**
+ * ASA4 (4013): cria o cadastro SEM AVISOS do parcelamento (só nome e CPF, avisos
+ * do Asaas desligados, sem contato): nenhum e-mail, SMS ou WhatsApp do Asaas
+ * sai para ele. O link vai por quem fechou a venda (19.19.3, 19.21).
+ */
+export function createCustomerWithoutNotices(
+  cred: AsaasCredential,
+  input: { name: string; cpfCnpj: string; externalReference: string },
+  opts?: Opts
+): Promise<AsaasCustomer> {
+  return asaasRequest<AsaasCustomer>(
+    {
+      ...cred,
+      method: "POST",
+      path: "/customers",
+      body: { name: input.name, cpfCnpj: input.cpfCnpj, notificationDisabled: true, externalReference: input.externalReference },
+    },
+    opts
+  );
 }
 
 /**
@@ -237,6 +273,11 @@ export type AsaasPayment = {
   split?: AsaasSplit[] | null;
   netValue?: number | null;
   refunds?: AsaasRefund[] | null;
+  /** ASA4 (4013): o parcelamento no cartão a que a parcela pertence. */
+  installment?: string | null;
+  installmentNumber?: number | null;
+  estimatedCreditDate?: string | null;
+  creditDate?: string | null;
 };
 
 /** Uma entrada de split devolvida pelo Asaas. */
@@ -294,6 +335,68 @@ export function createPayment(cred: AsaasCredential, input: NovaCobranca, opts?:
         ...(input.splits && input.splits.length ? { split: input.splits } : {}),
       },
     },
+    opts
+  );
+}
+
+// ---- Cartão parcelado pelo Asaas (ASA4, entrega 2; 4013) -------------------------
+// Provado no sandbox em 14/11/2026 (spec 19.19 e 19.23): `installmentCount` +
+// `totalValue` cria o parcelamento inteiro (valores iguais, a sobra na ÚLTIMA,
+// vencimentos mês a mês); a referência do POST vai para todas as parcelas e cada
+// parcela aceita a SUA (`PUT /payments/{id}`), que se mantém depois do pagamento.
+
+export type NovoParcelamento = Omit<NovaCobranca, "billingType" | "value" | "discountValue" | "fineValue" | "interestPercent"> & {
+  /** De 2 a 21. */
+  installmentCount: number;
+  /** O total do parcelamento, em reais. */
+  totalValue: number;
+};
+
+/** `POST /v3/payments` com `installmentCount` + `totalValue` — o cartão parcelado, sem cartão (o pagador paga pelo link da fatura). */
+export function createCardInstallment(cred: AsaasCredential, input: NovoParcelamento, opts?: Opts): Promise<AsaasPayment> {
+  return asaasRequest<AsaasPayment>(
+    {
+      ...cred,
+      method: "POST",
+      path: "/payments",
+      body: {
+        customer: input.customer,
+        billingType: "CREDIT_CARD",
+        installmentCount: input.installmentCount,
+        totalValue: input.totalValue,
+        dueDate: input.dueDate,
+        description: input.description.slice(0, 500),
+        externalReference: input.externalReference,
+        ...(input.splits && input.splits.length ? { split: input.splits } : {}),
+      },
+    },
+    opts
+  );
+}
+
+/** `GET /v3/installments/{id}/payments` — as parcelas do parcelamento, na ordem. */
+export async function listInstallmentPayments(cred: AsaasCredential, id: string, opts?: Opts): Promise<AsaasPayment[]> {
+  const r = await asaasRequest<Lista<AsaasPayment>>(
+    { ...cred, method: "GET", path: "/installments/{id}/payments", params: { id }, query: { limit: 50 } },
+    opts
+  );
+  return (r?.data ?? []).filter((p) => p?.id && !p.deleted).sort((a, b) => Number(a.installmentNumber ?? 0) - Number(b.installmentNumber ?? 0));
+}
+
+/** `PUT /v3/payments/{id}` só com a referência: a parcela passa a apontar para a SUA cobrança no riSZon. */
+export function updatePaymentReference(cred: AsaasCredential, id: string, externalReference: string, opts?: Opts): Promise<AsaasPayment> {
+  return asaasRequest<AsaasPayment>({ ...cred, method: "PUT", path: "/payments/{id}", params: { id }, body: { externalReference } }, opts);
+}
+
+/** `DELETE /v3/installments/{id}` — cancela o parcelamento NÃO pago, inteiro. */
+export function deleteInstallment(cred: AsaasCredential, id: string, opts?: Opts): Promise<{ deleted?: boolean | null }> {
+  return asaasRequest<{ deleted?: boolean | null }>({ ...cred, method: "DELETE", path: "/installments/{id}", params: { id } }, opts);
+}
+
+/** `POST /v3/installments/{id}/refund` — estorno do parcelamento INTEIRO (sem `value`; provado no sandbox com o corpo vazio). */
+export function refundInstallment(cred: AsaasCredential, id: string, opts?: Opts): Promise<{ status?: string | null; refunds?: AsaasRefund[] | null }> {
+  return asaasRequest<{ status?: string | null; refunds?: AsaasRefund[] | null }>(
+    { ...cred, method: "POST", path: "/installments/{id}/refund", params: { id }, body: {} },
     opts
   );
 }

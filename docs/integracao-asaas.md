@@ -2241,3 +2241,84 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
 5. **Estorno de parcelamento com parcelas já creditadas.** No `POST /installments/{id}/refund` de um parcelamento com parte das parcelas já creditadas, de qual saldo sai o valor (da conta emissora inteiro, ou proporcional ao que cada carteira recebeu)? O que acontece se a conta emissora não tiver saldo? Há prazo máximo para estornar uma compra no cartão?
 6. **Tentativas no link.** Na fatura de um parcelamento no cartão, depois de uma recusa do banco emissor, o pagador pode tentar de novo no mesmo link? Há limite de tentativas? A recusa gera alguma tarifa?
 7. **Tarifa na aprovação.** A tarifa do cartão parcelado (percentual da faixa + parte fixa rateada) é calculada pela tabela vigente **no dia da aprovação** do cartão, mesmo que a cobrança tenha sido criada antes, durante uma promoção?
+
+### 19.23 Construção da entrega 2, parte 1 (4013), em 14/11/2026
+
+**Prova antes de desenhar: a referência de cada parcela** (`scripts/asaas-prova-referencia-parcelas-sandbox.mjs`; pagador sem contato, nada enviado):
+- a referência (`externalReference`) do POST vai para **todas** as parcelas;
+- cada parcela aceita a **sua** referência (`PUT /payments/{id}`), e o parcelamento continua o mesmo, com o split em cada parcela;
+- depois do cartão aprovado, cada parcela **mantém** a sua referência.
+- **Por isso o desenho é uma cobrança do riSZon por parcela,** cada uma ligada à sua parcela no Asaas e agrupadas por `charges.installment_block`. O aviso, a baixa, a tarifa e o split de hoje valem parcela a parcela, sem mudar o recebimento dos avisos.
+- ⚠️ **Sandbox:** com parcelas de R$ 10, o cartão de teste foi recusado várias vezes ("Transação não autorizada"), com e sem a troca da referência; com R$ 100, aprovou. As provas usam valores maiores.
+
+**O que a 4013 faz:**
+1. **O meio `cartao_parcelado_asaas`:**
+   - entra nas regras de meio de `direct_sales`, `payment_installments` e `plan_negotiations`;
+   - a venda direta nova sempre o aceita;
+   - a parcela do bloco **não vira cobrança sozinha** (`USE_O_PARCELAMENTO`) e não aceita baixa à mão (`PARCELADO_ASAAS_SO_PELO_ASAAS`);
+   - as portas por parcela do cancelar e do estornar recusam a parcela do bloco.
+2. **O bloco:**
+   - `_card_block_check` confere o que o Asaas faz: 2 a 21 parcelas, 1º vencimento até o dia 28, mês a mês, valores iguais com a sobra na última. Roda dentro de `apply_settlement_projection`, ao salvar o parcelamento da venda direta ou do contrato.
+   - A previsão de crédito é o vencimento + 30 dias; a data certa vem do Asaas na aprovação.
+3. **Nasce inteiro:**
+   - `_card_blocks_due` lista a venda marcada na assinatura (a marca da entrega 1), sem prazo;
+   - `_card_block_prepare_system` (servidor) e `charge_block_prepare` (à mão, a mesma permissão da emissão por parcela) criam as cobranças do bloco, uma por parcela;
+   - o valor é o devido em dia, sem desconto, multa nem juros;
+   - `charge_block_retry` é o "Tentar de novo".
+4. **O servidor** (`src/lib/asaas/parcelamento.ts`):
+   - **o cadastro do pagador:** cadastro **sem avisos** do parcelamento (referência `riszon-parcelado:<bloco>`; a busca pelo CPF da régua o ignora);
+   - **a criação:** o split pelo Método B com a parte fixa rateada; o parcelamento (`installmentCount` + `totalValue`), com a referência do bloco; tempo esgotado leva a nova consulta, nunca a repetir o POST;
+   - **a gravação:** a conferência de cada parcela (valor e vencimento); a troca da referência de cada parcela pela da sua cobrança; o split e a emissão de cada uma;
+   - **cancelar e estornar inteiro:** `DELETE /installments/{id}` e `POST /installments/{id}/refund`.
+5. **A baixa:**
+   - `_gateway_on_paid` grava a baixa como `cartao_parcelado`;
+   - `_gateway_apply_fee` grava a tarifa como `credito_parcelado`;
+   - a 1ª parcela fecha a venda.
+6. **O split:**
+   - `_charge_split_plan` manda o número de parcelas e a faixa;
+   - `_charge_split_inputs` e `split.ts` usam a faixa do parcelado e b ÷ n.
+7. **A taxa a reter:**
+   - `_split_charge_awaiting` marca a taxa como a reter quando o split da parcela está agendado (enviado ou bloqueado) e sem valor liquidado;
+   - `network_fee_summary` ganhou `awaiting_cents`; Taxas da rede mostra "a reter pelo split".
+8. **As telas e o estorno:**
+   - `card_block_fee_table` dá a tabela do custo no fechamento: venda direta e contrato (`components/commercial/custo-do-parcelado.tsx`);
+   - `_card_block_summary` e o bloco do parcelamento nas Cobranças da venda (`components/commercial/parcelamento-da-venda.tsx`): um link só, gerar, tentar de novo, cancelar e estornar;
+   - `card_block_refund_preview` mostra o que a unidade perde antes do estorno;
+   - a chave da maquininha está na **Central › Rede › Comercial** (`sale_method_settings_set`, só o Admin Master, na auditoria).
+
+**Provas:**
+- **Ensaio no treino** em transação desfeita (`scripts/asaas-ensaio-asa4-entrega2.mjs --confirmar`): **34/34**.
+- **Provado quebrando:**
+
+  | Modo | Resultado |
+  |---|---|
+  | `--quebrar=bloco` | 3 falhas |
+  | `--quebrar=parcela` | 5 falhas |
+  | `--quebrar=areter` | 3 falhas |
+
+- **Ponta a ponta no sandbox** (`asaas-asa4-entrega2.integracao.test.ts`, caminho real do servidor, pagador sem contato, cadastro sem avisos): **5/5**.
+  - **A criação:** venda direta com entrada em Pix e 3× no cartão. A assinatura criou **4 cobranças**: a entrada e o parcelamento inteiro, com as 3 parcelas ligadas.
+  - **No Asaas:** cada parcela com a referência da sua cobrança e com o split; o cadastro sem avisos, sem e-mail e sem celular.
+  - **O pagamento:** com o cartão de teste. As **3 baixas chegaram sozinhas** pelo aviso do Asaas, como "cartão parcelado", com a tarifa do parcelado e 3 datas de crédito.
+  - **O estorno inteiro:** as 3 parcelas ficaram estornadas. A taxa da rede ficou **mantida e devida** (R$ 17 por parcela de R$ 100, 0 retido), por isso virou a cobrar da unidade, como na regra 2a.
+  - **O cancelamento:** um 2º parcelamento não pago foi cancelado inteiro.
+  - **Limpeza:** as cobranças de teste foram estornadas ou canceladas no sandbox, incluindo as entradas em Pix.
+
+**Ficou para a parte 2 (migração 4014):**
+- a devolução por Pix registrada com o distrato ou termo anexado e a autorização (1a);
+- a contestação com o prazo e o aviso repetido 2 dias úteis antes. Hoje a parcela já fica "em contestação" e o aviso sai (4005), mas sem o prazo;
+- o aviso de antecipação ligada na Central;
+- o aviso do link vencido a cada 7 dias (3a);
+- a correção do split na aprovação pela tarifa do dia (`PUT /installments/{id}/splits`).
+  - Até lá, a fila da virada do dia atualiza o split parcela a parcela (`PUT /payments/{id}`, provado) enquanto o parcelamento está em aberto.
+
+**A nova numeração** (a entrega 2 ficou com duas migrações, 4013 e 4014; as seguintes andam um número):
+
+| Entrega | Migração |
+|---|---|
+| 1B | 4015 |
+| 1C | 4016 |
+| Renegociação | 4017 |
+| Mensalidades | 4018 |
+| Reemissão | 4019 |
+| Distrato | 4020 |

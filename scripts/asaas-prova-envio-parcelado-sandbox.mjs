@@ -36,7 +36,11 @@ const hojeBR = () => new Date().toLocaleString("pt-BR", { timeZone: "America/Sao
 const dia = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const corte = (x) => Math.floor(x * 100 + 1e-7) / 100;
 let ok = 0, falhas = 0;
-const conf = (nome, v) => { console.log(v ? "  ✓" : "  ✗", nome); v ? ok++ : falhas++; };
+const conf = (nome, v) => {
+  console.log(v ? "  ✓" : "  ✗", nome);
+  if (v) ok++;
+  else falhas++;
+};
 const desligado = { enabled: false, emailEnabledForProvider: false, smsEnabledForProvider: false, emailEnabledForCustomer: false, smsEnabledForCustomer: false, phoneCallEnabledForCustomer: false, whatsappEnabledForCustomer: false };
 const LIGADOS = ["PAYMENT_CREATED", "PAYMENT_RECEIVED"];
 

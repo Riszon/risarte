@@ -8,6 +8,8 @@ export const PAYMENT_METHODS = [
   "boleto",
   "cartao",
   "cartao_parcelado",
+  // ASA4 (4013): o cartão parcelado PELO ASAAS, ao lado da maquininha.
+  "cartao_parcelado_asaas",
   "credito_recorrente",
   "deposito_avista",
 ] as const;
@@ -19,6 +21,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   boleto: "Boleto",
   cartao: "Cartão",
   cartao_parcelado: "Cartão de crédito parcelado",
+  cartao_parcelado_asaas: "Cartão parcelado pelo Asaas",
   credito_recorrente: "Crédito recorrente",
   deposito_avista: "Depósito à vista",
 };

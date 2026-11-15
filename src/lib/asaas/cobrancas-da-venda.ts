@@ -26,17 +26,57 @@ export type ParcelaDaVenda = {
   meio: string | null;
   situacao_parcela: string;
   pelo_asaas: boolean;
+  /** 4013: parcela do cartão parcelado pelo Asaas (faz parte de UM parcelamento). */
+  parcelado?: boolean;
   agendada_para: string | null;
   cobranca: CobrancaDaParcela | null;
   ultimo_envio: { canal: string; quem: string | null; quando: string } | null;
+};
+
+/** 4013: o parcelamento no cartão da venda (`_card_block_summary`). */
+export type ParcelamentoDaVenda = {
+  block: string | null;
+  parcelas: number;
+  total: number;
+  situacao: "sem_parcelamento" | "emitindo" | "erro" | "aguardando" | "vencido" | "pago" | "cancelado" | "estornado" | "estorno_pedido" | "em_contestacao";
+  link: string | null;
+  primeira: string | null;
+  creditadas: number;
+  pode_gerar: boolean;
+  pode_tentar_de_novo: boolean;
+  pode_cancelar: boolean;
+  pode_estornar: boolean;
+  gerar_permitido: boolean;
+  cancelar_permitido: boolean;
+  estornar_permitido: boolean;
 };
 
 export type CobrancasDaVenda = {
   automatica: boolean;
   prazo: number;
   venda_fechada_em: string | null;
+  parcelamento?: ParcelamentoDaVenda | null;
   parcelas: ParcelaDaVenda[];
 };
+
+export const ROTULO_DO_PARCELAMENTO: Record<ParcelamentoDaVenda["situacao"], string> = {
+  sem_parcelamento: "Ainda não criado no Asaas",
+  emitindo: "Sendo criado no Asaas",
+  erro: "Erro ao criar no Asaas",
+  aguardando: "Aguardando o pagamento no cartão",
+  vencido: "Vencido sem pagamento",
+  pago: "Pago no cartão",
+  cancelado: "Cancelado",
+  estornado: "Estornado",
+  estorno_pedido: "Estorno pedido",
+  em_contestacao: "Em contestação pelo titular do cartão",
+};
+
+/** A mensagem pronta do WhatsApp do parcelamento (um link só, para todas as parcelas). */
+export function mensagemDoParcelamento(p: ParcelamentoDaVenda): string {
+  const valor = (p.total / 100).toFixed(2).replace(".", ",");
+  return `Olá! Segue o link para pagar no cartão de crédito, em ${p.parcelas}x, o total de R$ ${valor}: ${p.link ?? ""}`;
+}
 
 const dm = (iso: string) => {
   const [, m, d] = iso.slice(0, 10).split("-");
@@ -49,6 +89,7 @@ export function situacaoDaParcela(p: ParcelaDaVenda): { rotulo: string; tom: "ne
   if (p.situacao_parcela === "cancelada" || p.situacao_parcela === "renegociada") return { rotulo: "Cancelada", tom: "neutro" };
   const c = p.cobranca;
   if (!c) {
+    if (p.parcelado) return { rotulo: "No parcelamento do cartão", tom: "neutro" };
     if (!p.pelo_asaas) return { rotulo: "Fora do Asaas (balcão)", tom: "neutro" };
     return p.agendada_para ? { rotulo: `Agendada para ${dm(p.agendada_para)}`, tom: "neutro" } : { rotulo: "Sem cobrança", tom: "neutro" };
   }

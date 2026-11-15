@@ -78,6 +78,7 @@ export default async function PresentationPage(
       <PresentationView data={loaded.data} clientId={clientId} />
       {negotiationBlock && (
         <NegotiationPanel
+                clinicId={clinicId}
           clientId={clientId}
           planId={negotiationBlock.planId}
           options={negotiationBlock.options}

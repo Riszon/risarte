@@ -62,7 +62,7 @@ const reais = (cents: number) => Math.round(Number(cents)) / 100;
 /** Situações do Asaas em que a cobrança já está paga (não se cancela). */
 const PAGA_NO_ASAAS = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH", "DUNNING_RECEIVED"]);
 
-async function lerCobranca(chargeId: string): Promise<CobrancaDoBanco | null> {
+export async function lerCobranca(chargeId: string): Promise<CobrancaDoBanco | null> {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("_charge_for_gateway", { p_charge_id: chargeId });
   if (error) throw new Error(`charge read failed: ${error.message}`);
@@ -121,7 +121,7 @@ export type BancoDaEmissao = {
   }) => Promise<string | null>;
 };
 
-function bancoDe(chargeId: string, cred: AsaasCredential, opts: AsaasRequestOptions): BancoDaEmissao {
+export function bancoDe(chargeId: string, cred: AsaasCredential, opts: AsaasRequestOptions): BancoDaEmissao {
   const admin = createAdminClient();
   return {
     aplicarRegua: (id) => aplicarReguaDoPagador(id, cred, opts),

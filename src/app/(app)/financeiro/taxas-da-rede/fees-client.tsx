@@ -52,6 +52,11 @@ export type FeeSummaryRow = {
   payableStatus: string | null;
   /** ASA3 (4008): quanto do valor já foi pago no split (retido na origem). */
   retainedCents: number;
+  /**
+   * ASA4 (4013, 19.19.4): do retido, quanto ainda está A RETER PELO SPLIT (a
+   * parcela do cartão já baixada, com o crédito no futuro). Não vira conta a pagar.
+   */
+  awaitingCents?: number;
 };
 
 type AccountOption = { code: string; name: string; scope: string };
@@ -912,9 +917,14 @@ export function NetworkFeesView({
                     </span>
                     <span className="w-36 text-right text-muted-foreground">
                       {/* ASA3: o retido pelo split JÁ ESTÁ PAGO — o custo existe. */}
-                      {s.retainedCents > 0 && (
+                      {s.retainedCents - (s.awaitingCents ?? 0) > 0 && (
                         <span className="block text-emerald-700 dark:text-emerald-400">
-                          pago no split {formatBRL(s.retainedCents)}
+                          pago no split {formatBRL(s.retainedCents - (s.awaitingCents ?? 0))}
+                        </span>
+                      )}
+                      {(s.awaitingCents ?? 0) > 0 && (
+                        <span className="block text-sky-700 dark:text-sky-300">
+                          a reter pelo split {formatBRL(s.awaitingCents ?? 0)}
                         </span>
                       )}
                       {s.retainedCents > 0 && s.retainedCents >= s.amountCents

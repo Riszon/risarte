@@ -85,6 +85,9 @@ const MENSAGEM_DO_BANCO: Record<string, string> = {
   SURPLUS_ALREADY_RESOLVED: "Este pagamento em duplicidade já foi resolvido.",
   INSTALLMENT_OF_OTHER_CLIENT: "Escolha uma parcela deste mesmo paciente.",
   NOTHING_TO_WAIVE: "Esta baixa não tem taxa da rede mantida para dispensar.",
+  // ASA4 (4013): o cartão parcelado pelo Asaas é um parcelamento só.
+  USE_O_PARCELAMENTO:
+    "Esta parcela faz parte do cartão parcelado pelo Asaas: gere, cancele ou estorne o parcelamento inteiro, nas Cobranças da venda.",
 };
 
 /** A mensagem pt-BR de um erro do banco (procura o código no texto). */
@@ -143,6 +146,9 @@ export function motivoSemCobranca(p: {
   if (p.status === "paga") return "Parcela paga: não há o que cobrar.";
   if (p.status === "cancelada") return "Parcela cancelada: não há o que cobrar.";
   if (p.status === "renegociada") return "Parcela renegociada: a cobrança é das parcelas da renegociação.";
+  if (p.paymentMethod === "cartao_parcelado_asaas") {
+    return "Parcela do cartão parcelado pelo Asaas: o parcelamento é um só, nas Cobranças da venda (comercial do cliente ou venda direta).";
+  }
   if (METODOS_SEM_COBRANCA_NA_ASA1.has(p.paymentMethod ?? "")) {
     return "Cartão parcelado, crédito recorrente e depósito à vista ainda não são cobrados pelo Asaas.";
   }
