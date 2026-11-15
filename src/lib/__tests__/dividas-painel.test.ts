@@ -1,0 +1,131 @@
+import { describe, expect, it } from "vitest";
+import {
+  FILTRO_INICIAL,
+  aging,
+  distribuicao,
+  evolucaoMensal,
+  evolucaoPorCategoria,
+  fotosDoFiltro,
+  indicadoresDoPainel,
+  linhasDoPainel,
+  type FotoDoMes,
+} from "@/lib/finance/dividas-painel";
+import type { DebtListRow } from "@/lib/finance/dividas";
+
+// LEVANTAMENTO DE DÍVIDAS, FASE 6: as contas do Painel.
+
+const linha = (o: Partial<DebtListRow>): DebtListRow => ({
+  id: "d", code: "DV-1", clinicId: "L", clinicName: "Londrina", supplierId: "s", supplierName: "Banco", supplierKind: null,
+  categoryId: "c1", subcategoryId: null, natureCode: "financeira", tagIds: [], status: "a_vencer", dueDate: "2026-12-01",
+  originalCents: 1000, updatedCents: null, priority: null, ownerUserId: null, origin: "A", contractNumber: null, description: null,
+  installmentLabel: null, needsSplit: false, bundledCount: 1, groupCode: null, nextAction: null, nextActionOn: null,
+  negativada: false, protestada: false, judicial: false, propostaCents: null, propostaValidade: null, custasCents: 0, lastCheckedOn: null,
+  ...o,
+});
+const HOJE = "2026-11-15";
+
+describe("o filtro do painel", () => {
+  const rows = [
+    linha({ id: "a", clinicId: "L", tagIds: ["t"] }),
+    linha({ id: "b", clinicId: "C", status: "contestada" }),
+    linha({ id: "c", clinicId: "L", status: "baixada" }),
+  ];
+  it("baixada nunca conta; devedor, etiqueta e contestadas filtram", () => {
+    expect(linhasDoPainel(rows, FILTRO_INICIAL).map((r) => r.id)).toEqual(["a", "b"]);
+    expect(linhasDoPainel(rows, { ...FILTRO_INICIAL, devedor: "L" }).map((r) => r.id)).toEqual(["a"]);
+    expect(linhasDoPainel(rows, { ...FILTRO_INICIAL, etiqueta: "t" }).map((r) => r.id)).toEqual(["a"]);
+    expect(linhasDoPainel(rows, { ...FILTRO_INICIAL, semContestadas: true }).map((r) => r.id)).toEqual(["a"]);
+  });
+});
+
+describe("os cards", () => {
+  const rows = [
+    linha({ id: "a", status: "inadimplente", saldoCents: 5000, negativada: true, propostaCents: 3000, custasCents: 200 }),
+    linha({ id: "b", status: "em_atraso", saldoCents: 2000, protestada: true, clinicId: "C", clinicName: "Cambé" }),
+    linha({ id: "c", status: "judicial", saldoCents: 1000, judicial: true }),
+    linha({ id: "q", status: "quitada_encerrada", saldoCents: 0, pagoCents: 9000, negativada: true }),
+  ];
+  const acordos = [
+    { clinicId: "L", situacao: "em_andamento", dividas: ["a"], descontoCents: 700, abertas: [{ faltaCents: 100, vencimento: "2026-11-20" }, { faltaCents: 100, vencimento: "2027-01-20" }] },
+    { clinicId: "L", situacao: "quebrado", dividas: ["a"], descontoCents: 999, abertas: [{ faltaCents: 50, vencimento: "2026-10-01" }] },
+    { clinicId: "L", situacao: "cumprido", dividas: ["q"], descontoCents: 300, abertas: [] },
+    { clinicId: "X", situacao: "em_andamento", dividas: ["fora"], descontoCents: 5, abertas: [{ faltaCents: 9, vencimento: "2026-11-16" }] },
+  ];
+  const i = indicadoresDoPainel(rows, acordos, HOJE);
+  it("devido pela regra única, contestada/judicial à parte (D17), sem proposta não é desconto", () => {
+    expect(i.totais.devidoCents).toBe(8000);
+    expect(i.totais.contestadaJudicialCents).toBe(1000);
+    expect(i.totais.economiaCents).toBe(2000);
+    expect(i.totais.semPropostaCents).toBe(3000);
+    expect(i.totais.custoTotalCents).toBe(3000 + 3000 + 200);
+  });
+  it("restrições contam só o que não está quitado; CNPJs com restrição", () => {
+    expect(i.negativadas).toEqual({ quantidade: 1, valorCents: 5000 });
+    expect(i.inadimplentes.valorCents).toBe(5000);
+    expect(i.emAtraso.valorCents).toBe(2000);
+    expect(i.cnpjsComRestricao.map((c) => [c.nome, c.negativadas, c.protestadas, c.judiciais])).toEqual([
+      ["Cambé", 0, 1, 0],
+      ["Londrina", 1, 0, 1],
+    ]);
+  });
+  it("acordos: saldo e 30 dias dos que valem (só os das dívidas do filtro); economia só dos que valem ou cumpriram", () => {
+    expect(i.acordos).toEqual({ quantidade: 2, saldoCents: 250, proximos30Cents: 150, quebrados: 1 });
+    expect(i.economiaObtidaCents).toBe(1000);
+    expect(i.quitadoCents).toBe(9000);
+  });
+});
+
+describe("distribuição e aging", () => {
+  it("passa do máximo: o resto vira UMA fatia Outros", () => {
+    const rows = Array.from({ length: 5 }, (_, k) => linha({ id: String(k), supplierId: `s${k}`, saldoCents: (k + 1) * 100 }));
+    const d = distribuicao(rows, (r) => r.supplierId, (k) => k.toUpperCase(), 3);
+    expect(d.map((f) => [f.rotulo, f.valorCents])).toEqual([["S4", 500], ["S3", 400], ["Outros (3)", 600]]);
+  });
+  it("aging pelo título mais antigo em aberto; o que não venceu fica fora", () => {
+    const rows = [
+      linha({ id: "a", dueDate: "2025-01-01", vencimentoAberto: "2026-11-01", saldoCents: 100 }),
+      linha({ id: "b", dueDate: "2025-01-01", saldoCents: 200 }),
+      linha({ id: "c", dueDate: "2026-12-01", saldoCents: 300 }),
+    ];
+    const a = aging(rows, HOJE);
+    expect(a.find((x) => x.faixa === "1-30")?.valorCents).toBe(100);
+    expect(a.find((x) => x.faixa === "365+")?.valorCents).toBe(200);
+    expect(a.reduce((t, x) => t + x.valorCents, 0)).toBe(300);
+  });
+});
+
+describe("a evolução mensal: o passado vem da fotografia", () => {
+  const foto = (o: Partial<FotoDoMes>): FotoDoMes => ({
+    mes: "2026-10-01", debtId: "a", clinicId: "L", status: "inadimplente", categoryId: "c1", tagIds: [],
+    saldoCents: 1000, pagoNoMesCents: 0, novaNoMes: false, atualizadoCents: null, ...o,
+  });
+  const fotos = [
+    foto({ mes: "2026-09-01", saldoCents: 1500, novaNoMes: true, atualizadoCents: 1500 }),
+    foto({ mes: "2026-10-01", saldoCents: 1000, pagoNoMesCents: 500 }),
+    foto({ mes: "2026-10-01", debtId: "b", clinicId: "C", categoryId: "c2", saldoCents: 400, status: "baixada" }),
+  ];
+  it("meses fechados da foto; o corrente ao vivo, sem o pago (fecha no dia 1º)", () => {
+    const rows = [linha({ id: "a", saldoCents: 800, criadaEm: "2026-11-03T10:00:00Z", originalCents: 800 })];
+    const s = evolucaoMensal(fotosDoFiltro(fotos, FILTRO_INICIAL), rows, "2026-11-01");
+    expect(s).toEqual([
+      { mes: "2026-09-01", saldoCents: 1500, pagoCents: 0, novasCents: 1500, aoVivo: false },
+      { mes: "2026-10-01", saldoCents: 1000, pagoCents: 500, novasCents: 0, aoVivo: false },
+      { mes: "2026-11-01", saldoCents: 800, pagoCents: null, novasCents: 800, aoVivo: true },
+    ]);
+  });
+  it("sem foto nenhuma: só o mês corrente (a tela diz \"sem histórico\")", () => {
+    expect(evolucaoMensal([], [], "2026-11-01")).toHaveLength(1);
+  });
+  it("o filtro vale para o passado também", () => {
+    expect(fotosDoFiltro(fotos, { ...FILTRO_INICIAL, devedor: "C" })).toHaveLength(0);
+  });
+  it("por categoria: as maiores de agora e \"Outras\"", () => {
+    const rows = [linha({ id: "a", categoryId: "c1", saldoCents: 800 }), linha({ id: "x", categoryId: "c3", saldoCents: 50 }), linha({ id: "y", categoryId: "c4", saldoCents: 40 })];
+    const e = evolucaoPorCategoria(fotosDoFiltro(fotos, FILTRO_INICIAL), rows, "2026-11-01", (id) => id.toUpperCase(), 2);
+    expect(e.meses).toEqual(["2026-09-01", "2026-10-01", "2026-11-01"]);
+    expect(e.series.map((x) => [x.rotulo, x.valores])).toEqual([
+      ["C1", [1500, 1000, 800]],
+      ["Outras (2)", [0, 0, 90]],
+    ]);
+  });
+});

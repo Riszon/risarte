@@ -395,6 +395,11 @@ export type DebtListRow = {
   saldoCents?: number | null;
   /** O acordo vigente (aguardando aprovação, em andamento ou quebrado). */
   acordo?: { id: string; codigo: string; situacao: "aguardando_aprovacao" | "em_andamento" | "quebrado" } | null;
+  // ---- fase 6 (painel) ----
+  /** Vencimento do título mais antigo em aberto (o aging conta dele). */
+  vencimentoAberto?: string | null;
+  /** Quando a dívida entrou no sistema (as "novas do mês"). */
+  criadaEm?: string;
 };
 
 export type DebtFilters = {

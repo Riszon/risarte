@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.454.0 — ASA4, ENTREGA 3: RENEGOCIAÇÃO ASSINADA PELA ZAPSIGN (15/11/2026; Asaas 0.14.0, migração 4017)
+> ## 💳 0.454.1 — ASA4, ENTREGA 3: RENEGOCIAÇÃO ASSINADA PELA ZAPSIGN (15/11/2026; Asaas 0.14.0, migração 4017)
 >
 > Salvar a renegociação não muda mais nada nas parcelas de hoje: o acordo fica "aguardando assinatura", e o termo vai pela ZapSign, assinado pelo responsável financeiro se houver. Assinado, os boletos antigos são cancelados no Asaas e as parcelas novas nascem com cobrança automática, com a forma; na forma 2, aparecem no mesmo link da lista da venda, só do mesmo pagador.
 > - prazo de 5 dias, nunca depois do 1º vencimento novo, e expira sozinho;
@@ -13,7 +13,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - desconto por componente (juros, multa, benefício e principal);
 > - foto das parcelas e histórico da situação, para o futuro painel AP169.
 >
-> 4017 aplicada no TREINO; ensaio 73/73, provado quebrando; `test:indica` 246/0. **Falta:** teste do dono, o envio real do termo (com o "pode"), a 4017 na produção e o `main`. Spec 19.28 a 19.29; manual 13g.14; EV-349.
+> 4017 aplicada no TREINO; ensaio 73/73, provado quebrando; `test:indica` 246/0. **Falta:** teste do dono, o envio real do termo (com o "pode"), a 4017 na produção e o `main`. Spec 19.28 a 19.29; manual 13g.14; EV-350.
 
 > ## 💳 0.453.1 — CORREÇÃO: VENDA COM ACORDO DE RENEGOCIAÇÃO EM ABERTO NÃO É CANCELADA (15/11/2026; Asaas 0.13.1, migração 4015a)
 >
@@ -25,6 +25,54 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - conferido de fora: a função nova barra o anônimo (401).
 >
 > A exceção (só o Financeiro da Franqueadora ou o Admin Master, para o acordo de uma venda só) vem na entrega logo depois da 4017. Spec 19.28.11 a 19.28.14; manual 6.6.
+> ## 💼 EMPRESARIAL 0.105.0 / 1045 — AS VAGAS DO CONTRATO CONFERIDAS PELO BANCO (15/11/2026)
+>
+> Levantamento do módulo pedido pelo dono, grupo A. Decisão dele: a trava no
+> BANCO, seguindo a regra de sempre (contratado + termos de inclusão aceitos;
+> passou disso, termo de inclusão).
+> - **1045:** gatilhos `employees_vagas_do_contrato` e
+>   `dependents_vagas_do_contrato` conferem toda pessoa que PASSA A ATIVA
+>   (cadastro, reativação, planilha, API). Antes, **reativar** titular
+>   (`set_employee_active`) ou dependente (update direto) passava por cima do
+>   limite. Só a transição conta: empresa já acima do limite segue funcionando.
+>   Titular que volta traz os dependentes ativos dele para a conta.
+> - ⚠️ **A conta do limite mora em `_limite_de_titulares_raw` /
+>   `_limite_de_dependentes_raw` / `_dependentes_ativos_raw`**; as portas da
+>   1031 (mesma guarda) chamam elas. Recusa
+>   `VAGAS_<TITULARES|DEPENDENTES>:<LIMIT|MAX>:<teto>:<ativos antes>` →
+>   `recusaDasVagas` (`vagas.ts`), mesmas frases do cadastro.
+> - **Cancelar contrato** filtra pela empresa da tela, diz quando nada foi
+>   cancelado e grava na auditoria; reativar dependente também.
+> - O item "limite do plano no cadastro um a um" do levantamento NÃO era
+>   defeito: ali o plano é calculado pelo banco, não escolhido.
+> - Ensaio no treino 28/28 (`scripts/empresarial-ensaio-1045.mjs`, transação
+>   desfeita) e quebrando 3 vezes; régua `vagas-no-banco.test.ts` (17),
+>   provada quebrando. Manual do Empresarial 11 e 11.1. **Não visto na tela.**
+> - ⏳ **1045 só no treino**; o dono roda na produção antes do push.
+
+> ## 🏦 0.454.0 — LEVANTAMENTO DE DÍVIDAS, FASE 6: O PAINEL (15/11/2026; sem migração)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (3, 4.2, 4.3, 4.5; D17;
+> sugestão 4). Aba **Painel** (a primeira; `/financeiro/dividas` abre nela):
+> filtros devedor / etiqueta / sem contestadas; cards da 3.10 e **CNPJs com
+> restrição**; gráficos de evolução mensal (rede + cada CNPJ, com quitado e
+> novas), distribuição por credor/categoria/natureza, aging, evolução por
+> categoria e comparativo entre devedores. Manual 2.3; EV-349.
+> - ⚠️ **Contas do painel = `src/lib/finance/dividas-painel.ts`** (puras,
+>   sobre as linhas da lista com o saldo da regra única `debt_positions`). O
+>   PASSADO vem da fotografia (`carregarFotografias` → `debt_month_positions`),
+>   o mês corrente é ao vivo e sem o "pago do mês" (fecha no dia 1º). Nunca
+>   reconstruir mês fechado pelo log.
+> - ⚠️ **Gráficos = `src/components/dividas/graficos.tsx`** (SVG à mão, como
+>   repasse e metas): um eixo só, paleta categórica validada em ordem fixa
+>   (clara e escura), legenda com 2+ séries, dica ao passar o mouse e "Ver os
+>   números". Passe `largura` perto da largura real (a letra encolhe junto
+>   com o desenho — achado na tela).
+> - Régua `dividas-painel.test.ts` (10). Visto na tela pelo servidor local de
+>   teste (Financeiro de teste): os números batem com as 4 dívidas do treino
+>   (R$ 5.850; Londrina R$ 3.350), a dica, o quitado/novas, o filtro de
+>   devedor e o modo escuro. O treino ainda não tem fotografia (a primeira é
+>   de 01/12): só o mês corrente aparece, com o aviso "sem histórico".
 
 > ## 🏦 0.453.0 — LEVANTAMENTO DE DÍVIDAS, FASE 5: RENEGOCIAÇÃO E ENCERRAMENTO (15/11/2026; migração 0408)
 >
@@ -89,7 +137,14 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   histórico como "desfeito"). Achado na tela e corrigido: as parcelas eram
 >   numeradas contando a entrada ("parcela 2/5"). **Não visto na tela:**
 >   aprovação, quebra, restabelecimento e checklist (só no ensaio).
-> - ⏳ **0408 não aplicada na produção.** O dono roda.
+> - ✅ **0408 aplicada nos dois bancos** (produção pelo dono em 15/11/2026,
+>   `audit_attach_all` = 3; conferido de fora: as quatro tabelas novas
+>   respondem vazias, a coluna `payables.debt_agreement_id` existe, a
+>   permissão `acao.dividas.renegociar` está nos padrões e na matriz; sem
+>   login as 7 portas e as internas `_debt_positions`/`_debt_agreements_daily`
+>   recusam (42501; a de controle, inexistente, responde "não encontrada"); a
+>   chave de serviço, que não é pessoa, para em "sem permissão" e lê
+>   `debt_positions` vazio).
 
 > ## 💳 0.452.0 — ASA4, ENTREGA 1B: TODOS OS BOLETOS AGORA (15/11/2026; Asaas 0.13.0, migração 4015)
 >

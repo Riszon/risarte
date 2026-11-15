@@ -583,6 +583,7 @@ sistema não entrega esses dados a mais ninguém.
 
 | Aba | Para quê |
 |---|---|
+| **Painel** | A primeira que abre *(desde a 0.454.0)*: os números e os gráficos de quanto a rede deve. Veja *O Painel*, abaixo. |
 | **Dívidas** | A lista, com busca, filtros (devedor, situação, faixa de atraso, **restrição** e **proposta**; em **Mais filtros**, credor, tipo do credor, categoria, natureza, etiqueta, prioridade, responsável, período de vencimento e **só as que pedem conferência**), ordenação (inclusive pelo **desconto da proposta**), os **selos** e os totais — que **respeitam os filtros**. |
 | **Acordos** | Os acordos de renegociação *(desde a 0.453.0)*: os que **esperam aprovação**, os **quebrados** e os **em andamento**, com o saldo a pagar e as parcelas dos próximos 30 dias. Veja *Renegociar dívida*, abaixo. |
 | **Credores** | Quanto se deve a cada credor e **com quem se fala**: atendente, assessoria de cobrança, advogado ou cartório. |
@@ -838,9 +839,34 @@ Cada item se marca **feito** (com a data e, se quiser, o comprovante da aba
 Anexos) ou **não se aplica** (com o motivo). Tudo resolvido, a dívida vai para
 **Quitada — encerrada**.
 
-*Chegam nas próximas etapas:* o painel com gráficos (a "fotografia" de cada
-dívida no fim do mês já é guardada desde a 0.448.0); os outros avisos e o
-simulador de quitação.
+**O Painel** *(desde a 0.454.0)*. No alto, numa linha só, os filtros que valem
+para tudo o que está embaixo: **Devedor** (**Rede consolidada** ou um CNPJ),
+**Etiqueta** e **Sem as contestadas e judiciais**. Dívida baixada nunca entra.
+
+- **Os cartões:** **Total devido** (com quanto disso está contestado ou na
+  Justiça), **Estimado para regularizar** (a proposta, quando há; senão o
+  devido), **Custo total para regularizar** (com as custas de cartório),
+  **Economia potencial** e o desconto médio (**só onde há proposta** — dívida
+  sem proposta não conta como desconto), **Sem proposta** (o que falta
+  negociar), **Propostas atuais**, **Já quitado** e **Economia já obtida** (o
+  desconto dos acordos em dia ou cumpridos). Depois, quantidade e valor **em
+  atraso**, **inadimplentes**, **negativadas**, **protestadas**, **com ação
+  judicial**, e os **acordos valendo** (saldo, parcelas dos próximos 30 dias e
+  quantos estão quebrados). **CNPJs com restrição** lista quem tem negativação,
+  protesto ou ação.
+- **Os gráficos:** **evolução mensal do saldo devedor** (na rede, uma linha
+  para a rede e uma para cada CNPJ; marcando **Ver também o quitado no mês e
+  as dívidas novas**, as barras do mês), **quanto se deve por credor,
+  categoria ou natureza**, **faixas de atraso** (pelo título mais antigo em
+  aberto), **evolução por categoria** e o **comparativo entre devedores**.
+  Passar o mouse mostra o valor exato; **Ver os números** abre a tabela.
+- **O passado é a fotografia do mês**, guardada no dia 1º do mês seguinte —
+  não muda depois. O mês corrente (marcado com *) é calculado na hora; o
+  quitado dele aparece quando o mês fecha. Enquanto não houver fotografia, o
+  gráfico avisa **"Sem histórico ainda"** e mostra só o mês corrente.
+
+*Chegam nas próximas etapas:* os indicadores de saúde financeira e a
+exportação; os outros avisos e o simulador de quitação.
 
 ### 2.4. Recebíveis e inadimplência
 
@@ -7189,7 +7215,7 @@ Admin Master; o Admin libera em **Administração → Permissões**.
 
 ### 13g.14. Renegociação assinada pela ZapSign
 
-*(desde a versão 0.454.0)*
+*(desde a versão 0.454.1)*
 
 **O que muda:** salvar a renegociação **não muda mais nada** nas parcelas de
 hoje. O acordo só vale quando o cliente assina o **termo** pela ZapSign. Até
@@ -7252,7 +7278,7 @@ tivesse sido assinado pela ZapSign.
 **"Renegociação aguardando assinatura"** e cada parcela presa leva a marca
 **"Em renegociação"**.
 
-**Evidência:** EV-349; `scripts/asaas-ensaio-asa4-renegociacao.mjs`.
+**Evidência:** EV-350; `scripts/asaas-ensaio-asa4-renegociacao.mjs`.
 
 ## 14. Checklists
 

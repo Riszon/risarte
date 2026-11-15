@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { lerTodasAsPaginas } from "@/lib/paginar";
 import type { AgreementStatus, ClosingItem, ItemDoEncerramento, ParcelaDoAcordo, Recognition } from "@/lib/finance/dividas-acordos";
+import type { FotoDoMes } from "@/lib/finance/dividas-painel";
 import { ratear, valorDevido } from "@/lib/finance/dividas";
 import type { DebtListRow, DebtOrigin, DebtStatus, ManualStage, Priority, PriorityReason, DebtType, ContactKind } from "@/lib/finance/dividas";
 
@@ -479,6 +480,8 @@ export function linhasDaLista(
       noFinanceiro: (titulos.get(d.id) ?? []).length > 0 || posicoes?.get(d.id)?.temTitulos === true,
       saldoCents: posicoes?.get(d.id)?.saldoCents ?? null,
       acordo: posicoes?.get(d.id)?.acordo ?? null,
+      vencimentoAberto: posicoes?.get(d.id)?.vencimentoMaisAntigo ?? null,
+      criadaEm: d.createdAt,
     };
   });
 }
@@ -1018,4 +1021,36 @@ export async function carregarEncerramento(debtId: string): Promise<{ ok: boolea
       observacao: s(r.note),
     })),
   };
+}
+
+// ------------------------------------------------------------- fase 6 (painel)
+
+/**
+ * A fotografia mensal (`debt_month_positions`, 0407), para a evolução do
+ * Painel. Nulo = não deu para ler (a tela diz que falta, nunca "zero").
+ */
+export async function carregarFotografias(): Promise<FotoDoMes[] | null> {
+  const supabase = await createClient();
+  const lido = await lerTodasAsPaginas<Linha>(
+    (de, ate) =>
+      supabase
+        .from("debt_month_positions")
+        .select("month, debt_id, clinic_id, status, category_id, tag_ids, balance_cents, paid_in_month_cents, new_in_month, updated_cents")
+        .order("month")
+        .order("debt_id")
+        .range(de, ate) as unknown as PaginaLida
+  );
+  if (!lido.ok) return null;
+  return lido.linhas.map((r) => ({
+    mes: String(r.month).slice(0, 10),
+    debtId: r.debt_id as string,
+    clinicId: r.clinic_id as string,
+    status: String(r.status),
+    categoryId: s(r.category_id),
+    tagIds: Array.isArray(r.tag_ids) ? (r.tag_ids as string[]) : [],
+    saldoCents: Number(r.balance_cents ?? 0),
+    pagoNoMesCents: Number(r.paid_in_month_cents ?? 0),
+    novaNoMes: r.new_in_month === true,
+    atualizadoCents: numOuNulo(r.updated_cents),
+  }));
 }

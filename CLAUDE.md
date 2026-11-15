@@ -400,6 +400,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**15/11/2026 (vagas no banco) — PC Administrador (Empresarial 0.104.0 → 0.105.0, migração 1045)**
+
+- **As vagas do contrato conferidas pelo banco** (bloco "EMPRESARIAL 0.105.0"
+  no ESTADO). ⚠️ **Toda pessoa que passa a ATIVA no Empresarial passa pelos
+  gatilhos da 1045**: caminho novo não precisa conferir vaga para estar
+  certo, mas precisa traduzir a recusa com `recusaDasVagas`. ⚠️ Conta do
+  limite = as funções `_*_raw` da 1045 (as portas chamam elas).
+- ⏳ 1045 só no treino.
+
 **13/11/2026 (Asaas — ASA3, entrega 3) — PC Administrador (core 0.445.0 → 0.446.0, Asaas 0.9.0, migração 4010; worktree `wt-asaas`)**
 
 - **Repasses da franquia** (estado em `docs/asaas/ESTADO.md`; 18.8). ⚠️ **A
@@ -410,6 +419,12 @@ Syncthing se comportarem de forma estranha.**
   com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
   ⚠️ "Repasses" sozinho é o dos DENTISTAS.
 
+**15/11/2026 (Levantamento de Dívidas — fase 6) — PC Administrador (core 0.453.1 → 0.454.0, sem migração)**
+
+- **O Painel** (bloco 0.454.0 no ESTADO). ⚠️ Contas em `dividas-painel.ts`;
+  o passado vem da fotografia mensal, nunca reconstruído. ⚠️ Gráficos em
+  `src/components/dividas/graficos.tsx` (passar `largura` perto da real).
+
 **15/11/2026 (Levantamento de Dívidas — fase 5) — PC Administrador (core 0.452.0 → 0.453.0, migração 0408)**
 
 - **Renegociação e encerramento** (bloco 0.453.0 no ESTADO). ⚠️ **Parcela de
@@ -419,7 +434,7 @@ Syncthing se comportarem de forma estranha.**
   `_debt_snapshot_month` ou `debt_daily_run`, partir da 0408. ⚠️ Estorno do
   desconto = lançamento NOVO com data de hoje, nunca `reversal_of`.
   ⚠️ Regra de linha não chama função interna revogada (`_debt_clinic`).
-- ⏳ 0408 só no treino; o dono roda na produção.
+- ✅ 0408 nos dois bancos (produção pelo dono em 15/11/2026; conferido de fora).
 
 **14/11/2026 (Levantamento de Dívidas — fase 4) — PC Administrador (core 0.447.0 → 0.448.0, migração 0407)**
 
