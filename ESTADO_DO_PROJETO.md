@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.454.2 — EXCEÇÃO: CANCELAR VENDA COM ACORDO DE RENEGOCIAÇÃO (15/11/2026; Asaas 0.15.0, migração 4017a)
+> ## 💳 0.455.1 — EXCEÇÃO: CANCELAR VENDA COM ACORDO DE RENEGOCIAÇÃO (15/11/2026; Asaas 0.15.0, migração 4017a)
 >
 > O cancelamento recusado pela 4015a passa a mostrar os acordos da venda e o caminho de cada um:
 > - o acordo pendente se cancela ali mesmo;
@@ -11,7 +11,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - a venda direta só sem pago no acordo;
 > - os acordos de várias vendas ficam para o distrato.
 >
-> Ensaio 39/39, provado quebrando. **Falta:** teste do dono, a 4017a na produção e o `main`. Spec 19.30 a 19.31; manual 13g.15; EV-351.
+> Ensaio 39/39, provado quebrando. **Falta:** teste do dono, a 4017a na produção e o `main`. Spec 19.30 a 19.31; manual 13g.15; EV-353.
 
 > ## 💳 0.454.1 — ASA4, ENTREGA 3: RENEGOCIAÇÃO ASSINADA PELA ZAPSIGN (15/11/2026; Asaas 0.14.0, migração 4017)
 >
@@ -29,7 +29,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - `main` em 231d0671, produção mostrando 0.454.1 (a outra sessão publicou a core 0.454.0 antes);
 > - conferido de fora: as portas novas barram o anônimo.
 >
-> **Falta:** o teste do dono pela tela e o envio real do termo (com o "pode"). Spec 19.28 a 19.29; manual 13g.14; EV-350.
+> **Falta:** o teste do dono pela tela e o envio real do termo (com o "pode"). Spec 19.28 a 19.29; manual 13g.14; EV-352.
 
 > ## 💳 0.453.1 — CORREÇÃO: VENDA COM ACORDO DE RENEGOCIAÇÃO EM ABERTO NÃO É CANCELADA (15/11/2026; Asaas 0.13.1, migração 4015a)
 >
@@ -64,7 +64,53 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - Ensaio no treino 28/28 (`scripts/empresarial-ensaio-1045.mjs`, transação
 >   desfeita) e quebrando 3 vezes; régua `vagas-no-banco.test.ts` (17),
 >   provada quebrando. Manual do Empresarial 11 e 11.1. **Não visto na tela.**
-> - ⏳ **1045 só no treino**; o dono roda na produção antes do push.
+> - ✅ **1045 nos dois bancos** (produção pelo dono em 15/11/2026, conferência
+>   2·6·3; conferido de fora: sem login as funções internas e a porta recusam
+>   com "permission denied", a de controle responde "não encontrada"). O
+>   código subiu antes, no push de outra sessão (sem efeito sem a 1045).
+
+> ## 🏦 0.455.0 — LEVANTAMENTO DE DÍVIDAS, FASE 7: SAÚDE FINANCEIRA E VISÕES (15/11/2026; migração 0409)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (1.3 "Visões", 4.6, fase 7).
+> **Saúde financeira** no Painel (meses de receita, comprometimento, custo
+> financeiro, por CNPJ e rede), **exportar** a lista (PDF e Planilha),
+> **"E se eu pagar à vista?"** nas propostas e o card **"Dívidas da unidade"**
+> (desligado) no Painel do Financeiro da unidade. Manual 2.3; EV-350.
+> - ⚠️ **Receita e custo financeiro = a DRE oficial** (`dre_lines` +
+>   `buildDre`, `carregarDreDosDevedores`), 3 meses fechados; custo
+>   financeiro = conta 4.2.01. Contas em `saudeFinanceira` (`dividas-painel.ts`):
+>   sem receita = "sem dados", a rede divide só quem tem receita.
+> - ⚠️ **Cenário = `cenarioDeQuitacao`** (`dividas-cenario.ts`), na ação
+>   `cenarioDaProposta`: o mesmo `cash_balance_before` + `cash_flow_series`
+>   da tela de Fluxo de caixa; NUNCA grava. Título vencido não volta (não está
+>   no previsto).
+> - ⚠️ **Exportar = `dividas-exportacao.ts`** (`RelatorioPronto`, o modelo do
+>   Saldo de abertura): o filtro viaja no endereço (`filtroParaOEndereco`/
+>   `filtroDoEndereco`, só chaves conhecidas) e a rota refaz `linhasDaLista` +
+>   `filtrarDividas` + `ordenarDividas` — as mesmas funções da tela.
+> - ⚠️ **Card da unidade = porta `debt_unit_summary`** (0409; guarda
+>   `_debt_can_see_unit`): só números, saldo da regra única. Permissão
+>   `acao.dividas.ver_unidade` nasce SEM papel; teto Gerente e Franqueado, só
+>   da própria unidade (`_debt_cap_ceiling` recriada na 0409 — ao recriar,
+>   partir dela).
+> - Ensaio `scripts/dividas-ensaio-0409.mjs --confirmar` 8/8 (sem papel não
+>   vê; marcado para o Gerente vê só a própria unidade, com o saldo da regra
+>   única, e continua sem ler `debts`; Recepção marcada fica fora pelo teto;
+>   anônimo 42501); `--quebrar` reprova. Réguas `dividas-painel.test.ts`,
+>   `dividas-cenario.test.ts`, `dividas-exportacao.test.ts`, `dividas.test.ts`
+>   (lendo a 0409). 0409 no treino (`migrar:teste`). Visto na tela pelo
+>   servidor local de teste (Financeiro de teste): Saúde financeira (Londrina
+>   R$ 5.872,07/mês, 0,6 mês; franqueadora "sem dados"), o cenário da proposta
+>   de R$ 1.800 da DV-000011 (o caixa da Londrina do treino já é negativo — a
+>   frase passou a dizer isso), o PDF filtrado e a planilha, e o card em
+>   Londrina. **Não visto:** o card como Gerente com a permissão ligada (só no
+>   ensaio).
+> - ✅ **0409 aplicada nos dois bancos** (produção pelo dono em 15/11/2026,
+>   "Success. No rows returned" — esperado, a 0409 não cria tabela; conferido
+>   de fora: `acao.dividas.ver_unidade` nos padrões com papéis vazios, nenhuma
+>   linha na matriz; sem login `debt_unit_summary` e `_debt_can_see_unit`
+>   recusam (42501; a de controle, inexistente, responde "não encontrada"); a
+>   chave de serviço, que não é pessoa, lê vazio).
 
 > ## 🏦 0.454.0 — LEVANTAMENTO DE DÍVIDAS, FASE 6: O PAINEL (15/11/2026; sem migração)
 >

@@ -865,8 +865,37 @@ para tudo o que está embaixo: **Devedor** (**Rede consolidada** ou um CNPJ),
   quitado dele aparece quando o mês fecha. Enquanto não houver fotografia, o
   gráfico avisa **"Sem histórico ainda"** e mostra só o mês corrente.
 
-*Chegam nas próximas etapas:* os indicadores de saúde financeira e a
-exportação; os outros avisos e o simulador de quitação.
+- **Saúde financeira** *(desde a 0.455.0)*, no Painel: para cada CNPJ (e a
+  rede), o **devido**, a **receita bruta média por mês** dos 3 meses fechados
+  (pela DRE dele), quantos **meses de receita** a dívida representa, as
+  **parcelas de acordo que vencem neste mês** e o **comprometimento** (essas
+  parcelas ÷ a receita média), e o **custo financeiro** dos 3 meses (juros,
+  multas e encargos, conta 4.2.01). CNPJ sem receita lançada aparece como
+  **"sem dados"** — nunca zero. Na rede, cada dívida é comparada com a receita
+  do próprio CNPJ.
+
+**Exportar a lista** *(desde a 0.455.0)*. Na aba **Dívidas**, **PDF** e
+**Planilha** levam **exatamente o que está na tela**: os mesmos filtros, a
+mesma ordem e os mesmos totais do rodapé, com o filtro escrito no alto do
+documento. O PDF abre a página de impressão (**Salvar em PDF**).
+
+**"E se eu pagar à vista?"** *(desde a 0.455.0)*. Na aba **Propostas** da
+dívida, em cada proposta ativa: escolha a data e **Ver no caixa** mostra o
+caixa da unidade devedora nos próximos 90 dias, **sem pagar** e **pagando à
+vista** — o menor saldo, o saldo no fim e um gráfico. Os títulos da dívida que
+venceriam nesse período deixam de sair (o pagamento à vista os substitui).
+**É só um cenário: nada é gravado e o Fluxo de caixa não muda.** Se o caixa
+já fica negativo mesmo sem pagar, a tela avisa.
+
+**Card "Dívidas da unidade"** *(desde a 0.455.0, desligado)*. No Painel do
+Financeiro de uma unidade pode aparecer um card só com números: quanto a
+unidade deve, em atraso e inadimplente, quantas têm restrição e os acordos
+valendo. Ele **nasce desligado**: para o **Gerente** ou o **Franqueado**
+verem, o Admin marca **"Ver as dívidas da própria unidade (card)"** em
+Permissões. Cada um vê só a sua unidade, e nunca credor, contato, anexo ou a
+dívida uma a uma. Outros papéis marcados ali continuam sem ver.
+
+*Chegam nas próximas etapas:* os outros avisos e o simulador de quitação.
 
 ### 2.4. Recebíveis e inadimplência
 
@@ -7278,11 +7307,11 @@ tivesse sido assinado pela ZapSign.
 **"Renegociação aguardando assinatura"** e cada parcela presa leva a marca
 **"Em renegociação"**.
 
-**Evidência:** EV-350; `scripts/asaas-ensaio-asa4-renegociacao.mjs`.
+**Evidência:** EV-352; `scripts/asaas-ensaio-asa4-renegociacao.mjs`.
 
 ### 13g.15. Cancelar venda com acordo de renegociação
 
-*(desde a versão 0.454.2)*
+*(desde a versão 0.455.1)*
 
 **Quando acontece:** você tenta cancelar uma venda (o plano ou a venda direta)
 e a tela recusa, porque há parcelas dela num acordo de renegociação que ainda
@@ -7313,7 +7342,7 @@ Cada pedido gera um aviso.
   para o distrato; até lá, o caso vai para o Jeferson.
 - A taxa da rede sobre o que o cliente já pagou continua devida.
 
-**Evidência:** EV-351; `scripts/asaas-ensaio-4017a.mjs`.
+**Evidência:** EV-353; `scripts/asaas-ensaio-4017a.mjs`.
 
 ## 14. Checklists
 

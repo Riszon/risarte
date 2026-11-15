@@ -407,7 +407,8 @@ Syncthing se comportarem de forma estranha.**
   gatilhos da 1045**: caminho novo não precisa conferir vaga para estar
   certo, mas precisa traduzir a recusa com `recusaDasVagas`. ⚠️ Conta do
   limite = as funções `_*_raw` da 1045 (as portas chamam elas).
-- ⏳ 1045 só no treino.
+- ✅ 1045 nos dois bancos (produção pelo dono em 15/11/2026, 2·6·3; conferido
+  de fora).
 
 **13/11/2026 (Asaas — ASA3, entrega 3) — PC Administrador (core 0.445.0 → 0.446.0, Asaas 0.9.0, migração 4010; worktree `wt-asaas`)**
 
@@ -418,6 +419,14 @@ Syncthing se comportarem de forma estranha.**
   apaga o liquidado**: soma líquida com `*_estorno`. ⚠️ Recebimento estornado
   com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
   ⚠️ "Repasses" sozinho é o dos DENTISTAS.
+
+**15/11/2026 (Levantamento de Dívidas — fase 7) — PC Administrador (core 0.454.1 → 0.455.0, migração 0409)**
+
+- **Saúde financeira, exportação, cenário e card da unidade** (bloco 0.455.0
+  no ESTADO). ⚠️ Receita = DRE oficial (`dre_lines` + `buildDre`). ⚠️ Cenário
+  nunca grava. ⚠️ Card da unidade só pela porta `debt_unit_summary`; a
+  permissão `acao.dividas.ver_unidade` nasce sem papel (teto Gerente/Franqueado).
+- ✅ 0409 nos dois bancos (produção pelo dono em 15/11/2026; conferido de fora).
 
 **15/11/2026 (Levantamento de Dívidas — fase 6) — PC Administrador (core 0.453.1 → 0.454.0, sem migração)**
 

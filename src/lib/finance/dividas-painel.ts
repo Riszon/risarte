@@ -281,3 +281,100 @@ export function evolucaoPorCategoria(
     });
   return { meses, series };
 }
+
+// ---------------------------------------------- saúde financeira (4.6, fase 7)
+
+/** A DRE de um CNPJ nos 3 meses fechados (leitura oficial: `dre_lines` + `buildDre`). */
+export type DreDoDevedor = {
+  /** Receita bruta somada nos meses fechados lidos. */
+  receitaBrutaCents: number;
+  /** Juros, multas e encargos (conta 4.2.01) no mesmo período, positivo = gasto. */
+  custoFinanceiroCents: number;
+  meses: number;
+};
+
+export type SaudeDoDevedor = {
+  clinicId: string;
+  nome: string;
+  devidoCents: number;
+  /** Nulo = a unidade não tem receita lançada na DRE ("sem dados", nunca zero). */
+  receitaMediaCents: number | null;
+  /** Devido ÷ receita média mensal: quantos meses de receita a dívida representa. */
+  mesesDeReceita: number | null;
+  /** Parcelas de acordo que vencem no mês corrente (pagas ou não). */
+  parcelasDoMesCents: number;
+  /** Parcelas do mês ÷ receita média mensal. */
+  comprometimento: number | null;
+  custoFinanceiroCents: number | null;
+};
+
+/**
+ * Os indicadores de saúde por CNPJ (4.6) e o da rede, que soma o devido e a
+ * receita de CADA CNPJ (nunca a receita de um contra a dívida de outro).
+ * ⚠️ Construção: o comprometimento divide pela receita MÉDIA dos meses
+ * fechados, não pela do mês corrente (que ainda está pela metade e faria o
+ * número cair conforme o mês anda).
+ */
+export function saudeFinanceira(
+  rows: DebtListRow[],
+  acordos: (AcordoDoPainel & { parcelasDoMesCents: number })[],
+  dre: Map<string, DreDoDevedor>,
+  nomes: Map<string, string>
+): { linhas: SaudeDoDevedor[]; rede: SaudeDoDevedor } {
+  const ids = new Set(rows.map((r) => r.id));
+  const clinicas = [...new Set(rows.map((r) => r.clinicId))];
+  const linhas = clinicas
+    .map((clinicId): SaudeDoDevedor => {
+      const devido = rows.filter((r) => r.clinicId === clinicId).reduce((t, r) => t + valorDevido(r), 0);
+      const d = dre.get(clinicId);
+      const media = d && d.meses > 0 && d.receitaBrutaCents > 0 ? Math.round(d.receitaBrutaCents / d.meses) : null;
+      const parcelas = acordos
+        .filter((a) => a.clinicId === clinicId && a.dividas.some((x) => ids.has(x)))
+        .reduce((t, a) => t + a.parcelasDoMesCents, 0);
+      return {
+        clinicId,
+        nome: nomes.get(clinicId) ?? "—",
+        devidoCents: devido,
+        receitaMediaCents: media,
+        mesesDeReceita: media ? devido / media : null,
+        parcelasDoMesCents: parcelas,
+        comprometimento: media ? parcelas / media : null,
+        custoFinanceiroCents: d ? d.custoFinanceiroCents : null,
+      };
+    })
+    .sort((a, b) => b.devidoCents - a.devidoCents || a.nome.localeCompare(b.nome));
+
+  const comDre = linhas.filter((l) => l.receitaMediaCents !== null);
+  const media = comDre.reduce((t, l) => t + (l.receitaMediaCents ?? 0), 0);
+  const devidoComDre = comDre.reduce((t, l) => t + l.devidoCents, 0);
+  const parcelasComDre = comDre.reduce((t, l) => t + l.parcelasDoMesCents, 0);
+  const custos = linhas.filter((l) => l.custoFinanceiroCents !== null);
+  return {
+    linhas,
+    rede: {
+      clinicId: "",
+      nome: "Rede",
+      devidoCents: linhas.reduce((t, l) => t + l.devidoCents, 0),
+      receitaMediaCents: comDre.length ? media : null,
+      // Só os CNPJs com DRE entram na razão (a dívida de quem não tem receita
+      // lançada não é dividida pela receita dos outros).
+      mesesDeReceita: comDre.length && media > 0 ? devidoComDre / media : null,
+      parcelasDoMesCents: linhas.reduce((t, l) => t + l.parcelasDoMesCents, 0),
+      comprometimento: comDre.length && media > 0 ? parcelasComDre / media : null,
+      custoFinanceiroCents: custos.length ? custos.reduce((t, l) => t + (l.custoFinanceiroCents ?? 0), 0) : null,
+    },
+  };
+}
+
+/** A DRE lida (`dre_lines`) → receita bruta e custo financeiro (4.2.01). */
+export function dreDoDevedor(
+  linhas: { accountCode: string; block: string; amountCents: number }[],
+  meses: number,
+  receitaBruta: (l: { accountCode: string; block: string; amountCents: number }[]) => number
+): DreDoDevedor {
+  return {
+    receitaBrutaCents: receitaBruta(linhas),
+    custoFinanceiroCents: -linhas.filter((l) => l.accountCode === "4.2.01").reduce((t, l) => t + l.amountCents, 0),
+    meses,
+  };
+}

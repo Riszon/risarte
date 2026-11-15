@@ -262,6 +262,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   debt_agreement_undo: "Acordo de dívida desfeito",
   debt_agreement_reestablish: "Dívida restabelecida pelo credor",
   debt_closing_item: "Encerramento de dívida (checklist)",
+  debt_export: "Levantamento de Dívidas exportado (planilha)",
   purchase_request: "Requisição de compra",
   purchase_request_send: "Requisição de compra enviada",
   purchase_round: "Rodada de compra",

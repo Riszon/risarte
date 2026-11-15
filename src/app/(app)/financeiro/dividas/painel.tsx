@@ -5,6 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
+import { formatIsoMonthBr } from "@/lib/dates";
 import type { DebtListRow } from "@/lib/finance/dividas";
 import {
   FILTRO_INICIAL,
@@ -15,7 +16,9 @@ import {
   fotosDoFiltro,
   indicadoresDoPainel,
   linhasDoPainel,
+  saudeFinanceira,
   type AcordoDoPainel,
+  type DreDoDevedor,
   type FiltroDoPainel,
   type FotoDoMes,
 } from "@/lib/finance/dividas-painel";
@@ -38,10 +41,15 @@ export function PainelDasDividas({
   fotos,
   hoje,
   semRegraUnica,
+  dre,
+  periodoDaDre,
 }: {
   base: BaseDasDividas;
   linhas: DebtListRow[];
-  acordos: AcordoDoPainel[];
+  acordos: (AcordoDoPainel & { parcelasDoMesCents: number })[];
+  /** Fase 7: a DRE dos meses fechados de cada CNPJ (pares para atravessar ao navegador). */
+  dre: [string, DreDoDevedor][];
+  periodoDaDre: { de: string; ate: string };
   /** Nulo = a fotografia não pôde ser lida. */
   fotos: FotoDoMes[] | null;
   hoje: string;
@@ -94,6 +102,9 @@ export function PainelDasDividas({
   const faixas = useMemo(() => aging(rows, hoje), [rows, hoje]);
   const comparativo = useMemo(() => distribuicao(rows, (r) => r.clinicId, (k) => nomeDoDevedor.get(k) ?? "—", 12), [rows, nomeDoDevedor]);
   const semHistorico = evolucao.length <= 1;
+  const saude = useMemo(() => saudeFinanceira(rows, acordos, new Map(dre), nomeDoDevedor), [rows, acordos, dre, nomeDoDevedor]);
+  const pct = (x: number | null) => (x === null ? "sem dados" : `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`);
+  const vezes = (x: number | null) => (x === null ? "sem dados" : `${x.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mês(es)`);
   const t = ind.totais;
 
   return (
@@ -186,6 +197,42 @@ export function PainelDasDividas({
           )}
         </CardContent>
       </Card>
+
+      <Secao titulo="Saúde financeira">
+        <p className="text-xs text-muted-foreground">
+          Receita bruta média e custo financeiro (juros, multas e encargos, conta 4.2.01) de {formatIsoMonthBr(periodoDaDre.de)} a{" "}
+          {formatIsoMonthBr(periodoDaDre.ate)}, pela DRE de cada CNPJ. O comprometimento divide as parcelas de acordo que vencem neste
+          mês pela receita média. CNPJ sem receita lançada aparece como “sem dados”.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="px-2 py-1">Devedor</th>
+                <th className="px-2 py-1 text-right">Devido</th>
+                <th className="px-2 py-1 text-right">Receita média/mês</th>
+                <th className="px-2 py-1 text-right">Meses de receita</th>
+                <th className="px-2 py-1 text-right">Parcelas de acordo no mês</th>
+                <th className="px-2 py-1 text-right">Comprometimento</th>
+                <th className="px-2 py-1 text-right">Custo financeiro (3 meses)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...saude.linhas, ...(saude.linhas.length > 1 ? [saude.rede] : [])].map((l) => (
+                <tr key={l.clinicId || "rede"} className={cn("border-t", !l.clinicId && "font-semibold")}>
+                  <td className="px-2 py-1.5">{l.nome}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{formatBRL(l.devidoCents)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{l.receitaMediaCents === null ? "sem dados" : formatBRL(l.receitaMediaCents)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{vezes(l.mesesDeReceita)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{formatBRL(l.parcelasDoMesCents)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{pct(l.comprometimento)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{l.custoFinanceiroCents === null ? "sem dados" : formatBRL(l.custoFinanceiroCents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Secao>
 
       <Secao titulo="Evolução mensal do saldo devedor">
         {fotos === null ? (

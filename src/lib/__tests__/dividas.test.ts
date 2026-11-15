@@ -220,8 +220,8 @@ describe("lista, filtros e totais", () => {
 });
 
 describe("as permissões do módulo — tela e banco iguais, e o teto", () => {
-  // A definição mais nova dos padrões (a 0407 acrescentou "importar"; a 0408, "renegociar").
-  const SQL_CAPS = readFileSync("supabase/migrations/0408_dividas_renegociacao_e_encerramento.sql", "utf8").replace(/\r\n/g, "\n");
+  // A definição mais nova dos padrões (a 0407 acrescentou "importar"; a 0408, "renegociar"; a 0409, "ver_unidade", sem papel).
+  const SQL_CAPS = readFileSync("supabase/migrations/0409_dividas_card_da_unidade.sql", "utf8").replace(/\r\n/g, "\n");
   const doBanco = (cap: string): string[] => {
     const m = SQL_CAPS.match(new RegExp(`when '${cap.replace(/\./g, "\\.")}' then array\\[([^\\]]*)\\]`));
     if (!m) return [];
@@ -229,9 +229,10 @@ describe("as permissões do módulo — tela e banco iguais, e o teto", () => {
   };
   const caps = CAPACIDADES.filter((c) => c.id === "modulo.dividas" || c.id.startsWith("acao.dividas."));
 
-  it("são as 4 da fase 1 + importar (0407) + renegociar (0408)", () => {
+  it("são as 4 da fase 1 + importar (0407) + renegociar (0408) + ver_unidade (0409)", () => {
     expect(caps.map((c) => c.id).sort()).toEqual([
-      "acao.dividas.configurar", "acao.dividas.excluir", "acao.dividas.importar", "acao.dividas.lancar", "acao.dividas.renegociar", "modulo.dividas",
+      "acao.dividas.configurar", "acao.dividas.excluir", "acao.dividas.importar", "acao.dividas.lancar", "acao.dividas.renegociar",
+      "acao.dividas.ver_unidade", "modulo.dividas",
     ]);
   });
 
@@ -244,7 +245,15 @@ describe("as permissões do módulo — tela e banco iguais, e o teto", () => {
     expect(teto).toContain("'acao.dividas.importar'");
     expect(teto).toContain("'acao.dividas.renegociar'");
     expect(teto).toMatch(/then array\['finance_franchisor'\]/);
-    expect(teto).not.toMatch(/unit_manager|franchisee|franchisor_staff/);
+    // Só o card da unidade (0409) tem outro teto: o Gerente e o Franqueado, e mais ninguém.
+    const card = /when p_capability = 'acao\.dividas\.ver_unidade'\s+then array\['unit_manager', 'franchisee'\]/;
+    expect(teto).toMatch(card);
+    expect(teto.replace(card, "")).not.toMatch(/unit_manager|franchisee|franchisor_staff/);
+  });
+
+  it("o card da unidade nasce sem papel nenhum (0409)", () => {
+    expect(SQL_CAPS).toMatch(/when 'acao\.dividas\.ver_unidade' then '\{\}'/);
+    expect(CAPACIDADES.find((c) => c.id === "acao.dividas.ver_unidade")?.padrao).toEqual([]);
   });
 
   it("nenhuma tabela do módulo tem regra de escrita (só as funções gravam)", () => {
