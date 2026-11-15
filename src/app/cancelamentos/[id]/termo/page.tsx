@@ -37,7 +37,7 @@ export default async function CancellationTermPage(
   const { data: c } = await supabase
     .from("plan_cancellations")
     .select(
-      "id, code, created_at, status, reason, notes, destination, follow_up_return_at, contract_cents, executed_cents, pending_cents, penalty_percent, penalty_cents, due_cents, paid_cents, reversed_cents, client_owes_cents, clinic_refunds_cents, term_signed_at, applied_at, negotiation_id, client_id, clinic:clinics!plan_cancellations_clinic_id_fkey ( name ), client:clients!plan_cancellations_client_id_fkey ( full_name, cpf )"
+      "id, code, created_at, status, reason, notes, destination, follow_up_return_at, contract_cents, executed_cents, pending_cents, penalty_percent, penalty_cents, due_cents, paid_cents, reversed_cents, agreement_paid_cents, agreement_card_pending_cents, client_owes_cents, clinic_refunds_cents, term_signed_at, applied_at, negotiation_id, client_id, clinic:clinics!plan_cancellations_clinic_id_fkey ( name ), client:clients!plan_cancellations_client_id_fkey ( full_name, cpf )"
     )
     .eq("id", id)
     .maybeSingle();
@@ -221,6 +221,18 @@ export default async function CancellationTermPage(
                 {formatBRL(Number(c.paid_cents ?? 0))}
               </td>
             </tr>
+            {/* 4017a (19.30.3): o pago no acordo de renegociação entra no acerto. */}
+            {Number(c.agreement_paid_cents ?? 0) > 0 && (
+              <tr className="border-b">
+                <td className="py-1 text-[11px] text-neutral-600">
+                  Inclui {formatBRL(Number(c.agreement_paid_cents))} pagos no acordo de renegociação desta venda
+                  (exceção autorizada pelo Financeiro).
+                  {Number(c.agreement_card_pending_cents ?? 0) > 0 &&
+                    ` Parte foi no cartão parcelado: a unidade ainda vai receber ${formatBRL(Number(c.agreement_card_pending_cents))} nos próximos meses.`}
+                </td>
+                <td />
+              </tr>
+            )}
             {Number(c.reversed_cents ?? 0) > 0 && (
               <tr className="border-b">
                 <td className="py-1 text-[11px] text-neutral-600">

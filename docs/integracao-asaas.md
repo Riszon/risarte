@@ -3403,3 +3403,43 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
 - **4015a: rodada na produção.** O Jeferson rodou a pré-conferência (0 travados) e a 4015a, e a conferência vista bateu: 2 funções, 3 gatilhos, 0 planos, 0 termos. Produção na 0.453.1, conferida de fora.
 - **4017: rodada na produção.** A conferência vista bateu: 24 funções, 2 tabelas, 0 antigas, 0 aguardando, pasta privada. Produção na 0.454.1, conferida de fora.
   - **Falta:** o teste do Jeferson pelas telas (o roteiro da 19.29) e o envio real do termo pela ZapSign, que só sai com o "pode" dele, para o e-mail dele.
+
+#### 19.31 Construção da exceção (4017a), em 15/11/2026
+
+**O que a 4017a faz** (`supabase/migrations/4017a_asa4_excecao_cancelar_venda_com_acordo.sql`):
+1. O acordo ganha a situação "encerrada", e o termo de cancelamento ganha as colunas do pago no acordo, do cartão a receber e da exceção usada.
+2. `_sale_agreements`: os acordos da venda, seguindo a cadeia, com o aberto, o pago, o cartão aprovado a receber e se o acordo junta outra venda. A tela lê por `sale_agreements_read`.
+3. `sale_cancel_exceptions`, com as portas:
+   - `sale_cancel_exception_request`: só o Gerente ou o Admin. Recusa `PENDING_FIRST`, `MULTI_SALE`, `DIRECT_SALE_PAID`, `ALREADY_REQUESTED` e `NOTHING_OPEN`, e avisa o Financeiro da Franqueadora e os Admin;
+   - `sale_cancel_exception_decide`: só o Financeiro ou o Admin, recusa `SELF_APPROVAL` e vale 7 dias;
+   - `sale_cancel_exceptions_read`: a fila, da rede para o Financeiro e o Admin, da unidade para o Gerente;
+   - `_sale_cancel_exception_valid`: no prazo, não usada, sem acordo pendente e com o acordo igual ao do pedido.
+4. A trava da 4015a deixa seguir com a exceção válida.
+5. `open_plan_cancellation`, `apply_plan_cancellation` e `cancel_direct_sale`:
+   - o texto de hoje (0360 e 0180), com os pontos da 4017a marcados;
+   - o pago no acordo entra no acerto;
+   - `_sale_agreements_close` cancela as parcelas abertas do acordo, encerra o acordo e marca a exceção como usada;
+   - `EXCEPTION_INVALID` se ela caiu antes de efetivar.
+
+**O servidor e as telas:**
+- `src/lib/renegociacao/excecao.ts`: as parcelas abertas do acordo entram no cancelamento dos boletos (o caminho da 4015), e o cartão parcelado do acordo ainda não aprovado é cancelado inteiro no Asaas antes.
+- O cancelamento da venda direta passou a cancelar os boletos vivos pelo mesmo caminho, com a confirmação.
+- `acordos-da-venda.tsx` aparece no cancelamento do plano e da venda direta quando a recusa é por acordo.
+- `pedidos-de-excecao.tsx` fica em Financeiro › Cobranças automáticas.
+- O termo de cancelamento mostra a linha do pago no acordo e o cartão a receber.
+
+**Provas:**
+- **Ensaio no treino** (`scripts/asaas-ensaio-4017a.mjs --confirmar`): **39/39**. Provado quebrando:
+
+  | Modo | Resultado |
+  |---|---|
+  | `--quebrar=pago` | 1 falha |
+  | `--quebrar=autoriza` | 4 falhas |
+  | `--quebrar=abertas` | 4 falhas |
+
+- Os ensaios da renegociação (73/73) e da 4015a (13/13) seguem passando.
+- `test:indica` 246/0.
+- **Régua:** `asaas-4017a.test.ts`.
+- **Não provado aqui:**
+  - as telas pelo navegador;
+  - o cancelamento do cartão parcelado do acordo no Asaas (o caminho é o da 4013, já provado no sandbox).

@@ -7280,6 +7280,41 @@ tivesse sido assinado pela ZapSign.
 
 **Evidência:** EV-350; `scripts/asaas-ensaio-asa4-renegociacao.mjs`.
 
+### 13g.15. Cancelar venda com acordo de renegociação
+
+*(desde a versão 0.454.2)*
+
+**Quando acontece:** você tenta cancelar uma venda (o plano ou a venda direta)
+e a tela recusa, porque há parcelas dela num acordo de renegociação que ainda
+não vale, ou que ainda tem parcela em aberto. Logo abaixo aparecem os
+**acordos desta venda**, com a situação, o valor em aberto e o já pago.
+
+| O acordo | O que fazer |
+|---|---|
+| **Ainda não vale** (aguardando autorização ou assinatura) | **Cancelar o acordo pendente**, com o motivo. Depois, cancele a venda normalmente. Não precisa da franqueadora. |
+| **Assinado, só desta venda** | O **Gerente** (ou o Admin Master) clica em **Pedir exceção ao Financeiro**, com o motivo. A Recepção vê a orientação de chamar o Gerente. |
+| **Junta outras vendas** | Não há exceção: fica para o distrato. |
+
+**A decisão (Financeiro da Franqueadora ou Admin Master):** em **Financeiro ›
+Cobranças automáticas**, na lista **Pedidos de exceção**, de todas as unidades.
+Cada pedido gera um aviso.
+- **Autorizar** ou **Negar**. Para negar, é preciso escrever o motivo.
+- Quem pediu **não autoriza** o próprio pedido, nem sendo Admin Master.
+
+**Com a exceção autorizada** (vale **7 dias**, uma vez; cai se o acordo mudar):
+- **No plano:** abra o termo de cancelamento. O acerto conta como pago também
+  o que o cliente pagou no acordo, e o termo mostra a linha.
+  - Cartão parcelado aprovado conta inteiro. O termo avisa quanto a unidade
+    ainda vai receber nos próximos meses.
+  - Ao efetivar, as parcelas do acordo em aberto são canceladas, com os boletos
+    cancelados no Asaas, e o acordo fica **Encerrado pelo cancelamento da
+    venda**.
+- **Na venda direta:** só se o cliente não pagou nada no acordo. Se pagou, fica
+  para o distrato; até lá, o caso vai para o Jeferson.
+- A taxa da rede sobre o que o cliente já pagou continua devida.
+
+**Evidência:** EV-351; `scripts/asaas-ensaio-4017a.mjs`.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

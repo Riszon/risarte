@@ -14,6 +14,8 @@ export const RENEGOTIATION_STATUSES = [
   "nao_assinada",
   "expirada",
   "cancelada_pagamento",
+  // 4017a: encerrado pelo cancelamento da venda (exceção autorizada)
+  "encerrada",
 ] as const;
 export type RenegotiationStatus = (typeof RENEGOTIATION_STATUSES)[number];
 
@@ -26,6 +28,7 @@ export const RENEGOTIATION_STATUS_LABELS: Record<RenegotiationStatus, string> = 
   nao_assinada: "Não assinada",
   expirada: "Expirada",
   cancelada_pagamento: "Cancelada pelo pagamento",
+  encerrada: "Encerrada pelo cancelamento da venda",
 };
 
 /**

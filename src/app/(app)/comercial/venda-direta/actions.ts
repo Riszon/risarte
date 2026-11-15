@@ -1,6 +1,8 @@
 "use server";
 
 import { mensagemDoAcordoEmAberto } from "@/lib/acordo-em-aberto";
+import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
+import { prepararParcelasDoAcordo } from "@/lib/renegociacao/excecao";
 import { revalidatePath } from "next/cache";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -308,8 +310,10 @@ export async function closeDirectSaleStep(
 
 /** Cancela a venda direta (recepção/gerente/admin). */
 export async function cancelDirectSale(
-  saleId: string
-): Promise<DirectSaleResult> {
+  saleId: string,
+  /** 4017a: a pessoa confirmou que o cancelamento cancela os boletos vivos (venda e acordo). */
+  confirmarCancelamento = false
+): Promise<DirectSaleResult & { acordo?: boolean; precisaConfirmar?: number }> {
   const session = await getSessionContext();
   const info = await saleClinic(saleId);
   if (!info) return { ok: false, error: "Venda não encontrada." };
@@ -324,13 +328,39 @@ export async function cancelDirectSale(
   // a tela cancelava a venda e as sessões ficavam "Concluído" no prontuário
   // (bug relatado pelo dono). A função também devolve o benefício do programa
   // e cancela as cobranças em aberto.
-  const { error } = await supabase.rpc("cancel_direct_sale", {
-    p_sale_id: saleId,
+  // 4017a: com a exceção autorizada, as parcelas do acordo em aberto também
+  // caem; os boletos vivos (da venda e do acordo) são cancelados no Asaas antes,
+  // pelo caminho da 4015, com a confirmação da tela.
+  const { data: abertas } = await supabase.from("payment_installments").select("id").eq("direct_sale_id", saleId).eq("status", "em_aberto");
+  const { data: excecao } = await supabase
+    .from("sale_cancel_exceptions")
+    .select("id")
+    .eq("direct_sale_id", saleId)
+    .eq("status", "autorizada")
+    .is("used_at", null)
+    .maybeSingle();
+  const doAcordo = excecao
+    ? await prepararParcelasDoAcordo({ negotiationId: null, directSaleId: saleId, actorId: session.userId })
+    : { ok: true as const, installmentIds: [] as string[] };
+  if (!doAcordo.ok) return { ok: false, error: doAcordo.error };
+  const op = await comBoletosCancelados<unknown>({
+    operacao: "cancelamento da venda direta",
+    motivo: "cancelamento da venda direta",
+    installmentIds: [...(abertas ?? []).map((x) => x.id as string), ...doAcordo.installmentIds],
+    actorId: session.userId,
+    confirmar: confirmarCancelamento,
+    venda: { directSaleId: saleId },
+    tentar: async () => {
+      const r = await supabase.rpc("cancel_direct_sale", { p_sale_id: saleId });
+      return { error: r.error };
+    },
   });
+  if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
+  const error = op.ok ? null : { message: op.error };
   if (error) {
     const m = error.message;
     const acordo = mensagemDoAcordoEmAberto(m);
-    if (acordo) return { ok: false, error: acordo };
+    if (acordo) return { ok: false, error: acordo, acordo: true };
     if (m.includes("ALREADY_CLOSED")) {
       return { ok: false, error: "Venda já concluída — não pode ser cancelada." };
     }
