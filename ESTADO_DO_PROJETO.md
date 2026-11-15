@@ -13,7 +13,12 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - desconto por componente (juros, multa, benefício e principal);
 > - foto das parcelas e histórico da situação, para o futuro painel AP169.
 >
-> 4017 aplicada no TREINO; ensaio 73/73, provado quebrando; `test:indica` 246/0. **Falta:** teste do dono, o envio real do termo (com o "pode"), a 4017 na produção e o `main`. Spec 19.28 a 19.29; manual 13g.14; EV-350.
+> Ensaio 73/73, provado quebrando; `test:indica` 246/0. **Na produção em 15/11/2026:**
+> - o dono rodou a 4017, e a conferência vista bateu: 24 funções, 2 tabelas, 0 antigas, 0 aguardando, pasta privada;
+> - `main` em 231d0671, produção mostrando 0.454.1 (a outra sessão publicou a core 0.454.0 antes);
+> - conferido de fora: as portas novas barram o anônimo.
+>
+> **Falta:** o teste do dono pela tela e o envio real do termo (com o "pode"). Spec 19.28 a 19.29; manual 13g.14; EV-350.
 
 > ## 💳 0.453.1 — CORREÇÃO: VENDA COM ACORDO DE RENEGOCIAÇÃO EM ABERTO NÃO É CANCELADA (15/11/2026; Asaas 0.13.1, migração 4015a)
 >
