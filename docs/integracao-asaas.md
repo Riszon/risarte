@@ -3159,3 +3159,44 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
   - o fluxo "de quais datas para quais datas", pela foto e pelas parcelas novas;
   - o efeito no DRE, pelo razão e pelo desconto por componente;
   - a parte da renegociação nos recebíveis.
+
+#### 19.28.14 O levantamento na produção e as respostas 1a, 2a e 3a (Jeferson, 15/11/2026)
+
+**O levantamento na produção (15/11/2026):**
+- O Jeferson rodou `docs/asaas/levantamento-cancelamentos-com-acordo.sql` no SQL Editor da produção, e o resultado foi "Success. No rows returned".
+- **Nenhum plano cancelado nem venda direta cancelada tinha parcelas de renegociação.** Não há caso de cobrança em dobro para corrigir.
+
+**1a. A 4015a na produção: pode, com a pré-conferência antes.**
+- **Dependências (conferido):** a 4015a só usa tabelas do núcleo que já existem na produção há meses, e nenhuma função da integração Asaas.
+  - `payment_installments` (`status`, `renegotiated_by_id`, `renegotiation_id`), da 0187 e da 0189;
+  - `payment_renegotiations` (`status`, `code`, `source_installment_ids`), da 0189 e da 0190;
+  - `plan_cancellations`, da 0206;
+  - `commercial_sales.cancelled_at`;
+  - `direct_sales.cancelled`, da 0161.
+  - Na produção já rodaram da 4011 até a 4015.
+- **Pré-conferência só de leitura, antes de rodar** (`docs/asaas/pre-conferencia-4015a.sql`), com a mesma regra da 4015a escrita por extenso:
+  - **parte 1:** cada termo de cancelamento já aberto (rascunho ou assinado) que vai travar, com unidade, cliente, termo e acordos;
+  - **parte 2:** quantos ficam travados (termos abertos, planos e vendas diretas).
+  - No treino, ela dá o mesmo número da função da 4015a: 2 planos, 0 termos, 0 vendas diretas.
+- Se a parte 1 trouxer algum termo, decidimos cada um antes de rodar.
+- **Até a exceção existir,** o cancelamento legítimo de venda com acordo em aberto vai para o Jeferson, caso a caso.
+
+**2a. A ordem do desconto: juros, multa, benefício e principal**, a mesma da dispensa no recebimento manual (19.4, 4004).
+- **Como é hoje no recebimento:** o pagamento cobre primeiro o principal, depois o benefício, a multa e os juros (0188). A dispensa leva o que sobrou, então ela cai primeiro nos juros, depois na multa, no benefício e, por último, no principal.
+- **Na renegociação (4017):** o desconto é dividido na mesma ordem por uma função só (`_desconto_por_componente`), e o ensaio confere que ela dá o mesmo resultado da dispensa do recebimento para os mesmos valores.
+
+**3a. O caminho de exceção: aprovado, para a entrega logo depois da 4017, antes das demais.** O ajuste do Jeferson:
+- **Acordo que ainda não vale** (esperando a autorização do Gerente ou a assinatura do cliente) **não precisa da franqueadora**.
+  - A tela oferece "Cancelar o acordo pendente".
+  - Quem pode é a mesma pessoa que pode renegociar ou recusar a autorização.
+  - Em seguida, o cancelamento da venda segue normal.
+- **Só o acordo já assinado, com parcelas em aberto,** exige o Financeiro da Franqueadora ou o Admin Master.
+- **A taxa da rede sobre o que o cliente já pagou no acordo continua devida.** Confirmado:
+  - a taxa nasce em cada pagamento e só sai quando o pagamento é estornado;
+  - o cancelamento não estorna pagamento: a devolução ao cliente vira conta a pagar;
+  - é a regra D13, de que repasse feito não é devolvido em distrato.
+
+**Aprovado para a 4017 (Jeferson, 15/11/2026):**
+- as quatro coisas da 19.28.13: a foto de cada parcela renegociada, o desconto por componente, a data de cada mudança de situação e as vendas de origem;
+- o AP169 registrado.
+- **A construção da 4017 começa depois da 4015a na produção.**
