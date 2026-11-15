@@ -89,7 +89,12 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   frase passou a dizer isso), o PDF filtrado e a planilha, e o card em
 >   Londrina. **Não visto:** o card como Gerente com a permissão ligada (só no
 >   ensaio).
-> - ⏳ **0409 não aplicada na produção.** O dono roda.
+> - ✅ **0409 aplicada nos dois bancos** (produção pelo dono em 15/11/2026,
+>   "Success. No rows returned" — esperado, a 0409 não cria tabela; conferido
+>   de fora: `acao.dividas.ver_unidade` nos padrões com papéis vazios, nenhuma
+>   linha na matriz; sem login `debt_unit_summary` e `_debt_can_see_unit`
+>   recusam (42501; a de controle, inexistente, responde "não encontrada"); a
+>   chave de serviço, que não é pessoa, lê vazio).
 
 > ## 🏦 0.454.0 — LEVANTAMENTO DE DÍVIDAS, FASE 6: O PAINEL (15/11/2026; sem migração)
 >

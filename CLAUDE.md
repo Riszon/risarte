@@ -426,7 +426,7 @@ Syncthing se comportarem de forma estranha.**
   no ESTADO). ⚠️ Receita = DRE oficial (`dre_lines` + `buildDre`). ⚠️ Cenário
   nunca grava. ⚠️ Card da unidade só pela porta `debt_unit_summary`; a
   permissão `acao.dividas.ver_unidade` nasce sem papel (teto Gerente/Franqueado).
-- ⏳ 0409 só no treino; o dono roda na produção.
+- ✅ 0409 nos dois bancos (produção pelo dono em 15/11/2026; conferido de fora).
 
 **15/11/2026 (Levantamento de Dívidas — fase 6) — PC Administrador (core 0.453.1 → 0.454.0, sem migração)**
 
