@@ -1,4 +1,5 @@
 // 4012 (spec 19.3): as Cobranças da venda — tipos e textos puros.
+import type { BoletosDaVenda } from "@/lib/asaas/forma-dos-boletos";
 
 export type CobrancaDaParcela = {
   id: string;
@@ -14,6 +15,8 @@ export type CobrancaDaParcela = {
   enviada_pelo_asaas_em: string | null;
   aberta_em: string | null;
   paga_em: string | null;
+  /** 4015: o boleto da forma 2 (cadastro do carnê). */
+  via_carne?: boolean;
 };
 
 export type ParcelaDaVenda = {
@@ -90,6 +93,8 @@ export type CobrancasDaVenda = {
   prazo: number;
   venda_fechada_em: string | null;
   parcelamento?: ParcelamentoDaVenda | null;
+  /** 4015: a forma dos boletos e a lista. */
+  boletos?: BoletosDaVenda | null;
   parcelas: ParcelaDaVenda[];
 };
 
@@ -143,6 +148,8 @@ const CANAL: Record<string, string> = {
   whatsapp: "WhatsApp",
   copiar_pix: "Pix copiado",
   linha_digitavel: "linha digitável copiada",
+  lista_copiada: "link da lista copiado",
+  lista_whatsapp: "lista pelo WhatsApp",
 };
 
 /** As linhas de envio: Asaas (não é confirmação de entrega), riSZon e abertura. */

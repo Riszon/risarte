@@ -7068,6 +7068,58 @@ Admin Master; o Admin libera em **Administração → Permissões**.
 
 **Antecipação:** com a antecipação ligada (ou pedida à mão no painel do Asaas), a franqueadora recebe menos no split da parcela antecipada, e a diferença vira conta a pagar da unidade. A Central mostra o aviso com um exemplo.
 
+### 13g.13. Todos os boletos agora
+
+*(desde a versão 0.452.0)*
+
+**A escolha.** Na venda com parcelas em **boleto**, nas **Cobranças da venda** (no Fechamento do contrato ou na venda direta), aparecem as duas formas:
+- **Um boleto por mês** (o padrão):
+  - *para quem fecha:* o cliente recebe o primeiro boleto agora; os próximos chegam cerca de 15 dias antes de cada vencimento, com lembrete. Recomendado: se o plano mudar, é mais simples renegociar;
+  - *para o cliente:* "Você recebe o boleto de cada parcela cerca de 15 dias antes do vencimento, por e-mail, SMS ou WhatsApp."
+- **Todos os boletos agora:**
+  - *para quem fecha:* o cliente recebe todos os boletos hoje, numa única mensagem enviada por você, e continua recebendo o lembrete de cada parcela. Atenção: para renegociar ou cancelar depois, os boletos em aberto são cancelados;
+  - *para o cliente:* "Você recebe hoje todos os boletos do seu tratamento, de uma vez. Perto de cada vencimento, enviamos um lembrete."
+- **Quem escolhe:** quem fechou a venda, o Gerente, o Financeiro da Franqueadora e o Admin Master. Fica na Auditoria.
+- **Onde vale:** "Todos os boletos agora" só vale com a unidade ligada em Cobranças automáticas.
+
+**Exemplo: contrato de 12 parcelas de boleto, assinado em 10/03, com a 1ª vencendo em 20/03:**
+- **Um boleto por mês:** na assinatura, nasce o de 20/03; o de 20/04 nasce em 05/04, e assim por diante. São 12 avisos do Asaas, um perto de cada vencimento.
+- **Todos os boletos agora:** na assinatura, nascem os 12. O Asaas não manda o aviso de criação; você envia o link da lista uma vez. Os lembretes chegam perto de cada vencimento.
+
+**A lista (forma 2):**
+1. Nas Cobranças da venda, clique em **Gerar link da lista**.
+2. Copie o link na hora: por segurança, ele aparece **uma vez só**. Se precisar de novo, **Gerar novo link** (o anterior para de valer).
+3. Envie pelo **WhatsApp** ou **Copiar link**. O envio fica registrado.
+
+- **A página:** mostra o primeiro nome, o vencimento, o valor, a situação, **Abrir boleto** e a linha digitável. Nunca mostra o CPF.
+- **A validade:** vale até 5 dias depois do último vencimento. Você vê quantas vezes ela foi aberta.
+- **Revogar** desliga o link na hora.
+
+**Quando um boleto já entregue deixa de valer.** Estas operações cancelam o boleto no Asaas sozinhas, **depois de você confirmar** "esta operação cancela N boletos já entregues ao cliente":
+- **Renegociação:** o boleto fica "Substituído pela renegociação — não pague".
+- **Cancelamento do plano:** "Cancelado — não pague".
+- **Trocar vencimento ou valor:** os boletos são cancelados e, na forma 2, os novos aparecem no mesmo link.
+- **Dinheiro ou permuta no balcão:** "Pago no balcão" ou "Pago (permuta)".
+- **Quitação por valor menor:** "Quitado".
+
+- **As permissões não mudam:** quem não podia fazer a operação continua sem poder.
+- **Se o boleto já foi pago no Asaas,** nada muda, e a tela avisa.
+- **O aviso de reenvio:** quem fechou a venda e o Gerente recebem "A lista de boletos mudou: reenvie o link".
+
+**Trocar de forma:**
+- **De "Um por mês" para "Todos agora":** emite os que faltam.
+- **De "Todos agora" para "Um por mês":** cancela, com confirmação, só os boletos que vencem fora do prazo. Os outros nascem um por mês.
+
+**Operação interrompida:**
+- **Quando acontece:** o boleto foi cancelado no Asaas, mas a mudança não entrou no riSZon.
+- **O aviso:** você e o Gerente recebem, e a pendência aparece em **Financeiro › Cobranças automáticas**.
+- **O que fazer:** **Reemitir os boletos**, ou refazer a operação na ficha e **Marcar como concluída**.
+
+**Pagaram um boleto cancelado:**
+- o Gerente e o Financeiro recebem um alerta com o valor e a parcela;
+- o dinheiro não dá baixa: aparece como pagamento em duplicidade na ficha;
+- abata numa parcela em aberto ou registre a devolução.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

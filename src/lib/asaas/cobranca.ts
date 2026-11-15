@@ -3,10 +3,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { credencialDaConta, opcoesDaConta } from "./account";
 import {
   createCustomer,
+  createCustomerWithoutNotices,
   createPayment,
   deletePayment,
   findCustomerByCpfCnpj,
+  findCustomerByReference,
   findPaymentsByReference,
+  REFERENCIA_DO_CADASTRO_DO_CARNE,
   getIdentificationField,
   getPayment,
   getPixPayload,
@@ -53,6 +56,8 @@ export type CobrancaDoBanco = {
   payer_name: string;
   payer_cpf: string;
   asaas_customer_id: string | null;
+  /** 4015: o boleto da forma 2 sai pelo cadastro do carnê (lido à parte). */
+  via_carne?: boolean;
 };
 
 export type ResultadoDaEmissao = { ok: true } | { ok: false; error: string };
@@ -94,6 +99,30 @@ async function pagadorNoAsaas(
   }
   if (!asaasId) throw new AsaasError({ code: "invalid_response", messagePt: "O Asaas não devolveu o pagador.", logMessage: "customer without id" });
   return { asaasId, localId: await banco.salvarPagador(c, asaasId) };
+}
+
+/**
+ * 4015 (forma 2): o CADASTRO DO CARNÊ do pagador nesta conta — o já gravado, o
+ * achado pela referência no Asaas, ou um novo. Nasce sem avisos e sem contato; a
+ * régua (fila de 10 em 10 minutos) aplica nele o contato e os avisos do cadastro
+ * principal, com o "cobrança criada" SEMPRE desligado. Nunca é "o" pagador.
+ */
+async function cadastroDoCarne(c: CobrancaDoBanco, localId: string, cred: AsaasCredential, opts: AsaasRequestOptions): Promise<string> {
+  const admin = createAdminClient();
+  const { data: gravado } = await admin
+    .from("gateway_carne_customers")
+    .select("asaas_customer_id")
+    .eq("account_id", c.gateway_account_id!)
+    .eq("gateway_customer_id", localId)
+    .maybeSingle();
+  if (gravado?.asaas_customer_id) return gravado.asaas_customer_id as string;
+  const ref = REFERENCIA_DO_CADASTRO_DO_CARNE + localId;
+  const achado = await findCustomerByReference(cred, ref, opts);
+  const asaasId = achado?.id ?? (await createCustomerWithoutNotices(cred, { name: c.payer_name, cpfCnpj: c.payer_cpf, externalReference: ref }, opts))?.id;
+  if (!asaasId) throw new AsaasError({ code: "invalid_response", messagePt: "O Asaas não devolveu o cadastro do carnê.", logMessage: "carne customer without id" });
+  const { error } = await admin.rpc("_gateway_carne_save", { p_account_id: c.gateway_account_id, p_gateway_customer_id: localId, p_asaas_customer_id: asaasId });
+  if (error) throw new Error(`carne save failed: ${error.message}`);
+  return asaasId;
 }
 
 /** O que a emissão grava no banco (separado para o teste do tempo esgotado). */
@@ -203,7 +232,9 @@ export async function emitirNoAsaas(chargeId: string, actorId: string | null): P
     return { ok: false, error: "Não foi possível ler a chave da conta Asaas da unidade. Avise o Admin Master." };
   }
   const opts = opcoesDaConta(c.gateway_account_id, purpose);
-  return emitirComOAsaas(c, cred, opts, bancoDe(chargeId, cred, opts));
+  // 4015: a forma 2 (boleto pelo cadastro do carnê).
+  const { data: vc } = await createAdminClient().from("charges").select("via_carne").eq("id", chargeId).maybeSingle();
+  return emitirComOAsaas({ ...c, via_carne: Boolean(vc?.via_carne) }, cred, opts, bancoDe(chargeId, cred, opts));
 }
 
 /**
@@ -244,12 +275,13 @@ export async function emitirComOAsaas(
           await banco.semSplit(decisao.motivo);
         }
       }
-      // 3) A cobrança.
+      // 3) A cobrança. 4015: a da forma 2 vai para o cadastro do carnê.
+      const cliente = c.via_carne ? await cadastroDoCarne(c, pagador.localId, cred, opts) : pagador.asaasId;
       try {
         pagamento = await createPayment(
           cred,
           {
-            customer: pagador.asaasId,
+            customer: cliente,
             billingType: c.billing_type,
             value: reais(c.value_cents),
             dueDate: c.due_date,

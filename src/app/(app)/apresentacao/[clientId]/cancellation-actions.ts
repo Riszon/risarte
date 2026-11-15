@@ -1,5 +1,6 @@
 "use server";
 
+import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -123,13 +124,32 @@ export async function signPlanCancellation(input: {
 export async function applyPlanCancellation(input: {
   id: string;
   clientId: string;
-}): Promise<CancellationResult> {
-  await getSessionContext();
+  /** 4015 (19.26.1): a pessoa confirmou que o cancelamento cancela os boletos vivos. */
+  confirmarCancelamento?: boolean;
+}): Promise<CancellationResult & { precisaConfirmar?: number }> {
+  const session = await getSessionContext();
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("apply_plan_cancellation", {
-    p_id: input.id,
+  // 4015: aplicar o cancelamento cancela no Asaas os boletos vivos das parcelas
+  // em aberto da venda, na mesma operação (com a confirmação da tela).
+  const { data: canc } = await supabase.from("plan_cancellations").select("negotiation_id").eq("id", input.id).maybeSingle();
+  const { data: abertas } = canc?.negotiation_id
+    ? await supabase.from("payment_installments").select("id").eq("negotiation_id", canc.negotiation_id).eq("status", "em_aberto")
+    : { data: [] as { id: string }[] };
+  const op = await comBoletosCancelados<unknown>({
+    operacao: "cancelamento do plano",
+    motivo: "cancelamento do plano",
+    installmentIds: (abertas ?? []).map((x) => x.id as string),
+    actorId: session.userId,
+    confirmar: Boolean(input.confirmarCancelamento),
+    venda: { negotiationId: (canc?.negotiation_id as string | undefined) ?? null },
+    tentar: async () => {
+      const r = await supabase.rpc("apply_plan_cancellation", { p_id: input.id });
+      return { error: r.error };
+    },
   });
+  if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
+  const error = op.ok ? null : { message: op.error };
   if (error) {
     const m = error.message;
     if (m.includes("TERM_NOT_SIGNED")) {

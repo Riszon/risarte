@@ -62,6 +62,43 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.452.0",
+    data: "2026-11-15",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4015, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Todos os boletos agora",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na venda com boletos, quem fecha escolhe a forma: \"Um boleto por mês\" (o padrão) ou \"Todos os boletos agora\". Na segunda, todos os boletos nascem de uma vez, sem o aviso de criação do Asaas, e o cliente recebe uma mensagem só com o link da lista. Os lembretes de cada parcela continuam normais.",
+        papeis: ["commercial_consultant", "receptionist", "unit_manager", "finance_franchisor"],
+        manual: "13g.13. Todos os boletos agora",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A lista dos boletos: uma página com o primeiro nome do paciente, o vencimento, o valor, a situação, \"Abrir boleto\" e a linha digitável. O link é gerado nas Cobranças da venda, pode ser revogado, vale até 5 dias depois do último vencimento e mostra quantas vezes foi aberto.",
+        papeis: ["commercial_consultant", "receptionist", "unit_manager"],
+        manual: "13g.13. Todos os boletos agora",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Renegociação, cancelamento do plano, troca de vencimento ou valor, baixa em dinheiro ou permuta e quitação por valor menor agora cancelam sozinhas no Asaas os boletos da parcela, depois de você confirmar \"esta operação cancela N boletos já entregues ao cliente\". Quem pode fazer cada operação continua o mesmo.",
+        papeis: ["receptionist", "unit_manager", "finance_franchisor"],
+        manual: "13g.13. Todos os boletos agora",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Se pagarem um boleto que o riSZon cancelou, o Gerente e o Financeiro recebem um alerta com o valor, a parcela e o que fazer. Se uma operação cancelar o boleto e não entrar no riSZon, ela aparece em Cobranças automáticas como \"operação interrompida\", com o botão para reemitir.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.13. Todos os boletos agora",
+      },
+    ],
+  },
+  {
     versao: "0.451.0",
     data: "2026-11-15",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4014, ASAAS_MIGRATION).

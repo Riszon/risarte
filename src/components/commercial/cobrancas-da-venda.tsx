@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import { lerCobrancasDaVenda, registrarEnvio } from "@/app/(app)/comercial/cobrancas-da-venda-actions";
 import { ParcelamentoDaVendaBloco } from "@/components/commercial/parcelamento-da-venda";
+import { FormaDosBoletosBloco } from "@/components/commercial/forma-dos-boletos";
 import {
   linhasDeEnvio,
   mensagemDoWhatsApp,
@@ -79,6 +80,9 @@ export function CobrancasDaVenda({ negotiationId, directSaleId }: { negotiationI
           {dados.automatica && ` · as próximas nascem ${dados.prazo} dias antes do vencimento`}
         </span>
       </div>
+      {dados.boletos && (
+        <FormaDosBoletosBloco b={dados.boletos} negotiationId={negotiationId} directSaleId={directSaleId} aoMudar={carregar} />
+      )}
       {dados.parcelamento && (
         <ParcelamentoDaVendaBloco p={dados.parcelamento} negotiationId={negotiationId} directSaleId={directSaleId} aoMudar={carregar} />
       )}

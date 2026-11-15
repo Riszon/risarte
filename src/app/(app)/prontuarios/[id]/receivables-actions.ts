@@ -6,51 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { modalityOf } from "@/lib/finance/acquirers";
 import { erroDaConta, portaAusente } from "@/lib/finance/conta-do-dinheiro";
-import { cancelarNoAsaas } from "@/lib/asaas/cobranca";
+import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
 import { mensagemDoErroDeMeio } from "@/lib/venda-direta-meios";
-
-/**
- * 4011 (19.11 ajuste C, item 1): parcela com cobrança ativa no Asaas e o
- * paciente paga EM DINHEIRO no balcão — a própria baixa cancela a cobrança.
- * Ordem: confere no Asaas; se já foi paga lá, recusa; senão cancela, grava o
- * cancelamento e só então a baixa segue. Nunca fica "baixa em dinheiro com
- * cobrança viva" (a trava do banco, CHARGE_IN_GATEWAY, continua valendo).
- */
-async function cancelarCobrancaParaDinheiro(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  installmentId: string,
-  actorId: string
-): Promise<{ ok: true; cancelou: boolean } | { ok: false; error: string }> {
-  const { data: ativas } = await supabase
-    .from("charges")
-    .select("id")
-    .eq("payment_installment_id", installmentId)
-    .eq("is_external", false)
-    .in("status", ["emitindo", "emitida", "vencida", "erro_emissao"]);
-  const lista = (ativas ?? []) as { id: string }[];
-  for (const ch of lista) {
-    const { data, error } = await supabase.rpc("charge_cancel_check", { p_charge_id: ch.id, p_purpose: "counter" });
-    if (error) return { ok: false, error: "Esta parcela tem cobrança ativa no Asaas e sua função não pode cancelá-la." };
-    const chk = (Array.isArray(data) ? data[0] : data) as { asaas_payment_id: string | null; gateway_account_id: string | null } | null;
-    const r = await cancelarNoAsaas({
-      chargeId: ch.id,
-      accountId: chk?.gateway_account_id ?? null,
-      asaasPaymentId: chk?.asaas_payment_id ?? null,
-      actorId,
-      reason: "pagou em dinheiro no balcão",
-    });
-    if (!r.ok) {
-      return {
-        ok: false,
-        error: r.jaPaga
-          ? "Esta parcela já foi paga pelo Asaas. A baixa vem do Asaas; não registre o dinheiro."
-          : (r.error ?? "Não foi possível cancelar a cobrança no Asaas."),
-      };
-    }
-    await logAudit({ action: "update", entityType: "charge", entityId: ch.id, details: { cancel: "counter", motivo: "dinheiro no balcão", ok: true } });
-  }
-  return { ok: true, cancelou: lista.length > 0 };
-}
 
 export type ReceivableResult = { ok: boolean; error?: string };
 
@@ -191,19 +148,19 @@ export async function registerReceipt(input: {
    * (juros → multa → benefício perdido → principal). O banco decide quem pode.
    */
   waiverReason?: string;
+  /** 4015 (19.26.1): a pessoa confirmou que a baixa cancela os boletos vivos da parcela. */
+  confirmarCancelamento?: boolean;
 }): Promise<
-  ReceivableResult & { fee?: FeeOutcome; feeSkipped?: FeeSkipReason }
+  ReceivableResult & { fee?: FeeOutcome; feeSkipped?: FeeSkipReason; precisaConfirmar?: number }
 > {
   const session = await getSessionContext();
   const supabase = await createClient();
 
-  // 4011: dinheiro no balcão em parcela que estava no Asaas — cancela antes.
+  // 4011/4015 (19.26.1): dinheiro, permuta ou quitação por valor menor numa
+  // parcela com boleto vivo no Asaas — a própria baixa cancela o boleto, com a
+  // confirmação da tela, sem ampliar quem pode dar a baixa (a permissão é a da
+  // própria baixa, conferida antes da trava).
   let cancelouNoAsaas = false;
-  if (input.paymentMethod === "dinheiro") {
-    const c = await cancelarCobrancaParaDinheiro(supabase, input.installmentId, session.userId);
-    if (!c.ok) return { ok: false, error: c.error };
-    cancelouNoAsaas = c.cancelou;
-  }
 
   const args = {
     p_installment_id: input.installmentId,
@@ -222,21 +179,40 @@ export async function registerReceipt(input: {
   // de sempre (sem a 4004 ela daria baixa parcial calada, sem a dispensa).
   const quitaMenor = Boolean(input.waiverReason && input.waiverReason.trim());
   let receiptId: unknown;
-  let error: { message: string } | null;
-  if (quitaMenor) {
-    ({ data: receiptId, error } = await supabase.rpc("register_payment_with_waiver", {
-      ...args,
-      p_conta: input.conta ?? "",
-      p_reason: input.waiverReason?.trim() ?? "",
-    }));
-  } else {
-    ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt_to", {
-      p_conta: input.conta ?? "",
-      ...args,
-    }));
-    if (portaAusente(error)) {
-      ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt", args));
+  let error: { message: string } | null = null;
+  const baixar = async (): Promise<{ error: { message: string } | null; data: unknown }> => {
+    if (quitaMenor) {
+      ({ data: receiptId, error } = await supabase.rpc("register_payment_with_waiver", {
+        ...args,
+        p_conta: input.conta ?? "",
+        p_reason: input.waiverReason?.trim() ?? "",
+      }));
+    } else {
+      ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt_to", {
+        p_conta: input.conta ?? "",
+        ...args,
+      }));
+      if (portaAusente(error)) {
+        ({ data: receiptId, error } = await supabase.rpc("register_payment_receipt", args));
+      }
     }
+    return { error, data: receiptId };
+  };
+  if (quitaMenor || input.paymentMethod === "dinheiro" || input.paymentMethod === "permuta") {
+    const op = await comBoletosCancelados<unknown>({
+      operacao: quitaMenor ? "quitação por valor menor" : input.paymentMethod === "permuta" ? "baixa em permuta" : "baixa em dinheiro",
+      motivo: quitaMenor ? "quitação por valor menor" : input.paymentMethod === "permuta" ? "permuta no balcão" : "pagou em dinheiro no balcão",
+      installmentIds: [input.installmentId],
+      actorId: session.userId,
+      confirmar: Boolean(input.confirmarCancelamento),
+      tentar: baixar,
+    });
+    if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
+    receiptId = op.ok ? op.data : undefined;
+    error = op.ok ? null : { message: op.error };
+    cancelouNoAsaas = op.ok && op.cancelados > 0;
+  } else {
+    await baixar();
   }
   if (error) {
     const m = error.message;
@@ -488,17 +464,34 @@ export async function saveRenegotiation(input: {
   reason: string;
   /** Juros ao mês do novo parcelamento (Tabela Price). */
   monthlyInterestPercent: number;
-}): Promise<ReceivableResult & { pending?: boolean }> {
-  await getSessionContext();
+  /** 4015 (19.26.1): a pessoa confirmou que a renegociação cancela os boletos vivos. */
+  confirmarCancelamento?: boolean;
+}): Promise<ReceivableResult & { pending?: boolean; precisaConfirmar?: number }> {
+  const session = await getSessionContext();
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("save_renegotiation", {
-    p_client_id: input.clientId,
-    p_installment_ids: input.installmentIds,
-    p_entries: input.entries,
-    p_reason: input.reason || null,
-    p_monthly_interest_percent: input.monthlyInterestPercent,
+  // 4015: a renegociação aplicada cancela no Asaas os boletos vivos das parcelas
+  // renegociadas, na mesma operação (com a confirmação da tela).
+  const op = await comBoletosCancelados<unknown>({
+    operacao: "renegociação",
+    motivo: "renegociação",
+    installmentIds: input.installmentIds,
+    actorId: session.userId,
+    confirmar: Boolean(input.confirmarCancelamento),
+    tentar: async () => {
+      const r = await supabase.rpc("save_renegotiation", {
+        p_client_id: input.clientId,
+        p_installment_ids: input.installmentIds,
+        p_entries: input.entries,
+        p_reason: input.reason || null,
+        p_monthly_interest_percent: input.monthlyInterestPercent,
+      });
+      return { error: r.error, data: r.data };
+    },
   });
+  if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
+  const data = op.ok ? op.data : null;
+  const error = op.ok ? null : { message: op.error };
   if (error) {
     const m = error.message;
     if (m.includes("NO_INSTALLMENTS")) {
@@ -557,15 +550,30 @@ export async function authorizeRenegotiation(input: {
   renegotiationId: string;
   approve: boolean;
   note: string;
-}): Promise<ReceivableResult> {
-  await getSessionContext();
+  /** 4015 (19.26.1): a pessoa confirmou que a renegociação cancela os boletos vivos. */
+  confirmarCancelamento?: boolean;
+}): Promise<ReceivableResult & { precisaConfirmar?: number }> {
+  const session = await getSessionContext();
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("authorize_renegotiation", {
-    p_id: input.renegotiationId,
-    p_approve: input.approve,
-    p_note: input.note || null,
+  const { data: reneg } = await supabase.from("payment_renegotiations").select("source_installment_ids").eq("id", input.renegotiationId).maybeSingle();
+  const op = await comBoletosCancelados<unknown>({
+    operacao: "renegociação",
+    motivo: "renegociação",
+    installmentIds: input.approve ? ((reneg?.source_installment_ids as string[] | null) ?? []) : [],
+    actorId: session.userId,
+    confirmar: Boolean(input.confirmarCancelamento),
+    tentar: async () => {
+      const r = await supabase.rpc("authorize_renegotiation", {
+        p_id: input.renegotiationId,
+        p_approve: input.approve,
+        p_note: input.note || null,
+      });
+      return { error: r.error };
+    },
   });
+  if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
+  const error = op.ok ? null : { message: op.error };
   if (error) {
     const m = error.message;
     if (m.includes("NOT_PENDING")) {

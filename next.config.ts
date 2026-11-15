@@ -55,6 +55,21 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // ASA4, 1B (4015; spec 19.26.3): a lista pública dos boletos da forma 2 fica
+  // fora dos buscadores, sem cache e sem passar o endereço a outros sites.
+  async headers() {
+    return [
+      {
+        source: "/boletos/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+          { key: "Cache-Control", value: "no-store, max-age=0" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

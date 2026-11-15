@@ -195,13 +195,22 @@ export type AsaasCustomer = { id?: string | null; name?: string | null; cpfCnpj?
  */
 export const REFERENCIA_DO_CADASTRO_DO_PARCELADO = "riszon-parcelado:";
 
+/** ASA4 (4015): o cadastro do CARNÊ (forma 2): "cobrança criada" desligado para sempre. */
+export const REFERENCIA_DO_CADASTRO_DO_CARNE = "riszon-carne:";
+
+/** Os cadastros que NUNCA são "o" pagador da régua (parcelado e carnê). */
+export function ehCadastroAuxiliar(externalReference: string | null | undefined): boolean {
+  const r = String(externalReference ?? "");
+  return r.startsWith(REFERENCIA_DO_CADASTRO_DO_PARCELADO) || r.startsWith(REFERENCIA_DO_CADASTRO_DO_CARNE);
+}
+
 /** `GET /v3/customers?cpfCnpj=` — o pagador que já existe na conta (o primeiro não apagado). */
 export async function findCustomerByCpfCnpj(cred: AsaasCredential, cpfCnpj: string, opts?: Opts): Promise<AsaasCustomer | null> {
   const r = await asaasRequest<Lista<AsaasCustomer>>(
     { ...cred, method: "GET", path: "/customers", query: { cpfCnpj, limit: 10 } },
     opts
   );
-  return (r?.data ?? []).find((c) => c?.id && !c.deleted && !String(c.externalReference ?? "").startsWith(REFERENCIA_DO_CADASTRO_DO_PARCELADO)) ?? null;
+  return (r?.data ?? []).find((c) => c?.id && !c.deleted && !ehCadastroAuxiliar(c.externalReference)) ?? null;
 }
 
 /** ASA4 (4013): o cadastro sem avisos de um parcelamento (`GET /customers?externalReference=`). */

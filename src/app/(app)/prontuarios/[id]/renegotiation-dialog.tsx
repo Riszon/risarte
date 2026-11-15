@@ -1,5 +1,6 @@
 "use client";
 
+import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -117,18 +118,22 @@ export function RenegotiationDialog({
 
   function save() {
     startTransition(async () => {
-      const r = await saveRenegotiation({
-        clientId,
-        installmentIds: selected.map((v) => v.id),
-        entries: current.map((e) => ({
-          kind: e.kind,
-          due_date: e.dueDate,
-          amount_cents: e.amountCents,
-          payment_method: method || null,
-        })),
-        reason,
-        monthlyInterestPercent: monthlyPercent,
-      });
+      // 4015: com boletos já entregues, a tela confirma antes de cancelá-los.
+      const r = await comConfirmacaoDeBoletos((confirmar) =>
+        saveRenegotiation({
+          clientId,
+          installmentIds: selected.map((v) => v.id),
+          entries: current.map((e) => ({
+            kind: e.kind,
+            due_date: e.dueDate,
+            amount_cents: e.amountCents,
+            payment_method: method || null,
+          })),
+          reason,
+          monthlyInterestPercent: monthlyPercent,
+          confirmarCancelamento: confirmar,
+        })
+      );
       if (r.ok) {
         toast.success(
           outcome.needsAuthorization

@@ -7,8 +7,9 @@ import { logAudit } from "@/lib/audit";
 import type { ScheduleEntry } from "@/lib/payments";
 import { mensagemDoErroDeMeio } from "@/lib/venda-direta-meios";
 import { criarCobrancasAutomaticas } from "@/lib/asaas/cobrancas-automaticas";
+import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
 
-export type ScheduleResult = { ok: boolean; error?: string };
+export type ScheduleResult = { ok: boolean; error?: string; precisaConfirmar?: number };
 
 /**
  * I9: grava o plano de cobrança (entrada + parcelas) de uma negociação ou de
@@ -19,23 +20,45 @@ export async function savePaymentSchedule(input: {
   negotiationId?: string;
   directSaleId?: string;
   entries: ScheduleEntry[];
+  /** 4015 (19.26.1): a pessoa confirmou que salvar cancela os boletos vivos da venda. */
+  confirmarCancelamento?: boolean;
 }): Promise<ScheduleResult> {
-  await getSessionContext();
+  const session = await getSessionContext();
   if (!input.negotiationId && !input.directSaleId) {
     return { ok: false, error: "Venda não informada." };
   }
   const supabase = await createClient();
-  const { error } = await supabase.rpc("save_payment_schedule", {
-    p_negotiation_id: input.negotiationId ?? null,
-    p_direct_sale_id: input.directSaleId ?? null,
-    p_entries: input.entries.map((e) => ({
-      kind: e.kind,
-      due_date: e.dueDate,
-      amount_cents: e.amountCents,
-      // 4011: o meio da parcela (venda direta nova); vazio = o da venda.
-      ...(e.paymentMethod ? { payment_method: e.paymentMethod } : {}),
-    })),
+  // 4015: trocar vencimento ou valor apaga e recria as parcelas. Com boletos vivos,
+  // salvar cancela os boletos no Asaas na mesma operação (com a confirmação); na
+  // forma 2, os boletos novos nascem logo depois, no mesmo link da lista.
+  const { data: daVenda } = await supabase
+    .from("payment_installments")
+    .select("id")
+    .eq(input.negotiationId ? "negotiation_id" : "direct_sale_id", (input.negotiationId ?? input.directSaleId)!);
+  const op = await comBoletosCancelados<unknown>({
+    operacao: "alteração do parcelamento",
+    motivo: "parcelamento alterado",
+    installmentIds: (daVenda ?? []).map((x) => x.id as string),
+    actorId: session.userId,
+    confirmar: Boolean(input.confirmarCancelamento),
+    venda: { negotiationId: input.negotiationId ?? null, directSaleId: input.directSaleId ?? null },
+    tentar: async () => {
+      const r = await supabase.rpc("save_payment_schedule", {
+        p_negotiation_id: input.negotiationId ?? null,
+        p_direct_sale_id: input.directSaleId ?? null,
+        p_entries: input.entries.map((e) => ({
+          kind: e.kind,
+          due_date: e.dueDate,
+          amount_cents: e.amountCents,
+          // 4011: o meio da parcela (venda direta nova); vazio = o da venda.
+          ...(e.paymentMethod ? { payment_method: e.paymentMethod } : {}),
+        })),
+      });
+      return { error: r.error };
+    },
   });
+  if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
+  const error = op.ok ? null : { message: op.error };
   if (error) {
     const m = error.message;
     if (m.includes("TOTAL_MISMATCH")) {

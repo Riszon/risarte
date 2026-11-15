@@ -1,5 +1,6 @@
 "use client";
 
+import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
 import { CobrancasDaVenda } from "@/components/commercial/cobrancas-da-venda";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
@@ -445,10 +446,14 @@ export function SaleItem({
         toast.error(r.error ?? "Algo deu errado.");
         return;
       }
-      const s = await savePaymentSchedule({
-        directSaleId: sale.id,
-        entries: schedule.map((e, i) => ({ ...e, seq: i + 1 })),
-      });
+      // 4015: com boletos já entregues, a tela confirma antes de cancelá-los.
+      const s = await comConfirmacaoDeBoletos((confirmar) =>
+        savePaymentSchedule({
+          directSaleId: sale.id,
+          entries: schedule.map((e, i) => ({ ...e, seq: i + 1 })),
+          confirmarCancelamento: confirmar,
+        })
+      );
       if (s.ok) toast.success("Pagamento salvo.");
       else toast.warning(`Condições salvas. ${s.error ?? ""}`);
       router.refresh();

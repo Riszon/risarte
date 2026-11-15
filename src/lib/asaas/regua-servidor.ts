@@ -64,14 +64,30 @@ export async function aplicarNoAsaas(
     permitidos: lerPermitidos(env[VARIAVEL_DOS_PERMITIDOS]),
   });
   const { body, levouContato } = contatoParaOAsaas(trava.modo, trava.contato);
-  await updateCustomer(cred, item.asaas_customer_id, body, opts);
-  if (trava.modo === "on") {
-    const atuais = await getCustomerNotifications(cred, item.asaas_customer_id, opts);
-    const pacote = pacoteDosAvisos(atuais, item.rules ?? [], {
-      temEmail: !!body.email,
-      temCelular: !!body.mobilePhone,
-    });
-    await updateNotificationsBatch(cred, item.asaas_customer_id, pacote, opts);
+  // 4015 (forma 2): os cadastros do CARNÊ deste pagador recebem o mesmo contato e
+  // os mesmos avisos, com o "cobrança criada" SEMPRE desligado (19.26.4). Todos
+  // passam pela mesma trava (o contato vem dela).
+  const { data: carnes } = await createAdminClient()
+    .from("gateway_carne_customers")
+    .select("asaas_customer_id")
+    .eq("gateway_customer_id", item.customer_id);
+  const destinos = [
+    { id: item.asaas_customer_id, carne: false },
+    ...((carnes ?? []) as { asaas_customer_id: string }[]).map((k) => ({ id: k.asaas_customer_id, carne: true })),
+  ];
+  for (const d of destinos) {
+    await updateCustomer(cred, d.id, body, opts);
+    if (trava.modo === "on") {
+      const atuais = await getCustomerNotifications(cred, d.id, opts);
+      const regras = d.carne
+        ? (item.rules ?? []).map((r) => (r.slot === "criada" ? { ...r, email: false, sms: false, whatsapp: false, phoneCall: false } : r))
+        : (item.rules ?? []);
+      const pacote = pacoteDosAvisos(atuais, regras, {
+        temEmail: !!body.email,
+        temCelular: !!body.mobilePhone,
+      });
+      await updateNotificationsBatch(cred, d.id, pacote, opts);
+    }
   }
   return { modo: trava.modo, levouContato, barrado: trava.barrado };
 }

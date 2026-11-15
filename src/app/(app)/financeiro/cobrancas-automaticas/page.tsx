@@ -5,6 +5,7 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewFinance } from "@/lib/finance/access";
 import { PainelDasCobrancasAutomaticas, type DadosDoPainel } from "./painel";
+import { OperacoesInterrompidas, type OperacaoInterrompida } from "./operacoes-interrompidas";
 
 export const metadata: Metadata = { title: "Cobranças automáticas" };
 
@@ -22,6 +23,8 @@ export default async function CobrancasAutomaticasPage() {
   const daRede = session.isAdminMaster || Object.values(session.rolesByClinic).flat().includes("finance_franchisor");
   const unidade = daRede ? null : (session.activeClinic?.id ?? null);
   const { data, error } = await supabase.rpc("auto_charge_panel_read", { p_clinic_id: unidade });
+  // 4015: as operações interrompidas (boleto cancelado sem a mudança).
+  const { data: interrompidas } = await supabase.rpc("boleto_op_failures_read", { p_clinic_id: unidade });
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
@@ -44,7 +47,10 @@ export default async function CobrancasAutomaticasPage() {
               : "Não foi possível ler a criação automática."}
         </p>
       ) : (
-        <PainelDasCobrancasAutomaticas dados={data as DadosDoPainel} />
+        <>
+          <OperacoesInterrompidas itens={((interrompidas ?? []) as OperacaoInterrompida[])} />
+          <PainelDasCobrancasAutomaticas dados={data as DadosDoPainel} />
+        </>
       )}
     </div>
   );

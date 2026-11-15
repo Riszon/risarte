@@ -1775,7 +1775,7 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
     - mesmo que o Asaas use uma fila que só olha a configuração na hora de enviar, ela encontraria o aviso desligado;
     - o risco de fila era do caminho "desligar, criar e religar", descartado em 19.10.
   - **Se o Jeferson quiser a janela completa:** repetir com o mesmo script e limpar só depois de 30 minutos.
-- **Conclusão:** o cadastro do carnê serve para a forma 2 (entrega 1B / 4014). **Prova aceita pelo Jeferson com a janela curta (14/11/2026).**
+- **Conclusão:** o cadastro do carnê serve para a forma 2 (entrega 1B, migração 4015). **Prova aceita pelo Jeferson** (14/11/2026); em 15/11/2026, ele conferiu a caixa de entrada e o spam mais de 7 horas depois do disparo: nenhum dos 3 e-mails do carnê chegou (19.27).
 
 ### 19.17 Construção da entrega 1, parte 1 (4011), em 14/11/2026
 
@@ -2241,6 +2241,7 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
 5. **Estorno de parcelamento com parcelas já creditadas.** No `POST /installments/{id}/refund` de um parcelamento com parte das parcelas já creditadas, de qual saldo sai o valor (da conta emissora inteiro, ou proporcional ao que cada carteira recebeu)? O que acontece se a conta emissora não tiver saldo? Há prazo máximo para estornar uma compra no cartão?
 6. **Tentativas no link.** Na fatura de um parcelamento no cartão, depois de uma recusa do banco emissor, o pagador pode tentar de novo no mesmo link? Há limite de tentativas? A recusa gera alguma tarifa?
 7. **Tarifa na aprovação.** A tarifa do cartão parcelado (percentual da faixa + parte fixa rateada) é calculada pela tabela vigente **no dia da aprovação** do cartão, mesmo que a cobrança tenha sido criada antes, durante uma promoção?
+8. **Boleto removido e pago.** Depois do `DELETE /v3/payments/{id}` de um boleto, o Asaas faz a baixa dele no banco (CIP)? Em quanto tempo o código de barras deixa de ser pagável? Se o pagador pagar mesmo assim (código de barras ou QR Code Pix do boleto), o valor é creditado na conta? A cobrança volta (`PAYMENT_RESTORED`) e chega `PAYMENT_RECEIVED` com a mesma `externalReference`? *(acrescentada em 15/11/2026, 19.27)*
 
 ### 19.23 Construção da entrega 2, parte 1 (4013), em 14/11/2026
 
@@ -2541,10 +2542,107 @@ Ou seja: hoje nada muda com o boleto vivo; a operação é recusada. O que a 1B 
 | Não saiu | nenhum dos **3** do cadastro do carnê (**R$ 5,01, R$ 5,02 e R$ 5,03**) |
 | Limpeza | 18:26:43 |
 
-- ⚠️ **A janela observada foi de cerca de 2 minutos,** e não dos 30 previstos, porque a limpeza rodou cedo. Você aceitou com a janela curta.
-- **Por que vale:** no carnê, o aviso nasce desligado e nunca é religado. O risco de uma fila do Asaas olhar a configuração mais tarde era do caminho "desligar, criar e religar", descartado.
-- Por isso a **decisão 5 continua (a)**. Se você quiser a janela completa, a mesma prova roda de novo, com o seu "pode", e a limpeza só depois de 30 minutos.
+- **Conferência do Jeferson em 15/11/2026,** mais de 7 horas depois do disparo, incluindo o spam: **nenhum dos 3 e-mails do carnê** (R$ 5,01, R$ 5,02 e R$ 5,03) chegou. **A prova vale e não precisa repetir** (19.27).
+- A decisão 5 continua (a).
 
 #### 19.26.6 "Baixar todos em PDF"
 
 Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologação (ASA7), em `docs/asaas/ESTADO.md`.
+
+### 19.27 APROVAÇÃO da 19.26 e a construção da 1B (4015), em 15/11/2026
+
+**Aprovado pelo Jeferson (15/11/2026):** a 19.26, com três pontos que entram na especificação e na construção, sem novo plano.
+
+**1. Falha no meio da operação.**
+- Se o boleto foi cancelado no Asaas e a mudança no riSZon falhou, a parcela **não fica sem boleto em silêncio**:
+  - vira uma **operação interrompida** (`boleto_op_failures`);
+  - **avisa quem fez e o Gerente** da unidade;
+  - aparece em **Financeiro › Cobranças automáticas** com **Reemitir os boletos** e **Marcar como concluída** (com a nota do que foi feito);
+  - nas Cobranças da venda, um aviso aponta para lá.
+- O cancelamento da operação não conta como "à mão": a parcela que continua existindo volta à rotina, e a reemissão recria o boleto.
+
+**2. O pagamento de um boleto que o riSZon cancelou.**
+- **O que o Asaas faz:** a documentação **não diz**. Ela não fala em baixa no banco ao excluir, em pagamento depois da exclusão, em crédito na conta, nem em que aviso chega.
+  - Ela só diz que a exclusão serve para a cobrança que não deve mais ficar disponível para pagamento, que a exclusão não manda `PAYMENT_BANK_SLIP_CANCELLED` e que existe a restauração (`PAYMENT_RESTORED`).
+  - A pergunta foi para a lista (19.22, pergunta 8).
+- **O que o riSZon faz hoje (desde a 4005):** um aviso de pagamento numa cobrança cancelada **não dá baixa**. O valor fica guardado como **pagamento em duplicidade** (`gateway_payment_surpluses`, motivo `cobranca_cancelada`), e a ficha oferece "abater em outra parcela" ou "devolvido".
+- **Na 4015, o alerta da regra:** vai para o Gerente da unidade e o Financeiro da Franqueadora. Diz o **valor**, a **parcela** (número e vencimento) e o **que fazer**: "o dinheiro está na conta da unidade e não deu baixa; abata numa parcela em aberto ou registre a devolução".
+- E se o Asaas avisar que **restaurou** uma cobrança cancelada (`PAYMENT_RESTORED`), sai um alerta na hora, antes de qualquer pagamento.
+
+**3. Confirmação antes de cancelar.**
+- As operações que agora cancelam boletos sozinhas mostram antes **"Esta operação cancela N boletos já entregues ao cliente…"**:
+  - a baixa em dinheiro ou permuta;
+  - a quitação por valor menor;
+  - a renegociação (ao salvar e ao autorizar);
+  - o cancelamento do plano;
+  - salvar o parcelamento de novo (vencimento ou valor);
+  - a troca da forma 2 para a 1.
+- Sem o "sim", nada muda.
+- **As permissões não mudam:** o servidor tenta a operação primeiro, e a permissão é conferida dentro dela, antes da trava. Só a operação que passou da permissão e parou na trava chega à confirmação e ao cancelamento.
+
+**Decisões registradas:**
+- **"Não abriu":** conta o acesso à página da lista **ou** a abertura de uma fatura. O acesso à lista marca "aberta" nos boletos dela.
+- **A prova do carnê vale** (19.26.5): nenhum e-mail do carnê chegou em mais de 7 horas.
+- **Renegociação de venda na forma 2:** no fechamento da renegociação, a escolha da forma é oferecida de novo. **Fica para a entrega da renegociação** (4017).
+
+**O que a 4015 faz:**
+1. **A forma na venda:** `direct_sales.boleto_mode` e `plan_negotiations.boleto_mode` (`mensal`, o padrão, ou `todos`).
+   - `sale_boleto_mode_set` diz quem pode escolher: quem fechou a venda, o Gerente, o Financeiro e o Admin. A troca fica na auditoria.
+   - A forma 2 exige a unidade ligada e pelo menos um boleto.
+   - De 2 para 1, devolve os boletos do carnê que vencem **fora do prazo** (1a).
+2. **A forma 2 na rotina:**
+   - `_auto_charge_due` pega todos os boletos da venda na forma 2, sem prazo;
+   - `_charge_prepare_system` marca `via_carne`;
+   - `_auto_charge_cancelled_by_hand` ignora o cancelamento do sistema (`cancel_system`).
+3. **O cadastro do carnê:**
+   - fica em `gateway_carne_customers`; `_gateway_carne_save` põe a régua do pagador na fila;
+   - o servidor (`cadastroDoCarne` em `src/lib/asaas/cobranca.ts`) cria o cadastro com a referência `riszon-carne:`, sem avisos e sem contato;
+   - a fila da régua (`aplicarNoAsaas`) aplica o contato e os avisos nos dois cadastros, com o "cobrança criada" sempre desligado no carnê;
+   - a busca pelo CPF ignora os cadastros auxiliares (`ehCadastroAuxiliar`).
+4. **A lista:**
+   - as tabelas `boleto_lists`, `boleto_list_accesses` e `boleto_list_misses`;
+   - as portas `boleto_list_issue` (só o resumo do código), `boleto_list_revoke`, `boleto_list_sent` (o envio conta para cada boleto) e `_boleto_list_read` (limites, validade, registro, "aberta");
+   - a página `/boletos/[código]`: pública, `noindex`, `X-Robots-Tag`, `no-store` e `no-referrer`, com `/boletos/` fora do `robots.txt`.
+5. **"A lista mudou":** um aviso por lista por dia, a quem fechou a venda e ao Gerente, quando um boleto da lista é cancelado ou criado.
+6. **O servidor** (`src/lib/asaas/boletos-da-operacao.ts`):
+   - `comBoletosCancelados` faz a tentativa, a confirmação, o cancelamento no Asaas e no riSZon, a repetição e a pendência;
+   - `cancelarBoletosDoSistema` cuida da troca de forma;
+   - as cinco operações passam por ele (baixa, renegociação ao salvar e ao autorizar, cancelamento do plano, parcelamento);
+   - as seis telas pedem a confirmação (`src/lib/confirmar-boletos.ts`).
+7. **As telas:**
+   - nas Cobranças da venda, a forma, com os seus textos para quem fecha e para o cliente, e a lista: gerar ou gerar novo link (o link aparece uma vez), Copiar, WhatsApp, Revogar e "aberta N vezes";
+   - em Financeiro › Cobranças automáticas, as operações interrompidas.
+
+**Provas:**
+- **Ensaio no treino** em transação desfeita (`scripts/asaas-ensaio-asa4-1b.mjs --confirmar`): **41/41**. Cobre:
+  - a escolha, quem pode, a unidade desligada e a auditoria;
+  - os 12 boletos sem prazo pelo carnê, com o Pix no prazo;
+  - a virada do split pegando os 12;
+  - o carnê pondo a régua na fila;
+  - a lista: o mínimo, o acesso registrado e "aberta", o limite de 20 por IP, o link novo invalidando o antigo, a revogação e o envio contando para cada boleto;
+  - os 6 casos: com o boleto vivo, recusado; depois do cancelamento da operação, passa, e a lista mostra a situação nova;
+  - o "à mão" contra o do sistema;
+  - o aviso de reenvio, uma vez;
+  - a troca de 2 para 1, só fora do prazo;
+  - a operação interrompida, com o aviso, a lista de pendências e a conclusão;
+  - o boleto cancelado pago, com valor, parcela e o que fazer, para o Gerente e o Financeiro;
+  - a restauração;
+  - as portas fechadas.
+- **Provado quebrando:**
+
+  | Modo | Resultado |
+  |---|---|
+  | `--quebrar=trava` | 8 falhas |
+  | `--quebrar=mao` | 1 falha |
+  | `--quebrar=pendencia` | 1 falha |
+  | `--quebrar=lista` | 2 falhas |
+
+- **Sandbox, 12 boletos, pelo caminho real do servidor** (`asaas-asa4-1b.integracao.test.ts`, pagador sem contato): **4/4**.
+  - a assinatura criou os 12 de uma vez, todos pelo cadastro do carnê, sem "Enviada pelo Asaas";
+  - no Asaas, os 12 estão num único cadastro `riszon-carne:`, sem contato e sem o aviso de criação; o cadastro principal não tem nenhum deles;
+  - a página da lista mostrou os 12, com o link e a linha digitável;
+  - na troca de 2 para 1, só os de fora do prazo foram cancelados no Asaas, como cancelamento do sistema;
+  - no fim, os 12 ficaram cancelados.
+- **O que não foi provado no sandbox:**
+  - **A limitação:** os 6 casos não passaram pela tela, porque as portas exigem a sessão de quem faz. No banco, os 6 estão provados no ensaio. No servidor, o cancelamento é o mesmo da troca de forma, que foi provado no sandbox.
+  - **O teste do Jeferson** cobre esses casos pela tela (roteiro no relatório).

@@ -100,10 +100,11 @@ describe("a baixa à mão e a troca de meio (ajuste C)", () => {
     expect(ehPeloAsaas("dinheiro") || ehPeloAsaas("permuta")).toBe(false);
   });
   it("a baixa em dinheiro cancela antes a cobrança do Asaas (e recusa se já foi paga lá)", () => {
+    // 4015 (19.26.1): o mesmo, agora pelo cancelamento na operação, com a confirmação da tela.
+    const OP = readFileSync("src/lib/asaas/boletos-da-operacao.ts", "utf8");
     expect(BAIXA).toContain('input.paymentMethod === "dinheiro"');
-    expect(BAIXA).toContain("cancelarCobrancaParaDinheiro");
-    expect(BAIXA).toContain("charge_cancel_check");
-    expect(BAIXA).toContain("r.jaPaga");
+    expect(BAIXA).toContain("comBoletosCancelados");
+    expect(OP).toContain("PAGA_NO_ASAAS.has(p.status)");
   });
   it("a troca para meio do Asaas gera a cobrança na hora", () => {
     expect(TROCA).toContain("installment_set_method");

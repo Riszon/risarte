@@ -1,5 +1,6 @@
 "use client";
 
+import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -359,18 +360,23 @@ export function ReceivablesSection({
     const quitaMenor = canWaive && waive && amountCents < paying.updatedBalanceCents;
     const quita = quitaMenor || amountCents >= paying.updatedBalanceCents;
     startTransition(async () => {
-      const r = await registerReceipt({
-        clientId,
-        installmentId: paying.id,
-        amountCents,
-        receivedAt,
-        paymentMethod: method,
-        reference,
-        notes,
-        clientToken: crypto.randomUUID(),
-        conta,
-        waiverReason: quitaMenor ? waiveReason : undefined,
-      });
+      // 4015: com boleto já entregue, a tela confirma antes de cancelá-lo.
+      const token = crypto.randomUUID();
+      const r = await comConfirmacaoDeBoletos((confirmar) =>
+        registerReceipt({
+          clientId,
+          installmentId: paying.id,
+          amountCents,
+          receivedAt,
+          paymentMethod: method,
+          reference,
+          notes,
+          clientToken: token,
+          conta,
+          waiverReason: quitaMenor ? waiveReason : undefined,
+          confirmarCancelamento: confirmar,
+        })
+      );
       if (r.ok) {
         const base = quitaMenor
           ? `Recebimento registrado — parcela quitada por valor menor (dispensado ${formatBRL(
@@ -446,12 +452,15 @@ export function ReceivablesSection({
   function decide() {
     if (!decisionId) return;
     startTransition(async () => {
-      const r = await authorizeRenegotiation({
-        clientId,
-        renegotiationId: decisionId,
-        approve: decisionApprove,
-        note: decisionNote,
-      });
+      const r = await comConfirmacaoDeBoletos((confirmar) =>
+        authorizeRenegotiation({
+          clientId,
+          renegotiationId: decisionId,
+          approve: decisionApprove,
+          note: decisionNote,
+          confirmarCancelamento: confirmar,
+        })
+      );
       if (r.ok) {
         toast.success(
           decisionApprove

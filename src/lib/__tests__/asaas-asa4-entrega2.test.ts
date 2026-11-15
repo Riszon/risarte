@@ -168,7 +168,8 @@ describe("o servidor e o Asaas", () => {
   });
   it("o cadastro SEM AVISOS do parcelado nunca é o pagador da régua", () => {
     expect(API).toContain("notificationDisabled: true, externalReference: input.externalReference");
-    expect(API).toContain("!String(c.externalReference ?? \"\").startsWith(REFERENCIA_DO_CADASTRO_DO_PARCELADO)");
+    expect(API).toContain("!ehCadastroAuxiliar(c.externalReference)");
+    expect(API).toContain("r.startsWith(REFERENCIA_DO_CADASTRO_DO_PARCELADO) || r.startsWith(REFERENCIA_DO_CADASTRO_DO_CARNE)");
   });
   it("o parcelamento nasce inteiro, sem prazo, e cada parcela conta no limite diário", () => {
     expect(AUTO).toContain('admin.rpc("_card_blocks_due"');

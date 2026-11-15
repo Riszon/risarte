@@ -1,5 +1,6 @@
 "use client";
 
+import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -646,10 +647,14 @@ export function NegotiationPanel({
         finalCents > 0 &&
         schedule.length > 0
       ) {
-        const s = await savePaymentSchedule({
-          negotiationId: r.negotiationId,
-          entries: schedule.map((e, i) => ({ ...e, seq: i + 1 })),
-        });
+        // 4015: com boletos já entregues, a tela confirma antes de cancelá-los.
+        const s = await comConfirmacaoDeBoletos((confirmar) =>
+          savePaymentSchedule({
+            negotiationId: r.negotiationId,
+            entries: schedule.map((e, i) => ({ ...e, seq: i + 1 })),
+            confirmarCancelamento: confirmar,
+          })
+        );
         if (!s.ok) {
           toast.warning(`Negociação salva. ${s.error ?? ""}`);
           router.refresh();

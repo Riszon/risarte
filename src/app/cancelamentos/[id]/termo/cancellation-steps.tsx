@@ -1,5 +1,6 @@
 "use client";
 
+import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -107,7 +108,8 @@ export function CancellationSteps({
           }
           onClick={() =>
             run(
-              () => applyPlanCancellation({ id, clientId }),
+              // 4015: com boletos já entregues, a tela confirma antes de cancelá-los.
+              () => comConfirmacaoDeBoletos((confirmar) => applyPlanCancellation({ id, clientId, confirmarCancelamento: confirmar })),
               "Cancelamento efetivado."
             )
           }

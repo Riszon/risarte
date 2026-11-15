@@ -110,7 +110,9 @@ export async function criarCobrancasAutomaticas(opts: {
         resumo.criadas += 1;
         folga -= 1;
         seguidas = 0;
-        await admin.rpc("_charge_mark_asaas_sent", { p_charge_id: prep.data });
+        // 4015: o boleto do carnê (forma 2) não manda o aviso de criação.
+        const { data: vc } = await admin.from("charges").select("via_carne").eq("id", prep.data).maybeSingle();
+        if (!vc?.via_carne) await admin.rpc("_charge_mark_asaas_sent", { p_charge_id: prep.data });
       } else {
         resumo.falhas += 1;
         seguidas += 1;
