@@ -10,6 +10,7 @@ import {
   carregarAcordos,
   carregarBase,
   carregarDividas,
+  carregarFotografias,
   carregarPosicoes,
   carregarResumoDaFase2,
   carregarTitulosDasDividas,
@@ -17,6 +18,7 @@ import {
   prazosDosSelos,
 } from "./dados";
 import { AcordosDaRede } from "./acordos-da-rede";
+import { PainelDasDividas } from "./painel";
 import { ListaDeDividas } from "./lista-de-dividas";
 import { Credores } from "./credores";
 import { Configuracoes } from "./configuracoes";
@@ -24,6 +26,7 @@ import { Qualidade } from "./qualidade";
 import { LINK_DA_PLANILHA_MODELO } from "@/lib/finance/dividas-importacao";
 
 const ABAS = [
+  { id: "painel", label: "Painel" },
   { id: "dividas", label: "Dívidas" },
   { id: "acordos", label: "Acordos" },
   { id: "credores", label: "Credores" },
@@ -36,21 +39,23 @@ type Aba = (typeof ABAS)[number]["id"];
  * LEVANTAMENTO DE DÍVIDAS (0404, fase 1): o que a rede deve a terceiros, por
  * CNPJ — unidades e franqueadora. Só o Financeiro da Franqueadora (e o Admin
  * Master); o banco recusa os outros mesmo que a matriz seja mudada.
- * Acordos desde a fase 5 (0408); o Painel chega na fase 6.
+ * Acordos desde a fase 5 (0408); o Painel (cards e gráficos) na fase 6.
  */
 export default async function DividasPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   const session = await getSessionContext();
   if (!podeVerDividas(session)) redirect("/financeiro");
   const { aba: abaPedida } = await searchParams;
-  const aba: Aba = ABAS.some((a) => a.id === abaPedida) ? (abaPedida as Aba) : "dividas";
+  // O Painel abre primeiro (plano, seção 3).
+  const aba: Aba = ABAS.some((a) => a.id === abaPedida) ? (abaPedida as Aba) : "painel";
 
-  const [base, lista, fase2, doFinanceiro, posicoes, acordos] = await Promise.all([
+  const [base, lista, fase2, doFinanceiro, posicoes, acordos, fotos] = await Promise.all([
     carregarBase(),
     carregarDividas(),
     carregarResumoDaFase2(),
     carregarTitulosDasDividas(),
     carregarPosicoes(),
-    aba === "acordos" ? carregarAcordos() : Promise.resolve({ ok: true, acordos: [] }),
+    aba === "acordos" || aba === "painel" ? carregarAcordos() : Promise.resolve({ ok: true, acordos: [] }),
+    aba === "painel" ? carregarFotografias() : Promise.resolve(null),
   ]);
   const linhas = linhasDaLista(lista.dividas, base, fase2, doFinanceiro.titulos, posicoes);
   const codigos = Object.fromEntries(lista.dividas.map((d) => [d.id, d.code]));
@@ -102,7 +107,7 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
             {ABAS.map((a) => (
               <Link
                 key={a.id}
-                href={a.id === "dividas" ? "/financeiro/dividas" : `/financeiro/dividas?aba=${a.id}`}
+                href={a.id === "painel" ? "/financeiro/dividas" : `/financeiro/dividas?aba=${a.id}`}
                 className={cn(
                   "-mb-px border-b-2 px-3 py-2",
                   aba === a.id ? "border-gold font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"
@@ -129,6 +134,24 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
           {aba === "dividas" && podeLancarDividas(session) && pendentes.length > 0 && <GerarPendentes pendentes={pendentes} />}
           {aba === "dividas" && (
             <ListaDeDividas base={base} linhas={linhas} hoje={todayInBrazil()} prazos={prazos} podeLancar={podeLancarDividas(session)} />
+          )}
+          {aba === "painel" && lista.ok && (
+            <PainelDasDividas
+              base={base}
+              linhas={linhas}
+              acordos={acordos.acordos.map((a) => ({
+                clinicId: a.clinicId,
+                situacao: a.situacao,
+                dividas: a.dividas.map((x) => x.debtId),
+                descontoCents: a.descontoCents,
+                abertas: a.titulos
+                  .filter((t) => t.status === "aberta" || t.status === "parcial")
+                  .map((t) => ({ faltaCents: Math.max(t.valorCents - t.pagoCents, 0), vencimento: t.vencimento })),
+              }))}
+              fotos={fotos}
+              hoje={todayInBrazil()}
+              semRegraUnica={posicoes === null}
+            />
           )}
           {aba === "acordos" && (
             <AcordosDaRede acordos={acordos.acordos} ok={acordos.ok && posicoes !== null} base={base} codigos={codigos} hoje={todayInBrazil()} />

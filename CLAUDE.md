@@ -419,6 +419,12 @@ Syncthing se comportarem de forma estranha.**
   com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
   ⚠️ "Repasses" sozinho é o dos DENTISTAS.
 
+**15/11/2026 (Levantamento de Dívidas — fase 6) — PC Administrador (core 0.453.1 → 0.454.0, sem migração)**
+
+- **O Painel** (bloco 0.454.0 no ESTADO). ⚠️ Contas em `dividas-painel.ts`;
+  o passado vem da fotografia mensal, nunca reconstruído. ⚠️ Gráficos em
+  `src/components/dividas/graficos.tsx` (passar `largura` perto da real).
+
 **15/11/2026 (Levantamento de Dívidas — fase 5) — PC Administrador (core 0.452.0 → 0.453.0, migração 0408)**
 
 - **Renegociação e encerramento** (bloco 0.453.0 no ESTADO). ⚠️ **Parcela de

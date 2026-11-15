@@ -27,6 +27,30 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   provada quebrando. Manual do Empresarial 11 e 11.1. **Não visto na tela.**
 > - ⏳ **1045 só no treino**; o dono roda na produção antes do push.
 
+> ## 🏦 0.454.0 — LEVANTAMENTO DE DÍVIDAS, FASE 6: O PAINEL (15/11/2026; sem migração)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (3, 4.2, 4.3, 4.5; D17;
+> sugestão 4). Aba **Painel** (a primeira; `/financeiro/dividas` abre nela):
+> filtros devedor / etiqueta / sem contestadas; cards da 3.10 e **CNPJs com
+> restrição**; gráficos de evolução mensal (rede + cada CNPJ, com quitado e
+> novas), distribuição por credor/categoria/natureza, aging, evolução por
+> categoria e comparativo entre devedores. Manual 2.3; EV-349.
+> - ⚠️ **Contas do painel = `src/lib/finance/dividas-painel.ts`** (puras,
+>   sobre as linhas da lista com o saldo da regra única `debt_positions`). O
+>   PASSADO vem da fotografia (`carregarFotografias` → `debt_month_positions`),
+>   o mês corrente é ao vivo e sem o "pago do mês" (fecha no dia 1º). Nunca
+>   reconstruir mês fechado pelo log.
+> - ⚠️ **Gráficos = `src/components/dividas/graficos.tsx`** (SVG à mão, como
+>   repasse e metas): um eixo só, paleta categórica validada em ordem fixa
+>   (clara e escura), legenda com 2+ séries, dica ao passar o mouse e "Ver os
+>   números". Passe `largura` perto da largura real (a letra encolhe junto
+>   com o desenho — achado na tela).
+> - Régua `dividas-painel.test.ts` (10). Visto na tela pelo servidor local de
+>   teste (Financeiro de teste): os números batem com as 4 dívidas do treino
+>   (R$ 5.850; Londrina R$ 3.350), a dica, o quitado/novas, o filtro de
+>   devedor e o modo escuro. O treino ainda não tem fotografia (a primeira é
+>   de 01/12): só o mês corrente aparece, com o aviso "sem histórico".
+
 > ## 🏦 0.453.0 — LEVANTAMENTO DE DÍVIDAS, FASE 5: RENEGOCIAÇÃO E ENCERRAMENTO (15/11/2026; migração 0408)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (1.3 "Renegociação no razão",

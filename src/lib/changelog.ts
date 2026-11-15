@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.454.0",
+    data: "2026-11-15",
+    migracao: null,
+    titulo: "Levantamento de Dívidas: o Painel",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O Levantamento de Dívidas abre no Painel: total devido (com o contestado e o judicial à parte), estimado e custo total para regularizar, economia potencial só onde há proposta, o que ainda não tem proposta, quitado, economia já obtida, as dívidas em atraso, inadimplentes, negativadas, protestadas e na Justiça, os acordos valendo e os CNPJs com restrição — da rede inteira ou de um CNPJ, por etiqueta, com ou sem as contestadas.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Gráficos no Painel: a evolução do saldo devedor mês a mês (a rede e cada CNPJ, com o quitado e as dívidas novas do mês), quanto se deve por credor, categoria e natureza, as faixas de atraso, a evolução por categoria e o comparativo entre devedores. O mês que fechou não muda depois: é a fotografia guardada no dia 1º.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.453.1",
     data: "2026-11-15",
     // Sem migração do CORE: a desta correção é da integração Asaas (4015a, ASAAS_MIGRATION).
