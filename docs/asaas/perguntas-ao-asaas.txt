@@ -1,0 +1,83 @@
+Olá! Somos a Risarte, uma rede de clínicas com uma conta Asaas por unidade (subcontas da conta da franqueadora). O nosso sistema, o riSZon, emite as cobranças pela API, com split para a conta da franqueadora. Já testamos tudo no sandbox e temos as perguntas abaixo antes de ir para a produção. Para cada uma, a primeira linha é o contexto.
+
+PARTE A — PERGUNTAS TÉCNICAS (equipe de integrações)
+
+1. Mensageria nas cobranças avulsas
+Contexto: aplicamos a régua de avisos (e-mail e SMS) no cadastro do pagador e fazemos split percentual.
+Pergunta: a tarifa de mensageria (R$ 0,99) é descontada do netValue da cobrança, e por isso entra na base do split percentual, ou é debitada à parte do saldo da conta?
+
+2. Mensageria no parcelamento no cartão
+Contexto: criamos o parcelamento no cartão com installmentCount e totalValue, com split em cada parcela; no sandbox, o e-mail de "cobrança criada" saiu uma vez por parcelamento.
+Pergunta: a tarifa de mensageria é cobrada uma vez por parcelamento ou em cada parcela? Ela sai do netValue da parcela (base do split) ou à parte do saldo? É cobrada na aprovação do cartão ou no crédito de cada parcela?
+
+3. Split na antecipação do cartão parcelado
+Contexto: a antecipação fica desligada nas nossas contas, mas a unidade pode ligá-la; no sandbox, a conta de teste não pode antecipar (cannotAnticipate).
+Pergunta: numa parcela com split que foi antecipada (automática ou pedida), o split é creditado na carteira de destino no dia da antecipação ou na data original de crédito? O estimatedCreditDate/creditDate da cobrança muda? Que evento avisa a liquidação do split nesse caso?
+
+4. Contestação (chargeback) no parcelamento
+Contexto: acompanhamos a contestação pelos avisos e por GET /payments/{id}/chargeback.
+Pergunta: num parcelamento no cartão, a contestação vem por parcela ou pelo parcelamento inteiro?
+
+5. Split na contestação
+Contexto: sabemos (resposta de 11/11/2026) que o estorno total reverte o split de todas as carteiras.
+Pergunta: se o titular do cartão ganha a contestação, o Asaas reverte o split já creditado na carteira de destino (como no estorno) ou debita tudo da conta que emitiu? E nas parcelas ainda não creditadas, o split agendado é cancelado?
+
+6. Estorno de parcelamento com parcelas já creditadas
+Contexto: usamos POST /installments/{id}/refund para estornar o parcelamento inteiro.
+Pergunta: com parte das parcelas já creditadas, de qual saldo sai o valor: todo da conta que emitiu, ou proporcional ao que cada carteira recebeu? O que acontece se a conta que emitiu não tiver saldo? Há prazo máximo para estornar uma compra no cartão?
+
+7. Novas tentativas no link do parcelamento
+Contexto: no sandbox, depois de uma recusa do cartão, o pagador tentou de novo no mesmo link e nenhum parcelamento novo foi criado.
+Pergunta: na produção, depois de uma recusa do banco emissor, o pagador pode tentar de novo no mesmo link? Há limite de tentativas? A recusa gera alguma tarifa?
+
+8. Tarifa do cartão parcelado: dia da criação ou da aprovação
+Contexto: a cobrança pode ser criada durante uma promoção de tarifa e o cartão ser aprovado depois do fim dela.
+Pergunta: a tarifa do cartão parcelado (percentual da faixa + parte fixa) é a da tabela vigente no dia da aprovação do cartão, mesmo que a cobrança tenha sido criada antes?
+
+9. Boleto removido e pago mesmo assim
+Contexto: quando um boleto deixa de valer (renegociação, pagamento no balcão), removemos com DELETE /v3/payments/{id}; a documentação não diz o que acontece se ele for pago depois.
+Pergunta: depois do DELETE, o Asaas faz a baixa do boleto no banco (CIP)? Em quanto tempo o código de barras deixa de ser pagável? Se o pagador pagar mesmo assim (código de barras ou QR Code Pix do boleto), o valor é creditado na conta? A cobrança volta (PAYMENT_RESTORED) e chega PAYMENT_RECEIVED com a mesma externalReference?
+
+10. Cartão de débito na fatura de cartão
+Contexto: emitimos cobranças CREDIT_CARD para o pagador pagar na fatura do Asaas.
+Pergunta: o pagador consegue pagar com cartão de débito nessa fatura? Se sim, qual tarifa vale: a do débito ou a do crédito?
+
+11. A unidade como pagadora do próprio boleto (depósito do dinheiro do caixa)
+Contexto: cada unidade recebe dinheiro em espécie no balcão e precisa levá-lo à sua conta Asaas. A ideia é emitir, uma vez por dia, um boleto na subconta da unidade em que o pagador é a própria unidade (o mesmo CNPJ titular), sem notificações (notificationDisabled), com split para a conta da franqueadora, e pagá-lo em dinheiro na agência ou na lotérica. No sandbox, a API aceitou.
+Perguntas: (a) Na produção, a API aceita cobrança em que o CPF/CNPJ do pagador é o do titular da conta? (b) Esse uso é permitido pelos termos e pela análise de risco do Asaas, ou pode gerar bloqueio da conta? (c) O valor recebido cai como receita de cobrança normal, com a tarifa de boleto pago da nossa conta? (d) Se não for permitido, qual é o meio recomendado pelo Asaas para levar dinheiro em espécie para a conta (depósito, Pix a partir de outra conta, outro produto)?
+
+12. Limite diário de criação de cobranças na produção
+Contexto: no sandbox, GET /payments/limits mostra 5.000 por dia em cada conta; a nossa rotina lê esse limite antes de criar em lote.
+Pergunta: qual é o limite diário de criação de cobranças na produção para a conta da franqueadora e para as subcontas de Londrina e Cambé? Ele pode ser aumentado?
+
+13. Token do cartão pela fatura do Asaas
+Contexto: queremos a recorrência no cartão sem que os dados do cartão passem pelo nosso sistema.
+Pergunta: quando o paciente digita o cartão na fatura do Asaas, o creditCardToken volta para nós (no aviso ou na consulta da cobrança), para as cobranças seguintes?
+
+14. IP na cobrança com token
+Contexto: a cobrança com token é criada pelo nosso servidor, sem o paciente presente.
+Pergunta: qual IP devemos informar em remoteIp nesse caso: o do nosso servidor ou o do paciente na primeira compra?
+
+PARTE B — PERGUNTAS COMERCIAIS E CONTRATUAIS (gerente de contas)
+
+15. Chave de API entre CNPJs diferentes
+Contexto: a franqueadora (um CNPJ) opera, pelo riSZon, a conta Asaas de cada unidade (outro CNPJ), com autorização do franqueado.
+Pergunta: esse uso da chave de API da unidade pela franqueadora é permitido pelo contrato e pela regulação?
+
+16. Subcontas de CNPJs diferentes
+Contexto: as unidades são empresas de outros donos, abertas como subcontas da conta da franqueadora.
+Pergunta: subcontas geridas pela franqueadora podem ter CNPJ e titular diferentes dos dela?
+
+17. Tabelas de tarifas e negociação pelo volume da rede
+Contexto: cada unidade tem a sua tabela de tarifas, e a rede soma o volume de todas.
+Pergunta: podemos negociar as tarifas pelo volume da rede inteira? Qual é a tabela vigente de cada conta (franqueadora, Londrina e Cambé), inclusive a de boleto pago?
+
+18. Pix Automático em Londrina e Cambé
+Contexto: o Pix Automático exige conta PJ aprovada e CNPJ ativo há pelo menos 6 meses.
+Pergunta: as contas de Londrina e Cambé já podem usar o Pix Automático? Qual é a tarifa?
+
+19. Repasse de 100% à parceira no plano empresarial
+Contexto: no plano empresarial, a Risarte emite a cobrança da implantação e repassa 100% (ou 50%, na mensalidade) à RisLife, outra empresa, por split.
+Pergunta: o Asaas vê algum impedimento num split de 100% do valor para outra empresa?
+
+Obrigado!

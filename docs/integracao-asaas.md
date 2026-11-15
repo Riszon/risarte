@@ -1614,6 +1614,13 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
 - **Conferência do Jeferson antes da 1C:** no painel do Asaas da produção, Minha conta → Taxas → "Boleto pago". Ou a pergunta vai junto com a do F2.
 - A 1C não começa sem esse valor anotado aqui.
 
+**⛔ A 1C CONTINUA BLOQUEADA (registro de 15/11/2026, decisão do Jeferson):**
+- Ela só começa com **as duas respostas** anotadas aqui:
+  - **F6:** a tarifa de "Boleto pago" no painel de produção de **Londrina e de Cambé**. O Jeferson vai olhar e passar os valores.
+  - **F2:** a resposta do Asaas sobre a unidade como pagadora (pergunta 11 da lista em `docs/asaas/perguntas-ao-asaas.txt`).
+- A migração **4016 fica reservada** para ela.
+- Enquanto isso, a próxima entrega é a da renegociação (4017, seção 19.28).
+
 ### 19.13 Nova ordem das entregas e das migrações (ajuste A, APROVADA)
 
 **Pedido:** o cartão parcelado pelo Asaas vem logo depois da entrega 1, antes da renegociação. Até ele estar pronto e aprovado, a maquininha continua na venda direta **só para o cartão parcelado**.
@@ -2234,6 +2241,20 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
 
 ### 19.22 Perguntas ao Asaas (lista única, pronta para enviar)
 
+**Lista completa e atualizada (15/11/2026):** `docs/asaas/perguntas-ao-asaas.txt`, com 19 perguntas, cada uma com o contexto em uma linha. Pronta para o Jeferson copiar e enviar por e-mail e WhatsApp.
+- Juntou as 8 perguntas abaixo e as outras que estavam espalhadas na especificação:
+  - a mensageria nas cobranças avulsas (18.6);
+  - o cartão de débito na fatura (18.6);
+  - a F2 (19.12);
+  - o limite diário da produção (19.5 e 19.15);
+  - o token e o IP do cartão recorrente (ASA4B);
+  - as perguntas ao gerente de contas (13.3).
+- O split na contestação (13.3 e 18.6) entrou na pergunta 5 da lista.
+- A tarifa de "Boleto pago" (F6) entrou na pergunta 17, mas o Jeferson vai lê-la no painel.
+- **Numeração nova:** a lista de baixo é a antiga. Vale a numeração do arquivo.
+
+**A lista antiga (as 8 perguntas da entrega 2 e da 1B):**
+
 1. **Mensageria no parcelamento.** No parcelamento no cartão de crédito (`installmentCount`), a tarifa de mensageria (e-mail/SMS, R$ 0,99) é cobrada **uma vez por parcelamento ou em cada parcela**? Ela é descontada do `netValue` da parcela, e por isso entra na base do split, ou sai à parte do saldo da conta? Quando é cobrada: na confirmação do cartão ou no crédito de cada parcela?
 2. **Split na antecipação.** Numa parcela de cartão parcelado com split, antecipada (automática ou pedida), o split é creditado na carteira de destino **no dia da antecipação ou na data original de crédito**? O `estimatedCreditDate`/`creditDate` da cobrança muda? Qual evento avisa a liquidação do split nesse caso?
 3. **Contestação no parcelamento.** Num parcelamento no cartão, a contestação (chargeback) vem **por parcela ou pelo parcelamento inteiro**?
@@ -2646,3 +2667,229 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
 - **O que não foi provado no sandbox:**
   - **A limitação:** os 6 casos não passaram pela tela, porque as portas exigem a sessão de quem faz. No banco, os 6 estão provados no ensaio. No servidor, o cancelamento é o mesmo da troca de forma, que foi provado no sandbox.
   - **O teste do Jeferson** cobre esses casos pela tela (roteiro no relatório).
+
+### 19.28 Entrega 3 — renegociação assinada pela ZapSign: PLANO (15/11/2026; migração 4017; AGUARDA APROVAÇÃO)
+
+**Pedido do Jeferson (15/11/2026):**
+- pular a 1C, que fica esperando o Asaas com a 4016 reservada;
+- planejar a renegociação, com a escolha da forma oferecida de novo no fechamento;
+- mostrar no plano:
+  - o que acontece com as taxas da rede já retidas das parcelas renegociadas;
+  - como fica a parcela vencida que entra na renegociação, com multa e juros;
+  - o que muda para a venda na forma 2, com a página da lista.
+
+**O que a especificação já decidiu:**
+- D15 e 19.10, entrega 2: "as cobranças antigas só são canceladas depois da assinatura do termo; as novas nascem pela mesma regra da entrega 1";
+- seção 7: "Renegociação só cancela as cobranças antigas depois da assinatura do novo contrato";
+- 19.26.1: a renegociação cancela no Asaas os boletos das parcelas renegociadas na mesma operação, depois da confirmação;
+- 19.27: na venda na forma 2, a escolha da forma é oferecida de novo no fechamento.
+
+#### 19.28.1 Como funciona hoje (conferido no código)
+
+1. **Quem faz:** `save_renegotiation` (0190). Pode renegociar o Gerente da unidade, o Financeiro da Franqueadora e o Admin Master (`can_renegotiate`).
+2. **O valor de partida:** para cada parcela escolhida, `installment_balance` no dia, que dá:
+   - o que falta do valor;
+   - o benefício perdido (o desconto de pontualidade que deixa de valer com o atraso);
+   - a multa: `late_fee_percent`, 2% por padrão, sobre o valor;
+   - os juros: `monthly_interest_percent`, 1% ao mês por padrão, por dia de atraso.
+3. **O desconto:** a diferença entre o original e o novo total.
+   - Acima do limite da rede, ou dado por quem não é Gerente, espera a autorização do Gerente (`authorize_renegotiation`).
+4. **Sem autorização pendente, a renegociação é aplicada na hora** (`apply_renegotiation`):
+   - as parcelas antigas ficam "renegociada";
+   - as novas nascem com `renegotiation_id`;
+   - o razão recebe a multa e os juros incorporados (4.1.01), o benefício perdido (1.1.01) e o desconto (1.9.02) ou o acréscimo (4.1.01).
+5. **Os boletos vivos das antigas (4015):** são cancelados no Asaas nessa mesma hora, depois da confirmação.
+6. **O termo:** é **impresso** (`/renegociacoes/[id]/acordo`). As etapas "acordo assinado", "cobrança emitida" e "pagamento confirmado" são marcadas à mão.
+7. **As parcelas novas não ganham cobrança sozinhas:** `_auto_charge_due` ignora parcela com `renegotiation_id`.
+8. **Os meios da tela de renegociação** ainda são os antigos: boleto, Pix, recorrência no cartão, cartão parcelado (maquininha) e depósito.
+
+**Diferença entre hoje e a especificação:** hoje o boleto antigo é cancelado **antes** de o paciente assinar. A 4017 inverte isso: nada antigo é cancelado antes da assinatura.
+
+#### 19.28.2 O fluxo novo
+
+1. **Montar e salvar.** É a mesma tela, com as mesmas pessoas e o mesmo cálculo.
+   - Com desconto acima do limite, ou dado por quem não é Gerente: a autorização do Gerente vem **antes** do envio, como hoje.
+2. **"Aguardando assinatura".**
+   - A renegociação ganha esse estado novo.
+   - **Nada muda nas parcelas antigas:** elas continuam em aberto, e os boletos delas continuam valendo.
+   - As antigas ficam presas a ela: não entram em outra renegociação (`RENEGOTIATION_PENDING`, estendido a este estado).
+   - Os valores ficam **congelados no dia do salvamento** (19.28.4).
+3. **O termo pela ZapSign.**
+   - Modelo novo nas Assinaturas: "Termo de renegociação", tipo `renegotiation`, origem `payment_renegotiation`.
+   - O texto sai do termo impresso de hoje e nasce como **texto provisório**, como os outros modelos, até a revisão do jurídico.
+   - O envio é o mesmo dos contratos, com os mesmos signatários e a mesma regra de autenticação.
+   - **Antes de enviar,** a tela diz: "Quando o cliente assinar, N boletos já entregues serão cancelados." Se for 0, não pergunta.
+4. **Assinado (webhook da ZapSign, a mesma porta do contrato):**
+   1. Primeiro, o Asaas: os boletos vivos das antigas são cancelados (`comBoletosCancelados`, motivo "renegociação"). Se algum já estiver pago, tudo para (item 6).
+   2. Depois, o banco, numa transação só:
+      - as antigas ficam "renegociada";
+      - as novas nascem;
+      - os lançamentos do razão são feitos;
+      - a etapa "acordo assinado" fica marcada, com a origem "assinatura digital".
+   3. Por fim, as cobranças das novas nascem pela regra da entrega 1, com a forma escolhida (19.28.5).
+   - O aviso repetido da ZapSign não aplica duas vezes: a guarda é o `applied_at`, que já existe.
+5. **Recusado, cancelado ou vencido na ZapSign:**
+   - a renegociação fica "não assinada";
+   - as antigas voltam a poder ser renegociadas;
+   - nada no Asaas muda;
+   - quem enviou e o Gerente recebem um aviso.
+6. **O paciente paga uma parcela antiga antes de assinar:**
+   - qualquer baixa numa antiga **cancela a renegociação pendente**, porque o acordo deixou de bater;
+   - o termo é cancelado na ZapSign;
+   - quem enviou e o Gerente recebem o aviso "O cliente pagou uma parcela da renegociação antes de assinar: refaça o acordo".
+   - Se o pagamento chegar **depois** da assinatura, com o boleto já cancelado, vale o alerta da 4015 ("Pagaram um boleto que o riSZon tinha cancelado").
+7. **Falha no meio** (Asaas cancelou e o banco não aplicou): vira operação interrompida, com aviso e o botão "concluir", como na 4015.
+   - **Termo assinado e não aplicado é a pior situação:** o aviso diz isso com essas palavras.
+8. **Sem ZapSign (exceção).** Recomendo manter o termo impresso só como exceção:
+   - só o Gerente ou o Admin Master;
+   - com o PDF assinado anexado, obrigatório, numa pasta privada;
+   - ao anexar, o caminho é o mesmo do item 4.
+
+#### 19.28.3 As taxas da rede das parcelas renegociadas
+
+- **Regra de hoje (`_apply_fee_split`, 0370):** a taxa da rede nasce em cada **baixa**, sobre o valor da baixa, uma vez só por baixa.
+  - Ela não depende da parcela continuar viva: renegociar não devolve nem refaz taxa de baixa já feita.
+- **O que já foi pago antes da renegociação:**
+  - a taxa dessas baixas fica como está: retida pelo split, se a baixa veio pelo Asaas, ou na conta a pagar da unidade, se veio fora dele;
+  - essas baixas eram dinheiro recebido, e a renegociação só trata o que falta.
+- **O que falta e vai para as parcelas novas:**
+  - paga taxa só quando cada parcela nova for paga, sobre o valor pago;
+  - com o split na origem, se for pelo Asaas, ou na conta a pagar, se for em dinheiro.
+- **Nunca em dobro:** a parcela antiga renegociada não tem mais baixa, então não gera taxa. O boleto antigo cancelado não liquidou split, então não há nada a desfazer no Asaas.
+- **Multa e juros incorporados pagam taxa quando recebidos.** É o mesmo que acontece hoje quando a parcela atrasada é paga com multa: a base é o valor da baixa.
+- **Desconto da renegociação:** reduz a base das taxas futuras. Não devolve taxa de baixa anterior.
+- **Cartão parcelado pelo Asaas:** a parcela de um bloco continua sem poder ser renegociada (4015). É preciso cancelar ou estornar o parcelamento antes. Por isso, a "taxa a reter" do parcelado nunca entra numa renegociação.
+
+**Exemplo com as taxas de produção (17%):**
+
+| | Parcela A | Parcela B |
+|---|---|---|
+| Valor | R$ 500,00 | R$ 500,00 |
+| Situação em 15/11 | venceu em 15/10, 31 dias de atraso, nada pago | vence em 15/12, R$ 300,00 já pagos em dinheiro |
+| Taxa já cobrada | nenhuma | 17% de 300 = **R$ 51,00**, na conta a pagar da unidade |
+| Entra na renegociação | 500,00 + multa 10,00 + juros 5,17 = **515,17** | **200,00** |
+
+- **Renegociação:** 715,17 em 3 parcelas de **R$ 238,39**.
+  - Taxa de cada parcela nova, se paga: 14,30 + 4,77 + 7,15 + 14,30 = **R$ 40,52**.
+  - Nas três: **R$ 121,56**.
+- **Total de taxa dessa dívida:** 51,00 + 121,56 = **R$ 172,56**.
+  - Sem atraso nenhum, seriam 17% de 1.000,00 = R$ 170,00.
+  - A diferença de R$ 2,56 é a taxa sobre os R$ 15,17 de multa e juros, com 1 centavo de arredondamento em cada uma das 4 taxas.
+- **Com desconto de R$ 15,17** (o Gerente dispensa a multa e os juros): o novo total é 700,00, a taxa das novas é R$ 119,00, e o total volta a **R$ 170,00**.
+
+#### 19.28.4 A parcela vencida, com multa e juros
+
+- **No salvamento,** `installment_balance` calcula, no dia:
+  - **multa:** `late_fee_percent` (2% por padrão) sobre o valor da parcela, mais o benefício perdido;
+  - **juros:** `monthly_interest_percent` (1% ao mês por padrão), dividido por 30, vezes os dias de atraso, descontada a carência;
+  - **benefício perdido:** o desconto de pontualidade, se a parcela tinha.
+- **O termo mostra cada valor separado:** valor, benefício perdido, multa, juros, desconto e o novo total. Isso já existe no termo impresso.
+- **Valores congelados no dia do salvamento:**
+  - entre o salvamento e a assinatura, a multa e os juros **não** crescem no acordo;
+  - o termo diz "valores calculados em dd/mm/aaaa".
+- **Prazo do termo** (recomendação):
+  - até **5 dias corridos**, e nunca depois do 1º vencimento novo;
+  - vencido o prazo, o termo é cancelado e é preciso refazer o acordo, com o cálculo do dia.
+  - Assim, os juros que o acordo deixa de cobrar são no máximo os de 5 dias.
+- **Enquanto espera,** a parcela antiga continua com o boleto dela, que tem a multa e os juros do Asaas (`fine` e `interest`). Se o paciente pagar esse boleto, vale o item 6 de 19.28.2.
+- **No razão, na aplicação:**
+  - a multa e os juros entram como receita financeira (4.1.01), como hoje;
+  - o benefício perdido entra em 1.1.01;
+  - o desconto, em 1.9.02;
+  - os juros do parcelamento novo (Tabela Price), em 4.1.01.
+- **As parcelas novas,** se atrasarem, têm multa e juros próprios, pela mesma regra de qualquer parcela. No Asaas, a cobrança nova sai com a multa e os juros dela.
+- **Dispensar multa e juros** é dar desconto. A regra de autorização continua a de hoje.
+
+#### 19.28.5 A forma dos boletos e a página da lista
+
+- **Se as parcelas novas têm boleto,** o fechamento oferece de novo a escolha "Um boleto por mês" ou "Todos os boletos agora", com os mesmos textos e as mesmas pessoas da 1B.
+  - **Já vem marcada** a forma da venda de origem. Se as antigas vierem de vendas com formas diferentes, vem marcado "Um boleto por mês".
+  - A escolha fica gravada na renegociação (`payment_renegotiations.boleto_mode`) e vale para as parcelas novas.
+- **Forma 2 na renegociação:** na assinatura, todos os boletos novos nascem de uma vez, pelo cadastro do carnê, como na 1B.
+- **A página da lista** (recomendação: uma lista própria para o acordo):
+  - **a lista antiga** (da venda) continua valendo e mostra as parcelas renegociadas como "Substituído pela renegociação — não pague", como já faz a 4015;
+    - essas linhas ganham a frase "Os novos boletos foram enviados à parte".
+    - A página não pode mostrar o link novo: o riSZon só guarda o resumo do código.
+  - **a renegociação na forma 2 ganha a sua própria lista**, com o seu link, enviado depois da assinatura pelos mesmos botões (copiar e WhatsApp);
+    - mesmas regras de segurança da 1B: resumo do código, limite, revogação, fora dos buscadores;
+    - vence 5 dias depois do último vencimento.
+  - **Por que separada:** uma renegociação pode juntar parcelas de mais de uma venda do mesmo cliente, e a lista da venda é de uma venda só.
+  - **O aviso "A lista de boletos mudou"** sai para a lista antiga, como hoje.
+- **Forma 1 na renegociação:** os boletos novos nascem um a um, perto de cada vencimento, pela rotina da entrega 1. A lista antiga mostra as parcelas como substituídas.
+- **Antes da assinatura:** a lista antiga não muda, porque nada foi cancelado.
+
+#### 19.28.6 Os meios das parcelas novas
+
+- **Recomendação:** os mesmos meios da venda direta nova:
+  - Pix, boleto e cartão à vista, pelo Asaas;
+  - cartão parcelado pelo Asaas, com as regras do bloco (2 a 21 parcelas, mês a mês);
+  - dinheiro.
+- **Ficam fora:**
+  - a **maquininha**, desligada pela chave da rede;
+  - a **permuta**, que não é renegociação;
+  - a **recorrência no cartão**, que é da ASA4B;
+  - o **depósito**.
+- **Quitação antecipada à vista** continua sendo uma renegociação de 1 parcela, por Pix ou cartão.
+
+#### 19.28.7 O que a 4017 faz
+
+1. **A renegociação:**
+   - os estados novos "aguardando assinatura", "não assinada" e "cancelada pelo pagamento";
+   - `boleto_mode` e o prazo do termo (`sign_deadline`);
+   - `save_renegotiation` deixa de aplicar na hora;
+   - `apply_renegotiation` só roda com o termo assinado (webhook) ou com o PDF anexado (exceção).
+2. **A ZapSign:**
+   - o tipo de modelo `renegotiation` e a origem `payment_renegotiation`;
+   - o modelo provisório;
+   - `signature_apply_webhook` ganha o ramo da renegociação:
+     - assinado → aplica;
+     - recusado, cancelado ou vencido → "não assinada".
+3. **A trava:** a baixa numa parcela presa a uma renegociação pendente cancela a renegociação, cancela o termo e avisa.
+4. **As cobranças novas:**
+   - `sale_auto_charges` ganha `renegotiation_id`;
+   - `_auto_charge_due` passa a aceitar parcela de renegociação marcada;
+   - o contrato da renegociação é o termo assinado;
+   - o fechamento passa o `boleto_mode`, e `_sale_boleto_mode` lê a renegociação.
+5. **A lista:**
+   - `boleto_lists.renegotiation_id`;
+   - `boleto_list_issue` e `_boleto_list_read` para a renegociação;
+   - a frase nova nas linhas substituídas.
+6. **A tela:**
+   - os meios novos (19.28.6);
+   - a escolha da forma no fechamento;
+   - o envio do termo com a confirmação;
+   - o estado da renegociação na ficha, com "Reenviar", "Cancelar envio" e "Anexar termo assinado".
+7. **O que já existe e muda de momento:** o cancelamento da 4015 na renegociação sai do salvamento e da autorização e passa para a assinatura.
+
+#### 19.28.8 Provas
+
+- **Ensaio no treino, provado quebrando:**
+  1. salvar não cancela nada;
+  2. assinar cancela e aplica;
+  3. aviso repetido não aplica duas vezes;
+  4. pagamento antes de assinar cancela a renegociação;
+  5. recusa ou vencimento libera as antigas;
+  6. taxa já retida intocada, e taxa das novas só na baixa;
+  7. multa e juros congelados;
+  8. forma 2 com lista própria e a lista antiga marcada;
+  9. as permissões de hoje.
+- **Sandbox do Asaas, sem envio:** a renegociação de uma venda na forma 2, com 12 boletos. A assinatura simulada pela porta do webhook cancela os antigos e cria os novos pelo carnê.
+- **ZapSign:** o envio real do termo só com o "pode" do Jeferson, para o e-mail dele.
+
+#### 19.28.9 Decisões para o Jeferson
+
+1. **Prazo do termo:**
+   - (a) até 5 dias corridos, nunca depois do 1º vencimento novo (recomendado);
+   - (b) até 3 dias.
+2. **Termo impresso como exceção:**
+   - (a) só Gerente ou Admin Master, com o PDF assinado anexado (recomendado);
+   - (b) só pela ZapSign.
+3. **Lista da renegociação na forma 2:**
+   - (a) lista própria, e a antiga diz "os novos boletos foram enviados à parte" (recomendado);
+   - (b) a lista da venda passa a mostrar também os boletos novos, só quando todas as antigas vierem dessa venda.
+4. **Meios das parcelas novas:**
+   - (a) os da venda direta nova, sem maquininha, permuta, recorrência e depósito (recomendado);
+   - (b) manter a lista de hoje.
+5. **Pagamento de parcela antiga antes da assinatura:**
+   - (a) cancela a renegociação e o termo, com aviso para refazer (recomendado);
+   - (b) recalcula o acordo e manda um termo novo.
