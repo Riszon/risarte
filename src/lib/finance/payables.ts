@@ -12,6 +12,8 @@ export const PAYABLE_STATUSES = [
   "paga",
   "cancelada",
   "recusada",
+  // 0408: título de dívida substituído por um acordo (Levantamento de Dívidas).
+  "renegociada",
 ] as const;
 export type PayableStatus = (typeof PAYABLE_STATUSES)[number];
 
@@ -22,6 +24,7 @@ export const PAYABLE_STATUS_LABELS: Record<PayableStatus, string> = {
   paga: "Paga",
   cancelada: "Cancelada",
   recusada: "Recusada",
+  renegociada: "Renegociada (acordo)",
 };
 
 // ---------------------------------------------------------------------------
@@ -168,7 +171,9 @@ export function viewPayable(p: Payable, referenceDate: string): PayableView {
   const closed =
     p.status === "paga" ||
     p.status === "cancelada" ||
-    p.status === "recusada";
+    p.status === "recusada" ||
+    // Renegociada: o que faltava passou para as parcelas do acordo (0408).
+    p.status === "renegociada";
   const open = !closed && balance > 0;
   return {
     ...p,
@@ -193,6 +198,7 @@ export const PAYABLE_FILTERS = [
   { key: "vencidas", label: "Vencidas" },
   { key: "pagas", label: "Pagas" },
   { key: "canceladas", label: "Canceladas" },
+  { key: "renegociadas", label: "Renegociadas" },
 ] as const;
 
 export type PayableFilter = (typeof PAYABLE_FILTERS)[number]["key"];
@@ -214,6 +220,8 @@ export function matchesPayableFilter(
       return v.status === "paga";
     case "canceladas":
       return v.status === "cancelada" || v.status === "recusada";
+    case "renegociadas":
+      return v.status === "renegociada";
   }
 }
 
@@ -259,7 +267,7 @@ export function summarizePayables(
   let awaitingCents = 0;
 
   for (const v of views) {
-    if (v.status === "cancelada" || v.status === "recusada") continue;
+    if (v.status === "cancelada" || v.status === "recusada" || v.status === "renegociada") continue;
     if (v.status === "aguardando_autorizacao") {
       awaitingCount += 1;
       awaitingCents += v.balanceCents;

@@ -86,18 +86,33 @@ export function diasEmAtraso(dueDate: string, today: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
-/** Espelho de `_debt_compute_status` (fase 1: sem quitação nem acordo). */
+/**
+ * Espelho de `_debt_compute_status` (0408). Precedência do plano (4.1):
+ * baixada → quitada (encerrada se o checklist está todo feito) → contestada →
+ * judicial → acordo quebrado → acordo em andamento (inclui "aguardando
+ * aprovação") → em negociação → pelo atraso do título mais antigo em aberto.
+ */
 export function situacaoDaDivida(input: {
   dueDate: string;
   manualStage: ManualStage | null;
   today: string;
   daysToDefault: number;
+  /** 0408: o acordo vigente (aguardando aprovação, em andamento ou quebrado). */
+  acordo?: "aguardando_aprovacao" | "em_andamento" | "quebrado" | null;
+  /** 0408: tem título e não falta nada; `encerrada` = checklist completo. */
+  quitada?: { encerrada: boolean } | null;
+  /** 0408: o vencimento do título mais antigo em aberto (o atraso conta dele). */
+  vencimentoMaisAntigo?: string | null;
 }): DebtStatus {
   if (input.manualStage === "baixada") return "baixada";
+  if (input.quitada && input.acordo !== "aguardando_aprovacao")
+    return input.quitada.encerrada ? "quitada_encerrada" : "quitada_pendencias";
   if (input.manualStage === "contestada") return "contestada";
   if (input.manualStage === "judicial") return "judicial";
+  if (input.acordo === "quebrado") return "acordo_quebrado";
+  if (input.acordo === "em_andamento" || input.acordo === "aguardando_aprovacao") return "acordo_em_andamento";
   if (input.manualStage === "em_negociacao") return "em_negociacao";
-  const atraso = diasEmAtraso(input.dueDate, input.today);
+  const atraso = diasEmAtraso(input.vencimentoMaisAntigo ?? input.dueDate, input.today);
   if (atraso <= 0) return "a_vencer";
   if (atraso <= input.daysToDefault) return "em_atraso";
   return "inadimplente";
@@ -241,7 +256,10 @@ export function valorDevido(d: {
   originalCents: number | null;
   /** 0406: o que já foi pago nos títulos da dívida (Contas a Pagar). */
   pagoCents?: number;
+  /** 0408: o saldo pela regra única do banco (`debt_positions`) — com acordo, é ele que vale. */
+  saldoCents?: number | null;
 }): number {
+  if (typeof d.saldoCents === "number") return Math.max(0, d.saldoCents);
   return Math.max(0, (d.updatedCents ?? d.originalCents ?? 0) - (d.pagoCents ?? 0));
 }
 
@@ -372,6 +390,11 @@ export type DebtListRow = {
   pagoCents?: number;
   /** A dívida já tem título no Contas a Pagar (gerado ou vinculado). */
   noFinanceiro?: boolean;
+  // ---- fase 5 (0408) ----
+  /** Saldo pela regra única do banco: títulos próprios + a parte da dívida no acordo. */
+  saldoCents?: number | null;
+  /** O acordo vigente (aguardando aprovação, em andamento ou quebrado). */
+  acordo?: { id: string; codigo: string; situacao: "aguardando_aprovacao" | "em_andamento" | "quebrado" } | null;
 };
 
 export type DebtFilters = {
@@ -617,7 +640,7 @@ const TOM_AMBAR = "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-am
 const TOM_CINZA = "bg-muted text-muted-foreground";
 const TOM_AZUL = "bg-sky-100 text-sky-900 dark:bg-sky-950/50 dark:text-sky-200";
 
-/** Os selos da lista (seção 5 do pedido). "Acordo quebrado" chega na fase 5. */
+/** Os selos da lista (seção 5 do pedido). O acordo quebrado é a própria situação (0408). */
 export function selosDaDivida(
   r: DebtListRow,
   today: string,
@@ -627,6 +650,8 @@ export function selosDaDivida(
   if (r.negativada) s.push({ codigo: "negativada", rotulo: "Negativada", tom: TOM_VERMELHO });
   if (r.protestada) s.push({ codigo: "protestada", rotulo: "Protestada", tom: TOM_VERMELHO });
   if (r.judicial) s.push({ codigo: "judicial", rotulo: "Judicial", tom: TOM_ROXO });
+  if (r.acordo?.situacao === "aguardando_aprovacao")
+    s.push({ codigo: "aguardando_aprovacao", rotulo: `${r.acordo.codigo} aguardando aprovação`, tom: TOM_AMBAR });
   if (propostaVencendo(r, today, prazos.alertaDaProposta))
     s.push({ codigo: "proposta_vencendo", rotulo: "Proposta vencendo", tom: TOM_AMBAR });
   if (r.needsSplit)

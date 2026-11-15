@@ -414,3 +414,61 @@ export async function linkDoAnexo(anexoId: string): Promise<{ ok: boolean; url?:
   await logAudit({ action: "view", entityType: "debt_attachment", entityId: anexoId });
   return { ok: true, url: data.signedUrl };
 }
+
+// ------------------------------------------------------------- fase 5 (0408)
+
+/**
+ * A conferência do acordo, feita PELO BANCO (`debt_agreement_preview`): o que
+ * entra, S, desconto/encargos, aprovação. A tela mostra exatamente a conta que
+ * a gravação vai refazer.
+ */
+export async function previaDoAcordo(p: Record<string, unknown>): Promise<{ ok: boolean; previa?: Record<string, unknown>; error?: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("debt_agreement_preview", { p });
+  if (error) {
+    console.error("debt_agreement_preview failed:", error.message);
+    return { ok: false, error: mensagem(error, "Não foi possível conferir o acordo (falta a migração 0408 neste banco?).") };
+  }
+  return { ok: true, previa: (data ?? {}) as Record<string, unknown> };
+}
+
+export async function registrarAcordo(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  const r = await porta("debt_agreement_save", { p }, "Não foi possível registrar o acordo.", debtId);
+  if (r.ok && r.id) await logAudit({ action: "create", entityType: "debt_agreement", entityId: r.id });
+  return r;
+}
+
+export async function decidirAcordo(debtId: string, acordoId: string, aprovar: boolean, motivo: string): Promise<Result> {
+  const r = await porta(
+    "debt_agreement_decide",
+    { p_agreement_id: acordoId, p_approve: aprovar, p_reason: motivo.trim() || null },
+    "Não foi possível decidir o acordo.",
+    debtId
+  );
+  if (r.ok) await logAudit({ action: "update", entityType: "debt_agreement_decision", entityId: acordoId, details: { approved: aprovar } });
+  return r;
+}
+
+export async function desfazerAcordo(debtId: string, acordoId: string, motivo: string): Promise<Result> {
+  const r = await porta("debt_agreement_undo", { p_agreement_id: acordoId, p_reason: motivo.trim() }, "Não foi possível desfazer o acordo.", debtId);
+  if (r.ok) await logAudit({ action: "update", entityType: "debt_agreement_undo", entityId: acordoId });
+  return r;
+}
+
+export async function restabelecerDivida(debtId: string, acordoId: string, vencimento: string, motivo: string): Promise<Result> {
+  const r = await porta(
+    "debt_agreement_reestablish",
+    { p_agreement_id: acordoId, p: { due_date: vencimento || null, reason: motivo.trim() } },
+    "Não foi possível registrar o restabelecimento.",
+    debtId
+  );
+  if (r.ok) await logAudit({ action: "update", entityType: "debt_agreement_reestablish", entityId: acordoId });
+  return r;
+}
+
+export async function salvarItemDoEncerramento(debtId: string, p: Record<string, unknown>): Promise<Result> {
+  const r = await porta("debt_closing_save", { p }, "Não foi possível salvar o item do encerramento.", debtId);
+  if (r.ok) await logAudit({ action: "update", entityType: "debt_closing_item", entityId: String(p.id ?? debtId) });
+  return r;
+}

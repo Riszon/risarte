@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCheck, History, MessageSquarePlus, Pencil, Receipt, Trash2 } from "lucide-react";
+import { CheckCheck, Handshake, History, MessageSquarePlus, Pencil, Receipt, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,15 +40,20 @@ import { Propostas } from "./propostas";
 import { ContatosDaDivida } from "./contatos-da-divida";
 import { Anexos } from "./anexos";
 import { NoFinanceiro, type PreviaDoFinanceiro } from "./no-financeiro";
-import type { TituloDaDivida } from "../dados";
+import type { Acordo, TituloDaDivida } from "../dados";
+import type { ItemDoEncerramento } from "@/lib/finance/dividas-acordos";
+import { Acordos, type Candidata } from "./acordos";
+import { Encerramento } from "./encerramento";
 import type { ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
 import { useAcao } from "./comum";
 
-const ABAS = ["dados", "financeiro", "restricoes", "propostas", "contatos", "anexos", "historico"] as const;
+const ABAS = ["dados", "financeiro", "acordos", "encerramento", "restricoes", "propostas", "contatos", "anexos", "historico"] as const;
 type Aba = (typeof ABAS)[number];
 const ROTULO_DA_ABA: Record<Aba, string> = {
   dados: "Dados",
   financeiro: "Contas a Pagar",
+  acordos: "Acordos",
+  encerramento: "Encerramento",
   restricoes: "Restrições",
   propostas: "Propostas",
   contatos: "Contatos",
@@ -72,6 +77,7 @@ export function DetalheDaDivida({
   previa,
   titulos,
   contas,
+  fase5,
 }: {
   base: BaseDasDividas;
   divida: Divida;
@@ -88,6 +94,16 @@ export function DetalheDaDivida({
   previa: PreviaDoFinanceiro | null;
   titulos: TituloDaDivida[];
   contas: ContaDaUnidade[];
+  /** 0408: acordos, candidatas a entrar num acordo e o checklist (null = sem a migração). */
+  fase5: {
+    acordos: Acordo[];
+    candidatas: Candidata[];
+    codigos: Record<string, string>;
+    encerramento: ItemDoEncerramento[];
+    podeRenegociar: boolean;
+    souAdminMaster: boolean;
+    meuId: string;
+  } | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -223,6 +239,11 @@ export function DetalheDaDivida({
               <Button size="sm" variant="outline" onClick={() => irPara("propostas")}>
                 <Receipt className="size-4" /> Registrar proposta
               </Button>
+              {fase5?.podeRenegociar && (
+                <Button size="sm" variant="outline" onClick={() => irPara("acordos")}>
+                  <Handshake className="size-4" /> Renegociar dívida
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={() => irPara("contatos")}>
                 <MessageSquarePlus className="size-4" /> Registrar contato
               </Button>
@@ -243,7 +264,7 @@ export function DetalheDaDivida({
           )}
           <span className="self-center text-[11px] text-muted-foreground">
             {d.lastCheckedOn ? `Última conferência: ${formatIsoDateBr(d.lastCheckedOn)}.` : "Nunca conferida."} Pagamentos: aba Contas a
-            Pagar. Renegociar chega numa próxima fase.
+            Pagar (as parcelas de acordo também, na aba Acordos).
           </span>
         </div>
       )}
@@ -372,6 +393,37 @@ export function DetalheDaDivida({
           hoje={hoje}
           podeLancar={podeLancar && !excluida}
         />
+      )}
+
+      {(aba === "acordos" || aba === "encerramento") && !fase5 && (
+        <p className="rounded-lg border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          Esta parte precisa da migração 0408, que ainda não foi aplicada neste banco.
+        </p>
+      )}
+
+      {aba === "acordos" && fase5 && (
+        <Acordos
+          key={`a${abrir?.aba === "acordos" ? abrir.n : 0}`}
+          divida={{ id: d.id, code: d.code, clinicId: d.clinicId, groupId: d.groupId }}
+          devedor={devedor?.nome ?? "a unidade"}
+          candidatas={fase5.candidatas}
+          acordos={fase5.acordos}
+          propostasAtivas={fase2.propostas.filter((p) => p.status === "ativa")}
+          contatos={contatos}
+          codigos={fase5.codigos}
+          nomes={nomes}
+          contas={contas}
+          hoje={hoje}
+          podeRenegociar={fase5.podeRenegociar && !excluida}
+          podePagar={podeLancar && !excluida}
+          souAdminMaster={fase5.souAdminMaster}
+          meuId={fase5.meuId}
+          abrirNovo={abrir?.aba === "acordos"}
+        />
+      )}
+
+      {aba === "encerramento" && fase5 && (
+        <Encerramento debtId={d.id} itens={fase5.encerramento} anexos={fase2.anexos} nomes={nomes} hoje={hoje} podeLancar={podeLancar && !excluida} />
       )}
 
       {aba === "restricoes" && fase2.ok && (

@@ -5,7 +5,7 @@ import { formatCnpj, formatCpf } from "@/lib/masks";
 import { podeVerDividas } from "@/lib/finance/dividas-acesso";
 import { relatorioDoSaldoDeAbertura, type DividaDoSaldo } from "@/lib/finance/dividas-saldo-de-abertura";
 import type { RelatorioPronto } from "@/lib/finance/relatorio";
-import { carregarBase, carregarDividas, carregarTitulosDasDividas, type BaseDasDividas } from "../dados";
+import { carregarBase, carregarDividas, carregarPosicoes, carregarTitulosDasDividas, type BaseDasDividas } from "../dados";
 
 /**
  * O relatório de saldo de abertura de UM devedor (CNPJ). A página de
@@ -29,7 +29,7 @@ export async function carregarSaldoDeAbertura(
   const devedor = base.devedores.find((d) => d.id === clinica);
   if (!devedor) return { escolher: base.devedores };
 
-  const [lista, titulos] = await Promise.all([carregarDividas(), carregarTitulosDasDividas()]);
+  const [lista, titulos, posicoes] = await Promise.all([carregarDividas(), carregarTitulosDasDividas(), carregarPosicoes()]);
   if (!lista.ok || !titulos.ok) return { falhou: true };
 
   const categoria = new Map(base.categorias.map((c) => [c.id, c]));
@@ -57,7 +57,8 @@ export async function carregarSaldoDeAbertura(
         vencimento: d.dueDate,
         originalCents: d.originalCents,
         saldoCents: d.updatedCents ?? d.originalCents ?? 0,
-        pagoCents: doFinanceiro.reduce((a, t) => a + t.pagoCents, 0),
+        // 0408: com acordo, o pago inclui a parte da dívida nas parcelas (regra única).
+        pagoCents: posicoes?.get(d.id)?.pagoCents ?? doFinanceiro.reduce((a, t) => a + t.pagoCents, 0),
         noFinanceiro: doFinanceiro.length > 0,
       };
     });

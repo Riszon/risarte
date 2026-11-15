@@ -2,6 +2,71 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏦 0.453.0 — LEVANTAMENTO DE DÍVIDAS, FASE 5: RENEGOCIAÇÃO E ENCERRAMENTO (15/11/2026; migração 0408)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (1.3 "Renegociação no razão",
+> 3.2, 3.3, 4.1, 4.7; D8, D9, D12; ajuste 1). **Renegociar dívida** no detalhe
+> (o que entra → condições com a tabela de parcelas → impacto conferido pelo
+> banco), aba **Acordos** no detalhe e na tela principal, **Encerramento**
+> (checklist) no detalhe, situação **Renegociada** no Contas a Pagar (filtro
+> próprio). Permissão nova `acao.dividas.renegociar` (padrão e teto
+> Financeiro da Franqueadora); aprovar acordo é só do Admin Master (fixo).
+> Manual 2.3; EV-348.
+> - ⚠️ **As parcelas do acordo SÃO `payables`** (`debt_agreement_id`,
+>   `debt_link = 'acordo'`, conta 5.5.02, `debt_id` = a dívida principal). Não
+>   existe tabela de parcelas nem "pagamento do acordo": paga-se pelo
+>   `register_payable_payment` de sempre (`[id]/pagamento.tsx`).
+> - ⚠️ **`renegociada` só o acordo põe e tira** (`payables_debt_guard` +
+>   `renegotiated_by_agreement_id`, que diz qual acordo substituiu; o
+>   desfazer devolve por ele). `refresh_payable_payment` (recriada na 0408 a
+>   partir da 0235) mantém a renegociada; título renegociado não recebe
+>   pagamento novo (`PAYABLE_RENEGOTIATED`), o estorno de um antigo pode.
+>   **Leitor novo de "a pagar" filtra por `status in ('aberta','parcial',…)`**:
+>   quem filtra por `not in ('cancelada','recusada')` conta a renegociada.
+> - ⚠️ **Saldo, pago, título mais antigo e acordo vigente = `_debt_positions`**
+>   (porta `debt_positions` para a tela; `linhasDaLista` recebe as
+>   posições; `valorDevido` usa `saldoCents` quando vem). Acordo de várias
+>   dívidas reparte pela base (`debt_agreement_debts.base_cents`), o resto do
+>   arredondamento na principal. `_debt_compute_status` e a fotografia mensal
+>   leem dela. **Ao recriar `_debt_compute_status`, `_debt_refresh_status`,
+>   `_debt_snapshot_month` ou `debt_daily_run`, partir da 0408.**
+> - ⚠️ **Desconto/encargos:** forma congelada no acordo. "Na data do acordo" =
+>   lançamento `debt_agreement_discount`/`_surcharge` (4.1.03 / 4.2.01,
+>   `open`, sem caixa); "proporcional" = gatilho
+>   `payable_payments_debt_agreement` (delta até D × pago ÷ T; o estorno do
+>   pagamento volta sozinho). **O estorno no restabelecimento é lançamento NOVO
+>   e oposto com data de hoje** (`debt_agreement_reversal`), nunca
+>   `reversal_of` (os leitores filtram `reversal_of is null`). "A validar com
+>   o contador."
+> - ⚠️ **Acordo quebrado = rotina diária** (`_debt_agreements_daily`, chamada
+>   no começo da `debt_daily_run`): parcela vencida há mais que a tolerância
+>   em dias úteis (`_payout_add_business_days`, com os feriados nacionais) →
+>   quebrado + aviso crítico; pagou, volta a em andamento; tudo pago, cumprido.
+>   Aviso de parcela em atraso no dia seguinte. Avisos pela porta `_debt_notify`
+>   (uma vez por assunto em `debt_notices`): responsável → senão os
+>   Financeiros da Franqueadora; Admin Master só nos críticos (D12). Os outros
+>   avisos da 4.4 ficam para a fase 8.
+> - ⚠️ **Dívida em acordo não muda o que gerou nem é excluída** (`debts_finance_resync`
+>   e `debt_delete` recriadas com `_debt_agreement_blocking`).
+> - ⚠️ RLS das tabelas novas por `exists (select 1 from debts …)`: **regra de
+>   linha não pode chamar função interna** (`_debt_clinic` é revogada do
+>   logado — achado no ensaio: o checklist dava "permission denied").
+> - Ensaio `scripts/dividas-ensaio-0408.mjs --confirmar` 60/60 (acordo com
+>   desconto, travas, atraso/quebra/retomada com os avisos, restabelecimento,
+>   acordo novo acima do valor de aprovação com desconto proporcional e o
+>   estorno do pagamento, cumprido → quitada → checklist → encerrada, desfazer
+>   com a proposta voltando, recusa, quem pode e o anônimo); `--quebrar`
+>   reprova. Régua `dividas-acordos.test.ts`. 0408 no treino
+>   (`migrar:teste` + reaplicada depois das correções).
+> - Visto na tela pelo servidor local de teste (Financeiro de teste): acordo
+>   AD-00019 com DV-000011 + DV-000056 (impacto do banco, parcelas, pagamento
+>   da entrada, saldo repartido, título renegociado, aba Acordos), estorno do
+>   pagamento e Desfazer — o treino ficou como estava (o acordo fica no
+>   histórico como "desfeito"). Achado na tela e corrigido: as parcelas eram
+>   numeradas contando a entrada ("parcela 2/5"). **Não visto na tela:**
+>   aprovação, quebra, restabelecimento e checklist (só no ensaio).
+> - ⏳ **0408 não aplicada na produção.** O dono roda.
+
 > ## 💳 0.452.0 — ASA4, ENTREGA 1B: TODOS OS BOLETOS AGORA (15/11/2026; Asaas 0.13.0, migração 4015)
 >
 > Forma 2 na venda com boletos (escolha no fechamento, com os textos do Jeferson): todos os boletos nascem de uma vez no cadastro do carnê (sem o aviso de criação; lembretes normais), e o cliente recebe uma mensagem só com o link da lista (`/boletos/[código]`: só o resumo gravado, revogável, acesso registrado, limites, fora dos buscadores). Boleto que deixa de valer: renegociação, cancelamento do plano, troca de vencimento ou valor, dinheiro, permuta e valor menor cancelam no Asaas na mesma operação, depois da confirmação, sem ampliar permissões; falha no meio vira operação interrompida com aviso e botão de reemitir; boleto cancelado pago alerta o Gerente e o Financeiro. Ensaio 41/41; sandbox com 12 boletos 4/4. **Na produção em 15/11/2026:** o dono rodou a 4015 no SQL Editor (conferência vista e certa: 13, 5, 0, 0); `main` em 1aadbc34, produção mostrando 0.452.0; conferido de fora: tabelas novas fechadas ao anônimo, escolha da forma barra o anônimo, página pública sem login e fora dos buscadores, robots.txt certo. O teste do dono pela tela ficou para depois. Spec 19.25 a 19.27; manual 13g.13; EV-347.

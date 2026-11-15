@@ -29,6 +29,15 @@ export function podeImportarDividas(session: SessionContext): boolean {
   return podeVerDividas(session) && comTeto(session, "acao.dividas.importar");
 }
 
+export function podeRenegociarDividas(session: SessionContext): boolean {
+  return podeVerDividas(session) && comTeto(session, "acao.dividas.renegociar");
+}
+
+/** Aprovar acordo acima do valor: só o Admin Master (fixo no banco, D8). */
+export function podeAprovarAcordos(session: SessionContext): boolean {
+  return session.isAdminMaster;
+}
+
 export function podeConfigurarDividas(session: SessionContext): boolean {
   return podeVerDividas(session) && comTeto(session, "acao.dividas.configurar");
 }

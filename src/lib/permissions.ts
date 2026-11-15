@@ -492,6 +492,15 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["finance_franchisor"],
   },
   {
+    id: "acao.dividas.renegociar",
+    rotulo: "Renegociar dívidas (acordos)",
+    grupo: "Ações — Dívidas da rede",
+    descricao:
+      "Registrar acordo (as parcelas viram contas a pagar), desfazer enquanto nada foi pago e registrar que o credor restabeleceu a dívida. Acordo acima do valor de aprovação espera o Admin Master.",
+    dependeDoBanco: true,
+    padrao: ["finance_franchisor"],
+  },
+  {
     id: "acao.dividas.configurar",
     rotulo: "Configurar o Levantamento de Dívidas",
     grupo: "Ações — Dívidas da rede",

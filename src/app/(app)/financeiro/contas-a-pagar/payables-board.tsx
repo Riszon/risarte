@@ -97,6 +97,7 @@ const STATUS_STYLE: Record<PayableStatus, string> = {
   paga: "border-emerald-300 bg-emerald-50 text-emerald-800",
   cancelada: "border-border bg-muted text-muted-foreground",
   recusada: "border-destructive/40 bg-destructive/5 text-destructive",
+  renegociada: "border-indigo-300 bg-indigo-50 text-indigo-800",
 };
 
 // As formas de pagar moram num lugar só (a importação da nota usa as mesmas).
@@ -786,7 +787,7 @@ export function PayablesBoard({
                       )}
                     {canManage &&
                       v.paidAmountCents === 0 &&
-                      !["cancelada", "recusada", "paga"].includes(v.status) && (
+                      !["cancelada", "recusada", "paga", "renegociada"].includes(v.status) && (
                         <Button
                           size="sm"
                           variant="ghost"

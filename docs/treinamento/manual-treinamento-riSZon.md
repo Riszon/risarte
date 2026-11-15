@@ -584,6 +584,7 @@ sistema não entrega esses dados a mais ninguém.
 | Aba | Para quê |
 |---|---|
 | **Dívidas** | A lista, com busca, filtros (devedor, situação, faixa de atraso, **restrição** e **proposta**; em **Mais filtros**, credor, tipo do credor, categoria, natureza, etiqueta, prioridade, responsável, período de vencimento e **só as que pedem conferência**), ordenação (inclusive pelo **desconto da proposta**), os **selos** e os totais — que **respeitam os filtros**. |
+| **Acordos** | Os acordos de renegociação *(desde a 0.453.0)*: os que **esperam aprovação**, os **quebrados** e os **em andamento**, com o saldo a pagar e as parcelas dos próximos 30 dias. Veja *Renegociar dívida*, abaixo. |
 | **Credores** | Quanto se deve a cada credor e **com quem se fala**: atendente, assessoria de cobrança, advogado ou cartório. |
 | **Qualidade dos dados** | O que falta completar nas dívidas *(desde a 0.448.0; veja Importar planilha, abaixo)*. |
 | **Configurações** | A regra de inadimplência, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas, etiquetas e os cartórios de protesto. |
@@ -695,13 +696,16 @@ origem:
   (vão para a despesa financeira do mês do pagamento), data, forma e a conta
   de onde o dinheiro saiu. O **valor devido** da lista passa a descontar o
   que já foi pago; pago tudo, a dívida vai para **Quitada — pendências de
-  baixa** (falta a carta de quitação ou a baixa da restrição).
+  baixa** e ganha o **checklist de encerramento** (veja *Encerramento*,
+  abaixo).
 - **Excluir a dívida** cancela o título que ela gerou e solta os vinculados.
   Se o título gerado já tiver pagamento, a exclusão é recusada.
 
 **No Financeiro da unidade.** O título aparece em **Contas a pagar** com o selo
 **Saldo de implantação** e o link **Dívida DV-…**, e o filtro **Com o saldo de
-implantação / Sem / Só o saldo** separa uns dos outros. Para não inundar a
+implantação / Sem / Só o saldo** separa uns dos outros. Título de dívida que entrou num acordo aparece como **Renegociada (acordo)**,
+com filtro próprio **Renegociadas**: ele não se paga nem se cancela mais por
+ali — o que se paga são as parcelas do acordo. Para não inundar a
 unidade de avisos, **o saldo de implantação vencido não entra no "Vencidas"**:
 aparece numa linha à parte (*"+ R$ X do saldo de implantação"*), no cartão
 **Dívidas antigas vencidas** do Painel e no aviso do **Fluxo de caixa**. No
@@ -778,9 +782,65 @@ dívidas — credor **sem CNPJ completo**, **"A classificar"**, **vencimento igu
 **grupo para desdobrar** e **sem conferência recente**. Cada item abre a lista,
 com o link para a dívida. Quitadas e baixadas não entram.
 
-*Chegam nas próximas etapas:* a renegociação com as parcelas do acordo; o
-painel com gráficos (a "fotografia" de cada dívida no fim do mês começa a ser
-guardada nesta versão); os avisos.
+**Renegociar dívida** *(desde a 0.453.0)*. No detalhe da dívida, o botão
+**Renegociar dívida** (ou a aba **Acordos**) registra o acordo fechado com o
+credor, em três passos:
+
+1. **O que entra:** esta dívida e, se quiser, outras do **mesmo credor e do
+   mesmo devedor** (o grupo dela aparece marcado como "mesmo grupo"). Só entra
+   dívida que já está no Contas a Pagar. A **base** do acordo é o que **falta
+   pagar** em cada título.
+2. **Condições:** data do acordo, **total combinado**, **entrada**, número de
+   parcelas e o 1º vencimento → **Montar as parcelas** (mensais; a última
+   absorve o arredondamento; dá para mudar a data e o valor de cada uma). Se
+   houver proposta ativa, ela já preenche o total. Também: forma de pagamento,
+   canal, com quem se negociou e a **tolerância para quebra** (vazia = a da
+   rede, 3 dias úteis; preencha se o termo disser outra).
+3. **Impacto:** a conta que o sistema **vai gravar**, antes de gravar —
+   quantos títulos viram **"renegociado"**, as parcelas que nascem na conta
+   **5.5.02** (fora da DRE), o **desconto obtido** (receita financeira,
+   conta 4.1.03) ou os **encargos** (despesa financeira, 4.2.01) e quando
+   entram (na data do acordo, ou a cada parcela paga — é a regra da rede).
+   **Confirmar o acordo.**
+
+Ao confirmar, os títulos antigos ficam como **Renegociada** no Contas a Pagar
+(saem do "a pagar" e do fluxo previsto; **nada se apaga**), as parcelas do
+acordo aparecem lá como contas a pagar normais, e a proposta usada vira
+**aceita**. A dívida passa a **Acordo em andamento**. **Cada parcela se paga
+com Registrar pagamento** (na aba Acordos ou no Contas a Pagar) — o mesmo
+pagamento de sempre. A dívida renegociada **não pode mais ser editada nem
+excluída**: o que vale é o acordo.
+
+- **Acordo acima do valor de aprovação** (configurável; desligado de fábrica):
+  fica **Aguardando aprovação** e **nada é gerado** até o **Admin Master**
+  aprovar. Ele recebe o aviso; quem registrou não aprova o próprio acordo.
+  **Recusar** pede o motivo e a dívida volta ao que era.
+- **Parcela atrasada:** no dia seguinte ao vencimento chega o aviso
+  *"parcela do acordo em atraso"*. Passada a tolerância sem pagamento, o
+  acordo fica **Quebrado** (aviso também ao Admin Master). Pagou a parcela,
+  volta a **Em andamento**; tudo pago, **Cumprido**.
+- **Acordo quebrado:** **Renegociar de novo** (um acordo novo com o que falta
+  pagar; o quebrado vira "substituído") ou **Credor restabeleceu a dívida**
+  (o credor não aceitou e voltou a cobrar): as parcelas em aberto viram
+  renegociadas, nasce um título de **o que faltava antes do acordo menos o que
+  foi pago nele**, e o desconto que tinha entrado no resultado **sai com data
+  de hoje** (nunca no mês do acordo, que pode estar fechado).
+- **Desfazer acordo** (com motivo): só **enquanto nenhuma parcela foi paga**.
+  As parcelas são canceladas, o desconto sai e os títulos voltam a ficar em
+  aberto.
+
+**Encerramento** *(desde a 0.453.0)*. Quitada a dívida (todos os títulos — ou
+todas as parcelas do acordo — pagos), a aba **Encerramento** traz o checklist
+**só com o que se aplica** a ela: **termo de quitação**; **baixa da
+negativação** (com o **prazo do credor**, em dias úteis depois do último
+pagamento — a regra da rede); **protesto cancelado**; **processo extinto**.
+Cada item se marca **feito** (com a data e, se quiser, o comprovante da aba
+Anexos) ou **não se aplica** (com o motivo). Tudo resolvido, a dívida vai para
+**Quitada — encerrada**.
+
+*Chegam nas próximas etapas:* o painel com gráficos (a "fotografia" de cada
+dívida no fim do mês já é guardada desde a 0.448.0); os outros avisos e o
+simulador de quitação.
 
 ### 2.4. Recebíveis e inadimplência
 
