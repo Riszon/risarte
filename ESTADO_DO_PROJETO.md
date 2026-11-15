@@ -48,7 +48,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - Ensaio no treino 28/28 (`scripts/empresarial-ensaio-1045.mjs`, transação
 >   desfeita) e quebrando 3 vezes; régua `vagas-no-banco.test.ts` (17),
 >   provada quebrando. Manual do Empresarial 11 e 11.1. **Não visto na tela.**
-> - ⏳ **1045 só no treino**; o dono roda na produção antes do push.
+> - ✅ **1045 nos dois bancos** (produção pelo dono em 15/11/2026, conferência
+>   2·6·3; conferido de fora: sem login as funções internas e a porta recusam
+>   com "permission denied", a de controle responde "não encontrada"). O
+>   código subiu antes, no push de outra sessão (sem efeito sem a 1045).
 
 > ## 🏦 0.454.0 — LEVANTAMENTO DE DÍVIDAS, FASE 6: O PAINEL (15/11/2026; sem migração)
 >
