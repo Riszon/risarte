@@ -4543,6 +4543,13 @@ venda.
 - Se **não sobra tratamento**, o termo pede o destino como sempre:
   **Reavaliação** (Fase 6) ou **Acompanhamento** (Fase 7, com a data de
   retorno).
+- **Venda com parcelas num acordo de renegociação ainda em aberto não é
+  cancelada** (desde a versão 0.452.1). Isso vale também para o acordo que
+  espera a autorização do Gerente. A tela diz o código do acordo (RN-…) e
+  explica o motivo: o cancelamento deixaria as parcelas do acordo sendo
+  cobradas e não contaria o que o cliente já pagou nelas. O cancelamento de
+  venda com acordo fica para o distrato; até lá, fale com o Financeiro da
+  Franqueadora ou com o Admin Master. Vale também para a venda direta.
 
 
 ### 6.7. Demais funções

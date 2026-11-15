@@ -1,5 +1,6 @@
 "use server";
 
+import { mensagemDoAcordoEmAberto } from "@/lib/acordo-em-aberto";
 import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
@@ -43,6 +44,8 @@ export async function openPlanCancellation(input: {
   });
   if (error) {
     const m = error.message;
+    const acordo = mensagemDoAcordoEmAberto(m);
+    if (acordo) return { ok: false, error: acordo };
     if (m.includes("ALREADY_OPEN")) {
       return {
         ok: false,
@@ -152,6 +155,8 @@ export async function applyPlanCancellation(input: {
   const error = op.ok ? null : { message: op.error };
   if (error) {
     const m = error.message;
+    const acordo = mensagemDoAcordoEmAberto(m);
+    if (acordo) return { ok: false, error: acordo };
     if (m.includes("TERM_NOT_SIGNED")) {
       return {
         ok: false,

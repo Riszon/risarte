@@ -62,6 +62,22 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.452.1",
+    data: "2026-11-15",
+    // Sem migração do CORE: a desta correção é da integração Asaas (4015a, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Venda com acordo em aberto não é cancelada",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Cancelar uma venda que tem parcelas num acordo de renegociação ainda em aberto deixava as parcelas do acordo sendo cobradas e não contava o que o cliente já tinha pago nelas. Agora o cancelamento é recusado, e a tela diz o código do acordo e a quem recorrer: o Financeiro da Franqueadora ou o Admin Master.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.452.0",
     data: "2026-11-15",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4015, ASAAS_MIGRATION).

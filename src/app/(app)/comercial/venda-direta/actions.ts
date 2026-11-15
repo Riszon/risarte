@@ -1,5 +1,6 @@
 "use server";
 
+import { mensagemDoAcordoEmAberto } from "@/lib/acordo-em-aberto";
 import { revalidatePath } from "next/cache";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -328,6 +329,8 @@ export async function cancelDirectSale(
   });
   if (error) {
     const m = error.message;
+    const acordo = mensagemDoAcordoEmAberto(m);
+    if (acordo) return { ok: false, error: acordo };
     if (m.includes("ALREADY_CLOSED")) {
       return { ok: false, error: "Venda já concluída — não pode ser cancelada." };
     }

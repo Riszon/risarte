@@ -1097,7 +1097,7 @@ Pedido do Jeferson (14/11/2026): entregas pequenas, cada uma com migração, ens
 | **3** | **Cartão parcelado**: um pagamento no cartão cobrindo o tratamento (parcelamento do Asaas, split por parcela). Prova no sandbox das datas de crédito de cada parcela (pendência da seção 17). | 4013 |
 | **4** | **Mensalidades do PPR+ e da Ortodontia** (`ppr_charges`, `ortho_charges`): criadas perto do vencimento pela mesma rotina da entrega 1. | 4014 |
 | **5** | **Reemissão de cobrança externa**: a que foi paga por fora volta a ser cobrada pelo Asaas, sem duplicar. | 4015 |
-| **6** | **Distrato com checklist** (D12): nada é cancelado no Asaas antes de o Gerente concluir a checklist; ao efetivar, cancela as cobranças em aberto de todos os tipos acima. | 4016 |
+| **6** | **Distrato com checklist** (D12): nada é cancelado no Asaas antes de o Gerente concluir a checklist; ao efetivar, cancela as cobranças em aberto de todos os tipos acima. **Precisa tratar também (19.28.12, Jeferson, 15/11/2026):** o acordo de renegociação com várias vendas e o valor já pago nas parcelas renegociadas, no acerto de cada venda. | 4016 (hoje 4020) |
 
 **Por que essa ordem:**
 - A 2 reaproveita o gatilho da assinatura logo em seguida.
@@ -3044,3 +3044,118 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
 
 - **Hoje, na produção:** a recusa de A também protege a renegociação manual que já existe, porque a falha não depende da 4017.
   - Ela entra na 4017 e sobe junto.
+
+#### 19.28.12 Aprovação de A(a) e B(a), com os ajustes da A (Jeferson, 15/11/2026)
+
+**A. Cancelar venda com parcelas renegociadas: recusar por enquanto.** A solução completa fica para o distrato (4020).
+
+**A.1 A correção na produção, separada da 4017: migração `4015a`** (`supabase/migrations/4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql`, versão 0.452.1, Asaas 0.13.1).
+- **O que faz:** recusa o cancelamento enquanto a venda tiver parcelas num acordo com parcela nova em aberto, seguindo a cadeia (acordo de acordo), ou numa renegociação esperando a autorização do Gerente.
+- **Onde recusa** (gatilhos, para valer por qualquer caminho):
+  1. ao abrir o termo de cancelamento do plano;
+  2. ao efetivar, o que pega também o termo aberto antes da correção;
+  3. ao cancelar a venda direta.
+- **O erro e a tela:**
+  - o banco recusa com `RENEGOTIATED_OPEN: RN-…`;
+  - a tela diz o código do acordo, o motivo e a quem recorrer (`src/lib/acordo-em-aberto.ts`);
+  - o manual (6.6) e o changelog (0.452.1) explicam.
+- **A porta de exceção:** a marca `risarte.cancelar_com_acordo`, para a função autorizada da A.3. Só uma função do banco liga essa marca, nunca a tela.
+- **Risco:**
+  - um cancelamento legítimo de venda com acordo em aberto fica parado até a exceção (A.3) ou o distrato;
+  - um termo de cancelamento já aberto nessa situação não consegue ser efetivado (a conferência da migração conta quantos são);
+  - nenhum dado é alterado.
+- **Desfazer:** apagar os 3 gatilhos e as 2 funções (o comando está no cabeçalho da migração). Nada mais muda.
+- **Ensaio no treino** (`scripts/asaas-ensaio-4015a.mjs`): **13/13**. Provado quebrando: `--quebrar=trava`, sem os gatilhos, reprova 7 conferências.
+
+**A.2 O levantamento do que já aconteceu:** `docs/asaas/levantamento-cancelamentos-com-acordo.sql`.
+- É só leitura, para o SQL Editor da produção.
+- Lista cada venda cancelada (plano ou venda direta) com parcelas renegociadas, com:
+  - unidade, cliente, data e código do cancelamento;
+  - a parcela de acerto;
+  - os acordos, seguindo a cadeia;
+  - as parcelas do acordo em aberto e o que foi pago nelas;
+  - a parte do acordo que veio da venda;
+  - o valor **possivelmente** cobrado a mais. É um teto para conferir caso a caso.
+- Conferida no treino com um caso montado numa transação desfeita.
+- **A correção de cada caso é proposta depois do resultado, e nada é alterado antes da aprovação do Jeferson.**
+
+**A.3 O caminho de exceção até o distrato (PROPOSTA, espera aprovação; não está construído).**
+- **Quem pede:** o Gerente, na própria tela do cancelamento recusado, com o botão "Pedir exceção ao Financeiro" e o motivo. Vai um aviso ao Financeiro da Franqueadora e ao Admin Master.
+- **Quem autoriza:** só o **Financeiro da Franqueadora** ou o **Admin Master**. A porta nova é `plan_cancellation_with_agreement`.
+- **Só para acordo de uma venda só.** Se o acordo juntou parcelas de outra venda, a exceção também é recusada, e o caso espera o distrato. Dividir um acordo de várias vendas é a parte grande, e é do distrato.
+- **O que acontece com as parcelas do acordo em aberto:**
+  - são canceladas na mesma operação;
+  - os boletos delas são cancelados antes no Asaas, pelo caminho da 4015 (com a confirmação e a operação interrompida, se falhar no meio);
+  - o acordo fica "encerrado pelo cancelamento da venda".
+- **Como o acerto conta o que o cliente já pagou no acordo:** o "pago" do acerto passa a ser o pago nas parcelas da venda **mais** o pago nas parcelas do acordo, inclusive nos acordos da cadeia.
+  - Assim, se o cliente deve, o acerto já desconta o que ele pagou no acordo; se a unidade devolve, a devolução já inclui o que ele pagou no acordo.
+- **Na auditoria:**
+  - quem pediu e quem autorizou;
+  - o motivo;
+  - os códigos dos acordos;
+  - as parcelas canceladas;
+  - o pago no acordo que entrou no acerto.
+- **Tamanho:** médio. É uma porta nova e uma versão do acerto que soma o acordo, sem mexer no cancelamento normal.
+  - **O mínimo que evita a cobrança em dobro** é exatamente isso, limitado ao acordo de uma venda só.
+  - Recomendo construir na entrega seguinte à 4017, com o seu "pode". Até lá, vale a recusa da 4015a.
+
+**Registrado na entrega do distrato (4020):** ela precisa tratar:
+- o **acordo com várias vendas**: dividir a parte de cada venda pela proporção das parcelas de origem, ou cancelar o acordo inteiro e refazer o das outras vendas;
+- o **valor já pago nas parcelas renegociadas**, que entra no acerto de cada venda, na mesma proporção;
+- a cadeia de acordos.
+
+**B. Renegociar parcela de venda não fechada: recusado** (`SALE_NOT_CLOSED`, na 4017).
+- A tela diz: "Esta parcela é de uma venda que ainda não foi fechada. Feche a venda (contrato assinado) antes de renegociar."
+- Parcela de renegociação aplicada continua aceita.
+
+**Registros, sem construir:**
+- **Renegociação de clientes diferentes com o mesmo responsável financeiro:** ideia para uma entrega futura (19.28.11, dúvida 2).
+- **Relatório por venda de origem das parcelas renegociadas:** possível, porque a 4017 grava as vendas de origem.
+
+**O ensaio da 4017 inclui também:**
+- o cancelamento recusado com acordo em aberto;
+- a renegociação de venda não fechada recusada;
+- a troca do responsável financeiro entre a venda e a renegociação, com a lista antiga sem os boletos novos e sem valores do acordo.
+
+#### 19.28.13 As renegociações no Financeiro: o que a 4017 grava para a tela futura
+
+**Já existe plano?** Não.
+- Hoje as renegociações aparecem só na ficha do cliente e como "origem: renegociação" no Painel de recebíveis.
+- Nem o roteiro (ROADMAP) nem o documento do Financeiro têm uma tela de renegociações.
+- Registrado no backlog do riSZon (pelo comando `npm run backlog`, item novo).
+
+**O que o Jeferson quer ver** (por unidade e na rede, mês a mês, com comparação entre unidades):
+- quanto a unidade tem em renegociação: valor, quantidade de acordos e de clientes, em aberto e pago;
+- a situação dos acordos: aguardando assinatura, em dia, em atraso, quitados e expirados;
+- o que foi dispensado: desconto no principal, multa, juros e benefício de pontualidade;
+- o efeito no fluxo de caixa, no DRE e nos recebíveis.
+
+**Quem vê:** o Gerente, só a sua unidade; o Financeiro da Franqueadora e o Admin Master, a rede.
+
+**O que já é gravado hoje e serve de base:**
+- **a renegociação** (`payment_renegotiations`): unidade, cliente, parcelas de origem, os totais de partida (principal, benefício perdido, multa, juros), o desconto total, o novo total, o percentual, os juros do novo parcelamento, quem fez, quando, quando foi aplicada e se precisou de autorização;
+- **as parcelas antigas** continuam gravadas, com a data e o valor originais, como "renegociada" e ligadas ao acordo. A data original não se perde;
+- **as parcelas novas,** com as datas e os valores novos e as baixas delas;
+- **o razão:**
+  - multa e juros incorporados (4.1.01);
+  - benefício perdido (1.1.01);
+  - desconto (1.9.02);
+  - juros do parcelamento (4.1.01).
+
+**O que faltava e entra na 4017, porque é barato gravar agora e caro recuperar depois:**
+1. **A foto de cada parcela renegociada no dia do acordo** (tabela `payment_renegotiation_sources`), com:
+   - a parcela, a venda de origem, o vencimento e o valor originais;
+   - os dias de atraso;
+   - o que faltava de principal, benefício, multa e juros naquele dia.
+   - Hoje só existem os totais. A conta por parcela depende das taxas e da data, e depois não dá para refazer com certeza.
+2. **O desconto separado por componente:** `discount_interest_cents`, `discount_fee_cents`, `discount_benefit_cents` e `discount_principal_cents`. Hoje é um número só.
+   - **Regra proposta**, a mesma de qualquer acordo de cobrança: o desconto abate **primeiro os juros, depois a multa, depois o benefício perdido e, por último, o principal**.
+   - A tela mostra a divisão antes de salvar, e o termo também.
+   - **Precisa do seu "ok" na regra.** Se preferir outra ordem, é só trocar.
+3. **As datas de cada mudança de estado:** enviado, assinado, recusado, expirado, cancelado pelo pagamento e encerrado. Cada uma com quem fez e o motivo.
+4. **As vendas de origem** (`origin_negotiation_ids` e `origin_direct_sale_ids`), que já estavam no desenho (19.28.5).
+- Com isso, a tela futura calcula sem gravar mais nada:
+  - "em dia / em atraso / quitado", pelas parcelas novas;
+  - o fluxo "de quais datas para quais datas", pela foto e pelas parcelas novas;
+  - o efeito no DRE, pelo razão e pelo desconto por componente;
+  - a parte da renegociação nos recebíveis.
