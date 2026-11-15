@@ -6,7 +6,17 @@ import { todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { GerarPendentes } from "./gerar-pendentes";
 import { podeConfigurarDividas, podeImportarDividas, podeLancarDividas, podeVerDividas } from "@/lib/finance/dividas-acesso";
-import { carregarBase, carregarDividas, carregarResumoDaFase2, carregarTitulosDasDividas, linhasDaLista, prazosDosSelos } from "./dados";
+import {
+  carregarAcordos,
+  carregarBase,
+  carregarDividas,
+  carregarPosicoes,
+  carregarResumoDaFase2,
+  carregarTitulosDasDividas,
+  linhasDaLista,
+  prazosDosSelos,
+} from "./dados";
+import { AcordosDaRede } from "./acordos-da-rede";
 import { ListaDeDividas } from "./lista-de-dividas";
 import { Credores } from "./credores";
 import { Configuracoes } from "./configuracoes";
@@ -15,6 +25,7 @@ import { LINK_DA_PLANILHA_MODELO } from "@/lib/finance/dividas-importacao";
 
 const ABAS = [
   { id: "dividas", label: "Dívidas" },
+  { id: "acordos", label: "Acordos" },
   { id: "credores", label: "Credores" },
   { id: "qualidade", label: "Qualidade dos dados" },
   { id: "configuracoes", label: "Configurações" },
@@ -25,7 +36,7 @@ type Aba = (typeof ABAS)[number]["id"];
  * LEVANTAMENTO DE DÍVIDAS (0404, fase 1): o que a rede deve a terceiros, por
  * CNPJ — unidades e franqueadora. Só o Financeiro da Franqueadora (e o Admin
  * Master); o banco recusa os outros mesmo que a matriz seja mudada.
- * Painel e Acordos chegam nas fases 5 e 6.
+ * Acordos desde a fase 5 (0408); o Painel chega na fase 6.
  */
 export default async function DividasPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   const session = await getSessionContext();
@@ -33,13 +44,16 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
   const { aba: abaPedida } = await searchParams;
   const aba: Aba = ABAS.some((a) => a.id === abaPedida) ? (abaPedida as Aba) : "dividas";
 
-  const [base, lista, fase2, doFinanceiro] = await Promise.all([
+  const [base, lista, fase2, doFinanceiro, posicoes, acordos] = await Promise.all([
     carregarBase(),
     carregarDividas(),
     carregarResumoDaFase2(),
     carregarTitulosDasDividas(),
+    carregarPosicoes(),
+    aba === "acordos" ? carregarAcordos() : Promise.resolve({ ok: true, acordos: [] }),
   ]);
-  const linhas = linhasDaLista(lista.dividas, base, fase2, doFinanceiro.titulos);
+  const linhas = linhasDaLista(lista.dividas, base, fase2, doFinanceiro.titulos, posicoes);
+  const codigos = Object.fromEntries(lista.dividas.map((d) => [d.id, d.code]));
   const prazos = prazosDosSelos(base);
   // Fase 3: as dívidas A/B cadastradas antes da 0406 (ou sem "gerar já").
   const pendentes = lista.dividas
@@ -115,6 +129,9 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
           {aba === "dividas" && podeLancarDividas(session) && pendentes.length > 0 && <GerarPendentes pendentes={pendentes} />}
           {aba === "dividas" && (
             <ListaDeDividas base={base} linhas={linhas} hoje={todayInBrazil()} prazos={prazos} podeLancar={podeLancarDividas(session)} />
+          )}
+          {aba === "acordos" && (
+            <AcordosDaRede acordos={acordos.acordos} ok={acordos.ok && posicoes !== null} base={base} codigos={codigos} hoje={todayInBrazil()} />
           )}
           {aba === "credores" && <Credores base={base} linhas={linhas} podeLancar={podeLancarDividas(session)} />}
           {aba === "qualidade" && <Qualidade base={base} dividas={lista.dividas} hoje={todayInBrazil()} prazoDaConferencia={prazos.conferencia} />}

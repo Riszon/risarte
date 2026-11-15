@@ -3049,7 +3049,7 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
 
 **A. Cancelar venda com parcelas renegociadas: recusar por enquanto.** A solução completa fica para o distrato (4020).
 
-**A.1 A correção na produção, separada da 4017: migração `4015a`** (`supabase/migrations/4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql`, versão 0.452.1, Asaas 0.13.1).
+**A.1 A correção na produção, separada da 4017: migração `4015a`** (`supabase/migrations/4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql`, versão 0.453.1 (saiu como 0.452.1 e virou 0.453.1 porque a outra sessão publicou a 0.453.0 antes), Asaas 0.13.1).
 - **O que faz:** recusa o cancelamento enquanto a venda tiver parcelas num acordo com parcela nova em aberto, seguindo a cadeia (acordo de acordo), ou numa renegociação esperando a autorização do Gerente.
 - **Onde recusa** (gatilhos, para valer por qualquer caminho):
   1. ao abrir o termo de cancelamento do plano;
@@ -3058,7 +3058,7 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
 - **O erro e a tela:**
   - o banco recusa com `RENEGOTIATED_OPEN: RN-…`;
   - a tela diz o código do acordo, o motivo e a quem recorrer (`src/lib/acordo-em-aberto.ts`);
-  - o manual (6.6) e o changelog (0.452.1) explicam.
+  - o manual (6.6) e o changelog (0.453.1) explicam.
 - **A porta de exceção:** a marca `risarte.cancelar_com_acordo`, para a função autorizada da A.3. Só uma função do banco liga essa marca, nunca a tela.
 - **Risco:**
   - um cancelamento legítimo de venda com acordo em aberto fica parado até a exceção (A.3) ou o distrato;

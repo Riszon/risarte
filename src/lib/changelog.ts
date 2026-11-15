@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.452.1",
+    versao: "0.453.1",
     data: "2026-11-15",
     // Sem migração do CORE: a desta correção é da integração Asaas (4015a, ASAAS_MIGRATION).
     migracao: null,
@@ -74,6 +74,42 @@ export const CHANGELOG: Versao[] = [
           "Cancelar uma venda que tem parcelas num acordo de renegociação ainda em aberto deixava as parcelas do acordo sendo cobradas e não contava o que o cliente já tinha pago nelas. Agora o cancelamento é recusado, e a tela diz o código do acordo e a quem recorrer: o Financeiro da Franqueadora ou o Admin Master.",
         papeis: ["unit_manager", "finance_franchisor"],
         manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
+    versao: "0.453.0",
+    data: "2026-11-15",
+    migracao: "0408",
+    titulo: "Levantamento de Dívidas: renegociação e encerramento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Renegociar dívida: o acordo com o credor é registrado em três passos (o que entra, as condições com a tabela de parcelas, e o impacto conferido antes de gravar). Os títulos antigos ficam como \"Renegociada\" no Contas a Pagar, as parcelas do acordo viram contas a pagar e se pagam pelo Registrar pagamento de sempre, e o desconto obtido (ou os encargos) entra no resultado como manda a regra da rede.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Acordo quebrado: no dia seguinte ao vencimento de uma parcela sem pagamento chega o aviso; passada a tolerância (3 dias úteis, ou a do acordo), o acordo fica quebrado e o Admin Master também é avisado. Dá para renegociar de novo, registrar que o credor restabeleceu a dívida (o desconto sai com data de hoje) ou, enquanto nada foi pago, desfazer o acordo.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Acordo acima do valor de aprovação (configurável, desligado de fábrica) espera o Admin Master: nada é gerado até ele aprovar, e quem registrou não aprova o próprio acordo.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Encerramento: a dívida quitada ganha um checklist só com o que se aplica a ela (termo de quitação, baixa da negativação com o prazo do credor, protesto cancelado, processo extinto). Tudo resolvido, ela fica \"Quitada — encerrada\". E a nova aba Acordos mostra os que esperam aprovação, os quebrados e os em andamento, com o saldo e as parcelas dos próximos 30 dias.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
       },
     ],
   },

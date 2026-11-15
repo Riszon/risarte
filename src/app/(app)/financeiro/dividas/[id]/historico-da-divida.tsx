@@ -42,6 +42,16 @@ const EVENTOS: Record<string, string> = {
   titulo_atualizado: "Atualizou o título no Contas a Pagar",
   titulo_vinculado: "Vinculou títulos que já estavam no Contas a Pagar",
   importada: "Entrou pela importação da planilha",
+  acordo_em_andamento: "O acordo passou a valer (parcelas no Contas a Pagar)",
+  acordo_aguardando_aprovacao: "Registrou um acordo que espera a aprovação do Admin Master",
+  acordo_aprovado: "Aprovou o acordo",
+  acordo_recusado: "Recusou o acordo",
+  acordo_desfeito: "Desfez o acordo",
+  acordo_quebrado: "O acordo ficou quebrado (parcela vencida além da tolerância)",
+  acordo_retomado: "O acordo voltou a ficar em dia",
+  acordo_cumprido: "O acordo foi cumprido (todas as parcelas pagas)",
+  divida_restabelecida: "O credor restabeleceu a dívida",
+  encerramento_item: "Atualizou o checklist de encerramento",
 };
 
 const STAGE_LABEL = (v: unknown) =>

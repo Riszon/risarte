@@ -49,6 +49,7 @@ function translate(message: string, fallback: string): string {
       "Esta conta ainda espera autorização — só pode ser paga depois de liberada.",
     ],
     ["PAYABLE_CLOSED", "Esta conta está cancelada ou recusada."],
+    ["PAYABLE_RENEGOTIATED", "Esta conta foi renegociada num acordo de dívida: case com uma parcela do acordo."],
   ];
   for (const [code, text] of map) {
     if (message.includes(code)) return text;

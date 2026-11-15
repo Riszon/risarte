@@ -5,11 +5,14 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { todayInBrazil } from "@/lib/dates";
 import { valorDevido } from "@/lib/finance/dividas";
-import { podeExcluirDividas, podeLancarDividas, podeVerDividas } from "@/lib/finance/dividas-acesso";
+import { podeAprovarAcordos, podeExcluirDividas, podeLancarDividas, podeRenegociarDividas, podeVerDividas } from "@/lib/finance/dividas-acesso";
 import {
   COLUNAS_DA_DIVIDA,
+  carregarAcordos,
   carregarBase,
   carregarDetalheDaFase2,
+  carregarEncerramento,
+  carregarPosicoes,
   carregarResumoDaFase2,
   carregarTitulosDaDivida,
   dividaDaLinha,
@@ -19,10 +22,12 @@ import {
 import { carregarContasDaUnidade } from "../../contas-da-unidade";
 import { DetalheDaDivida } from "./detalhe-da-divida";
 import type { PreviaDoFinanceiro } from "./no-financeiro";
+import type { Candidata } from "./acordos";
 
 /**
  * O detalhe de uma dívida: Dados · Restrições · Propostas · Contatos ·
- * Anexos · Histórico (0404 + 0405) e Contas a Pagar (0406).
+ * Anexos · Histórico (0404 + 0405), Contas a Pagar (0406), Acordos e
+ * Encerramento (0408).
  */
 export default async function DividaPage({
   params,
@@ -51,16 +56,60 @@ export default async function DividaPage({
     ? await supabase.from("debts").select(COLUNAS_DA_DIVIDA).eq("group_id", divida.groupId).is("deleted_at", null)
     : { data: null };
   const dividasDoGrupo = ((doGrupo ?? []) as unknown as Record<string, unknown>[]).map(dividaDaLinha);
-  const [fase2, resumo, doFinanceiro, contas, previaLida] = await Promise.all([
+  const [fase2, resumo, doFinanceiro, contas, previaLida, posicoes, doAcordo, encerramento, doCredorLidas] = await Promise.all([
     carregarDetalheDaFase2(divida.id, divida.groupId),
     carregarResumoDaFase2(),
     carregarTitulosDaDivida(divida.id),
     carregarContasDaUnidade(supabase, [divida.clinicId]),
     supabase.rpc("debt_finance_preview", { p_debt_id: divida.id }),
+    carregarPosicoes(),
+    carregarAcordos(divida.id),
+    carregarEncerramento(divida.id),
+    // As candidatas a entrar no acordo: mesmo devedor e mesmo credor (3.2).
+    supabase
+      .from("debts")
+      .select("id, code, description, installment_label, contract_number, status, group_id, finance_synced_at")
+      .eq("clinic_id", divida.clinicId)
+      .eq("supplier_id", divida.supplierId)
+      .is("deleted_at", null)
+      .order("code"),
   ]);
   const titulosPorDivida = new Map([[divida.id, doFinanceiro.titulos.filter((t) => t.status !== "cancelada" && t.status !== "recusada")]]);
-  const linhaDaLista = linhasDaLista(dividasDoGrupo.length ? dividasDoGrupo : [divida], base, resumo, titulosPorDivida).find((l) => l.id === divida.id)
-    ?? linhasDaLista([divida], base, resumo, titulosPorDivida)[0];
+  const linhaDaLista = linhasDaLista(dividasDoGrupo.length ? dividasDoGrupo : [divida], base, resumo, titulosPorDivida, posicoes).find((l) => l.id === divida.id)
+    ?? linhasDaLista([divida], base, resumo, titulosPorDivida, posicoes)[0];
+
+  // Fase 5 (0408): sem a migração, as abas dizem que falta.
+  const doCredor = (doCredorLidas.data ?? []) as Record<string, unknown>[];
+  const candidatas: Candidata[] = doCredor
+    .filter((x) => !["baixada", "quitada_pendencias", "quitada_encerrada"].includes(String(x.status)))
+    .map((x) => ({
+      id: x.id as string,
+      code: String(x.code),
+      descricao: [x.installment_label, x.contract_number, x.description].filter(Boolean).join(" · ") || "—",
+      saldoCents: posicoes?.get(x.id as string)?.saldoCents ?? 0,
+      status: x.status as Candidata["status"],
+      groupId: (x.group_id as string | null) ?? null,
+      noFinanceiro: !!x.finance_synced_at,
+    }));
+  const idsDosAcordos = [...new Set(doAcordo.acordos.flatMap((a) => a.dividas.map((x) => x.debtId)))];
+  const { data: dosAcordos } = idsDosAcordos.length
+    ? await supabase.from("debts").select("id, code").in("id", idsDosAcordos)
+    : { data: [] as { id: string; code: string }[] };
+  const codigos = Object.fromEntries([
+    ...doCredor.map((x) => [x.id as string, String(x.code)] as [string, string]),
+    ...((dosAcordos ?? []) as { id: string; code: string }[]).map((x) => [x.id, x.code] as [string, string]),
+  ]);
+  const fase5 = posicoes && doAcordo.ok && encerramento.ok
+    ? {
+        acordos: doAcordo.acordos,
+        candidatas,
+        codigos,
+        encerramento: encerramento.itens,
+        podeRenegociar: podeRenegociarDividas(session),
+        souAdminMaster: podeAprovarAcordos(session),
+        meuId: session.userId,
+      }
+    : null;
   // Sem a 0406 no banco a prévia não existe: a aba diz que falta a migração.
   const p = ((previaLida.data ?? []) as Record<string, unknown>[])[0];
   const previa: PreviaDoFinanceiro | null = p
@@ -83,6 +132,8 @@ export default async function DividaPage({
     divida.ownerUserId,
     ...fase2.contatos.map((c) => c.userId),
     ...fase2.anexos.map((a) => a.uploadedBy),
+    ...doAcordo.acordos.flatMap((a) => [a.registradoPor, a.aprovadoPor, a.decididoPor]),
+    ...encerramento.itens.map((i) => i.feitoPor),
   ].filter((x): x is string => !!x);
   const { data: perfis } = pessoas.length
     ? await supabase.from("profiles").select("id, full_name").in("id", [...new Set(pessoas)])
@@ -110,6 +161,7 @@ export default async function DividaPage({
         previa={previa}
         titulos={doFinanceiro.titulos}
         contas={contas}
+        fase5={fase5}
       />
     </div>
   );

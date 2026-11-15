@@ -33,6 +33,8 @@ function translate(message: string, fallback: string): string {
     ],
     ["NOT_APPROVED", "Esta conta ainda espera autorização."],
     ["PAYABLE_CLOSED", "Esta conta foi cancelada ou recusada."],
+    // 0408: o título da dívida virou parcelas de um acordo.
+    ["PAYABLE_RENEGOTIATED", "Esta conta foi renegociada num acordo de dívida: pague as parcelas do acordo (Levantamento de Dívidas)."],
     ["AMOUNT_OVER_BALANCE", "O valor é maior que o saldo desta conta."],
     ["ALREADY_PAID", "Esta conta já tem pagamento: estorne antes de cancelar."],
     ["ALREADY_REVERSED", "Este pagamento já foi estornado."],

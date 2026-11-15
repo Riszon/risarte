@@ -4,19 +4,15 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Link2, Receipt, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatBRL } from "@/lib/pricing";
 import { formatIsoDateBr } from "@/lib/dates";
 import { titulosParecidos } from "@/lib/finance/dividas";
-import { contaPadrao, type ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
-import { CampoDaConta } from "../../campo-da-conta";
-import { registerPayablePayment } from "../../payables-actions";
+import type { ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
 import { buscarTitulosLivres, gerarNoFinanceiro, vincularTitulos } from "../actions";
 import type { TituloDaDivida, TituloLivre } from "../dados";
-import { SELECT, useAcao } from "./comum";
+import { useAcao } from "./comum";
+import { DialogoDePagamento } from "./pagamento";
 
 // A aba "Contas a Pagar" do detalhe da dívida (0406, fase 3): o que a dívida
 // gera (ou já gerou) no Financeiro da unidade devedora.
@@ -40,22 +36,15 @@ const STATUS_DO_TITULO: Record<string, string> = {
   cancelada: "Cancelado",
   recusada: "Recusado",
   aguardando_autorizacao: "Aguardando autorização",
+  renegociada: "Renegociado (substituído pelo acordo)",
 };
 
-const FORMAS = [
-  { value: "pix", label: "Pix" },
-  { value: "boleto", label: "Boleto" },
-  { value: "transferencia", label: "Transferência" },
-  { value: "cartao", label: "Cartão" },
-  { value: "dinheiro", label: "Dinheiro" },
-  { value: "debito_automatico", label: "Débito automático" },
-];
-
-const reais = (texto: string) => {
-  const n = Number(texto.replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(n) ? Math.round(n * 100) : NaN;
+const ORIGEM_DO_TITULO: Record<TituloDaDivida["link"], string> = {
+  gerado: "gerado pela dívida",
+  vinculado: "vinculado",
+  acordo: "parcela do acordo",
+  restabelecido: "dívida restabelecida pelo credor",
 };
-const emTexto = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
 
 export function NoFinanceiro({
   debtId,
@@ -82,8 +71,12 @@ export function NoFinanceiro({
 }) {
   const { ocupado, rodar } = useAcao();
   const ativos = titulos.filter((t) => t.status !== "cancelada" && t.status !== "recusada");
-  const total = ativos.reduce((a, t) => a + t.valorCents, 0);
   const pago = ativos.reduce((a, t) => a + t.pagoCents, 0);
+  // O que falta é só o que está em aberto: o renegociado passou para o acordo (0408).
+  const falta = ativos
+    .filter((t) => t.status === "aberta" || t.status === "parcial" || t.status === "aguardando_autorizacao")
+    .reduce((a, t) => a + Math.max(t.valorCents - t.pagoCents, 0), 0);
+  const renegociados = ativos.filter((t) => t.status === "renegociada").length;
 
   // Origem C: os títulos livres do mesmo CNPJ, os parecidos primeiro.
   const [livres, setLivres] = useState<TituloLivre[] | null>(null);
@@ -105,44 +98,6 @@ export function NoFinanceiro({
 
   // Registrar pagamento (a mesma porta do Contas a Pagar).
   const [pagando, setPagando] = useState<TituloDaDivida | null>(null);
-  const [valor, setValor] = useState("");
-  const [juros, setJuros] = useState("0,00");
-  const [data, setData] = useState(hoje);
-  const [forma, setForma] = useState("pix");
-  const [conta, setConta] = useState("");
-  const [referencia, setReferencia] = useState("");
-  const abrirPagamento = (t: TituloDaDivida) => {
-    setPagando(t);
-    setValor(emTexto(t.valorCents - t.pagoCents));
-    setJuros("0,00");
-    setData(hoje);
-    setForma("pix");
-    setConta(contaPadrao(contas, clinicId, "pix"));
-    setReferencia("");
-  };
-  const pagar = () => {
-    if (!pagando) return;
-    const amount = reais(valor);
-    const interest = reais(juros || "0");
-    if (!(amount > 0) || !(interest >= 0)) return;
-    rodar(
-      () =>
-        registerPayablePayment({
-          payableId: pagando.id,
-          amountCents: amount,
-          feeCents: 0,
-          interestCents: interest,
-          paidAt: data,
-          paymentMethod: forma,
-          reference: referencia,
-          notes: "",
-          clientToken: crypto.randomUUID(),
-          conta,
-        }),
-      "Pagamento registrado.",
-      () => setPagando(null)
-    );
-  };
 
   return (
     <div className="space-y-4">
@@ -154,8 +109,8 @@ export function NoFinanceiro({
               <p className="font-medium">No Contas a Pagar de {devedor}</p>
               {ativos.length > 0 ? (
                 <p className="text-muted-foreground">
-                  {ativos.length} {ativos.length === 1 ? "título" : "títulos"} · {formatBRL(total)} · pago {formatBRL(pago)} · falta{" "}
-                  {formatBRL(Math.max(total - pago, 0))}
+                  {ativos.length} {ativos.length === 1 ? "título" : "títulos"} · pago {formatBRL(pago)} · falta {formatBRL(falta)}
+                  {renegociados > 0 && ` · ${renegociados} renegociado${renegociados === 1 ? "" : "s"} (veja a aba Acordos)`}
                 </p>
               ) : (
                 <p className="text-muted-foreground">Esta dívida ainda não está no Contas a Pagar.</p>
@@ -197,7 +152,7 @@ export function NoFinanceiro({
             </div>
           )}
 
-          {origem !== "C" && previa?.jaGerada && previa.problema === null && (
+          {origem !== "C" && previa?.jaGerada && previa.problema === null && renegociados === 0 && (
             <p className="text-xs text-muted-foreground">
               Mudou o valor, a conta ou o vencimento da dívida? O título acompanha sozinho enquanto não tiver pagamento.
             </p>
@@ -270,7 +225,7 @@ export function NoFinanceiro({
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{t.descricao}</span>
                       <span className="text-xs text-muted-foreground">
-                        {t.conta} · {t.link === "gerado" ? "gerado pela dívida" : "vinculado"}
+                        {t.conta} · {ORIGEM_DO_TITULO[t.link]}
                         {t.saldoDeImplantacao ? " · saldo de implantação" : ""}
                       </span>
                     </span>
@@ -283,7 +238,7 @@ export function NoFinanceiro({
                       )}
                     </span>
                     {aberto && podeLancar && (
-                      <Button size="sm" variant="outline" onClick={() => abrirPagamento(t)}>
+                      <Button size="sm" variant="outline" onClick={() => setPagando(t)}>
                         <Wallet className="size-4" /> Registrar pagamento
                       </Button>
                     )}
@@ -302,67 +257,7 @@ export function NoFinanceiro({
         </Card>
       )}
 
-      <Dialog open={pagando !== null} onOpenChange={(o) => !o && setPagando(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Registrar pagamento</DialogTitle>
-          </DialogHeader>
-          {pagando && (
-            <div className="space-y-3 text-sm">
-              <p className="text-muted-foreground">
-                {pagando.descricao} · falta {formatBRL(pagando.valorCents - pagando.pagoCents)}
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-[11px]">Valor pago (R$)</Label>
-                  <Input value={valor} onChange={(e) => setValor(e.target.value)} inputMode="decimal" />
-                </div>
-                <div>
-                  <Label className="text-[11px]">Juros e multa (R$)</Label>
-                  <Input value={juros} onChange={(e) => setJuros(e.target.value)} inputMode="decimal" />
-                </div>
-                <div>
-                  <Label className="text-[11px]">Data</Label>
-                  <Input type="date" value={data} max={hoje} onChange={(e) => setData(e.target.value)} />
-                </div>
-                <label className="block">
-                  <span className="text-[11px] font-medium text-muted-foreground">Forma</span>
-                  <select
-                    className={SELECT}
-                    value={forma}
-                    onChange={(e) => {
-                      setForma(e.target.value);
-                      setConta(contaPadrao(contas, clinicId, e.target.value));
-                    }}
-                  >
-                    {FORMAS.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <CampoDaConta rotulo="Saiu de" contas={contas} clinicId={clinicId} value={conta} onChange={setConta} />
-              <div>
-                <Label className="text-[11px]">Referência (opcional)</Label>
-                <Input value={referencia} onChange={(e) => setReferencia(e.target.value)} />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Juros e multa vão para a despesa financeira do mês do pagamento; o principal só baixa a dívida.
-              </p>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPagando(null)}>
-              Cancelar
-            </Button>
-            <Button disabled={ocupado} onClick={pagar}>
-              Registrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogoDePagamento titulo={pagando} onFechar={() => setPagando(null)} contas={contas} clinicId={clinicId} hoje={hoje} />
     </div>
   );
 }

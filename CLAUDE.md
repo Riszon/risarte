@@ -410,6 +410,17 @@ Syncthing se comportarem de forma estranha.**
   com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
   ⚠️ "Repasses" sozinho é o dos DENTISTAS.
 
+**15/11/2026 (Levantamento de Dívidas — fase 5) — PC Administrador (core 0.452.0 → 0.453.0, migração 0408)**
+
+- **Renegociação e encerramento** (bloco 0.453.0 no ESTADO). ⚠️ **Parcela de
+  acordo = `payables`** (`debt_link = 'acordo'`, 5.5.02); `renegociada` só o
+  acordo põe e tira. ⚠️ **Saldo/situação = `_debt_positions`** (porta
+  `debt_positions`); ao recriar `_debt_compute_status`, `_debt_refresh_status`,
+  `_debt_snapshot_month` ou `debt_daily_run`, partir da 0408. ⚠️ Estorno do
+  desconto = lançamento NOVO com data de hoje, nunca `reversal_of`.
+  ⚠️ Regra de linha não chama função interna revogada (`_debt_clinic`).
+- ⏳ 0408 só no treino; o dono roda na produção.
+
 **14/11/2026 (Levantamento de Dívidas — fase 4) — PC Administrador (core 0.447.0 → 0.448.0, migração 0407)**
 
 - **Importar planilha e Qualidade dos dados** (bloco 0.448.0 no ESTADO).

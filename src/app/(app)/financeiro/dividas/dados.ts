@@ -1,5 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { lerTodasAsPaginas } from "@/lib/paginar";
+import type { AgreementStatus, ClosingItem, ItemDoEncerramento, ParcelaDoAcordo, Recognition } from "@/lib/finance/dividas-acordos";
 import { ratear, valorDevido } from "@/lib/finance/dividas";
 import type { DebtListRow, DebtOrigin, DebtStatus, ManualStage, Priority, PriorityReason, DebtType, ContactKind } from "@/lib/finance/dividas";
 
@@ -388,7 +390,9 @@ export function linhasDaLista(
   dividas: Divida[],
   base: BaseDasDividas,
   f2: ResumoDaFase2,
-  titulos: Map<string, TituloDaDivida[]> = new Map()
+  titulos: Map<string, TituloDaDivida[]> = new Map(),
+  /** 0408: o saldo pela regra única do banco; sem ela (antes da migração), a conta antiga. */
+  posicoes: Map<string, Posicao> | null = null
 ): DebtListRow[] {
   const propostaDaDivida = new Map<string, { amountCents: number; validUntil: string | null }>();
   const propostaDoGrupo = new Map<string, { amountCents: number; validUntil: string | null }>();
@@ -471,8 +475,10 @@ export function linhasDaLista(
       propostaValidade: proposta?.validade ?? null,
       custasCents: (custasDaDivida.get(d.id) ?? 0) + (parteDasCustas.get(d.id) ?? 0),
       lastCheckedOn: d.lastCheckedOn,
-      pagoCents: (titulos.get(d.id) ?? []).reduce((t, x) => t + x.pagoCents, 0),
-      noFinanceiro: (titulos.get(d.id) ?? []).length > 0,
+      pagoCents: posicoes?.get(d.id)?.pagoCents ?? (titulos.get(d.id) ?? []).reduce((t, x) => t + x.pagoCents, 0),
+      noFinanceiro: (titulos.get(d.id) ?? []).length > 0 || posicoes?.get(d.id)?.temTitulos === true,
+      saldoCents: posicoes?.get(d.id)?.saldoCents ?? null,
+      acordo: posicoes?.get(d.id)?.acordo ?? null,
     };
   });
 }
@@ -691,7 +697,12 @@ export async function carregarDetalheDaFase2(debtId: string, groupId: string | n
 export type TituloDaDivida = {
   id: string;
   debtId: string;
-  link: "gerado" | "vinculado";
+  link: "gerado" | "vinculado" | "acordo" | "restabelecido";
+  /** 0408: a parcela é de um acordo (ou o restabelecimento dele). */
+  acordoId: string | null;
+  parcela: number | null;
+  /** 0408: renegociado — o acordo que o substituiu. */
+  renegociadoPor: string | null;
   saldoDeImplantacao: boolean;
   conta: string;
   descricao: string;
@@ -704,7 +715,10 @@ export type TituloDaDivida = {
 const tituloDaLinha = (r: Linha): TituloDaDivida => ({
   id: r.id as string,
   debtId: r.debt_id as string,
-  link: r.debt_link === "vinculado" ? "vinculado" : "gerado",
+  link: r.debt_link === "vinculado" || r.debt_link === "acordo" || r.debt_link === "restabelecido" ? r.debt_link : "gerado",
+  acordoId: s(r.debt_agreement_id),
+  parcela: r.debt_installment_no === null || r.debt_installment_no === undefined ? null : Number(r.debt_installment_no),
+  renegociadoPor: s(r.renegotiated_by_agreement_id),
   saldoDeImplantacao: r.opening_balance === true,
   conta: r.account_code as string,
   descricao: r.description as string,
@@ -715,18 +729,29 @@ const tituloDaLinha = (r: Linha): TituloDaDivida => ({
 });
 
 const COLUNAS_DO_TITULO = "id, debt_id, debt_link, opening_balance, account_code, description, amount_cents, paid_amount_cents, due_date, status";
+// 0408: as colunas do acordo. Lidas com recuo — sem a migração, a tela segue.
+const COLUNAS_DO_TITULO_0408 = `${COLUNAS_DO_TITULO}, debt_agreement_id, debt_installment_no, renegotiated_by_agreement_id`;
+type PaginaLida = PromiseLike<{ data: Linha[] | null; error: { message: string } | null }>;
 
 /** Os títulos ativos de todas as dívidas (cancelado e recusado não contam). */
 export async function carregarTitulosDasDividas(): Promise<{ ok: boolean; titulos: Map<string, TituloDaDivida[]> }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("payables")
-    .select(COLUNAS_DO_TITULO)
-    .not("debt_id", "is", null)
-    .not("status", "in", "(cancelada,recusada)");
+  const ler = (colunas: string) =>
+    lerTodasAsPaginas<Linha>(
+      (de, ate) =>
+        supabase
+          .from("payables")
+          .select(colunas)
+          .not("debt_id", "is", null)
+          .not("status", "in", "(cancelada,recusada)")
+          .order("id")
+          .range(de, ate) as unknown as PaginaLida
+    );
+  let lido = await ler(COLUNAS_DO_TITULO_0408);
+  if (!lido.ok) lido = await ler(COLUNAS_DO_TITULO);
   const titulos = new Map<string, TituloDaDivida[]>();
-  if (error) return { ok: false, titulos };
-  for (const r of (data ?? []) as Linha[]) {
+  if (!lido.ok) return { ok: false, titulos };
+  for (const r of lido.linhas) {
     const t = tituloDaLinha(r);
     titulos.set(t.debtId, [...(titulos.get(t.debtId) ?? []), t]);
   }
@@ -736,13 +761,14 @@ export async function carregarTitulosDasDividas(): Promise<{ ok: boolean; titulo
 /** Os títulos de UMA dívida, inclusive os cancelados (para o histórico da tela). */
 export async function carregarTitulosDaDivida(debtId: string): Promise<{ ok: boolean; titulos: TituloDaDivida[] }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("payables")
-    .select(COLUNAS_DO_TITULO)
-    .eq("debt_id", debtId)
-    .order("due_date");
-  if (error) return { ok: false, titulos: [] };
-  return { ok: true, titulos: ((data ?? []) as Linha[]).map(tituloDaLinha) };
+  const ler = async (colunas: string) => {
+    const r = await supabase.from("payables").select(colunas).eq("debt_id", debtId).order("due_date");
+    return { data: (r.data ?? null) as unknown as Linha[] | null, error: r.error };
+  };
+  let lido = await ler(COLUNAS_DO_TITULO_0408);
+  if (lido.error) lido = await ler(COLUNAS_DO_TITULO);
+  if (lido.error) return { ok: false, titulos: [] };
+  return { ok: true, titulos: (lido.data ?? []).map(tituloDaLinha) };
 }
 
 /** Títulos em aberto do mesmo CNPJ que ainda não são de nenhuma dívida:
@@ -776,4 +802,220 @@ export async function carregarTitulosLivres(clinicId: string): Promise<TituloLiv
     status: r.status as string,
     documento: s(r.document_number),
   }));
+}
+
+// ------------------------------------------------------------- fase 5 (0408)
+
+/** Saldo, pago e acordo vigente de cada dívida — a regra única do banco (`debt_positions`). */
+export type Posicao = {
+  saldoCents: number;
+  pagoCents: number;
+  temTitulos: boolean;
+  vencimentoMaisAntigo: string | null;
+  acordo: { id: string; codigo: string; situacao: "aguardando_aprovacao" | "em_andamento" | "quebrado" } | null;
+};
+
+/** Nulo = a porta não respondeu (sem a 0408 no banco): a tela usa a conta antiga. */
+export async function carregarPosicoes(): Promise<Map<string, Posicao> | null> {
+  const supabase = await createClient();
+  const lido = await lerTodasAsPaginas<Linha>(
+    (de, ate) => supabase.rpc("debt_positions").order("debt_id").range(de, ate) as unknown as PaginaLida
+  );
+  if (!lido.ok) return null;
+  return new Map(
+    lido.linhas.map((r) => [
+      r.debt_id as string,
+      {
+        saldoCents: Number(r.balance_cents ?? 0),
+        pagoCents: Number(r.paid_cents ?? 0),
+        temTitulos: r.has_titles === true,
+        vencimentoMaisAntigo: s(r.oldest_open_due),
+        acordo: r.agreement_id
+          ? {
+              id: r.agreement_id as string,
+              codigo: String(r.agreement_code ?? ""),
+              situacao: r.agreement_status as "aguardando_aprovacao" | "em_andamento" | "quebrado",
+            }
+          : null,
+      },
+    ])
+  );
+}
+
+export type ParcelaLida = {
+  id: string;
+  numero: number | null;
+  link: "acordo" | "restabelecido";
+  descricao: string;
+  valorCents: number;
+  pagoCents: number;
+  vencimento: string;
+  status: string;
+  renegociadoPor: string | null;
+};
+
+export type Acordo = {
+  id: string;
+  codigo: string;
+  clinicId: string;
+  supplierId: string;
+  principalId: string;
+  anteriorId: string | null;
+  propostaId: string | null;
+  data: string;
+  baseCents: number;
+  totalCents: number;
+  entradaCents: number;
+  parcelas: number;
+  combinado: ParcelaDoAcordo[];
+  forma: string | null;
+  descontoCents: number;
+  encargosCents: number;
+  reconhecerDesconto: Recognition;
+  reconhecerEncargos: Recognition;
+  toleranciaDiasUteis: number | null;
+  negociadoPor: string | null;
+  contatoId: string | null;
+  canal: string | null;
+  observacoes: string | null;
+  situacao: AgreementStatus;
+  motivo: string | null;
+  situacaoDesde: string;
+  pedeAprovacao: boolean;
+  aprovadoPor: string | null;
+  aprovadoEm: string | null;
+  decididoPor: string | null;
+  registradoPor: string | null;
+  registradoEm: string;
+  /** As dívidas que o acordo cobre e a base de cada uma. */
+  dividas: { debtId: string; baseCents: number }[];
+  /** Os títulos do acordo no Contas a Pagar (parcelas e o restabelecido). */
+  titulos: ParcelaLida[];
+};
+
+const recon = (x: unknown): Recognition => (x === "proporcional" ? "proporcional" : "na_data_do_acordo");
+const numOuNulo = (x: unknown) => (x === null || x === undefined ? null : Number(x));
+
+/**
+ * Os acordos (todos, ou só os de uma dívida), com as dívidas e os títulos.
+ * `ok: false` = a tabela não existe ainda (sem a 0408) ou a leitura falhou.
+ */
+export async function carregarAcordos(debtId?: string): Promise<{ ok: boolean; acordos: Acordo[] }> {
+  const supabase = await createClient();
+  let ids: string[] | null = null;
+  if (debtId) {
+    const { data, error } = await supabase.from("debt_agreement_debts").select("agreement_id").eq("debt_id", debtId);
+    if (error) return { ok: false, acordos: [] };
+    ids = [...new Set(((data ?? []) as Linha[]).map((r) => r.agreement_id as string))];
+    if (ids.length === 0) return { ok: true, acordos: [] };
+  }
+  const lidos = await lerTodasAsPaginas<Linha>((de, ate) => {
+    let q = supabase.from("debt_agreements").select("*").order("created_at", { ascending: false }).order("id");
+    if (ids) q = q.in("id", ids);
+    return q.range(de, ate) as unknown as PaginaLida;
+  });
+  if (!lidos.ok) return { ok: false, acordos: [] };
+  const aIds = lidos.linhas.map((r) => r.id as string);
+  if (aIds.length === 0) return { ok: true, acordos: [] };
+  const [dd, tt] = await Promise.all([
+    lerTodasAsPaginas<Linha>(
+      (de, ate) =>
+        supabase
+          .from("debt_agreement_debts")
+          .select("agreement_id, debt_id, base_cents")
+          .in("agreement_id", aIds)
+          .order("agreement_id")
+          .order("debt_id")
+          .range(de, ate) as unknown as PaginaLida
+    ),
+    lerTodasAsPaginas<Linha>(
+      (de, ate) =>
+        supabase
+          .from("payables")
+          .select("id, debt_agreement_id, debt_link, debt_installment_no, description, amount_cents, paid_amount_cents, due_date, status, renegotiated_by_agreement_id")
+          .in("debt_agreement_id", aIds)
+          .order("due_date")
+          .order("id")
+          .range(de, ate) as unknown as PaginaLida
+    ),
+  ]);
+  if (!dd.ok || !tt.ok) return { ok: false, acordos: [] };
+  return {
+    ok: true,
+    acordos: lidos.linhas.map((r) => {
+      const id = r.id as string;
+      const combinado = Array.isArray(r.schedule)
+        ? (r.schedule as Linha[]).map((x) => ({ vencimento: String(x.due_date), valorCents: Number(x.amount_cents), entrada: x.entrada === true }))
+        : [];
+      return {
+        id,
+        codigo: String(r.code ?? ""),
+        clinicId: r.clinic_id as string,
+        supplierId: r.supplier_id as string,
+        principalId: r.primary_debt_id as string,
+        anteriorId: s(r.previous_agreement_id),
+        propostaId: s(r.proposal_id),
+        data: String(r.agreed_on),
+        baseCents: Number(r.base_cents),
+        totalCents: Number(r.total_cents),
+        entradaCents: Number(r.down_payment_cents ?? 0),
+        parcelas: Number(r.installments),
+        combinado,
+        forma: s(r.method),
+        descontoCents: Number(r.discount_cents ?? 0),
+        encargosCents: Number(r.surcharge_cents ?? 0),
+        reconhecerDesconto: recon(r.discount_recognition),
+        reconhecerEncargos: recon(r.surcharge_recognition),
+        toleranciaDiasUteis: numOuNulo(r.broken_tolerance_bdays),
+        negociadoPor: s(r.negotiated_by),
+        contatoId: s(r.contact_id),
+        canal: s(r.channel),
+        observacoes: s(r.notes),
+        situacao: r.status as AgreementStatus,
+        motivo: s(r.status_reason),
+        situacaoDesde: String(r.status_changed_at),
+        pedeAprovacao: r.approval_required === true,
+        aprovadoPor: s(r.approved_by),
+        aprovadoEm: s(r.approved_at),
+        decididoPor: s(r.decided_by),
+        registradoPor: s(r.created_by),
+        registradoEm: String(r.created_at),
+        dividas: dd.linhas.filter((x) => x.agreement_id === id).map((x) => ({ debtId: x.debt_id as string, baseCents: Number(x.base_cents) })),
+        titulos: tt.linhas
+          .filter((x) => x.debt_agreement_id === id)
+          .map((x) => ({
+            id: x.id as string,
+            numero: numOuNulo(x.debt_installment_no),
+            link: x.debt_link === "restabelecido" ? ("restabelecido" as const) : ("acordo" as const),
+            descricao: String(x.description ?? ""),
+            valorCents: Number(x.amount_cents),
+            pagoCents: Number(x.paid_amount_cents ?? 0),
+            vencimento: String(x.due_date),
+            status: String(x.status),
+            renegociadoPor: s(x.renegotiated_by_agreement_id),
+          })),
+      };
+    }),
+  };
+}
+
+/** O checklist de encerramento da dívida (vazio antes de quitar). */
+export async function carregarEncerramento(debtId: string): Promise<{ ok: boolean; itens: ItemDoEncerramento[] }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("debt_closing_items").select("*").eq("debt_id", debtId).order("created_at");
+  if (error) return { ok: false, itens: [] };
+  return {
+    ok: true,
+    itens: ((data ?? []) as Linha[]).map((r) => ({
+      id: r.id as string,
+      item: r.item as ClosingItem,
+      aplicavel: r.applicable !== false,
+      motivoDeNaoAplicar: s(r.not_applicable_reason),
+      prazo: s(r.due_on),
+      feitoEm: s(r.done_on),
+      feitoPor: s(r.done_by),
+      anexoId: s(r.attachment_id),
+      observacao: s(r.note),
+    })),
+  };
 }
