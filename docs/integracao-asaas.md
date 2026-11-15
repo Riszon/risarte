@@ -2371,7 +2371,7 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
   - **A antecipação** (`scripts/asaas-prova-antecipacao-parcelado-sandbox.mjs`): o Asaas recusou a simulação e o pedido, porque a conta de teste não é aprovada para antecipar (`cannotAnticipate`). A pergunta 2 da 19.22 continua.
   - **A contestação:** o sandbox não simula. O prazo real só aparece na homologação (ASA7).
 
-### 19.25 Entrega 1B — forma 2, "Todos os boletos agora": PLANO (15/11/2026, para aprovar; migração 4015)
+### 19.25 Entrega 1B — forma 2, "Todos os boletos agora": PLANO (15/11/2026; APROVADO com os pontos da 19.26; migração 4015)
 
 **O que já estava aprovado:** o acréscimo A da 19.9, o cadastro do carnê (19.10 item 2, provado em 19.16) e a página com a lista (19.10 item 3).
 
@@ -2438,3 +2438,113 @@ O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e
 3. **A página expira 5 dias depois do último vencimento**, e "Gerar novo link" invalida o anterior?
 4. **A forma 2 só para venda com a unidade ligada** (automática; recomendado)? Para a venda assinada antes de ligar, continua o botão manual por parcela.
 5. **A prova com envio real de 12 boletos:** não repetir (recomendado), ou repetir com a janela de 30 minutos?
+
+### 19.26 APROVAÇÃO da 1B e os pontos acrescentados (Jeferson, 15/11/2026)
+
+**Aprovado o plano da 19.25,** com as cinco recomendações: 1a, 2a, 3a, 4a e 5a. Os pontos abaixo **valem por cima** da 19.25.
+
+#### 19.26.1 Boleto que deixa de valer depois de entregue ao cliente
+
+**A regra:**
+- nenhum boleto de parcela que mudou ou deixou de existir continua pagável;
+- o boleto é cancelado no Asaas **na mesma operação**, e, quando a parcela continua existindo com outro valor ou data, um boleto novo é emitido;
+- a página da lista mostra a situação nova;
+- quem fechou a venda e o Gerente recebem aviso para reenviar o link.
+
+**O que já existe e segura tudo (4004):** enquanto a parcela tem cobrança viva no Asaas, o banco **recusa**:
+- mudar o valor, o vencimento, o meio ou o pagador;
+- cancelar, renegociar ou apagar a parcela (`payment_installments_charge_lock`, erro `CHARGE_ACTIVE`);
+- dar baixa à mão (`payment_receipts_charge_lock`, erro `CHARGE_IN_GATEWAY`).
+
+Ou seja: hoje nada muda com o boleto vivo; a operação é recusada. O que a 1B acrescenta é **cancelar no Asaas dentro da própria operação**, em vez de obrigar a cancelar antes, à mão.
+
+**Caso a caso:**
+
+| Caso | Hoje | Na 1B (a mesma operação) | A página da lista |
+|---|---|---|---|
+| **Renegociação** (o fechamento põe as parcelas como "renegociada") | recusado (`CHARGE_ACTIVE`) | o fechamento da renegociação cancela no Asaas os boletos em aberto das parcelas renegociadas e depois fecha. As parcelas novas seguem a forma 1 | o boleto fica "Substituído pela renegociação — não pague" |
+| **Distrato** (hoje, o Cancelamento do plano; o distrato completo é da entrega 6) | recusado (`CHARGE_ACTIVE`) | aplicar o cancelamento cancela no Asaas os boletos em aberto e depois cancela as parcelas | "Cancelado — não pague este boleto" |
+| **Quitação antecipada** | não há porta própria: ou o paciente paga os boletos antes do vencimento (o boleto vale; nada muda), ou a quitação é feita pela renegociação à vista | o primeiro jeito não muda nada; o segundo é o caso da renegociação | paga, ou substituída pela renegociação |
+| **Dinheiro no balcão** | já cancela no Asaas antes da baixa (4011); se o boleto já foi pago lá, a baixa é recusada | o mesmo; no pagamento parcial, o boleto do **restante** nasce na hora pelo cadastro do carnê | "Pago no balcão"; o restante aparece com o boleto novo |
+| **Permuta** | recusado (`CHARGE_IN_GATEWAY`) | a baixa em permuta (Gerente ou Admin) cancela no Asaas antes, como o dinheiro | "Pago (permuta)" |
+| **Troca de vencimento ou de valor** (o "Personalizar" do parcelamento, que apaga e recria as parcelas; depois de qualquer baixa, só pela renegociação) | recusado (`CHARGE_ACTIVE`) | salvar o parcelamento novo cancela no Asaas os boletos em aberto da venda, salva, e a forma 2 emite os boletos novos pelo cadastro do carnê | o **mesmo link**, com os boletos novos; os antigos somem da lista |
+| **Quitação por valor menor** (Gerente ou Admin) | recusado (`CHARGE_IN_GATEWAY`) | cancela no Asaas antes de dar a baixa | "Quitado por valor menor" |
+
+**Na ordem segura:**
+- **Primeiro cancela no Asaas, depois muda o riSZon.** Se o Asaas disser que o boleto já foi pago, nada muda, e a tela explica.
+- Se o cancelamento passar e a mudança do riSZon falhar, o boleto já está cancelado (não pagável), e a parcela fica sem cobrança com o motivo na lista de pendências.
+- Esses cancelamentos levam o motivo da operação ("renegociação", "cancelamento do plano", "parcelamento alterado", "dinheiro", "permuta", "valor menor") e **não contam como "cancelado à mão"**.
+
+**O aviso de reenvio:** quando a lista muda (boleto cancelado, substituído ou novo), quem fechou a venda e o Gerente recebem "A lista de boletos de Fulano mudou: reenvie o link". É um aviso por lista por dia.
+
+**O ensaio no treino, provado quebrando**, em cada um dos 6 casos:
+- a operação com o boleto vivo é recusada;
+- com o cancelamento na mesma operação, ela passa, e o boleto fica cancelado e fora da lista como pagável;
+- o aviso de reenvio sai uma vez;
+- **quebrando a trava:** com a trava tirada (`--quebrar=trava`), a operação passa com o boleto vivo, e o ensaio tem de reprovar.
+
+#### 19.26.2 Split dos boletos futuros
+
+**A rotina diária do split cobre todos os boletos em aberto da forma 2.**
+- A virada do dia (`gateway-split-diario`, 00:05) põe na fila toda cobrança **emitida ou vencida** cujas entradas do split mudam no dia (`_charge_split_inputs`: a tarifa vigente sai da janela quando `valid_to` passa).
+- A fila aplica no Asaas por `PUT /payments/{id}`, com 150 por conta a cada 10 minutos.
+- O 2º disparo pelo banco e o vigia valem para ela (entrega 1).
+
+**A conta, num boleto de R$ 500,00 da forma 2 que vence em 20/03/2027:**
+- **Tarifa em Londrina:** R$ 0,99 até 10/02/2027 e R$ 1,99 a partir de 11/02/2027. Taxas da rede: 17%.
+
+| Momento | Tarifa na janela | Split enviado | Se pago nesse período | A franqueadora recebe | 17% de R$ 500 | Diferença |
+|---|---|---|---|---|---|---|
+| Emitido em 15/11/2026 | de R$ 0,99 a R$ 1,99 (vale a menor, 18.2) | 17% + R$ 0,16 | até 10/02 (tarifa R$ 0,99; líquido R$ 499,01) | R$ 84,83 + R$ 0,16 = R$ 84,99 | R$ 85,00 | R$ 0,01 |
+| 11/02/2027, a virada do dia refaz | só R$ 1,99 | 17% + R$ 0,33 | em 20/03 (tarifa R$ 1,99; líquido R$ 498,01) | R$ 84,66 + R$ 0,33 = R$ 84,99 | R$ 85,00 | R$ 0,01 |
+| Se a virada **não** rodar | — | ficou 17% + R$ 0,16 | em 20/03 | R$ 84,66 + R$ 0,16 = R$ 84,82 | R$ 85,00 | R$ 0,18 |
+
+- **Se a virada não rodar,** a diferença passa da tolerância de R$ 0,10 e vira **a cobrar da unidade** (S5).
+- O vigia avisa no mesmo dia que a rotina não rodou, e a rodada seguinte corrige os boletos ainda não pagos.
+- O ensaio da 1B prova que os 12 boletos de um contrato entram na fila da virada.
+
+#### 19.26.3 Segurança da página da lista
+
+| Item | Como fica | Estava na 19.25? |
+|---|---|---|
+| Link impossível de adivinhar | 32 bytes aleatórios (256 bits) no endereço; o banco grava **só o resumo** (SHA-256), nunca o código | sim |
+| Pode ser revogado | **Revogar** e **Gerar novo link** (o anterior para na hora), por quem fechou a venda, o Gerente, o Financeiro e o Admin, na auditoria; expira sozinho 5 dias depois do último vencimento | sim (o "Revogar" sozinho é novo) |
+| Cada acesso registrado | data e hora de cada abertura, com o resumo do IP (nunca o IP aberto) e o navegador abreviado. Quem fechou a venda vê "Lista aberta em…" | **novo** |
+| Limite de tentativas | endereço errado: 20 por hora por IP, depois a página recusa (429). Endereço certo: 60 aberturas por hora, depois recusa até a hora seguinte | **novo** |
+| Fora dos buscadores | `noindex, nofollow` na página e no cabeçalho (`X-Robots-Tag`), `/boletos/` fora do `robots.txt`, sem cache (`no-store`) e sem o endereço passado a outros sites (`Referrer-Policy: no-referrer`) | **novo** |
+| Só os dados mínimos | primeiro nome, vencimento, valor, situação, "Abrir boleto" e linha digitável. Sem CPF, sem sobrenome, sem endereço, sem outra venda | sim |
+
+- **Um cuidado que não depende do riSZon:** o "Abrir boleto" abre a fatura do **Asaas**, e ela mostra os dados do pagador que o boleto exige. É o mesmo que acontece hoje, quando o link vai sozinho.
+
+#### 19.26.4 Avisos e contato
+
+- **"Não abriu até 1 dia útil antes do vencimento",** na forma 2: conta **qualquer um dos dois**, o acesso à página da lista **ou** a abertura de uma fatura (o aviso `PAYMENT_CHECKOUT_VIEWED`/`PAYMENT_BANK_SLIP_VIEWED` do Asaas), para o 1º boleto que vence.
+  - **Proposta:** os dois, porque o paciente pode abrir o boleto direto do link guardado.
+  - Sem nenhum dos dois, quem fechou a venda recebe o aviso para reenviar.
+- **Mudança de e-mail ou celular do pagador:** a fila da régua aplica no **cadastro principal e no do carnê**, no mesmo item, com o mesmo contato. No carnê, o "cobrança criada" continua desligado. Provado no ensaio (os dois na fila) e no sandbox (os dois com o contato novo).
+- **Unidade com a régua desligada:**
+  - o cadastro do carnê fica como o principal: sem contato e sem avisos;
+  - **o primeiro envio do link é sempre de quem fechou a venda.** Na forma 2 isso vale com a régua ligada também, porque o Asaas nunca manda o aviso de criação;
+  - **os alertas já aprovados valem para a lista:** 1 dia útil sem envio, aviso para quem fechou a venda; faltando 2 dias úteis para o 1º vencimento sem envio, também o Gerente;
+  - o envio da lista conta como envio de cada boleto dela.
+
+#### 19.26.5 A prova do cadastro do carnê (com envio real)
+
+**Foi feita com envio real** (19.16):
+
+| | |
+|---|---|
+| Data | **14/11/2026** |
+| Disparo | 18:24:44, com o seu "pode" |
+| Conta | sandbox de Londrina, só para o seu e-mail, sem celular |
+| Saiu | **1 e-mail**: a "nova cobrança" de **R$ 5,00** (o controle, com o aviso ligado). Você confirmou "só o de R$ 5,00" |
+| Não saiu | nenhum dos **3** do cadastro do carnê (**R$ 5,01, R$ 5,02 e R$ 5,03**) |
+| Limpeza | 18:26:43 |
+
+- ⚠️ **A janela observada foi de cerca de 2 minutos,** e não dos 30 previstos, porque a limpeza rodou cedo. Você aceitou com a janela curta.
+- **Por que vale:** no carnê, o aviso nasce desligado e nunca é religado. O risco de uma fila do Asaas olhar a configuração mais tarde era do caminho "desligar, criar e religar", descartado.
+- Por isso a **decisão 5 continua (a)**. Se você quiser a janela completa, a mesma prova roda de novo, com o seu "pode", e a limpeza só depois de 30 minutos.
+
+#### 19.26.6 "Baixar todos em PDF"
+
+Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologação (ASA7), em `docs/asaas/ESTADO.md`.

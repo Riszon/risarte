@@ -43,6 +43,8 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   **Na homologação (ASA7), provar também:** a recusa do cartão **pelo banco emissor**
   no cartão parcelado (o sandbox só recusa por dado inválido ou cartão vencido; 19.19.7
   item 4): o paciente tenta de novo no mesmo link, sem parcelamento novo.
+  E o **PDF do boleto sem login** (`bankSlipUrl`; no sandbox deu 504 em 4 tentativas,
+  19.25): se abrir, a página da lista da forma 2 ganha "Baixar todos em PDF" (19.26.6).
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
 
