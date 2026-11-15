@@ -4,7 +4,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 
 > ## 💳 0.451.0 — ASA4, ENTREGA 2 (PARTE 2): DEVOLUÇÃO POR PIX, CONTESTAÇÃO E AVISOS DO CARTÃO PARCELADO (15/11/2026; Asaas 0.12.0, migração 4014)
 >
-> Devolução por Pix na desistência (termo assinado obrigatório; só o Financeiro da Franqueadora ou o Admin Master autorizam; vira conta a pagar 1.9.03), contestação com o prazo lido do Asaas e avisos (quando chega e 2 dias úteis antes), aviso do link vencido de 7 em 7 dias, split pela tarifa do dia da aprovação (`PUT /installments/{id}/splits`) e o aviso da antecipação na Central. 4014 aplicada no TREINO; ensaio 31/31; sandbox 2/2. **Falta:** teste do dono, a 4013 e depois a 4014 na produção (o dono roda) e o `main`. Spec 19.24; manual 13g.12; EV-346.
+> Devolução por Pix na desistência (termo assinado obrigatório; só o Financeiro da Franqueadora ou o Admin Master autorizam; vira conta a pagar 1.9.03), contestação com o prazo lido do Asaas e avisos (quando chega e 2 dias úteis antes), aviso do link vencido de 7 em 7 dias, split pela tarifa do dia da aprovação (`PUT /installments/{id}/splits`) e o aviso da antecipação na Central. 4014 aplicada no TREINO; ensaio 31/31; sandbox 2/2. **Na produção em 15/11/2026:** o dono rodou a 4013 e depois a 4014 no SQL Editor (as duas conferências vistas e certas); `main` em d6381b1d, produção mostrando 0.451.0; conferido de fora: as portas novas barram o anônimo e a rota da régua recusa sem senha. O teste do dono no projeto de teste ficou para depois. Spec 19.24; manual 13g.12; EV-346.
 
 > ## 💳 0.450.0 — ASA4, ENTREGA 2 (PARTE 1): CARTÃO PARCELADO PELO ASAAS (14/11/2026; Asaas 0.11.0, migração 4013)
 >
