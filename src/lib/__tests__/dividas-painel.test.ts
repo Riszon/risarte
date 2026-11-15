@@ -8,6 +8,8 @@ import {
   fotosDoFiltro,
   indicadoresDoPainel,
   linhasDoPainel,
+  saudeFinanceira,
+  dreDoDevedor,
   type FotoDoMes,
 } from "@/lib/finance/dividas-painel";
 import type { DebtListRow } from "@/lib/finance/dividas";
@@ -127,5 +129,33 @@ describe("a evolução mensal: o passado vem da fotografia", () => {
       ["C1", [1500, 1000, 800]],
       ["Outras (2)", [0, 0, 90]],
     ]);
+  });
+});
+
+describe("saúde financeira (4.6)", () => {
+  const rows = [
+    linha({ id: "a", clinicId: "L", saldoCents: 60000 }),
+    linha({ id: "b", clinicId: "C", saldoCents: 30000 }),
+  ];
+  const acordos = [{ clinicId: "L", situacao: "em_andamento", dividas: ["a"], descontoCents: 0, abertas: [], parcelasDoMesCents: 5000 }];
+  const dre = new Map([["L", { receitaBrutaCents: 90000, custoFinanceiroCents: 1200, meses: 3 }]]);
+  const nomes = new Map([["L", "Londrina"], ["C", "Cambé"]]);
+  const s = saudeFinanceira(rows, acordos, dre, nomes);
+  it("meses de receita = devido ÷ receita média; comprometimento = parcelas do mês ÷ receita média", () => {
+    const l = s.linhas.find((x) => x.clinicId === "L")!;
+    expect(l.receitaMediaCents).toBe(30000);
+    expect(l.mesesDeReceita).toBe(2);
+    expect(l.comprometimento).toBeCloseTo(5000 / 30000);
+    expect(l.custoFinanceiroCents).toBe(1200);
+  });
+  it("sem DRE é \"sem dados\", nunca zero; a rede divide só quem tem receita pela própria receita", () => {
+    const c = s.linhas.find((x) => x.clinicId === "C")!;
+    expect([c.receitaMediaCents, c.mesesDeReceita, c.comprometimento, c.custoFinanceiroCents]).toEqual([null, null, null, null]);
+    expect(s.rede.devidoCents).toBe(90000);
+    expect(s.rede.mesesDeReceita).toBe(2);
+  });
+  it("custo financeiro vem da 4.2.01 (gasto positivo)", () => {
+    const d = dreDoDevedor([{ accountCode: "4.2.01", block: "resultado_financeiro", amountCents: -800 }, { accountCode: "1.1.01", block: "receita_bruta", amountCents: 5000 }], 3, () => 5000);
+    expect(d).toEqual({ receitaBrutaCents: 5000, custoFinanceiroCents: 800, meses: 3 });
   });
 });

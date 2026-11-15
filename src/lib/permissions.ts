@@ -501,6 +501,15 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["finance_franchisor"],
   },
   {
+    id: "acao.dividas.ver_unidade",
+    rotulo: "Ver as dívidas da própria unidade (card)",
+    grupo: "Ações — Dívidas da rede",
+    descricao:
+      "Mostra no Painel do Financeiro da unidade o card \"Dívidas da unidade\": só os números (quanto deve, em atraso, inadimplente, com restrição, acordos), nunca credor, contato ou anexo. Nasce desligada; o banco só aceita o Gerente e o Franqueado, e só da unidade deles.",
+    dependeDoBanco: true,
+    padrao: [],
+  },
+  {
     id: "acao.dividas.configurar",
     rotulo: "Configurar o Levantamento de Dívidas",
     grupo: "Ações — Dívidas da rede",

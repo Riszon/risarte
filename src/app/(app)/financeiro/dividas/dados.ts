@@ -2,7 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { lerTodasAsPaginas } from "@/lib/paginar";
 import type { AgreementStatus, ClosingItem, ItemDoEncerramento, ParcelaDoAcordo, Recognition } from "@/lib/finance/dividas-acordos";
-import type { FotoDoMes } from "@/lib/finance/dividas-painel";
+import { dreDoDevedor, type DreDoDevedor, type FotoDoMes } from "@/lib/finance/dividas-painel";
+import { buildDre } from "@/lib/finance/dre";
 import { ratear, valorDevido } from "@/lib/finance/dividas";
 import type { DebtListRow, DebtOrigin, DebtStatus, ManualStage, Priority, PriorityReason, DebtType, ContactKind } from "@/lib/finance/dividas";
 
@@ -1053,4 +1054,32 @@ export async function carregarFotografias(): Promise<FotoDoMes[] | null> {
     novaNoMes: r.new_in_month === true,
     atualizadoCents: numOuNulo(r.updated_cents),
   }));
+}
+
+// ------------------------------------------------- fase 7 (saúde financeira)
+
+/**
+ * Receita bruta e custo financeiro de cada CNPJ nos meses fechados, pela
+ * leitura OFICIAL da DRE (`dre_lines` + `buildDre`, a mesma da tela da DRE).
+ * CNPJ cuja leitura falha fica fora do mapa (a tela diz "sem dados").
+ */
+export async function carregarDreDosDevedores(
+  clinicIds: string[],
+  periodo: { de: string; ate: string; meses: number }
+): Promise<Map<string, DreDoDevedor>> {
+  const supabase = await createClient();
+  const lidas = await Promise.all(
+    clinicIds.map(async (id) => {
+      const { data, error } = await supabase.rpc("dre_lines", { p_clinic_id: id, p_from: periodo.de, p_to: periodo.ate });
+      if (error) return null;
+      const linhas = ((data ?? []) as Linha[]).map((r) => ({
+        accountCode: String(r.account_code),
+        accountName: String(r.account_name ?? ""),
+        block: String(r.block),
+        amountCents: Number(r.amount_cents ?? 0),
+      }));
+      return [id, dreDoDevedor(linhas, periodo.meses, (l) => buildDre(l.map((x) => ({ ...x, accountName: "" }))).receitaBrutaCents)] as const;
+    })
+  );
+  return new Map(lidas.filter((x): x is NonNullable<typeof x> => x !== null));
 }

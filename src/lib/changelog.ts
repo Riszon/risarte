@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.455.0",
+    data: "2026-11-15",
+    migracao: "0409",
+    titulo: "Levantamento de Dívidas: saúde financeira, exportação e cenário",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Saúde financeira no Painel do Levantamento de Dívidas: para cada CNPJ e para a rede, quantos meses de receita a dívida representa, quanto das parcelas de acordo do mês pesa na receita e o custo financeiro (juros, multas e encargos) dos últimos 3 meses — pela DRE de cada CNPJ; sem receita lançada aparece \"sem dados\".",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Exportar a lista de dívidas em PDF e Planilha, exatamente como está na tela (os mesmos filtros, a mesma ordem e os mesmos totais).",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "\"E se eu pagar à vista?\": em cada proposta ativa, o caixa da unidade devedora nos próximos 90 dias, sem pagar e pagando — o menor saldo, o saldo no fim e o gráfico. É só um cenário: nada é gravado e o Fluxo de caixa não muda.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Card \"Dívidas da unidade\" no Painel do Financeiro da unidade, só com números. Nasce desligado: o Admin liga em Permissões para o Gerente ou o Franqueado, e cada um vê só a própria unidade.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.454.1",
     data: "2026-11-15",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4017, ASAAS_MIGRATION).

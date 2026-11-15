@@ -25,6 +25,7 @@ import {
 import { mudarSituacaoDaProposta, registrarProposta } from "../actions";
 import type { Proposta } from "../dados";
 import { Caixa, Campo, SELECT, moeda, useAcao } from "./comum";
+import { CenarioDaProposta } from "./cenario";
 
 const TOM: Record<ProposalStatus, string> = {
   ativa: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
@@ -94,6 +95,8 @@ export function Propostas({
   });
   const [f, setF] = useState<Form | null>(abrirNova && podeLancar ? vazio() : null);
   const [mudar, setMudar] = useState<{ id: string; para: "recusada" | "expirada"; motivo: string } | null>(null);
+  // Fase 7: o cenário "e se eu pagar à vista?" (só tela) da proposta aberta.
+  const [cenario, setCenario] = useState<string | null>(null);
 
   const baseDoCalculo = (escopoGrupo: boolean) => (escopoGrupo ? (devidoDoGrupoCents ?? devidoCents) : devidoCents);
 
@@ -229,6 +232,15 @@ export function Propostas({
                       {desc < 0 ? "maior que o devido" : `${Math.round(desc * 100)}% de desconto · economia ${formatBRL(base - p.amountCents)}`}
                     </span>
                   )}
+                  {st === "ativa" && (
+                    <button
+                      type="button"
+                      className="text-xs text-primary underline"
+                      onClick={() => setCenario(cenario === p.id ? null : p.id)}
+                    >
+                      E se eu pagar à vista?
+                    </button>
+                  )}
                   {podeLancar && st === "ativa" && (
                     <span className="ml-auto flex gap-2 text-xs">
                       <button type="button" className="text-muted-foreground underline hover:text-foreground" onClick={() => setMudar({ id: p.id, para: "recusada", motivo: "" })}>
@@ -254,6 +266,7 @@ export function Propostas({
                 {p.conditionText && <p className="text-xs">“{p.conditionText}”</p>}
                 {p.notes && <p className="text-xs text-muted-foreground">{p.notes}</p>}
                 {p.statusReason && st !== "ativa" && <p className="text-xs text-muted-foreground">Motivo: {p.statusReason}</p>}
+                {cenario === p.id && <CenarioDaProposta debtId={debtId} propostaId={p.id} valorCents={p.amountCents} hoje={hoje} />}
                 {mudar?.id === p.id && (
                   <div className="mt-2 flex flex-wrap items-end gap-2">
                     <Campo className="min-w-64 flex-1" rotulo={mudar.para === "recusada" ? "Motivo da recusa *" : "Observação (opcional)"} valor={mudar.motivo} onChange={(v) => setMudar({ ...mudar, motivo: v })} />
@@ -269,7 +282,7 @@ export function Propostas({
         </ul>
         <p className="text-[11px] text-muted-foreground">
           Proposta não se edita nem se apaga: registrar uma nova substitui a ativa e o histórico mostra a evolução. Aceitar
-          uma proposta é feito pelo Renegociar (próxima etapa). A proposta vencida sai de “ativa” sozinha na madrugada.
+          uma proposta é feito pelo Renegociar dívida (aba Acordos). A proposta vencida sai de “ativa” sozinha na madrugada.
         </p>
       </CardContent>
     </Card>

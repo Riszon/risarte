@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
-import { formatIsoMonthBr } from "@/lib/dates";
+import { formatIsoDateBr, formatIsoMonthBr } from "@/lib/dates";
 
 // Gráficos do Painel de Dívidas (fase 6). SVG à mão, como os do repasse e
 // das metas — sem biblioteca. Regras de leitura:
@@ -91,6 +91,7 @@ export function GraficoDeLinhas({
   ultimoAoVivo,
   rotulo,
   largura = 640,
+  eixoEmDias = false,
 }: {
   meses: string[];
   series: SerieDeLinha[];
@@ -98,16 +99,26 @@ export function GraficoDeLinhas({
   rotulo: string;
   /** Largura do desenho: perto da largura real na tela, para a letra não encolher. */
   largura?: number;
+  /** O eixo é de DIAS (dd/mm), não de meses (o cenário do caixa). */
+  eixoEmDias?: boolean;
 }) {
   const [foco, setFoco] = useState<number | null>(null);
   const L = largura, A = 220;
   const M = { t: 12, r: 16, b: 26, l: 64 };
   const todos = series.flatMap((s) => s.valores.filter((v): v is number => v !== null));
-  const grade = escala(Math.max(0, ...todos));
-  const teto = grade[grade.length - 1] || 1;
+  const positivos = escala(Math.max(0, ...todos));
+  const passoY = positivos[1] ?? 1;
+  // Saldo negativo (o cenário do caixa): a grade desce no mesmo passo.
+  const negativos: number[] = [];
+  for (let v = -passoY; v > Math.min(0, ...todos) - passoY; v -= passoY) negativos.push(v);
+  const grade = [...negativos.reverse(), ...positivos];
+  const teto = positivos[positivos.length - 1] || 1;
+  const piso = grade[0] < 0 ? grade[0] : 0;
   const passoX = meses.length > 1 ? (L - M.l - M.r) / (meses.length - 1) : 0;
   const x = (i: number) => (meses.length > 1 ? M.l + i * passoX : (M.l + L - M.r) / 2);
-  const y = (v: number) => M.t + (1 - v / teto) * (A - M.t - M.b);
+  const y = (v: number) => M.t + ((teto - v) / (teto - piso || 1)) * (A - M.t - M.b);
+  const rotuloDoX = (iso: string) => (eixoEmDias ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : mesCurto(iso));
+  const rotuloLongo = (iso: string) => (eixoEmDias ? formatIsoDateBr(iso) : formatIsoMonthBr(iso));
 
   return (
     <figure className="space-y-2">
@@ -116,13 +127,13 @@ export function GraficoDeLinhas({
         <svg viewBox={`0 0 ${L} ${A}`} className="w-full" role="img" aria-label={rotulo} onMouseLeave={() => setFoco(null)}>
           {grade.map((g) => (
             <g key={g}>
-              <line x1={M.l} x2={L - M.r} y1={y(g)} y2={y(g)} stroke="currentColor" strokeOpacity="0.1" />
+              <line x1={M.l} x2={L - M.r} y1={y(g)} y2={y(g)} stroke="currentColor" strokeOpacity={g === 0 ? 0.35 : 0.1} />
               <text x={M.l - 6} y={y(g) + 3} textAnchor="end" fontSize="10" fill="currentColor" opacity="0.6">{reaisCurtos(g)}</text>
             </g>
           ))}
           {meses.map((m, i) => (
             <text key={m} x={x(i)} y={A - 8} textAnchor="middle" fontSize="10" fill="currentColor" opacity="0.6">
-              {mesCurto(m)}
+              {rotuloDoX(m)}
               {ultimoAoVivo && i === meses.length - 1 ? "*" : ""}
             </text>
           ))}
@@ -167,7 +178,7 @@ export function GraficoDeLinhas({
             style={{ left: `${Math.min(70, (x(foco) / L) * 100)}%` }}
           >
             <p className="font-medium">
-              {formatIsoMonthBr(meses[foco])}
+              {rotuloLongo(meses[foco])}
               {ultimoAoVivo && foco === meses.length - 1 ? " (até hoje)" : ""}
             </p>
             {series.map((s, si) => (
@@ -181,9 +192,9 @@ export function GraficoDeLinhas({
         )}
       </div>
       <Tabela
-        cabecalho={["Mês", ...series.map((s) => s.rotulo)]}
+        cabecalho={[eixoEmDias ? "Dia" : "Mês", ...series.map((s) => s.rotulo)]}
         linhas={meses.map((m, i) => [
-          `${formatIsoMonthBr(m)}${ultimoAoVivo && i === meses.length - 1 ? " (até hoje)" : ""}`,
+          `${rotuloLongo(m)}${ultimoAoVivo && i === meses.length - 1 ? " (até hoje)" : ""}`,
           ...series.map((s) => (s.valores[i] === null ? "—" : formatBRL(s.valores[i]!))),
         ])}
       />

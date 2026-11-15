@@ -53,6 +53,44 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   com "permission denied", a de controle responde "não encontrada"). O
 >   código subiu antes, no push de outra sessão (sem efeito sem a 1045).
 
+> ## 🏦 0.455.0 — LEVANTAMENTO DE DÍVIDAS, FASE 7: SAÚDE FINANCEIRA E VISÕES (15/11/2026; migração 0409)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (1.3 "Visões", 4.6, fase 7).
+> **Saúde financeira** no Painel (meses de receita, comprometimento, custo
+> financeiro, por CNPJ e rede), **exportar** a lista (PDF e Planilha),
+> **"E se eu pagar à vista?"** nas propostas e o card **"Dívidas da unidade"**
+> (desligado) no Painel do Financeiro da unidade. Manual 2.3; EV-350.
+> - ⚠️ **Receita e custo financeiro = a DRE oficial** (`dre_lines` +
+>   `buildDre`, `carregarDreDosDevedores`), 3 meses fechados; custo
+>   financeiro = conta 4.2.01. Contas em `saudeFinanceira` (`dividas-painel.ts`):
+>   sem receita = "sem dados", a rede divide só quem tem receita.
+> - ⚠️ **Cenário = `cenarioDeQuitacao`** (`dividas-cenario.ts`), na ação
+>   `cenarioDaProposta`: o mesmo `cash_balance_before` + `cash_flow_series`
+>   da tela de Fluxo de caixa; NUNCA grava. Título vencido não volta (não está
+>   no previsto).
+> - ⚠️ **Exportar = `dividas-exportacao.ts`** (`RelatorioPronto`, o modelo do
+>   Saldo de abertura): o filtro viaja no endereço (`filtroParaOEndereco`/
+>   `filtroDoEndereco`, só chaves conhecidas) e a rota refaz `linhasDaLista` +
+>   `filtrarDividas` + `ordenarDividas` — as mesmas funções da tela.
+> - ⚠️ **Card da unidade = porta `debt_unit_summary`** (0409; guarda
+>   `_debt_can_see_unit`): só números, saldo da regra única. Permissão
+>   `acao.dividas.ver_unidade` nasce SEM papel; teto Gerente e Franqueado, só
+>   da própria unidade (`_debt_cap_ceiling` recriada na 0409 — ao recriar,
+>   partir dela).
+> - Ensaio `scripts/dividas-ensaio-0409.mjs --confirmar` 8/8 (sem papel não
+>   vê; marcado para o Gerente vê só a própria unidade, com o saldo da regra
+>   única, e continua sem ler `debts`; Recepção marcada fica fora pelo teto;
+>   anônimo 42501); `--quebrar` reprova. Réguas `dividas-painel.test.ts`,
+>   `dividas-cenario.test.ts`, `dividas-exportacao.test.ts`, `dividas.test.ts`
+>   (lendo a 0409). 0409 no treino (`migrar:teste`). Visto na tela pelo
+>   servidor local de teste (Financeiro de teste): Saúde financeira (Londrina
+>   R$ 5.872,07/mês, 0,6 mês; franqueadora "sem dados"), o cenário da proposta
+>   de R$ 1.800 da DV-000011 (o caixa da Londrina do treino já é negativo — a
+>   frase passou a dizer isso), o PDF filtrado e a planilha, e o card em
+>   Londrina. **Não visto:** o card como Gerente com a permissão ligada (só no
+>   ensaio).
+> - ⏳ **0409 não aplicada na produção.** O dono roda.
+
 > ## 🏦 0.454.0 — LEVANTAMENTO DE DÍVIDAS, FASE 6: O PAINEL (15/11/2026; sem migração)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (3, 4.2, 4.3, 4.5; D17;

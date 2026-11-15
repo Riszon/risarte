@@ -24,6 +24,8 @@ import {
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canViewFinance, isFinanceFranchisor } from "@/lib/finance/access";
+import { podeVerDividas, podeVerDividasDaUnidade } from "@/lib/finance/dividas-acesso";
+import { DividasDaUnidade } from "./dividas-da-unidade";
 import { formatBrDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import {
@@ -466,6 +468,17 @@ export default async function FinanceHomePage() {
           </div>
         )}
       </section>
+
+      {/* ---------------------- Levantamento de Dívidas, fase 7 (0409): o card
+          da unidade. Nasce desligado; o banco decide quem vê. */}
+      {!veRede && podeVerDividasDaUnidade(session, clinica.id) && (
+        <DividasDaUnidade
+          supabase={supabase}
+          clinicId={clinica.id}
+          nome={clinica.name}
+          linkParaOLevantamento={podeVerDividas(session)}
+        />
+      )}
 
       {/* ------------------------------------------------------ os caminhos */}
       <section className="space-y-5">

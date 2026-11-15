@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, X } from "lucide-react";
+import { FileSpreadsheet, FileText, Plus, X } from "lucide-react";
+import { filtroParaOEndereco } from "@/lib/finance/dividas-exportacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -134,6 +135,16 @@ export function ListaDeDividas({
             <X className="size-4" /> Limpar
           </Button>
         )}
+        {/* Fase 7: exporta EXATAMENTE o que está na tela (filtros e ordem). <a>, não
+            <Link>: o Next pré-carregaria a planilha sem ninguém pedir. */}
+        <span className={cn("flex items-center gap-3 text-sm", !podeLancar && "ml-auto")}>
+          <a href={`/financeiro/dividas/exportar?${filtroParaOEndereco(filtros, ordem)}`} className="inline-flex items-center gap-1 underline">
+            <FileText className="size-4" /> PDF
+          </a>
+          <a href={`/financeiro/dividas/exportar/planilha?${filtroParaOEndereco(filtros, ordem)}`} className="inline-flex items-center gap-1 underline">
+            <FileSpreadsheet className="size-4" /> Planilha
+          </a>
+        </span>
         {podeLancar && (
           <Button type="button" size="sm" className="ml-auto h-9" onClick={() => setNovo(true)}>
             <Plus className="size-4" /> Nova dívida

@@ -10,6 +10,7 @@ import {
   carregarAcordos,
   carregarBase,
   carregarDividas,
+  carregarDreDosDevedores,
   carregarFotografias,
   carregarPosicoes,
   carregarResumoDaFase2,
@@ -58,6 +59,27 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
     aba === "painel" ? carregarFotografias() : Promise.resolve(null),
   ]);
   const linhas = linhasDaLista(lista.dividas, base, fase2, doFinanceiro.titulos, posicoes);
+  // Fase 7: a DRE dos 3 meses fechados de cada CNPJ com dívida (só no Painel).
+  const hoje = todayInBrazil();
+  const mesAtual = `${hoje.slice(0, 7)}-01`;
+  const inicioDosFechados = (() => {
+    const d = new Date(`${mesAtual}T12:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - 3);
+    return d.toISOString().slice(0, 10);
+  })();
+  const fimDosFechados = (() => {
+    const d = new Date(`${mesAtual}T12:00:00Z`);
+    d.setUTCDate(0);
+    return d.toISOString().slice(0, 10);
+  })();
+  const dre =
+    aba === "painel"
+      ? await carregarDreDosDevedores([...new Set(lista.dividas.map((d) => d.clinicId))], {
+          de: inicioDosFechados,
+          ate: fimDosFechados,
+          meses: 3,
+        })
+      : new Map();
   const codigos = Object.fromEntries(lista.dividas.map((d) => [d.id, d.code]));
   const prazos = prazosDosSelos(base);
   // Fase 3: as dívidas A/B cadastradas antes da 0406 (ou sem "gerar já").
@@ -147,9 +169,14 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
                 abertas: a.titulos
                   .filter((t) => t.status === "aberta" || t.status === "parcial")
                   .map((t) => ({ faltaCents: Math.max(t.valorCents - t.pagoCents, 0), vencimento: t.vencimento })),
+                parcelasDoMesCents: a.titulos
+                  .filter((t) => t.link === "acordo" && t.status !== "cancelada" && t.status !== "renegociada" && t.vencimento.slice(0, 7) === mesAtual.slice(0, 7))
+                  .reduce((x, t) => x + t.valorCents, 0),
               }))}
+              dre={[...dre.entries()]}
+              periodoDaDre={{ de: inicioDosFechados, ate: fimDosFechados }}
               fotos={fotos}
-              hoje={todayInBrazil()}
+              hoje={hoje}
               semRegraUnica={posicoes === null}
             />
           )}

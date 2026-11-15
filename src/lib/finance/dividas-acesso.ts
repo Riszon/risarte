@@ -38,6 +38,19 @@ export function podeAprovarAcordos(session: SessionContext): boolean {
   return session.isAdminMaster;
 }
 
+/**
+ * O card "Dívidas da unidade" (0409): quem já vê o módulo, ou o Gerente e o
+ * Franqueado DESTA unidade com a permissão marcada (nasce sem papel). Espelho
+ * de `_debt_can_see_unit`; o banco decide de novo.
+ */
+export function podeVerDividasDaUnidade(session: SessionContext, clinicId: string): boolean {
+  if (podeVerDividas(session)) return true;
+  const papeis = session.rolesByClinic[clinicId] ?? [];
+  return (
+    papeis.some((p) => p === "unit_manager" || p === "franchisee") && pode(session, "acao.dividas.ver_unidade", clinicId)
+  );
+}
+
 export function podeConfigurarDividas(session: SessionContext): boolean {
   return podeVerDividas(session) && comTeto(session, "acao.dividas.configurar");
 }

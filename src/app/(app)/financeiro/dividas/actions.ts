@@ -5,6 +5,9 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { carregarTitulosLivres } from "./dados";
+import { addDaysIso, todayInBrazil } from "@/lib/dates";
+import { podeVerDividas } from "@/lib/finance/dividas-acesso";
+import { cenarioDeQuitacao, type Cenario } from "@/lib/finance/dividas-cenario";
 import {
   debtToPayload,
   faltaNoCadastro,
@@ -471,4 +474,55 @@ export async function salvarItemDoEncerramento(debtId: string, p: Record<string,
   const r = await porta("debt_closing_save", { p }, "Não foi possível salvar o item do encerramento.", debtId);
   if (r.ok) await logAudit({ action: "update", entityType: "debt_closing_item", entityId: String(p.id ?? debtId) });
   return r;
+}
+
+// ------------------------------------------------------------- fase 7 (0409)
+
+/**
+ * "E se eu pagar esta proposta à vista?" — o cenário no caixa da unidade
+ * devedora, calculado na hora e NUNCA gravado (`cenarioDeQuitacao`). Lê o
+ * mesmo fluxo da tela de Fluxo de caixa (`cash_balance_before` +
+ * `cash_flow_series`) e os títulos em aberto da dívida (ou do grupo, se a
+ * proposta é do grupo).
+ */
+export async function cenarioDaProposta(
+  debtId: string,
+  propostaId: string,
+  dia: string
+): Promise<{ ok: boolean; cenario?: Cenario; dias?: number; error?: string }> {
+  const session = await getSessionContext();
+  if (!podeVerDividas(session)) return { ok: false, error: "Sem permissão." };
+  const supabase = await createClient();
+  const [{ data: d }, { data: p }] = await Promise.all([
+    supabase.from("debts").select("id, clinic_id, group_id").eq("id", debtId).maybeSingle(),
+    supabase.from("debt_proposals").select("id, debt_id, group_id, amount_cents, status").eq("id", propostaId).maybeSingle(),
+  ]);
+  if (!d || !p) return { ok: false, error: "Dívida ou proposta não encontrada." };
+  const hoje = todayInBrazil();
+  const DIAS = 90;
+  const ids = p.group_id
+    ? (((await supabase.from("debts").select("id").eq("group_id", p.group_id).is("deleted_at", null)).data ?? []) as { id: string }[]).map((x) => x.id)
+    : [debtId];
+  const [serie, saldo, titulos] = await Promise.all([
+    supabase.rpc("cash_flow_series", { p_clinic_id: d.clinic_id, p_from: hoje, p_to: addDaysIso(hoje, DIAS) }),
+    supabase.rpc("cash_balance_before", { p_clinic_id: d.clinic_id, p_date: addDaysIso(hoje, 1) }),
+    supabase.from("payables").select("due_date, amount_cents, paid_amount_cents").in("debt_id", ids).in("status", ["aberta", "parcial"]),
+  ]);
+  if (serie.error || saldo.error || titulos.error) {
+    return { ok: false, error: "Não foi possível ler o fluxo de caixa da unidade agora." };
+  }
+  const cenario = cenarioDeQuitacao({
+    hoje,
+    dias: DIAS,
+    saldoHojeCents: Number(saldo.data ?? 0),
+    previstos: ((serie.data ?? []) as { day: string; kind: string; inflow_cents: number; outflow_cents: number }[])
+      .filter((r) => r.kind === "previsto")
+      .map((r) => ({ dia: String(r.day).slice(0, 10), entradaCents: Number(r.inflow_cents ?? 0), saidaCents: Number(r.outflow_cents ?? 0) })),
+    titulos: ((titulos.data ?? []) as { due_date: string; amount_cents: number; paid_amount_cents: number | null }[]).map((t) => ({
+      vencimento: String(t.due_date).slice(0, 10),
+      faltaCents: Math.max(Number(t.amount_cents) - Number(t.paid_amount_cents ?? 0), 0),
+    })),
+    pagamento: { dia: dia || hoje, valorCents: Number(p.amount_cents) },
+  });
+  return { ok: true, cenario, dias: DIAS };
 }

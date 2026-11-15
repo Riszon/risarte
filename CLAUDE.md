@@ -420,6 +420,14 @@ Syncthing se comportarem de forma estranha.**
   com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
   ⚠️ "Repasses" sozinho é o dos DENTISTAS.
 
+**15/11/2026 (Levantamento de Dívidas — fase 7) — PC Administrador (core 0.454.1 → 0.455.0, migração 0409)**
+
+- **Saúde financeira, exportação, cenário e card da unidade** (bloco 0.455.0
+  no ESTADO). ⚠️ Receita = DRE oficial (`dre_lines` + `buildDre`). ⚠️ Cenário
+  nunca grava. ⚠️ Card da unidade só pela porta `debt_unit_summary`; a
+  permissão `acao.dividas.ver_unidade` nasce sem papel (teto Gerente/Franqueado).
+- ⏳ 0409 só no treino; o dono roda na produção.
+
 **15/11/2026 (Levantamento de Dívidas — fase 6) — PC Administrador (core 0.453.1 → 0.454.0, sem migração)**
 
 - **O Painel** (bloco 0.454.0 no ESTADO). ⚠️ Contas em `dividas-painel.ts`;
