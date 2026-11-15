@@ -69,6 +69,7 @@ import {
   setRenegotiationStep,
 } from "./receivables-actions";
 import { RenegotiationDialog } from "./renegotiation-dialog";
+import { TermoDaRenegociacao } from "./termo-da-renegociacao";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 import { contaPadrao, type ContaDaUnidade } from "@/lib/finance/conta-do-dinheiro";
 import { CampoDaConta } from "../../financeiro/campo-da-conta";
@@ -134,6 +135,8 @@ export function ReceivablesSection({
   canReverse,
   canRenegotiate,
   canAuthorize,
+  maquininhaLigada = false,
+  userId,
   contas = [],
   clinicIdPadrao,
   charges = [],
@@ -162,6 +165,10 @@ export function ReceivablesSection({
   canRenegotiate: boolean;
   /** Gerente da unidade / Admin Master — quem libera desconto acima do teto. */
   canAuthorize: boolean;
+  /** 4017: a chave da rede da maquininha (fica na renegociação enquanto ligada). */
+  maquininhaLigada?: boolean;
+  /** 4017: quem está na tela (quem negociou envia o termo). */
+  userId?: string;
   /** AP51: as contas das unidades das cobranças (vazia = quem não as enxerga). */
   contas?: ContaDaUnidade[];
   /** A unidade do cliente — usada quando a cobrança não diz a dela. */
@@ -357,6 +364,15 @@ export function ReceivablesSection({
 
   function save() {
     if (!paying) return;
+    // 4017 (19.28.10 ponto 2): a parcela está num acordo que ainda não vale.
+    if (
+      emAcordo.has(paying.id) &&
+      !window.confirm(
+        "Esta parcela está numa renegociação aguardando assinatura. Registrar este pagamento cancela o acordo. Continuar?"
+      )
+    ) {
+      return;
+    }
     const quitaMenor = canWaive && waive && amountCents < paying.updatedBalanceCents;
     const quita = quitaMenor || amountCents >= paying.updatedBalanceCents;
     startTransition(async () => {
@@ -419,6 +435,11 @@ export function ReceivablesSection({
     });
   }
 
+  // 4017: os acordos que ainda não valem e as parcelas presas a eles.
+  const pendentes = renegotiations.filter(
+    (x) => x.status === "aguardando_assinatura" || x.status === "aguardando_autorizacao"
+  );
+  const emAcordo = new Set(pendentes.flatMap((x) => x.sourceInstallmentIds));
   const selectedViews = allViews.filter(
     (v) => picked.has(v.id) && canRenegotiateInstallment(v)
   );
@@ -452,19 +473,17 @@ export function ReceivablesSection({
   function decide() {
     if (!decisionId) return;
     startTransition(async () => {
-      const r = await comConfirmacaoDeBoletos((confirmar) =>
-        authorizeRenegotiation({
-          clientId,
-          renegotiationId: decisionId,
-          approve: decisionApprove,
-          note: decisionNote,
-          confirmarCancelamento: confirmar,
-        })
-      );
+      // 4017: autorizada vai para "aguardando assinatura"; nada é cancelado aqui.
+      const r = await authorizeRenegotiation({
+        clientId,
+        renegotiationId: decisionId,
+        approve: decisionApprove,
+        note: decisionNote,
+      });
       if (r.ok) {
         toast.success(
           decisionApprove
-            ? "Renegociação autorizada e aplicada."
+            ? "Renegociação autorizada. Agora quem negociou envia o termo para o cliente assinar."
             : "Renegociação recusada."
         );
         setDecisionId(null);
@@ -765,6 +784,11 @@ export function ReceivablesSection({
                           : "Negociação"}
                       {v.paymentMethod && ` · ${methodLabel(v.paymentMethod)}`}
                     </span>
+                    {emAcordo.has(v.id) && (
+                      <span className="ml-2 rounded border border-amber-300 bg-amber-50 px-1 text-[10px] font-medium text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
+                        Em renegociação
+                      </span>
+                    )}
                     {v.isLate && (
                       <span className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[11px] font-medium text-destructive">
                         <AlertTriangle className="size-3" />
@@ -1265,6 +1289,15 @@ export function ReceivablesSection({
         </DialogContent>
       </Dialog>
 
+      {/* 4017: o acordo que ainda não vale, para quem lida com pagamento. */}
+      {canReceive && pendentes.length > 0 && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
+          <strong>Renegociação aguardando {pendentes.some((x) => x.status === "aguardando_autorizacao") ? "autorização ou assinatura" : "assinatura"}</strong>
+          {pendentes.map((x) => ` · ${x.code ?? ""}${x.signDeadline ? ` até ${x.signDeadline.split("-").reverse().join("/")}` : ""}`).join("")}.
+          As parcelas marcadas &quot;Em renegociação&quot; continuam valendo até o cliente assinar; um pagamento nelas cancela o acordo.
+        </p>
+      )}
+
       {/* FIN2: renegociações — o documento que explica de onde veio o valor. */}
       {renegotiations.length > 0 && (
         <Card>
@@ -1280,9 +1313,9 @@ export function ReceivablesSection({
                 key={r.id}
                 className={cn(
                   "rounded-lg border p-2.5 text-xs",
-                  r.status === "aguardando_autorizacao" &&
+                  (r.status === "aguardando_autorizacao" || r.status === "aguardando_assinatura") &&
                     "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/15",
-                  r.status === "recusada" && "opacity-60"
+                  ["recusada", "cancelada", "nao_assinada", "expirada", "cancelada_pagamento"].includes(r.status) && "opacity-60"
                 )}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1387,6 +1420,13 @@ export function ReceivablesSection({
                   </div>
                 )}
 
+                <TermoDaRenegociacao
+                  clientId={clientId}
+                  r={r}
+                  podeGerir={canAuthorize}
+                  podeEnviar={canRenegotiate || (!!userId && r.createdBy === userId)}
+                />
+
                 {r.status === "aguardando_autorizacao" && canAuthorize && (
                   <div className="mt-2 flex gap-1">
                     <Button
@@ -1433,6 +1473,7 @@ export function ReceivablesSection({
           today={today}
           maxDiscountPercent={maxDiscountPercent}
           isManager={canAuthorize}
+          maquininhaLigada={maquininhaLigada}
         />
       )}
 

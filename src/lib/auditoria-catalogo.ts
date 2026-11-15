@@ -131,6 +131,8 @@ export const TABELAS: Record<string, string> = {
   "public.boleto_list_accesses": "Acesso à lista de boletos",
   "public.boleto_list_misses": "Tentativa com link de lista errado",
   "public.boleto_op_failures": "Operação interrompida (boleto cancelado sem a mudança)",
+  "public.payment_renegotiation_events": "Histórico da situação da renegociação",
+  "public.payment_renegotiation_sources": "Foto das parcelas renegociadas no dia do acordo",
   "public.charge_splits": "Split de cobrança (o que foi enviado e liquidado)",
   "public.charge_split_updates": "Split de cobrança atualizado pela fila",
   "public.charge_refunds": "Pedido de estorno",

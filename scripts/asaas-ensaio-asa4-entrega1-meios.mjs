@@ -68,6 +68,9 @@ try {
     await c.query("rollback to savepoint dup");
     conf(`a 4011 roda duas vezes sem erro (${e.message})`, false);
   }
+  // As migrações seguintes redefinem parte desta: o ensaio roda por cima delas,
+  // como o banco está de verdade (rodar só esta de novo deixaria as funções antigas).
+  for (const depois of ["4012_asa4_cobranca_na_assinatura_e_rotina.sql", "4013_asa4_cartao_parcelado_pelo_asaas.sql", "4014_asa4_parcelado_devolucao_contestacao_e_avisos.sql", "4015_asa4_forma2_todos_os_boletos_agora.sql", "4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql", "4017_asa4_renegociacao_assinada.sql"]) await c.query(readFileSync(`supabase/migrations/${depois}`, "utf8"));
   if (QUEBRAR === "fechamento") {
     sql = sql.replace("if coalesce(new.payment_method, '') in ('dinheiro', 'permuta')\n       and coalesce(current_setting('risarte.baixa_do_asaas', true), '') <> '1' then", "if false then");
     await c.query(sql);

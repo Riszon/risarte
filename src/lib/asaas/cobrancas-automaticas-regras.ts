@@ -25,9 +25,12 @@ export function origemDaCobranca(
   origemDaRodada: "vercel" | "banco" | "rodar_agora" | "gatilho",
   origemDaVenda: string,
   especifica?: "restante"
-): "assinatura" | "venda_direta" | "rotina" | "rodar_agora" | "restante" {
+): "assinatura" | "venda_direta" | "rotina" | "rodar_agora" | "restante" | "renegociacao" {
   if (especifica) return especifica;
-  if (origemDaRodada === "gatilho") return origemDaVenda === "venda_direta" ? "venda_direta" : "assinatura";
+  if (origemDaRodada === "gatilho") {
+    if (origemDaVenda === "renegociacao") return "renegociacao";
+    return origemDaVenda === "venda_direta" ? "venda_direta" : "assinatura";
+  }
   if (origemDaRodada === "rodar_agora") return "rodar_agora";
   return "rotina";
 }
@@ -38,6 +41,7 @@ export const ROTULO_DA_ORIGEM: Record<string, string> = {
   rotina: "pela rotina diária",
   rodar_agora: "pelo \"Rodar agora\"",
   restante: "do restante, depois do dinheiro",
+  renegociacao: "na assinatura da renegociação",
 };
 
 export const ROTULO_DO_MOTIVO: Record<string, string> = {

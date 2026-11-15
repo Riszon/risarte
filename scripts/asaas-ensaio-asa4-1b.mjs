@@ -87,6 +87,8 @@ try {
     await c.query("rollback to savepoint dup");
     conf(`a 4015 roda duas vezes sem erro (${e.message})`, false);
   }
+  // 4017 (renegociação assinada) redefine parte da 4015: o ensaio roda por cima dela.
+  await c.query(readFileSync("supabase/migrations/4017_asa4_renegociacao_assinada.sql", "utf8"));
   if (QUEBRAR === "trava") {
     await c.query("drop trigger if exists payment_installments_charge_lock on public.payment_installments");
     await c.query("drop trigger if exists payment_receipts_charge_lock on public.payment_receipts");
@@ -206,10 +208,14 @@ try {
   // (c) troca de vencimento ou valor (salvar o parcelamento de novo)
   conf("trocar vencimento ou valor com boletos vivos: recusado", erro(await pessoa(P.recepcao, "select public.save_payment_schedule(null, $1, $2::jsonb)", [v, JSON.stringify([{ kind: "parcela", due_date: primeiro, amount_cents: 130000, payment_method: "boleto" }])]), "CHARGE_ACTIVE"));
   // (a) renegociação
-  const reneg = () => pessoa(P.gerente, "select public.save_renegotiation($1, $2, $3::jsonb, 'ensaio 1B', 0)", [cli.id, [p1.id], JSON.stringify([{ kind: "parcela", due_date: mesesDepois(primeiro, 14), amount_cents: 10000, payment_method: "pix" }])]);
-  conf("renegociação com o boleto vivo: recusada", erro(await reneg(), "CHARGE_ACTIVE"));
+  // 4017: salvar não cancela nada; o boleto antigo cai na ASSINATURA do termo.
+  const salvo = await pessoa(P.gerente, "select public.save_renegotiation($1, $2, $3::jsonb, 'ensaio 1B', 0) id", [cli.id, [p1.id], JSON.stringify([{ kind: "parcela", due_date: mesesDepois(primeiro, 14), amount_cents: 10000, payment_method: "pix" }])]);
+  if (!passou(salvo)) throw new Error(`renegociação: ${salvo}`);
+  conf("renegociação: salvar com o boleto vivo não muda nada (4017)", passou(salvo));
+  const reneg = () => servidor("select public.renegotiation_apply_signed($1, 'zapsign', null)", [salvo[0].id]);
+  conf("renegociação assinada com o boleto vivo: recusada", erro(await reneg(), "CHARGE_ACTIVE"));
   await cancelaDoSistema(p1.charge_id, "renegociação");
-  conf("renegociação depois do cancelamento na operação: passa", passou(await reneg()));
+  conf("renegociação assinada depois do cancelamento na operação: passa", passou(await reneg()));
   conf("…e a lista mostra \"substituído pela renegociação\"", (await situacao(p1)) === "substituido_renegociacao");
   // (b) cancelamento do plano (a parcela vira "cancelada")
   const cancPlano = () => servidor("update public.payment_installments set status = 'cancelada' where id = $1", [p2.id]);

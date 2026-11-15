@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { modalityOf } from "@/lib/finance/acquirers";
 import { erroDaConta, portaAusente } from "@/lib/finance/conta-do-dinheiro";
 import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
+import { mensagemDaRenegociacao } from "@/lib/renegociacao/mensagens";
 import { mensagemDoErroDeMeio } from "@/lib/venda-direta-meios";
 
 export type ReceivableResult = { ok: boolean; error?: string };
@@ -460,78 +461,33 @@ export async function saveRenegotiation(input: {
     due_date: string;
     amount_cents: number;
     payment_method?: string | null;
+    /** 4017: a descrição da permuta (obrigatória). */
+    descricao?: string | null;
   }[];
   reason: string;
   /** Juros ao mês do novo parcelamento (Tabela Price). */
   monthlyInterestPercent: number;
-  /** 4015 (19.26.1): a pessoa confirmou que a renegociação cancela os boletos vivos. */
-  confirmarCancelamento?: boolean;
-}): Promise<ReceivableResult & { pending?: boolean; precisaConfirmar?: number }> {
-  const session = await getSessionContext();
+  /** 4017 (19.28.5): a forma dos boletos novos ("mensal" ou "todos"). */
+  boletoMode?: "mensal" | "todos" | null;
+}): Promise<ReceivableResult & { pending?: boolean; renegotiationId?: string }> {
+  await getSessionContext();
   const supabase = await createClient();
 
-  // 4015: a renegociação aplicada cancela no Asaas os boletos vivos das parcelas
-  // renegociadas, na mesma operação (com a confirmação da tela).
-  const op = await comBoletosCancelados<unknown>({
-    operacao: "renegociação",
-    motivo: "renegociação",
-    installmentIds: input.installmentIds,
-    actorId: session.userId,
-    confirmar: Boolean(input.confirmarCancelamento),
-    tentar: async () => {
-      const r = await supabase.rpc("save_renegotiation", {
-        p_client_id: input.clientId,
-        p_installment_ids: input.installmentIds,
-        p_entries: input.entries,
-        p_reason: input.reason || null,
-        p_monthly_interest_percent: input.monthlyInterestPercent,
-      });
-      return { error: r.error, data: r.data };
-    },
+  // 4017: salvar NÃO aplica mais nem cancela boleto nenhum. O acordo fica
+  // "aguardando assinatura" (ou a autorização do Gerente, antes); os boletos
+  // antigos continuam valendo até o termo ser assinado.
+  const { data, error } = await supabase.rpc("save_renegotiation", {
+    p_client_id: input.clientId,
+    p_installment_ids: input.installmentIds,
+    p_entries: input.entries,
+    p_reason: input.reason || null,
+    p_monthly_interest_percent: input.monthlyInterestPercent,
+    p_boleto_mode: input.boletoMode ?? null,
   });
-  if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
-  const data = op.ok ? op.data : null;
-  const error = op.ok ? null : { message: op.error };
   if (error) {
-    const m = error.message;
-    if (m.includes("NO_INSTALLMENTS")) {
-      return { ok: false, error: "Escolha ao menos uma cobrança." };
-    }
-    if (m.includes("NO_ENTRIES")) {
-      return { ok: false, error: "Monte o novo parcelamento antes de salvar." };
-    }
-    if (m.includes("INSTALLMENT_NOT_OPEN")) {
-      return {
-        ok: false,
-        error:
-          "Alguma cobrança escolhida já foi paga, cancelada ou renegociada. Recarregue a tela.",
-      };
-    }
-    if (m.includes("CLIENT_MISMATCH") || m.includes("CLINIC_MISMATCH")) {
-      return {
-        ok: false,
-        error: "As cobranças precisam ser do mesmo cliente e da mesma unidade.",
-      };
-    }
-    if (m.includes("MULTIPLE_DOWN_PAYMENTS")) {
-      return { ok: false, error: "Só pode haver uma entrada." };
-    }
-    if (m.includes("RENEGOTIATION_PENDING")) {
-      return {
-        ok: false,
-        error:
-          "Alguma dessas cobranças já está numa renegociação aguardando autorização do Gerente.",
-      };
-    }
-    if (m.includes("NOT_ALLOWED")) {
-      return {
-        ok: false,
-        error:
-          "Renegociar é do Gerente da unidade, do Financeiro da Franqueadora ou do Admin Master.",
-      };
-    }
-    console.error("save_renegotiation failed:", m);
-    return { ok: false, error: "Não foi possível salvar a renegociação." };
+    const msg = mensagemDaRenegociacao(error.message);
+    if (!msg) console.error("save_renegotiation failed:", error.message);
+    return { ok: false, error: msg ?? "Não foi possível salvar a renegociação." };
   }
 
   await logAudit({
@@ -541,7 +497,7 @@ export async function saveRenegotiation(input: {
   });
   revalidatePath(`/prontuarios/${input.clientId}`);
   revalidatePath("/financeiro");
-  return { ok: true };
+  return { ok: true, renegotiationId: typeof data === "string" ? data : undefined };
 }
 
 /** FIN2 — o Gerente autoriza (ou recusa) a renegociação com desconto. */
@@ -550,30 +506,16 @@ export async function authorizeRenegotiation(input: {
   renegotiationId: string;
   approve: boolean;
   note: string;
-  /** 4015 (19.26.1): a pessoa confirmou que a renegociação cancela os boletos vivos. */
-  confirmarCancelamento?: boolean;
-}): Promise<ReceivableResult & { precisaConfirmar?: number }> {
-  const session = await getSessionContext();
+}): Promise<ReceivableResult> {
+  await getSessionContext();
   const supabase = await createClient();
 
-  const { data: reneg } = await supabase.from("payment_renegotiations").select("source_installment_ids").eq("id", input.renegotiationId).maybeSingle();
-  const op = await comBoletosCancelados<unknown>({
-    operacao: "renegociação",
-    motivo: "renegociação",
-    installmentIds: input.approve ? ((reneg?.source_installment_ids as string[] | null) ?? []) : [],
-    actorId: session.userId,
-    confirmar: Boolean(input.confirmarCancelamento),
-    tentar: async () => {
-      const r = await supabase.rpc("authorize_renegotiation", {
-        p_id: input.renegotiationId,
-        p_approve: input.approve,
-        p_note: input.note || null,
-      });
-      return { error: r.error };
-    },
+  // 4017: autorizada vai para "aguardando assinatura"; nada é cancelado aqui.
+  const { error } = await supabase.rpc("authorize_renegotiation", {
+    p_id: input.renegotiationId,
+    p_approve: input.approve,
+    p_note: input.note || null,
   });
-  if (!op.ok && op.precisaConfirmar) return { ok: false, error: op.error, precisaConfirmar: op.precisaConfirmar };
-  const error = op.ok ? null : { message: op.error };
   if (error) {
     const m = error.message;
     if (m.includes("NOT_PENDING")) {
@@ -584,6 +526,9 @@ export async function authorizeRenegotiation(input: {
         ok: false,
         error: "Só o Gerente da unidade ou o Admin Master autoriza.",
       };
+    }
+    if (m.includes("FIRST_DUE_TOO_SOON")) {
+      return { ok: false, error: "O primeiro vencimento novo já passou ou é hoje: o termo não teria prazo para ser assinado. Recuse e refaça a renegociação." };
     }
     console.error("authorize_renegotiation failed:", m);
     return { ok: false, error: "Não foi possível registrar a decisão." };

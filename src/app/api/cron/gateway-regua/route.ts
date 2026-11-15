@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rodarFilaDaRegua } from "@/lib/asaas/regua-servidor";
 import { conferirWebhooks, corrigirBloqueios, limparCelularesDeEstorno, rodarFilaDoSplit } from "@/lib/asaas/split-servidor";
 import { conferirContestacoes, conferirSplitDosParcelamentos } from "@/lib/asaas/parcelamento";
+import { rotinaDasRenegociacoes } from "@/lib/asaas/renegociacao";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
 
 /**
@@ -45,8 +46,11 @@ export async function GET(request: Request) {
     const admin = createAdminClient();
     const avisosDeContestacao = await admin.rpc("chargeback_alerts_run").then((x) => (x.error ? 0 : Number(x.data ?? 0)));
     const avisosDeVencido = await admin.rpc("card_block_overdue_alerts_run").then((x) => (x.error ? 0 : Number(x.data ?? 0)));
-    await terminarRodada(rodada, { ok: true, detalhes: { avisosDeLink, avisosDeContestacao, avisosDeVencido, splitDoParcelado, contestacoes } });
-    return Response.json({ ok: true, ...r, split, bloqueios, webhooks, celularesApagados, avisosDeLink, splitDoParcelado, contestacoes, avisosDeContestacao, avisosDeVencido });
+    // 4017: a renegociação — o termo vencido expira; o termo de acordo que acabou
+    // sem assinatura é cancelado na ZapSign; o assinado que ficou sem aplicar, aplica.
+    const renegociacoes = await rotinaDasRenegociacoes().catch(() => null);
+    await terminarRodada(rodada, { ok: true, detalhes: { avisosDeLink, avisosDeContestacao, avisosDeVencido, splitDoParcelado, contestacoes, renegociacoes } });
+    return Response.json({ ok: true, ...r, split, bloqueios, webhooks, celularesApagados, avisosDeLink, splitDoParcelado, contestacoes, avisosDeContestacao, avisosDeVencido, renegociacoes });
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
     // Banco sem a 4007 (o código pode ir ao ar antes): não há fila.

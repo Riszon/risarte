@@ -7187,6 +7187,73 @@ Admin Master; o Admin libera em **Administração → Permissões**.
 - o dinheiro não dá baixa: aparece como pagamento em duplicidade na ficha;
 - abata numa parcela em aberto ou registre a devolução.
 
+### 13g.14. Renegociação assinada pela ZapSign
+
+*(desde a versão 0.454.0)*
+
+**O que muda:** salvar a renegociação **não muda mais nada** nas parcelas de
+hoje. O acordo só vale quando o cliente assina o **termo** pela ZapSign. Até
+lá, as parcelas antigas e os boletos delas continuam valendo.
+
+**O passo a passo (Gerente, Financeiro da Franqueadora ou Admin Master):**
+
+1. Na ficha → aba **Financeiro**, marque as parcelas e clique em **Renegociar**.
+   - Só entra parcela de venda fechada, com o contrato assinado, ou de um acordo
+     já assinado.
+   - **Os meios:** Pix, boleto, cartão à vista, cartão parcelado pelo Asaas,
+     dinheiro e permuta.
+     - A permuta é só do Gerente ou do Admin Master e exige a descrição.
+     - A maquininha só aparece enquanto a chave da rede estiver ligada.
+   - **No boleto:** escolha a forma ("Um boleto por mês" ou "Todos os boletos
+     agora"). Já vem marcada a da venda.
+   - **Com desconto:** a tela mostra o que ele abate, nesta ordem: juros, multa,
+     benefício e principal (a mesma ordem da quitação por valor menor). Desconto
+     acima do teto, ou dado por quem não é Gerente, espera a autorização do
+     Gerente, como antes.
+2. **Salvar o acordo.** Ele fica **Aguardando assinatura**, com o prazo:
+   - até 5 dias corridos;
+   - nunca depois do 1º vencimento novo.
+3. No cartão da renegociação, clique em **Enviar termo**.
+   - Quem envia é **quem negociou** (ou o Gerente, o Financeiro, o Admin).
+   - A tela avisa quantos boletos já entregues serão cancelados **quando o
+     cliente assinar**.
+   - Quem assina pelo cliente é o **responsável financeiro**, se houver.
+   - O termo mostra cada valor separado (calculado no dia em que o acordo foi
+     salvo) e a frase: *"Até você assinar, os boletos atuais continuam valendo.
+     Se pagar algum deles antes de assinar, o acordo é cancelado e refeito."*
+4. **Cobrança emitida fora do riSZon** numa parcela antiga: a tela lista essas
+   cobranças. O **Gerente** cancela cada uma no painel do Asaas e marca
+   **"Cancelei no painel do Asaas"**; sem isso, o termo não sai. Fica na
+   auditoria.
+5. **O cliente assinou:**
+   - os boletos antigos são cancelados no Asaas;
+   - as parcelas antigas viram **Renegociada**;
+   - as novas nascem com cobrança automática, pela regra das Cobranças
+     automáticas e com a forma escolhida.
+   - Na forma "Todos os boletos agora", os boletos novos aparecem **no mesmo
+     link da lista da venda** e as antigas aparecem como *"Substituído pela
+     renegociação — não pague"*. Se o responsável financeiro mudou, a lista
+     antiga mostra só as antigas como substituídas.
+
+**O que acontece quando o acordo não é assinado:**
+
+| Situação | O que o riSZon faz |
+|---|---|
+| **Prazo vencido** | A renegociação fica **Expirada** sozinha. Nada muda nas parcelas antigas. Quem negociou e o Gerente são avisados. |
+| **O cliente pagou uma parcela antiga antes de assinar** | O acordo fica **Cancelado pelo pagamento** e o termo é cancelado. Aviso para refazer. A tela da baixa pergunta antes. |
+| **Termo recusado ou cancelado na ZapSign** | Fica **Não assinada**. As parcelas antigas voltam a poder ser renegociadas. |
+| **Quem negociou desistiu** | **Cancelar acordo**, com o motivo. Nada muda nas parcelas antigas. |
+
+**Termo impresso (exceção):** o Gerente ou o Admin Master clica em **Anexar
+termo assinado** e envia o PDF ou a foto. O acordo é aplicado na hora, como se
+tivesse sido assinado pela ZapSign.
+
+**Na ficha:** enquanto o acordo não vale, a aba Financeiro mostra a faixa
+**"Renegociação aguardando assinatura"** e cada parcela presa leva a marca
+**"Em renegociação"**.
+
+**Evidência:** EV-349; `scripts/asaas-ensaio-asa4-renegociacao.mjs`.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

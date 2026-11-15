@@ -3200,3 +3200,76 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
 - as quatro coisas da 19.28.13: a foto de cada parcela renegociada, o desconto por componente, a data de cada mudança de situação e as vendas de origem;
 - o AP169 registrado.
 - **A construção da 4017 começa depois da 4015a na produção.**
+
+### 19.29 Construção da renegociação assinada (4017), em 15/11/2026
+
+**O que a 4017 faz** (`supabase/migrations/4017_asa4_renegociacao_assinada.sql`):
+1. **A renegociação:**
+   - estados novos: aguardando assinatura, não assinada, expirada e cancelada pelo pagamento;
+   - `flow`: as de antes ficam "legado" e continuam como eram;
+   - colunas da forma, do prazo, das vendas de origem, do pacote da ZapSign, da assinatura e do fim, e do desconto por componente.
+2. **Salvar** (`save_renegotiation`) não aplica. A função confere:
+   - venda fechada (contrato assinado) ou acordo aplicado (`SALE_NOT_CLOSED`);
+   - os meios da venda direta nova (`_direct_sale_method_ok`; a maquininha só com a chave);
+   - a permuta (Gerente ou Admin, com descrição);
+   - a regra do cartão parcelado pelo Asaas nas parcelas novas (`_card_block_entries_check`);
+   - o prazo (`FIRST_DUE_TOO_SOON`).
+   - Grava a foto de cada parcela (`payment_renegotiation_sources`) e o desconto por componente (`_desconto_por_componente`).
+3. **Autorizar** (`authorize_renegotiation`) vai para "aguardando assinatura". O acordo "legado" continua aplicando na autorização.
+4. **Antes de enviar:**
+   - `renegotiation_send_check` diz quantos boletos vivos e quais cobranças externas;
+   - `renegotiation_confirm_external` é só do Gerente ou do Admin e fica na auditoria;
+   - `renegotiation_mark_sent` recusa `EXTERNAL_NOT_CONFIRMED`.
+5. **Assinado:** `renegotiation_apply_signed`.
+   - Recusa `SOURCE_CHANGED`. Grava a assinatura, aplica e liga a cobrança automática das novas (`sale_auto_charges.renegotiation_id`, origem `renegociacao`).
+   - Exceção: `renegotiation_attach_signed`, com a pasta privada `renegociacoes`.
+6. **O fim sem assinatura** (`_renegotiation_end`), com os avisos:
+   - `renegotiation_cancel_pending`;
+   - `renegotiation_signature_status` (recusado, cancelado, vencido);
+   - `renegotiation_expire_run` (a rotina);
+   - o pagamento antes da assinatura (o gatilho em `payment_receipts`).
+7. **O histórico** de cada situação (`payment_renegotiation_events`, por gatilho).
+8. **A cobrança automática:**
+   - `_auto_charge_billing` e `_auto_charge_due` aceitam a parcela do acordo, com a forma (`_installment_boleto_mode`);
+   - `_charge_prepare_system` põe no carnê o boleto do acordo na forma 2;
+   - o cartão parcelado do acordo nasce inteiro (`_card_block_*` com o terceiro argumento);
+   - **as assinaturas de antes ficam como passagem para as novas**, para que rodar uma migração antiga de novo não crie duas versões.
+9. **A lista da venda:** `_boleto_list_installments` e `boleto_lists.payer_guardian_id`. O boleto do acordo entra na lista da venda de origem só do mesmo pagador, e "a lista mudou" avisa as listas de origem.
+10. **A trava da 4015a** conta também o acordo aguardando assinatura.
+
+**O servidor:**
+- `src/lib/renegociacao/termo.ts`: o termo pela ZapSign, com o documento do código (`termo-texto.ts`, texto provisório) e o responsável financeiro como signatário (`montarSignatarios` ganhou `pagador`).
+- `src/lib/asaas/renegociacao.ts`:
+  - `aplicarRenegociacaoAssinada`: os boletos vivos cancelados no Asaas pelo caminho da 4015, o banco, as cobranças novas;
+  - `reagirAoTermo`, chamado pelo `webhook-apply.ts`;
+  - `rotinaDasRenegociacoes`, na rota da régua: expira, cancela na ZapSign e aplica o assinado que o reprocesso pulou;
+  - o aviso "Termo de renegociação assinado e NÃO aplicado".
+- `criarCobrancasAutomaticas` ganhou `renegotiationId`.
+
+**As telas:**
+- a janela de renegociar: os meios, a descrição da permuta, a forma, o desconto por componente e a frase da espera;
+- `termo-da-renegociacao.tsx`: enviar, ver o pacote, cancelar o acordo, anexar o termo assinado e confirmar as externas;
+- a faixa "Renegociação aguardando assinatura", a marca "Em renegociação" e a pergunta na baixa.
+
+**Provas:**
+- **Ensaio no treino** (`scripts/asaas-ensaio-asa4-renegociacao.mjs --confirmar`): **73/73**. Provado quebrando:
+
+  | Modo | Resultado |
+  |---|---|
+  | `--quebrar=assinatura` | 15 falhas |
+  | `--quebrar=pagamento` | 3 falhas |
+  | `--quebrar=expira` | 6 falhas |
+  | `--quebrar=falha` | 2 falhas |
+
+- Os ensaios anteriores foram ajustados para a 4017 e passam:
+  - 4012: 44/44;
+  - 4013: 34/34;
+  - 4014: 31/31;
+  - 1B: 42/42;
+  - 4015a: 13/13.
+  - O da 4011 já não rodava antes da 4017, porque rodar a 4011 de novo esbarra na regra de meio que a 4013 ampliou.
+- **Régua:** `asaas-asa4-renegociacao.test.ts`.
+- **Não provado aqui:**
+  - o envio real do termo pela ZapSign (só com o "pode" do Jeferson, para o e-mail dele);
+  - a assinatura pela ZapSign de ponta a ponta;
+  - as telas pelo navegador (o roteiro do Jeferson).

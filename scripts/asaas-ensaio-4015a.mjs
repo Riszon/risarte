@@ -97,9 +97,16 @@ try {
       where i.negotiation_id = $1 and i.status = 'em_aberto' and not public._installment_has_active_charge(i.id, false)
       order by i.due_date, i.seq limit 2`, [neg])).rows;
   const hoje = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
-  const renegociar = async (quem, clientId, ids, total) =>
-    pessoa(quem, "select public.save_renegotiation($1, $2::uuid[], $3::jsonb, 'ensaio 4015a', 0) id",
+  // 4017: salvar deixa o acordo "aguardando assinatura"; o servidor aplica na
+  // assinatura. Aqui o ensaio assina (como o servidor), salvo quando espera autorização.
+  const renegociar = async (quem, clientId, ids, total) => {
+    const r = await pessoa(quem, "select public.save_renegotiation($1, $2::uuid[], $3::jsonb, 'ensaio 4015a', 0) id",
       [clientId, ids, JSON.stringify([{ kind: "parcela", due_date: hoje, amount_cents: total, payment_method: "pix" }])]);
+    if (Array.isArray(r) && (await um("select status from public.payment_renegotiations where id = $1", [r[0].id])).status === "aguardando_assinatura") {
+      await servidor("select public.renegotiation_apply_signed($1, 'zapsign', null)", [r[0].id]);
+    }
+    return r;
+  };
   const abrir = (neg) => pessoa(P.gerente, "select public.open_plan_cancellation($1, 'ensaio 4015a', 'reevaluation', null, null) id", [neg]);
 
   // 1) Controle: sem acordo, o cancelamento abre.
@@ -163,9 +170,11 @@ try {
       order by s.created_at desc limit 1`);
   if (dv) {
     await papel("gerente", dv.clinic_id, "unit_manager");
+    // 4017 (19.28.12 B): só entra parcela de venda com o contrato assinado.
+    await c.query("update public.direct_sales set contract_signed = true where id = $1", [dv.id]);
     const di = (await c.query("select id, amount_cents from public.payment_installments where direct_sale_id = $1 and status = 'em_aberto' and not public._installment_has_active_charge(id, false) limit 1", [dv.id])).rows;
     const r8 = await renegociar(P.gerente, dv.client_id, di.map((x) => x.id), Number(di[0].amount_cents));
-    conf("venda direta não fechada renegociada (cenário de hoje)", passou(r8));
+    conf("venda direta assinada, ainda não fechada, renegociada (cenário)", passou(r8));
     conf("venda direta com acordo em aberto: cancelar é recusado", recusou(await pessoa(P.gerente, "select public.cancel_direct_sale($1)", [dv.id])));
   } else {
     console.log("   (sem venda direta aberta no treino: caso 8 não medido)");

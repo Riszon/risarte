@@ -2,6 +2,19 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💳 0.454.0 — ASA4, ENTREGA 3: RENEGOCIAÇÃO ASSINADA PELA ZAPSIGN (15/11/2026; Asaas 0.14.0, migração 4017)
+>
+> Salvar a renegociação não muda mais nada nas parcelas de hoje: o acordo fica "aguardando assinatura", e o termo vai pela ZapSign, assinado pelo responsável financeiro se houver. Assinado, os boletos antigos são cancelados no Asaas e as parcelas novas nascem com cobrança automática, com a forma; na forma 2, aparecem no mesmo link da lista da venda, só do mesmo pagador.
+> - prazo de 5 dias, nunca depois do 1º vencimento novo, e expira sozinho;
+> - pagamento antes da assinatura cancela o acordo;
+> - cobrança externa precisa da confirmação do Gerente;
+> - só entra parcela de venda fechada;
+> - meios da venda direta nova, com permuta e com a maquininha pela chave;
+> - desconto por componente (juros, multa, benefício e principal);
+> - foto das parcelas e histórico da situação, para o futuro painel AP169.
+>
+> 4017 aplicada no TREINO; ensaio 73/73, provado quebrando; `test:indica` 246/0. **Falta:** teste do dono, o envio real do termo (com o "pode"), a 4017 na produção e o `main`. Spec 19.28 a 19.29; manual 13g.14; EV-349.
+
 > ## 💳 0.453.1 — CORREÇÃO: VENDA COM ACORDO DE RENEGOCIAÇÃO EM ABERTO NÃO É CANCELADA (15/11/2026; Asaas 0.13.1, migração 4015a)
 >
 > Achado no plano da renegociação (19.28.11): o cancelamento do plano deixava as parcelas do acordo em aberto, sendo cobradas, e o acerto ignorava o que o cliente tinha pago nelas, o que podia cobrar em dobro. A 4015a recusa o cancelamento (abrir o termo, efetivar, cancelar venda direta) enquanto a venda tiver parcelas num acordo com parcela nova em aberto, seguindo a cadeia, ou numa renegociação esperando autorização. O erro é `RENEGOTIATED_OPEN: RN-…`, e a tela diz o código e a quem recorrer. Ensaio 13/13, provado quebrando. **Na produção em 15/11/2026:**

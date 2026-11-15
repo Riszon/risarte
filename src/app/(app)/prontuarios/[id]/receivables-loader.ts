@@ -203,6 +203,19 @@ export type RenegotiationRow = {
   paymentIssued: boolean;
   paymentConfirmed: boolean;
   closedAt: string | null;
+  /** 4017: o termo pela ZapSign. */
+  flow: "legado" | "assinatura";
+  signDeadline: string | null;
+  signaturePackageId: string | null;
+  signedVia: string | null;
+  endReason: string | null;
+  boletoMode: "mensal" | "todos";
+  discountInterestCents: number;
+  discountFeeCents: number;
+  discountBenefitCents: number;
+  discountPrincipalCents: number;
+  createdBy: string | null;
+  sourceInstallmentIds: string[];
 };
 
 /**
@@ -950,7 +963,7 @@ async function loadRenegotiations(
   const { data } = await supabase
     .from("payment_renegotiations")
     .select(
-      "id, code, created_at, status, original_principal_cents, original_benefit_cents, original_fee_cents, original_interest_cents, original_total_cents, discount_cents, discount_percent, new_total_cents, monthly_interest_percent, financed_interest_cents, reason, requires_authorization, authorization_note, contract_signed, payment_issued, payment_confirmed, closed_at, author:profiles!payment_renegotiations_created_by_fkey ( full_name ), approver:profiles!payment_renegotiations_authorized_by_fkey ( full_name )"
+      "id, code, created_at, status, original_principal_cents, original_benefit_cents, original_fee_cents, original_interest_cents, original_total_cents, discount_cents, discount_percent, new_total_cents, monthly_interest_percent, financed_interest_cents, reason, requires_authorization, authorization_note, contract_signed, payment_issued, payment_confirmed, closed_at, flow, sign_deadline, signature_package_id, signed_via, end_reason, boleto_mode, discount_interest_cents, discount_fee_cents, discount_benefit_cents, discount_principal_cents, created_by, source_installment_ids, author:profiles!payment_renegotiations_created_by_fkey ( full_name ), approver:profiles!payment_renegotiations_authorized_by_fkey ( full_name )"
     )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
@@ -977,6 +990,18 @@ async function loadRenegotiations(
         payment_issued: boolean;
         payment_confirmed: boolean;
         closed_at: string | null;
+        flow: "legado" | "assinatura" | null;
+        sign_deadline: string | null;
+        signature_package_id: string | null;
+        signed_via: string | null;
+        end_reason: string | null;
+        boleto_mode: "mensal" | "todos" | null;
+        discount_interest_cents: number | null;
+        discount_fee_cents: number | null;
+        discount_benefit_cents: number | null;
+        discount_principal_cents: number | null;
+        created_by: string | null;
+        source_installment_ids: string[] | null;
         author: { full_name: string } | null;
         approver: { full_name: string } | null;
       }[]
@@ -1006,5 +1031,17 @@ async function loadRenegotiations(
     paymentIssued: r.payment_issued,
     paymentConfirmed: r.payment_confirmed,
     closedAt: r.closed_at,
+    flow: r.flow ?? "legado",
+    signDeadline: r.sign_deadline,
+    signaturePackageId: r.signature_package_id,
+    signedVia: r.signed_via,
+    endReason: r.end_reason,
+    boletoMode: r.boleto_mode ?? "mensal",
+    discountInterestCents: Number(r.discount_interest_cents ?? 0),
+    discountFeeCents: Number(r.discount_fee_cents ?? 0),
+    discountBenefitCents: Number(r.discount_benefit_cents ?? 0),
+    discountPrincipalCents: Number(r.discount_principal_cents ?? 0),
+    createdBy: r.created_by,
+    sourceInstallmentIds: r.source_installment_ids ?? [],
   }));
 }

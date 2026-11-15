@@ -1,6 +1,5 @@
 "use client";
 
-import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -31,6 +30,8 @@ import {
 } from "@/lib/finance/renegotiation";
 import type { InstallmentView } from "@/lib/finance/receivables";
 import { saveRenegotiation } from "./receivables-actions";
+import { descontoPorComponente } from "@/lib/renegociacao/desconto";
+import { FRASE_DA_ESPERA } from "@/lib/renegociacao/termo-texto";
 
 function fmtDate(iso: string): string {
   const [y, m, d] = iso.split("-");
@@ -50,6 +51,7 @@ export function RenegotiationDialog({
   today,
   maxDiscountPercent,
   isManager,
+  maquininhaLigada = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -58,6 +60,8 @@ export function RenegotiationDialog({
   today: string;
   maxDiscountPercent: number | null;
   isManager: boolean;
+  /** 4017: a maquininha só com a chave da rede ligada. */
+  maquininhaLigada?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -65,6 +69,9 @@ export function RenegotiationDialog({
   const [count, setCount] = useState(3);
   const [firstDue, setFirstDue] = useState(today);
   const [method, setMethod] = useState("boleto");
+  // 4017: a descrição da permuta e a forma dos boletos (null = a da venda de origem).
+  const [descricao, setDescricao] = useState("");
+  const [forma, setForma] = useState<"mensal" | "todos" | null>(null);
   const [rate, setRate] = useState("0");
   const [reason, setReason] = useState("");
   const [entries, setEntries] = useState<ScheduleEntry[] | null>(null);
@@ -115,30 +122,36 @@ export function RenegotiationDialog({
     scheduleErrors: scheduleErrors(current, { totalCents: newTotal }),
   });
   const needsReason = outcome.discountCents !== 0 && !reason.trim();
+  const needsDescricao = method === "permuta" && descricao.trim().length < 3;
+  // 4017 (2a): o desconto abate juros, depois multa, benefício e principal.
+  const divisao = descontoPorComponente(
+    { principal: base.principalCents, beneficio: base.benefitCents, multa: base.lateFeeCents, juros: base.interestCents },
+    Math.max(0, outcome.discountCents)
+  );
 
   function save() {
     startTransition(async () => {
-      // 4015: com boletos já entregues, a tela confirma antes de cancelá-los.
-      const r = await comConfirmacaoDeBoletos((confirmar) =>
-        saveRenegotiation({
-          clientId,
-          installmentIds: selected.map((v) => v.id),
-          entries: current.map((e) => ({
-            kind: e.kind,
-            due_date: e.dueDate,
-            amount_cents: e.amountCents,
-            payment_method: method || null,
-          })),
-          reason,
-          monthlyInterestPercent: monthlyPercent,
-          confirmarCancelamento: confirmar,
-        })
-      );
+      // 4017: salvar não muda as parcelas antigas nem cancela boleto: o acordo
+      // espera a assinatura do termo (ou, antes, a autorização do Gerente).
+      const r = await saveRenegotiation({
+        clientId,
+        installmentIds: selected.map((v) => v.id),
+        entries: current.map((e) => ({
+          kind: e.kind,
+          due_date: e.dueDate,
+          amount_cents: e.amountCents,
+          payment_method: method || null,
+          descricao: method === "permuta" ? descricao.trim() : null,
+        })),
+        reason,
+        monthlyInterestPercent: monthlyPercent,
+        boletoMode: method === "boleto" ? forma : null,
+      });
       if (r.ok) {
         toast.success(
           outcome.needsAuthorization
-            ? "Renegociação enviada para autorização do Gerente."
-            : "Renegociação aplicada — as cobranças novas já estão na ficha."
+            ? "Renegociação enviada para autorização do Gerente. Depois dela, envie o termo para o cliente assinar."
+            : "Renegociação salva. Agora envie o termo para o cliente assinar: até lá, nada muda nas parcelas antigas."
         );
         onOpenChange(false);
         setEntries(null);
@@ -265,16 +278,51 @@ export function RenegotiationDialog({
                 onChange={(e) => setMethod(e.target.value)}
                 className="mt-0.5 h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
               >
+                {/* 4017 (19.28.6): os meios da venda direta nova. */}
                 <option value="boleto">Boleto</option>
                 <option value="pix">PIX</option>
-                <option value="credito_recorrente">
-                  Recorrência no cartão
-                </option>
-                <option value="cartao_parcelado">Cartão parcelado</option>
-                <option value="deposito_avista">Depósito</option>
+                <option value="cartao">Cartão à vista</option>
+                <option value="cartao_parcelado_asaas">Cartão parcelado (Asaas)</option>
+                <option value="dinheiro">Dinheiro</option>
+                {isManager && <option value="permuta">Permuta</option>}
+                {maquininhaLigada && <option value="cartao_parcelado">Cartão parcelado (maquininha)</option>}
               </select>
             </div>
           </div>
+
+          {method === "permuta" && (
+            <div>
+              <Label className="text-[11px]">O que é a permuta (obrigatório)</Label>
+              <Input
+                className="h-9 text-sm"
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Ex.: serviço de marcenaria na recepção"
+              />
+            </div>
+          )}
+
+          {method === "boleto" && (
+            <div className="space-y-1 rounded-lg border p-2 text-xs">
+              <p className="font-semibold">Forma dos boletos</p>
+              {(
+                [
+                  [null, "A da venda de origem"],
+                  ["mensal", "Um boleto por mês"],
+                  ["todos", "Todos os boletos agora"],
+                ] as const
+              ).map(([v, label]) => (
+                <label key={label} className="mr-3 inline-flex items-center gap-1">
+                  <input type="radio" checked={forma === v} onChange={() => setForma(v)} className="accent-primary" />
+                  {label}
+                </label>
+              ))}
+              <p className="text-[11px] text-muted-foreground">
+                Os boletos novos nascem quando o cliente assinar o termo. Em &quot;Todos os boletos agora&quot;, eles aparecem
+                no mesmo link da lista da venda.
+              </p>
+            </div>
+          )}
 
           {financed.interestCents > 0 && (
             <p className="rounded-lg border border-border bg-muted/30 p-2 text-xs">
@@ -316,6 +364,12 @@ export function RenegotiationDialog({
                 <span>+ {formatBRL(-outcome.discountCents)}</span>
               </p>
             )}
+            {outcome.discountCents > 0 && (
+              <p className="text-[11px] font-normal text-muted-foreground">
+                O desconto abate, nesta ordem: juros {formatBRL(divisao.juros)} · multa {formatBRL(divisao.multa)} ·
+                benefício {formatBRL(divisao.beneficio)} · principal {formatBRL(divisao.principal)}
+              </p>
+            )}
             {maxDiscountPercent !== null && (
               <p className="text-[11px] font-normal text-muted-foreground">
                 Teto de desconto da unidade: {maxDiscountPercent}%
@@ -328,8 +382,8 @@ export function RenegotiationDialog({
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
               <span>
                 Este desconto precisa de <strong>autorização do Gerente</strong>{" "}
-                da unidade. A renegociação fica registrada e as cobranças só
-                mudam quando ele aprovar.
+                da unidade. A renegociação fica registrada e, só depois de ele
+                aprovar, o termo vai para o cliente assinar.
               </span>
             </p>
           )}
@@ -346,6 +400,11 @@ export function RenegotiationDialog({
             />
           </div>
 
+          <p className="rounded-lg border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+            Salvar não muda as parcelas de hoje. O acordo só vale quando o cliente assinar o termo (até 5 dias, nunca
+            depois do 1º vencimento novo). {FRASE_DA_ESPERA}
+          </p>
+
           {errors.length > 0 && (
             <ul className="space-y-0.5 rounded-lg border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
               {errors.map((e) => (
@@ -360,11 +419,11 @@ export function RenegotiationDialog({
             Cancelar
           </Button>
           <Button
-            disabled={isPending || errors.length > 0 || needsReason}
+            disabled={isPending || errors.length > 0 || needsReason || needsDescricao}
             onClick={save}
           >
             <Check className="mr-1 size-4" />
-            {outcome.needsAuthorization ? "Enviar para autorização" : "Renegociar"}
+            {outcome.needsAuthorization ? "Enviar para autorização" : "Salvar o acordo"}
           </Button>
         </DialogFooter>
       </DialogContent>

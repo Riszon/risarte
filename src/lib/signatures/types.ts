@@ -93,7 +93,9 @@ export type PackageOriginType =
   | "treatment_plan"
   | "company"
   | "company_document"
-  | "commercial_lead";
+  | "commercial_lead"
+  /** 4017: o termo de renegociação (o documento sai do código, sem modelo). */
+  | "payment_renegotiation";
 
 /** Uma pessoa do sistema que pode assinar pela Risarte ou como testemunha. */
 export type StaffSignerOption = {

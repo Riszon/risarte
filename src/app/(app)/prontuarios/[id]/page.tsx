@@ -599,6 +599,14 @@ export default async function ClientDetailPage(
     isFinanceStaff || financeRoles.includes("unit_manager");
   const canAuthorizeRenegotiation =
     session.isAdminMaster || financeRoles.includes("unit_manager");
+  // 4017 (19.28.10 ponto 3): a maquininha fica na renegociação enquanto a chave
+  // da rede "maquininha na venda direta" estiver ligada.
+  const { data: metodosDaRede } = await supabase
+    .from("sale_method_settings")
+    .select("card_machine_direct_sale")
+    .eq("id", true)
+    .maybeSingle();
+  const maquininhaLigada = metodosDaRede?.card_machine_direct_sale ?? false;
   const receivables = canSeeReceivables
     ? await loadClientReceivables(client.id, client.clinic_id)
     : {
@@ -3793,6 +3801,8 @@ export default async function ClientDetailPage(
               canReverse={canReverseReceipt}
               canRenegotiate={canRenegotiate}
               canAuthorize={canAuthorizeRenegotiation}
+              maquininhaLigada={maquininhaLigada}
+              userId={session.userId}
               contas={contasDoDinheiro}
               clinicIdPadrao={client.clinic_id}
               charges={receivables.charges}

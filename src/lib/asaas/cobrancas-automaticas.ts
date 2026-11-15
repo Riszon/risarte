@@ -30,6 +30,8 @@ export async function criarCobrancasAutomaticas(opts: {
   clinicId?: string | null;
   negotiationId?: string | null;
   directSaleId?: string | null;
+  /** 4017: o acordo de renegociação assinado. */
+  renegotiationId?: string | null;
   /** Origem gravada na cobrança quando a chamada é de uma parcela específica (o restante do dinheiro). */
   origemDaCobranca?: "restante";
   limite?: number;
@@ -43,6 +45,7 @@ export async function criarCobrancasAutomaticas(opts: {
     p_negotiation_id: opts.negotiationId ?? null,
     p_direct_sale_id: opts.directSaleId ?? null,
     p_limit: opts.limite ?? 300,
+    p_renegotiation_id: opts.renegotiationId ?? null,
   });
   if (error) {
     const semMigracao = /does not exist|schema cache/i.test(error.message);
@@ -130,9 +133,10 @@ export async function criarCobrancasAutomaticas(opts: {
       p_negotiation_id: opts.negotiationId ?? null,
       p_direct_sale_id: opts.directSaleId ?? null,
       p_limit: 100,
+      p_renegotiation_id: opts.renegotiationId ?? null,
     });
     if (eb && !/does not exist|schema cache/i.test(eb.message)) console.error("card blocks list failed:", eb.message);
-    for (const b of (blocos ?? []) as { clinic_id: string; negotiation_id: string | null; direct_sale_id: string | null; parcelas: number; origem: string }[]) {
+    for (const b of (blocos ?? []) as { clinic_id: string; negotiation_id: string | null; direct_sale_id: string | null; renegotiation_id?: string | null; parcelas: number; origem: string }[]) {
       const folga = await folgaDa(b.clinic_id);
       if (folga < b.parcelas) {
         resumo.puladas += b.parcelas;
@@ -143,6 +147,7 @@ export async function criarCobrancasAutomaticas(opts: {
         p_negotiation_id: b.negotiation_id,
         p_direct_sale_id: b.direct_sale_id,
         p_origin: origemDaCobranca(opts.origem, b.origem),
+        p_renegotiation_id: b.renegotiation_id ?? null,
       });
       if (prep.error || typeof prep.data !== "string") {
         const m = prep.error?.message ?? "";

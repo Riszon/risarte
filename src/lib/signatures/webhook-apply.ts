@@ -68,6 +68,12 @@ export async function aplicarWebhook(
     // aviso repetido da ZapSign não marca de novo). Nunca derruba o 200.
     if (!deps.admin) await cobrarNaAssinatura(admin, r.package_id);
   }
+  // 4017: o termo de renegociação — assinado aplica o acordo; recusado, cancelado
+  // ou vencido encerra o acordo (a rotina diária refaz o que o reprocesso pular).
+  if (!deps.admin && (r.newly_signed || r.changed)) {
+    const { reagirAoTermo } = await import("@/lib/asaas/renegociacao");
+    await reagirAoTermo(r.package_id, r.status, !!r.newly_signed);
+  }
   return out;
 }
 

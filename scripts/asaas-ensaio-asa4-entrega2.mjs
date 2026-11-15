@@ -85,6 +85,9 @@ try {
     await c.query("rollback to savepoint dup");
     conf(`a 4013 roda duas vezes sem erro (${e.message})`, false);
   }
+  // As migrações seguintes redefinem parte desta: o ensaio roda por cima delas,
+  // como o banco está de verdade (rodar só esta de novo deixaria as funções antigas).
+  for (const depois of ["4014_asa4_parcelado_devolucao_contestacao_e_avisos.sql", "4015_asa4_forma2_todos_os_boletos_agora.sql", "4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql", "4017_asa4_renegociacao_assinada.sql"]) await c.query(readFileSync(`supabase/migrations/${depois}`, "utf8"));
   if (QUEBRAR === "bloco") {
     await c.query("create or replace function public._card_block_check(p_negotiation_id uuid, p_direct_sale_id uuid) returns void language plpgsql stable security definer set search_path = '' as $$ begin return; end; $$");
     console.log("   (QUEBRADO de propósito: o bloco não é conferido)");

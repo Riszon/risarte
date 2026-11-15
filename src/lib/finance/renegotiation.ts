@@ -8,6 +8,12 @@ export const RENEGOTIATION_STATUSES = [
   "aplicada",
   "aguardando_autorizacao",
   "recusada",
+  "cancelada",
+  // 4017: o termo pela ZapSign
+  "aguardando_assinatura",
+  "nao_assinada",
+  "expirada",
+  "cancelada_pagamento",
 ] as const;
 export type RenegotiationStatus = (typeof RENEGOTIATION_STATUSES)[number];
 
@@ -15,6 +21,11 @@ export const RENEGOTIATION_STATUS_LABELS: Record<RenegotiationStatus, string> = 
   aplicada: "Aplicada",
   aguardando_autorizacao: "Aguardando autorização",
   recusada: "Recusada",
+  cancelada: "Cancelada",
+  aguardando_assinatura: "Aguardando assinatura",
+  nao_assinada: "Não assinada",
+  expirada: "Expirada",
+  cancelada_pagamento: "Cancelada pelo pagamento",
 };
 
 /**

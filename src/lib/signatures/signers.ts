@@ -57,6 +57,11 @@ export function montarSignatarios(input: {
   witnesses: StaffSignerOption[];
   /** O representante escolhido para cada modelo (índice = o do modelo); nulo = não resolvido. */
   representatives: (StaffSignerOption | null)[];
+  /**
+   * 4017: o RESPONSÁVEL FINANCEIRO (`client_guardians.is_financial`) assina no
+   * lugar do paciente, mesmo adulto — o termo de renegociação é de quem paga.
+   */
+  pagador?: GuardianForSigning | null;
 }): SignersResult {
   const blockers: string[] = [];
   const signers: SignerDraft[] = [];
@@ -67,9 +72,9 @@ export function montarSignatarios(input: {
     blockers.push("O paciente não tem data de nascimento cadastrada: sem ela não dá para saber quem assina.");
   }
   const menor = ehMenorDeIdade(input.client.birthDate ?? "", input.todayIso);
-  if (menor) {
+  if (menor || input.pagador) {
     clientSide = "legal_guardian";
-    const g = input.guardians[0];
+    const g = input.pagador ?? input.guardians[0];
     if (!g) {
       blockers.push("O paciente é menor de idade e não tem responsável legal cadastrado.");
     } else {
@@ -83,7 +88,7 @@ export function montarSignatarios(input: {
         phone: g.phone,
         user_id: null,
         staff_member_id: null,
-        qualification: QUALIFICACAO.legal_guardian,
+        qualification: input.pagador ? "Responsável financeiro" : QUALIFICACAO.legal_guardian,
       });
     }
   } else {

@@ -64,7 +64,8 @@ describe("boleto que deixa de valer (19.26.1)", () => {
     expect(SQL).toContain("'Operação interrompida: boleto cancelado sem a mudança'");
   });
   it("as cinco operações passam pelo cancelamento na mesma operação", () => {
-    expect(BAIXA).toContain('operacao: "renegociação"');
+    // 4017: a renegociação cancela os boletos na ASSINATURA (src/lib/asaas/renegociacao.ts).
+    expect(readFileSync("src/lib/asaas/renegociacao.ts", "utf8")).toContain('operacao: "renegociação"');
     expect(BAIXA).toContain('quitaMenor ? "quitação por valor menor"');
     expect(CANCEL).toContain('operacao: "cancelamento do plano"');
     expect(PARC).toContain('operacao: "alteração do parcelamento"');

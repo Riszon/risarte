@@ -62,6 +62,36 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.454.0",
+    data: "2026-11-15",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4017, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Renegociação assinada pela ZapSign",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A renegociação agora vale só depois que o cliente assina o termo pela ZapSign. Salvar não muda nada nas parcelas de hoje: os boletos atuais continuam valendo até a assinatura. Assinado, os boletos antigos são cancelados e as parcelas novas nascem com cobrança automática.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.14. Renegociação assinada pela ZapSign",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O termo tem prazo de até 5 dias, nunca depois do primeiro vencimento novo. Vencido, o acordo expira sozinho; pagamento numa parcela antiga antes de assinar cancela o acordo, com aviso para refazer. Cobrança emitida fora do riSZon precisa da confirmação do Gerente de que foi cancelada no painel do Asaas.",
+        papeis: ["unit_manager", "finance_franchisor", "receptionist"],
+        manual: "13g.14. Renegociação assinada pela ZapSign",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na renegociação, os meios são os da venda direta nova (Pix, boleto, cartão, cartão parcelado pelo Asaas, dinheiro e permuta), e o desconto mostra o que abate: juros, multa, benefício e principal. Só entra parcela de venda fechada.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.14. Renegociação assinada pela ZapSign",
+      },
+    ],
+  },
+  {
     versao: "0.453.1",
     data: "2026-11-15",
     // Sem migração do CORE: a desta correção é da integração Asaas (4015a, ASAAS_MIGRATION).
