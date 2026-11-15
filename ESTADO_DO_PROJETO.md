@@ -4,6 +4,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 
 > ## 💳 0.449.0 — ASA4, ENTREGA 1: VENDA DIRETA PELO ASAAS, DINHEIRO NO CAIXA E A COBRANÇA QUE NASCE SOZINHA (14/11/2026; Asaas 0.10.0, migrações 4011 e 4012)
 >
+> **Na produção em 14/11/2026:** o dono rodou a 4011 e depois a 4012 no SQL Editor (conferências certas: 11 e 10 funções, vigia e rotina do dinheiro parado agendados, pasta `depositos` privada, nenhuma unidade ligada, sem pg_net). `main` em 415508ae; produção mostrando 0.449.0; conferido de fora: funções respondem, anônimo barrado, rota das cobranças recusa sem senha.
+>
 > Spec `docs/integracao-asaas.md` 19.11 a 19.18; estado em `docs/asaas/ESTADO.md`.
 >
 > - **4011:**
