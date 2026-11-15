@@ -65,7 +65,14 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   histórico como "desfeito"). Achado na tela e corrigido: as parcelas eram
 >   numeradas contando a entrada ("parcela 2/5"). **Não visto na tela:**
 >   aprovação, quebra, restabelecimento e checklist (só no ensaio).
-> - ⏳ **0408 não aplicada na produção.** O dono roda.
+> - ✅ **0408 aplicada nos dois bancos** (produção pelo dono em 15/11/2026,
+>   `audit_attach_all` = 3; conferido de fora: as quatro tabelas novas
+>   respondem vazias, a coluna `payables.debt_agreement_id` existe, a
+>   permissão `acao.dividas.renegociar` está nos padrões e na matriz; sem
+>   login as 7 portas e as internas `_debt_positions`/`_debt_agreements_daily`
+>   recusam (42501; a de controle, inexistente, responde "não encontrada"); a
+>   chave de serviço, que não é pessoa, para em "sem permissão" e lê
+>   `debt_positions` vazio).
 
 > ## 💳 0.452.0 — ASA4, ENTREGA 1B: TODOS OS BOLETOS AGORA (15/11/2026; Asaas 0.13.0, migração 4015)
 >
