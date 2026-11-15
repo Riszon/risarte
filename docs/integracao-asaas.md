@@ -3273,3 +3273,109 @@ Fica fora da 1B. O teste do PDF do boleto sem login entrou na lista da homologa�
   - o envio real do termo pela ZapSign (só com o "pode" do Jeferson, para o e-mail dele);
   - a assinatura pela ZapSign de ponta a ponta;
   - as telas pelo navegador (o roteiro do Jeferson).
+
+### 19.30 A exceção: cancelar venda com acordo de renegociação — PLANO (15/11/2026; migração 4017a; AGUARDA APROVAÇÃO)
+
+**De onde vem:**
+- 19.28.12 A.3 e 19.28.14 3a, aprovados pelo Jeferson, para a entrega logo depois da 4017, antes das demais.
+- Até o distrato (4020), a 4015a recusa o cancelamento da venda que tem parcelas num acordo que ainda não vale ou que ainda tem parcela em aberto. Esta entrega dá o caminho para os dois casos.
+- **Numeração:** `4017a`, como a `4015a`, para não mexer na numeração aprovada (mensalidades 4018, reemissão 4019, distrato 4020).
+
+#### 19.30.1 O que a tela mostra quando o cancelamento é recusado
+
+- Hoje a tela diz o código do acordo e a quem recorrer (4015a).
+- **Na 4017a:** a tela lista os acordos da venda, com:
+  - o código;
+  - a situação: aguardando autorização, aguardando assinatura ou assinado;
+  - quanto está em aberto e quanto o cliente já pagou nele;
+  - se o acordo juntou outras vendas.
+- A porta nova é `sale_agreements_read`, só leitura, para quem pode cancelar a venda.
+- Cada acordo vem com o caminho dele:
+
+| O acordo | O caminho |
+|---|---|
+| **Ainda não vale** (aguardando autorização ou assinatura) | Botão **"Cancelar o acordo pendente"** (a porta da 4017, com o motivo). Pode quem pode renegociar ou quem negociou. Depois, o cancelamento da venda segue normal. Não precisa da franqueadora. |
+| **Assinado, com parcela em aberto, só desta venda** | Botão **"Pedir exceção ao Financeiro"**, com o motivo. |
+| **Assinado, juntando outras vendas** | Não há exceção. A tela diz: "Este acordo junta parcelas de outras vendas. O cancelamento fica para o distrato." |
+
+#### 19.30.2 O pedido e a autorização
+
+- **Pedir:** o Gerente da unidade ou o Admin Master, os mesmos que cancelam o plano hoje.
+  - Na venda direta não fechada, também a Recepção, que hoje cancela a venda direta.
+  - O pedido vai para a tabela nova `sale_cancel_exceptions`, com a venda, os acordos, o motivo, quem pediu e quando.
+  - Aviso ao Financeiro da Franqueadora e ao Admin Master.
+- **Autorizar ou negar:** só o Financeiro da Franqueadora ou o Admin Master, com a nota (`sale_cancel_exception_decide`).
+  - Quem pediu não autoriza o próprio pedido, nem sendo Admin.
+  - A decisão volta como aviso para quem pediu.
+- **A autorização vale uma vez e por 7 dias.** Se o acordo mudar nesse meio-tempo (uma parcela paga, outro acordo), ela cai, e é preciso pedir de novo.
+- **Tudo na auditoria:** pedido, decisão, uso, os acordos, as parcelas canceladas e o pago no acordo que entrou no acerto.
+
+#### 19.30.3 O cancelamento com a exceção autorizada
+
+**No plano (termo de cancelamento):**
+1. **Abrir o termo** (`open_plan_cancellation`): com a exceção autorizada, o acerto passa a contar como "pago" o que o cliente pagou nas parcelas da venda **mais** o que pagou nas parcelas do acordo, seguindo a cadeia.
+   - Se o cliente deve, o acerto já desconta o que ele pagou no acordo.
+   - Se a unidade devolve, a devolução já inclui o que ele pagou no acordo.
+   - O termo mostra a linha "pago no acordo RN-…".
+2. **Efetivar** (`apply_plan_cancellation`), na mesma operação:
+   - as parcelas do acordo **em aberto** são canceladas;
+   - os boletos vivos delas são cancelados no Asaas antes, pelo caminho da 4015 (com a confirmação na tela e a operação interrompida, se falhar no meio);
+   - o acordo fica **encerrado pelo cancelamento da venda**, com a data e quem fez;
+   - a exceção fica marcada como usada.
+3. As parcelas do acordo **já pagas** ficam como estão: são dinheiro recebido e entram no acerto (item 1).
+
+**Na venda direta não fechada** (`cancel_direct_sale`): ela não tem termo nem acerto.
+- **Recomendação:** a exceção só vale se o cliente **não pagou nada** no acordo. Então as parcelas do acordo em aberto são canceladas junto com as da venda, e acabou.
+- Se ele já pagou alguma parcela do acordo, não há acerto na venda direta para devolver ou cobrar. O caso fica para o distrato, e a tela diz isso.
+
+**A taxa da rede** sobre o que o cliente pagou no acordo continua devida (19.28.14, 3a). O cancelamento não estorna pagamento, e a devolução vira conta a pagar, como na regra D13.
+
+#### 19.30.4 O que a 4017a faz
+
+1. Tabela `sale_cancel_exceptions`: pedida, autorizada, negada, usada ou vencida.
+2. As portas novas:
+   - `sale_agreements_read`;
+   - `sale_cancel_exception_request`;
+   - `sale_cancel_exception_decide`;
+   - e a regra "autorização válida para esta venda" (`_sale_cancel_exception_valid`).
+3. **A trava da 4015a:** passa a deixar seguir quando há exceção autorizada e válida. Nesse caso só sobra acordo assinado, de uma venda só. Acordo pendente nunca passa: ele precisa ser cancelado antes.
+4. **`open_plan_cancellation`:** soma o pago no acordo quando há exceção, e grava `agreement_paid_cents` no termo.
+5. **`apply_plan_cancellation` e `cancel_direct_sale`:** cancelam as parcelas em aberto do acordo, encerram o acordo e marcam a exceção como usada.
+6. **A tela:**
+   - a lista dos acordos no cancelamento recusado, com os botões;
+   - a fila "Pedidos de exceção" para o Financeiro e o Admin Master, na tela de Cobranças automáticas do Financeiro;
+   - o termo com a linha do pago no acordo.
+
+#### 19.30.5 Provas
+
+**Ensaio no treino, provado quebrando:**
+1. acordo pendente: cancelar o acordo e depois a venda;
+2. acordo assinado, de uma venda: pedir, autorizar, abrir o termo com o pago no acordo e efetivar. As parcelas abertas do acordo são canceladas, e o acordo fica encerrado;
+3. acordo de várias vendas: a exceção é recusada;
+4. quem pediu não autoriza; a Recepção e o Gerente não autorizam;
+5. a autorização vence em 7 dias e vale uma vez;
+6. o acordo mudou depois da autorização: ela cai;
+7. venda direta com pago no acordo: recusada;
+8. a taxa já cobrada fica intocada.
+
+**Modos de quebra:**
+- `--quebrar=pago`: o acerto deixa de contar o pago no acordo;
+- `--quebrar=autoriza`: qualquer um autoriza;
+- `--quebrar=abertas`: as parcelas do acordo não são canceladas.
+
+Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em carência.
+
+#### 19.30.6 Decisões para o Jeferson
+
+1. **Prazo da autorização:**
+   - (a) 7 dias, uso único (recomendado);
+   - (b) sem prazo, uso único.
+2. **Venda direta com pago no acordo:**
+   - (a) fica para o distrato (recomendado);
+   - (b) a 4017a cria uma conta a pagar de devolução do que ele pagou no acordo.
+3. **Quem pede a exceção na venda direta:**
+   - (a) os mesmos que cancelam hoje: Recepção, Gerente e Admin (recomendado);
+   - (b) só o Gerente ou o Admin.
+4. **Onde fica a fila de pedidos:**
+   - (a) em Financeiro › Cobranças automáticas, junto das operações interrompidas, com aviso a cada pedido (recomendado);
+   - (b) numa tela própria.
