@@ -38,6 +38,9 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   `creditCard` faria o cartão passar pelo servidor do riSZon, o que é proibido.
 - **ASA7:** decidir a lista de IPs autorizados (IP fixo da Vercel: US$ 100/mês
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
+  **Na homologação (ASA7), provar também:** a recusa do cartão **pelo banco emissor**
+  no cartão parcelado (o sandbox só recusa por dado inválido ou cartão vencido; 19.19.7
+  item 4): o paciente tenta de novo no mesmo link, sem parcelamento novo.
 - **ASA8:** a nota do paciente no primeiro de `PAYMENT_CONFIRMED` /
   `PAYMENT_RECEIVED` é proposta, a validar com o contador.
 

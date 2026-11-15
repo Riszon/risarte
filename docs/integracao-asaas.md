@@ -1888,7 +1888,7 @@ Esta seção substitui "Onde paga: Asaas / Balcão" (19.10 item 1).
   - É o comportamento da emissão de sempre (ASA1), não da 4012.
   - **Proposta para depois:** a rotina de 10 minutos tenta buscar de novo o QR Code que faltou.
 
-### 19.19 Entrega 2 — cartão parcelado pelo Asaas: PLANO REVISADO (14/11/2026; aprovado com os ajustes A a E; revisão para aprovar antes de codificar)
+### 19.19 Entrega 2 — cartão parcelado pelo Asaas: PLANO REVISADO (14/11/2026; APROVADO pelo Jeferson com ressalvas — 19.20)
 
 **Aprovado pelo Jeferson (14/11/2026):**
 - a prova com envio real, só para o e-mail dele, sem celular, num 3×, com aviso antes e o "pode" na hora (19.19.8);
@@ -2159,3 +2159,84 @@ Na construção, eu tento a antecipação no sandbox (simulação e pedido). Se 
 2. **Estorno inteiro:** a taxa continua devida sobre o **valor confirmado inteiro** (no exemplo, R$ 510,00), ou só sobre as parcelas **já creditadas** (R$ 170,00)?
 3. **Link vencido:** sem cancelamento automático, só avisos, e o Gerente decide?
 4. **O "pode" da prova com envio real (19.19.8):** de 2 a 6 e-mails para você, e nada no celular.
+
+### 19.20 APROVAÇÃO do plano revisado da entrega 2 (Jeferson, 14/11/2026)
+
+Aprovado o plano da 19.19, com as respostas **1a, 2a, 3a e 4a**. As ressalvas abaixo **valem por cima** da 19.19.
+
+**1a. Desistência até a entrega 6: a unidade devolve por Pix e registra.**
+- **Autorização:** só com a do Financeiro da Franqueadora ou do Admin Master.
+- **Anexo obrigatório:** o registro exige o **distrato ou termo de devolução assinado**. Sem o anexo, a devolução não é registrada.
+- **Aviso na tela:** o paciente pode contestar a compra no cartão depois de receber o Pix.
+- **O cartão:** as parcelas continuam pagas, e a taxa da rede continua devida.
+
+**2a. Estorno inteiro: a taxa continua devida sobre o valor confirmado inteiro.**
+- Segue a regra travada.
+- **Dispensa:** só o Financeiro da Franqueadora ou o Admin Master, à mão, com motivo.
+- **Antes de confirmar, a tela do pedido de estorno mostra o que a unidade perde:**
+  - o valor devolvido;
+  - a tarifa do Asaas que não volta;
+  - a taxa da rede que continua devida.
+
+**3a. Link vencido: só avisos, e o Gerente decide.**
+- **O aviso se repete a cada 7 dias** enquanto o link estiver aberto, para quem fechou a venda e para o Gerente.
+- **A rotina diária do split cobre o parcelamento em aberto** (confirmado no sandbox, abaixo):
+  - hoje, a virada do dia (`/api/cron/gateway-split-diario`, `_gateway_split_enqueue_daily` da 4009) põe na fila as cobranças cujo split muda no dia (campanha que começa ou acaba, fim de promoção de tarifa);
+  - a fila (`rodarFilaDoSplit` em `src/lib/asaas/split-servidor.ts`) aplica parcela a parcela, por `PUT /payments/{id}`;
+  - **A 4013 estende:** o parcelamento em aberto entra na fila **uma vez** (não por parcela) e é aplicado pela porta do parcelamento inteiro, `PUT /installments/{id}/splits`. Isso também vale para a tarifa que muda na Central (nova leitura de `/myAccount/fees`).
+- **A tarifa usada em todas as parcelas é a do dia da aprovação do cartão:**
+  - o Asaas calcula a tarifa do parcelamento inteiro na aprovação, e o líquido das parcelas sai dela;
+  - na aprovação (`PAYMENT_CONFIRMED`), o riSZon lê o líquido de cada parcela e confere com a tarifa vigente naquele dia;
+  - se o split enviado foi calculado com outra tarifa, o riSZon corrige o split do parcelamento inteiro (`PUT /installments/{id}/splits`). O sandbox aceitou essa troca **depois** do cartão aprovado.
+  - **Exceção:** a parcela já antecipada, porque o Asaas não deixa mudar o split depois da antecipação. Aí vale a regra da antecipação, abaixo.
+
+**Prova no sandbox da troca do split** (`scripts/asaas-prova-split-parcelamento-aberto-sandbox.mjs`; pagador sem contato, nada enviado; estornado e apagado):
+
+| Passo | Resultado |
+|---|---|
+| Parcelamento 3× R$ 300 sem cartão, split 17,6147% + R$ 0,02 (tarifa cheia) | as 3 parcelas com esse split; repasse calculado R$ 17,16 (acima dos 17%: o líquido já era o da promoção) |
+| `PUT /installments/{id}/splits` com 17,4341% + R$ 0,02 (promoção) | aceito; **as 3 parcelas** mudaram; repasse R$ 16,99 cada |
+| `PUT /payments/{id}` só na 3ª parcela | aceito; só a 3ª mudou |
+| Cartão aprovado | o split que valeu em cada parcela foi o último enviado |
+| `PUT /installments/{id}/splits` depois de aprovado | aceito |
+
+O líquido mostrado antes do pagamento (R$ 97,35) já era o da tarifa vigente, e ficou o mesmo depois da aprovação. O fim da promoção entre a criação e a aprovação não dá para provar no sandbox. Por isso, a conferência é feita na aprovação, como acima.
+
+**4a. Prova com envio real:** autorizada. O resultado está na 19.21.
+
+**Antecipação (aprovada):**
+- A diferença vira **"a cobrar da unidade"**. É a **única exceção** à regra de a taxa sair sempre do split.
+- **Aviso na Central,** na unidade com antecipação ligada: o que muda (a franqueadora recebe menos no split, e a diferença vira conta a pagar) e **quanto custa a mais**, com um exemplo pela taxa de antecipação da conta.
+- Continuo tentando provar no sandbox **quando** o split da parcela antecipada sai.
+
+**Pendências registradas:**
+- Recusa do cartão **pelo banco**: não provada no sandbox. Entrou na lista da homologação (ASA7) em `docs/asaas/ESTADO.md`.
+- As perguntas ao Asaas estão numa lista só, em 19.22.
+
+### 19.21 Prova com envio real do cartão parcelado (14/11/2026, com o "pode" do Jeferson)
+
+**Script:** `scripts/asaas-prova-envio-parcelado-sandbox.mjs`.
+- **O ensaio antes,** sem criar cobrança nem enviar nada: o cadastro sem celular nem telefone, e só "cobrança criada" e "pagamento" ligados, só por e-mail ao pagador. Nenhum aviso para a conta.
+- **O disparo,** às **22:42:39** de Brasília, na conta de teste de Londrina:
+  - um pagador com só o e-mail do Jeferson;
+  - um parcelamento **3× de R$ 15,00** criado sem cartão, como o do link da fatura;
+  - pago pela API às **22:43:06**, com o cartão de teste do Asaas. O e-mail do titular do cartão é `@example.com`.
+
+**Medido:**
+- **As 3 parcelas,** de R$ 5,00, ficaram confirmadas na hora. O líquido de cada uma foi de R$ 4,72, **igual à regra da 19.19.2 sem mensageria** (R$ 0,12 + R$ 0,16 de tarifa).
+- **Os lançamentos da conta** (`GET /financialTransactions`, novembro inteiro, 56 lançamentos) **não têm nenhuma tarifa de mensageria**: nem desta prova, nem da prova de envio da 19.16. Os únicos tipos são `PAYMENT_FEE`, `PAYMENT_RECEIVED`, `PAYMENT_REVERSAL`, `REFUND_REQUEST_FEE` e as transferências internas.
+- **Conclusão: o sandbox não cobra mensageria.** Não dá para saber, por ele, se ela sai por parcela ou por parcelamento, nem se entra no líquido do split. Vale a 19.19.3: até a resposta do Asaas (19.22, pergunta 1), o cartão parcelado usa o **cadastro sem avisos**, o link vai uma vez por quem fechou a venda, e o comprovante ao paciente é o do riSZon.
+- **E-mails recebidos pelo Jeferson** ("nova cobrança": 1 ou 3; "pagamento confirmado": 0, 1 ou 3): *a informar pelo Jeferson*.
+
+**Limpeza:** depois da contagem dos e-mails, os avisos do cadastro são desligados antes do estorno, para não sair e-mail de estorno. Depois vêm o estorno do parcelamento e a remoção do cadastro (`--limpar`).
+
+### 19.22 Perguntas ao Asaas (lista única, pronta para enviar)
+
+1. **Mensageria no parcelamento.** No parcelamento no cartão de crédito (`installmentCount`), a tarifa de mensageria (e-mail/SMS, R$ 0,99) é cobrada **uma vez por parcelamento ou em cada parcela**? Ela é descontada do `netValue` da parcela, e por isso entra na base do split, ou sai à parte do saldo da conta? Quando é cobrada: na confirmação do cartão ou no crédito de cada parcela?
+2. **Aviso de criação no parcelamento.** Ao criar um parcelamento no cartão, o aviso "cobrança criada" sai **uma vez** para o parcelamento ou **uma vez por parcela**? E o aviso de pagamento confirmado?
+3. **Split na antecipação.** Numa parcela de cartão parcelado com split, antecipada (automática ou pedida), o split é creditado na carteira de destino **no dia da antecipação ou na data original de crédito**? O `estimatedCreditDate`/`creditDate` da cobrança muda? Qual evento avisa a liquidação do split nesse caso?
+4. **Contestação no parcelamento.** Num parcelamento no cartão, a contestação (chargeback) vem **por parcela ou pelo parcelamento inteiro**?
+5. **Split na contestação.** Se o titular ganha a contestação, o Asaas **reverte o split já creditado** na carteira de destino (como no estorno) ou debita tudo da conta emissora? E nas parcelas ainda não creditadas, o split agendado é cancelado?
+6. **Estorno de parcelamento com parcelas já creditadas.** No `POST /installments/{id}/refund` de um parcelamento com parte das parcelas já creditadas, de qual saldo sai o valor (da conta emissora inteiro, ou proporcional ao que cada carteira recebeu)? O que acontece se a conta emissora não tiver saldo? Há prazo máximo para estornar uma compra no cartão?
+7. **Tentativas no link.** Na fatura de um parcelamento no cartão, depois de uma recusa do banco emissor, o pagador pode tentar de novo no mesmo link? Há limite de tentativas? A recusa gera alguma tarifa?
+8. **Tarifa na aprovação.** A tarifa do cartão parcelado (percentual da faixa + parte fixa rateada) é calculada pela tabela vigente **no dia da aprovação** do cartão, mesmo que a cobrança tenha sido criada antes, durante uma promoção?
