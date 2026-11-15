@@ -2,6 +2,17 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💳 0.453.1 — CORREÇÃO: VENDA COM ACORDO DE RENEGOCIAÇÃO EM ABERTO NÃO É CANCELADA (15/11/2026; Asaas 0.13.1, migração 4015a)
+>
+> Achado no plano da renegociação (19.28.11): o cancelamento do plano deixava as parcelas do acordo em aberto, sendo cobradas, e o acerto ignorava o que o cliente tinha pago nelas, o que podia cobrar em dobro. A 4015a recusa o cancelamento (abrir o termo, efetivar, cancelar venda direta) enquanto a venda tiver parcelas num acordo com parcela nova em aberto, seguindo a cadeia, ou numa renegociação esperando autorização. O erro é `RENEGOTIATED_OPEN: RN-…`, e a tela diz o código e a quem recorrer. Ensaio 13/13, provado quebrando. **Na produção em 15/11/2026:**
+> - o levantamento (só leitura) não achou nenhum caso já cancelado;
+> - a pré-conferência deu 0 travados;
+> - o dono rodou a 4015a, e a conferência vista bateu: 2 funções, 3 gatilhos, 0 planos e 0 termos travados;
+> - `main` em 147a4705, produção mostrando 0.453.1;
+> - conferido de fora: a função nova barra o anônimo (401).
+>
+> A exceção (só o Financeiro da Franqueadora ou o Admin Master, para o acordo de uma venda só) vem na entrega logo depois da 4017. Spec 19.28.11 a 19.28.14; manual 6.6.
+
 > ## 🏦 0.453.0 — LEVANTAMENTO DE DÍVIDAS, FASE 5: RENEGOCIAÇÃO E ENCERRAMENTO (15/11/2026; migração 0408)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (1.3 "Renegociação no razão",
