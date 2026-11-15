@@ -426,7 +426,7 @@ Syncthing se comportarem de forma estranha.**
   ⚠️ Avisos pela rotina `_debt_notices_daily` e o gatilho de protesto/ação,
   sempre pela porta `_debt_notify`; ao recriar `debt_daily_run`, partir da
   0410. ⚠️ Simulador por CNPJ (cada um paga com o próprio caixa).
-- ⏳ 0410 só no treino; o dono roda na produção.
+- ✅ 0410 nos dois bancos (produção pelo dono em 15/11/2026; conferido de fora o que a API mostra).
 
 **15/11/2026 (Levantamento de Dívidas — fase 7) — PC Administrador (core 0.454.1 → 0.455.0, migração 0409)**
 

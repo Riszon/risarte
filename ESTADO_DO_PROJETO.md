@@ -92,7 +92,13 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   (Financeiro de teste): o simulador com as 4 dívidas do treino (ordem certa;
 >   caixa projetado negativo → R$ 0; com R$ 1.500 em Londrina, cabem 2 de 3 e
 >   sobram R$ 250). **Não visto na tela:** os avisos no sino (só no ensaio).
-> - ⏳ **0410 não aplicada na produção.** O dono roda.
+> - ✅ **0410 aplicada nos dois bancos** (produção pelo dono em 15/11/2026,
+>   "Success. No rows returned" — esperado, a 0410 não cria tabela; conferido
+>   de fora: sem login `_debt_notices_daily` e `_debt_setting_int` recusam
+>   (42501; a de controle, inexistente, responde "não encontrada"); a chave de
+>   serviço lê a regra da rede (encerramento parado = 15 dias). Os gatilhos e
+>   o corpo novo da `debt_daily_run` não aparecem pela API: conferência no fim
+>   da 0410, esperado 2 · 2 · true).
 
 > ## 🏦 0.455.0 — LEVANTAMENTO DE DÍVIDAS, FASE 7: SAÚDE FINANCEIRA E VISÕES (15/11/2026; migração 0409)
 >
