@@ -53,6 +53,31 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   com "permission denied", a de controle responde "não encontrada"). O
 >   código subiu antes, no push de outra sessão (sem efeito sem a 1045).
 
+> ## 🏦 0.456.0 — LEVANTAMENTO DE DÍVIDAS, FASE 8: AVISOS E SIMULADOR (15/11/2026; migração 0410)
+>
+> Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (4.4, D12, fase 8). **As 8
+> fases do Levantamento estão entregues.** Avisos da rotina e de protesto/ação
+> novos; categoria **Dívidas da rede** no sino; **Simulador de quitação** na
+> aba Dívidas. Manual 2.3; EV-351.
+> - ⚠️ **Avisos = `_debt_notices_daily`** (chamada pela `debt_daily_run`, recriada
+>   na 0410 a partir da 0408 — ao recriar, partir da 0410) e o gatilho
+>   `debt_restriction_notify` (protesto/ação, crítico; pula o que a importação
+>   cria na mesma transação: dívida com lote e `created_at = now()`). Todos
+>   pela porta `_debt_notify` (uma vez por assunto em `debt_notices`). Regra
+>   por devedor → rede = `_debt_setting_int`.
+> - ⚠️ **Sino:** categoria `dividas` pelo link `/financeiro/dividas`
+>   (`categorizeNotification`); aviso novo das dívidas tem de apontar para lá.
+> - ⚠️ **Simulador = `dividas-simulador.ts`** (puro: `ordemSugerida`,
+>   `simularQuitacao`), por CNPJ; o caixa sugerido vem da ação `caixaProjetado`
+>   (o mesmo `cenarioDeQuitacao` sem pagamento → menor saldo em 30 dias). Só tela.
+> - Ensaio `scripts/dividas-ensaio-0410.mjs --confirmar` 15/15; `--quebrar`
+>   reprova. Réguas `dividas-simulador.test.ts`, `notifications.test.ts`. 0410
+>   no treino (`migrar:teste`). Visto na tela pelo servidor local de teste
+>   (Financeiro de teste): o simulador com as 4 dívidas do treino (ordem certa;
+>   caixa projetado negativo → R$ 0; com R$ 1.500 em Londrina, cabem 2 de 3 e
+>   sobram R$ 250). **Não visto na tela:** os avisos no sino (só no ensaio).
+> - ⏳ **0410 não aplicada na produção.** O dono roda.
+
 > ## 🏦 0.455.0 — LEVANTAMENTO DE DÍVIDAS, FASE 7: SAÚDE FINANCEIRA E VISÕES (15/11/2026; migração 0409)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (1.3 "Visões", 4.6, fase 7).

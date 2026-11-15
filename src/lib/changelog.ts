@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.456.0",
+    data: "2026-11-15",
+    migracao: "0410",
+    titulo: "Levantamento de Dívidas: avisos e simulador de quitação",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Simulador de quitação: marque dívidas na lista e veja quanto custa quitar o conjunto (proposta ou devido, mais custas), a economia e a ordem sugerida para cada CNPJ (prioridade, restrição, maior desconto, proposta que vence antes). Com o valor disponível — ou o caixa projetado dos próximos 30 dias — ele mostra o que cabe. Só um cenário: nada é gravado.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Novos avisos das dívidas no sino (categoria Dívidas da rede): proposta vencendo, parcela do acordo vencendo, dívida que vira inadimplente em breve, encerramento parado, baixa da negativação não confirmada e próxima ação vencida. Novo protesto ou nova ação judicial avisa também o Admin Master.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.455.0",
     data: "2026-11-15",
     migracao: "0409",

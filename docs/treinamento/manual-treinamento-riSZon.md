@@ -895,7 +895,38 @@ verem, o Admin marca **"Ver as dívidas da própria unidade (card)"** em
 Permissões. Cada um vê só a sua unidade, e nunca credor, contato, anexo ou a
 dívida uma a uma. Outros papéis marcados ali continuam sem ver.
 
-*Chegam nas próximas etapas:* os outros avisos e o simulador de quitação.
+**Simulador de quitação** *(desde a 0.456.0)*. Na aba **Dívidas**, marque as
+dívidas (a caixa no começo de cada linha; a do cabeçalho marca todas as que
+aparecem) e clique **Simular quitação**. O simulador mostra quanto custa
+quitar o conjunto (a proposta, quando há, senão o devido — mais as custas de
+cartório), a economia e, **para cada CNPJ**, a **ordem sugerida**:
+prioridade, depois as com restrição (negativada, protestada, judicial), o
+maior desconto e a proposta que vence antes. Informe o **valor disponível**
+de cada CNPJ — ou **Usar o caixa projetado** (o menor saldo previsto para os
+próximos 30 dias, para não deixar o caixa negativo) — e ele marca o que cabe,
+na ordem; o que não cabe é pulado e as seguintes ainda são tentadas. Cada CNPJ
+paga com o próprio caixa. É só um cenário: nada é gravado.
+
+**Os avisos** *(desde a 0.453.0 e a 0.456.0)*. Chegam no sino, na categoria
+**Dívidas da rede**, para o **responsável** da dívida; sem responsável, para
+os **Financeiros da Franqueadora**. O **Admin Master** recebe só os
+críticos. Cada aviso vem **uma vez**.
+
+| Aviso | Quando | Admin Master? |
+|---|---|---|
+| Proposta vencendo | nos dias da regra antes da validade (7 e 2, na rede) | não |
+| Parcela do acordo vencendo | 3 dias antes | não |
+| Parcela do acordo em atraso | no dia seguinte ao vencimento | não |
+| Acordo quebrado | passada a tolerância | **sim** |
+| Acordo aguardando aprovação | ao registrar | **sim** (é quem aprova) |
+| Novo protesto ou nova ação judicial | ao lançar (a importação da planilha não avisa um a um) | **sim** |
+| Vira inadimplente em breve | os dias da regra antes do prazo (5, na rede) | não |
+| Encerramento parado | quitada há mais dias que a regra (15, na rede) e o checklist ainda pendente | não |
+| Baixa da negativação não confirmada | passado o prazo do credor | não |
+| Próxima ação vencida | a data da próxima ação passou | não |
+
+Quem fez a ação não recebe o próprio aviso. Os dias de cada aviso ficam em
+**Configurações** (regra da rede ou do devedor).
 
 ### 2.4. Recebíveis e inadimplência
 

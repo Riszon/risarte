@@ -23,6 +23,7 @@ import {
   SmilePlus,
   FileSignature,
   Bot,
+  Landmark,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,6 +57,7 @@ const CATEGORY_ICON: Record<NotificationCategory, React.ComponentType<{ classNam
   ortodontia: SmilePlus,
   assinaturas: FileSignature,
   rita: Bot,
+  dividas: Landmark,
   outras: Bell,
 };
 
