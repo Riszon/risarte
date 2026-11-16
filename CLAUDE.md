@@ -402,7 +402,7 @@ Syncthing se comportarem de forma estranha.**
 
 **16/11/2026 (relato OC-00181) — PC Administrador (core 0.457.0 → 0.458.0, migração 0411; worktree `wt-oc181`)**
 
-- Bloco 0.457.0 no ESTADO. ⚠️ **Ao recriar `consume_attendance_kit`, levar
+- Bloco 0.458.0 no ESTADO. ⚠️ **Ao recriar `consume_attendance_kit`, levar
   a 0411** (sem kit na apresentação comercial; mês fechado → dia da conclusão).
 - ✅ 0411 (kit) aplicada nos dois bancos (produção pelo dono, 16/11/2026).
 - ⚠️ **DUAS 0411, as duas aplicadas na produção:** `0411_certificacao_dispensa…`
