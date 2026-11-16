@@ -1,9 +1,10 @@
 import { pode, type SessionContext } from "@/lib/auth";
-import type { UserRole } from "@/lib/roles";
 
-function allRoles(session: SessionContext): UserRole[] {
-  return Object.values(session.rolesByClinic).flat();
-}
+// ⚠️ DESDE A 1048 (pedido do dono, 16/11/2026) QUEM PODE O QUÊ NO EMPRESARIAL
+// VEM DA MATRIZ DE PERMISSÕES (Administração → Permissões, grupo "Ações —
+// Empresarial"), e o BANCO pergunta à mesma matriz (`empresarial.pode`).
+// Antes os papéis estavam escritos aqui e nas regras do banco, e não havia
+// como ver nem mudar. O Admin Master passa sempre (`pode` já faz isso).
 
 /**
  * Gere o programa por inteiro (parte comercial, toda a rede): Admin ou
@@ -15,8 +16,7 @@ function allRoles(session: SessionContext): UserRole[] {
  * `canWorkOnCompanies` — o banco limita às dele.
  */
 export function isProgramManager(session: SessionContext): boolean {
-  if (session.isAdminMaster) return true;
-  return allRoles(session).includes("franchisor_staff");
+  return pode(session, "acao.empresarial.gerir");
 }
 
 /**
@@ -38,7 +38,25 @@ export function canWorkOnCompanies(session: SessionContext): boolean {
  */
 export function isProgramFinance(session: SessionContext): boolean {
   if (isProgramManager(session)) return true;
-  return allRoles(session).includes("finance_franchisor");
+  return pode(session, "acao.empresarial.cobrancas");
+}
+
+/**
+ * MEXE NAS CONFIGURAÇÕES DO PROGRAMA (as regras da rede: preços e divisão
+ * padrão, benefícios, vantagens, modelos). Espelha
+ * `empresarial.can_configure_program()` (1048).
+ */
+export function canConfigureProgram(session: SessionContext): boolean {
+  return pode(session, "acao.empresarial.configurar");
+}
+
+/**
+ * CADASTRA TITULARES E DEPENDENTES (incluir, importar, inativar, reativar).
+ * Espelha `empresarial.can_manage_employees()` (1048); o ALCANCE (quais
+ * empresas) continua do banco.
+ */
+export function canManageEmployees(session: SessionContext): boolean {
+  return pode(session, "acao.empresarial.titulares");
 }
 
 /**
@@ -51,7 +69,13 @@ export function canViewEmpresarial(session: SessionContext): boolean {
   return pode(session, "modulo.empresarial");
 }
 
-/** Consultor RisLife "puro" (sem papéis de gestão da rede) — foco no funil/agenda. */
+/**
+ * TRABALHA NA PRÓPRIA CARTEIRA: funil, agenda, propostas, contratos e edição
+ * das empresas e leads de que a pessoa é a responsável (permissão
+ * `acao.empresarial.carteira`; padrão: o Consultor RisLife). O nome ficou o
+ * de antes porque todo uso quer dizer isso; quem decide agora é a matriz.
+ * O banco limita às dela (`is_my_company`, `can_access_lead`).
+ */
 export function isRislifeConsultant(session: SessionContext): boolean {
-  return allRoles(session).includes("rislife_consultant");
+  return pode(session, "acao.empresarial.carteira");
 }

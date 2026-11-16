@@ -74,7 +74,9 @@ describe("as ações de cobrança usam a régua do financeiro", () => {
   });
 
   it("o comercial continua só com o gestor do programa (decisão do dono)", () => {
-    expect(ler("src/app/(app)/empresarial/configuracoes/page.tsx")).toContain("if (!isProgramManager(session)) redirect(\"/empresarial\");");
+    // 1048: as configurações têm permissão própria — que o Financeiro não tem.
+    expect(ler("src/app/(app)/empresarial/configuracoes/page.tsx")).toContain("if (!canConfigureProgram(session)) redirect(\"/empresarial\");");
+    expect(ler("src/app/(app)/empresarial/configuracoes/page.tsx")).not.toMatch(/isProgramFinance/);
     expect(ler("src/app/(app)/empresarial/[companyId]/inclusion-actions.ts")).not.toMatch(/isProgramFinance/);
     expect(ler("src/app/(app)/empresarial/actions.ts")).not.toMatch(/isProgramFinance/);
   });

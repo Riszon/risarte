@@ -7,7 +7,7 @@ import type { SessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatCpf } from "@/lib/masks";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { canWorkOnCompanies } from "@/lib/empresarial/access";
+import { canWorkOnCompanies, canManageEmployees } from "@/lib/empresarial/access";
 import {
   COMPANY_DOCS_BUCKET,
   COMPANY_FILE_TYPES,
@@ -34,12 +34,8 @@ function canManageCompany(session: SessionContext): boolean {
 
 /** Arquivos do titular: programa + equipe da unidade (quem cadastra). */
 function canManageEmployeeFiles(session: SessionContext): boolean {
-  if (canWorkOnCompanies(session)) return true;
-  return Object.values(session.rolesByClinic)
-    .flat()
-    .some((r) =>
-      ["sdr", "receptionist", "unit_manager", "franchisee"].includes(r)
-    );
+  // 1048: a mesma permissão de cadastrar titulares (matriz).
+  return canManageEmployees(session);
 }
 
 // ---- Documentos da empresa --------------------------------------------------

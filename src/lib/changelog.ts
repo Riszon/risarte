@@ -62,6 +62,59 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.461.0",
+    data: "2026-11-16",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4021, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Cobrança mensal da rede às unidades",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cobrança da rede (Financeiro › Rede): todo mês, a prévia das taxas da rede que não passaram pelo split (as fixas e o \"a cobrar\"), linha a linha. A unidade confere ou contesta dentro do prazo; sem contestação, a cobrança segue para a aprovação do Financeiro da Franqueadora e sai pelo Asaas (boleto com Pix), com a unidade como pagadora. O pagamento dá a baixa nas contas de taxa sozinho.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Saldo anterior: as taxas da rede em aberto antes do primeiro mês da cobrança mensal aparecem em separado, e o Financeiro decide, por unidade e com o motivo, incluir, parcelar ou dispensar.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A configuração (Central › Rede › Taxas da franquia, quadro \"Cobrança mensal às unidades\") nasce em branco: multa, juros, vencimento, período, prazo da prévia, o mês incompleto, o e-mail financeiro e o primeiro mês de cada unidade. Sem ela, nada é emitido. A multa e os juros da cobrança à unidade saíram do quadro do split e foram para lá.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+    ],
+  },
+  {
+    versao: "0.460.0",
+    data: "2026-11-16",
+    // Sem migração do CORE: a desta entrega é do Empresarial (1048, EMPRESARIAL_MIGRATION).
+    migracao: null,
+    titulo: "Permissões explicadas e as permissões do Empresarial",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Em Administração → Permissões, cada permissão agora diz o que é, o que a pessoa passa a ver e fazer se estiver LIBERADA e o que some ou é recusado se estiver BLOQUEADA — escrito a partir do que o sistema faz de verdade.",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Empresarial ganhou o grupo “Ações — Empresarial” em Permissões: Gerir o programa (todas as empresas), Trabalhar na própria carteira, Cobranças das empresas, Cadastrar titulares e dependentes e Configurações do programa. Nascem com quem já podia; o que você mudar vale na tela e no banco.",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+    ],
+  },
+  {
     versao: "0.459.1",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4020, ASAAS_MIGRATION).

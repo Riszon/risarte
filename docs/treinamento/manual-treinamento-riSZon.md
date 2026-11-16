@@ -5613,6 +5613,39 @@ na capa dele contra a que aparece no rodapé do menu.
 **Para achar rápido:** a caixa **Procurar permissão** (não precisa de acento),
 o filtro de **grupo** e a opção **Só as diferentes do padrão**.
 
+**O que cada permissão faz.** Todo item diz, em português simples:
+
+- **o que é** (a frase embaixo do nome);
+- **Se liberado** — o que a pessoa passa a ver e fazer (o menu, a tela, os
+  botões, as ações);
+- **Se bloqueado** — o que some ou é recusado.
+
+Na visão **Por função**, abra *"O que muda ao liberar ou bloquear"* embaixo de
+cada item; na visão **Por permissão**, os dois quadros já aparecem no alto.
+
+> **Itens de menu só escondem o atalho.** Vários deles (Jornada, Agenda,
+> Atendimento, Prontuários, Planejamento, Procedimentos, Planos, Comercial,
+> Relatórios, Risartanos) tiram o item do menu, mas a tela em si confere a
+> FUNÇÃO da pessoa, não esta permissão: quem tem o endereço ainda abre. O texto
+> de cada um diz isso.
+
+**As permissões do Empresarial** (grupo *Ações — Empresarial*, desde a
+0.460.0):
+
+| Permissão | Quem tem de fábrica | O que libera |
+|---|---|---|
+| **Gerir o programa (todas as empresas)** | Equipe da Franqueadora | cadastrar e importar empresas, editar qualquer empresa, mudar a situação, o funil de todos e o Painel |
+| **Trabalhar na própria carteira** | Consultor RisLife | funil, propostas, contratos e edição só das empresas e leads de que é o responsável |
+| **Cobranças das empresas** | Equipe e Financeiro da Franqueadora | gerar, dar baixa, cancelar e estornar cobranças e o Acordo de cobrança |
+| **Cadastrar titulares e dependentes** | Equipe da Franqueadora, Consultor RisLife, SDR, Recepção, Gerente, Franqueado | incluir, importar, inativar e reativar titulares e dependentes (nas empresas que a pessoa alcança) |
+| **Configurações do programa** | Equipe da Franqueadora | preços e divisão padrão, benefícios, vantagens e modelos da rede |
+
+Estas valem **por completo**: o banco lê a mesma matriz, então liberar para
+outra função funciona de verdade (por exemplo, dar *Gerir o programa* ao
+Gerente faz ele ver e editar todas as empresas). O que a matriz não muda é o
+**alcance**: quem tem só a carteira continua limitado às empresas e aos leads
+de que é o responsável.
+
 **Como salvar:** marcar **não grava**. Tudo o que você mudou — em qualquer das
 três visões — fica numa **barra no rodapé** ("3 alterações em 2 permissões"),
 com a lista do que muda ("Recepcionista passa a ter Financeiro"). Clique em

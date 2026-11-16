@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { isProgramManager } from "@/lib/empresarial/access";
+import { canConfigureProgram } from "@/lib/empresarial/access";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -54,7 +54,7 @@ export default async function EmpresarialConfigPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) redirect("/empresarial");
+  if (!canConfigureProgram(session)) redirect("/empresarial");
 
   const searchParams = await props.searchParams;
   // Endereço antigo da aba de grupos (favoritos, links do manual) cai na aba

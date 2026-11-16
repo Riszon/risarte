@@ -7,6 +7,7 @@ import { empresarialDb } from "@/lib/empresarial/db";
 import {
   canViewEmpresarial,
   isProgramFinance,
+  canConfigureProgram,
   isProgramManager,
   isRislifeConsultant,
 } from "@/lib/empresarial/access";
@@ -121,6 +122,7 @@ export default async function EmpresarialPage(props: {
   const canManage = isProgramManager(session);
   const podeCobrar = isProgramFinance(session);
   const canFunnel = canManage || isRislifeConsultant(session);
+  const podeConfigurar = canConfigureProgram(session);
 
   const searchParams = await props.searchParams;
   const busca = typeof searchParams.busca === "string" ? searchParams.busca : "";
@@ -271,31 +273,36 @@ export default async function EmpresarialPage(props: {
             </Button>
           )}
           {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={BOTAO_NO_CABECALHO}
+              nativeButton={false}
+              render={<Link href="/empresarial/painel" />}
+            >
+              <BarChart3 className="mr-1 size-4" />
+              Painel
+            </Button>
+          )}
+          {/* 1048: as Configurações têm permissão própria na matriz. */}
+          {podeConfigurar && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={BOTAO_NO_CABECALHO}
+              nativeButton={false}
+              render={<Link href="/empresarial/configuracoes" />}
+            >
+              <Settings className="mr-1 size-4" />
+              Configurações
+            </Button>
+          )}
+          {canManage && (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                className={BOTAO_NO_CABECALHO}
-                nativeButton={false}
-                render={<Link href="/empresarial/painel" />}
-              >
-                <BarChart3 className="mr-1 size-4" />
-                Painel
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className={BOTAO_NO_CABECALHO}
-                nativeButton={false}
-                render={<Link href="/empresarial/configuracoes" />}
-              >
-                <Settings className="mr-1 size-4" />
-                Configurações
-              </Button>
-          <ImportarEmpresasDialog className={BOTAO_NO_CABECALHO} />
-          <CompanyFormDialog consultants={consultants} noCabecalho />
-          </>
-        )}
+              <ImportarEmpresasDialog className={BOTAO_NO_CABECALHO} />
+              <CompanyFormDialog consultants={consultants} noCabecalho />
+            </>
+          )}
       </CabecalhoDeModulo>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

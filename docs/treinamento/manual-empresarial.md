@@ -106,6 +106,23 @@ Cada passo tem a sua seção detalhada mais adiante.
 
 ## 3. Quem faz o quê
 
+> **Desde a 0.108.0 (16/11/2026) isto é configurável.** Cada papel abaixo é
+> uma permissão em **Administração → Permissões**, grupo **Ações —
+> Empresarial**, e cada uma diz ali o que libera e o que bloqueia:
+>
+> | Permissão | Quem tem de fábrica |
+> |---|---|
+> | **Gerir o programa (todas as empresas)** — o "gestor do programa" desta seção | Equipe da Franqueadora |
+> | **Trabalhar na própria carteira** — o que o Consultor RisLife faz | Consultor RisLife |
+> | **Cobranças das empresas** — o Financeiro do programa | Equipe e Financeiro da Franqueadora |
+> | **Cadastrar titulares e dependentes** | Equipe da Franqueadora, Consultor RisLife, SDR, Recepção, Gerente, Franqueado |
+> | **Configurações do programa** (seção 15) | Equipe da Franqueadora |
+>
+> O banco lê a mesma tela: liberar para outra função vale por completo. O que
+> não muda é o **alcance** — quem tem só a carteira continua nas empresas e
+> nos leads de que é o responsável, e levar alguém à unidade continua exigindo
+> uma unidade no alcance. O texto abaixo descreve o padrão de fábrica.
+
 O módulo tem dois níveis de acesso, e a diferença importa.
 
 **Gestor do programa** — vê e faz tudo na parte comercial, em TODAS as

@@ -13,8 +13,7 @@ import {
   canWorkOnCompanies,
   isProgramFinance,
   isProgramManager,
-  isRislifeConsultant,
-} from "@/lib/empresarial/access";
+  isRislifeConsultant, canManageEmployees } from "@/lib/empresarial/access";
 import { VantagensDaEmpresa, type CompromissoView } from "./vantagens-da-empresa";
 import type { Vantagem } from "@/lib/empresarial/vantagens";
 import {
@@ -335,11 +334,8 @@ export default async function CompanyDetailPage(props: {
 
   // Aba Titulares: carrega titulares + dependentes + unidades do seletor.
   const allRoles = Object.values(session.rolesByClinic).flat();
-  const canManageEmp =
-    canWorkOnCompanies(session) ||
-    allRoles.some((r) =>
-      ["sdr", "receptionist", "unit_manager", "franchisee"].includes(r)
-    );
+  // 1048: "Cadastrar titulares e dependentes" vem da matriz.
+  const canManageEmp = canManageEmployees(session);
   // Extrato de benefícios tem dado clínico por pessoa (sessões/pilar): só gestão.
   // O Consultor RisLife abre a MESMA rota e vê o resumo do uso, sem dado
   // clínico (a página decide; o banco só responde para as empresas dele, 1039).

@@ -650,6 +650,56 @@ export const CAPACIDADES: Capability[] = [
     padrao: ["unit_manager", "franchisee"],
   },
 
+  // ---- Empresarial (1048, pedido do dono, 16/11/2026) -------------------------
+  // ⚠️ AQUI O BANCO TAMBÉM LÊ A MATRIZ (como nas assinaturas): as funções do
+  // schema `empresarial` que decidem quem pode (`is_program_manager`,
+  // `is_program_finance`, `is_my_company`, `can_access_lead`,
+  // `can_manage_employees`, `can_configure_program`) perguntam a
+  // `empresarial.pode(capacidade)`. Ligar aqui liga no banco. Os padrões do
+  // banco (`empresarial._padrao_da_permissao`) = estes; a régua compara.
+  // O que NÃO passa pela matriz: o Admin Master (sempre pode) e o ALCANCE —
+  // quem tem "carteira" só alcança as empresas/leads em que é o responsável.
+  {
+    id: "acao.empresarial.gerir",
+    rotulo: "Gerir o programa (todas as empresas)",
+    grupo: "Ações — Empresarial",
+    descricao: "Cadastrar, importar e editar qualquer empresa, mudar a situação e trabalhar no funil de todos.",
+    dependeDoBanco: false,
+    padrao: ["franchisor_staff"],
+  },
+  {
+    id: "acao.empresarial.carteira",
+    rotulo: "Trabalhar na própria carteira",
+    grupo: "Ações — Empresarial",
+    descricao: "Funil, propostas, contratos e edição só das empresas e leads de que a pessoa é a responsável.",
+    dependeDoBanco: false,
+    padrao: ["rislife_consultant"],
+  },
+  {
+    id: "acao.empresarial.cobrancas",
+    rotulo: "Cobranças das empresas",
+    grupo: "Ações — Empresarial",
+    descricao: "Gerar, dar baixa, cancelar e estornar as cobranças das empresas e editar o Acordo de cobrança.",
+    dependeDoBanco: false,
+    padrao: ["franchisor_staff", "finance_franchisor"],
+  },
+  {
+    id: "acao.empresarial.titulares",
+    rotulo: "Cadastrar titulares e dependentes",
+    grupo: "Ações — Empresarial",
+    descricao: "Incluir, importar, editar, inativar e reativar os titulares das empresas e os dependentes.",
+    dependeDoBanco: false,
+    padrao: ["franchisor_staff", "rislife_consultant", "sdr", "receptionist", "unit_manager", "franchisee"],
+  },
+  {
+    id: "acao.empresarial.configurar",
+    rotulo: "Configurações do programa",
+    grupo: "Ações — Empresarial",
+    descricao: "Preços, divisão, benefícios, vantagens e modelos que valem para todas as empresas.",
+    dependeDoBanco: false,
+    padrao: ["franchisor_staff"],
+  },
+
   // ---- assinaturas digitais (ZapSign, 0340) -----------------------------------
   // ⚠️ AQUI O BANCO LÊ A MATRIZ (exceção à 0246, restrita ao módulo — decisão
   // do dono em 31/10/2026). As regras de linha das tabelas `signature_*`

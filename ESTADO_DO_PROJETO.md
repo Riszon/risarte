@@ -2,6 +2,48 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💳 0.461.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+>
+> - **A prévia** do mês que fechou, por unidade: as taxas fixas (proporcionais no mês incompleto) e o "a cobrar" das percentuais, linha a linha, com a origem e o paciente abreviado. Cada linha entra pelo **delta** (o que vale hoje menos o já faturado): nunca duas vezes, e o "a reter" nunca entra.
+> - **A unidade** confere ou contesta; o silêncio leva à aprovação (avisos na abertura e 1 dia útil antes do fim). O Financeiro decide; depois da emissão, a contestação aceita vira **crédito** no mês seguinte (compensação, sem caixa).
+> - **O saldo anterior** (antes do 1º mês) não entra sozinho: o Financeiro inclui, parcela ou dispensa, com motivo. Consulta só de leitura para a produção: `docs/asaas/levantamento-taxas-acumuladas.sql`.
+> - **A emissão** sai pela conta da franqueadora, com a unidade (CNPJ) como pagadora, só por e-mail; a baixa pelo aviso do Asaas paga as contas de taxa da unidade; o caixa da franqueadora vai num lançamento só de caixa; multa e juros no financeiro, sem taxa sobre taxa; a tarifa é da franqueadora. Mês fechado: a dispensa entra no mês aberto, como ajuste.
+> - **A configuração nasce em branco** (Central › Rede › Taxas da franquia); exemplo só no treino e no sandbox, marcado.
+>
+> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-361; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+
+> ## 🔐 0.460.0 / EMPRESARIAL 0.108.0 / 1048 — PERMISSÕES EXPLICADAS E AS DO EMPRESARIAL NA MATRIZ (16/11/2026)
+>
+> Pedido do dono: ver e personalizar quem pode o quê no Empresarial ("hoje não
+> consigo ver quem pode editar as empresas") e TODA permissão com explicação
+> simples do que libera e do que bloqueia.
+> - **Textos:** `src/lib/permissoes-explicacoes.ts` (o que é · se liberado ·
+>   se bloqueado), escritos a partir de onde cada permissão é conferida no
+>   código; a tela `/admin/permissoes` mostra (`ExplicacaoDaPermissao`).
+>   ⚠️ **Permissão nova sem os três textos reprova** (`permissoes-explicacoes.test.ts`).
+> - **Empresarial:** `acao.empresarial.gerir`, `carteira`, `cobrancas`,
+>   `titulares`, `configurar` (grupo "Ações — Empresarial"). App:
+>   `access.ts` pergunta à matriz (`isProgramManager`, `isProgramFinance`,
+>   `canConfigureProgram`, `canManageEmployees`, `isRislifeConsultant` =
+>   carteira). Banco (1048): `empresarial.pode(cap)` (como `signature_can`),
+>   as funções de decisão e as regras de linha que tinham o papel escrito; as
+>   portas definer de titular pedem a permissão; levar à unidade
+>   (`complete_employee`, `link_dependent`) exige unidade no alcance.
+>   ⚠️ Padrões do banco (`_padrao_da_permissao`) = `permissions.ts` (régua
+>   `permissoes-empresarial.test.ts`).
+> - Com a matriz padrão ninguém ganha nem perde nada (ensaio papel por papel;
+>   única diferença: a MARCA de titulares do Consultor RisLife, que o app e a
+>   regra da tabela já davam — o efeito de levar à unidade segue barrado).
+> - Ensaio no treino 24/24 (`scripts/empresarial-ensaio-1048.mjs`, desfeito;
+>   `QUEBRA=gerir`/`carteira` reprovam); réguas provadas quebrando. Manual
+>   13b e Empresarial §3; EV-360. **Não visto na tela.**
+> - Achado (a registrar no backlog com o OK do dono): vários itens de MENU só
+>   escondem o atalho — a tela abre pelo endereço.
+> - ✅ **1048 nos dois bancos** (produção pelo dono em 16/11/2026, conferência
+>   5·5·2·18; conferido de fora: sem login `pode` e `can_configure_program`
+>   recusam com "permission denied", a de controle responde "não encontrada";
+>   as 5 permissões semeadas com os papéis de antes).
+
 > ## 💳 0.459.1 — ASA4, ENTREGA 6: DISTRATO COM CHECKLIST (16/11/2026; Asaas 0.17.0, migração 4020) — NA PRODUÇÃO
 >
 > - **Nada é distratado sozinho:** o pedido registrado na ficha e o contrato em atraso há 60 dias (Central) avisam o Gerente, que abre o distrato ou mantém o contrato, com o motivo.

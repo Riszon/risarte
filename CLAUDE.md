@@ -400,6 +400,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/11/2026 (permissões do Empresarial) — PC Administrador (core 0.459.1 → 0.460.0; Empresarial 0.107.0 → 0.108.0, migração 1048)**
+
+- **Permissões explicadas e as do Empresarial na matriz** (bloco 0.460.0 no
+  ESTADO). ⚠️ **Permissão nova = os três textos em
+  `permissoes-explicacoes.ts`** (régua). ⚠️ **No Empresarial o banco lê a
+  matriz** (`empresarial.pode`, 1048): regra nova do módulo usa as funções
+  (`is_program_manager`, `can_configure_program`…), nunca papel no texto;
+  padrões do banco = `permissions.ts` (régua).
+- ✅ 1048 nos dois bancos (produção pelo dono em 16/11/2026, 5·5·2·18; conferido de fora).
+
 **16/11/2026 (AP172, certificação) — PC Administrador (core 0.458.0 → 0.459.0, migração 0412)**
 
 - **Aproveitar as tarefas de outra certificação** (bloco 0.459.0 no ESTADO).
