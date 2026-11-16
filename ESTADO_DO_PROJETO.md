@@ -69,6 +69,22 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   com "permission denied", a de controle responde "não encontrada"). O
 >   código subiu antes, no push de outra sessão (sem efeito sem a 1045).
 
+> ## 🏦 0.456.2 — PLANILHA-MODELO DAS DÍVIDAS: O PROTESTO APARECE SOZINHO (15/11/2026; sem migração)
+>
+> Pedido do dono: "Protestada? = Sim" na aba Dívidas leva a dívida à aba
+> Protestos; lá só se preenche o que falta; explicação melhor. Manual 2.3; EV-355.
+> - ⚠️ **O desenho da planilha = `montarPlanilhaModelo`**
+>   (`src/lib/finance/dividas-planilha-modelo.ts`; a rota só passa as listas).
+>   Linha N da aba Protestos = fórmula sobre a linha N da aba Dívidas (travada,
+>   aba protegida sem senha); parte livre a partir de `PRIMEIRA_LINHA_AVULSA`.
+>   Títulos = `mapeamentoPadrao` (régua `dividas-planilha-modelo.test.ts`).
+> - ⚠️ **Um protesto por dívida:** em `conferirPlanilha`, a linha da aba
+>   Protestos ligada a uma dívida "Protestada? = Sim" substitui o protesto da
+>   linha da dívida (aviso na dívida).
+> - Conferido no Excel deste PC: o espelho calcula, a célula travada recusa,
+>   a livre aceita; salvo pelo Excel, a leitura da importação acha 1 dívida e
+>   1 protesto ligado ao nº dela.
+
 > ## 🏦 0.456.1 — PAINEL DAS DÍVIDAS: NÚMEROS CLICÁVEIS E EM BLOCOS (15/11/2026; sem migração)
 >
 > Pedido do dono (imagem do Painel no treino): todo cartão abre a lista do
