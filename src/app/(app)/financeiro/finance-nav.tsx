@@ -44,7 +44,7 @@ import {
  * saiu do módulo.
  */
 
-type Item = { href: string; label: string; soDividas?: boolean; soRepasses?: boolean };
+type Item = { href: string; label: string; soDividas?: boolean; soRepasses?: boolean; soCobrancaDaRede?: boolean };
 type Aba =
   | { tipo: "direta"; href: string; label: string; icon: LucideIcon; soCobrancas?: boolean }
   | { tipo: "grupo"; label: string; icon: LucideIcon; itens: Item[]; soRede?: boolean };
@@ -129,6 +129,9 @@ const ABAS: Aba[] = [
       // 4010 — as taxas da rede pagas no split. Gerente e Franqueado também
       // entram (só a própria unidade), quando o Admin libera a permissão.
       { href: "/financeiro/repasses-da-franquia", label: "Repasses da franquia", soRepasses: true },
+      // 4021 (ASA6) — a cobrança mensal da rede: Financeiro e Admin (a rede);
+      // Gerente e franqueado (a própria unidade).
+      { href: "/financeiro/cobranca-da-rede", label: "Cobrança da rede", soCobrancaDaRede: true },
       // 0404 — só para quem o banco deixa (Financeiro da Franqueadora e Admin).
       { href: "/financeiro/dividas", label: "Levantamento de Dívidas", soDividas: true },
     ],
@@ -156,11 +159,13 @@ export function FinanceNav({
   veCobrancas = false,
   veDividas = false,
   veRepasses = false,
+  veCobrancaDaRede = false,
 }: {
   veRede: boolean;
   veCobrancas?: boolean;
   veDividas?: boolean;
   veRepasses?: boolean;
+  veCobrancaDaRede?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -176,7 +181,7 @@ export function FinanceNav({
     >
       <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4">
         {ABAS.filter(
-          (a) => (a.tipo === "grupo" ? !a.soRede || veRede || veRepasses : !a.soCobrancas || veCobrancas)
+          (a) => (a.tipo === "grupo" ? !a.soRede || veRede || veRepasses || veCobrancaDaRede : !a.soCobrancas || veCobrancas)
         ).map(
           (aba) => {
             const Icon = aba.icon;
@@ -205,7 +210,8 @@ export function FinanceNav({
               (i) =>
                 (!i.soDividas || veDividas) &&
                 (!i.soRepasses || veRepasses) &&
-                (veRede || !aba.soRede || i.soRepasses === true)
+                (!i.soCobrancaDaRede || veCobrancaDaRede) &&
+                (veRede || !aba.soRede || i.soRepasses === true || i.soCobrancaDaRede === true)
             );
             if (!itens.length) return null;
             const dentro = itens.some(

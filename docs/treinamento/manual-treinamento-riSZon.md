@@ -7562,6 +7562,91 @@ Financeiro da Franqueadora também. Nada expira sozinho.
 
 **Evidência:** EV-359; `scripts/asaas-ensaio-asa4-distrato.mjs`.
 
+### 13g.18. Cobrança mensal da rede
+
+*(desde a versão 0.461.0)*
+
+**O que é:** a cobrança que a franqueadora faz à unidade, uma vez por mês, das
+taxas da rede que **não** foram retidas pelo split:
+- as taxas fixas (tecnologia e SDR);
+- o "a cobrar" das taxas percentuais (royalties, fundo, planejamento e
+  comercial): o recebido em dinheiro, maquininha, depósito, Pix manual, permuta,
+  cobrança externa, cobrança sem split, split a menor e o que continua devido no
+  estorno e no distrato.
+
+O "a reter" do cartão parcelado e o que o split já reteve **nunca** entram.
+
+**Quem vê:** o Gerente e o franqueado (a sua unidade), o Financeiro da
+Franqueadora e o Admin Master (a rede). Dentista, Planner, ASB, TSB, SDR e
+Recepção não veem. A tela fica em **Financeiro › Rede › Cobrança da rede**.
+
+**A configuração** (Central › Rede › Taxas da franquia, quadro "Cobrança mensal
+às unidades"; Financeiro da Franqueadora ou Admin Master):
+- **Da rede:** multa, juros ao mês, dia de vencimento, período de apuração, dias
+  da prévia e a regra das taxas fixas no mês incompleto (cheio ou proporcional
+  aos dias).
+- **De cada unidade:** o e-mail financeiro, o **primeiro mês da cobrança
+  mensal** (é ele que liga a unidade), o início e a saída das atividades, e as
+  exceções de multa, juros e vencimento.
+- Os valores de SDR e de tecnologia ficam em Taxas da rede.
+- Tudo nasce **em branco**, porque os valores são do contrato de franquia. Sem
+  eles, nada é emitido, e a tela diz o que falta.
+
+**O mês, passo a passo:**
+1. **Dia 1:** a rotina abre a **prévia** do mês que fechou, para cada unidade
+   com a configuração completa (o Financeiro também pode abrir à mão). O Gerente
+   e o franqueado são avisados, com o prazo.
+2. **Na prévia** (dia 1 até o fim da janela): a unidade confere linha a linha
+   (data, origem, paciente pelo código e nome abreviado, base, percentual e
+   valor) e baixa a planilha.
+   - **Conferi, está de acordo:** a prévia fica pronta antes do prazo.
+   - **Contestar:** na linha, com o motivo e, se quiser, o comprovante (PDF ou
+     imagem).
+   - **Sem contestação até o prazo,** a prévia segue para a aprovação e a
+     cobrança é emitida. A tela diz isso, com a data, e a unidade recebe um
+     lembrete 1 dia útil antes do fim.
+3. **O Financeiro decide** cada contestação, com o motivo:
+   - **aceita:** a linha é dispensada (na auditoria);
+   - **recusada:** a linha continua.
+4. **Aprovar e emitir** (Financeiro ou Admin): a cobrança sai pela **conta da
+   franqueadora**, com a unidade (razão social e CNPJ) como pagadora: boleto com
+   Pix, multa e juros do contrato, sem desconto. Os avisos do Asaas vão só para o
+   e-mail financeiro. O link fica na tela.
+5. **O pagamento** dá a baixa sozinho, pelo aviso do Asaas:
+   - as contas a pagar de taxa da unidade ficam pagas;
+   - a multa e os juros vão para o financeiro (sem taxa sobre taxa);
+   - a tarifa do Asaas é da franqueadora.
+6. **Em atraso:** aviso à unidade e ao Financeiro a cada 7 dias; aos 30 dias, ao
+   Admin Master. Nada é bloqueado sozinho.
+
+**Casos especiais:**
+- **Mês sem nada a cobrar:** não gera cobrança.
+- **Abaixo de R$ 5,00** (o mínimo do Asaas): o valor acumula para o mês
+  seguinte.
+- **O que chega depois do fechamento** (um estorno, um split recusado) entra no
+  mês seguinte, em "Ajustes de meses anteriores", com o mês de origem.
+- **Contestação aceita depois da emissão:** o boleto não muda; a linha vira
+  **crédito** no mês seguinte, com a linha de origem.
+- **Mês já fechado na contabilidade:** a dispensa entra no mês aberto, como
+  ajuste.
+- **Cancelar para reemitir:** só a última cobrança da unidade, e só se não
+  estiver paga. A prévia volta a ser montada.
+
+**O saldo anterior:** as taxas em aberto **antes** do primeiro mês da cobrança
+mensal não entram sozinhas. Na tela, o Financeiro vê o saldo em separado, por
+unidade, e decide, com o motivo:
+- **incluir** na próxima cobrança;
+- **parcelar** nas próximas cobranças (2 a 24);
+- **dispensar**.
+
+A decisão não se refaz.
+
+**Pendente do contador:** quando a franqueadora reconhece a receita da taxa (no
+fechamento ou no pagamento) e quando sai a nota dos royalties. O riSZon guarda
+os dois jeitos, e nada trava por isso.
+
+**Evidência:** EV-361; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs`.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

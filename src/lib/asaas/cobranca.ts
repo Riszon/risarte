@@ -50,7 +50,7 @@ export type CobrancaDoBanco = {
   due_date: string;
   description: string;
   asaas_payment_id: string | null;
-  payer_kind: "client" | "guardian";
+  payer_kind: "client" | "guardian" | "company" | "unit";
   payer_guardian_id: string | null;
   client_id: string;
   payer_name: string;
@@ -128,6 +128,10 @@ async function cadastroDoCarne(c: CobrancaDoBanco, localId: string, cred: AsaasC
 /** O que a emissão grava no banco (separado para o teste do tempo esgotado). */
 export type BancoDaEmissao = {
   salvarPagador: (c: CobrancaDoBanco, asaasCustomerId: string) => Promise<string>;
+  /** ASA6 (4021): o pagador vem de outro jeito (a unidade, com o e-mail financeiro). */
+  pagador?: (c: CobrancaDoBanco) => Promise<{ asaasId: string; localId: string }>;
+  /** ASA6 (4021): o split por valor fixo (o fundo com conta própria, decisão 5a). */
+  splitsFixos?: () => Promise<{ walletId: string; fixedValue: number }[]>;
   /** ASA2 (4007): aplica a régua do pagador, se ele estiver na fila. */
   aplicarRegua?: (gatewayCustomerId: string) => Promise<void>;
   /** ASA3 (4008): o plano do split desta cobrança (ausente = sem split). */
@@ -255,7 +259,7 @@ export async function emitirComOAsaas(
     [pagamento] = await findPaymentsByReference(cred, c.charge_id, opts);
     if (!pagamento) {
       // 2) O pagador.
-      pagador = await pagadorNoAsaas(c, cred, opts, banco);
+      pagador = banco.pagador ? await banco.pagador(c) : await pagadorNoAsaas(c, cred, opts, banco);
       // 2b) ASA2 (4007): a régua do pagador ANTES da cobrança, para o aviso
       // "cobrança criada" sair. Falha aqui não impede a emissão.
       if (banco.aplicarRegua) await banco.aplicarRegua(pagador.localId).catch(() => {});
@@ -275,6 +279,7 @@ export async function emitirComOAsaas(
           await banco.semSplit(decisao.motivo);
         }
       }
+      const fixos = !entradas && banco.splitsFixos ? await banco.splitsFixos() : [];
       // 3) A cobrança. 4015: a da forma 2 vai para o cadastro do carnê.
       const cliente = c.via_carne ? await cadastroDoCarne(c, pagador.localId, cred, opts) : pagador.asaasId;
       try {
@@ -290,7 +295,7 @@ export async function emitirComOAsaas(
             discountValue: reais(c.discount_cents),
             fineValue: reais(c.fine_cents ?? 0),
             interestPercent: Number(c.interest_percent),
-            ...(entradas ? { splits: splitsParaOAsaas(entradas) } : {}),
+            ...(entradas ? { splits: splitsParaOAsaas(entradas) } : fixos.length ? { splits: fixos } : {}),
           },
           opts
         );

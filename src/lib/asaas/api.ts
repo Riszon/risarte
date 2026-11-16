@@ -244,6 +244,33 @@ export function createCustomerWithoutNotices(
 }
 
 /**
+ * ASA6 (4021): a UNIDADE como pagadora da cobrança mensal, na conta da
+ * franqueadora. Com o e-mail financeiro e os avisos do Asaas LIGADOS — sem
+ * celular, então só e-mail (cobrança criada, vencendo e vencida; 20.6).
+ */
+export function createUnitCustomer(
+  cred: AsaasCredential,
+  input: { name: string; cpfCnpj: string; email: string; externalReference: string },
+  opts?: Opts
+): Promise<AsaasCustomer> {
+  return asaasRequest<AsaasCustomer>(
+    {
+      ...cred,
+      method: "POST",
+      path: "/customers",
+      body: {
+        name: input.name,
+        cpfCnpj: input.cpfCnpj,
+        email: input.email,
+        notificationDisabled: false,
+        externalReference: input.externalReference,
+      },
+    },
+    opts
+  );
+}
+
+/**
  * `POST /v3/customers` — até a ASA2, SÓ nome e CPF/CNPJ e as notificações do
  * Asaas desligadas (o riSZon é quem avisa o paciente).
  */
@@ -300,7 +327,8 @@ export type AsaasSplit = {
 };
 
 /** O que o riSZon envia em `splits` (ASA3, método B — `split.ts`). */
-export type SplitParaEnviar = { walletId: string; percentualValue: number; fixedValue?: number };
+/** ASA6 (4021): a cobrança mensal manda só o valor fixo (o fundo), sem percentual. */
+export type SplitParaEnviar = { walletId: string; percentualValue?: number; fixedValue?: number };
 
 export type NovaCobranca = {
   customer: string;

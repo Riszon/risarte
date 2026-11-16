@@ -88,6 +88,11 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   gateway_split_zero: "Split retirado (todas as taxas em zero)",
   payment_waivers: "Quitação por valor menor (dispensa)",
   network_fee_waiver: "Dispensa da taxa da rede mantida no estorno",
+  franchise_monthly_batch: "Cobrança mensal da rede (prévia aberta, refeita ou aprovada)",
+  franchise_monthly_contest: "Contestação da cobrança mensal da rede (a decisão)",
+  franchise_prior_balance: "Saldo anterior da cobrança mensal (incluir, parcelar ou dispensar)",
+  franchise_billing_settings: "Configuração da cobrança mensal da rede",
+  franchise_billing_unit_settings: "Configuração da cobrança mensal da unidade",
   gateway_charges_panel: "Planilha do Painel de cobranças",
   franchise_payouts: "Planilha dos Repasses da franquia",
   // 4011 (ASA4, entrega 1): meio por parcela, dinheiro e permuta.

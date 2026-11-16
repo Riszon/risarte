@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { CobrancaMensalConfig, type ConfigLida } from "./cobranca-mensal-config";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SessionContext } from "@/lib/auth";
@@ -133,6 +134,7 @@ export async function AbaTaxasDaRede({
         </Card>
       )}
       {!semMigracao && <FilaPorUnidade supabase={supabase} session={session} />}
+      {!semMigracao && podeEditar && <QuadroDaCobrancaMensal supabase={supabase} podeEditar={podeEditar} />}
 
       <TaxasDaRedeConteudo session={session} params={params} basePath="/central/rede/taxas" />
     </>
@@ -266,5 +268,24 @@ export async function AbaTaxasDaUnidade({
 
       <TaxasDaRedeConteudo session={session} params={params} unidadeFixa={clinicId} basePath={`/central/unidades/${clinicId}/taxas`} />
     </>
+  );
+}
+
+/** ASA6 (4021): a cobrança mensal às unidades — a configuração da rede e de cada unidade. */
+async function QuadroDaCobrancaMensal({ supabase, podeEditar }: { supabase: SupabaseClient; podeEditar: boolean }) {
+  const { data, error } = await supabase.rpc("franchise_billing_config_read");
+  if (error) {
+    if (!/does not exist|schema cache/i.test(error.message)) console.error("franchise billing config read failed:", error.message);
+    return null;
+  }
+  return (
+    <Card>
+      <CardHeader className="gap-1">
+        <CardTitle className="text-base">Cobrança mensal às unidades</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <CobrancaMensalConfig lido={data as ConfigLida} podeEditar={podeEditar} />
+      </CardContent>
+    </Card>
   );
 }

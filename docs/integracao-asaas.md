@@ -4629,7 +4629,7 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 
 **A tabela de fases foi corrigida:** o cartão recorrente da ASA4B não está mais bloqueado pela regra do cartão. Falta só a tokenização habilitada nas contas, com o comercial do Asaas.
 
-## 20. ASA6 — Cobrança mensal às unidades e conciliação: PLANO (16/11/2026; migração 4021; AGUARDA APROVAÇÃO)
+## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 CONSTRUÍDA (16/11/2026; ver 20.15 e 20.16); 4021a a seguir
 
 ### 20.1 O que já existe (levantado no código em 16/11/2026)
 
@@ -4886,3 +4886,134 @@ Os campos nascem **em branco**. **Sem eles, a cobrança mensal não sai**, e a t
 - **4021:** o lote e os itens, a prévia, a contestação, a emissão, a baixa, a configuração e o demonstrativo.
 - **4021a:** a conciliação noturna, `reconciliation_issues` e o painel.
 - **Prova** como na 20.8: ensaio quebrado de propósito e sandbox com a conta da franqueadora.
+
+### 20.15 Aprovação do dono (16/11/2026) — as seis decisões, os quatro complementos e as confirmações
+
+**Aprovado:** 1a, 2a, 3a, 4a, 5a e 6a (20.13), com os quatro complementos abaixo. **A 4021 pode ser construída**; a 4021a (conciliação) vem em seguida.
+
+#### 20.15.1 Complemento 1 — o saldo acumulado antes da 4021
+
+**O problema:** desde a ASA3, a produção já cria contas a pagar de taxa (uma por unidade, taxa e mês) que ninguém cobrou. A primeira cobrança mensal não pode trazê-las sozinha.
+
+**A consulta:** `docs/asaas/levantamento-taxas-acumuladas.sql`, só leitura, roda o dono na produção. Mostra, por unidade, taxa e mês, as contas a pagar de taxa em aberto, com o total por unidade.
+
+**A regra:**
+- a **primeira cobrança mensal** de cada unidade **não inclui nada anterior por conta própria**;
+- o que estiver em aberto antes do 1º período da cobrança mensal é o **saldo anterior**, mostrado **em separado** na tela do Financeiro;
+- o Financeiro ou o Admin decide, **por unidade**, com o motivo e na auditoria:
+  - **incluir** o saldo na próxima cobrança (uma linha "Saldo anterior", com o mês de origem);
+  - **parcelar** em N cobranças mensais (uma linha por mês, "Saldo anterior — parcela k de N");
+  - **dispensar** (as contas a pagar ficam canceladas com o motivo, e a receita da franqueadora cai junto).
+- Sem a decisão, o saldo anterior **fica parado**: não entra em nenhuma cobrança.
+
+#### 20.15.2 Complemento 2 — o silêncio da unidade na prévia
+
+- Se a unidade **não conferir nem contestar** dentro da janela, a prévia segue para a aprovação do Financeiro e a cobrança sai.
+- **A tela da unidade diz isso com clareza**, com a data:
+  > "Confira até DD/MM. Sem contestação até essa data, a cobrança segue para aprovação e é emitida."
+- **Os avisos à unidade** (Gerente e franqueado):
+  1. na **abertura** da prévia;
+  2. **1 dia útil antes do fim** da janela.
+- A unidade pode marcar **"Conferi, está de acordo"**: a prévia fica pronta para a aprovação antes do prazo.
+
+#### 20.15.3 Complemento 3 — o mês incompleto
+
+- **Na Central, um campo (em branco):** "Taxas fixas no mês incompleto (início ou saída da unidade)":
+  - **cheio**: a taxa fixa inteira;
+  - **proporcional aos dias**: a taxa fixa × dias de operação ÷ dias do mês, arredondada ao centavo.
+- **A unidade** ganha a data de início e a data de saída da cobrança da rede.
+- **Sem a escolha, nenhuma cobrança sai** (a tela diz o que falta), mesmo que o mês seja cheio.
+
+#### 20.15.4 Complemento 4 — o reconhecimento da receita e a nota (pendente do contador)
+
+**Pendente do contador:**
+- quando a franqueadora reconhece a receita da taxa: **no fechamento** (competência) ou **no pagamento** (caixa);
+- quando sai a nota consolidada dos royalties.
+
+**O que a 4021 faz:**
+- marca a decisão como **pendente** na Central ("Reconhecimento da receita da taxa: a definir pelo contador");
+- **prepara o razão para os dois jeitos:**
+  - a receita da franqueadora (`network_fee_revenue`) continua nascendo **em aberto** no fechamento, como hoje;
+  - a baixa grava a **data do pagamento** e a ligação com a cobrança;
+  - escolhido "no pagamento", a receita passa a valer na data do pagamento; escolhido "no fechamento", na data de competência. É uma leitura, sem relançar nada.
+- **Não bloqueia a construção** nem a cobrança.
+
+#### 20.15.5 Confirmações (do plano)
+
+| Pergunta do dono | Confirmação |
+|---|---|
+| Mês sem nada a cobrar | **Não gera cobrança.** A prévia mostra "Nada a cobrar neste mês" e fica registrada. |
+| Valor abaixo do mínimo do Asaas | **Não gera cobrança.** O valor **acumula** para o mês seguinte (os itens voltam a "a cobrar"). O mínimo do Asaas é R$ 5,00 para o boleto; ele é conferido na emissão. |
+| Tarifa do boleto e da mensageria | **São da franqueadora**: a cobrança sai da conta raiz, e a tarifa é descontada dela pelo Asaas. Não vira linha da unidade. |
+| Multa e juros da cobrança em atraso | **Não geram taxa sobre taxa.** Vão para a receita financeira da franqueadora e para a despesa financeira da unidade, fora do split e fora da apuração das taxas. |
+| Contestação aceita depois da emissão | Vira **crédito** na cobrança do mês seguinte, uma linha negativa com a **linha de origem** identificada (a taxa, o mês e o recebimento). O boleto emitido não muda. |
+| Quem não vê | **Dentista, Planner, ASB, TSB, SDR e Recepcionista** não veem a cobrança mensal nem o demonstrativo. Veem só o Gerente e o franqueado (a sua unidade), o Financeiro da Franqueadora e o Admin Master (a rede). |
+
+#### 20.15.6 A configuração (complemento da 20.12)
+
+- **Os valores do contrato nascem em branco:** multa, juros, dia de vencimento, período de apuração, janela da prévia, regra do mês incompleto, SDR, tecnologia e o e-mail financeiro.
+- **Por unidade, também em branco:** o 1º mês da cobrança mensal (liga a unidade) e o início e a saída das atividades (o mês incompleto).
+- **Sem eles, nada é emitido**, e a tela diz o que falta.
+- **No treino e no sandbox:** valores de exemplo podem ser usados, **identificados como exemplo** (na própria configuração: "Exemplo — não é do contrato"). Na produção, nenhum valor é preenchido pelo riSZon.
+
+#### 20.15.7 A ordem aprovada
+
+1. **4020a:** o estorno parcial pelo Asaas, os itens 1 e 3 da 19.37 e o ajuste da tela da unidade.
+2. **ASA6:** a 4021 (agora) e a 4021a (conciliação).
+3. **ASA7:** as peças que preparam o piloto (as do sandbox, depois da 4021a).
+4. **O piloto em Londrina.**
+5. **ASA4B, ASA5 e ASA8:** durante o piloto. A ASA5 só depois de combinar com a sessão das 1046 e 1047.
+
+### 20.16 A construção da 4021 (16/11/2026): o que foi feito e as diferenças do plano
+
+**Versões:** core 0.461.0, Asaas 0.18.0, migração 4021. No treino e no projeto de teste; **não está na produção**.
+
+**Onde fica:**
+- **Central › Rede › Taxas da franquia**, quadro "Cobrança mensal às unidades": os campos da rede e, por unidade, o e-mail financeiro, o 1º mês da cobrança mensal, o início e a saída das atividades e as exceções de multa, juros e vencimento. Todos em branco.
+- **Financeiro › Rede › Cobrança da rede** (`/financeiro/cobranca-da-rede`): a lista dos meses, o demonstrativo, a contestação, a decisão, a aprovação e a emissão, o cancelamento para reemitir e o saldo anterior.
+- **A rotina do dia** (o cron das cobranças): abre a prévia do mês que fechou, manda os lembretes e os avisos de atraso. **Nunca emite**: a emissão é sempre do Financeiro ou do Admin.
+
+**Refinamentos (diferenças do plano):**
+
+1. **O crédito do mês seguinte é compensação.**
+   - **O plano:** dizia "linha negativa na cobrança do mês seguinte".
+   - **O que foi feito:** a linha negativa continua no demonstrativo, com a linha de origem. Na baixa, o crédito paga parte das contas de taxa do mês **sem saída de caixa**, e o boleto vem menor.
+   - **Por quê:** assim o caixa da unidade é igual ao boleto pago, e a despesa por competência fica certa.
+2. **O caixa da franqueadora vai num lançamento próprio, só de caixa** (o mesmo modelo do recebimento de parcela).
+   - **O que fica igual:** a receita da taxa por competência continua no lançamento do mês.
+   - **Por quê:**
+     - mudar o lançamento da receita para "liquidado" o travaria (o razão não deixa mudar valor de lançamento liquidado);
+     - um recebimento atrasado daquele mês seria recusado depois;
+     - os dois jeitos do contador (20.15.4) ficam prontos: no fechamento, a competência; no pagamento, o caixa.
+3. **O mês fechado na contabilidade.**
+   - **A regra do razão:** um mês fechado não aceita mudança de valor (PERIOD_CLOSED).
+   - **A dispensa:** a contestação aceita ou o saldo anterior dispensado num mês fechado entram no **mês aberto**, como ajuste, nos dois lados (a despesa da unidade e a receita da franqueadora). É a mesma regra do recebimento que chega atrasado.
+   - **A taxa fixa:** se o 1º mês da cobrança estiver fechado e sem a conta da taxa fixa, a prévia não abre, com a mensagem. O Financeiro reabre o mês ou muda o 1º mês.
+4. **A janela e o vencimento.**
+   - **A janela:** vai do dia 1 do mês seguinte (ou do dia em que a prévia abriu, se depois) por N dias.
+   - **O vencimento:** o dia configurado do mês seguinte. Se já passou na hora da aprovação, é amanhã, porque o Asaas não aceita vencimento no passado.
+5. **Cancelar para reemitir.**
+   - Só a última cobrança da unidade, e só se não estiver paga.
+   - Não se cancela a que tem contestação depois da emissão.
+   - Cancelada no Asaas, a prévia do mês volta a ser montada.
+6. **A contestação de uma linha que já tem parte cobrada em outro mês** é recusada, com a orientação de dispensar pela tela das taxas. A dispensa inteira devolveria também a parte já cobrada.
+7. **Os campos antigos de multa e juros** da cobrança à unidade (aba Taxas, sem uso) **não foram copiados**. A configuração nasce em branco, e os campos antigos saíram da tela.
+8. **O pagamento a menor não dá a baixa sozinho:** avisa o Financeiro e o Admin. O pagamento de uma cobrança já cancelada também avisa.
+9. **As tabelas novas não têm leitura direta.** Tudo passa pelas funções, que conferem o papel de novo. Nenhuma regra de acesso chama função fechada.
+10. **O 1º mês da cobrança mensal** é o campo que liga a unidade. O que estiver antes dele é o saldo anterior. O início e a saída das atividades servem só para o mês incompleto.
+
+**A prova:**
+- **Ensaio:** `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs`, 103/103. Provado quebrando:
+
+  | Modo | O que quebra | Resultado |
+  |---|---|---|
+  | `--quebrar=dobro` | a mesma linha faturada duas vezes | 8 falhas |
+  | `--quebrar=fora` | uma linha "a cobrar" de fora | 6 falhas |
+  | `--quebrar=reter` | o "a reter" faturado | 14 falhas |
+  | `--quebrar=baixa` | a baixa sem liquidar as contas | 9 falhas |
+
+- **Sandbox:** `asaas-asa6-cobranca-mensal.integracao.test.ts`, 4/4, pela conta raiz.
+  - A unidade (CNPJ) foi a pagadora, só com o e-mail.
+  - A cobrança foi cancelada e reemitida.
+  - Paga pela simulação, a baixa veio pelo aviso do Asaas.
+  - A tarifa ficou com a franqueadora.

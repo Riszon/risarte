@@ -38,8 +38,9 @@ export function ConfiguracaoDoSplit({
   const [pendente, start] = useTransition();
   const [destinos, setDestinos] = useState(inicial.destinos);
   const [tolerancia, setTolerancia] = useState(reais(inicial.toleranciaCentavos));
-  const [multa, setMulta] = useState(texto(inicial.multaPercent));
-  const [juros, setJuros] = useState(texto(inicial.jurosPercent));
+  // 4021: a multa e os juros mudaram para o quadro da cobrança mensal; aqui seguem os valores antigos, sem tela.
+  const multa = texto(inicial.multaPercent);
+  const juros = texto(inicial.jurosPercent);
 
   const raiz = carteiras.find((c) => c.ownerType === "franchisor");
   const recebedoras = carteiras.filter((c) => c.ownerType === "recipient" && c.temCarteira);
@@ -102,7 +103,7 @@ export function ConfiguracaoDoSplit({
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <label className="space-y-1">
+        <label className="space-y-1 sm:col-span-3">
           <span className="text-sm font-medium">Tolerância por cobrança (R$)</span>
           <Input value={tolerancia} onChange={(e) => setTolerancia(e.target.value)} disabled={!podeEditar || pendente} inputMode="decimal" />
           <span className="block text-xs text-muted-foreground">
@@ -110,20 +111,9 @@ export function ConfiguracaoDoSplit({
             pagar da unidade.
           </span>
         </label>
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Multa da cobrança à unidade (%)</span>
-          <Input value={multa} onChange={(e) => setMulta(e.target.value)} disabled={!podeEditar || pendente} inputMode="decimal" placeholder="em branco" />
-          <span className="block text-xs text-muted-foreground">Em branco = sem multa.</span>
-        </label>
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Juros da cobrança à unidade (% ao mês)</span>
-          <Input value={juros} onChange={(e) => setJuros(e.target.value)} disabled={!podeEditar || pendente} inputMode="decimal" placeholder="em branco" />
-          <span className="block text-xs text-muted-foreground">Em branco = sem juros.</span>
-        </label>
       </section>
       <p className="text-xs text-muted-foreground">
-        Multa e juros valem para a cobrança mensal da franqueadora à unidade (taxas fixas e taxas que não passaram pelo
-        split), paga em atraso. Os percentuais seguem o contrato de franquia. Não existe desconto por pagar em dia.
+        A multa e os juros da cobrança mensal à unidade ficam no quadro “Cobrança mensal às unidades”, abaixo (4021).
       </p>
 
       {podeEditar && (

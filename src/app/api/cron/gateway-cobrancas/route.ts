@@ -33,5 +33,20 @@ export async function GET(request: Request) {
   // 4020 (19.35.3): o contrato em atraso e o distrato aberto avisam o Gerente
   // (a cada 7 dias; o distrato aberto há mais de 30, também o Financeiro).
   const distrato = await admin.rpc("_distrato_watch_run").then((x) => (x.error ? null : x.data));
-  return Response.json({ ok: true, origem, criadas: r.criadas, falhas: r.falhas, puladas: r.puladas, motivo: r.motivo, mensalidadesGeradas: geradas, atraso, distrato });
+  // 4021 (ASA6): a cobrança mensal da rede — abre a prévia do mês que fechou (só
+  // das unidades com a configuração completa), o lembrete do prazo, a prévia
+  // pronta para aprovação e os avisos de atraso. A EMISSÃO é sempre à mão.
+  const cobrancaDaRede = await admin.rpc("_franchise_monthly_cron").then((x) => (x.error ? null : x.data));
+  return Response.json({
+    ok: true,
+    origem,
+    criadas: r.criadas,
+    falhas: r.falhas,
+    puladas: r.puladas,
+    motivo: r.motivo,
+    mensalidadesGeradas: geradas,
+    atraso,
+    distrato,
+    cobrancaDaRede,
+  });
 }
