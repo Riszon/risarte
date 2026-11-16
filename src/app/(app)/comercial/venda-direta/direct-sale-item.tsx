@@ -640,11 +640,15 @@ export function SaleItem({
                   prontuário.
                 </p>
               ) : sale.status === "concluida" ? (
-                <div className="ml-7 flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-emerald-900">
-                  <PartyPopper className="size-4" />
-                  <span className="text-sm font-medium">
-                    Venda concluída — contrato assinado e pagamento confirmado.
-                  </span>
+                <div className="ml-7 space-y-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-emerald-900">
+                    <PartyPopper className="size-4" />
+                    <span className="text-sm font-medium">
+                      Venda concluída — contrato assinado e pagamento confirmado.
+                    </span>
+                  </div>
+                  {/* 4020 (4a): a venda concluída (com pagamento) só se desfaz pelo distrato. */}
+                  {sale.clientId && <DistratoDaVenda clientId={sale.clientId} directSaleId={sale.id} />}
                 </div>
               ) : (
                 <p className="ml-7 flex items-center gap-1.5 rounded-lg border bg-muted/40 p-2 text-xs text-muted-foreground">
