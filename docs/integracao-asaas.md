@@ -4628,3 +4628,261 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 - **O limite da conferência:** ela usou o líquido informado pelo Asaas. A previsão do líquido pelo riSZon (a tarifa) já é conferida na tolerância de R$ 0,10 (S5).
 
 **A tabela de fases foi corrigida:** o cartão recorrente da ASA4B não está mais bloqueado pela regra do cartão. Falta só a tokenização habilitada nas contas, com o comercial do Asaas.
+
+## 20. ASA6 — Cobrança mensal às unidades e conciliação: PLANO (16/11/2026; migração 4021; AGUARDA APROVAÇÃO)
+
+### 20.1 O que já existe (levantado no código em 16/11/2026)
+
+**As taxas:**
+- **Os tipos** (`network_fee_types`):
+  - **percentuais:** royalty, fundo, planejamento e comercial;
+  - **fixas:** **sistema** (tecnologia) e **sdr**;
+  - cada um com a conta da unidade (2.6.x) e a da franqueadora (1.3.x), e o destino do split (`split_account_id`; vazio = a conta da franqueadora).
+- **Os valores** (`network_fees`): o padrão da rede e a exceção da unidade, com o percentual, o valor fixo mensal e o dia de vencimento. Hoje estão **zerados** (o dono passa os valores do contrato).
+- **Sem desconto de pontualidade** (S4, travado no banco).
+
+**Por recebimento** (`split_charges`), uma linha por taxa, com o devido e o retido. As três situações saem do banco:
+
+| Situação | Quando |
+|---|---|
+| **a reter** | o split foi enviado e o Asaas ainda não liquidou (cartão parcelado, mês a mês) |
+| **retida** | o Asaas liquidou o split |
+| **a cobrar** | devido − retido > 0 |
+
+**De onde nasce o "a cobrar":**
+- recebimento à mão: dinheiro, maquininha, depósito, Pix manual, permuta e cobrança externa;
+- cobrança do Asaas sem split;
+- split cancelado, recusado ou com diferença acima de R$ 0,10 (S5), o que inclui a antecipação;
+- estorno: o recebimento estornado mantém a taxa (D13);
+- distrato: a taxa do que entrou continua devida.
+
+**A conta a pagar de taxa** (`refresh_network_fee_payable`):
+- é **uma por unidade, taxa e mês**, com a soma do "a cobrar" do mês (ou o valor fixo);
+- vence no mês seguinte, no dia configurado;
+- espelha a receita da franqueadora no razão (`network_fee_revenue`).
+- As taxas fixas nascem no dia 1, pela rotina e pelo botão "Gerar taxas fixas do mês".
+
+**O que mais existe:**
+- **Multa e juros da cobrança à unidade:** os campos estão na Central (aba Taxas da franquia), **em branco e sem uso**.
+- **As telas:** "Taxas da rede" (o apurado do mês) e "Repasses da franquia" (o devido, o pago no split, o que foi para conta a pagar, as divergências e as dispensas).
+- **A cobrança:** `charges.source_type` já aceita `franchise_monthly`, mas nada a cria. O pagador só pode ser cliente, responsável ou empresa; **a unidade como pagadora não existe**.
+
+**O que falta:**
+- a entidade da cobrança mensal (o lote, os itens, a prévia, a emissão e a baixa);
+- a marca de que cada "a cobrar" já foi **faturado** (sem ela, nada impede cobrar duas vezes, F1);
+- a unidade como pagadora, emitida pela conta da franqueadora;
+- a multa e os juros aplicados;
+- a baixa que liquida as contas a pagar da unidade e a receita da franqueadora (sem ela, o razão dobraria);
+- a conciliação do mês e a tabela de divergências (`reconciliation_issues`, prevista e nunca criada).
+
+### 20.2 Regras travadas (do dono)
+
+- As taxas percentuais (royalties 6%, fundo 2%, planejamento 3%, comercial 6%) saem pelo **split sempre que possível**. A cobrança mensal recebe **só o "a cobrar da unidade"**.
+- **SDR e tecnologia** são taxas **fixas mensais por unidade**.
+- **Sem desconto de pontualidade.** Em atraso, multa e juros.
+- A taxa continua devida no **estorno** e no **distrato**. Só o Financeiro da Franqueadora ou o Admin Master **dispensam**, à mão.
+- **Permuta e dinheiro** geram "a cobrar".
+- No cartão parcelado, a taxa **"a reter pelo split" nunca entra** na cobrança mensal.
+- **Do contrato de franquia** (o dono passa; nada é inventado):
+  - a multa e os juros;
+  - o dia de vencimento e o período de apuração;
+  - os valores de SDR e de tecnologia.
+  - Todos configuráveis na Central, **na rede e na unidade**.
+
+### 20.3 De onde vem cada linha da cobrança
+
+A cobrança mensal de uma unidade, para o período P, tem **dois blocos**:
+
+**A. Taxas fixas do período:** SDR e tecnologia, pelo valor da unidade (ou o da rede).
+
+**B. Taxas percentuais "a cobrar"**, uma linha por recebimento e por taxa, com a **origem**:
+
+| Origem | O que é | Base |
+|---|---|---|
+| **Dinheiro** | recebido no balcão | o valor recebido |
+| **Maquininha** | cartão na maquininha da unidade | o valor recebido |
+| **Depósito / Pix manual** | depósito ou Pix direto na conta da unidade | o valor recebido |
+| **Permuta** | serviço em troca | o valor da permuta |
+| **Cobrança externa** | cobrada fora do riSZon (D17) | o valor recebido |
+| **Asaas sem split** | a cobrança do Asaas saiu sem split (com o motivo) | o líquido |
+| **Split que falhou** | split cancelado, recusado ou liquidado a menos que R$ 0,10 abaixo (S5) | a diferença |
+| **Antecipação** | parcela antecipada com o split a menor | a diferença (pela S5) |
+| **Estorno** | o recebimento estornado: a taxa continua devida (D13) | o valor estornado |
+| **Distrato** | a taxa do que o cliente pagou, no distrato | o valor recebido |
+| **Mensalidades** | PPR+ e Ortodontia pagas à mão ou sem split | o valor pago |
+
+- **Cada linha** guarda a data, a parcela ou mensalidade, o paciente (código e nome abreviado; decisão 6), o meio, a base, o percentual e o valor.
+- **Fica fora:** o "a reter" (cartão parcelado à espera do crédito) e o que foi **dispensado**.
+- **A dispensa** (só Financeiro ou Admin, com motivo) aparece no demonstrativo como linha zerada, com o motivo.
+
+**Dentro do período:** entra o "a cobrar" com o **mês de competência** igual a P. O mês segue a regra de hoje: o mês do recebimento, ou o mês aberto se o recebimento caiu num mês fechado.
+
+**O que chega depois do fechamento** (decisão 4) entra na **cobrança do mês seguinte**, na seção **"Ajustes de meses anteriores"**, com o mês de origem:
+- um estorno do mês passado;
+- um split que o Asaas recusou depois;
+- a diferença de uma antecipação.
+
+### 20.4 O demonstrativo que a unidade recebe
+
+Uma página (e a planilha) por unidade e período, para ela conferir linha a linha:
+
+1. **O cabeçalho:** a unidade (razão social e CNPJ), o período, o vencimento, o número da cobrança e a situação.
+2. **Resumo:**
+
+   | | Valor |
+   |---|---|
+   | Taxas fixas (SDR, tecnologia) | R$ … |
+   | Royalties a cobrar | R$ … |
+   | Fundo de marketing a cobrar | R$ … |
+   | Centro de planejamento a cobrar | R$ … |
+   | Comercial a cobrar | R$ … |
+   | Ajustes de meses anteriores | R$ … |
+   | **Total a pagar** | **R$ …** |
+   | *(informativo)* Retido pelo split no período | R$ … |
+   | *(informativo)* A reter (cartão parcelado, nos próximos meses) | R$ … |
+   | *(informativo)* Dispensado no período | R$ … |
+
+3. **O detalhe por origem:** as tabelas da 20.3, com o subtotal de cada origem e de cada taxa.
+4. **O retido pelo split** (informativo): por taxa, o que o Asaas já repassou no período. A unidade vê que essa parte **não está sendo cobrada de novo**.
+5. **Em atraso:** a multa e os juros, calculados até o dia, pelo contrato.
+6. **Os botões:** baixar a planilha, **Contestar** (por linha) e o link de pagamento.
+
+### 20.5 O fluxo do mês
+
+| Quando | O que acontece | Quem |
+|---|---|---|
+| **Fim do período** | O período fecha para a cobrança: o riSZon monta a **prévia** de cada unidade (os itens congelados) | rotina |
+| **Prévia** (dias 1 a N do mês seguinte; decisão 1) | O Financeiro confere a prévia de cada unidade. A unidade vê a sua prévia e pode **contestar linhas** | Financeiro; Gerente |
+| **Conferência** | O Financeiro resolve as contestações (aceita: dispensa a linha; recusa: com o motivo) e **aprova** a prévia | Financeiro ou Admin |
+| **Emissão** | A cobrança vai ao Asaas pela **conta da franqueadora**, com a unidade como pagadora, e cada item fica **faturado** | Financeiro ou Admin |
+| **Pagamento** | O aviso do Asaas dá a baixa: as contas a pagar de taxa da unidade daquele período ficam **pagas** e a receita da franqueadora **realizada**, sem lançar duas vezes | rotina |
+| **Atraso** | Multa e juros pelo Asaas; avisos (20.7) | rotina |
+
+**O congelamento (a regra contra o dobro):**
+- cada "a cobrar" entra em **um item só** (um índice único no banco, pela linha de taxa e pelo período da cobrança);
+- depois de faturado, ele não volta a nenhuma prévia;
+- a taxa fixa da unidade e do período também entra uma vez só (índice único);
+- se a cobrança for **cancelada antes de paga** (para reemitir), os itens voltam a "a cobrar" e entram na prévia nova.
+
+### 20.6 Como a cobrança é emitida
+
+- **A conta:** a da **franqueadora** (a conta raiz do Asaas).
+- **O pagador:**
+  - é a **unidade**: razão social e CNPJ da clínica, num cadastro novo do pagador do tipo "unidade";
+  - **o e-mail:** o e-mail financeiro da unidade, configurável na Central;
+  - **os avisos do Asaas:** só por e-mail (cobrança criada, vencendo e vencida). Sem SMS e sem WhatsApp, porque o pagador é empresa.
+- **O meio** (decisão 2):
+  - boleto com o QR Code Pix (a unidade paga como preferir);
+  - a multa e os juros do contrato vão como multa e juros do Asaas;
+  - **sem desconto**.
+- **O split** (decisão 5): se o **fundo de marketing** tiver conta própria (`split_account_id`), a parte do fundo vai por split para ela; o resto fica na franqueadora. Hoje o fundo usa a conta da franqueadora, e não há split.
+- **No riSZon:** a cobrança aparece para o Gerente e o franqueado da unidade, com "Copiar link"; o Gerente recebe o aviso da emissão.
+- **A baixa:** o aviso de pagamento liquida as contas a pagar de taxa da unidade daquele período (com a multa e os juros na conta de despesa financeira) e realiza a receita da franqueadora.
+
+### 20.7 Contestação e falta de pagamento
+
+**Contestação** (decisão 1):
+- **Na prévia** (antes da emissão):
+  - o Gerente marca a linha, escreve o motivo e pode anexar um comprovante;
+  - o Financeiro decide: **aceita** (a linha é dispensada, com o motivo, na auditoria) ou **recusa** (com o motivo);
+  - a cobrança só sai sem nenhuma contestação aberta.
+- **Depois da emissão:** a contestação aceita vira **crédito** na cobrança do mês seguinte (linha negativa, com a origem). O boleto emitido não é mexido.
+
+**Falta de pagamento** (decisão 3):
+- **Vencida:** multa e juros pelo Asaas; aviso ao Gerente e ao franqueado da unidade e ao Financeiro, **a cada 7 dias**.
+- **30 dias:** o aviso sobe para o Admin Master, e a unidade aparece em **"Em atraso com a rede"** no painel da conciliação.
+- **Nada é bloqueado sozinho**: a decisão é do Financeiro ou do Admin, fora do sistema (como a regra do distrato).
+
+### 20.8 A conciliação do mês
+
+**Por unidade e na rede**, o painel do mês mostra:
+
+| | Valor |
+|---|---|
+| **Devido** (todas as taxas do período) | R$ … |
+| = Retido pelo split | R$ … |
+| + A reter (cartão parcelado) | R$ … |
+| + Faturado na cobrança mensal | R$ … |
+| + Dispensado | R$ … |
+| + Ainda não faturado (ajustes que vão para o mês seguinte) | R$ … |
+| **Diferença** | **R$ 0,00** |
+
+**A rotina noturna:**
+- confere essa conta por unidade;
+- confere que **cada linha de taxa tem um dono só** (retida, a reter, faturada, dispensada ou ainda a cobrar; F1);
+- grava em `reconciliation_issues` o que não bater: uma linha em dois donos, uma linha sem dono depois do fechamento, uma cobrança paga com valor diferente do faturado, ou um split liquidado a mais (S5).
+- O painel mostra as divergências abertas, com o caminho de cada uma.
+
+**A prova:**
+- **No ensaio:** um mês com todas as origens da 20.3 e todos os casos (estorno depois do fechamento, distrato, parcelado a reter, dispensa, contestação aceita), quebrado de propósito:
+  - `--quebrar=dobro`: a mesma linha faturada duas vezes;
+  - `--quebrar=fora`: uma linha "a cobrar" que não entra;
+  - `--quebrar=reter`: o "a reter" faturado;
+  - `--quebrar=baixa`: a baixa sem liquidar a conta a pagar.
+- **No sandbox:** a emissão pela conta da franqueadora com a unidade como pagadora, o pagamento simulado e a baixa.
+
+### 20.9 Ligação com a nota fiscal (ASA8, sem construir)
+
+- Cada item da cobrança guarda a **taxa** e o **mês**, e a cobrança guarda o **total por taxa**. É o que a nota consolidada precisa.
+- A nota consolidada do mês (14.x e 3.x) cobre **a cobrança mensal e o retido pelo split do mês**: o total por taxa vem da conciliação (retido + faturado).
+- **Na ASA8:** o código de serviço de cada taxa (um campo reservado no tipo de taxa) e a nota pedida pelo riSZon.
+
+### 20.10 O que a 1C muda depois
+
+- **Hoje:** o dinheiro do caixa gera "a cobrar", que vai para a cobrança mensal.
+- **Com a 1C** (o boleto de depósito pago pela unidade, com o split fixo):
+  - a taxa desse dinheiro passa a ser **retida no depósito**, com um dono novo, "no depósito" (F1), e **não entra** na cobrança mensal;
+  - o depósito que não for pago (F4) volta a "a cobrar" e entra na cobrança mensal.
+- **A ASA6 já nasce com os donos da F1:** a 1C só acrescenta um dono, sem mexer na cobrança mensal.
+
+### 20.11 Quem vê e quem faz
+
+| | Gerente (só a sua unidade) | Franqueado (a sua) | Financeiro da Franqueadora | Admin Master |
+|---|---|---|---|---|
+| Ver a prévia, o demonstrativo e a cobrança | ✅ | ✅ | ✅ (a rede) | ✅ |
+| Contestar linha | ✅ | ✅ | — | — |
+| Decidir a contestação, dispensar linha | — | — | ✅ | ✅ |
+| Aprovar e emitir a cobrança | — | — | ✅ | ✅ |
+| Painel da conciliação | a sua | a sua | a rede | a rede |
+| Configurar na Central (multa, juros, vencimento, período, valores fixos, e-mail financeiro) | — | — | ✅ | ✅ |
+
+### 20.12 A configuração na Central (rede e unidade)
+
+Os campos nascem **em branco**. **Sem eles, a cobrança mensal não sai**, e a tela diz o que falta.
+
+| Campo | Rede | Unidade | Onde fica hoje |
+|---|---|---|---|
+| Multa por atraso (%) | ✅ | ✅ (exceção) | existe só na rede (`unit_charge_fine_percent`) |
+| Juros ao mês (%) | ✅ | ✅ | existe só na rede (`unit_charge_interest_percent`) |
+| Dia de vencimento | ✅ | ✅ | existe por taxa (`due_day`); passa a ser **um** para a cobrança |
+| Período de apuração | ✅ | — | novo (o padrão proposto é o mês calendário, a confirmar pelo contrato) |
+| Dias da prévia (a janela de contestação) | ✅ | — | novo |
+| Valor de SDR e de tecnologia | ✅ | ✅ | existe (`network_fees.amount_cents`) |
+| E-mail financeiro da unidade | — | ✅ | novo |
+
+### 20.13 Decisões para o dono
+
+1. **A prévia antes da emissão:**
+   - (a) a prévia fica aberta à unidade N dias (configurável) para contestar; a cobrança sai depois da conferência do Financeiro (recomendado);
+   - (b) sem prévia: a cobrança sai no fechamento, e a contestação vira crédito no mês seguinte.
+2. **O meio:**
+   - (a) boleto com o QR Code Pix (recomendado);
+   - (b) só Pix.
+3. **A falta de pagamento:**
+   - (a) multa e juros, avisos a cada 7 dias, o Admin aos 30 dias, sem bloqueio automático (recomendado);
+   - (b) com bloqueio de alguma função da unidade (diga qual).
+4. **O que chega depois do fechamento:**
+   - (a) entra no mês seguinte, como "Ajustes de meses anteriores" (recomendado);
+   - (b) reabre a cobrança do mês.
+5. **O fundo de marketing:**
+   - (a) se o fundo tiver conta própria, a parte dele vai por split na cobrança mensal (recomendado);
+   - (b) tudo na conta da franqueadora, com o repasse ao fundo por fora.
+6. **O paciente no demonstrativo:**
+   - (a) o código do paciente e o nome abreviado (recomendado, pela LGPD; a unidade já tem a ficha);
+   - (b) o nome completo.
+
+### 20.14 Tamanho e entregas
+
+- **4021:** o lote e os itens, a prévia, a contestação, a emissão, a baixa, a configuração e o demonstrativo.
+- **4021a:** a conciliação noturna, `reconciliation_issues` e o painel.
+- **Prova** como na 20.8: ensaio quebrado de propósito e sandbox com a conta da franqueadora.
