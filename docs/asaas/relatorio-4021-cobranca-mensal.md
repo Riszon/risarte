@@ -219,6 +219,12 @@ Entre como Admin Master. Nos passos 👤, entre como Gerente de Londrina e como 
      - Londrina: o mesmo = R$ 1.600,00;
      - o mais antigo venceu em 10/11/2026.
    - O que vira saldo anterior depende do 1º mês de cada unidade: com novembro, o saldo é outubro (R$ 800,00 por unidade); com dezembro, outubro e novembro (R$ 1.600,00).
+   - **Decisão do dono (16/11/2026): cancelar as 8 contas e começar as taxas fixas em 12/2026.** Rodado na produção por ele (`docs/asaas/cancelar-taxas-fixas-out-nov-2026.sql`).
+     - **A 1ª tentativa gravou:** as contas foram canceladas às 19:54:30 com o motivo, e o erro "relation alvo does not exist" veio de um passo seguinte.
+     - **A 2ª, um comando só,** achou 0 contas (já estavam canceladas).
+     - **Conferido de dentro:** as 8 contas canceladas e 16 lançamentos cancelados (8 da despesa e 8 da receita, R$ 3.200,00 cada lado).
+     - **Na 4021:** o 1º mês de Cambé e de Londrina é 12/2026, e não há saldo anterior.
+     - **Lição:** o SQL Editor não segura tabela temporária entre comandos. Mudança de produção vai num comando só.
 2. **Os valores do contrato.**
 3. **Os meses fechados:** confira se o 1º mês da unidade não está fechado sem a taxa fixa.
 
