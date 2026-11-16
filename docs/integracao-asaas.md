@@ -5116,3 +5116,58 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 - **A tela:** a aba do painel.
 - **A prova:** o ensaio com os defeitos plantados.
 - **Sem chamada nova ao Asaas.**
+
+#### 20.17.8 Aprovação do dono (16/11/2026), com ajustes
+
+**Aprovado:** 1a a 6a, com os ajustes:
+1. **A aba** fica dentro de "Cobrança da rede" e se chama **"Conferência das taxas"**. O mesmo nome vale no manual e nos avisos.
+2. **Ignorar:** o Financeiro da Franqueadora ou o Admin Master ignoram, com o motivo; se o valor mudar, a divergência reabre. **As ignoradas ficam numa lista própria, sempre visível,** com quem ignorou e quando.
+3. **O aviso:** um resumo por dia ao Financeiro, só quando aparecer divergência nova.
+4. **A unidade vê:** o Gerente e o franqueado veem a conta e as divergências da própria unidade, só leitura.
+5. **Desde quando:** a conferência parte do 1º mês da cobrança mensal de cada unidade, o que o dono ligar na Central. **Nenhum mês fixo.** A cobrança mensal depende da conta de produção (ASA7) e dos valores do contrato, ainda em branco.
+6. **A tolerância:** zero na conta do mês e na cobrança paga; o split a mais usa os R$ 0,10 da Central.
+
+**A ordem:**
+1. a explicação dos R$ 90,76 (20.17.9);
+2. a 4021a;
+3. a prova do cartão parcelado (17/11);
+4. a 4020a;
+5. as peças da ASA7 que preparam o piloto.
+
+#### 20.17.9 Os R$ 90,76 de "split a mais" no treino: falso alarme, com defeito real na marca
+
+**O que se viu:**
+- São **10 splits liquidados**, todos com a mesma regra:
+  - para a conta raiz: 17%, mais R$ 0,16 fixos;
+  - tarifa de R$ 0,99, no Pix e no boleto.
+- **Em todos os 10, a rede recebeu 1 centavo a MENOS do que o devido,** a favor da unidade, como a regra aprovada.
+- **Só 4 estavam marcados "a mais":** as mensalidades do PPR+ e da Ortodontia (4018), R$ 16,97 + R$ 28,41 + R$ 28,41 + R$ 16,97 = R$ 90,76.
+- **A marca era o valor inteiro recebido, não uma diferença.**
+
+**A causa:**
+1. Na mensalidade, o aviso do split liquidado chega **antes** de as linhas de taxa nascerem (cerca de 1 segundo antes, na baixa).
+2. `_gateway_split_retention` só pula a cobrança sem recebimento quando ela também não tem origem. A mensalidade tem origem, então a função conferiu com o devido = 0 e marcou tudo como "a mais".
+3. Também mandou o aviso "Split: repasse acima do devido": 20 avisos no treino.
+4. Quando as linhas nasceram, a conferência rodou de novo e viu "recebeu menos que o devido". Mas a marca nunca é limpa, só gravada.
+
+**Na parcela** isso não acontece: sem o recebimento, a função para antes.
+
+**O que o defeito afeta:**
+- **O dinheiro não:** o retido, a conta a pagar e o razão ficaram certos.
+- **Afeta a marca e o aviso:** e a 4021a mostraria uma divergência falsa.
+
+**Na produção:**
+- **O código está lá:** 4009 e 4018.
+- **Nenhuma unidade ligou as mensalidades,** então não deve haver marca. Consulta só de leitura: `docs/asaas/levantamento-split-a-mais.sql`.
+
+**A correção proposta (entrega própria, antes da 4021a):**
+- **Na `_gateway_split_retention`:**
+  - sem linha de taxa ligada à cobrança, não confere o "a mais" (espera as linhas);
+  - a marca é sempre recalculada (o maior entre recebido − devido e zero), então fica limpa quando as linhas chegam;
+  - o aviso só sai quando o "a mais" passa da tolerância da Central (R$ 0,10).
+- **No treino:** a conferência roda de novo nas 4 cobranças, e as marcas ficam zeradas.
+- **A prova:**
+  - um ensaio com o split liquidado antes das linhas (sem marca e sem aviso);
+  - o mesmo depois das linhas (zero);
+  - um "a mais" de verdade, acima de R$ 0,10 (marca e aviso);
+  - provado quebrando, com a regra antiga de volta, o ensaio reprova.
