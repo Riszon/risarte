@@ -3757,3 +3757,103 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
 - **Também passaram:**
   - os ensaios anteriores (renegociação 73/73, 4017a 39/39, 4015a 13/13, 1B 42/42, 4012 44/44, 4013 34/34, 4014 31/31), ajustados para rodar as migrações novas por cima;
   - `test:indica` 246/0.
+
+
+### 19.34 Entrega 5 — reemissão da cobrança externa: PLANO (16/11/2026; migração 4019; AGUARDA APROVAÇÃO)
+
+**Como é hoje (4004, D17):**
+- **Marcar:** "Marcar como cobrada fora" cria em `charges` uma cobrança `externa`, só com uma nota livre ("Onde e como foi cobrada"). O riSZon **não sabe qual é** a cobrança no Asaas.
+- **Efeitos da marcação:**
+  - a parcela fica travada (`CHARGE_ACTIVE`): não muda valor, data nem meio e não é renegociada (a 4017 pede a confirmação do Gerente);
+  - a baixa continua à mão;
+  - no painel de repasses, a parcela conta como "externa" (taxa da rede **a cobrar**).
+- **Pagamento:** quando o paciente paga a cobrança antiga, o aviso do Asaas chega, mas é ignorado (`ignorado_fora_do_riszon`), porque ela não tem a referência do riSZon.
+- **Saída:** o único jeito de sair é **Desfazer**, que apaga a marcação e **não toca no Asaas**. Se depois o riSZon emite outra cobrança, ficam **duas vivas**, e o paciente pode pagar as duas.
+
+**Leitura da linha "a que foi paga por fora volta a ser cobrada pelo Asaas" (linha 5 da tabela):** entendo "a que foi **cobrada** por fora", isto é, emitida direto no painel do Asaas e ainda não paga. A paga continua com a baixa à mão, como hoje (o riSZon nunca cancela nem edita cobrança paga).
+
+**O que a entrega faz:** um botão **"Trazer para o riSZon"** na parcela com cobrança externa (Gerente, Admin Master e quem já pode marcar e cancelar: `_charge_can('cancel')`).
+
+1. **Achar a cobrança antiga.**
+   - **Busca:** o servidor procura, na conta da unidade (pelo `clinic_id`), o pagador da parcela pelo CPF/CNPJ e lista as cobranças dele **em aberto e vencidas**, com valor, vencimento, meio e descrição.
+   - **Escolha:** o usuário escolhe uma, ou cola o código (`pay_…`) ou o link da fatura.
+2. **Conferir.** O servidor lê a cobrança no Asaas (`GET /payments/{id}`) e **recusa** quando ela:
+   - não é dessa conta;
+   - já foi paga ou confirmada → o caminho é a baixa à mão;
+   - já tem a referência de outra cobrança do riSZon;
+   - faz parte de um **parcelamento** ou de uma **assinatura** do Asaas → a tela orienta a cancelar no painel do Asaas, para não nascerem outras;
+   - é de **outro pagador** (CPF/CNPJ diferente do pagador da parcela) → decisão 3.
+3. **Mostrar e confirmar.** A tela mostra a cobrança antiga ao lado da parcela: valor, vencimento, meio e situação, com o pagador mascarado. Depois mostra o que vai acontecer (decisão 1), com a confirmação.
+4. **Executar, nesta ordem:**
+   - o riSZon grava o código do Asaas na cobrança externa e trava a operação;
+   - fala com o Asaas;
+   - só com o Asaas confirmado, fecha a externa e libera a parcela.
+   - **Falha:** nada muda, e a tela diz o motivo.
+   - **Tempo esgotado:** o riSZon relê a cobrança no Asaas antes de seguir (nunca repete sozinho).
+
+**Depois da entrega:**
+- **A cobrança antiga fica reconhecida.** Com o código gravado, o aviso de pagamento dela deixa de ser ignorado (decisão 4).
+- **Painel de cobranças** (Financeiro › Cobranças), aba nova **"Externas"**: as parcelas em aberto com cobrança externa, por unidade, com vencimento, valor, nota, quem marcou, há quantos dias e o link para o cliente (é a lista "cobranças externas a reemitir" da seção 9).
+- **Taxa da rede:** a externa conta como "a cobrar". Trazida para o riSZon com split, a taxa passa a nascer **retida**, sem cobrar duas vezes.
+- **Auditoria:** quem trouxe, quando, o código antigo, o caminho escolhido e a cobrança nova.
+
+**Decisões para o dono:**
+
+**1. O que fazer com a cobrança antiga.**
+- **(a) Cancelar e emitir nova (D17 ao pé da letra)** — recomendado:
+  - o riSZon apaga a antiga no Asaas (`DELETE`) e só depois emite a nova pelo caminho normal, com split, multa e juros da regra e o desconto de pontualidade;
+  - o paciente recebe um boleto ou link novo, e o antigo deixa de valer.
+- **(b) Adotar a mesma cobrança:**
+  - o riSZon põe a sua referência na cobrança antiga (`PUT /payments/{id}`, como a 4013 já faz no parcelado) e o split (`PUT` do split, como a 4009);
+  - o paciente continua com o **mesmo** boleto, e a baixa passa a vir sozinha;
+  - **só quando:** o valor e o vencimento batem com a parcela e ela não venceu. Senão, cai em (a).
+  - **Risco:** a multa, os juros e o desconto continuam os que alguém digitou no painel, e não os da regra.
+- **(c)** As duas, com o usuário escolhendo caso a caso; (b) só aparece quando bate.
+
+**2. Quando a cobrança antiga não está no Asaas** (outro banco, carnê de papel, sem o código):
+- **(a)** **"Não está no Asaas"**: o usuário confirma, numa caixa obrigatória, que a cobrança antiga foi cancelada ou não pode mais ser paga. A marcação é desfeita, com a confirmação na auditoria (igual à confirmação da 4017), e a parcela volta a aceitar a cobrança do riSZon. Recomendado.
+- **(b)** Sem esse caminho: continua só o **Desfazer** de hoje.
+
+**3. Cobrança antiga de outro pagador** (por exemplo, emitida no nome do paciente, e a parcela é do responsável financeiro):
+- **(a)** Recusa, com o aviso. Recomendado: evita cancelar a cobrança errada.
+- **(b)** Aceita, com uma segunda confirmação.
+
+**4. A antiga é paga depois de cancelada** (pergunta 8 ao Asaas, ainda sem resposta: o boleto apagado pode ser pago?):
+- **(a)** O riSZon reconhece o aviso pelo código gravado e **não dá baixa sozinho**. Avisa o Gerente e o Financeiro ("a cobrança antiga, cancelada, foi paga: cancele a nova e dê a baixa"), e a parcela ganha o alerta, como o boleto cancelado pago da 4015. Recomendado.
+- **(b)** Dá a baixa sozinho e cancela a nova.
+- **No caminho (b) da decisão 1,** a antiga **é** a do riSZon, e a baixa vem sozinha.
+
+**5. A parcela vencida.** A cobrança nova segue a 14.3:
+- data de hoje a 7 dias;
+- multa e juros até a nova data;
+- acima do limite, recusa com a indicação da renegociação.
+- **(a)** Igual à 14.3. Recomendado.
+- **(b)** Sem o limite de dias, só para a externa.
+
+**Proposta técnica (4019):**
+- **`charges`:**
+  - `external_asaas_payment_id` (o código da antiga, único por conta);
+  - `external_resolved_at`, `external_resolution` (`cancelada_no_asaas`, `adotada`, `fora_do_asaas`);
+  - `reissued_from_charge_id` na cobrança nova.
+- **Funções:**
+  - `charge_external_bring_begin` (usuário: permissão, parcela em aberto, código, trava);
+  - `_charge_external_bring_done` (só o servidor: fecha a externa e registra);
+  - `charge_external_not_in_gateway` (decisão 2);
+  - `gateway_external_charges_list` (a aba "Externas").
+- **Redefinição:** `_gateway_apply_event` reconhece o código gravado (decisão 4).
+- **Servidor:** `src/lib/asaas/reemissao.ts` (busca, conferência, cancelar ou adotar, emissão pelo caminho de `emitirCobranca`).
+- **Tela:** o diálogo na parcela (`cobranca-da-parcela.tsx`) e a aba do painel.
+- **Sem mudança** em `payment_installments` (o Indica não é tocado; mesmo assim, `test:indica` roda).
+
+**Provas:**
+- **Ensaio no treino**, provado quebrando:
+  - `--quebrar=ordem`: a externa fecha antes do Asaas;
+  - `--quebrar=paga`: aceita cancelar cobrança paga;
+  - `--quebrar=duplicada`: duas vivas na parcela;
+  - `--quebrar=aviso`: o pagamento da antiga ignorado.
+- **Sandbox:**
+  - crio uma cobrança direto pela API, sem a referência (como se fosse no painel), e a marco como externa;
+  - "Trazer para o riSZon": a antiga apagada (relida como apagada), a nova emitida com split, o pagamento simulado dando baixa pelo aviso;
+  - se (b) for aprovado, também a adoção.
+  - Pagador sem contato: **nenhuma mensagem enviada**.
+- **Levantamento na produção, só leitura:** `docs/asaas/levantamento-cobrancas-externas.sql` (quantas externas abertas por unidade, a mais antiga, quantas vencidas).
