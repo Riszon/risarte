@@ -214,6 +214,11 @@ Entre como Admin Master. Nos passos 👤, entre como Gerente de Londrina e como 
 
 **Antes de ligar a 1ª unidade:**
 1. **O saldo anterior:** rode `docs/asaas/levantamento-taxas-acumuladas.sql`, só leitura (no treino: Londrina com R$ 188,02 de novembro).
+   - **Rodado na produção pelo dono em 16/11/2026:** R$ 3.200,00 em aberto na rede, nada pago, **só taxas fixas** (nenhuma percentual "a cobrar"):
+     - Cambé: SDR R$ 550,00 e tecnologia R$ 250,00 em 10/2026 e em 11/2026 = R$ 1.600,00;
+     - Londrina: o mesmo = R$ 1.600,00;
+     - o mais antigo venceu em 10/11/2026.
+   - O que vira saldo anterior depende do 1º mês de cada unidade: com novembro, o saldo é outubro (R$ 800,00 por unidade); com dezembro, outubro e novembro (R$ 1.600,00).
 2. **Os valores do contrato.**
 3. **Os meses fechados:** confira se o 1º mês da unidade não está fechado sem a taxa fixa.
 
