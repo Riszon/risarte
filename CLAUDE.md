@@ -408,8 +408,11 @@ Syncthing se comportarem de forma estranha.**
   tranca é por função** (`system_closed_clinics.role`; grant/revoke com
   `p_role`). ⚠️ Aviso igual no mesmo instante entra uma vez
   (`notifications_dedupe`). A trava de uma função por unidade só sai na F2.
-- ✅ 0413 e 2012 no treino (ensaio 15/15, desfeito). ⏳ Produção: o dono roda a
-  0413 e DEPOIS a 2012, antes do push.
+- ✅ 0413 e 2012 nos dois bancos (treino: ensaio 15/15, desfeito; produção pelo
+  dono em 16/11/2026; conferido de fora: as funções com `assignment_kind`
+  "principal", `system_closed_clinics.role` existe, liberar/tirar com a função
+  recusam sem login e param em NOT_ALLOWED pela chave de serviço; o corpo da
+  2012 não dá para ler de fora, só que a função existe). Publicado. Próxima: F2.
 
 **16/11/2026 (permissões do Empresarial) — PC Administrador (core 0.459.1 → 0.460.0; Empresarial 0.107.0 → 0.108.0, migração 1048)**
 
