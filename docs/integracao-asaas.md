@@ -3669,3 +3669,38 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
   - **Falta:** o teste do Jeferson pelas telas e o envio real do termo pela ZapSign, que só sai com o "pode" dele.
 - **4017a (exceção do cancelamento, 1a, 2a, 3b, 4a): na produção.** A conferência bateu: 7, 1, 3, true. Produção na 0.455.1, conferida de fora.
   - **Falta:** o teste do Jeferson pelas telas.
+
+#### 19.32.10 Aprovação com dois ajustes e o levantamento (Jeferson, 15/11/2026)
+
+**O levantamento na produção (15/11/2026):** o Jeferson rodou `docs/asaas/levantamento-ppr-cancelado-com-mensalidade-aberta.sql`, e o resultado foi "Success. No rows returned". **Nenhuma adesão do PPR+ cancelada tem mensalidade em aberto.** Não há caso para corrigir.
+
+**Aprovados como propostos:**
+- **5, as datas:** a mensalidade nasce no dia 1 do mês anterior, e o boleto sai 15 dias antes do vencimento.
+- **7, o selo "Em atraso":** a mensalidade vencida entra no selo, pela mesma regra de dias úteis. Dentista, Planner, TSB, ASB e SDR continuam sem ver, **inclusive pela API**: a porta do banco já recusa esses papéis.
+- **9:** a 4018 genérica.
+- **2, 3, 6 e 8:** de acordo.
+
+**Ajuste 1 — o cancelamento do PPR+ não é automático:**
+- A **suspensão aos 30 dias** de atraso roda sozinha, todo dia, e a unidade é avisada (Gerente e Recepção).
+- **Aos 90 dias, o sistema não cancela sozinho.**
+  - O Gerente recebe o aviso "Adesão com 90 dias de atraso" e decide: cancelar ou manter suspensa.
+  - O aviso se repete a cada 7 dias enquanto não houver decisão. "Manter suspensa" registra a decisão e para o aviso.
+- **Adesão suspensa não gera mensalidade nova.**
+- **Quitado o que deve, a adesão é reativada:**
+  - a baixa da última mensalidade vencida (pelo Asaas ou à mão) reativa a adesão, como hoje;
+  - **a geração é retomada na hora:** se a mensalidade do próximo vencimento ainda não existe, ela nasce no mesmo dia; daí em diante, a regra do dia 1 do mês anterior;
+  - **os meses da suspensão não são cobrados:** a adesão suspensa não usa os benefícios, e só a dívida de antes da suspensão é cobrada.
+- **No cancelamento:** os meses que ainda não venceram são cancelados, com o boleto cancelado no Asaas, e os já vencidos continuam como dívida.
+- **Mantido:** o aviso à unidade quando a adesão chega a 2 mensalidades vencidas.
+
+**Ajuste 2 — quem paga por recorrência continua como está até a ASA4B:**
+- **Não mudam quando a unidade liga a chave:** as adesões e os tratamentos que hoje estão em crédito, débito ou Pix recorrente continuam como hoje até a ASA4B.
+  - Isso substitui, para os casos existentes, a tabela de meios da 19.32.5.
+- **Entram agora:** os que já são boleto, e as adesões e os tratamentos novos (com boleto, Pix ou cartão à vista pelo link).
+- **A tela da chave mostra separado:** quantos clientes entram agora e quantos ficam esperando a ASA4B.
+- **Passar um cliente de recorrência para boleto ou Pix antes da ASA4B:** um a um, na adesão ou no caso, com a concordância do cliente registrada (a frase "O cliente concordou em pagar por boleto ou Pix", quem registrou e quando, na auditoria).
+- **Como a recorrência é cobrada hoje, na prática:** o riSZon **não cobra** a recorrência. Não há integração com cartão, débito ou Pix recorrente.
+  - A unidade cobra por fora (na maquininha, no banco ou no app dela) e dá a baixa à mão na tela de Mensalidades.
+  - **É isso que continua igual** para esses clientes até a ASA4B: a mensalidade nasce no riSZon, a unidade cobra por fora e marca como paga.
+
+**A construção começa agora, do jeito genérico.**
