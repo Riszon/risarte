@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { FileSpreadsheet, FileText, Plus, X } from "lucide-react";
+import { Calculator, FileSpreadsheet, FileText, Plus, X } from "lucide-react";
 import { filtroParaOEndereco } from "@/lib/finance/dividas-exportacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ import {
 } from "@/lib/finance/dividas";
 import type { BaseDasDividas } from "./dados";
 import { FormularioDaDivida, SELECT_CLASS } from "./formulario-da-divida";
+import { SimuladorDeQuitacao } from "./simulador";
 
 /**
  * A lista do Levantamento de Dívidas (0404): busca, os filtros da 3.9 que já
@@ -58,6 +59,9 @@ export function ListaDeDividas({
   const [ordem, setOrdem] = useState<Ordenacao>("vencimento");
   const [novo, setNovo] = useState(false);
   const [maisFiltros, setMaisFiltros] = useState(false);
+  // Fase 8: a seleção para o simulador de quitação.
+  const [marcadas, setMarcadas] = useState<Set<string>>(new Set());
+  const [simulando, setSimulando] = useState(false);
 
   const muda = (p: Partial<DebtFilters>) => setFiltros((f) => ({ ...f, ...p }));
   const visiveis = useMemo(
@@ -178,11 +182,28 @@ export function ListaDeDividas({
         </div>
       )}
 
+      {marcadas.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+          <span>
+            {marcadas.size} dívida{marcadas.size === 1 ? "" : "s"} escolhida{marcadas.size === 1 ? "" : "s"}
+          </span>
+          <Button type="button" size="sm" className="h-8" onClick={() => setSimulando(true)}>
+            <Calculator className="size-4" /> Simular quitação
+          </Button>
+          <Button type="button" size="sm" variant="ghost" className="h-8" onClick={() => setMarcadas(new Set())}>
+            Limpar a escolha
+          </Button>
+        </div>
+      )}
+      {simulando && (
+        <SimuladorDeQuitacao linhas={linhas.filter((r) => marcadas.has(r.id))} onFechar={() => setSimulando(false)} />
+      )}
+
       {linhas.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Nenhuma dívida cadastrada ainda.
-            {podeLancar && " Use “Nova dívida” para lançar a primeira. A importação da planilha chega na fase 4."}
+            {podeLancar && " Use “Nova dívida” para lançar a primeira, ou Importar planilha."}
           </CardContent>
         </Card>
       ) : (
@@ -190,6 +211,24 @@ export function ListaDeDividas({
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
               <tr>
+                <th className="w-8 px-2 py-2">
+                  <input
+                    type="checkbox"
+                    className="accent-primary"
+                    aria-label="Escolher todas as dívidas visíveis para o simulador"
+                    checked={visiveis.length > 0 && visiveis.every((r) => marcadas.has(r.id))}
+                    onChange={(e) =>
+                      setMarcadas((m) => {
+                        const n = new Set(m);
+                        for (const r of visiveis) {
+                          if (e.target.checked) n.add(r.id);
+                          else n.delete(r.id);
+                        }
+                        return n;
+                      })
+                    }
+                  />
+                </th>
                 <th className="px-2 py-2">Código</th>
                 <th className="px-2 py-2">Devedor</th>
                 <th className="px-2 py-2">Credor</th>
@@ -206,6 +245,22 @@ export function ListaDeDividas({
                 const desconto = descontoDaProposta(valorDevido(r), r.propostaCents);
                 return (
                   <tr key={r.id} className="border-t align-top hover:bg-muted/30">
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        className="accent-primary"
+                        aria-label={`Escolher ${r.code} para o simulador`}
+                        checked={marcadas.has(r.id)}
+                        onChange={(e) =>
+                          setMarcadas((m) => {
+                            const n = new Set(m);
+                            if (e.target.checked) n.add(r.id);
+                            else n.delete(r.id);
+                            return n;
+                          })
+                        }
+                      />
+                    </td>
                     <td className="whitespace-nowrap px-2 py-2">
                       <Link className="font-medium text-primary underline-offset-2 hover:underline" href={`/financeiro/dividas/${r.id}`}>
                         {r.code}
@@ -257,7 +312,7 @@ export function ListaDeDividas({
               })}
               {visiveis.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
                     Nenhuma dívida com esses filtros.
                   </td>
                 </tr>
@@ -265,7 +320,7 @@ export function ListaDeDividas({
             </tbody>
             <tfoot className="border-t bg-muted/30 text-xs">
               <tr>
-                <td colSpan={5} className="px-2 py-2">
+                <td colSpan={6} className="px-2 py-2">
                   {totais.quantidade} dívida{totais.quantidade === 1 ? "" : "s"}
                   {algumFiltro && " (com os filtros)"} · valor original {formatBRL(totais.originalCents)}
                   {totais.contestadaJudicialCents > 0 && ` · contestadas/judiciais ${formatBRL(totais.contestadaJudicialCents)}`}

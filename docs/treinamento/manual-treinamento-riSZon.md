@@ -843,17 +843,25 @@ Anexos) ou **não se aplica** (com o motivo). Tudo resolvido, a dívida vai para
 para tudo o que está embaixo: **Devedor** (**Rede consolidada** ou um CNPJ),
 **Etiqueta** e **Sem as contestadas e judiciais**. Dívida baixada nunca entra.
 
-- **Os cartões:** **Total devido** (com quanto disso está contestado ou na
-  Justiça), **Estimado para regularizar** (a proposta, quando há; senão o
-  devido), **Custo total para regularizar** (com as custas de cartório),
-  **Economia potencial** e o desconto médio (**só onde há proposta** — dívida
-  sem proposta não conta como desconto), **Sem proposta** (o que falta
-  negociar), **Propostas atuais**, **Já quitado** e **Economia já obtida** (o
-  desconto dos acordos em dia ou cumpridos). Depois, quantidade e valor **em
-  atraso**, **inadimplentes**, **negativadas**, **protestadas**, **com ação
-  judicial**, e os **acordos valendo** (saldo, parcelas dos próximos 30 dias e
-  quantos estão quebrados). **CNPJs com restrição** lista quem tem negativação,
-  protesto ou ação.
+- **Os números, em três blocos** *(desde a 0.456.1)*:
+  - **Quanto se deve:** o **Total devido** em destaque (com quanto disso está
+    contestado ou na Justiça) e uma barra que separa o que **tem proposta** do
+    que **ainda não tem**; ao lado, **Estimado para regularizar** (a proposta,
+    quando há; senão o devido), **Custo total para regularizar** (com as
+    custas de cartório), **Economia potencial** e o desconto médio (**só onde
+    há proposta**), **Propostas atuais** e **Sem proposta**.
+  - **O que pede atenção** (cada um com a sua cor e o seu ícone): quantas
+    dívidas e quanto **em atraso**, **inadimplentes**, **negativadas**,
+    **protestadas** e **com ação judicial**; embaixo, os **CNPJs com
+    restrição**.
+  - **O que já foi resolvido e o que está em acordo:** **Já quitado**,
+    **Economia já obtida** (o desconto dos acordos em dia ou cumpridos) e
+    **Acordos valendo** (saldo, parcelas dos próximos 30 dias e quantos estão
+    quebrados).
+- **Todo número abre a lista do que o forma** *(desde a 0.456.1)*: clique no
+  cartão (ou no CNPJ com restrição) e aparecem as dívidas — ou os acordos —
+  que somam aquele valor, com o total no rodapé, seguindo o filtro do Painel.
+  O código abre a dívida.
 - **Os gráficos:** **evolução mensal do saldo devedor** (na rede, uma linha
   para a rede e uma para cada CNPJ; marcando **Ver também o quitado no mês e
   as dívidas novas**, as barras do mês), **quanto se deve por credor,
@@ -895,7 +903,38 @@ verem, o Admin marca **"Ver as dívidas da própria unidade (card)"** em
 Permissões. Cada um vê só a sua unidade, e nunca credor, contato, anexo ou a
 dívida uma a uma. Outros papéis marcados ali continuam sem ver.
 
-*Chegam nas próximas etapas:* os outros avisos e o simulador de quitação.
+**Simulador de quitação** *(desde a 0.456.0)*. Na aba **Dívidas**, marque as
+dívidas (a caixa no começo de cada linha; a do cabeçalho marca todas as que
+aparecem) e clique **Simular quitação**. O simulador mostra quanto custa
+quitar o conjunto (a proposta, quando há, senão o devido — mais as custas de
+cartório), a economia e, **para cada CNPJ**, a **ordem sugerida**:
+prioridade, depois as com restrição (negativada, protestada, judicial), o
+maior desconto e a proposta que vence antes. Informe o **valor disponível**
+de cada CNPJ — ou **Usar o caixa projetado** (o menor saldo previsto para os
+próximos 30 dias, para não deixar o caixa negativo) — e ele marca o que cabe,
+na ordem; o que não cabe é pulado e as seguintes ainda são tentadas. Cada CNPJ
+paga com o próprio caixa. É só um cenário: nada é gravado.
+
+**Os avisos** *(desde a 0.453.0 e a 0.456.0)*. Chegam no sino, na categoria
+**Dívidas da rede**, para o **responsável** da dívida; sem responsável, para
+os **Financeiros da Franqueadora**. O **Admin Master** recebe só os
+críticos. Cada aviso vem **uma vez**.
+
+| Aviso | Quando | Admin Master? |
+|---|---|---|
+| Proposta vencendo | nos dias da regra antes da validade (7 e 2, na rede) | não |
+| Parcela do acordo vencendo | 3 dias antes | não |
+| Parcela do acordo em atraso | no dia seguinte ao vencimento | não |
+| Acordo quebrado | passada a tolerância | **sim** |
+| Acordo aguardando aprovação | ao registrar | **sim** (é quem aprova) |
+| Novo protesto ou nova ação judicial | ao lançar (a importação da planilha não avisa um a um) | **sim** |
+| Vira inadimplente em breve | os dias da regra antes do prazo (5, na rede) | não |
+| Encerramento parado | quitada há mais dias que a regra (15, na rede) e o checklist ainda pendente | não |
+| Baixa da negativação não confirmada | passado o prazo do credor | não |
+| Próxima ação vencida | a data da próxima ação passou | não |
+
+Quem fez a ação não recebe o próprio aviso. Os dias de cada aviso ficam em
+**Configurações** (regra da rede ou do devedor).
 
 ### 2.4. Recebíveis e inadimplência
 

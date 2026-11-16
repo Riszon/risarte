@@ -111,3 +111,10 @@ describe("M5 — avisos das Metas", () => {
     expect(categorizeNotification("Meta atingida: Mês do Riso+")).toBe("ppr");
   });
 });
+
+describe("Levantamento de Dívidas (0408/0410): categoria própria pelo link", () => {
+  it("aviso com link do Levantamento cai em Dívidas, mesmo com palavra de outra categoria no título", () => {
+    expect(categorizeNotification("Dívidas: proposta vencendo em 20/11/2026", "/financeiro/dividas/abc?aba=propostas")).toBe("dividas");
+    expect(categorizeNotification("Dívidas: acordo AD-00001 quebrado", "/financeiro/dividas/abc?aba=acordos")).toBe("dividas");
+  });
+});

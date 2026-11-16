@@ -526,3 +526,41 @@ export async function cenarioDaProposta(
   });
   return { ok: true, cenario, dias: DIAS };
 }
+
+// ------------------------------------------------------------- fase 8 (0410)
+
+/**
+ * O caixa projetado de cada CNPJ para o simulador de quitação: o saldo de hoje
+ * e o MENOR saldo dos próximos 30 dias, pelo mesmo fluxo da tela de Fluxo de
+ * caixa. O valor sugerido para quitar é esse menor saldo (se positivo): gastar
+ * mais que ele deixaria o caixa negativo em algum dia do mês.
+ */
+export async function caixaProjetado(
+  clinicIds: string[]
+): Promise<{ ok: boolean; caixas?: Record<string, { saldoHojeCents: number; menorCents: number; diaDoMenor: string }>; error?: string }> {
+  const session = await getSessionContext();
+  if (!podeVerDividas(session)) return { ok: false, error: "Sem permissão." };
+  const supabase = await createClient();
+  const hoje = todayInBrazil();
+  const DIAS = 30;
+  const caixas: Record<string, { saldoHojeCents: number; menorCents: number; diaDoMenor: string }> = {};
+  for (const id of [...new Set(clinicIds)].slice(0, 20)) {
+    const [serie, saldo] = await Promise.all([
+      supabase.rpc("cash_flow_series", { p_clinic_id: id, p_from: hoje, p_to: addDaysIso(hoje, DIAS) }),
+      supabase.rpc("cash_balance_before", { p_clinic_id: id, p_date: addDaysIso(hoje, 1) }),
+    ]);
+    if (serie.error || saldo.error) return { ok: false, error: "Não foi possível ler o caixa projetado agora." };
+    const c = cenarioDeQuitacao({
+      hoje,
+      dias: DIAS,
+      saldoHojeCents: Number(saldo.data ?? 0),
+      previstos: ((serie.data ?? []) as { day: string; kind: string; inflow_cents: number; outflow_cents: number }[])
+        .filter((r) => r.kind === "previsto")
+        .map((r) => ({ dia: String(r.day).slice(0, 10), entradaCents: Number(r.inflow_cents ?? 0), saidaCents: Number(r.outflow_cents ?? 0) })),
+      titulos: [],
+      pagamento: { dia: hoje, valorCents: 0 },
+    });
+    caixas[id] = { saldoHojeCents: Number(saldo.data ?? 0), menorCents: c.sem.menorCents, diaDoMenor: c.sem.diaDoMenor };
+  }
+  return { ok: true, caixas };
+}

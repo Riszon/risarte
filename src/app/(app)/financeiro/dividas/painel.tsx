@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { CartoesDoPainel } from "./cartoes-do-painel";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/pricing";
 import { formatIsoMonthBr } from "@/lib/dates";
@@ -46,7 +46,7 @@ export function PainelDasDividas({
 }: {
   base: BaseDasDividas;
   linhas: DebtListRow[];
-  acordos: (AcordoDoPainel & { parcelasDoMesCents: number })[];
+  acordos: (AcordoDoPainel & { parcelasDoMesCents: number; supplierName?: string })[];
   /** Fase 7: a DRE dos meses fechados de cada CNPJ (pares para atravessar ao navegador). */
   dre: [string, DreDoDevedor][];
   periodoDaDre: { de: string; ate: string };
@@ -105,7 +105,6 @@ export function PainelDasDividas({
   const saude = useMemo(() => saudeFinanceira(rows, acordos, new Map(dre), nomeDoDevedor), [rows, acordos, dre, nomeDoDevedor]);
   const pct = (x: number | null) => (x === null ? "sem dados" : `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`);
   const vezes = (x: number | null) => (x === null ? "sem dados" : `${x.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mês(es)`);
-  const t = ind.totais;
 
   return (
     <div className="space-y-4">
@@ -141,62 +140,7 @@ export function PainelDasDividas({
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Cartao titulo="Total devido" valor={formatBRL(t.devidoCents)}
-          nota={t.contestadaJudicialCents > 0 ? `dos quais ${formatBRL(t.contestadaJudicialCents)} contestado ou judicial` : `${t.quantidade} dívida(s)`} />
-        <Cartao titulo="Estimado para regularizar" valor={formatBRL(t.estimadoCents)} nota="a proposta, quando há; senão o devido" />
-        <Cartao titulo="Custo total para regularizar" valor={formatBRL(t.custoTotalCents)}
-          nota={t.custasCents > 0 ? `com ${formatBRL(t.custasCents)} de custas de cartório` : "sem custas de cartório em aberto"} />
-        <Cartao titulo="Economia potencial" valor={formatBRL(t.economiaCents)}
-          nota={t.descontoMedio === null ? "nenhuma dívida com proposta" : `desconto médio de ${Math.round(t.descontoMedio * 100)}% (só onde há proposta)`} />
-        <Cartao titulo="Sem proposta" valor={formatBRL(t.semPropostaCents)} nota="pendência de negociação" />
-        <Cartao titulo="Propostas atuais" valor={formatBRL(t.propostasCents)} nota={`sobre ${formatBRL(t.comPropostaDevidoCents)} devidos`} />
-        <Cartao titulo="Já quitado" valor={formatBRL(ind.quitadoCents)} nota="pago nos títulos e nas parcelas" />
-        <Cartao titulo="Economia já obtida" valor={formatBRL(ind.economiaObtidaCents)} nota="desconto dos acordos em dia ou cumpridos" />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Contagem titulo="Em atraso" c={ind.emAtraso} />
-        <Contagem titulo="Inadimplentes" c={ind.inadimplentes} />
-        <Contagem titulo="Negativadas" c={ind.negativadas} />
-        <Contagem titulo="Protestadas" c={ind.protestadas} />
-        <Contagem titulo="Com ação judicial" c={ind.judiciais} />
-        <Card>
-          <CardContent className="py-3">
-            <p className="text-xs text-muted-foreground">Acordos valendo</p>
-            <p className="text-lg font-semibold tabular-nums">{formatBRL(ind.acordos.saldoCents)}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {ind.acordos.quantidade} acordo(s) · {formatBRL(ind.acordos.proximos30Cents)} em 30 dias
-              {ind.acordos.quebrados > 0 && ` · ${ind.acordos.quebrados} quebrado(s)`}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardContent className="py-3 text-sm">
-          <p className="mb-1 flex items-center gap-1.5 font-medium">
-            <AlertTriangle className="size-4 text-red-700 dark:text-red-300" /> CNPJs com restrição
-          </p>
-          {ind.cnpjsComRestricao.length === 0 ? (
-            <p className="text-muted-foreground">Nenhum CNPJ com negativação, protesto ou ação judicial no filtro.</p>
-          ) : (
-            <ul className="flex flex-wrap gap-x-6 gap-y-1">
-              {ind.cnpjsComRestricao.map((c) => (
-                <li key={c.clinicId}>
-                  <span className="font-medium">{c.nome}</span>
-                  <span className="text-muted-foreground">
-                    {" "}
-                    — {[c.negativadas && `${c.negativadas} negativada(s)`, c.protestadas && `${c.protestadas} protestada(s)`, c.judiciais && `${c.judiciais} judicial(is)`]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <CartoesDoPainel ind={ind} rows={rows} acordos={acordos} />
 
       <Secao titulo="Saúde financeira">
         <p className="text-xs text-muted-foreground">
@@ -309,30 +253,6 @@ export function PainelDasDividas({
         )}
       </div>
     </div>
-  );
-}
-
-function Cartao({ titulo, valor, nota }: { titulo: string; valor: string; nota: string }) {
-  return (
-    <Card>
-      <CardContent className="py-3">
-        <p className="text-xs text-muted-foreground">{titulo}</p>
-        <p className="text-xl font-semibold tabular-nums">{valor}</p>
-        <p className="text-[11px] text-muted-foreground">{nota}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Contagem({ titulo, c }: { titulo: string; c: { quantidade: number; valorCents: number } }) {
-  return (
-    <Card>
-      <CardContent className="py-3">
-        <p className="text-xs text-muted-foreground">{titulo}</p>
-        <p className="text-lg font-semibold tabular-nums">{formatBRL(c.valorCents)}</p>
-        <p className="text-[11px] text-muted-foreground">{c.quantidade} dívida{c.quantidade === 1 ? "" : "s"}</p>
-      </CardContent>
-    </Card>
   );
 }
 

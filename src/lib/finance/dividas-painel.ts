@@ -48,6 +48,11 @@ export type AcordoDoPainel = {
   descontoCents: number;
   /** Parcelas em aberto: falta pagar e vencimento. */
   abertas: { faltaCents: number; vencimento: string }[];
+  /** Para a lista do cartão (opcionais: a conta não depende deles). */
+  id?: string;
+  codigo?: string;
+  principalId?: string;
+  totalCents?: number;
 };
 
 export type ContaComValor = { quantidade: number; valorCents: number };
@@ -377,4 +382,73 @@ export function dreDoDevedor(
     custoFinanceiroCents: -linhas.filter((l) => l.accountCode === "4.2.01").reduce((t, l) => t + l.amountCents, 0),
     meses,
   };
+}
+
+// ------------------------------------------- o que forma cada número (clique)
+
+/**
+ * Os cartões do Painel. Cada um, ao ser clicado, abre a lista do que o forma —
+ * a MESMA regra da conta do número (abaixo), para a lista e o total nunca
+ * discordarem.
+ */
+export const CARTOES_DO_PAINEL = {
+  devido: "Total devido",
+  estimado: "Estimado para regularizar",
+  custo: "Custo total para regularizar",
+  economia: "Economia potencial",
+  sem_proposta: "Sem proposta",
+  propostas: "Propostas atuais",
+  quitado: "Já quitado",
+  em_atraso: "Em atraso",
+  inadimplentes: "Inadimplentes",
+  negativadas: "Negativadas",
+  protestadas: "Protestadas",
+  judiciais: "Com ação judicial",
+  restricao: "Com restrição",
+  economia_obtida: "Economia já obtida",
+  acordos: "Acordos valendo",
+} as const;
+export type CartaoDoPainel = keyof typeof CARTOES_DO_PAINEL;
+
+/** As dívidas de um cartão (os de acordo usam `acordosDoCartao`). */
+export function dividasDoCartao(c: CartaoDoPainel, rows: DebtListRow[], clinicId?: string): DebtListRow[] {
+  const vivas = rows.filter((r) => r.status !== "quitada_pendencias" && r.status !== "quitada_encerrada");
+  const devendo = vivas.filter((r) => valorDevido(r) > 0);
+  switch (c) {
+    case "devido":
+    case "estimado":
+    case "custo":
+      return devendo;
+    case "economia":
+    case "propostas":
+      return vivas.filter((r) => r.propostaCents !== null);
+    case "sem_proposta":
+      return devendo.filter((r) => r.propostaCents === null);
+    case "quitado":
+      return rows.filter((r) => (r.pagoCents ?? 0) > 0);
+    case "em_atraso":
+      return vivas.filter((r) => r.status === "em_atraso");
+    case "inadimplentes":
+      return vivas.filter((r) => r.status === "inadimplente");
+    case "negativadas":
+      return vivas.filter((r) => r.negativada);
+    case "protestadas":
+      return vivas.filter((r) => r.protestada);
+    case "judiciais":
+      return vivas.filter((r) => r.judicial);
+    case "restricao":
+      return vivas.filter((r) => (r.negativada || r.protestada || r.judicial) && (!clinicId || r.clinicId === clinicId));
+    default:
+      return [];
+  }
+}
+
+/** Os acordos de um cartão: os valendo (saldo) ou os que deram economia. */
+export function acordosDoCartao<A extends AcordoDoPainel>(c: CartaoDoPainel, acordos: A[], rows: DebtListRow[]): A[] {
+  const ids = new Set(rows.map((r) => r.id));
+  const doFiltro = acordos.filter((a) => a.dividas.some((d) => ids.has(d)));
+  if (c === "acordos") return doFiltro.filter((a) => a.situacao === "em_andamento" || a.situacao === "quebrado");
+  if (c === "economia_obtida")
+    return doFiltro.filter((a) => (a.situacao === "em_andamento" || a.situacao === "cumprido") && a.descontoCents > 0);
+  return [];
 }

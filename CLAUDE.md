@@ -420,6 +420,14 @@ Syncthing se comportarem de forma estranha.**
   com taxa mantida (D13) = categoria `estornado` (recebido 0, taxa devida).
   ⚠️ "Repasses" sozinho é o dos DENTISTAS.
 
+**15/11/2026 (Levantamento de Dívidas — fase 8) — PC Administrador (core 0.455.0 → 0.456.0, migração 0410)**
+
+- **Avisos e simulador; as 8 fases entregues** (bloco 0.456.0 no ESTADO).
+  ⚠️ Avisos pela rotina `_debt_notices_daily` e o gatilho de protesto/ação,
+  sempre pela porta `_debt_notify`; ao recriar `debt_daily_run`, partir da
+  0410. ⚠️ Simulador por CNPJ (cada um paga com o próprio caixa).
+- ✅ 0410 nos dois bancos (produção pelo dono em 15/11/2026; conferido de fora o que a API mostra).
+
 **15/11/2026 (Levantamento de Dívidas — fase 7) — PC Administrador (core 0.454.1 → 0.455.0, migração 0409)**
 
 - **Saúde financeira, exportação, cenário e card da unidade** (bloco 0.455.0
