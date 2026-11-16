@@ -4391,3 +4391,25 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
   - **Pix:** `pay_0_w36c3upvx52rdg`, R$ 100,00 pago, split de R$ 16,66 liquidado. O estorno parcial de R$ 30,00 está **aguardando a autorização** no painel da conta principal.
   - **Cartão parcelado:** parcelamento `64cff44d…`, 3× de R$ 100,00, aprovado em 16/11 (split de R$ 16,37 por parcela, ainda pendente). O estorno parcial de R$ 120,00 é pedido em 17/11 (`--pedir-cartao`).
   - **A leitura:** `--ler` mostra os estornos, o split e os avisos que chegaram.
+
+**Resultado da prova do Pix (16/11/2026, 12:06, autorizado pelo Jeferson no painel da conta principal):**
+
+| | Antes | Depois do estorno parcial de R$ 30,00 |
+|---|---|---|
+| Cobrança | `RECEIVED`, R$ 100,00 | continua `RECEIVED`, R$ 100,00 (líquido R$ 98,01) |
+| Estorno | `AWAITING_CRITICAL_ACTION_AUTHORIZATION` | `DONE`, R$ 30,00, com o comprovante e o identificador do Pix |
+| Split para a carteira de Londrina (17%) | `DONE`, R$ 16,66 | **continua `DONE`, R$ 16,66; nada devolvido** (`refundedSplits` vazio) |
+
+**Os avisos que chegaram** (pela ordem): `PAYMENT_CREATED`, `PAYMENT_SPLIT_DONE`, `PAYMENT_RECEIVED`, `PAYMENT_PARTIALLY_REFUNDED`.
+- O último traz a cobrança inteira, com a lista `refunds`: valor, situação, data efetiva, comprovante e o identificador do Pix.
+- Não veio aviso do split.
+- O riSZon ignorou todos, como devia, porque a cobrança não é dele (foi criada direto na conta principal).
+
+**O que isso decide para a 4020a:**
+- **No estorno parcial do Pix, o Asaas não mexe no split.**
+  - O valor estornado sai inteiro da conta que emitiu a cobrança (na rede, a unidade).
+  - A parte da franqueadora fica com ela.
+  - **A taxa da rede continua "retida"**, sem virar "a cobrar": isso bate com a regra travada (a taxa continua devida no estorno; 19.35.7).
+  - É diferente do estorno **inteiro** (18.7.3), em que o split volta (`REFUNDED`) e a taxa vira "a cobrar".
+- **O aviso basta para a 4020a:** a lista `refunds` do aviso traz o valor e o comprovante, e o riSZon grava a devolução como paga por estorno, sem desfazer o recebimento.
+- **Falta:** a prova do cartão parcelado (estorno parcial do parcelamento em 17/11).
