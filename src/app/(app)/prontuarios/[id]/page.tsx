@@ -69,6 +69,7 @@ import { ReceivablesSection } from "./receivables-section";
 import { AvisosDeCobranca } from "./avisos-de-cobranca";
 import { carregarContasDaUnidade } from "../../financeiro/contas-da-unidade";
 import { CancelPlanCard } from "./cancel-plan-card";
+import { DistratoDaVenda } from "@/components/commercial/distrato-da-venda";
 import { loadClientReceivables } from "./receivables-loader";
 import { viewInstallment } from "@/lib/finance/receivables";
 import { corteDoAtraso, parcelaEmAtraso, selosDeAtraso } from "@/lib/finance/selo-atraso";
@@ -654,16 +655,17 @@ export default async function ClientDetailPage(
   // AP107 (0360, K1): um cancelamento POR VENDA — o plano original e cada
   // complemento vendido. Inclui a CANCELADA: o plano cancelado precisa
   // continuar mostrando o código da venda, o selo e o link do termo.
-  const { data: vendasRows } = canCancelTreatment
-    ? await supabase
+  // 4020: as vendas também servem ao "Pedir distrato", que quem atende registra
+  // (Recepção, Coordenação, Comercial) — não só o Gerente. A regra de linha decide,
+  // e o componente se esconde para quem não pode pedir nem decidir.
+  const { data: vendasRows } = await supabase
         .from("plan_negotiations")
         .select(
           "id, code, status, plan_id, created_at, commercial_sales ( closed_at, cancelled_at ), plano:treatment_plans!plan_negotiations_plan_id_fkey ( complement_of_plan_id, complement_no )"
         )
         .eq("client_id", client.id)
         .in("status", ["aceita", "cancelada"])
-        .order("created_at", { ascending: true })
-    : { data: null };
+        .order("created_at", { ascending: true });
   const umSo = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
   const vendasDoCliente: VendaDoCliente[] = ((vendasRows ?? []) as unknown as {
     id: string;
@@ -3673,6 +3675,15 @@ export default async function ClientDetailPage(
                 })()}
               />
             )}
+            {/* 4020 (19.35.3): quem atende e não cancela registra o pedido de distrato. */}
+            {!canCancelTreatment &&
+              vendasDoCliente
+                .filter((v) => v.situacao !== "cancelada" && v.fechada)
+                .map((v) => (
+                  <div key={`distrato-${v.negociacaoId}`} className="mt-4">
+                    <DistratoDaVenda clientId={client.id} negotiationId={v.negociacaoId} />
+                  </div>
+                ))}
             {canCancelTreatment &&
               vendasDoCliente.map((v) => (
                 <div key={v.negociacaoId} className="mt-4">
