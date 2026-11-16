@@ -408,7 +408,7 @@ Syncthing se comportarem de forma estranha.**
   matriz** (`empresarial.pode`, 1048): regra nova do módulo usa as funções
   (`is_program_manager`, `can_configure_program`…), nunca papel no texto;
   padrões do banco = `permissions.ts` (régua).
-- ⏳ 1048 só no treino.
+- ✅ 1048 nos dois bancos (produção pelo dono em 16/11/2026, 5·5·2·18; conferido de fora).
 
 **16/11/2026 (AP172, certificação) — PC Administrador (core 0.458.0 → 0.459.0, migração 0412)**
 

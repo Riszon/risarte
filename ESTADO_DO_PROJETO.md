@@ -29,7 +29,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   13b e Empresarial §3; EV-360. **Não visto na tela.**
 > - Achado (a registrar no backlog com o OK do dono): vários itens de MENU só
 >   escondem o atalho — a tela abre pelo endereço.
-> - ⏳ **1048 só no treino**; o dono roda na produção antes do push.
+> - ✅ **1048 nos dois bancos** (produção pelo dono em 16/11/2026, conferência
+>   5·5·2·18; conferido de fora: sem login `pode` e `can_configure_program`
+>   recusam com "permission denied", a de controle responde "não encontrada";
+>   as 5 permissões semeadas com os papéis de antes).
 
 > ## 💳 0.459.1 — ASA4, ENTREGA 6: DISTRATO COM CHECKLIST (16/11/2026; Asaas 0.17.0, migração 4020) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
