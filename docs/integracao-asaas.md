@@ -4435,3 +4435,9 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 4. **A venda direta concluída não mostrava o distrato.** Passou a mostrar.
 
 **Para o dono:** ver, emitir e cancelar cobranças pelo Asaas nascem só com o Admin Master (ASA1). Antes de ligar as unidades, libere esses direitos aos outros papéis no Painel de permissões.
+
+**A correção 2 na produção (16/11/2026):**
+- **A conferência:** o dono rodou `docs/asaas/correcao-producao-regras-de-acesso.sql` no SQL Editor da produção, e a conferência bateu: as duas funções liberadas (`true`, `true`) e **0 regras quebradas**.
+- **De fora** (sem login), as duas funções continuam barrando o anônimo (401), e `boleto_lists` e `sale_cancel_exceptions` não mostram nada a ele.
+- **O efeito:** o "Anexar termo assinado" da renegociação volta a funcionar na produção.
+- **Continua fora da produção:** a correção 1 (o 1º vencimento da renegociação) é código e vai com a 4020.
