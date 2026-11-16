@@ -2,6 +2,28 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🎓 0.457.0 — CERTIFICAÇÃO: QUEM SAIU NÃO SEGURA A UNIDADE, E TURMA NOVA NÃO TRAVA (16/11/2026; migração 0411)
+>
+> Relatos OC-00015 e OC-00016 (produção, Admin Master). Decisões do dono:
+> dispensa automática + botão Dispensar; "não travar quando convida uma pessoa
+> para uma outra certificação". Manual "⚠️ A missão só começa quando você
+> aceita"; EV-357.
+> - ⚠️ **Dispensar = `_dismiss_training_enrollment`** (interna; só turma aberta,
+>   só convocado/em andamento; devolve acesso suspenso pela reciclagem). Botão:
+>   `dismiss_training_enrollment` (Admin, motivo). Automático pelos gatilhos
+>   `training_dismiss_on_role_change` (`user_clinic_roles_all`, update/delete)
+>   e `training_dismiss_on_deactivation` (`profiles.is_active`). Colunas
+>   `dismissed_at/by/reason` (`dismissed_by` sem FK de propósito: 3ª ligação a
+>   `profiles` deixaria embeds ambíguos).
+> - ⚠️ **A trava agora é por (pessoa, função, tipo), não por unidade:**
+>   `training_candidates_multi` devolve `turma_aberta` (drop + create) e
+>   `open_training_campaign` pula quem já está numa turma aberta. Ao recriar
+>   qualquer das duas, partir da 0411.
+> - Ensaio no treino 15/15 (transação desfeita). Na produção a 0411 dispensa a
+>   Luna (TR-00007, Cambé) ao rodar. **Não visto na tela.**
+> - Para o backlog (pedido do dono): revisar as tarefas quando a pessoa já faz
+>   outra certificação; certificação por módulo (Indica +Risos, PPR+, Ortodontia).
+
 > ## 💳 0.456.3 — ASA4, ENTREGA 4: MENSALIDADES DO PPR+ E DA ORTODONTIA PELO ASAAS (15/11/2026; Asaas 0.16.0, migração 4018)
 >
 > Do jeito genérico: o caminho do Asaas trabalha com a cobrança de qualquer origem registrada (`charge_source_types`), e cada origem só informa o que é dela.

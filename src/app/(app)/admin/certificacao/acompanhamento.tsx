@@ -14,9 +14,11 @@ import {
   type Situacao,
 } from "@/lib/certificacao-equipe";
 import { cn } from "@/lib/utils";
-import { medirUnidadeDaTurma } from "./actions";
+import { dispensarMatricula, medirUnidadeDaTurma } from "./actions";
 
 export type MatriculaNoPainel = BaseDaSituacao & {
+  /** A matrícula (para o "Dispensar", 0411). */
+  id: string;
   campaignId: string;
   turma: string;
   clinicId: string;
@@ -71,6 +73,9 @@ export function Acompanhamento({
   const [unidade, setUnidade] = useState("");
   const [funcao, setFuncao] = useState("");
   const [situacao, setSituacao] = useState("");
+  // 0411 (OC-00015): a matrícula sendo dispensada e o motivo digitado.
+  const [dispensando, setDispensando] = useState<string | null>(null);
+  const [motivo, setMotivo] = useState("");
 
   const opcoes = useMemo(() => {
     const turmas = new Map<string, string>();
@@ -131,6 +136,20 @@ export function Acompanhamento({
         return;
       }
       toast.success("Unidade medida no treino.");
+      router.refresh();
+    });
+  }
+
+  function dispensar(id: string) {
+    startTransition(async () => {
+      const r = await dispensarMatricula(id, motivo);
+      if (!r.ok) {
+        toast.error(r.error ?? "Não foi possível dispensar agora.");
+        return;
+      }
+      toast.success("Pessoa dispensada. Ela deixa de segurar a unidade.");
+      setDispensando(null);
+      setMotivo("");
       router.refresh();
     });
   }
@@ -242,6 +261,56 @@ export function Acompanhamento({
                         <span className={cn("rounded-full border px-2 py-0.5 text-[11px] font-medium", TOM[s])}>
                           {ROTULO_DA_SITUACAO[s]}
                         </span>
+                        {(s === "nao_aceitou" || s === "em_andamento") && dispensando !== p.id && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-[11px]"
+                            disabled={isPending}
+                            onClick={() => {
+                              setDispensando(p.id);
+                              setMotivo("");
+                            }}
+                          >
+                            Dispensar
+                          </Button>
+                        )}
+                        {dispensando === p.id && (
+                          <div className="flex w-full flex-wrap items-center gap-2 rounded-md bg-muted/50 p-2">
+                            <input
+                              autoFocus
+                              value={motivo}
+                              maxLength={300}
+                              onChange={(e) => setMotivo(e.currentTarget.value)}
+                              placeholder="Motivo (ex.: licença, afastamento, saiu da equipe)"
+                              className="h-8 min-w-0 flex-1 rounded-lg border border-input bg-background px-2 text-xs"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="h-7 text-[11px]"
+                              disabled={isPending || !motivo.trim()}
+                              onClick={() => dispensar(p.id)}
+                            >
+                              {isPending ? "Dispensando…" : "Confirmar dispensa"}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-[11px]"
+                              disabled={isPending}
+                              onClick={() => setDispensando(null)}
+                            >
+                              Cancelar
+                            </Button>
+                            <p className="w-full text-[11px] text-muted-foreground">
+                              Dispensada, a pessoa sai da missão desta turma e deixa de segurar a unidade.
+                              Quem é desligado ou perde a função na unidade já é dispensado sozinho.
+                            </p>
+                          </div>
+                        )}
                       </li>
                     );
                   })}

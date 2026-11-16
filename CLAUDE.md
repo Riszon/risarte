@@ -400,6 +400,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/11/2026 (relatos OC-00015/OC-00016, certificação) — PC Administrador (core 0.456.3 → 0.457.0, migração 0411)**
+
+- **Quem saiu não segura a unidade; turma nova não trava** (bloco 0.457.0 no
+  ESTADO). ⚠️ **Dispensar = `_dismiss_training_enrollment`** (gatilhos em
+  `user_clinic_roles_all` e `profiles.is_active`; botão
+  `dismiss_training_enrollment`). ⚠️ A trava saiu da UNIDADE: agora é
+  pessoa + função + tipo (`training_candidates_multi.turma_aberta`); ao recriar
+  ela ou `open_training_campaign`, partir da 0411.
+- ✅ 0411 no treino (ensaio 15/15, desfeito). ⏳ **Produção: o dono roda a
+  0411** (ela dispensa a Luna na TR-00007). Relatos ainda SEM resposta: responder
+  depois da 0411 na produção. AP172 e AP173 no backlog, ligados ao OC-00016.
+
 **16/11/2026 (implantação medida) — PC Administrador (Empresarial 0.105.0 → 0.106.0, migração 1046)**
 
 - **O ganho no cartão e a implantação medida pelo sistema** (bloco

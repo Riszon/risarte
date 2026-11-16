@@ -203,6 +203,7 @@ export default async function CertificacaoPage() {
     const convocadoEm = String(m.invited_at ?? "");
     const clinicId = m.clinic_id ? String(m.clinic_id) : "";
     return {
+      id: String(m.id),
       campaignId: String(m.campaign_id),
       turma: `${t?.code ?? "Turma"} · ${t?.kind === "reciclagem" ? "Reciclagem" : "Novatos"}`,
       clinicId,
@@ -221,10 +222,15 @@ export default async function CertificacaoPage() {
     };
   });
 
-  // Unidade que já está numa turma aberta não pode entrar em outra (0275).
+  // As turmas abertas de cada unidade — só informação desde a 0411 (OC-00016):
+  // a unidade pode estar em mais de uma turma ao mesmo tempo.
   const turmaDaUnidade = new Map<string, string>();
   for (const t of turmas) {
-    for (const u of t.unidades) turmaDaUnidade.set(u.id, t.code ?? "aberta");
+    for (const u of t.unidades) {
+      const antes = turmaDaUnidade.get(u.id);
+      const codigo = t.code ?? "aberta";
+      turmaDaUnidade.set(u.id, antes ? `${antes}, ${codigo}` : codigo);
+    }
   }
   const unidadesParaTurma: UnidadeParaTurma[] = (unidades ?? []).map((u) => ({
     id: String(u.id),

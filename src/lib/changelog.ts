@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.457.0",
+    data: "2026-11-16",
+    migracao: "0411",
+    titulo: "Certificação: quem saiu não segura a unidade, e turma nova não trava",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem é desligado da equipe, ou deixa a função na unidade, passa a ser dispensado sozinho da turma de certificação aberta, e a unidade para de esperar por essa pessoa. No Acompanhamento da certificação, o Admin ganhou o botão Dispensar, com motivo, para licença e afastamento.",
+        papeis: [],
+        manual: "⚠️ A missão só começa quando você aceita",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Dá para abrir uma turma nova numa unidade que já tem turma aberta, inclusive para uma pessoa só. Quem já está numa turma aberta na mesma função aparece como \"já na turma\" e não é convocado de novo.",
+        papeis: [],
+        manual: "⚠️ A missão só começa quando você aceita",
+      },
+    ],
+  },
+  {
     versao: "0.456.3",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4018, ASAAS_MIGRATION).

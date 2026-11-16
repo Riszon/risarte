@@ -238,13 +238,14 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
         m.includes("NOT_ALLOWED")
           ? "Só o Admin Master abre turmas."
           : m.includes("CAMPAIGN_ALREADY_OPEN")
-            ? "Alguma das unidades escolhidas já tem uma turma aberta. Encerre a atual ou tire a unidade da seleção."
+            ? // Só antes da 0411 chegar a este banco (a trava por unidade saiu).
+              "Este banco ainda não recebeu a atualização que permite mais de uma turma por unidade. Encerre a turma atual ou peça para aplicar a atualização."
             : m.includes("UNKNOWN_UNIT")
               ? "Alguma das unidades escolhidas não existe ou foi desativada. Recarregue a tela."
               : m.includes("NO_UNITS")
                 ? "Escolha ao menos uma unidade."
                 : m.includes("NOBODY_TO_ENROLL")
-                  ? "Ninguém foi convocado: nenhuma das pessoas marcadas entra nesta turma."
+                  ? "Ninguém foi convocado: as pessoas marcadas já estão numa turma aberta nesta função, ou não entram nesta turma."
                   : m.includes("POLICY_ONLY_FOR_RECYCLING")
                     ? "Suspender acesso só vale para reciclagem."
                     : m.includes("DEADLINE_IN_THE_PAST")
@@ -383,6 +384,55 @@ export async function aprovarConclusoes(
     return { ok: false, error: "Nenhuma aprovação foi registrada (talvez já tivessem sido aprovadas).", recusadas };
   }
   return { ok: true, aprovadas, recusadas };
+}
+
+/**
+ * DISPENSAR UMA PESSOA DA TURMA (0411, relato OC-00015) — afastamento,
+ * licença, ou quem saiu e o cadastro ainda não refletiu. Dispensada, ela deixa
+ * de segurar a unidade na liberação coletiva. Quem é desligado ou perde a
+ * função na unidade já é dispensado sozinho pelo banco; o botão é para o resto.
+ */
+export async function dispensarMatricula(
+  enrollmentId: string,
+  motivo: string
+): Promise<ActionResult> {
+  await requireAdminMaster();
+  const texto = motivo.trim();
+  if (!texto) return { ok: false, error: "Escreva o motivo da dispensa." };
+  if (texto.length > 300) return { ok: false, error: "Motivo longo demais (até 300 letras)." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("dismiss_training_enrollment", {
+    p_enrollment_id: enrollmentId,
+    p_reason: texto,
+  });
+
+  if (error) {
+    const m = error.message;
+    return {
+      ok: false,
+      error: m.includes("NOT_ALLOWED")
+        ? "Só o Admin Master dispensa da turma."
+        : m.includes("NOT_DISMISSABLE")
+          ? "Esta pessoa já concluiu ou já foi dispensada, ou a turma foi encerrada."
+          : m.includes("ENROLLMENT_NOT_FOUND")
+            ? "Matrícula não encontrada. Recarregue a tela."
+            : m.includes("dismiss_training_enrollment")
+              ? "Este banco ainda não recebeu a atualização da dispensa. Peça para aplicar a atualização."
+              : "Não foi possível dispensar agora.",
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "training_enrollments",
+    entityId: enrollmentId,
+    details: { dispensada: true },
+  });
+
+  revalidatePath("/admin/certificacao");
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 /** Encerra a turma. Não apaga nada: matrícula e certificado continuam. */

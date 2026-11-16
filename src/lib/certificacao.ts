@@ -1751,7 +1751,18 @@ export type Medicao =
 export type CandidatoDaUnidade = Candidato & {
   clinic_id: string;
   clinic_name: string;
+  /**
+   * 0411: código da turma aberta (do mesmo tipo) em que a pessoa já está nesta
+   * função. É a mesma missão (0305): a prévia mostra e não convoca de novo.
+   * Ausente antes da 0411 chegar ao banco — tratado como "não está".
+   */
+  turma_aberta?: string | null;
 };
+
+/** 0411: a pessoa já está numa turma aberta nesta função (não entra de novo). */
+export function jaEmTurmaAberta(c: CandidatoDaUnidade): boolean {
+  return typeof c.turma_aberta === "string" && c.turma_aberta.length > 0;
+}
 
 /**
  * A chave de uma convocação é (pessoa, função), não só a pessoa: com várias

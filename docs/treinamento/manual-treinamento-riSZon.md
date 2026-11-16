@@ -1594,6 +1594,14 @@ situação e o percentual da última medição. Filtre por turma, unidade, funç
 situação. **Medir agora** mede a unidade no treino naquele momento e atualiza
 os números.
 
+**Quem sai da equipe não segura a unidade** (desde a versão 0.457.0). Quando a
+pessoa é **desligada** (cadastro desativado) ou **deixa a função naquela
+unidade**, o sistema a **dispensa sozinho** da turma aberta, e a unidade para
+de esperar por ela. Para os outros casos (licença, afastamento), use
+**Dispensar** ao lado da pessoa no Acompanhamento e escreva o motivo. A pessoa
+dispensada aparece como *Dispensado* e não conta no *"N de M"*. Quem já cumpriu
+a missão não pode ser dispensado: o certificado dela continua valendo.
+
 **Para o Admin Master:** as turmas ficam na mesma tela de Certificação. Escolha
 **uma unidade, várias, ou marque "Rede toda"** — com muitas unidades, há uma
 busca pelo nome. Escolha o tipo, confira a lista que o sistema monta, **agrupada
@@ -1605,9 +1613,14 @@ Três coisas para saber sobre turmas de várias unidades:
 - **É uma turma só**, com um código só — não uma por unidade.
 - **Cada unidade é liberada quando o SEU grupo cumprir.** Numa turma da rede
   toda, Cambé não fica esperando Londrina.
-- **Unidade que já está numa turma aberta aparece desabilitada**, com o código
-  da turma. Ela só entra em outra quando aquela for encerrada — senão a mesma
-  pessoa teria duas missões ao mesmo tempo.
+- **Uma unidade pode estar em mais de uma turma aberta** (desde a versão
+  0.457.0). Não é preciso encerrar a turma atual para convocar uma pessoa
+  nova: escolha a unidade, deixe marcada só quem deve entrar e convoque. Ao
+  lado da unidade aparece o código da turma que já está aberta nela, só como
+  informação.
+- **Quem já está numa turma aberta na mesma função não é convocado de novo**:
+  na lista ele aparece apagado, com *"já na turma TR-…"*. É a mesma missão; ela
+  continua na turma onde começou.
 
 Na lista de turmas, **abra uma unidade para ver o progresso de cada pessoa**:
 ele é medido no treino na hora em que você abre, para a tela continuar rápida
