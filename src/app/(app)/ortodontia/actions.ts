@@ -1,5 +1,6 @@
 "use server";
 
+import { cancelarCobrancasDasMensalidades } from "@/lib/asaas/mensalidades";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -205,6 +206,21 @@ export async function setOrthoStatus(
   const { data: c } = await supabase.from("ortho_cases").select("id, clinic_id, client_id").eq("id", caseId).maybeSingle();
   if (!c) return { ok: false, error: "Caso não encontrado." };
   if (!canManageOrtho(session, c.clinic_id as string)) return { ok: false, error: "Você não pode mudar a situação deste caso." };
+
+  // 4018: finalizar, suspender ou interromper cancela as mensalidades futuras;
+  // as cobranças vivas delas são canceladas no Asaas antes.
+  if (status === "finalizado" || status === "suspenso" || status === "interrompido") {
+    const prox = new Date();
+    const mes = `${prox.getFullYear()}-${String(prox.getMonth() + 1).padStart(2, "0")}-01`;
+    const { data: futuras } = await supabase
+      .from("ortho_charges")
+      .select("id")
+      .eq("case_id", caseId)
+      .in("status", ["em_aberto", "atrasada"])
+      .gt("reference_month", mes);
+    const canc = await cancelarCobrancasDasMensalidades({ tipo: "ortho_charge", ids: (futuras ?? []).map((x) => x.id as string), actorId: session.userId, motivo: "caso de Ortodontia " + status });
+    if (!canc.ok) return { ok: false, error: canc.error };
+  }
 
   const { error } = await supabase.rpc("ortho_set_status", {
     p_case_id: caseId,
@@ -504,6 +520,9 @@ export async function cancelOrthoCharge(chargeId: string, reason: string): Promi
   if (!ch) return { ok: false, error: "Mensalidade não encontrada." };
   if (!canManageOrtho(session, ch.clinic_id as string)) return { ok: false, error: "Só o Gerente e o Coordenador cancelam uma mensalidade." };
   if (reason.trim().length < 5) return { ok: false, error: "Escreva o motivo (pelo menos 5 letras)." };
+  // 4018: a cobrança viva da mensalidade é cancelada no Asaas antes.
+  const canc = await cancelarCobrancasDasMensalidades({ tipo: "ortho_charge", ids: [chargeId], actorId: session.userId, motivo: "mensalidade cancelada" });
+  if (!canc.ok) return { ok: false, error: canc.error };
   const { error } = await supabase.rpc("ortho_cancel_charge", { p_charge_id: chargeId, p_reason: reason.trim() });
   if (error) return { ok: false, error: mensagemDaOrtodontia(error) };
   await logAudit({ action: "update", entityType: "ortho_charge", entityId: chargeId, clinicId: ch.clinic_id as string, details: { cancelled: true } });
@@ -560,4 +579,17 @@ export async function saveOrthoSettings(clinicId: string | null, formData: FormD
   await logAudit({ action: "update", entityType: "ortho_settings", entityId: clinicId ?? "rede", clinicId: clinicId ?? undefined });
   revalidatePath("/ortodontia/configuracao");
   return { ok: true };
+}
+
+/** 4018 (19.32.10): passar o caso de recorrência para boleto, Pix ou cartão pelo link, com a concordância do cliente. */
+export async function switchOrthoMethod(caseId: string, method: "boleto" | "pix" | "cartao", consent: boolean): Promise<OrthoActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ortho_case_switch_method", { p_case_id: caseId, p_method: method, p_consent: consent });
+  if (error) {
+    if (error.message.includes("CONSENT_REQUIRED")) return { ok: false, error: "Registre que o cliente concordou com o novo meio." };
+    return { ok: false, error: mensagemDaOrtodontia(error) };
+  }
+  revalidatePath(`/ortodontia/casos/${caseId}`);
+  return { ok: true, caseId };
 }

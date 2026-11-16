@@ -163,6 +163,10 @@ export const ORTHO_BILLING_METHODS = [
   "cartao_parcelado",
   "boleto",
   "avista_periodo",
+  // 4018 (19.32.5): pelo Asaas, um por mês (Pix avulso e cartão à vista pelo link), e dinheiro no balcão.
+  "pix",
+  "cartao",
+  "dinheiro",
 ] as const;
 export type OrthoBillingMethod = (typeof ORTHO_BILLING_METHODS)[number];
 
@@ -173,6 +177,9 @@ export const ORTHO_BILLING_METHOD_LABELS: Record<OrthoBillingMethod, string> = {
   cartao_parcelado: "Cartão de crédito parcelado",
   boleto: "Boleto",
   avista_periodo: "À vista (o período inteiro)",
+  pix: "PIX (pelo Asaas, um por mês)",
+  cartao: "Cartão à vista pelo link (Asaas, um por mês)",
+  dinheiro: "Dinheiro no balcão",
 };
 
 /** De onde o caso veio (0334, R4/Q1): da venda do Comercial, ou legado (já em tratamento antes do sistema). */

@@ -2,6 +2,17 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💳 0.456.2 — ASA4, ENTREGA 4: MENSALIDADES DO PPR+ E DA ORTODONTIA PELO ASAAS (15/11/2026; Asaas 0.16.0, migração 4018)
+>
+> Do jeito genérico: o caminho do Asaas trabalha com a cobrança de qualquer origem registrada (`charge_source_types`), e cada origem só informa o que é dela.
+> - **Meios:** PPR+ com boleto e Pix; Ortodontia com boleto, Pix e cartão pelo link.
+> - **Liga a unidade:** a partir de uma data, depois de marcar "Avisei os clientes". A recorrência espera a ASA4B.
+> - **Sem multa nem juros.** O desconto de pontualidade vai até o vencimento.
+> - **PPR+:** a 1ª mensalidade sai na assinatura; a suspensão aos 30 dias é sozinha; aos 90, o Gerente decide.
+> - **Taxa e selo:** a taxa da rede fica retida, sem dobro, e a mensalidade vencida entra no selo.
+>
+> Ensaio 49/49, provado quebrando; sandbox 2/2. **Falta:** teste do dono, a 4018 na produção e o `main`. Spec 19.32 a 19.33; manual 13g.16; EV-355.
+
 > ## 💳 0.455.1 — EXCEÇÃO: CANCELAR VENDA COM ACORDO DE RENEGOCIAÇÃO (15/11/2026; Asaas 0.15.0, migração 4017a)
 >
 > O cancelamento recusado pela 4015a passa a mostrar os acordos da venda e o caminho de cada um:

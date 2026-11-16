@@ -62,6 +62,36 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.456.2",
+    data: "2026-11-15",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4018, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "As mensalidades do PPR+ e da Ortodontia em boleto, Pix ou cartão pelo link passam a ir ao Asaas sozinhas, 15 dias antes do vencimento, e a baixa vem pelo aviso do Asaas. A unidade liga em Financeiro › Cobranças automáticas, a partir de uma data, depois de ver quantos clientes entram e marcar \"Avisei os clientes\". Quem paga por recorrência continua como hoje até a próxima fase.",
+        papeis: ["unit_manager", "receptionist", "finance_franchisor"],
+        manual: "13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "PPR+: a adesão aceita boleto e Pix; a 1ª mensalidade nasce na assinatura e o pagamento ativa a adesão; a suspensão aos 30 dias roda sozinha, e aos 90 o Gerente decide (cancelar ou manter suspensa). Ortodontia: o desconto de pontualidade vai no boleto até o vencimento.",
+        papeis: ["unit_manager", "receptionist"],
+        manual: "13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A mensalidade vencida passa a contar no selo \"Em atraso\", pela mesma regra de dias úteis. Cancelar a adesão do PPR+ passa a cancelar as mensalidades dos meses que ainda não venceram.",
+        papeis: ["unit_manager", "receptionist"],
+        manual: "13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+      },
+    ],
+  },
+  {
     versao: "0.456.1",
     data: "2026-11-15",
     migracao: null,

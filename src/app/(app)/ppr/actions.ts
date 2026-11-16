@@ -1,5 +1,6 @@
 "use server";
 
+import { cancelarCobrancasDasMensalidades, MENSAGEM_DA_TRAVA_DA_MENSALIDADE } from "@/lib/asaas/mensalidades";
 import { contagemConfirmada, naoConseguiConferir } from "@/lib/contagem";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
@@ -526,6 +527,12 @@ export async function pprCloseStep(
     entityId: membershipId,
     clinicId: m.clinic_id as string,
   });
+  // 4018 (4a): assinada a adesão de boleto/Pix na unidade ligada, a 1ª
+  // mensalidade já nasceu no banco; a cobrança sai na hora pelo Asaas.
+  if (step === "contract" && value) {
+    const { criarCobrancasAutomaticas } = await import("@/lib/asaas/cobrancas-automaticas");
+    await criarCobrancasAutomaticas({ origem: "gatilho", ator: session.userId, clinicId: m.clinic_id as string, mensalidade: { tipo: "ppr_charge" } }).catch(() => null);
+  }
   refresh(membershipId, m.holder_client_id as string);
   return { ok: true };
 }
@@ -548,6 +555,17 @@ export async function cancelPprMembership(
   if (!m) return { ok: false, error: "Adesão não encontrada." };
   if (!canManagePpr(rolesAt(session, m.clinic_id as string), session.isAdminMaster))
     return { ok: false, error: "Só o Gerente da unidade pode cancelar." };
+
+  // 4018: os meses que ainda não venceram caem; as cobranças vivas deles são
+  // canceladas no Asaas antes (as vencidas continuam como dívida).
+  const { data: futuras } = await supabase
+    .from("ppr_charges")
+    .select("id")
+    .eq("membership_id", membershipId)
+    .in("status", ["em_aberto", "atrasada"])
+    .gte("due_date", new Date().toISOString().slice(0, 10));
+  const canc = await cancelarCobrancasDasMensalidades({ tipo: "ppr_charge", ids: (futuras ?? []).map((x) => x.id as string), actorId: session.userId, motivo: "cancelamento da adesão do PPR+" });
+  if (!canc.ok) return { ok: false, error: canc.error };
 
   const now = new Date().toISOString();
   const { error } = await supabase
@@ -672,6 +690,7 @@ export async function markPprChargePaid(
     const m = error.message;
     if (m.includes("NOT_ALLOWED"))
       return { ok: false, error: "Você não pode dar baixa nesta mensalidade." };
+    if (m.includes("CHARGE_ACTIVE")) return { ok: false, error: MENSAGEM_DA_TRAVA_DA_MENSALIDADE };
     console.error("ppr_mark_charge_paid failed:", m);
     return { ok: false, error: "Não foi possível atualizar a mensalidade." };
   }
@@ -959,4 +978,34 @@ export async function removePprBeneficiary(
   );
   refresh(b.membership_id as string, b.client_id as string);
   return recalculou ? { ok: true } : { ok: true, aviso: AVISO_DA_MENSALIDADE };
+}
+
+/** 4018 (19.32.10): aos 90 dias de atraso, o Gerente decide "manter suspensa" (o aviso para). */
+export async function keepPprSuspended(membershipId: string): Promise<PprActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ppr_overdue_keep", { p_membership_id: membershipId });
+  if (error) {
+    if (error.message.includes("NOT_ALLOWED")) return { ok: false, error: "Só o Gerente da unidade decide." };
+    if (error.message.includes("NOT_SUSPENDED")) return { ok: false, error: "A adesão não está suspensa." };
+    console.error("ppr_overdue_keep failed:", error.message);
+    return { ok: false, error: "Não foi possível registrar a decisão." };
+  }
+  revalidatePath(`/ppr/adesoes/${membershipId}`);
+  return { ok: true };
+}
+
+/** 4018 (19.32.10): passar de recorrência para boleto/Pix, com a concordância do cliente. */
+export async function switchPprMethod(membershipId: string, method: "boleto" | "pix", consent: boolean): Promise<PprActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ppr_membership_switch_method", { p_membership_id: membershipId, p_method: method, p_consent: consent });
+  if (error) {
+    if (error.message.includes("CONSENT_REQUIRED")) return { ok: false, error: "Registre que o cliente concordou com o boleto ou o Pix." };
+    if (error.message.includes("NOT_ALLOWED")) return { ok: false, error: "Você não pode mudar o meio desta adesão." };
+    console.error("ppr_membership_switch_method failed:", error.message);
+    return { ok: false, error: "Não foi possível mudar o meio." };
+  }
+  revalidatePath(`/ppr/adesoes/${membershipId}`);
+  return { ok: true };
 }

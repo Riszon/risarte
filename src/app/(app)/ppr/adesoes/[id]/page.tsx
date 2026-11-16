@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MensalidadeDaAdesao } from "./mensalidade-da-adesao";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -57,7 +58,7 @@ export default async function PprMembershipPage(
   const { data: m } = await supabase
     .from("ppr_memberships")
     .select(
-      "id, clinic_id, status, monthly_cents, extra_dependents, payment_method, billing_day, contract_signed, contract_signed_at, first_payment_confirmed, first_payment_at, activated_at, cancelled_at, cancel_reason, sale_origin, created_at, notes, plan:ppr_plans ( id, name, description, allows_dependents, included_dependents, allows_extra_dependents, extra_dependent_cents, max_dependents ), clinic:clinics!ppr_memberships_clinic_id_fkey ( name ), seller:profiles!ppr_memberships_sold_by_fkey ( full_name )"
+      "id, clinic_id, status, monthly_cents, extra_dependents, payment_method, billing_day, overdue_alert_at, overdue_kept_at, contract_signed, contract_signed_at, first_payment_confirmed, first_payment_at, activated_at, cancelled_at, cancel_reason, sale_origin, created_at, notes, plan:ppr_plans ( id, name, description, allows_dependents, included_dependents, allows_extra_dependents, extra_dependent_cents, max_dependents ), clinic:clinics!ppr_memberships_clinic_id_fkey ( name ), seller:profiles!ppr_memberships_sold_by_fkey ( full_name )"
     )
     .eq("id", id)
     .maybeSingle();
@@ -255,6 +256,16 @@ export default async function PprMembershipPage(
             }
             units={units}
             clinicId={m.clinic_id as string}
+          />
+
+          <MensalidadeDaAdesao
+            membershipId={id}
+            status={status}
+            paymentMethod={(m.payment_method as string | null) ?? null}
+            overdueAlertAt={(m.overdue_alert_at as string | null) ?? null}
+            overdueKeptAt={(m.overdue_kept_at as string | null) ?? null}
+            canManage={canManage}
+            canEdit={canEdit}
           />
 
           <dl className="grid gap-x-6 gap-y-1 border-t pt-3 text-xs sm:grid-cols-2">

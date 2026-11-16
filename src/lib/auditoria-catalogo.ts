@@ -134,6 +134,7 @@ export const TABELAS: Record<string, string> = {
   "public.payment_renegotiation_events": "Histórico da situação da renegociação",
   "public.payment_renegotiation_sources": "Foto das parcelas renegociadas no dia do acordo",
   "public.sale_cancel_exceptions": "Exceção para cancelar venda com acordo de renegociação",
+  "public.charge_source_types": "Origens de cobrança no Asaas (mensalidades)",
   "public.charge_splits": "Split de cobrança (o que foi enviado e liquidado)",
   "public.charge_split_updates": "Split de cobrança atualizado pela fila",
   "public.charge_refunds": "Pedido de estorno",

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CobrancaDaMensalidade, type CobrancaDaMensalidadeDados } from "@/components/financeiro/cobranca-da-mensalidade";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Wallet } from "lucide-react";
@@ -63,6 +64,11 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
     loadCases(supabase, { clinicIds: scope.clinicIds }),
   ]);
   const charges = chargesRead.ok ? chargesRead.linhas : [];
+  // 4018: a cobrança de cada mensalidade no Asaas (link, situação).
+  const { data: cobrancas } = charges.length
+    ? await supabase.rpc("fee_charges_read", { p_source_type: "ortho_charge", p_source_ids: charges.map((c) => c.id) })
+    : { data: [] };
+  const cobrancaDe = new Map(((cobrancas ?? []) as (CobrancaDaMensalidadeDados & { source_id: string })[]).map((x) => [x.source_id, x]));
   // AP129: quem deu a baixa (só das pagas).
   const quemBaixou = await loadChargePayers(
     supabase,
@@ -174,6 +180,11 @@ export default async function OrtoMensalidadesPage(props: PageProps<"/ortodontia
                       {ch.status === "paga" && (ch.paid_on || ch.paid_at) && <span className="ml-1 text-[11px] text-muted-foreground">em {formatIsoDateBr((ch.paid_on ?? ch.paid_at ?? "").slice(0, 10))}</span>}
                       {ch.status === "paga" && textoDaBaixa(quemBaixou, ch.id, ch.paid_at) && (
                         <span className="block text-[11px] text-muted-foreground">{textoDaBaixa(quemBaixou, ch.id, ch.paid_at)}</span>
+                      )}
+                      {cobrancaDe.get(ch.id) && (
+                        <span className="mt-0.5 block">
+                          <CobrancaDaMensalidade c={cobrancaDe.get(ch.id)!} nome={c?.client?.full_name ?? null} />
+                        </span>
                       )}
                     </td>
                     <td className="px-3 py-2 text-right">

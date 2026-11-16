@@ -32,6 +32,8 @@ export async function criarCobrancasAutomaticas(opts: {
   directSaleId?: string | null;
   /** 4017: o acordo de renegociação assinado. */
   renegotiationId?: string | null;
+  /** 4018: só as mensalidades (de uma origem, ou uma mensalidade só, na assinatura da adesão). */
+  mensalidade?: { tipo: string; id?: string | null } | null;
   /** Origem gravada na cobrança quando a chamada é de uma parcela específica (o restante do dinheiro). */
   origemDaCobranca?: "restante";
   limite?: number;
@@ -53,7 +55,8 @@ export async function criarCobrancasAutomaticas(opts: {
     await terminarRodada(rodada, { ok: semMigracao, motivo: semMigracao ? "sem_migracao" : "erro_lista" });
     return { ...resumo, motivo: semMigracao ? "sem_migracao" : "erro_lista" };
   }
-  const itens = (lista ?? []) as { installment_id: string; clinic_id: string; billing_type: string; origem: string }[];
+  // 4018: pedida só a mensalidade, as parcelas ficam para a rodada normal.
+  const itens = (opts.mensalidade ? [] : (lista ?? [])) as { installment_id: string; clinic_id: string; billing_type: string; origem: string }[];
 
   // Por unidade (= por conta Asaas): o limite é da conta.
   const porUnidade = new Map<string, typeof itens>();
@@ -127,7 +130,7 @@ export async function criarCobrancasAutomaticas(opts: {
 
   // ASA4 (4013): o CARTÃO PARCELADO PELO ASAAS nasce INTEIRO (o cartão é cobrado
   // uma vez): o bloco da venda marcada, sem prazo. Cada parcela conta no limite.
-  if (!opts.origemDaCobranca) {
+  if (!opts.origemDaCobranca && !opts.mensalidade) {
     const { data: blocos, error: eb } = await admin.rpc("_card_blocks_due", {
       p_clinic_id: opts.clinicId ?? null,
       p_negotiation_id: opts.negotiationId ?? null,
@@ -162,6 +165,47 @@ export async function criarCobrancasAutomaticas(opts: {
       if (r.ok) {
         resumo.criadas += b.parcelas;
         folgas.set(b.clinic_id, folga - b.parcelas);
+      } else {
+        resumo.falhas += 1;
+        resumo.erros.push(r.error.slice(0, 80));
+      }
+    }
+  }
+
+  // 4018 (19.32): as MENSALIDADES (qualquer origem registrada), pela janela da
+  // rede; a 1ª mensalidade do PPR+ sai na hora. O caminho é o mesmo das parcelas.
+  if (!opts.origemDaCobranca) {
+    const { data: mens, error: em } = await admin.rpc("_fee_charges_due", { p_clinic_id: opts.clinicId ?? null, p_limit: 300 });
+    if (em && !/does not exist|schema cache/i.test(em.message)) console.error("fee charges list failed:", em.message);
+    for (const f of (mens ?? []) as { source_type: string; source_id: string; clinic_id: string; billing_type: string }[]) {
+      if (opts.negotiationId || opts.directSaleId || opts.renegotiationId) break;
+      if (opts.mensalidade && (f.source_type !== opts.mensalidade.tipo || (opts.mensalidade.id && f.source_id !== opts.mensalidade.id))) continue;
+      const folga = await folgaDa(f.clinic_id);
+      if (folga <= 0) {
+        resumo.puladas += 1;
+        resumo.motivo = "limite_diario";
+        continue;
+      }
+      const prep = await admin.rpc("_fee_charge_prepare_system", {
+        p_source_type: f.source_type,
+        p_source_id: f.source_id,
+        p_billing_type: f.billing_type,
+        p_origin: "mensalidade",
+      });
+      if (prep.error || typeof prep.data !== "string") {
+        const m = prep.error?.message ?? "";
+        if (/NOT_DUE|duplicate key|charges_one_active/i.test(m)) resumo.puladas += 1;
+        else {
+          resumo.falhas += 1;
+          resumo.erros.push(m.slice(0, 80));
+        }
+        continue;
+      }
+      const r = await emitirNoAsaas(prep.data, opts.ator ?? null);
+      if (r.ok) {
+        resumo.criadas += 1;
+        folgas.set(f.clinic_id, folga - 1);
+        await admin.rpc("_charge_mark_asaas_sent", { p_charge_id: prep.data });
       } else {
         resumo.falhas += 1;
         resumo.erros.push(r.error.slice(0, 80));

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MeioDoCaso } from "./meio-do-caso";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -347,6 +348,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
                 ) : (
                   c.status === "em_tratamento" && <p className="text-xs text-amber-800">Sem lote de mensalidades emitido.</p>
                 )}
+                {lote && canSettle && <MeioDoCaso caseId={c.id} method={lote.billing_method ?? null} />}
                 {(canManage || canSettle) && c.status === "em_tratamento" && (
                   <BatchActions
                     caseId={c.id}

@@ -28,6 +28,7 @@ const MENSAGENS: Record<string, string> = {
   APPOINTMENT_ALREADY_LINKED: "Este agendamento já está ligado a outra manutenção.",
   CHARGE_PAID: "Mensalidade já paga não pode ser cancelada — desfaça a baixa antes.",
   CHARGE_CANCELLED: "Esta mensalidade foi cancelada.",
+  CHARGE_ACTIVE: "Esta mensalidade tem cobrança viva no Asaas. Espere o aviso do pagamento, ou cancele a cobrança antes de mudar ou dar baixa à mão.",
 };
 
 export function mensagemDaOrtodontia(error: { message?: string } | null | undefined): string {

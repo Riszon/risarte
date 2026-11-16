@@ -401,7 +401,9 @@ describe("espelho do banco (migração 0334 — ORTO8, do Comercial ao caso)", (
   it("R5/R7: o acordo ortodôntico é por negociação, com as formas de emissão do código", () => {
     expect(sql).toMatch(/create table if not exists public\.plan_negotiation_ortho/);
     expect(sql).toContain("plan_negotiation_ortho_negotiation_id_fkey");
-    for (const m of ORTHO_BILLING_METHODS) expect(sql).toContain(`'${m}'`);
+    // 4018 acrescentou pix, cartao e dinheiro (pelo Asaas e no balcão): ficam na 4018.
+    const da4018 = readFileSync(join(process.cwd(), "supabase/migrations/4018_asa4_mensalidades_pelo_asaas.sql"), "utf8");
+    for (const m of ORTHO_BILLING_METHODS) expect(["pix", "cartao", "dinheiro"].includes(m) ? da4018 : sql).toContain(`'${m}'`);
     const s = fn("save_negotiation_ortho");
     expect(s).toMatch(/'commercial_consultant'/);
     expect(s).toMatch(/NEGOTIATION_CLOSED/);
@@ -512,7 +514,9 @@ describe("espelho do banco (migração 0335 — ORTO9, mensalidades por lote)", 
     expect(sql).toMatch(/create table if not exists public\.ortho_billing_batches/);
     expect(sql).toMatch(/create table if not exists public\.ortho_notices/);
     expect(sql).toMatch(/for select to authenticated using \(public\.ortho_can_see_money\(clinic_id\)\)/);
-    for (const m of ORTHO_BILLING_METHODS) expect(sql).toContain(`'${m}'`);
+    // 4018 acrescentou pix, cartao e dinheiro (pelo Asaas e no balcão): ficam na 4018.
+    const da4018 = readFileSync(join(process.cwd(), "supabase/migrations/4018_asa4_mensalidades_pelo_asaas.sql"), "utf8");
+    for (const m of ORTHO_BILLING_METHODS) expect(["pix", "cartao", "dinheiro"].includes(m) ? da4018 : sql).toContain(`'${m}'`);
     const d = fn("ortho_daily_alerts");
     expect(d).toMatch(/v_days <= 15 then 'd15'/);
     expect(d).toMatch(/v_days <= 30 then 'd30'/);

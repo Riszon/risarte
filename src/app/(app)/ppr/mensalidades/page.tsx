@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CobrancaDaMensalidade, type CobrancaDaMensalidadeDados } from "@/components/financeiro/cobranca-da-mensalidade";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, HeartPulse, Wallet } from "lucide-react";
@@ -94,6 +95,11 @@ export default async function PprChargesPage(
   const one = <T,>(v: T | T[] | null | undefined): T | null =>
     Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
   const charges = (rows ?? []) as unknown as Row[];
+  // 4018: a cobrança de cada mensalidade no Asaas (link, situação).
+  const { data: cobrancas } = charges.length
+    ? await supabase.rpc("fee_charges_read", { p_source_type: "ppr_charge", p_source_ids: charges.map((c) => c.id) })
+    : { data: [] };
+  const cobrancaDe = new Map(((cobrancas ?? []) as (CobrancaDaMensalidadeDados & { source_id: string })[]).map((x) => [x.source_id, x]));
 
   const totals = {
     aberto: charges
@@ -233,6 +239,9 @@ export default async function PprChargesPage(
                       </span>
                     )}
                   </p>
+                  {cobrancaDe.get(c.id) && (
+                    <CobrancaDaMensalidade c={cobrancaDe.get(c.id)!} nome={holder?.full_name ?? null} />
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold tabular-nums">

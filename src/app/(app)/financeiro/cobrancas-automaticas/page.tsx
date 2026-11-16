@@ -7,6 +7,8 @@ import { canViewFinance } from "@/lib/finance/access";
 import { PainelDasCobrancasAutomaticas, type DadosDoPainel } from "./painel";
 import { OperacoesInterrompidas, type OperacaoInterrompida } from "./operacoes-interrompidas";
 import { PedidosDeExcecao, type PedidoDeExcecao } from "./pedidos-de-excecao";
+import { MensalidadesDaUnidade } from "./mensalidades-da-unidade";
+import { todayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cobranças automáticas" };
 
@@ -52,6 +54,10 @@ export default async function CobrancasAutomaticasPage() {
       ) : (
         <>
           <PedidosDeExcecao itens={((pedidosDeExcecao ?? []) as PedidoDeExcecao[])} />
+          {/* 4018: a chave das mensalidades pelo Asaas, da unidade ativa (Gerente ou Admin). */}
+          {session.activeClinic?.id && (
+            <MensalidadesDaUnidade clinicId={session.activeClinic.id} clinicName={session.activeClinic.name} hoje={todayInBrazil()} />
+          )}
           <OperacoesInterrompidas itens={((interrompidas ?? []) as OperacaoInterrompida[])} />
           <PainelDasCobrancasAutomaticas dados={data as DadosDoPainel} />
         </>

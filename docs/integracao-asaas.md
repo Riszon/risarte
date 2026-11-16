@@ -3704,3 +3704,56 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
   - **É isso que continua igual** para esses clientes até a ASA4B: a mensalidade nasce no riSZon, a unidade cobra por fora e marca como paga.
 
 **A construção começa agora, do jeito genérico.**
+
+### 19.33 Construção das mensalidades pelo Asaas (4018), em 15/11/2026
+
+**O caminho genérico** (`supabase/migrations/4018_asa4_mensalidades_pelo_asaas.sql`):
+- **O registro das origens** (`charge_source_types`): cada origem informa 5 funções (a lista do que vence, os dados da cobrança, a baixa, o vencido para o selo, quem vê).
+- **O caminho comum** só chama essas funções pelo nome registrado, sem regra de "PPR+" ou "Ortodontia" dentro dele (a régua de testes confere):
+  - `_fee_charges_due`: a janela da rede, a cobrança viva, o cancelamento à mão, a unidade pronta, e a cobrança "imediata", que é a 1ª mensalidade;
+  - `_fee_charge_prepare_system`: o pagador de sempre, sem multa nem juros, com o desconto até o vencimento;
+  - `_gateway_on_paid_source`: a baixa pelo aviso, a tarifa como despesa bancária 2.4.01 e a duplicidade;
+  - `_fee_source_lock`: a trava da mensalidade com o boleto vivo;
+  - `fee_charges_read`: o link nas telas.
+  - A parcela de venda continua no caminho de hoje (`_gateway_on_paid` só desvia o que não é parcela).
+- **A taxa da rede:** `_split_charge_born_retained` e `_gateway_split_retention` passam a reconhecer a mensalidade. Paga pelo Asaas com split, ela fica "retida"; paga por fora, fica "a cobrar"; nunca em dobro.
+- **O selo "Em atraso":** `client_overdue_badges` inclui as mensalidades vencidas, pela mesma regra e pela mesma permissão.
+
+**O PPR+ e a Ortodontia:**
+- **PPR+:**
+  - boleto e Pix na adesão;
+  - a 1ª mensalidade na assinatura, cobrada na hora;
+  - `_ppr_generate_run`, no dia 1 do mês anterior, só na adesão ativa;
+  - a reativação gera a próxima na hora;
+  - o atraso sem cancelamento automático, com o aviso dos 90 dias a cada 7 dias e o de 2 vencidas;
+  - "Manter suspensa";
+  - cancelada, caem os meses que não venceram;
+  - a passagem de recorrência com a concordância do cliente.
+- **Ortodontia:**
+  - boleto, Pix e cartão pelo link;
+  - o desconto de pontualidade como desconto do Asaas;
+  - a passagem de recorrência com a concordância do cliente.
+- **A chave da unidade:** `fees_switch_preview` e `fees_switch_set`. A tela fica em Financeiro › Cobranças automáticas. A recorrência continua manual até a ASA4B.
+
+**O servidor e as telas:**
+- `criarCobrancasAutomaticas` emite as mensalidades.
+- A rota diária gera as mensalidades e confere o atraso nas unidades ligadas.
+- `src/lib/asaas/mensalidades.ts` cancela no Asaas antes de cancelar a adesão, encerrar o caso ou cancelar a mensalidade.
+- As telas das Mensalidades mostram a situação, "Copiar link" e "WhatsApp"; a adesão e o caso ganham os botões novos.
+
+**Provas:**
+- **Ensaio no treino** (`scripts/asaas-ensaio-asa4-mensalidades.mjs --confirmar`): **49/49**. Provado quebrando:
+
+  | Modo | Resultado |
+  |---|---|
+  | `--quebrar=retida` | 2 falhas |
+  | `--quebrar=baixa` | 7 falhas |
+  | `--quebrar=trava` | 5 falhas |
+
+- **Sandbox** (`asaas-asa4-mensalidades.integracao.test.ts`): **2/2**. Pagador sem contato, nada enviado.
+  - **PPR+:** a mensalidade de boleto foi ao Asaas pela rotina, sem multa nem juros. O pagamento simulado deu baixa pelo aviso do Asaas, e a taxa ficou retida.
+  - **Ortodontia:** o desconto de 5% foi como desconto do Asaas até o vencimento (R$ 8,80, `dueDateLimitDays` 0). Pago até o vencimento, a baixa foi de R$ 167,20, e a taxa da rede incidiu sobre R$ 167,20.
+- **Não provado no sandbox:** o pagamento **depois** do vencimento. O sandbox não aceita vencimento no passado, então essa prova precisa esperar um dia, como a de 12/11. No banco, o ensaio prova que o pago depois sai cheio.
+- **Também passaram:**
+  - os ensaios anteriores (renegociação 73/73, 4017a 39/39, 4015a 13/13, 1B 42/42, 4012 44/44, 4013 34/34, 4014 31/31), ajustados para rodar as migrações novas por cima;
+  - `test:indica` 246/0.

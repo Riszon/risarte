@@ -76,6 +76,9 @@ const sha = (t) => createHash("sha256").update(t).digest("hex");
 
 try {
   await c.query("begin");
+  // As migrações antigas, rodadas de novo aqui, não conhecem as origens novas de
+  // cobrança (4017 e 4018): dentro desta transação desfeita, elas ficam sem origem.
+  await c.query("update public.charges set auto_origin = null where auto_origin not in ('assinatura', 'venda_direta', 'rotina', 'rodar_agora', 'restante')");
   const sql = readFileSync(ARQ, "utf8");
   await c.query(sql);
   await c.query("savepoint dup");
@@ -88,7 +91,7 @@ try {
     conf(`a 4015 roda duas vezes sem erro (${e.message})`, false);
   }
   // 4017 (renegociação assinada) redefine parte da 4015: o ensaio roda por cima dela.
-  await c.query(readFileSync("supabase/migrations/4017_asa4_renegociacao_assinada.sql", "utf8"));
+  for (const depois of ["4017_asa4_renegociacao_assinada.sql", "4017a_asa4_excecao_cancelar_venda_com_acordo.sql", "4018_asa4_mensalidades_pelo_asaas.sql"]) await c.query(readFileSync(`supabase/migrations/${depois}`, "utf8"));
   if (QUEBRAR === "trava") {
     await c.query("drop trigger if exists payment_installments_charge_lock on public.payment_installments");
     await c.query("drop trigger if exists payment_receipts_charge_lock on public.payment_receipts");

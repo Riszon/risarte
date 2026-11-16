@@ -78,6 +78,9 @@ const sha = (t) => createHash("sha256").update(t).digest("hex");
 
 try {
   await c.query("begin");
+  // As migrações antigas, rodadas de novo aqui, não conhecem as origens novas de
+  // cobrança (4017 e 4018): dentro desta transação desfeita, elas ficam sem origem.
+  await c.query("update public.charges set auto_origin = null where auto_origin not in ('assinatura', 'venda_direta', 'rotina', 'rodar_agora', 'restante')");
   const sql = readFileSync(ARQ, "utf8");
   await c.query(sql);
   await c.query("savepoint dup");

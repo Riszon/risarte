@@ -40,8 +40,14 @@ export const PPR_RELATIONSHIPS = [
   "Outro",
 ] as const;
 
-/** Formas de pagamento da MENSALIDADE — só recorrentes (docs/PPR.md §4). */
+/**
+ * Formas de pagamento da MENSALIDADE (docs/PPR.md §4). 4018 (19.32.5): boleto e
+ * Pix avulsos pelo Asaas, um por mês; as recorrentes (cobradas por fora até a
+ * ASA4B) continuam aceitas.
+ */
 export const PPR_RECURRING_METHODS = [
+  "boleto",
+  "pix",
   "credito_recorrente",
   "debito_recorrente",
   "pix_recorrente",
@@ -49,6 +55,8 @@ export const PPR_RECURRING_METHODS = [
 export type PprRecurringMethod = (typeof PPR_RECURRING_METHODS)[number];
 
 export const PPR_RECURRING_METHOD_LABELS: Record<PprRecurringMethod, string> = {
+  boleto: "Boleto (pelo Asaas, um por mês)",
+  pix: "PIX (pelo Asaas, um por mês)",
   credito_recorrente: "Cartão de crédito recorrente",
   debito_recorrente: "Débito recorrente",
   pix_recorrente: "PIX recorrente",

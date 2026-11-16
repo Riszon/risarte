@@ -63,6 +63,9 @@ const mesesDepois = (s, k) => {
 
 try {
   await c.query("begin");
+  // As migrações antigas, rodadas de novo aqui, não conhecem as origens novas de
+  // cobrança (4017 e 4018): dentro desta transação desfeita, elas ficam sem origem.
+  await c.query("update public.charges set auto_origin = null where auto_origin not in ('assinatura', 'venda_direta', 'rotina', 'rodar_agora', 'restante')");
   await c.query(readFileSync(ARQ13, "utf8"));
   const sql = readFileSync(ARQ, "utf8");
   await c.query(sql);
@@ -77,7 +80,7 @@ try {
   }
   // As migrações seguintes redefinem parte desta: o ensaio roda por cima delas,
   // como o banco está de verdade (rodar só esta de novo deixaria as funções antigas).
-  for (const depois of ["4015_asa4_forma2_todos_os_boletos_agora.sql", "4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql", "4017_asa4_renegociacao_assinada.sql"]) await c.query(readFileSync(`supabase/migrations/${depois}`, "utf8"));
+  for (const depois of ["4015_asa4_forma2_todos_os_boletos_agora.sql", "4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql", "4017_asa4_renegociacao_assinada.sql", "4017a_asa4_excecao_cancelar_venda_com_acordo.sql", "4018_asa4_mensalidades_pelo_asaas.sql"]) await c.query(readFileSync(`supabase/migrations/${depois}`, "utf8"));
   if (QUEBRAR === "termo") {
     const f = await um("select pg_get_functiondef('public.card_block_return_request(jsonb)'::regprocedure) d");
     await c.query(f.d.replace("raise exception 'TERM_REQUIRED';", "null;"));
@@ -174,7 +177,8 @@ try {
   await c.query("update public.charges set status = 'em_contestacao' where installment_block = $1", [pago.bloco]);
   const lista = await todos("select * from public._chargebacks_to_check(50) where charge_id = any($1)", [pago.cs.map((x) => x.id)]);
   conf("o servidor recebe a lista das contestações sem prazo", lista.length === 3);
-  const prazo = iso(new Date(Date.now() + 2 * 86400000));
+  // O prazo conta do dia de HOJE no Brasil (depois das 21h, o UTC já é amanhã).
+  const prazo = iso(new Date(Date.parse(String((await um("select public.today_br()::text d")).d)) + 2 * 86400000));
   for (const x of pago.cs) await um("select public._chargeback_save($1, $2, 'REQUESTED')", [x.id, prazo]);
   conf("com o prazo lido, ela sai da lista", (await todos("select * from public._chargebacks_to_check(50) where charge_id = any($1)", [pago.cs.map((x) => x.id)])).length === 0);
   await um("select public.chargeback_alerts_run()");

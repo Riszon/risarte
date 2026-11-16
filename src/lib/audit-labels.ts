@@ -74,6 +74,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   renegotiation_term_attached: "Renegociação: termo assinado anexado",
   renegotiation_cancel_pending: "Renegociação: acordo cancelado antes de valer",
   sale_cancel_exception: "Exceção para cancelar venda com acordo (pedido, decisão ou uso)",
+  fees_switch: "Mensalidades pelo Asaas na unidade (ligar ou desligar)",
+  fee_method_consent: "Mensalidade passada de recorrência para boleto, Pix ou cartão (com a concordância do cliente)",
   boleto_op_failure: "Operação interrompida (boleto cancelado sem a mudança)",
   card_block_return_term: "Termo de devolução assinado (aberto)",
   charge_refund_mobile: "Celular do pagador enviado ou apagado no Asaas (estorno de boleto)",

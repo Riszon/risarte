@@ -7383,6 +7383,52 @@ Cada pedido gera um aviso.
 
 **Evidência:** EV-353; `scripts/asaas-ensaio-4017a.mjs`.
 
+### 13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas
+
+*(desde a versão 0.456.2)*
+
+**Ligar na unidade (Gerente ou Admin Master):** Financeiro › Cobranças
+automáticas › **Mensalidades pelo Asaas**.
+- A tela mostra quantos clientes **entram agora** (boleto, Pix ou cartão pelo
+  link) e quantos **esperam a próxima fase** (os de recorrência), por programa,
+  e quantos têm e-mail ou celular para os avisos do Asaas.
+- Escolha a data, marque **"Avisei os clientes"** e clique em **Ligar**.
+- Até ligar, tudo continua manual, como hoje.
+
+**Como funciona depois de ligar:**
+- **A mensalidade nasce no dia 1 do mês anterior ao vencimento.** O boleto
+  (ou Pix, ou o link do cartão) vai ao Asaas **15 dias antes**. O pagamento dá
+  baixa sozinho.
+- **Sem multa nem juros.** Na Ortodontia, o **desconto de pontualidade** vai
+  no boleto: quem paga até o vencimento paga com desconto; depois, o valor
+  cheio.
+- Nas telas de **Mensalidades**, cada uma mostra a situação no Asaas, **Copiar
+  link** e **WhatsApp**.
+- Com o boleto vivo, a baixa à mão é recusada: espere o aviso do pagamento, ou
+  cancele a cobrança antes.
+
+**PPR+:**
+- A adesão aceita **boleto** e **Pix** (um por mês, pelo Asaas). A **1ª
+  mensalidade** nasce na assinatura, e o pagamento dela **ativa a adesão
+  sozinho**.
+- **Atraso:** aos 30 dias a adesão é suspensa sozinha, e a unidade é avisada.
+  Aos 90 dias, o sistema **não cancela**: o Gerente recebe o aviso e decide
+  (**Cancelar** ou **Manter suspensa**). O aviso se repete a cada 7 dias. Com 2
+  mensalidades vencidas, o Gerente é avisado.
+- Suspensa, a adesão **não gera mensalidade nova**. Quitado o que deve, ela é
+  reativada e a próxima mensalidade nasce na hora; os meses da suspensão não
+  são cobrados.
+- **Cancelada**, as mensalidades dos meses que ainda não venceram são
+  canceladas (com o boleto cancelado no Asaas); as vencidas continuam como
+  dívida.
+
+**Recorrência (crédito, débito ou Pix recorrente):** continua como hoje: a
+unidade cobra por fora e dá a baixa à mão. Para passar um cliente para boleto,
+Pix ou cartão pelo link, use **Passar para…** na adesão ou no caso, com a
+concordância do cliente (fica registrada).
+
+**Evidência:** EV-355; `scripts/asaas-ensaio-asa4-mensalidades.mjs`.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso
