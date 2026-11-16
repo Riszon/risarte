@@ -11,7 +11,7 @@ Situação: **APROVADO pelo dono em 16/11/2026, D1 a D15 como recomendado**
 | Entrega | Situação |
 |---|---|
 | F1 | ✅ 0.461.0, migrações 0413 e 2012 (16/11/2026; nos dois bancos, publicada). Ficaram para a F3, por só aparecerem com duas funções: o rótulo da função no chat e no aviso de mudança de fase (já hoje escolhem uma função qualquer entre unidades), a lista de Risartanos sem unidade repetida e a contagem da equipe da certificação. `unit_scheduling_staff` não precisou mudar: a agenda já junta as funções por pessoa. |
-| F2 | ✅ 0.462.0, migração 0414 (16/11/2026). O código da cobertura é **CB-00001** (o plano dizia AP-, que já é o código do backlog). |
+| F2 | ✅ 0.462.0, migração 0414 (16/11/2026; nos dois bancos, publicada). O código da cobertura é **CB-00001** (o plano dizia AP-, que já é o código do backlog). |
 | F3 | a fazer |
 | F4 | a fazer |
 

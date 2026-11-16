@@ -407,8 +407,10 @@ Syncthing se comportarem de forma estranha.**
   portas (só Admin). ⚠️ A janela esconde a linha vencida; a rotina
   `risarte-coverage-daily` encerra. ⚠️ Semente/script com `on conflict
   (user_id, clinic_id)` leva `where assignment_kind = principal`.
-- ✅ 0414 no treino (ensaio 26/26, desfeito). ⏳ Produção: o dono roda a 0414
-  antes do push.
+- ✅ 0414 nos dois bancos (treino: ensaio 26/26, desfeito; produção pelo dono em
+  16/11/2026; conferido de fora: tabelas e colunas novas, limites padrão só
+  avisando, a combinação proibida semeada; dar cobertura e a rotina recusam sem
+  login, e a chave de serviço para em NOT_ALLOWED). Publicado. Próxima: F3.
 
 **16/11/2026 (funções de apoio, F1) — PC Administrador (core 0.460.0 → 0.461.0, migração 0413; Indica 0.9.0 → 0.9.1, migração 2012)**
 
