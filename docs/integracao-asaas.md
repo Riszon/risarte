@@ -4418,3 +4418,20 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 - `docs/asaas/levantamento-ortodontia-em-venda-cancelada.sql`: **"Success. No rows returned"**.
 - Nenhuma venda cancelada tem caso de Ortodontia ainda ativo ou mensalidade em aberto. **Não há o que corrigir nos dados de hoje.**
 - Daqui para a frente, a 4020 cuida disso no distrato: o caso fica interrompido e as mensalidades futuras caem.
+
+#### 19.36.1 O roteiro do dono, feito pela tela (16/11/2026)
+
+- **Pedido do dono:** "faça você mesmo o roteiro teste". O roteiro único (4017, 4017a, 4018 e a seção 4 da 4020) foi feito pela tela do projeto de teste, com o Playwright (`e2e-publicado/roteiro-dono-*.spec.ts`; o preparo em `roteiro-dono.preparo.integracao.test.ts`).
+- **Resultado:** todos os passos passaram, com 4 defeitos achados e corrigidos no caminho. O passo a passo está em `docs/asaas/relatorio-roteiro-do-dono-16-11.md`.
+
+**Os defeitos e as correções:**
+1. **A renegociação abria com o 1º vencimento em hoje,** que o banco sempre recusa (`FIRST_DUE_TOO_SOON`). Agora abre uma semana à frente, e a data mínima é amanhã. **Está na produção hoje.**
+2. **Regras de acesso que chamavam funções fechadas para o usuário logado.**
+   - **As regras:** a pasta `renegociacoes` (4017), `sale_cancel_exceptions` (4017a), `boleto_lists` e `boleto_list_accesses` (4015), e `distrato_checklist` (4020).
+   - **O efeito:** o "Anexar termo assinado" falhava sempre.
+   - **A correção:** `grant execute` em `_is_manager_or_admin` e `_boleto_mode_can`, dentro da 4020 e separada em `docs/asaas/correcao-producao-regras-de-acesso.sql`. O ensaio do distrato confere que não volta (64/64).
+   - **Está na produção hoje.**
+3. **A Recepção não via o "Pedir distrato"** (ela não tem a aba Plano). O pedido foi também para o topo da aba Financeiro.
+4. **A venda direta concluída não mostrava o distrato.** Passou a mostrar.
+
+**Para o dono:** ver, emitir e cancelar cobranças pelo Asaas nascem só com o Admin Master (ASA1). Antes de ligar as unidades, libere esses direitos aos outros papéis no Painel de permissões.

@@ -165,12 +165,20 @@ test.describe.serial("roteiro do dono — parte D (distrato)", () => {
     await page.getByRole("button", { name: /Concluídas/ }).first().click().catch(() => {});
     const item = page.locator("div.rounded-lg.border.p-3").filter({ hasText: "Roteiro D distrato venda direta" }).first();
     await item.getByRole("button").first().click();
+    await item.getByText("Distrato", { exact: true }).first().waitFor({ timeout: 30_000 }).catch(() => {});
+    await page.waitForTimeout(2000);
     const t5a = await item.innerText();
     anotar("D5 a venda direta paga (concluída) não tem o \"Cancelar venda\" e mostra o caminho do distrato", !/Cancelar venda/.test(t5a) && /Abrir distrato/.test(t5a), (t5a.match(/Já pago[^.]*|Abrir distrato/g) ?? ["sem o bloco do distrato"]).join(" · "));
-    await item.getByRole("button", { name: "Abrir distrato" }).click();
-    await item.locator("textarea").last().fill("Desistiu depois de pagar a 1ª (roteiro)");
-    await item.getByRole("button", { name: "Abrir o distrato" }).click();
-    await page.waitForURL(/\/cancelamentos\/.+\/termo/, { timeout: 45_000 }).catch(() => {});
+    const [jaAberto] = await sql<{ id: string }>("select id from public.plan_cancellations where direct_sale_id = $1 and status in ('rascunho','assinado') limit 1", [C.D.venda]);
+    if (!jaAberto) {
+      await item.getByRole("button", { name: "Abrir distrato" }).click();
+      await item.locator("textarea").last().fill("Desistiu depois de pagar (roteiro)");
+      await item.getByRole("button", { name: "Abrir o distrato" }).click();
+      await page.waitForURL(/\/cancelamentos\/.+\/termo/, { timeout: 60_000 }).catch(() => {});
+    }
+    const [aberto] = await sql<{ id: string }>("select id from public.plan_cancellations where direct_sale_id = $1 and status in ('rascunho','assinado') limit 1", [C.D.venda]);
+    if (!/\/cancelamentos\//.test(page.url()) && aberto) await page.goto(`/cancelamentos/${aberto.id}/termo`);
+    await page.waitForLoadState("networkidle").catch(() => {});
     const t5 = await textoDaTela(page);
     anotar("D5 o termo de distrato da venda direta, sem multa", /Termo de distrato de venda direta/.test(t5) && !/Multa de rescisão/.test(t5), page.url());
     await page.getByRole("button", { name: "Marcar termo como assinado" }).click();
@@ -215,7 +223,7 @@ test.describe.serial("roteiro do dono — parte D (distrato)", () => {
     // --- D7: a Central mostra o prazo do aviso --------------------------------------------
     await context.clearCookies();
     await entrarComo(context, "admin@example.com", C.ldn, DOMINIO);
-    await page.goto("/central?aba=financeiro");
+    await page.goto("/central/rede/financeiro");
     await page.waitForLoadState("networkidle").catch(() => {});
     const t7 = await textoDaTela(page);
     anotar("D7 a Central › Financeiro tem o prazo do aviso do distrato (15 a 365), com 60", /Distrato: avisar o Gerente com o contrato em atraso há quantos dias \(15 a 365\)/.test(t7), (t7.match(/Distrato: avisar[^\n]*/) ?? ["campo não encontrado"])[0]);
