@@ -3798,6 +3798,16 @@ export default async function ClientDetailPage(
             alertCount={lateInstallmentCount}
           >
             <AvisosDeCobranca clientId={client.id} />
+            {/* 4020 (19.35.3): o pedido de distrato de cada contrato fechado, onde a
+                Recepção trabalha (ela não tem a aba Plano). O Gerente abre o
+                distrato do contrato pelo "Cancelar tratamento", na aba Plano. */}
+            {vendasDoCliente
+              .filter((v) => v.situacao !== "cancelada" && v.fechada)
+              .map((v) => (
+                <div key={`distrato-fin-${v.negociacaoId}`} className="mb-3">
+                  <DistratoDaVenda clientId={client.id} negotiationId={v.negociacaoId} rotulo={vendasDoCliente.length > 1 ? v.codigo : null} />
+                </div>
+              ))}
             <ReceivablesSection
               clientId={client.id}
               installments={receivables.installments}

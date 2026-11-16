@@ -5,7 +5,7 @@
 // ligar, "Rodar agora", passar de meio, dar baixa à mão, cancelar e desligar.
 // GRAVA no treino. Ao fim, Londrina volta com as mensalidades desligadas.
 import { test, type Page } from "@playwright/test";
-import { entrarComo, trocarPara } from "../e2e/apoio";
+import { entrarComo } from "../e2e/apoio";
 import { APP_PUBLICADO } from "../playwright.publicado.config";
 import { CENARIO, anotar, asaas, esperar, foto, sql, textoDaTela } from "./roteiro-dono.apoio";
 
@@ -33,6 +33,9 @@ async function painel(page: Page) {
   await page.getByText("Mensalidades pelo Asaas").first().waitFor({ timeout: 30_000 });
   return page.locator("section").filter({ hasText: "Mensalidades pelo Asaas" }).first();
 }
+
+// Nenhum clique espera para sempre: o passo que trava vira falha com a foto.
+test.use({ actionTimeout: 30_000, navigationTimeout: 60_000 });
 
 test.describe.serial("roteiro do dono — parte C (mensalidades)", () => {
   test("C1 a C9", async ({ page, context }) => {
@@ -79,7 +82,8 @@ test.describe.serial("roteiro do dono — parte C (mensalidades)", () => {
     const [f1] = await sql<{ id: string; due_date: string }>("select id, to_char(due_date,'YYYY-MM-DD') due_date from public.ppr_charges where membership_id = $1", [m.id]);
     anotar("C3 a 1ª mensalidade nasce na assinatura", Boolean(f1), f1 ? `vence ${f1.due_date}` : "não nasceu");
     // A emissão: "Rodar agora" (Admin Master), como a rotina faria.
-    await trocarPara(context, "admin@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "admin@example.com", C.ldn, DOMINIO);
     await page.goto("/financeiro/cobrancas-automaticas");
     await page.waitForLoadState("networkidle").catch(() => {});
     await page.getByRole("button", { name: /Rodar agora/ }).first().click();
@@ -97,7 +101,7 @@ test.describe.serial("roteiro do dono — parte C (mensalidades)", () => {
     // --- C4: Ortodontia com desconto de pontualidade -------------------------------------
     const cliOrto = await cliente("C4 Ortodontia");
     const [caso] = await sql<{ id: string }>("insert into public.ortho_cases (clinic_id, client_id, status, start_date) values ($1, $2, 'em_tratamento', current_date) returning id", [C.ldn, cliOrto]);
-    const termos = await sql("insert into public.ortho_case_terms (case_id, billing_method, punctuality_discount_percent) values ($1, 'boleto', 5) returning case_id", [caso.id]).catch((e) => String(e.message));
+    const termos = await sql("insert into public.ortho_case_terms (case_id, clinic_id, billing_method, punctuality_discount_percent) values ($1, $2, 'boleto', 5) returning case_id", [caso.id, C.ldn]).catch((e) => String(e.message));
     const [oc] = await sql<{ id: string }>(
       "insert into public.ortho_charges (case_id, clinic_id, client_id, reference_month, due_date, amount_cents, status, kind) values ($1, $2, $3, date_trunc('month', current_date + 40)::date, current_date + 10, 17600, 'em_aberto', 'mensalidade') returning id",
       [caso.id, C.ldn, cliOrto]);
@@ -118,7 +122,8 @@ test.describe.serial("roteiro do dono — parte C (mensalidades)", () => {
     }
 
     // --- C5: passar da recorrência, com a concordância ------------------------------------
-    await trocarPara(context, "gerente@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "gerente@example.com", C.ldn, DOMINIO);
     const cliRec = await cliente("C5 recorrencia");
     const [mr] = await sql<{ id: string }>(
       "insert into public.ppr_memberships (clinic_id, plan_id, holder_client_id, status, monthly_cents, billing_day, payment_method, contract_signed, first_payment_confirmed) values ($1, $2, $3, 'ativo', 9990, 10, 'credito_recorrente', true, true) returning id",
@@ -149,12 +154,14 @@ test.describe.serial("roteiro do dono — parte C (mensalidades)", () => {
       "insert into public.ppr_memberships (clinic_id, plan_id, holder_client_id, status, monthly_cents, billing_day, payment_method, contract_signed, first_payment_confirmed) values ($1, $2, $3, 'ativo', 9990, 10, 'boleto', true, true) returning id",
       [C.ldn, plano.id, cliVivo]);
     const [fv] = await sql<{ id: string }>("insert into public.ppr_charges (membership_id, clinic_id, reference_month, due_date, amount_cents, status) values ($1, $2, date_trunc('month', current_date + 40)::date, current_date + 8, 9990, 'em_aberto') returning id", [mv.id, C.ldn]);
-    await trocarPara(context, "admin@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "admin@example.com", C.ldn, DOMINIO);
     await page.goto("/financeiro/cobrancas-automaticas");
     await page.waitForLoadState("networkidle").catch(() => {});
     await page.getByRole("button", { name: /Rodar agora/ }).first().click();
     await esperar(async () => (await sql<{ n: number }>("select count(*)::int n from public.charges where source_type = 'ppr_charge' and source_id = $1 and status = 'emitida'", [fv.id]))[0].n === 1, 120_000);
-    await trocarPara(context, "gerente@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "gerente@example.com", C.ldn, DOMINIO);
     await page.goto(`/ppr/adesoes/${mv.id}`);
     await page.waitForLoadState("networkidle").catch(() => {});
     await page.getByRole("button", { name: /Dar baixa/ }).first().click().catch(() => {});
@@ -165,12 +172,9 @@ test.describe.serial("roteiro do dono — parte C (mensalidades)", () => {
     await foto(page, "C7-baixa");
 
     // --- C8: cancelar a adesão: caem as que não venceram (com o boleto no Asaas) ---------
-    await page.getByRole("button", { name: "Cancelar plano" }).first().click().catch(() => {});
-    const dlg = page.getByRole("dialog");
-    if (await dlg.isVisible().catch(() => false)) {
-      await dlg.locator("textarea, input[type=text]").first().fill("Roteiro do dono: cancelar a adesão").catch(() => {});
-      await dlg.getByRole("button", { name: /Cancelar plano|Confirmar|Cancelar adesão/ }).last().click().catch(() => {});
-    }
+    await page.getByRole("button", { name: "Cancelar plano" }).first().click();
+    await page.getByPlaceholder("Motivo do cancelamento").fill("Roteiro do dono: cancelar a adesão");
+    await page.getByRole("button", { name: "Confirmar cancelamento" }).click();
     await page.waitForTimeout(6000);
     const [mvd] = await sql<{ status: string }>("select status from public.ppr_memberships where id = $1", [mv.id]);
     const [fv3] = await sql<{ status: string }>("select status from public.ppr_charges where id = $1", [fv.id]);

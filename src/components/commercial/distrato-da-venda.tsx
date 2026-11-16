@@ -29,11 +29,14 @@ export function DistratoDaVenda({
   directSaleId = null,
   /** Contrato: o distrato abre pelo cartão "Cancelar tratamento" (a tela avisa). */
   aoAbrirContrato,
+  rotulo = null,
 }: {
   clientId: string;
   negotiationId?: string | null;
   directSaleId?: string | null;
   aoAbrirContrato?: () => void;
+  /** O código da venda, quando o cliente tem mais de uma. */
+  rotulo?: string | null;
 }) {
   const router = useRouter();
   const [ocupado, start] = useTransition();
@@ -86,7 +89,7 @@ export function DistratoDaVenda({
   return (
     <div className="space-y-2 rounded-md border border-dashed p-2 text-xs">
       <p className="flex items-center gap-1 font-medium">
-        <FileSignature className="h-3.5 w-3.5" /> Distrato
+        <FileSignature className="h-3.5 w-3.5" /> Distrato{rotulo ? ` · ${rotulo}` : ""}
       </p>
 
       {s.distrato && (
@@ -128,10 +131,15 @@ export function DistratoDaVenda({
               Abrir distrato
             </Button>
           )}
-          {s.pode_decidir && negotiationId && s.pedido && (
-            <Button size="sm" variant="outline" className="h-7 text-xs" disabled={ocupado} onClick={() => aoAbrirContrato?.()}>
+          {s.pode_decidir && negotiationId && s.pedido && aoAbrirContrato && (
+            <Button size="sm" variant="outline" className="h-7 text-xs" disabled={ocupado} onClick={() => aoAbrirContrato()}>
               Abrir distrato
             </Button>
+          )}
+          {s.pode_decidir && negotiationId && s.pedido && !aoAbrirContrato && (
+            <a className="inline-flex h-7 items-center rounded-md border px-2 text-xs underline-offset-2 hover:underline" href={`/prontuarios/${clientId}?aba=plano`}>
+              Abrir distrato (aba Plano)
+            </a>
           )}
           {s.pode_decidir && s.pedido && (
             <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={ocupado} onClick={() => setModo("manter")}>

@@ -5,7 +5,7 @@
 // Asaas). A venda direta é a do preparo (sem contato). GRAVA no treino.
 import { test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
-import { entrarComo, trocarPara } from "../e2e/apoio";
+import { entrarComo } from "../e2e/apoio";
 import { APP_PUBLICADO } from "../playwright.publicado.config";
 import { CENARIO, PASTA, anotar, esperar, foto, linhaDaParcela, sql, textoDaTela } from "./roteiro-dono.apoio";
 
@@ -28,6 +28,9 @@ async function checklistInteira(page: Page) {
   }
 }
 
+// Nenhum clique espera para sempre: o passo que trava vira falha com a foto.
+test.use({ actionTimeout: 30_000, navigationTimeout: 60_000 });
+
 test.describe.serial("roteiro do dono — parte D (distrato)", () => {
   test("D1 a D7", async ({ page, context }) => {
     test.setTimeout(900_000);
@@ -40,7 +43,8 @@ test.describe.serial("roteiro do dono — parte D (distrato)", () => {
 
     // --- D1: o pedido de distrato (Recepção) e "Manter o contrato" (Gerente) ------------
     await entrarComo(context, "recepcao@example.com", C.ldn, DOMINIO);
-    await aba(page, cli.id, "plano");
+    // A Recepção não tem a aba Plano: o pedido fica no topo da aba Financeiro.
+    await aba(page, cli.id, "financeiro");
     const pedir = page.getByRole("button", { name: "Pedir distrato" }).first();
     const recVe = await pedir.isVisible().catch(() => false);
     if (recVe) {
@@ -52,7 +56,8 @@ test.describe.serial("roteiro do dono — parte D (distrato)", () => {
     const [ped] = await sql<{ id: string; status: string }>("select id, status from public.distrato_requests where negotiation_id = $1 order by requested_at desc limit 1", [neg.id]);
     anotar("D1 a Recepção registra o pedido de distrato na ficha", recVe && ped?.status === "aberto", `botão ${recVe ? "visível" : "AUSENTE"}; pedido ${ped?.status ?? "não gravado"}`);
     await foto(page, "D1-recepcao");
-    await trocarPara(context, "gerente@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "gerente@example.com", C.ldn, DOMINIO);
     const [ger] = await sql<{ id: string }>("select id from public.profiles where email = 'gerente@example.com'");
     const [av] = await sql<{ n: number }>("select count(*)::int n from public.notifications where user_id = $1 and title = 'Pedido de distrato para decidir' and created_at > now() - interval '30 minutes'", [ger.id]);
     await page.goto("/financeiro/cobrancas-automaticas");
@@ -141,10 +146,9 @@ test.describe.serial("roteiro do dono — parte D (distrato)", () => {
     const [p1] = await sql<{ id: string }>("select id from public.payment_installments where direct_sale_id = $1 order by seq limit 1", [C.D.venda]);
     await sql("insert into public.payment_receipts (clinic_id, client_id, installment_id, amount_cents, received_at, payment_method) values ($1, $2, $3, 10000, current_date, 'dinheiro')", [C.ldn, C.D.cliente, p1.id]);
     await sql("update public.direct_sales set closed_at = null where id = $1", [C.D.venda]);
-    const [codD] = await sql<{ code: string }>("select code from public.direct_sales where id = $1", [C.D.venda]);
     await page.goto("/comercial/venda-direta?periodo=mes");
     await page.waitForLoadState("networkidle").catch(() => {});
-    const item = page.locator("div.rounded-lg.border").filter({ hasText: codD.code }).first();
+    const item = page.locator("div.rounded-lg.border.p-3").filter({ hasText: "Roteiro D distrato venda direta" }).first();
     await item.getByRole("button").first().click();
     await item.getByRole("button", { name: "Cancelar venda" }).click();
     await page.waitForTimeout(4000);
@@ -181,7 +185,8 @@ test.describe.serial("roteiro do dono — parte D (distrato)", () => {
     await page.waitForLoadState("networkidle").catch(() => {});
     const gerVeAutorizar = await page.locator("section").filter({ hasText: "Distratos e devoluções" }).getByRole("button", { name: "Autorizar" }).first().isVisible().catch(() => false);
     anotar("D6 o Gerente (quem pediu) não autoriza", !gerVeAutorizar, gerVeAutorizar ? "o botão Autorizar APARECE para o Gerente" : "sem o botão");
-    await trocarPara(context, "financeiro@example.com");
+    await context.clearCookies();
+    await entrarComo(context, "financeiro@example.com", undefined, DOMINIO);
     await page.goto("/financeiro/cobrancas-automaticas");
     await page.waitForLoadState("networkidle").catch(() => {});
     const secF = page.locator("section").filter({ hasText: "Distratos e devoluções" }).first();
@@ -195,7 +200,8 @@ test.describe.serial("roteiro do dono — parte D (distrato)", () => {
     anotar("D6 o Financeiro autoriza: a conta a pagar 1.9.03", dv2?.status === "autorizada" && pay?.account_code === "1.9.03", `pedido ${dv2?.status}; conta ${pay?.account_code ?? "—"} de ${pay?.amount_cents ?? "—"}`);
 
     // --- D7: a Central mostra o prazo do aviso --------------------------------------------
-    await trocarPara(context, "admin@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "admin@example.com", C.ldn, DOMINIO);
     await page.goto("/central?aba=financeiro");
     await page.waitForLoadState("networkidle").catch(() => {});
     const t7 = await textoDaTela(page);

@@ -5,11 +5,13 @@
 // único (nenhuma senha é digitada). Este roteiro GRAVA no treino (é o teste do dono).
 import { test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
-import { entrarComo, trocarPara } from "../e2e/apoio";
+import { entrarComo } from "../e2e/apoio";
 import { APP_PUBLICADO } from "../playwright.publicado.config";
 import { CENARIO, PASTA, anotar, asaas, dataBR, esperar, foto, linhaDaParcela, sql, textoDaTela } from "./roteiro-dono.apoio";
 
 const DOMINIO = new URL(APP_PUBLICADO).hostname;
+const PASSOS = (process.env.ROTEIRO_PASSOS ?? "").split(",").filter(Boolean);
+const rodar = (passo: string) => PASSOS.length === 0 || PASSOS.includes(passo);
 const C = CENARIO;
 const PDF = `${PASTA}/termo-assinado.pdf`;
 writeFileSync(PDF, "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
@@ -46,6 +48,9 @@ async function salvarAcordo(page: Page) {
   return (await toast.allInnerTexts().catch(() => [])).join(" | ");
 }
 
+// Nenhum clique espera para sempre: o passo que trava vira falha com a foto.
+test.use({ actionTimeout: 30_000, navigationTimeout: 60_000 });
+
 test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
   test("A2 a A10", async ({ page, context }) => {
     test.setTimeout(900_000);
@@ -61,6 +66,8 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     await entrarComo(context, "gerente@example.com", C.ldn, DOMINIO);
     const [p1, p2, p3, p4, p5] = await parcelas(C.A.venda);
 
+    let r1: { id: string; status: string; sign_deadline: string | null } = { id: "", status: "", sign_deadline: null };
+    if (rodar("A2")) {
     // --- A2: renegociar as parcelas 2 e 3, sem desconto -----------------------
     await abrirFinanceiro(page, C.A.cliente);
     await foto(page, "A2-antes");
@@ -71,7 +78,7 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     anotar("A2 o 1º vencimento novo já vem numa data aceita (depois de hoje)", venc1 > new Date().toISOString().slice(0, 10), `1º vencimento sugerido: ${dataBR(venc1)}`);
     await foto(page, "A2-dialogo");
     const aviso2 = await salvarAcordo(page);
-    const [r1] = await sql<{ id: string; status: string; sign_deadline: string | null }>(
+    [r1] = await sql<{ id: string; status: string; sign_deadline: string | null }>(
       "select id, status, to_char(sign_deadline, 'YYYY-MM-DD') sign_deadline from public.payment_renegotiations where source_installment_ids && $1::uuid[] order by created_at desc limit 1", [[p2.id, p3.id]]);
     const depois = await parcelas(C.A.venda);
     anotar("A2 acordo salvo fica Aguardando assinatura, com prazo", r1?.status === "aguardando_assinatura" && Boolean(r1?.sign_deadline), `situação ${r1?.status ?? "nenhuma"}, prazo ${r1?.sign_deadline ?? "—"}; a tela disse: ${aviso2 || "nada"}`);
@@ -84,6 +91,8 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     anotar("A2 a faixa \"Renegociação aguardando assinatura\" e a marca \"Em renegociação\"", /Renegociação aguardando assinatura/i.test(tFicha) && /Em renegociação/i.test(tFicha), (tFicha.match(/Renegociação aguardando assinatura|Em renegociação/gi) ?? []).join(", ") || "nada");
     await foto(page, "A2-depois");
 
+    }
+    if (rodar("A3")) {
     // --- A3: Enviar termo — ver o aviso e NÃO confirmar -------------------------
     (page as unknown as { recusarProximo?: boolean }).recusarProximo = true;
     const enviar = page.getByRole("button", { name: "Enviar termo" }).first();
@@ -95,6 +104,8 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     } else anotar("A3 o botão Enviar termo aparece", false, "não achei o botão");
     (page as unknown as { recusarProximo?: boolean }).recusarProximo = false;
 
+    }
+    if (rodar("A4")) {
     // --- A4: anexar o termo assinado (Gerente) ----------------------------------
     await abrirFinanceiro(page, C.A.cliente);
     await page.locator("label", { hasText: "Anexar termo assinado" }).first().locator("input[type=file]").setInputFiles(PDF);
@@ -111,6 +122,8 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     await abrirFinanceiro(page, C.A.cliente);
     await foto(page, "A4-depois");
 
+    }
+    if (rodar("A5")) {
     // --- A5: pagar antes de assinar cancela o acordo ---------------------------------
     await renegociar(page, [p4.due_date], { parcelas: 2, meio: "boleto" });
     await salvarAcordo(page);
@@ -125,13 +138,16 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
       anotar("A5 pagou a parcela 4 antes de assinar: o acordo é cancelado pelo pagamento", caiu && /cancel/.test(r2d.status), `acordo ${r2d.status}; parcela 4 ${pp4.status}; avisos: ${aviso.map((x) => x.title).join(" | ") || "nenhum"}`);
     } else anotar("A5 cenário (acordo e boleto da parcela 4)", false, `acordo ${r2?.status ?? "não salvo"}, boleto ${b4 ? "vivo" : "não achado"}`);
 
+    }
+    if (rodar("A6")) {
     // --- A6: desconto na parcela vencida, na ordem juros → multa → benefício → principal
     await abrirFinanceiro(page, C.A.cliente);
     const [p7] = (await parcelas(C.A.venda)).filter((x) => x.seq === 7);
     const d6 = await renegociar(page, [p7.due_date], { parcelas: 1, meio: "pix" });
     // O desconto: "Personalizar" e o valor da cobrança menor que a dívida (R$ 102,67 → R$ 100,00).
     await d6.getByRole("button", { name: "Personalizar" }).click();
-    const valor = d6.locator("input[inputmode=decimal]").first();
+    // O valor da 1ª cobrança (dentro da lista "Cobranças"), não a "Entrada".
+    const valor = d6.locator("xpath=.//label[normalize-space()='Valor (R$)']/following-sibling::input[1]").first();
     await valor.fill("100,00");
     await valor.blur();
     await page.waitForTimeout(1200);
@@ -140,6 +156,8 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     await foto(page, "A6-dialogo");
     await d6.getByRole("button", { name: "Cancelar" }).first().click().catch(() => page.keyboard.press("Escape"));
 
+    }
+    if (rodar("A8")) {
     // --- A8: forma 2 — o mesmo link mostra os novos e marca os antigos ------------
     const [q1, q2] = await parcelas(C.A8.venda);
     await abrirFinanceiro(page, C.A8.cliente);
@@ -158,6 +176,8 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     anotar("A8 o mesmo link mostra os antigos como \"Substituído pela renegociação — não pague\"", /Substituído pela renegociação/i.test(tLista), (tLista.match(/Substituído pela renegociação[^\n]*/gi) ?? []).length + " marcados");
     anotar("A8 …e os boletos novos no mesmo link", (tLista.match(/R\$/g) ?? []).length >= 6, tLista.slice(0, 400).replace(/\s+/g, " "));
 
+    }
+    if (rodar("A9")) {
     // --- A9: venda não fechada — recusado com o motivo ------------------------------
     const [n1] = await parcelas(C.A9.venda);
     await abrirFinanceiro(page, C.A9.cliente);
@@ -168,23 +188,28 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     await foto(page, "A9-recusa");
     await page.keyboard.press("Escape");
 
+    }
+    if (rodar("A10")) {
     // --- A10: cobrança externa numa parcela renegociada ------------------------------
     // Marcar "cobrada fora" é da permissão "Cobranças: cancelar", que nasce só com o
     // Admin Master (ASA1); o dono libera os outros papéis no Painel de permissões.
-    await trocarPara(context, "admin@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "admin@example.com", C.ldn, DOMINIO);
     await abrirFinanceiro(page, C.A.cliente);
-    const lin5 = linhaDaParcela(page, p5.due_date);
-    await lin5.getByRole("button", { name: /Já cobrada fora do riSZon/ }).click();
+    const lin5 = page.locator("div").filter({ hasText: `Parcela · ${dataBR(p5.due_date)}` }).filter({ has: page.getByRole("button", { name: /Já cobrada fora do riSZon/ }) }).last();
+    await lin5.getByRole("button", { name: /Já cobrada fora do riSZon/ }).click({ timeout: 30_000 });
     const dx = page.getByRole("dialog");
     await dx.locator("input").first().fill("Boleto emitido direto no painel do Asaas (roteiro)");
     await dx.getByRole("button", { name: "Marcar" }).click();
     await page.waitForTimeout(3000);
-    await trocarPara(context, "gerente@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "gerente@example.com", C.ldn, DOMINIO);
     await abrirFinanceiro(page, C.A.cliente);
     await renegociar(page, [p5.due_date], { parcelas: 1, meio: "pix" });
     await salvarAcordo(page);
     // Recepcionista: vê a lista, mas não marca.
-    await trocarPara(context, "recepcao@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "recepcao@example.com", C.ldn, DOMINIO);
     await abrirFinanceiro(page, C.A.cliente);
     (page as unknown as { recusarProximo?: boolean }).recusarProximo = false;
     const env10 = page.getByRole("button", { name: "Enviar termo" }).first();
@@ -197,7 +222,8 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     anotar("A10 a Recepção vê a cobrança externa e não marca (só o Gerente)", /Cancele cada uma no painel do Asaas/i.test(tRec) && /Só o Gerente da unidade ou o Admin Master confirma/i.test(tRec), tRec ? (tRec.match(/Cancele cada uma[^\n]*|Só o Gerente[^\n]*/g) ?? []).join(" | ") : "a Recepção não vê o Enviar termo");
     await foto(page, "A10-recepcao");
     // Gerente: a lista exige a marca; marcar libera o envio e a marcação externa some.
-    await trocarPara(context, "gerente@example.com", C.ldn);
+    await context.clearCookies();
+    await entrarComo(context, "gerente@example.com", C.ldn, DOMINIO);
     await abrirFinanceiro(page, C.A.cliente);
     (page as unknown as { recusarProximo?: boolean }).recusarProximo = true;
     await page.getByRole("button", { name: "Enviar termo" }).first().click();
@@ -214,5 +240,6 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
       anotar("A10 confirmado: a marcação externa some (fica na auditoria)", ext?.status === "cancelada", `cobrança externa ${ext?.status ?? "não achada"}`);
     }
     await foto(page, "A10-gerente");
+    }
   });
 });
