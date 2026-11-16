@@ -408,9 +408,11 @@ Syncthing se comportarem de forma estranha.**
   `dismiss_training_enrollment`). ⚠️ A trava saiu da UNIDADE: agora é
   pessoa + função + tipo (`training_candidates_multi.turma_aberta`); ao recriar
   ela ou `open_training_campaign`, partir da 0411.
-- ✅ 0411 no treino (ensaio 15/15, desfeito). ⏳ **Produção: o dono roda a
-  0411** (ela dispensa a Luna na TR-00007). Relatos ainda SEM resposta: responder
-  depois da 0411 na produção. AP172 e AP173 no backlog, ligados ao OC-00016.
+- ✅ 0411 nos dois bancos (treino: ensaio 15/15, desfeito; produção pelo dono
+  em 16/11/2026, na 2ª tentativa; conferido de fora: a Luna dispensada na
+  TR-00007, sem login as funções recusam, a chave de serviço para em
+  NOT_ALLOWED). Publicado; OC-00015 e OC-00016 respondidos como resolvidos
+  (0.457.0). AP172 e AP173 no backlog, ligados ao OC-00016. Não visto na tela.
 
 **16/11/2026 (implantação medida) — PC Administrador (Empresarial 0.105.0 → 0.106.0, migração 1046)**
 
