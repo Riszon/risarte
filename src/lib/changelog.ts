@@ -62,6 +62,43 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.463.0",
+    data: "2026-11-16",
+    // Sem migração: o caixa usa as mesmas regras e funções do banco de antes.
+    migracao: null,
+    titulo: "Venda direta: o caixa em uma janela só",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A venda direta agora começa e termina na mesma janela: o que vende, como paga, assinar e receber. Não é mais preciso lançar no prontuário e ir fechar na aba Sessões & Procedimentos.",
+        papeis: ["receptionist", "unit_manager", "sdr", "clinical_coordinator"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na tela Atendimento, cada paciente ganhou o botão Vender (o atendimento já vem escolhido) e apareceu a fila Para receber, com as vendas diretas em aberto da unidade e o botão Continuar.",
+        papeis: ["receptionist", "unit_manager", "sdr", "clinical_coordinator"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No caixa, o Pix já vem marcado e trocar de meio é um clique; as parcelas aparecem com o valor de cada uma e só o que a regra da unidade permite. Desconto e ajuste de parcelas ficam atrás de um link. Em dinheiro, o botão Recebi R$ … dá a baixa e conclui a venda de uma vez.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A venda direta aberta pelo prontuário oferecia os meios de pagamento antigos e podia aparecer sem os procedimentos. Agora mostra os meios certos (Pix, cartão e boleto pelo Asaas, dinheiro, permuta) e sempre os procedimentos da venda.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
     versao: "0.462.0",
     data: "2026-11-16",
     migracao: "0414",

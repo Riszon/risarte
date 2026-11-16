@@ -3234,6 +3234,68 @@ agende uma avaliação para hoje e registre a chegada.
 **Checklist final:** ☐ cadastrei ☐ agendei ☐ registrei chegada ☐ sei onde ver a
 fase do paciente ☐ sei que não sou eu quem chama
 
+### 6.1a. Venda direta: o caixa da recepção
+
+*(desde a versão 0.463.0)*
+
+A venda direta é para o que não passa por avaliação, planejamento e
+Consultor: limpeza, consulta, urgência, restauração, conserto ou manutenção
+de prótese. Ela começa e termina **na mesma janela**.
+
+**Onde abrir**
+
+- **Atendimento** — botão **Vender** no cartão do paciente. O atendimento já
+  vem escolhido. *(É o caminho do dia a dia.)*
+- **Prontuário** — botão **Venda Direta**, no alto. Se o cliente tem
+  atendimento hoje, ele já vem escolhido; se não, escolha na lista.
+- **Atendimento → Para receber** — a lista das vendas diretas **em aberto**
+  da unidade, com o que falta em cada uma e o botão **Continuar**. A venda em
+  aberto também aparece em **Precisa de atenção**, no prontuário.
+
+**Passo a passo**
+
+1. **O que** — clique no atalho do procedimento (os mais vendidos da unidade)
+   ou procure outro. Mude a quantidade na linha, se precisar.
+2. **Como paga** — o **Pix à vista já vem marcado**. Para trocar, clique em
+   outro meio; as parcelas mostram o valor de cada uma. Só aparece o que a
+   regra da unidade permite. **À vista é só Pix, dinheiro ou permuta**; os
+   outros meios começam em 2×. O desconto do programa e o desconto à vista
+   entram sozinhos. **Dar desconto** e **Ajustar parcelas** (datas, valores,
+   meio de cada parcela) abrem só se você clicar.
+3. **Finalizar: assinar e receber** — a venda é lançada e a janela passa para
+   o fechamento.
+4. **Termo** — quando o cliente assinar, clique em **Termo assinado**.
+5. **Pagamento**
+   - **Dinheiro, permuta ou maquininha:** **Recebi R$ …**. É a baixa da
+     cobrança: entra no Financeiro e a venda é concluída. Só libera depois do
+     termo assinado.
+   - **Pix, boleto ou cartão pelo Asaas:** a cobrança aparece depois do termo
+     assinado, e o pagamento pelo Asaas confirma sozinho. Se a unidade ainda
+     não usa o Asaas, **Confirmar que recebeu**.
+
+Fechou a janela no meio? A venda fica em **Para receber**; **Continuar**
+abre onde parou.
+
+**Quem faz o quê**
+
+- **Recepção, Gerente e SDR** lançam e fecham.
+- **Coordenador Clínico** só lança os procedimentos: o botão dele é **Enviar
+  para a recepção**, e a venda vai para a fila **Para receber**.
+- **Atendimento já concluído ou de outro dia:** a venda entra como
+  **exceção** sozinha (o certo é vender antes de atender), e o Gerente e o
+  Franqueado são avisados. Não há mais caixa para marcar.
+
+**Em "⋯ Mais"**: trocar a forma de pagamento, cancelar a venda, abrir o
+distrato; **desmarcar o termo** é só do Gerente.
+
+**Erros frequentes:** tentar receber antes do termo assinado; procurar o
+fechamento na aba Sessões & Procedimentos (ela mostra só os procedimentos e
+uma linha por venda, com **Abrir**).
+
+**O que ainda é feito à mão:** marcar o termo assinado. O envio do termo
+pela assinatura digital, com a marcação automática, está planejado para a
+próxima entrega.
+
 ### 6.2. Coordenador Clínico
 
 **Objetivo:** avaliar e preparar o caso. **Duração:** 60 minutos.

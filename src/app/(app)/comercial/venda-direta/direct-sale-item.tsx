@@ -111,6 +111,13 @@ export type DirectSaleRow = {
   paymentConfirmedByName: string | null;
   /** I9: plano de cobrança (entrada + parcelas) já salvo. */
   schedule?: ScheduleEntry[];
+  /** VD3: a primeira parcela ainda em aberto — o que o balcão recebe agora. */
+  nextDue?: {
+    seq: number;
+    amountCents: number;
+    paymentMethod: string | null;
+    dueDate: string;
+  } | null;
   /** I9b: entrada já salva (para reabrir a tela no mesmo formato). */
   downPaymentCents?: number;
   /** I8: parcela mínima do meio escolhido (para validar o plano). */

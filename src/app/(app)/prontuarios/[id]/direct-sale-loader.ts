@@ -19,6 +19,7 @@ import {
 } from "@/lib/direct-sale";
 import type { DirectSaleRow } from "../../comercial/venda-direta/direct-sale-item";
 import type { UserRole } from "@/lib/roles";
+import type { ScheduleEntry } from "@/lib/payments";
 
 /** Um procedimento que ESTE usuário pode lançar, já com o benefício aplicado. */
 export type SellableProcedure = {
@@ -59,6 +60,10 @@ export type DirectSaleContext = {
   rule: CommercialRule;
   programActive: boolean;
   programName: string | null;
+  /** VD3: faixas do plano do cliente (PPR+) — o desconto muda com as parcelas. */
+  programConditions: DirectSaleRow["programConditions"];
+  /** VD3: maquininha ainda permitida no cartão parcelado (chave da rede). */
+  cardMachine: boolean;
 };
 
 /**
@@ -224,7 +229,33 @@ export async function loadDirectSaleContext(
     programActive: program.active,
     // Mostra de qual programa veio o benefício (PPR+ ou Empresarial).
     programName: program.label ?? program.companyName,
+    programConditions: program.ppr?.planName
+      ? {
+          planName: program.ppr.planName,
+          cashDiscountPercent: program.ppr.cashDiscountPercent,
+          maxInstallments: program.ppr.maxInstallments,
+          minInstallmentCents: program.ppr.minInstallmentCents,
+          tiers: program.ppr.tiers,
+        }
+      : null,
+    cardMachine: await maquininhaLigada(supabase),
   };
+}
+
+/**
+ * 4011: a chave da rede "maquininha no cartão parcelado da venda direta".
+ * Banco sem a 4011 (ou leitura recusada): vale como sempre foi — ligada.
+ */
+async function maquininhaLigada(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("sale_method_settings")
+    .select("card_machine_direct_sale")
+    .maybeSingle();
+  return data
+    ? Boolean((data as { card_machine_direct_sale: boolean }).card_machine_direct_sale)
+    : true;
 }
 
 /** Procedimento avulso (venda direta) no prontuário: em aberto ou concluído. */
@@ -249,7 +280,7 @@ export async function loadClientDirectSales(
   const session = await getSessionContext();
   const supabase = await createClient();
 
-  const [saleRes, itemRes, sessRes, ruleRes, program, empresarial] =
+  const [saleRes, sessRes, ruleRes, program, empresarial] =
     await Promise.all([
     supabase
       .from("direct_sales")
@@ -258,11 +289,6 @@ export async function loadClientDirectSales(
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false }),
-    supabase
-      .from("direct_sale_items")
-      .select(
-        "id, sale_id, procedure_id, description, quantity, unit_price_cents, program_discount_cents, final_cents"
-      ),
     supabase
       .from("treatment_sessions")
       .select(
@@ -283,6 +309,24 @@ export async function loadClientDirectSales(
   if (sessRes.error)
     console.error("loadClientDirectSales sessions failed:", sessRes.error.message);
   const saleRows = saleRes.data;
+  // VD3: os itens SÓ das vendas deste cliente. A leitura era de TODOS os itens
+  // que a pessoa enxerga, sem filtro — a API corta em 1.000 linhas, e a venda
+  // aparecia sem procedimento nenhum quando a rede passava disso (visto no
+  // treino, 16/11/2026).
+  const itemRes =
+    (saleRows ?? []).length > 0
+      ? await supabase
+          .from("direct_sale_items")
+          .select(
+            "id, sale_id, procedure_id, description, quantity, unit_price_cents, program_discount_cents, final_cents"
+          )
+          .in(
+            "sale_id",
+            (saleRows ?? []).map((s) => s.id as string)
+          )
+      : { data: [], error: null };
+  if (itemRes.error)
+    console.error("loadClientDirectSales items failed:", itemRes.error.message);
   const sessRows = sessRes.data;
   const ruleRows = ruleRes.data;
 
@@ -341,6 +385,68 @@ export async function loadClientDirectSales(
     ) as CommercialRule,
     empresarial
   );
+
+  // VD3: a venda do prontuário chegava SEM a regra do meio (4011), sem a chave
+  // da maquininha e sem as parcelas salvas — a tela oferecia os meios da venda
+  // antiga para uma venda nova. As três leituras são à parte: banco sem a
+  // 4011 segue como era.
+  const saleIds = (saleRows ?? []).map((s) => s.id as string);
+  const methodRuleBySale = new Map<string, string | null>();
+  const scheduleBySale = new Map<string, ScheduleEntry[]>();
+  const nextDueBySale = new Map<string, NonNullable<DirectSaleRow["nextDue"]>>();
+  let cardMachine = true;
+  if (saleIds.length > 0) {
+    const { data: regras, error: semRegra } = await supabase
+      .from("direct_sales")
+      .select("id, method_rule")
+      .in("id", saleIds);
+    if (!semRegra)
+      for (const r of (regras ?? []) as { id: string; method_rule: string | null }[])
+        methodRuleBySale.set(r.id, r.method_rule);
+    cardMachine = await maquininhaLigada(supabase);
+    const { data: instRows } = await supabase
+      .from("payment_installments")
+      .select(
+        "direct_sale_id, seq, kind, due_date, amount_cents, paid_amount_cents, payment_method, status"
+      )
+      .in("direct_sale_id", saleIds)
+      .order("seq")
+      .returns<
+        {
+          direct_sale_id: string;
+          seq: number;
+          kind: string;
+          due_date: string;
+          amount_cents: number;
+          paid_amount_cents: number | null;
+          payment_method: string | null;
+          status: string;
+        }[]
+      >();
+    for (const r of instRows ?? []) {
+      const list = scheduleBySale.get(r.direct_sale_id) ?? [];
+      list.push({
+        seq: r.seq,
+        kind: r.kind === "entrada" ? "entrada" : "parcela",
+        dueDate: r.due_date,
+        amountCents: r.amount_cents,
+        paymentMethod: r.payment_method,
+      });
+      scheduleBySale.set(r.direct_sale_id, list);
+      // A primeira parcela ainda em aberto: é o que o balcão recebe agora.
+      if (
+        !nextDueBySale.has(r.direct_sale_id) &&
+        (r.status === "em_aberto" || r.status === "parcial")
+      ) {
+        nextDueBySale.set(r.direct_sale_id, {
+          seq: r.seq,
+          amountCents: Math.max(0, r.amount_cents - (r.paid_amount_cents ?? 0)),
+          paymentMethod: r.payment_method,
+          dueDate: r.due_date,
+        });
+      }
+    }
+  }
 
   const idsForNames = [
     ...new Set(
@@ -429,6 +535,10 @@ export async function loadClientDirectSales(
     canClose,
     isManager,
     isProgramMember,
+    methodRule: methodRuleBySale.get(s.id as string) ?? null,
+    cardMachine,
+    schedule: scheduleBySale.get(s.id as string) ?? [],
+    nextDue: nextDueBySale.get(s.id as string) ?? null,
     contractSignedByName: s.contract_signed_by
       ? (names.get(s.contract_signed_by as string) ?? null)
       : null,

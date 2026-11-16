@@ -400,6 +400,24 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+
+**16/11/2026 (venda direta v3, VD3-1) — PC Administrador (core 0.462.0 → 0.463.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **O caixa da venda direta em uma janela** (bloco 0.463.0 no ESTADO; plano e
+  decisões do dono em `docs/comercial/VENDA-DIRETA-V3-PLANO.md`). ⚠️ **NÃO
+  está no `main`:** espera o teste do dono. Ao juntar: conferir a versão (outra
+  sessão pode ter usado a 0.463.0), regerar o Word (`npm run manual:docx`).
+- ⚠️ **Regras de tela do caixa = `src/lib/venda-direta-caixa.ts`** (espelho de
+  `setDirectSaleConditions`). ⚠️ **"Recebi R$ …" é a baixa da parcela**
+  (`registerReceipt`), que conclui a venda no banco; exige o termo assinado.
+- ⚠️ **Turbopack recusa `node_modules` por junção** ("points out of the
+  filesystem root"): worktree que vai subir servidor precisa de `npm ci`.
+- ⚠️ **Disco C: chegou a 0 no `npm run verificar`** com 5 GB livres e o
+  servidor de teste no ar; passou depois de encerrar o servidor (o `next dev`
+  da porta 3100 sobrevive ao parar a tarefa: encerrar pelo processo da porta).
+- Não clicado na tela: Finalizar, Termo assinado e Recebi (uma venda de teste
+  na Unidade Teste avisa 1 Consultor real do treino). Próximas: VD3-2 (termo
+  pela ZapSign, migração nova), VD3-3, VD3-4.
 **16/11/2026 (funções de apoio, F2) — PC Administrador (core 0.461.0 → 0.462.0, migração 0414)**
 
 - **As coberturas no banco** (bloco 0.462.0 no ESTADO). ⚠️ Trava nova

@@ -2,6 +2,36 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🛒 0.463.0 — VENDA DIRETA V3: O CAIXA EM UMA JANELA (16/11/2026; sem migração) — NA BRANCH `feature/venda-direta-v3`, NÃO PUBLICADO
+>
+> Pedido do dono (a venda direta "confusa, em duas abas, tudo à mão"). Plano e
+> decisões em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` (VD3-1 a VD3-4). Esta
+> é a **VD3-1**. EV-363.
+> - **Uma janela** (`src/components/venda-direta/caixa.tsx`): o que vende,
+>   como paga, assinar e receber. Abre do **Atendimento** (botão Vender, o
+>   atendimento já escolhido), do prontuário e da fila **Para receber**.
+> - ⚠️ **As regras de tela moram em `src/lib/venda-direta-caixa.ts`** e
+>   espelham `setDirectSaleConditions` e `directSaleViolations`: mudou a conta
+>   do servidor, muda lá (régua `venda-direta-caixa.test.ts`).
+> - ⚠️ **"Recebi R$ …" é a BAIXA da parcela** (`registerReceipt`), que conclui
+>   a venda no banco (4011, `_counter_confirm_sale`) — não é a chave
+>   "pagamento confirmado". Exige o termo assinado.
+> - ⚠️ **A exceção "atendeu antes de vender" é decidida no servidor**
+>   (`atendidoAntesDaVenda`: atendimento concluído ou de dia anterior). O
+>   pop-up antigo marcava exceção para qualquer horário já iniciado.
+> - **Corrigido de passagem** (`direct-sale-loader.ts`): a venda do prontuário
+>   vinha sem a regra do meio (oferecia os meios antigos) e os itens eram
+>   lidos sem filtro (a API corta em 1.000 linhas: a venda aparecia vazia).
+> - `SaleItem` (o painel longo) continua em **Comercial → Venda direta**.
+> - **Não feito nesta entrega:** o termo pela ZapSign (VD3-2, migração nova),
+>   o Pix na janela (VD3-3), "Atender agora" (VD3-4), o motivo ao desmarcar o
+>   termo (D5: hoje só esconde o botão de quem não é Gerente), a agenda.
+> - **Visto na tela** no servidor local de teste, como a Recepção de teste: a
+>   venda nova até antes do Finalizar, o Vender, a fila e as etapas de vendas
+>   abertas. **Não clicado:** Finalizar, Termo assinado, Recebi (avisariam uma
+>   pessoa real no treino — espera o OK do dono). O `.docx` do manual não foi
+>   regerado (fazer na junção com o `main`).
+>
 > ## 👥 0.462.0 — FUNÇÕES DE APOIO, F2: AS COBERTURAS NO BANCO (16/11/2026; migração 0414)
 >
 > Plano aprovado (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Sem botão ainda (F3). EV-362.

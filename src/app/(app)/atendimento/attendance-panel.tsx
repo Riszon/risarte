@@ -12,6 +12,7 @@ import {
   DoorOpen,
   Hourglass,
   MoreHorizontal,
+  ShoppingCart,
   Stethoscope,
   UserRound,
   type LucideIcon,
@@ -74,6 +75,10 @@ import {
   BRAZIL_TIME_ZONE,
 } from "@/lib/dates";
 import { TIPOS_QUE_GRAVAM, pedirGravacao, pedirParaParar } from "@/lib/gravacao";
+import {
+  CaixaVendaDireta,
+  type AlvoDoCaixa,
+} from "@/components/venda-direta/caixa";
 
 export type PanelAppointment = {
   id: string;
@@ -391,7 +396,10 @@ export function AttendancePanel({
   waitingAlertMinutes,
   canSwapProvider,
   swapStaff,
+  canSell = false,
 }: {
+  /** VD3: quem lança venda direta vê o "Vender" em cada paciente. */
+  canSell?: boolean;
   appointments: PanelAppointment[];
   canCheckIn: boolean;
   canCall: boolean;
@@ -420,6 +428,8 @@ export function AttendancePanel({
   const [confirmCheckIn, setConfirmCheckIn] = useState<PanelAppointment | null>(
     null
   );
+  // VD3: o caixa da venda direta, aberto a partir do paciente.
+  const [vender, setVender] = useState<AlvoDoCaixa | null>(null);
   // H3.6: troca de profissional (qual atendimento + novo profissional + motivo).
   const [swapFor, setSwapFor] = useState<PanelAppointment | null>(null);
   const [swapProviderId, setSwapProviderId] = useState("");
@@ -642,8 +652,28 @@ export function AttendancePanel({
           )}
           <AttendanceTimers a={a} waitingAlertMinutes={waitingAlertMinutes} />
         </div>
-        {action && (
-          <div className="flex flex-wrap items-center gap-1">{action}</div>
+        {(action || (canSell && a.clientId && !comercial)) && (
+          <div className="flex flex-wrap items-center gap-1">
+            {action}
+            {/* VD3: a venda direta começa aqui — o atendimento já é este. */}
+            {canSell && a.clientId && !comercial && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-gold-tinta"
+                onClick={() =>
+                  setVender({
+                    clientId: a.clientId as string,
+                    clientName: a.clientName,
+                    appointmentId: a.id,
+                  })
+                }
+              >
+                <ShoppingCart className="mr-1 size-3.5" />
+                Vender
+              </Button>
+            )}
+          </div>
         )}
       </li>
     );
@@ -651,6 +681,7 @@ export function AttendancePanel({
 
   return (
     <>
+      <CaixaVendaDireta alvo={vender} onClose={() => setVender(null)} />
       {/* OC-00085: encerrar a avaliação interrompida, com motivo. */}
       <Dialog
         open={encerrarSemEnviar !== null}
