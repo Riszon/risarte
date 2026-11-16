@@ -19,6 +19,13 @@ import type {
   MeetingStatus,
 } from "@/lib/empresarial/constants";
 import { tempoNaFaseAtual, type StagePeriod } from "@/lib/empresarial/funnel";
+import {
+  IMPLEMENTATION_STEP_LABELS,
+  progressoDaImplantacao,
+  type ImplementationStep,
+  type PassoRegistrado,
+} from "@/lib/empresarial/implantacao";
+import { medidasDaImplantacao } from "@/lib/empresarial/implantacao-db";
 import { LeadBoard, type LeadView } from "./lead-board";
 import {
   BRAZIL_TIME_ZONE,
@@ -138,6 +145,34 @@ export default async function FunilPage() {
   // quadro continua abrindo — mas sem inventar "0 dias" para todo mundo.
   if (histErr) console.error("histórico de fases indisponível:", histErr.message);
 
+  // 1046 (dono, 16/11/2026): o cartão da Implantação diz que foi GANHO e
+  // quanto da implantação já foi feito — medido pelo sistema, com as marcas à
+  // mão só para a exceção. A mesma conta da ficha (`progressoDaImplantacao`).
+  const emImplantacao = leads.filter((l) => l.stage === "IMPLEMENTATION").map((l) => l.id);
+  const [medidas, { data: passoRows }] = await Promise.all([
+    medidasDaImplantacao(db, emImplantacao),
+    emImplantacao.length
+      ? db
+          .from("lead_implementation_steps")
+          .select("lead_id, step, done_at, not_applicable")
+          .in("lead_id", emImplantacao)
+          .returns<
+            { lead_id: string; step: ImplementationStep; done_at: string | null; not_applicable: boolean }[]
+          >()
+      : Promise.resolve({ data: [] as { lead_id: string; step: ImplementationStep; done_at: string | null; not_applicable: boolean }[] }),
+  ]);
+  const passosPorLead = new Map<string, PassoRegistrado[]>();
+  for (const r of passoRows ?? []) {
+    const lista = passosPorLead.get(r.lead_id) ?? [];
+    lista.push({ step: r.step, doneAt: r.done_at, notApplicable: r.not_applicable, note: null, doneByName: null });
+    passosPorLead.set(r.lead_id, lista);
+  }
+  /** Quando virou ganho: a medida do banco ou, sem ela, o histórico de fases. */
+  const ganhoDoLead = (id: string): string | null =>
+    medidas.get(id)?.ganhoEm ??
+    (histRows ?? []).find((h) => h.lead_id === id && h.stage === "CLOSED_WON")?.entered_at ??
+    null;
+
   // Fase 2 e fase 3 do funil (migração 1008): o que já foi tentado e o que
   // está marcado. As duas consultas vão juntas para não somar ida e volta ao
   // banco — cada viagem daqui até São Paulo custa no relógio de quem abre.
@@ -245,6 +280,22 @@ export default async function FunilPage() {
     referralName: l.referral_name,
     referralContact: l.referral_contact,
     tempoNaFase: tempoNaFaseAtual(historyByLead.get(l.id) ?? [], agora),
+    ganhoEm: l.stage === "CLOSED_WON" || l.stage === "IMPLEMENTATION" ? ganhoDoLead(l.id) : null,
+    implantacao:
+      l.stage === "IMPLEMENTATION"
+        ? (() => {
+            const p = progressoDaImplantacao(
+              passosPorLead.get(l.id) ?? [],
+              medidas.get(l.id)?.medidas ?? null
+            );
+            return {
+              percentual: p.percentual,
+              completa: p.completa,
+              faltando: p.faltando.map((f) => IMPLEMENTATION_STEP_LABELS[f]),
+              medido: medidas.has(l.id),
+            };
+          })()
+        : null,
     activities: activitiesByLead.get(l.id) ?? [],
     contactAttempts: (attemptsByLead.get(l.id) ?? []).map((a) => ({
       id: a.id,

@@ -12,13 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatBrDate } from "@/lib/dates";
 import {
-  IMPLEMENTATION_STEPS,
+  IMPLEMENTATION_STEP_AUTO,
   IMPLEMENTATION_STEP_HELP,
   IMPLEMENTATION_STEP_LABELS,
   impedimentosDaConferencia,
   podeNaoSeAplicar,
   progressoDaImplantacao,
   type ImplementationStep,
+  type MedidasDaImplantacao,
   type PassoRegistrado,
 } from "@/lib/empresarial/implantacao";
 import { confirmClosing, setImplementationStep } from "./actions";
@@ -42,6 +43,7 @@ export function FechamentoEImplantacao({
   companyId,
   conferencia,
   passos,
+  medidas,
   contractSignedAt,
   implantationPaidAt,
   lostReason,
@@ -51,6 +53,8 @@ export function FechamentoEImplantacao({
   companyId: string | null;
   conferencia: ConferenciaView | null;
   passos: PassoRegistrado[];
+  /** 1046: o que o sistema mede. Nulo = a leitura falhou (vale a marca à mão). */
+  medidas: MedidasDaImplantacao | null;
   contractSignedAt: string | null;
   implantationPaidAt: string | null;
   lostReason: string | null;
@@ -86,7 +90,12 @@ export function FechamentoEImplantacao({
         conferencia={conferencia}
       />
       {stage === "IMPLEMENTATION" && (
-        <Implantacao leadId={leadId} companyId={companyId} passos={passos} />
+        <Implantacao
+          leadId={leadId}
+          companyId={companyId}
+          passos={passos}
+          medidas={medidas}
+        />
       )}
     </>
   );
@@ -225,24 +234,34 @@ function Implantacao({
   leadId,
   companyId,
   passos,
+  medidas,
 }: {
   leadId: string;
   companyId: string | null;
   passos: PassoRegistrado[];
+  medidas: MedidasDaImplantacao | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const progresso = progressoDaImplantacao(passos);
+  // 1046: a MESMA conta do cartão do funil (medida pelo sistema; a marca à
+  // mão é a exceção).
+  const progresso = progressoDaImplantacao(passos, medidas);
   const porPasso = new Map(passos.map((p) => [p.step, p]));
+  const [motivoAberto, setMotivoAberto] = useState<ImplementationStep | null>(null);
+  const [motivo, setMotivo] = useState("");
 
   function marcar(
     step: ImplementationStep,
-    estado: "DONE" | "NOT_APPLICABLE" | "PENDING"
+    estado: "DONE" | "NOT_APPLICABLE" | "PENDING",
+    nota?: string
   ) {
     startTransition(async () => {
-      const r = await setImplementationStep(leadId, step, estado);
-      if (r.ok) router.refresh();
-      else toast.error(r.error ?? "Erro.");
+      const r = await setImplementationStep(leadId, step, estado, nota);
+      if (r.ok) {
+        setMotivoAberto(null);
+        setMotivo("");
+        router.refresh();
+      } else toast.error(r.error ?? "Erro.");
     });
   }
 
@@ -257,6 +276,12 @@ function Implantacao({
               {progresso.percentual}%
               {progresso.completa ? " — implantação concluída" : ""}
             </p>
+            {!medidas && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                Não foi possível ler o que o sistema mede agora; o % considera só
+                o que foi concluído à mão.
+              </p>
+            )}
           </div>
           {companyId && (
             <Button
@@ -281,10 +306,13 @@ function Implantacao({
         </div>
 
         <ul className="space-y-2">
-          {IMPLEMENTATION_STEPS.map((step) => {
+          {progresso.passos.map((situacao) => {
+            const { step } = situacao;
             const r = porPasso.get(step);
-            const feito = Boolean(r?.doneAt);
-            const dispensado = Boolean(r?.notApplicable);
+            const feito = situacao.feito;
+            const automatico = situacao.origem === "AUTOMATICO";
+            const manual = situacao.origem === "MANUAL";
+            const dispensado = situacao.origem === "NAO_SE_APLICA";
             return (
               <li
                 key={step}
@@ -303,15 +331,69 @@ function Implantacao({
                         <CircleDashed className="size-3.5 text-muted-foreground" />
                       )}
                       {IMPLEMENTATION_STEP_LABELS[step]}
+                      {situacao.parcial && !dispensado && (
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          · {situacao.parcial}
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {IMPLEMENTATION_STEP_HELP[step]}
                     </p>
-                    {feito && r?.doneAt && (
+                    <p className="text-xs text-muted-foreground">
+                      {automatico
+                        ? "Feito — conferido pelo sistema."
+                        : IMPLEMENTATION_STEP_AUTO[step]}
+                    </p>
+                    {manual && r?.doneAt && (
                       <p className="text-xs text-muted-foreground">
-                        Feito em {formatBrDate(r.doneAt)}
+                        Concluído à mão em {formatBrDate(r.doneAt)}
                         {r.doneByName ? ` por ${r.doneByName}` : ""}
+                        {r.note ? ` — motivo: ${r.note}` : ""}
                       </p>
+                    )}
+                    {motivoAberto === step && (
+                      <form
+                        className="mt-2 flex flex-wrap items-end gap-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          marcar(step, "DONE", motivo);
+                        }}
+                      >
+                        <div className="min-w-48 flex-1 space-y-1">
+                          <Label htmlFor={`motivo-${step}`} className="text-xs">
+                            Por que concluir sem o sistema confirmar?
+                          </Label>
+                          <Input
+                            id={`motivo-${step}`}
+                            value={motivo}
+                            onChange={(e) => setMotivo(e.target.value)}
+                            placeholder="Ex.: 2 titulares não quiseram agendar"
+                            className="h-8 text-xs"
+                            autoFocus
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          size="sm"
+                          className="h-8 text-xs"
+                          disabled={isPending || !motivo.trim()}
+                        >
+                          Concluir
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={() => {
+                            setMotivoAberto(null);
+                            setMotivo("");
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                      </form>
                     )}
                   </div>
 
@@ -321,7 +403,12 @@ function Implantacao({
                         não se aplica
                       </Badge>
                     )}
-                    {feito || dispensado ? (
+                    {automatico && (
+                      <Badge variant="secondary" className="text-xs">
+                        automático
+                      </Badge>
+                    )}
+                    {manual || dispensado ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -331,15 +418,19 @@ function Implantacao({
                       >
                         Desfazer
                       </Button>
-                    ) : (
+                    ) : !feito && motivoAberto !== step ? (
                       <>
                         <Button
+                          variant="outline"
                           size="sm"
                           className="h-7 text-xs"
                           disabled={isPending}
-                          onClick={() => marcar(step, "DONE")}
+                          onClick={() => {
+                            setMotivoAberto(step);
+                            setMotivo("");
+                          }}
                         >
-                          Feito
+                          Concluir mesmo assim
                         </Button>
                         {podeNaoSeAplicar(step) && (
                           <Button
@@ -353,7 +444,7 @@ function Implantacao({
                           </Button>
                         )}
                       </>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </li>

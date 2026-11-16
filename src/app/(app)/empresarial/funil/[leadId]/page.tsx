@@ -84,6 +84,7 @@ import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/empresarial/constants
 import { EnvioESelos, type EnvioView } from "./envio-e-selos";
 import { AssinaturasDaEmpresa } from "@/app/(app)/assinaturas/assinaturas-da-empresa";
 import { FechamentoEImplantacao } from "./fechamento-e-implantacao";
+import { medidasDaImplantacao } from "@/lib/empresarial/implantacao-db";
 
 // A tela deixou de ser só o levantamento quando virou abas (OC-00083).
 export const metadata: Metadata = { title: "Empresa no funil · Risarte Empresarial" };
@@ -703,7 +704,14 @@ export default async function FichaDoLeadPage({
   // ⚠️ A MESMA conta que a aba mostra ("2 de 5 passos"). Contar as linhas
   // gravadas dava "0 de 0" para quem ainda não marcou passo nenhum — e o selo
   // dizia "implantação concluída".
-  const progresso = progressoDaImplantacao(passos);
+  // 1046: o que o sistema mede (titulares, boas-vindas, agendamentos,
+  // orientações, apresentação). Leitura que falha = sem medidas, nunca zero.
+  const medidaDoLead =
+    lead.stage === "IMPLEMENTATION"
+      ? (await medidasDaImplantacao(db, [lead.id])).get(lead.id) ?? null
+      : null;
+  const medidas = medidaDoLead?.medidas ?? null;
+  const progresso = progressoDaImplantacao(passos, medidas);
   const situacao = situacaoDasEtapas({
     stage: lead.stage,
     empresaCriada: Boolean(lead.company_id),
@@ -816,6 +824,9 @@ export default async function FichaDoLeadPage({
     referralName: lead.referral_name,
     referralContact: lead.referral_contact,
     tempoNaFase: tempoNaFaseAtual(fases, agora),
+    // A janela de edição não mostra o selo nem a barra (são do cartão).
+    ganhoEm: medidaDoLead?.ganhoEm ?? null,
+    implantacao: null,
     activities: (actRows ?? []).map((a) => ({
       id: a.id,
       kind: a.kind,
@@ -1041,6 +1052,7 @@ export default async function FichaDoLeadPage({
           contractSignedAt={lead.contract_signed_at}
           implantationPaidAt={lead.implantation_paid_at}
           lostReason={lead.lost_reason}
+          medidas={medidas}
           conferencia={
             review
               ? {

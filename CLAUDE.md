@@ -400,6 +400,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/11/2026 (implantação medida) — PC Administrador (Empresarial 0.105.0 → 0.106.0, migração 1046)**
+
+- **O ganho no cartão e a implantação medida pelo sistema** (bloco
+  "EMPRESARIAL 0.106.0" no ESTADO). ⚠️ **% da implantação =
+  `progressoDaImplantacao(passos, medidas)`**, medidas pela porta
+  `medidasDaImplantacao` (1046); passo novo = medida nova na função E em
+  `medir`. ⚠️ Concluir à mão exige motivo.
+- ⏳ 1046 só no treino.
+
 **15/11/2026 (vagas no banco) — PC Administrador (Empresarial 0.104.0 → 0.105.0, migração 1045)**
 
 - **As vagas do contrato conferidas pelo banco** (bloco "EMPRESARIAL 0.105.0"

@@ -57,6 +57,29 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - conferido de fora: a função nova barra o anônimo (401).
 >
 > A exceção (só o Financeiro da Franqueadora ou o Admin Master, para o acordo de uma venda só) vem na entrega logo depois da 4017. Spec 19.28.11 a 19.28.14; manual 6.6.
+> ## 💼 EMPRESARIAL 0.106.0 / 1046 — O GANHO NO CARTÃO E A IMPLANTAÇÃO MEDIDA PELO SISTEMA (16/11/2026)
+>
+> Relato do dono (produção): a empresa fechada não mostrava o cartão de ganho
+> (a conferência a leva para Implantação, e o selo só existia em Fechamento);
+> o cartão devia mostrar o % da implantação; os passos eram marcas à mão.
+> Decisão dele: o selo "Ganho" vai para o cartão da Implantação.
+> - **1046:** `empresarial.implantacao_dos_leads(uuid[])` (definer, guarda
+>   `can_access_lead`, só contagens e datas): ganho_em (histórico), titulares
+>   contratados/ativos, boas-vindas (CONTACTED/DECLINED), com agendamento não
+>   cancelado, envio com `GUIDELINES`, reunião DONE depois do ganho.
+> - ⚠️ **% da implantação = `progressoDaImplantacao(passos, medidas)`** (quadro
+>   e ficha, leitura em `implantacao-db.ts`): o parcial entra no %; só chega a
+>   100 sem passo faltando; a marca à mão ("Concluir mesmo assim") vence a
+>   medida e EXIGE motivo. Leitura que falha = sem medidas (vale a marca), nunca
+>   zero.
+> - Envio ganhou o item **Orientações do programa** (`GUIDELINES`).
+> - ⚠️ O indicador de certificação "Passos de implantação concluídos" conta só
+>   as marcas à mão (`done_by`): o passo feito pelo sistema não pontua.
+> - Ensaio no treino 15/15 (`scripts/empresarial-ensaio-1046.mjs`, desfeito) e
+>   quebrando 2 vezes; régua `implantacao-medida.test.ts` (14), provada
+>   quebrando. Manual do Empresarial 7.3. **Não visto na tela.**
+> - ⏳ **1046 só no treino**; o dono roda na produção antes do push.
+
 > ## 💼 EMPRESARIAL 0.105.0 / 1045 — AS VAGAS DO CONTRATO CONFERIDAS PELO BANCO (15/11/2026)
 >
 > Levantamento do módulo pedido pelo dono, grupo A. Decisão dele: a trava no

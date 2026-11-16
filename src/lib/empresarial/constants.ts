@@ -275,6 +275,7 @@ export const DISPATCH_ITEMS = [
   "CONTRACT",
   "PRESENTATION",
   "BOLETO",
+  "GUIDELINES",
   "EXTRA",
 ] as const;
 export type DispatchItem = (typeof DISPATCH_ITEMS)[number];
@@ -283,6 +284,8 @@ export const DISPATCH_ITEM_LABELS: Record<DispatchItem, string> = {
   CONTRACT: "Contrato",
   PRESENTATION: "Apresentação do programa",
   BOLETO: "Boleto da implantação",
+  // 1046: o envio com as orientações fecha o passo "Enviar as orientações".
+  GUIDELINES: "Orientações do programa",
   EXTRA: "Documentos adicionais",
 };
 
