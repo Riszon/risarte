@@ -292,7 +292,7 @@ contratual. A função de apoio não muda o cargo.
 | **F1** | Corrigir os leitores: dinheiro, portão por função, avisos, listas, rótulos (seções 5 e 6, menos a tela nova) | 1 core (+ 1 combinada com a sessão do Asaas para 4017a/4018; + 1 do Indica para o prêmio) | Nada visível. A tranca passa a ser por função |
 | **F2** | O modelo: `role_coverages`, as travas novas, as funções de dar/encerrar, a rotina diária | 1 core | Nada visível (sem botão ainda) |
 | **F3** | As telas: ficha (dar, ver, encerrar), Início e barra do alto, avisos de início/fim, manual | sem migração | O Admin passa a dar função de apoio |
-| **F4** | Certificação da função de apoio e relatório "Coberturas" (quem cobriu o quê, por quanto tempo) | se D6 pedir | Conforme D6/D7 |
+| **F4** | Certificação da função de apoio (D6/D7), o painel **"Equipe e coberturas"** no Painel da rede e os avisos à Franqueadora (seção 10) | 1 core | A Franqueadora acompanha equipe enxuta e sobrecarga |
 
 A F1 vai primeiro **de propósito**: ela é segura sozinha e é a que evita
 pagar em dobro.
@@ -371,7 +371,132 @@ pagar em dobro.
 
 ---
 
-## 10. O que fica de fora (e por quê)
+## 10. Acompanhamento pela Franqueadora: equipe enxuta e sobrecarga
+
+*Pergunta do dono (16/11/2026): "como é possível pela franqueadora saber se tem
+unidade 'abusando' desta possibilidade, isso pode promover unidade que querem
+uma equipe 'mais enxuta' e como possibilidade de sobrecarregar a equipe, como
+consigo visualizar/acompanhar isso?"*
+
+A cobertura é um **registro com datas, motivo e quem deu** (seção 4.1). Por
+isso dá para medir o abuso em vez de adivinhar. O acompanhamento tem três
+partes: **impedir** o abuso fácil, **mostrar** os números e **avisar** quando
+um limite é passado.
+
+### 10.1 Impedir (as travas)
+
+- **Quem dá a cobertura.** Hoje só o Admin (D1), então a Franqueadora controla
+  na origem. Quando a unidade (Gerente ou Franqueado) puder agir, ela **pede**
+  e a Franqueadora **aprova** o acúmulo fixo. A temporária curta pode ficar com
+  a unidade (D12).
+- **Motivo em lista fechada**, mais o texto livre: *férias, licença, falta,
+  desligamento (vaga aberta), unidade sem a função, outro*. É isso que permite
+  separar "a recepcionista está de férias" de "a unidade nunca contratou
+  recepcionista".
+- **A temporária não vira fixa por emenda.** Cobertura nova da mesma pessoa,
+  na mesma função, que começa até 7 dias depois do fim da anterior **conta como
+  a mesma** para o limite de 90 dias (D2). Passou de 90, só como acúmulo fixo,
+  que exige a aprovação da Franqueadora.
+- **O acúmulo fixo vence.** Ele tem **revisão a cada 90 dias** (D14). Sem
+  revisão, vira pendência no painel e no sino.
+- **Limites da rede, configuráveis** (como as outras configurações em cascata,
+  rede → unidade): no máximo **X coberturas ao mesmo tempo por unidade** e
+  **Y% da equipe em acúmulo**. Passou do limite, a nova cobertura é recusada
+  (ou só avisa, conforme D13).
+
+### 10.2 Mostrar: o painel "Coberturas"
+
+Uma aba nova, **Equipe e coberturas**, no **Painel da rede** (onde já ficam
+Contas a pagar, Recebíveis, Fluxo de caixa e DRE por unidade). Funciona como as
+outras abas: o mês no alto, uma linha por unidade, a cor e uma frase, e um
+**Abrir na unidade** para ver o detalhe.
+
+**Sinais de equipe enxuta** (por unidade, no mês):
+
+| Indicador | O que mostra | Por que importa |
+|---|---|---|
+| **Função sem titular** | Função feita **só** por apoio (ninguém a tem como principal) e há quantos dias | É o sinal mais forte de vaga que não está sendo preenchida |
+| **% do mês coberto, por função** | Ex.: *"Recepção de Cambé: 22 de 30 dias por cobertura"* | Separa a ausência pontual da ausência crônica |
+| **Dias-pessoa de cobertura** | Soma dos dias de todas as coberturas | Mostra o tamanho do buraco, comparável entre unidades |
+| **% da equipe em acúmulo** | Quantas pessoas da unidade têm função de apoio | Uma pessoa cobrindo é normal; metade da equipe, não |
+| **Coberturas emendadas** | Temporárias que se renovam em sequência, com os dias contínuos | É a "fixa disfarçada" |
+| **Fixas sem revisão** | Acúmulos com a revisão vencida | Acúmulo esquecido |
+| **Motivos** | Distribuição por motivo | "Férias" é diferente de "vaga aberta há 4 meses" |
+
+**Sinais de sobrecarga** (por pessoa em cobertura). O sistema já registra o
+uso de cada pessoa: tempo ativo por dia (`access_sessions`, desde a 0287) e as
+ações por hora (painel de uso da Auditoria, 0290). A aba compara a pessoa
+**antes e durante** a cobertura:
+
+| Indicador | O que mostra |
+|---|---|
+| **Tempo ativo por dia** | Ex.: *"Celma: 5h10/dia antes, 7h40/dia na cobertura"* |
+| **Uso fora do horário da unidade** | Acessos antes da abertura ou depois do fechamento, pelo horário cadastrado da unidade. Sinal de hora extra |
+| **A função principal caiu?** | As ações da função principal dela (as mesmas que a certificação conta) antes e durante. Se caíram muito, a cobertura está tirando a pessoa do próprio trabalho |
+| **Duas coberturas ao mesmo tempo** | Quem está com as 2 funções de apoio, e há quanto tempo |
+
+**Comparativo da rede:** as unidades em ordem pelo *% de funções cobertas por
+apoio* e pelos *dias-pessoa de cobertura por pessoa da equipe*. Verde, amarelo
+ou vermelho pelos limites da D13.
+
+**⚠️ O limite honesto deste painel:** o riSZon vê o que acontece **dentro do
+sistema**. O tempo ativo e o horário de acesso indicam carga, mas **não são
+ponto eletrônico**. Hora extra de verdade se confere na folha. O painel serve
+para **saber para onde olhar**; a conclusão sobre uma unidade continua sendo uma
+conversa com ela.
+
+### 10.3 Avisar (o sino da Franqueadora)
+
+A rotina diária (a mesma do início e fim das coberturas) avisa o Admin e quem
+a D12 definir:
+
+- **Função sem titular** há mais de **30 dias**;
+- **Cobertura emendada** passando de **60 dias** contínuos;
+- **Acúmulo fixo** com a revisão vencida;
+- **Unidade acima do limite** de coberturas ou de % da equipe em acúmulo;
+- **Pessoa em sobrecarga:** tempo ativo médio na cobertura **30% acima** do
+  dela antes, ou acesso fora do horário em **5 ou mais dias** do mês.
+
+Um aviso por assunto e por fato, como os avisos da Ortodontia e das Metas:
+o mesmo alerta não se repete todo dia.
+
+### 10.4 Novas decisões
+
+**D12 — Quem vê o painel e recebe os avisos**
+- **Recomendado:** o **Admin Master** e a função **Franqueadora/Rede**, vendo
+  a rede inteira. O **Franqueado** e o **Gerente** veem **só a própria
+  unidade**, com os mesmos números (transparência ajuda a corrigir antes do
+  alerta). A pessoa em cobertura vê **o próprio** tempo, nunca o dos colegas.
+
+**D13 — Os limites da rede, e se eles travam ou só avisam**
+- **Recomendado, para começar:** no máximo **2 coberturas ao mesmo tempo por
+  unidade** e **30% da equipe em acúmulo**. Nos primeiros 3 meses, os limites
+  **só avisam**: assim você calibra os números com a operação de verdade antes
+  de travar alguém. Depois, você decide se passam a travar.
+
+**D14 — Revisão do acúmulo fixo**
+- **Recomendado:** a cada **90 dias**. Sem revisão em 15 dias depois do
+  vencimento, o acúmulo **continua** (para não parar a unidade), mas fica
+  **vermelho** no painel e o aviso se repete toda semana até alguém revisar.
+
+**D15 — Os motivos**
+- **Recomendado:** a lista fechada da 10.1 mais o texto livre. "Desligamento
+  (vaga aberta)" pede a **previsão de contratação**; vencida a previsão, a
+  unidade aparece no painel.
+
+### 10.5 Onde entra nas entregas
+
+- **F2** ganha as colunas do motivo (categoria), da revisão e da aprovação, a
+  regra da emenda e os limites da rede.
+- **F4** passa a ser **o painel "Equipe e coberturas" e os avisos da 10.3**,
+  no lugar do relatório simples.
+- Os sinais de sobrecarga **não precisam de tabela nova**: saem do que o
+  sistema já grava (coberturas, `access_sessions`, auditoria, horário da
+  unidade).
+
+---
+
+## 11. O que fica de fora (e por quê)
 
 - **"Agiu como Recepção" em cada registro.** A auditoria guarda **quem** fez,
   não **com qual função**. Com a soma (D5), separar exigiria a "troca de
