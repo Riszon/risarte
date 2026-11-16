@@ -403,6 +403,16 @@ try {
     }
   }
 
+  // --- 9b) nenhuma regra de acesso chama função fechada para o usuário logado --------
+  // (o defeito achado no roteiro do dono: o "Anexar termo assinado" falhava sempre).
+  const fechadas = await todos(`
+    select distinct p.tablename, p.policyname, f.proname
+      from pg_policies p
+      join pg_proc f on strpos(coalesce(p.qual, '') || ' ' || coalesce(p.with_check, ''), f.proname || '(') > 0
+      join pg_namespace n on n.oid = f.pronamespace and n.nspname = 'public'
+     where not has_function_privilege('authenticated', f.oid, 'execute')`);
+  conf(`nenhuma regra de acesso chama função fechada para o usuário logado (${fechadas.map((x) => `${x.tablename}:${x.proname}`).join(", ") || "nenhuma"})`, fechadas.length === 0);
+
   // --- 9) as leituras não vazam para quem não deve ------------------------------
   if (P.consultor) {
     await papel("consultor", A.clinic_id, "dentist");

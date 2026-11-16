@@ -80,6 +80,15 @@ create unique index if not exists plan_cancellations_direct_sale_open_uq
 comment on column public.plan_cancellations.checklist_required is
   '4020: o distrato com checklist (os abertos antes da 4020 seguem a regra antiga).';
 
+-- CORREÇÃO achada no roteiro do dono (16/11/2026): regras de acesso que chamam
+-- funções fechadas para o usuário logado falham com "permission denied" — o
+-- "Anexar termo assinado" da renegociação (pasta `renegociacoes`, 4017) nunca
+-- funcionava, e as leituras diretas da lista de exceções (4017a) e das listas da
+-- forma 2 (4015) também caíam. As duas funções só respondem sim/não sobre a
+-- própria pessoa logada: liberar a execução é seguro.
+grant execute on function public._is_manager_or_admin(uuid) to authenticated;
+grant execute on function public._boleto_mode_can(uuid, uuid) to authenticated;
+
 -- O Gerente da unidade (ou, sem Gerente, os Admin Master): quem decide o distrato.
 create or replace function public._distrato_managers(p_clinic_id uuid)
 returns uuid[]

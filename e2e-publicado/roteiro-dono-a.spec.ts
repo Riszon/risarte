@@ -38,9 +38,12 @@ async function renegociar(page: Page, vencimentos: string[], opts: { parcelas: n
 
 /** Salva o acordo e devolve o aviso que a tela mostrou (o "toast"). */
 async function salvarAcordo(page: Page) {
-  await page.getByRole("dialog").getByRole("button", { name: /Salvar o acordo|Enviar para autorização/ }).click();
-  await page.waitForTimeout(3500);
-  return (await page.locator("[data-sonner-toast]").allInnerTexts().catch(() => [])).join(" | ");
+  const d = page.getByRole("dialog");
+  await d.getByRole("button", { name: /Salvar o acordo|Enviar para autorização/ }).click();
+  const toast = page.locator("[data-sonner-toast]");
+  await Promise.race([d.waitFor({ state: "hidden", timeout: 45_000 }), toast.first().waitFor({ timeout: 45_000 })]).catch(() => {});
+  await page.waitForTimeout(1500);
+  return (await toast.allInnerTexts().catch(() => [])).join(" | ");
 }
 
 test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
@@ -126,12 +129,12 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     await abrirFinanceiro(page, C.A.cliente);
     const [p7] = (await parcelas(C.A.venda)).filter((x) => x.seq === 7);
     const d6 = await renegociar(page, [p7.due_date], { parcelas: 1, meio: "pix" });
-    const total = d6.locator("xpath=.//label[contains(normalize-space(),'Total') or contains(normalize-space(),'total')]/following-sibling::input[1]").first();
-    if (await total.isVisible().catch(() => false)) {
-      const atual = Number((await total.inputValue()).replace(/\./g, "").replace(",", "."));
-      await total.fill(String(Math.max(1, Math.round((atual - 1) * 100) / 100)).replace(".", ","));
-    }
-    await page.waitForTimeout(800);
+    // O desconto: "Personalizar" e o valor da cobrança menor que a dívida (R$ 102,67 → R$ 100,00).
+    await d6.getByRole("button", { name: "Personalizar" }).click();
+    const valor = d6.locator("input[inputmode=decimal]").first();
+    await valor.fill("100,00");
+    await valor.blur();
+    await page.waitForTimeout(1200);
     const t6 = await d6.innerText();
     anotar("A6 o desconto mostra a ordem juros → multa → benefício → principal", /juros[\s\S]*multa[\s\S]*benef[ií]cio[\s\S]*principal/i.test(t6), (t6.match(/O desconto abate[^\n]*/) ?? [t6.slice(0, 200)])[0]);
     await foto(page, "A6-dialogo");
@@ -166,6 +169,9 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     await page.keyboard.press("Escape");
 
     // --- A10: cobrança externa numa parcela renegociada ------------------------------
+    // Marcar "cobrada fora" é da permissão "Cobranças: cancelar", que nasce só com o
+    // Admin Master (ASA1); o dono libera os outros papéis no Painel de permissões.
+    await trocarPara(context, "admin@example.com", C.ldn);
     await abrirFinanceiro(page, C.A.cliente);
     const lin5 = linhaDaParcela(page, p5.due_date);
     await lin5.getByRole("button", { name: /Já cobrada fora do riSZon/ }).click();
@@ -173,6 +179,7 @@ test.describe.serial("roteiro do dono — parte A (renegociação)", () => {
     await dx.locator("input").first().fill("Boleto emitido direto no painel do Asaas (roteiro)");
     await dx.getByRole("button", { name: "Marcar" }).click();
     await page.waitForTimeout(3000);
+    await trocarPara(context, "gerente@example.com", C.ldn);
     await abrirFinanceiro(page, C.A.cliente);
     await renegociar(page, [p5.due_date], { parcelas: 1, meio: "pix" });
     await salvarAcordo(page);
