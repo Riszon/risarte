@@ -282,7 +282,19 @@ try {
   if (P.consultor) {
     const d = await pessoa(P.consultor, "select * from public.client_overdue_badges($1::uuid[])", [[cli.id]]);
     conf("o Dentista não vê o selo, nem pela porta do banco", !passou(d) || d.length === 0);
+    // Os papéis clínicos e o SDR (a mesma conta de teste, trocando o papel na transação).
+    // O Planner e o SDR são papéis da franqueadora (0011): entram por ela, que alcança a rede.
+    for (const [role, nome, onde] of [["planner_dentist", "o Planner", franq], ["asb", "a ASB", ldn], ["tsb", "a TSB", ldn], ["sdr", "o SDR", franq]]) {
+      await papel("consultor", onde, role);
+      const x = await pessoa(P.consultor, "select * from public.client_overdue_badges($1::uuid[])", [[cli.id]]);
+      conf(`${nome} não vê o selo, nem pela porta do banco`, !passou(x) || x.length === 0);
+    }
+    await papel("consultor", ldn, "dentist");
   }
+  // O contraponto: o Gerente vê (etapa 1 do selo, 4006: Gerente e Franqueado; a Recepção
+  // só depois que o dono liberar na matriz).
+  const r9 = await pessoa(P.gerente, "select * from public.client_overdue_badges($1::uuid[])", [[cli.id]]);
+  conf("o Gerente vê o selo (o contraponto)", passou(r9) && r9.length === 1);
 
   await c.query("rollback");
 } catch (e) {

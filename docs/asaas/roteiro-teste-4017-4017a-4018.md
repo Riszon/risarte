@@ -49,6 +49,24 @@ renegocie com um desconto pequeno.
 - Esperado: a tela mostra o abatimento na ordem **juros → multa → benefício → principal**.
 - Desconto acima do teto, ou dado por quem não é Gerente: fica **esperando a autorização do Gerente**.
 
+**A8. Renegociação na forma 2 ("Todos os boletos agora").** Crie outra venda fechada no boleto, na
+forma **"Todos os boletos agora"**, e copie o link da lista (`/boletos/…`). Renegocie 2 parcelas e
+anexe o termo assinado (como no A4).
+- Esperado: o **mesmo link** da lista passa a mostrar os boletos novos, e os antigos aparecem como
+  **"Substituído pela renegociação — não pague"**.
+
+**A9. Parcela de venda não fechada.** Numa venda **ainda não fechada** (sem o contrato assinado),
+marque uma parcela e tente **Renegociar**.
+- Esperado: recusa, com **"Esta parcela é de uma venda que ainda não foi fechada. Feche a venda
+  (contrato assinado) antes de renegociar."**
+
+**A10. Cobrança externa numa parcela renegociada.** Numa parcela em aberto, use **Marcar como cobrada
+fora** (com uma nota). Renegocie essa parcela e salve.
+- No **Enviar termo**: a tela lista a cobrança externa (parcela, vencimento, valor, nota) e **não deixa
+  enviar** sem a marca do Gerente **"Cancelei no painel do Asaas"**.
+- 👤 Como **Recepcionista** (ou quem não é Gerente): a marca não aparece para ela.
+- Como **Gerente**: marque. O envio é liberado, e a marcação externa some da parcela.
+
 **A7. Prazo vencido.** (Opcional: só dá para ver depois do prazo.) Um acordo salvo e não assinado
 fica **Expirado** sozinho, e nada muda nas parcelas antigas.
 
