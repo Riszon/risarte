@@ -1,11 +1,13 @@
 import "server-only";
 import { acharNoTreino, clienteDoTreino } from "@/lib/treino";
 import {
+  aproveitadaPara,
   contaDesde,
   missaoDoPapel,
   progressoDaMissao,
   type MetaDoTreino,
   type Medicao,
+  type TarefaAproveitada,
 } from "@/lib/certificacao";
 import { medirMissao, TEMPO_LIMITE_MS } from "@/lib/certificacao-contagem";
 import type { UserRole } from "@/lib/roles";
@@ -33,7 +35,10 @@ export async function medirMatricula(entrada: {
   role: UserRole;
   started_at: string | null;
   metas: readonly MetaDoTreino[];
+  /** 0412 (AP172): tarefas aproveitadas de outra certificação (`reused_items`). */
+  aproveitadas?: readonly TarefaAproveitada[];
 }): Promise<Medicao> {
+  const aproveitadas = entrada.aproveitadas ?? [];
   // A lei do marco (0273): sem o clique, não existe janela de contagem.
   const desde = contaDesde({ started_at: entrada.started_at });
   if (!desde) return { estado: "nao_comecou" };
@@ -77,13 +82,20 @@ export async function medirMatricula(entrada: {
     };
   }
 
+  // 0412: a tarefa aproveitada não vai ao treino — o número dela é o da
+  // certificação de onde veio.
   const contagens = await medirMissao(
     treino,
-    missao.map((m) => m.indicador),
+    missao
+      .filter((m) => !aproveitadaPara(m.indicador.chave, m.minimo, aproveitadas))
+      .map((m) => m.indicador),
     pessoa.id,
     desde
   );
-  return { estado: "medido", progresso: progressoDaMissao(missao, contagens) };
+  return {
+    estado: "medido",
+    progresso: progressoDaMissao(missao, contagens, aproveitadas),
+  };
 }
 
 /**

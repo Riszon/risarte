@@ -90,6 +90,18 @@ export type LeadView = {
   referralContact: string | null;
   /** null = sem histórico (ver migração 1007). Nunca confundir com "zero dias". */
   tempoNaFase: TempoNaFase | null;
+  /** Quando virou ganho (histórico de fases). Nulo fora do ganho/implantação. */
+  ganhoEm: string | null;
+  /**
+   * 1046: o andamento da implantação, medido pelo sistema (só na fase 8).
+   * `medido` falso = a leitura do banco falhou e o % vem só das marcas à mão.
+   */
+  implantacao: {
+    percentual: number;
+    completa: boolean;
+    faltando: string[];
+    medido: boolean;
+  } | null;
   activities: {
     id: string;
     kind: string;
@@ -153,6 +165,9 @@ export function LeadBoard({
             0
           );
           const ganhos = naColuna.filter((l) => l.stage === "CLOSED_WON").length;
+          // O ganho que seguiu para a implantação continua sendo ganho
+          // (dono, 16/11/2026): a contagem do Fechamento diz isso.
+          const ganhosEmImplantacao = leads.filter((l) => l.stage === "IMPLEMENTATION").length;
           const perdas = naColuna.filter((l) => l.stage === "CLOSED_LOST").length;
 
           return (
@@ -171,6 +186,12 @@ export function LeadBoard({
                       {ganhos} ganho{ganhos === 1 ? "" : "s"} · {perdas} perda
                       {perdas === 1 ? "" : "s"}
                     </p>
+                    {ganhosEmImplantacao > 0 && (
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                        + {ganhosEmImplantacao} ganho{ganhosEmImplantacao === 1 ? "" : "s"} já em
+                        implantação (coluna 8)
+                      </p>
+                    )}
                     <select
                       aria-label="Mostrar no fechamento"
                       className={selectClass}
@@ -257,8 +278,10 @@ function LeadCard({
       <div className="mt-1 flex flex-wrap items-center gap-1">
         {/* Na coluna de Fechamento os dois resultados convivem: o cartão precisa
             dizer qual é qual sem depender da cor de fundo. */}
-        {lead.stage === "CLOSED_WON" && (
-          <Badge className="bg-emerald-600 text-xs text-white">Ganho</Badge>
+        {(lead.stage === "CLOSED_WON" || lead.stage === "IMPLEMENTATION") && (
+          <Badge className="bg-emerald-600 text-xs text-white">
+            {lead.ganhoEm ? `Ganho em ${formatBrDate(lead.ganhoEm)}` : "Ganho"}
+          </Badge>
         )}
         {lead.stage === "CLOSED_LOST" && (
           <Badge variant="destructive" className="text-xs">
@@ -280,6 +303,8 @@ function LeadCard({
       </div>
 
       <TempoNaFaseLinha tempo={lead.tempoNaFase} limite={limite} />
+
+      {lead.implantacao && <AndamentoDaImplantacao {...lead.implantacao} />}
 
       {lead.stage === "CLOSED_LOST" && lead.lostReason && (
         <p className="mt-1 text-xs text-muted-foreground">
@@ -1062,5 +1087,50 @@ function LeadFormDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * 1046 (dono, 16/11/2026): quanto da implantação já foi feito, no cartão.
+ * A conta é a da ficha (`progressoDaImplantacao`); aqui só se desenha.
+ */
+function AndamentoDaImplantacao({
+  percentual,
+  completa,
+  faltando,
+  medido,
+}: {
+  percentual: number;
+  completa: boolean;
+  faltando: string[];
+  medido: boolean;
+}) {
+  return (
+    <div className="mt-2 space-y-1" title={medido ? undefined : "Medidas do sistema indisponíveis agora: o % considera só o que foi marcado à mão."}>
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium">
+          {completa ? "Implantação concluída" : "Implantação"}
+        </span>
+        <span className="tabular-nums text-muted-foreground">{percentual}%</span>
+      </div>
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-label="Andamento da implantação"
+        aria-valuenow={percentual}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className={completa ? "h-full bg-emerald-600" : "h-full bg-primary"}
+          style={{ width: `${percentual}%` }}
+        />
+      </div>
+      {!completa && faltando.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Falta: {faltando.map((f) => f.toLowerCase()).join("; ")}
+        </p>
+      )}
+    </div>
   );
 }

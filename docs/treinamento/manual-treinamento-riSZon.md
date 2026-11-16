@@ -1594,6 +1594,14 @@ situação e o percentual da última medição. Filtre por turma, unidade, funç
 situação. **Medir agora** mede a unidade no treino naquele momento e atualiza
 os números.
 
+**Quem sai da equipe não segura a unidade** (desde a versão 0.457.0). Quando a
+pessoa é **desligada** (cadastro desativado) ou **deixa a função naquela
+unidade**, o sistema a **dispensa sozinho** da turma aberta, e a unidade para
+de esperar por ela. Para os outros casos (licença, afastamento), use
+**Dispensar** ao lado da pessoa no Acompanhamento e escreva o motivo. A pessoa
+dispensada aparece como *Dispensado* e não conta no *"N de M"*. Quem já cumpriu
+a missão não pode ser dispensado: o certificado dela continua valendo.
+
 **Para o Admin Master:** as turmas ficam na mesma tela de Certificação. Escolha
 **uma unidade, várias, ou marque "Rede toda"** — com muitas unidades, há uma
 busca pelo nome. Escolha o tipo, confira a lista que o sistema monta, **agrupada
@@ -1605,9 +1613,24 @@ Três coisas para saber sobre turmas de várias unidades:
 - **É uma turma só**, com um código só — não uma por unidade.
 - **Cada unidade é liberada quando o SEU grupo cumprir.** Numa turma da rede
   toda, Cambé não fica esperando Londrina.
-- **Unidade que já está numa turma aberta aparece desabilitada**, com o código
-  da turma. Ela só entra em outra quando aquela for encerrada — senão a mesma
-  pessoa teria duas missões ao mesmo tempo.
+- **Uma unidade pode estar em mais de uma turma aberta** (desde a versão
+  0.457.0). Não é preciso encerrar a turma atual para convocar uma pessoa
+  nova: escolha a unidade, deixe marcada só quem deve entrar e convoque. Ao
+  lado da unidade aparece o código da turma que já está aberta nela, só como
+  informação.
+- **Quem já está numa turma aberta na mesma função não é convocado de novo**:
+  na lista ele aparece apagado, com *"já na turma TR-…"*. É a mesma missão; ela
+  continua na turma onde começou.
+- **Quem já é certificado em outra função pode aproveitar as tarefas em
+  comum** (desde a versão 0.459.0, só em turma de novatos). Na lista, abaixo
+  da pessoa, aparece *"Já certificado em Dentista: N tarefa(s) em comum"* e
+  duas opções: **Missão completa** (já vem marcada) ou **Só as tarefas
+  diferentes**. Uma tarefa só é aproveitada quando a outra certificação exigiu
+  **pelo menos o mesmo número**: se o Dentista fez 5 chamadas e o Coordenador
+  exige 15, as 15 continuam valendo. A escolha fica gravada na convocação.
+  Na missão da pessoa, a tarefa aproveitada já aparece cumprida, com *"Aproveitada
+  da certificação de …"*. Quem faz duas missões ao mesmo tempo não precisa
+  disso: a tarefa feita uma vez já conta nas duas.
 
 Na lista de turmas, **abra uma unidade para ver o progresso de cada pessoa**:
 ele é medido no treino na hora em que você abre, para a tela continuar rápida
@@ -3876,6 +3899,16 @@ a ficha procurava só o atendimento com data de hoje e não mostrava nada.
 **O que acontece automaticamente ao concluir:** o material do kit **baixa do
 estoque** e, quando a sessão concluída é a **última do procedimento**, o
 repasse do procedimento é apurado. Você não digita nada disso.
+
+> **O kit do atendimento e o mês fechado** (desde a 0.458.0, relato OC-00181).
+> O kit de atendimento (gorro, babador) é baixado no **dia do atendimento**.
+> Se esse mês **já foi fechado** no Financeiro — um atendimento antigo que só
+> está sendo concluído agora —, a baixa entra no **dia de hoje**, e o motivo
+> guarda a data original. A **apresentação comercial não consome o kit** (o
+> cliente não senta na cadeira). Antes, concluir um atendimento de mês fechado
+> dava só *"Não foi possível atualizar o atendimento"*; se algum mês fechado
+> ainda barrar, a tela agora diz *"O mês deste lançamento já está fechado no
+> Financeiro"*.
 
 **O repasse é por procedimento, não por sessão** (desde a versão 0.386.0).
 Um procedimento de 3 sessões entra no repasse **uma vez**, com o valor da
@@ -7413,7 +7446,7 @@ automáticas › **Mensalidades pelo Asaas**.
   link) e quantos **esperam a próxima fase** (os de recorrência), por programa,
   e quantos têm e-mail ou celular para os avisos do Asaas.
 - **Antes de ligar, cancele no painel do Asaas as assinaturas antigas dos
-  clientes que entram** *(desde a 0.456.4)*. Se a assinatura antiga continuar
+  clientes que entram** *(desde a 0.459.1)*. Se a assinatura antiga continuar
   ativa, o cliente recebe duas cobranças do mesmo mês: a dela e a do riSZon.
 - Escolha a data, marque **"Avisei os clientes e cancelei as assinaturas
   antigas."** e clique em **Ligar**.
@@ -7455,7 +7488,7 @@ concordância do cliente (fica registrada).
 
 ### 13g.17. Distrato com checklist
 
-*(desde a versão 0.456.5)*
+*(desde a versão 0.459.1)*
 
 **Nada é distratado sozinho.**
 - **Pedido de distrato:** na ficha, no cartão do tratamento (ou na venda direta),
@@ -7527,7 +7560,7 @@ na próxima etapa (4020a).
 **O distrato aberto:** o Gerente é avisado a cada 7 dias. Depois de 30 dias, o
 Financeiro da Franqueadora também. Nada expira sozinho.
 
-**Evidência:** EV-357; `scripts/asaas-ensaio-asa4-distrato.mjs`.
+**Evidência:** EV-359; `scripts/asaas-ensaio-asa4-distrato.mjs`.
 
 ## 14. Checklists
 

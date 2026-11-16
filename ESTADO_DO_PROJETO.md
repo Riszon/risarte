@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.456.5 — ASA4, ENTREGA 6: DISTRATO COM CHECKLIST (16/11/2026; Asaas 0.17.0, migração 4020) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.459.1 — ASA4, ENTREGA 6: DISTRATO COM CHECKLIST (16/11/2026; Asaas 0.17.0, migração 4020) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
 > - **Nada é distratado sozinho:** o pedido registrado na ficha e o contrato em atraso há 60 dias (Central) avisam o Gerente, que abre o distrato ou mantém o contrato, com o motivo.
 > - **A checklist** de 8 itens e o termo assinado vêm antes de qualquer cancelamento, no Asaas ou no riSZon.
@@ -11,7 +11,64 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **A devolução por Pix da unidade** é pedida com o termo anexado e autorizada pelo Financeiro; a taxa continua devida.
 > - Vai junto o aviso das assinaturas antigas na tela das mensalidades (0.456.4).
 >
-> Ensaio 63/63, provado quebrando; sandbox 4/4. **Falta:** o roteiro de teste do dono (4017, 4017a, 4018) e o "pode" para a produção. A 4020a (estorno parcial pelo Asaas) vem depois das duas provas. Spec 19.35 a 19.36; manual 13g.17; EV-357.
+> Ensaio 63/63, provado quebrando; sandbox 4/4. **Falta:** o roteiro de teste do dono (4017, 4017a, 4018) e o "pode" para a produção. A 4020a (estorno parcial pelo Asaas) vem depois das duas provas. Spec 19.35 a 19.36; manual 13g.17; EV-359.
+> ## 🎓 0.459.0 — CERTIFICAÇÃO: APROVEITAR AS TAREFAS DE OUTRA CERTIFICAÇÃO (16/11/2026; migração 0412)
+>
+> AP172 (pedido do dono no OC-00016), decisões D1–D4 como recomendado:
+> o Admin escolhe pessoa por pessoa ("missão completa" é o padrão); só
+> aproveita quando a outra certificação exigiu pelo menos o mesmo número;
+> só novatos; só de certificação já obtida. Manual "⚠️ A missão só começa
+> quando você aceita"; EV-358.
+> - ⚠️ **Aproveitável = `_training_reusable_items`** (lê o RETRATO do
+>   certificado: `snapshot.itens` com `minimo` e `feito`). Congelado na
+>   convocação em `training_enrollments.reused_items`.
+> - ⚠️ **`open_training_campaign` ganhou `p_reduced` (8 parâmetros, drop +
+>   create).** Ao recriar, partir da 0412. O app só manda `p_reduced` quando há
+>   escolha.
+> - ⚠️ **Medição: a tarefa aproveitada não vai ao treino** (`aproveitadaPara`):
+>   só vale se o feito de lá cobre o mínimo de HOJE. Todo caminho que mede uma
+>   matrícula passa `aproveitadas: lerAproveitadas(reused_items)`.
+> - Ensaio no treino 10/10 (transação desfeita). Não visto na tela.
+
+> ## 🧤 0.458.0 — CONCLUIR ATENDIMENTO DE MÊS FECHADO (16/11/2026; migração 0411)
+>
+> Relato OC-00181 (treino, Admin Master): duas apresentações comerciais de
+> 26–27/10 presas "em atendimento" (chamadas em 13 e 15/11, depois da venda já
+> concluída em 09/11) e o Concluir voltando PERIOD_CLOSED: o gatilho
+> `consume_attendance_kit` (0218) baixava o kit com `starts_at::date`, em
+> outubro já FECHADO na Londrina. **0411** (decisões do dono): apresentação
+> comercial não consome o kit; a baixa usa o dia do BRASIL e, com o mês
+> fechado (`is_period_closed`), o dia da conclusão, com a data original no
+> motivo. A tela traduz PERIOD_CLOSED (`agenda/actions.ts`). Ensaio no treino
+> 5/5 (com o "antes" recusando); régua `kit-do-atendimento-oc-00181.test.ts`.
+> Feito no worktree `wt-oc181`. **Não visto na tela.** ✅ **0411 aplicada nos
+> dois bancos** (produção pelo dono em 16/11/2026; função de gatilho não é
+> conferível de fora pela API).
+> - ⚠️ Ao recriar `consume_attendance_kit`, levar os dois desvios da 0411.
+> - Achado de passagem (não mexido): `consume_session_kit` usa
+>   `done_at::date` (dia de Greenwich) — das 21h à meia-noite cai no dia seguinte.
+>
+> ## 🎓 0.457.0 — CERTIFICAÇÃO: QUEM SAIU NÃO SEGURA A UNIDADE, E TURMA NOVA NÃO TRAVA (16/11/2026; migração 0411)
+>
+> Relatos OC-00015 e OC-00016 (produção, Admin Master). Decisões do dono:
+> dispensa automática + botão Dispensar; "não travar quando convida uma pessoa
+> para uma outra certificação". Manual "⚠️ A missão só começa quando você
+> aceita"; EV-357.
+> - ⚠️ **Dispensar = `_dismiss_training_enrollment`** (interna; só turma aberta,
+>   só convocado/em andamento; devolve acesso suspenso pela reciclagem). Botão:
+>   `dismiss_training_enrollment` (Admin, motivo). Automático pelos gatilhos
+>   `training_dismiss_on_role_change` (`user_clinic_roles_all`, update/delete)
+>   e `training_dismiss_on_deactivation` (`profiles.is_active`). Colunas
+>   `dismissed_at/by/reason` (`dismissed_by` sem FK de propósito: 3ª ligação a
+>   `profiles` deixaria embeds ambíguos).
+> - ⚠️ **A trava agora é por (pessoa, função, tipo), não por unidade:**
+>   `training_candidates_multi` devolve `turma_aberta` (drop + create) e
+>   `open_training_campaign` pula quem já está numa turma aberta. Ao recriar
+>   qualquer das duas, partir da 0411.
+> - Ensaio no treino 15/15 (transação desfeita). Na produção a 0411 dispensa a
+>   Luna (TR-00007, Cambé) ao rodar. **Não visto na tela.**
+> - Para o backlog (pedido do dono): revisar as tarefas quando a pessoa já faz
+>   outra certificação; certificação por módulo (Indica +Risos, PPR+, Ortodontia).
 
 > ## 💳 0.456.3 — ASA4, ENTREGA 4: MENSALIDADES DO PPR+ E DA ORTODONTIA PELO ASAAS (15/11/2026; Asaas 0.16.0, migração 4018)
 >
@@ -74,6 +131,64 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - conferido de fora: a função nova barra o anônimo (401).
 >
 > A exceção (só o Financeiro da Franqueadora ou o Admin Master, para o acordo de uma venda só) vem na entrega logo depois da 4017. Spec 19.28.11 a 19.28.14; manual 6.6.
+> ## 💼 EMPRESARIAL 0.107.0 / 1047 — IMPORTAR EMPRESAS POR PLANILHA (MIGRAÇÃO) (16/11/2026)
+>
+> Pedido do dono: levar ao sistema as empresas que já estão no programa, por
+> uma planilha modelo com instruções. Decisões dele: benefícios = padrão da
+> rede; documento que já existe = linha recusada; sem cobrança de implantação.
+> - **Modelo** `/empresarial/modelo-empresas` (só gestor do programa;
+>   `modelo-empresas-xlsx.ts`): abas Como preencher, **Empresas** (44
+>   colunas: identificação, contrato, cobrança, preços opcionais, tratamento e
+>   carência, quem assina, endereço, consultor) e **Outros CNPJs** (empresa
+>   escolhida numa lista "Razão — Documento"); listas de unidades e
+>   consultores numa aba escondida `Listas`.
+> - ⚠️ **Colunas, listas e conferência = `planilha-empresas.ts`** (pura;
+>   gerador e leitura usam a mesma lista). A conferência roda NO SERVIDOR
+>   (`importarEmpresas`, contexto em `importacao-empresas-servidor.ts`);
+>   tudo ou nada, erro com aba e linha do Excel.
+> - **1047:** `empresarial.importar_empresas(jsonb)` (invoker): empresa,
+>   documentos, unidades da parceria e preços (o branco = o da rede, porque a
+>   linha da empresa substitui a da rede inteira); `DOCUMENT_EXISTS` desfaz.
+> - ⚠️ **Validação de planilha no ExcelJS: UMA por faixa**
+>   (`dataValidations.add("E6:E505")`), nunca célula a célula — ele ordena os
+>   endereços como texto e gravava a regra DUAS vezes (E10:E505 sobre
+>   E6:E505). Corrigido também no modelo de titulares (estava assim desde a
+>   0.103.0); régua nos dois testes.
+> - Visto no Excel de verdade (COM): listas nas linhas 6 e 250, aba Listas
+>   escondida, lista de empresas compacta. Ensaio no treino 13/13
+>   (`scripts/empresarial-ensaio-1047.mjs`, desfeito) e quebrando 2 vezes;
+>   régua `planilha-empresas.test.ts` (13). Manual do Empresarial 8.1.
+>   **Não visto na tela do sistema.**
+> - ✅ **1047 nos dois bancos** (produção pelo dono em 16/11/2026, conferência
+>   true·true·false; conferido de fora: sem login recusa com "permission
+>   denied", a de controle responde "não encontrada").
+
+> ## 💼 EMPRESARIAL 0.106.0 / 1046 — O GANHO NO CARTÃO E A IMPLANTAÇÃO MEDIDA PELO SISTEMA (16/11/2026)
+>
+> Relato do dono (produção): a empresa fechada não mostrava o cartão de ganho
+> (a conferência a leva para Implantação, e o selo só existia em Fechamento);
+> o cartão devia mostrar o % da implantação; os passos eram marcas à mão.
+> Decisão dele: o selo "Ganho" vai para o cartão da Implantação.
+> - **1046:** `empresarial.implantacao_dos_leads(uuid[])` (definer, guarda
+>   `can_access_lead`, só contagens e datas): ganho_em (histórico), titulares
+>   contratados/ativos, boas-vindas (CONTACTED/DECLINED), com agendamento não
+>   cancelado, envio com `GUIDELINES`, reunião DONE depois do ganho.
+> - ⚠️ **% da implantação = `progressoDaImplantacao(passos, medidas)`** (quadro
+>   e ficha, leitura em `implantacao-db.ts`): o parcial entra no %; só chega a
+>   100 sem passo faltando; a marca à mão ("Concluir mesmo assim") vence a
+>   medida e EXIGE motivo. Leitura que falha = sem medidas (vale a marca), nunca
+>   zero.
+> - Envio ganhou o item **Orientações do programa** (`GUIDELINES`).
+> - ⚠️ O indicador de certificação "Passos de implantação concluídos" conta só
+>   as marcas à mão (`done_by`): o passo feito pelo sistema não pontua.
+> - Ensaio no treino 15/15 (`scripts/empresarial-ensaio-1046.mjs`, desfeito) e
+>   quebrando 2 vezes; régua `implantacao-medida.test.ts` (14), provada
+>   quebrando. Manual do Empresarial 7.3. **Não visto na tela.**
+> - ✅ **1046 nos dois bancos** (produção pelo dono em 16/11/2026, conferência
+>   true·true·false; conferido de fora: sem login recusa com "permission
+>   denied", a de controle responde "não encontrada", a chave de serviço lê
+>   vazio — não é pessoa, não enxerga lead).
+
 > ## 💼 EMPRESARIAL 0.105.0 / 1045 — AS VAGAS DO CONTRATO CONFERIDAS PELO BANCO (15/11/2026)
 >
 > Levantamento do módulo pedido pelo dono, grupo A. Decisão dele: a trava no

@@ -1,11 +1,11 @@
 # Relatório — 4020, distrato com checklist (16/11/2026)
 
 **Versões:**
-- core 0.456.5, Asaas 0.17.0, migração 4020;
+- core 0.459.1, Asaas 0.17.0, migração 4020;
 - vai junto o aviso das assinaturas (0.456.4).
 
 **Onde está:**
-- no treino e no projeto de teste (https://risarte-asaas.vercel.app, mostrando 0.456.5);
+- no treino e no projeto de teste (https://risarte-asaas.vercel.app, mostrando 0.459.1);
 - **não está na produção**: espera o seu roteiro da 4017, 4017a e 4018 e o "pode".
 
 ## 1. Ensaio no treino — 63/63

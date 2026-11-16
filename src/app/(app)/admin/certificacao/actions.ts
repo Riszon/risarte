@@ -15,6 +15,7 @@ import {
   normalizarMeta,
   PAPEIS_COM_MISSAO,
   chaveDaConvocacao,
+  lerAproveitadas,
   type CandidatoDaUnidade,
   type Medicao,
   type MetaDoTreino,
@@ -178,7 +179,31 @@ export async function previaDaTurma(
   });
 
   if (error) return { ok: false, error: "Não foi possível montar a prévia." };
-  return { ok: true, candidatos: (data ?? []) as CandidatoDaUnidade[] };
+  const candidatos = (data ?? []) as CandidatoDaUnidade[];
+
+  // 0412 (AP172): o que dá para aproveitar de outra certificação. Só novatos
+  // (D3). Falhar aqui não derruba a prévia: sem a resposta, ninguém ganha a
+  // opção e a turma abre com a missão completa, como sempre.
+  if (tipo === "novatos" && candidatos.length > 0) {
+    const { data: reuso, error: erroDoReuso } = await supabase.rpc("training_reuse_preview", {
+      p_clinic_ids: clinicIds,
+      p_kind: tipo,
+    });
+    if (erroDoReuso) {
+      console.error("previaDaTurma: aproveitamento indisponível:", erroDoReuso.message);
+    } else {
+      const porChave = new Map<string, unknown>();
+      for (const r of (reuso ?? []) as { user_id: string; role: string; items: unknown }[]) {
+        porChave.set(chaveDaConvocacao({ user_id: r.user_id, role: r.role }), r.items);
+      }
+      for (const c of candidatos) {
+        const itens = lerAproveitadas(porChave.get(chaveDaConvocacao(c)));
+        if (itens.length > 0) c.aproveitaveis = itens;
+      }
+    }
+  }
+
+  return { ok: true, candidatos };
 }
 
 /** Abre UMA turma para as unidades escolhidas e convoca a lista conferida. */
@@ -191,6 +216,12 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
   // Pares "pessoa:função" — a mesma pessoa pode vir com duas funções, e o Admin
   // pode convocar só uma delas.
   const escolhidos = formData.getAll("convocados").map(String).filter(Boolean);
+  // 0412 (AP172): pares "pessoa:função" marcados como "só as tarefas
+  // diferentes". Só valem para quem também está sendo convocado.
+  const reduzidos = formData
+    .getAll("reduzidos")
+    .map(String)
+    .filter((k) => k && escolhidos.includes(k));
   const redeToda = formData.get("whole_network") === "sim";
   // Sem a caixa na tela (turma de novatos) o campo nem é enviado — e o padrão
   // é o único que não pode parar a clínica.
@@ -212,6 +243,9 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
     hoje: todayInBrazil(),
   });
   if (impedimento) return { ok: false, error: impedimento };
+  if (reduzidos.length > 0 && tipo !== "novatos") {
+    return { ok: false, error: "Aproveitar tarefas de outra certificação vale só para turma de novatos." };
+  }
   if (escolhidos.length === 0) {
     return {
       ok: false,
@@ -228,6 +262,8 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
     p_access_policy: politica,
     p_deadline: politica === "prazo" ? prazo : null,
     p_whole_network: redeToda,
+    // Só vai quando há escolha: assim a turma abre igual num banco sem a 0412.
+    ...(reduzidos.length > 0 ? { p_reduced: reduzidos } : {}),
   });
 
   if (error) {
@@ -238,15 +274,18 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
         m.includes("NOT_ALLOWED")
           ? "Só o Admin Master abre turmas."
           : m.includes("CAMPAIGN_ALREADY_OPEN")
-            ? "Alguma das unidades escolhidas já tem uma turma aberta. Encerre a atual ou tire a unidade da seleção."
+            ? // Só antes da 0411 chegar a este banco (a trava por unidade saiu).
+              "Este banco ainda não recebeu a atualização que permite mais de uma turma por unidade. Encerre a turma atual ou peça para aplicar a atualização."
             : m.includes("UNKNOWN_UNIT")
               ? "Alguma das unidades escolhidas não existe ou foi desativada. Recarregue a tela."
               : m.includes("NO_UNITS")
                 ? "Escolha ao menos uma unidade."
                 : m.includes("NOBODY_TO_ENROLL")
-                  ? "Ninguém foi convocado: nenhuma das pessoas marcadas entra nesta turma."
+                  ? "Ninguém foi convocado: as pessoas marcadas já estão numa turma aberta nesta função, ou não entram nesta turma."
                   : m.includes("POLICY_ONLY_FOR_RECYCLING")
                     ? "Suspender acesso só vale para reciclagem."
+                    : m.includes("REUSE_ONLY_FOR_NEWCOMERS")
+                    ? "Aproveitar tarefas de outra certificação vale só para turma de novatos."
                     : m.includes("DEADLINE_IN_THE_PAST")
                       ? "A data limite precisa ser futura."
                       : m.includes("DEADLINE_REQUIRED")
@@ -263,6 +302,7 @@ export async function abrirTurma(formData: FormData): Promise<ActionResult> {
       unidades: unidades.length,
       redeToda,
       convocados: escolhidos.length,
+      aproveitando: reduzidos.length,
       politica,
       prazo: prazo || null,
     },
@@ -297,7 +337,7 @@ export async function medirUnidadeDaTurma(
   const [{ data: matriculas, error }, { data: metas }] = await Promise.all([
     supabase
       .from("training_enrollments")
-      .select("id, user_id, role, status, started_at, profiles!training_enrollments_user_id_fkey(email)")
+      .select("id, user_id, role, status, started_at, reused_items, profiles!training_enrollments_user_id_fkey(email)")
       .eq("campaign_id", campaignId)
       .eq("clinic_id", clinicId),
     supabase
@@ -319,6 +359,7 @@ export async function medirUnidadeDaTurma(
     status: String(m.status),
     started_at: m.started_at ? String(m.started_at) : null,
     email: emailDe(m.profiles),
+    aproveitadas: lerAproveitadas(m.reused_items),
   }));
 
   const medidas = await medirVarias(lista, async (m) => {
@@ -332,6 +373,7 @@ export async function medirUnidadeDaTurma(
       role: m.role,
       started_at: m.started_at,
       metas: metas ?? [],
+      aproveitadas: m.aproveitadas,
     });
   });
 
@@ -383,6 +425,55 @@ export async function aprovarConclusoes(
     return { ok: false, error: "Nenhuma aprovação foi registrada (talvez já tivessem sido aprovadas).", recusadas };
   }
   return { ok: true, aprovadas, recusadas };
+}
+
+/**
+ * DISPENSAR UMA PESSOA DA TURMA (0411, relato OC-00015) — afastamento,
+ * licença, ou quem saiu e o cadastro ainda não refletiu. Dispensada, ela deixa
+ * de segurar a unidade na liberação coletiva. Quem é desligado ou perde a
+ * função na unidade já é dispensado sozinho pelo banco; o botão é para o resto.
+ */
+export async function dispensarMatricula(
+  enrollmentId: string,
+  motivo: string
+): Promise<ActionResult> {
+  await requireAdminMaster();
+  const texto = motivo.trim();
+  if (!texto) return { ok: false, error: "Escreva o motivo da dispensa." };
+  if (texto.length > 300) return { ok: false, error: "Motivo longo demais (até 300 letras)." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("dismiss_training_enrollment", {
+    p_enrollment_id: enrollmentId,
+    p_reason: texto,
+  });
+
+  if (error) {
+    const m = error.message;
+    return {
+      ok: false,
+      error: m.includes("NOT_ALLOWED")
+        ? "Só o Admin Master dispensa da turma."
+        : m.includes("NOT_DISMISSABLE")
+          ? "Esta pessoa já concluiu ou já foi dispensada, ou a turma foi encerrada."
+          : m.includes("ENROLLMENT_NOT_FOUND")
+            ? "Matrícula não encontrada. Recarregue a tela."
+            : m.includes("dismiss_training_enrollment")
+              ? "Este banco ainda não recebeu a atualização da dispensa. Peça para aplicar a atualização."
+              : "Não foi possível dispensar agora.",
+    };
+  }
+
+  await logAudit({
+    action: "update",
+    entityType: "training_enrollments",
+    entityId: enrollmentId,
+    details: { dispensada: true },
+  });
+
+  revalidatePath("/admin/certificacao");
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 /** Encerra a turma. Não apaga nada: matrícula e certificado continuam. */

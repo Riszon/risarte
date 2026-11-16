@@ -190,7 +190,7 @@ etapas. As etapas são:
 | **Follow-up** | Esperando resposta, cobrando |
 | **Fechamento (ganho)** | Fechou |
 | **Fechamento (perda)** | Não fechou |
-| **Implantação** | Fechou e está entrando no ar |
+| **Implantação** | Fechou e está entrando no ar — o cartão mostra **Ganho** e o % da implantação (7.3) |
 
 **O valor no card e a soma da etapa.** Assim que a proposta tem preço salvo, o
 card mostra a **mensalidade da proposta** (*"R$ 524,40/mês"*, a mesma do
@@ -1074,6 +1074,43 @@ Assim que o cadastro existe, o alto da ficha mostra **Abrir a empresa** e os
 atalhos **Titulares**, **Cobranças** e **Contratos**, em qualquer fase. No
 quadro do funil, o cartão mostra **Ver empresa** também em *Implantação*.
 
+### 7.3. A implantação: o ganho no cartão e os passos que o sistema confere
+
+**O ganho não some.** Depois da conferência, a empresa vai para a coluna
+*Implantação*, e o cartão continua com o selo verde **"Ganho em dd/mm"**. A
+coluna *Fechamento* também avisa quantos ganhos já seguiram para a implantação.
+
+**O cartão mostra quanto da implantação já foi feito:** a barra com o % e o
+que falta (*"Implantação 18% · Falta: cadastrar os titulares; dar as
+boas-vindas…"*). É a mesma conta da aba *Fechamento* da ficha.
+
+**Os passos são conferidos pelo sistema**, sem ninguém precisar marcar:
+
+| Passo | O sistema dá por feito quando… |
+|---|---|
+| Cadastrar os titulares | os titulares ativos chegam à quantidade contratada (sem quantidade no contrato: há pelo menos 1) |
+| Enviar as orientações | um envio é registrado com **Orientações do programa** (aba *Envio e selos*) |
+| Dar as boas-vindas | todo titular ativo tem boas-vindas registradas (atendeu ou recusou), na fila de *Boas-vindas* da empresa |
+| Apresentação para todos | uma reunião da agenda do lead é marcada como **realizada** depois do ganho |
+| Agendar a 1ª consulta | todo titular ativo tem consulta marcada na agenda (cancelada não conta) |
+
+Os passos de contagem mostram o parcial (*"3 de 11"*), e o % anda a cada
+titular, sem esperar o passo inteiro. O % só chega a **100%** quando nada
+falta.
+
+**Para não travar:** quando a vida real não vai chegar a 100% (um titular que
+não quer agendar, por exemplo), use **Concluir mesmo assim** e escreva o
+motivo. O motivo fica registrado no passo. *Apresentação para todos* continua
+com **Não se aplica**, para a empresa que não pediu.
+
+> **"Não foi possível ler o que o sistema mede agora"** — a ficha não
+> conseguiu ler as contagens naquele instante. O % mostra só o que foi
+> concluído à mão; recarregue em instantes.
+
+> **Quem vê o quê:** o sistema mostra só números (*"3 de 11 agendados"*),
+> nunca quem nem quando. É assim que o Consultor RisLife acompanha a
+> implantação sem ver a agenda dos pacientes.
+
 ## 8. O cadastro da empresa
 
 Menu **Empresarial**, clique na empresa. Sete abas:
@@ -1141,6 +1178,55 @@ rural, autônomo, obra civil, estrangeira. Ela sugere o tipo de documento.
 
 **Preços de adesão da empresa** — mudar um valor aqui cria um **override**
 (aparece *Voltar ao padrão da rede*), e a mensalidade passa a usar o valor dela.
+
+### 8.1. Importar empresas por planilha (migração)
+
+Para levar ao sistema, de uma vez, as empresas que **já fazem parte** do
+programa. Só o **gestor do programa** importa (é o mesmo que cadastra empresa
+nova).
+
+1. Em **Empresarial**, clique em **Importar empresas** e depois em **Modelo**.
+   A planilha vem com a logo e três abas:
+   - **Como preencher** — o passo a passo, o que vai em cada coluna, um
+     exemplo e a lista do que conferir antes de importar;
+   - **Empresas** — **uma linha por empresa**. Os títulos em **vinho** (com
+     \*) são obrigatórios: documento principal (CNPJ da matriz), razão social,
+     início do contrato, quem paga, mensalidade (por titular ou valor fixo),
+     boletos (único ou um por CNPJ) e dia do vencimento. Passe o mouse no
+     título para ver como preencher;
+   - **Outros CNPJs** — filiais e outros documentos. A coluna **Empresa** tem
+     a setinha ▼ com as empresas já preenchidas na aba Empresas.
+2. Nas colunas com setinha ▼, **escolha na lista** (quem paga, unidade,
+   consultor…). A lista de unidades e de consultores vem do sistema no momento
+   em que o modelo é baixado.
+3. Preencha **só o que foi combinado diferente** da rede. Preço em branco = o
+   preço da rede. **Unidades da parceria** em branco ou *Todas* = qualquer
+   unidade.
+4. Volte em **Importar empresas**, **Escolher planilha** e **Conferir e
+   importar**.
+
+**A planilha entra inteira ou não entra.** Se alguma linha tiver problema, nada
+é gravado e a janela lista a **aba, a linha do Excel e o motivo** (por
+exemplo, *"Empresas, linha 8: falta o dia do vencimento"*). Corrija e escolha o
+arquivo de novo.
+
+> **Empresa que já está no sistema é recusada** (*"empresa já cadastrada no
+> sistema"*). A importação não altera cadastro existente: tire a linha da
+> planilha e, se precisar, ajuste a empresa pela ficha.
+
+> **O que a importação NÃO faz** (de propósito):
+> - **não cadastra titulares e dependentes** — depois de importar, abra cada
+>   empresa e use a planilha própria (aba **Titulares → Importar Excel**, seção
+>   9);
+> - **não gera cobrança de implantação** — as empresas já estão no programa; a
+>   mensalidade segue o ciclo normal;
+> - **não copia benefícios** — a empresa usa os **benefícios padrão da rede**;
+>   o que for diferente se ajusta em **Plano & Benefícios**.
+
+> **"Um boleto por CNPJ"** precisa de pelo menos mais um documento na aba
+> **Outros CNPJs** — sem ele, seria um boleto só com outro nome, e a linha é
+> recusada.
+
 
 ---
 

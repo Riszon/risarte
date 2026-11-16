@@ -736,6 +736,11 @@ export async function setImplementationStep(
     };
   }
 
+  // 1046: o sistema mede os passos; concluir à mão é a EXCEÇÃO e diz por quê.
+  if (estado === "DONE" && !note?.trim()) {
+    return { ok: false, error: "Escreva por que concluir sem o sistema confirmar." };
+  }
+
   const db = await empresarialDb();
 
   if (estado === "PENDING") {

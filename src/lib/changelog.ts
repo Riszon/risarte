@@ -62,11 +62,11 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.456.5",
+    versao: "0.459.1",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4020, ASAAS_MIGRATION).
     migracao: null,
-    titulo: "Distrato com checklist",
+    titulo: "Distrato com checklist; correções da renegociação e o aviso das assinaturas antigas",
     mudancas: [
       {
         tipo: "novidade",
@@ -96,20 +96,71 @@ export const CHANGELOG: Versao[] = [
         papeis: ["unit_manager", "finance_franchisor"],
         manual: "13g.17. Distrato com checklist",
       },
-    ],
-  },
-  {
-    versao: "0.456.4",
-    data: "2026-11-16",
-    migracao: null,
-    titulo: "Mensalidades pelo Asaas: o aviso das assinaturas antigas",
-    mudancas: [
       {
         tipo: "melhoria",
         texto:
           "Na tela de ligar as mensalidades pelo Asaas, o aviso: antes de ligar, cancele no painel do Asaas as assinaturas antigas dos clientes que entram, para ninguém receber duas cobranças do mesmo mês. A marca passa a ser \"Avisei os clientes e cancelei as assinaturas antigas.\"",
         papeis: ["unit_manager", "finance_franchisor"],
         manual: "13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Renegociação: o 1º vencimento novo passa a vir uma semana à frente (vinha com a data de hoje, que o sistema recusa). O \"Anexar termo assinado\" já tinha voltado a funcionar em 16/11 (a correção das regras de acesso, rodada na produção).",
+        papeis: ["unit_manager", "receptionist", "finance_franchisor"],
+        manual: "13g.14. Renegociação assinada pela ZapSign",
+      },
+    ],
+  },
+  {
+    versao: "0.459.0",
+    data: "2026-11-16",
+    migracao: "0412",
+    titulo: "Certificação: aproveitar as tarefas de outra certificação",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao abrir uma turma de novatos, quem já é certificado em outra função aparece com as tarefas em comum, e o Admin escolhe para cada pessoa: missão completa ou só as tarefas diferentes. A tarefa só é aproveitada quando a outra certificação exigiu pelo menos o mesmo número. Na missão da pessoa, ela já aparece cumprida, com \"Aproveitada da certificação de …\".",
+        papeis: "todos",
+        manual: "⚠️ A missão só começa quando você aceita",
+      },
+    ],
+  },
+  {
+    versao: "0.458.0",
+    data: "2026-11-16",
+    migracao: "0411",
+    titulo: "Concluir atendimento de mês já fechado",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Atendimento: concluir um atendimento de um mês já fechado no Financeiro dava \"Não foi possível atualizar o atendimento\". Agora conclui: o kit de material é baixado no dia de hoje (com a data original no motivo), e a apresentação comercial não consome mais o kit. (OC-00181)",
+        papeis: "todos",
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
+    versao: "0.457.0",
+    data: "2026-11-16",
+    migracao: "0411",
+    titulo: "Certificação: quem saiu não segura a unidade, e turma nova não trava",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Quem é desligado da equipe, ou deixa a função na unidade, passa a ser dispensado sozinho da turma de certificação aberta, e a unidade para de esperar por essa pessoa. No Acompanhamento da certificação, o Admin ganhou o botão Dispensar, com motivo, para licença e afastamento.",
+        papeis: [],
+        manual: "⚠️ A missão só começa quando você aceita",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Dá para abrir uma turma nova numa unidade que já tem turma aberta, inclusive para uma pessoa só. Quem já está numa turma aberta na mesma função aparece como \"já na turma\" e não é convocado de novo.",
+        papeis: [],
+        manual: "⚠️ A missão só começa quando você aceita",
       },
     ],
   },

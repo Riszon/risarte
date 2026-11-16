@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import {
   ESTADO_ROTULO,
+  INDICADORES,
   POLITICAS_DE_ACESSO,
   POLITICA_AJUDA,
   POLITICA_ROTULO,
@@ -25,6 +26,7 @@ import {
   chaveDaConvocacao,
   ehRedeToda,
   exigePrazo,
+  jaEmTurmaAberta,
   oQueImpedeAbrir,
   resumoDaPrevia,
   rotuloDoAlcance,
@@ -48,7 +50,10 @@ export type UnidadeParaTurma = {
   id: string;
   name: string;
   franqueadora: boolean;
-  /** Código da turma aberta em que ela já está, ou `null`. */
+  /**
+   * Código(s) das turmas abertas que já incluem a unidade, ou `null`. Só
+   * informação desde a 0411 (OC-00016): a unidade pode entrar em outra turma.
+   */
   turmaAberta: string | null;
 };
 
@@ -85,9 +90,11 @@ const nomeDaUnidade = (u: UnidadeParaTurma) =>
  * trabalhão"*. Daí a caixa "rede toda" e a busca por nome: com 200 unidades,
  * achar as 15 certas numa lista sem filtro seria outro trabalhão.
  *
- * ⚠️ Unidade que já está numa turma aberta aparece DESABILITADA, com o código
- * da turma. Esconder faria o Admin procurar uma unidade que "sumiu"; mostrar
- * habilitada faria a abertura falhar inteira no banco por causa dela.
+ * Unidade que já está numa turma aberta continua escolhível (0411, OC-00016:
+ * "não travar quando convida uma pessoa para uma outra certificação"); o
+ * código da turma aparece só como informação. Quem já está numa turma aberta
+ * na mesma função aparece na prévia como "já na turma …" e não é convocado de
+ * novo — é a mesma missão (0305).
  */
 function SeletorDeUnidades({
   unidades,
@@ -99,9 +106,8 @@ function SeletorDeUnidades({
   mudar: (novas: Set<string>) => void;
 }) {
   const [busca, setBusca] = useState("");
-  const livres = unidades.filter((u) => !u.turmaAberta);
-  const todasLivresMarcadas =
-    livres.length > 0 && livres.every((u) => escolhidas.has(u.id));
+  const todasMarcadas =
+    unidades.length > 0 && unidades.every((u) => escolhidas.has(u.id));
   const visiveis = unidades.filter((u) =>
     nomeDaUnidade(u).toLowerCase().includes(busca.trim().toLowerCase())
   );
@@ -118,18 +124,13 @@ function SeletorDeUnidades({
       <label className="flex cursor-pointer items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-medium">
         <input
           type="checkbox"
-          checked={todasLivresMarcadas}
+          checked={todasMarcadas}
           onChange={(e) =>
-            mudar(e.currentTarget.checked ? new Set(livres.map((u) => u.id)) : new Set())
+            mudar(e.currentTarget.checked ? new Set(unidades.map((u) => u.id)) : new Set())
           }
           className="size-4 shrink-0 accent-primary"
         />
         Rede toda
-        {livres.length < unidades.length && (
-          <span className="text-xs font-normal text-muted-foreground">
-            — {unidades.length - livres.length} unidade(s) já em turma aberta ficam de fora
-          </span>
-        )}
       </label>
 
       {unidades.length > 8 && (
@@ -150,15 +151,10 @@ function SeletorDeUnidades({
         {visiveis.map((u) => (
           <label
             key={u.id}
-            className={
-              u.turmaAberta
-                ? "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground"
-                : "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/40 has-[:checked]:bg-accent/60"
-            }
+            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/40 has-[:checked]:bg-accent/60"
           >
             <input
               type="checkbox"
-              disabled={Boolean(u.turmaAberta)}
               checked={escolhidas.has(u.id)}
               onChange={(e) => {
                 const novas = new Set(escolhidas);
@@ -170,10 +166,63 @@ function SeletorDeUnidades({
             />
             <span className="min-w-0 flex-1 truncate">{nomeDaUnidade(u)}</span>
             {u.turmaAberta && (
-              <span className="shrink-0 text-xs">já na turma {u.turmaAberta}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                turma aberta: {u.turmaAberta}
+              </span>
             )}
           </label>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * APROVEITAR TAREFAS DE OUTRA CERTIFICAÇÃO (0412, AP172) — a escolha do Admin,
+ * pessoa por pessoa (D1). "Missão completa" é o padrão; "só as tarefas
+ * diferentes" dispensa as que a pessoa já cumpriu numa certificação que exigiu
+ * pelo menos o mesmo número (D2, a conta é do banco).
+ */
+function OpcaoDeAproveitamento({
+  candidato,
+  reduzida,
+  mudar,
+}: {
+  candidato: CandidatoDaUnidade;
+  reduzida: boolean;
+  mudar: (sim: boolean) => void;
+}) {
+  const itens = candidato.aproveitaveis ?? [];
+  const deOnde = [...new Set(itens.map((i) => ROLE_LABELS[i.role] ?? i.role))].join(", ");
+  const nome = (chave: string) => INDICADORES.find((i) => i.chave === chave)?.rotulo ?? chave;
+  const grupo = `aproveitar-${chaveDaConvocacao(candidato)}`;
+  return (
+    <div className="mb-1 ml-8 space-y-1 rounded-md border border-dashed border-primary/40 p-2 text-xs">
+      <p className="text-muted-foreground">
+        Já certificado em {deOnde}: {itens.length} tarefa(s) em comum (
+        {itens.map((i) => nome(i.chave)).join(", ")}).
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <input
+            type="radio"
+            name={grupo}
+            checked={!reduzida}
+            onChange={() => mudar(false)}
+            className="size-3.5 accent-primary"
+          />
+          Missão completa
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <input
+            type="radio"
+            name={grupo}
+            checked={reduzida}
+            onChange={() => mudar(true)}
+            className="size-3.5 accent-primary"
+          />
+          Só as tarefas diferentes
+        </label>
       </div>
     </div>
   );
@@ -204,6 +253,9 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
     lista: CandidatoDaUnidade[];
   } | null>(null);
   const [fora, setFora] = useState<Set<string>>(new Set());
+  // 0412 (AP172): quem o Admin marcou como "só as tarefas diferentes".
+  // O padrão é a missão completa (decisão D1).
+  const [reduzidos, setReduzidos] = useState<Set<string>>(new Set());
   const [politica, setPolitica] = useState<PoliticaDeAcesso>("mantem");
   const [prazo, setPrazo] = useState("");
   const [nota, setNota] = useState("");
@@ -245,7 +297,10 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
   const carregando = escolhidas.size > 0 && candidatos === null;
 
   const grupos = useMemo(() => agruparPorUnidade(candidatos ?? []), [candidatos]);
-  const convocados = (candidatos ?? []).filter((c) => !fora.has(chaveDaConvocacao(c)));
+  // 0411: quem já está numa turma aberta nesta função não é convocado de novo.
+  const convocados = (candidatos ?? []).filter(
+    (c) => !jaEmTurmaAberta(c) && !fora.has(chaveDaConvocacao(c))
+  );
   const resumo = candidatos ? resumoDaPrevia(convocados) : null;
   const todasAtivas = unidades.map((u) => u.id);
 
@@ -260,7 +315,13 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
     e.preventDefault();
     const fd = new FormData();
     for (const id of escolhidas) fd.append("clinic_ids", id);
-    for (const c of convocados) fd.append("convocados", chaveDaConvocacao(c));
+    for (const c of convocados) {
+      fd.append("convocados", chaveDaConvocacao(c));
+      // Só quem tem o que aproveitar NESTA prévia (novatos, D3).
+      if (tipo === "novatos" && (c.aproveitaveis?.length ?? 0) > 0 && reduzidos.has(chaveDaConvocacao(c))) {
+        fd.append("reduzidos", chaveDaConvocacao(c));
+      }
+    }
     fd.set("kind", tipo);
     fd.set("note", nota);
     fd.set("access_policy", tipo === "reciclagem" ? politica : "mantem");
@@ -273,6 +334,7 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
         toast.success("Turma aberta. As pessoas já veem a convocação no Início.");
         setEscolhidas(new Set());
         setFora(new Set());
+        setReduzidos(new Set());
         setPrevia(null);
         setNota("");
         router.refresh();
@@ -440,7 +502,7 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
                     <div className="max-h-96 space-y-2 overflow-y-auto">
                       {grupos.map((g) => {
                         const dentro = g.pessoas.filter(
-                          (p) => !fora.has(chaveDaConvocacao(p))
+                          (p) => !jaEmTurmaAberta(p) && !fora.has(chaveDaConvocacao(p))
                         ).length;
                         return (
                           <details
@@ -460,9 +522,34 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
                             <div className="space-y-1 border-t p-2">
                               {g.pessoas.map((c) => {
                                 const chave = chaveDaConvocacao(c);
+                                if (jaEmTurmaAberta(c)) {
+                                  return (
+                                    <div
+                                      key={chave}
+                                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        disabled
+                                        checked={false}
+                                        readOnly
+                                        className="size-4 shrink-0"
+                                      />
+                                      <span className="min-w-0 flex-1 truncate">
+                                        {c.full_name ?? "(sem nome)"}
+                                      </span>
+                                      <span className="shrink-0 text-xs">
+                                        {ROLE_LABELS[c.role]}
+                                      </span>
+                                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs">
+                                        já na turma {c.turma_aberta}
+                                      </span>
+                                    </div>
+                                  );
+                                }
                                 return (
+                                  <div key={chave}>
                                   <label
-                                    key={chave}
                                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/40 has-[:checked]:bg-accent/60"
                                   >
                                     <input
@@ -485,6 +572,19 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
                                       </span>
                                     )}
                                   </label>
+                                  {(c.aproveitaveis?.length ?? 0) > 0 && !fora.has(chave) && (
+                                    <OpcaoDeAproveitamento
+                                      candidato={c}
+                                      reduzida={reduzidos.has(chave)}
+                                      mudar={(sim) => {
+                                        const novo = new Set(reduzidos);
+                                        if (sim) novo.add(chave);
+                                        else novo.delete(chave);
+                                        setReduzidos(novo);
+                                      }}
+                                    />
+                                  )}
+                                  </div>
                                 );
                               })}
                             </div>

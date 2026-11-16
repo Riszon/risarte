@@ -3993,7 +3993,7 @@ A taxa é **uma por parcela recebida**, e a situação dela depende de **por ond
 - **Ajuste na decisão 4 (antiga paga depois de cancelada):**
   - o aviso ao Gerente e ao Financeiro da Franqueadora já traz **o caminho pronto na tela**: cancelar a cobrança nova e dar baixa na parcela com o valor recebido, com a taxa da rede **a cobrar da unidade**;
   - o riSZon **não faz sozinho**: o Gerente confirma, e a confirmação fica na auditoria.
-- **Entra já (0.456.4), sem migração:** o aviso das assinaturas na tela de ligar as mensalidades (19.34.5).
+- **Entra já (0.459.1, junto com a 4020), sem migração:** o aviso das assinaturas na tela de ligar as mensalidades (19.34.5).
   - O aviso: "Antes de ligar, cancele no painel do Asaas as assinaturas antigas dos clientes que entram."
   - A marca passa a dizer: "Avisei os clientes e cancelei as assinaturas antigas."
 - **Na lista da ASA7:**
@@ -4308,7 +4308,7 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 
 ### 19.36 Construção do distrato (4020), em 16/11/2026
 
-**Versões:** core 0.456.5, Asaas 0.17.0, migração 4020. O aviso das assinaturas (0.456.4) vai junto. Construída no treino e no projeto de teste; **não está na produção**. A produção espera o roteiro de teste do dono (4017, 4017a e 4018) e o "pode".
+**Versões:** core 0.459.1, Asaas 0.17.0, migração 4020. O aviso das assinaturas (0.456.4) vai junto. Construída no treino e no projeto de teste; **não está na produção**. A produção espera o roteiro de teste do dono (4017, 4017a e 4018) e o "pode".
 
 **O banco (4020):**
 - **O pedido e o atraso:**

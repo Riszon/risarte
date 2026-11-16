@@ -289,3 +289,19 @@ describe("as peças presas no lugar", () => {
     expect(tela).not.toContain("aoa_to_sheet");
   });
 });
+
+describe("validações sem duplicata (16/11/2026)", () => {
+  it("cada coluna tem UMA validação (o ExcelJS duplicava as de célula a célula)", async () => {
+    const buf = await planilhaModeloDeTitulares({ empresa: "Padaria do Zé", geradoEm: "16/11/2026" });
+    const zip = await (await import("jszip")).default.loadAsync(buf);
+    let medidas = 0;
+    for (const nome of Object.keys(zip.files).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n))) {
+      const xml = await zip.file(nome)!.async("string");
+      const faixas = [...xml.matchAll(/<dataValidation [^>]*sqref="([^"]+)"/g)].map((m) => m[1]);
+      medidas += faixas.length;
+      const colunas = faixas.map((f) => f.replace(/\d+/g, ""));
+      expect(new Set(colunas).size, `${nome}: ${faixas.join(" ")}`).toBe(colunas.length);
+    }
+    expect(medidas).toBe(3); // Plano (Titulares), Titular e Parentesco (Dependentes)
+  });
+});

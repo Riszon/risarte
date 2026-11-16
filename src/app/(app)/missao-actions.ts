@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import type { MetaDoTreino } from "@/lib/certificacao";
+import { lerAproveitadas, type MetaDoTreino } from "@/lib/certificacao";
 import { guardarProgresso, medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
 import { recadoDaConclusao } from "@/lib/certificacao-conclusao";
 import type { UserRole } from "@/lib/roles";
@@ -75,7 +75,7 @@ export async function conferirMinhaMissao(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("training_enrollments")
-    .select("id, user_id, role, status, started_at")
+    .select("id, user_id, role, status, started_at, reused_items")
     .eq("id", enrollmentId)
     .maybeSingle();
   if (error) {
@@ -103,6 +103,7 @@ export async function conferirMinhaMissao(
     role: papel,
     started_at: String(data.started_at),
     metas: metas ?? [],
+    aproveitadas: lerAproveitadas(data.reused_items),
   });
   if (medicao.estado !== "medido") {
     return {
