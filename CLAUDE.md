@@ -407,8 +407,10 @@ Syncthing se comportarem de forma estranha.**
   congelado em `reused_items`. ⚠️ `open_training_campaign` tem 8 parâmetros
   (`p_reduced`); ao recriar, partir da 0412. ⚠️ Quem mede matrícula passa
   `aproveitadas: lerAproveitadas(reused_items)`.
-- ✅ 0412 no treino (ensaio 10/10, desfeito). ⏳ Produção: o dono roda a 0412
-  ANTES do push (o app lê `reused_items` no Início).
+- ✅ 0412 nos dois bancos (treino: ensaio 10/10, desfeito; produção pelo dono
+  em 16/11/2026; conferido de fora: `reused_items` existe, sem login as
+  funções recusam, a chave de serviço para em NOT_ALLOWED). Publicado; AP172
+  fechado. Não visto na tela.
 
 **16/11/2026 (relato OC-00181) — PC Administrador (core 0.457.0 → 0.458.0, migração 0411; worktree `wt-oc181`)**
 
