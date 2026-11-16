@@ -3759,7 +3759,7 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
   - `test:indica` 246/0.
 
 
-### 19.34 Entrega 5 — reemissão da cobrança externa: PLANO (16/11/2026; migração 4019; APROVADO com ajustes em 16/11/2026 — 19.34.2 a 19.34.8; o parcelamento e a assinatura deixam de ser só recusados: 19.34.4 e 19.34.5; a construção espera a decisão da prioridade, 19.34.9)
+### 19.34 Entrega 5 — reemissão da cobrança externa: PLANO (16/11/2026; migração 4019; APROVADO INTEIRO em 16/11/2026 — 19.34.1 a 19.34.10; o carnê antigo dentro da 4019, a assinatura antiga na 4019b; GUARDADO: volta antes da ASA7, 19.34.10)
 
 **Como é hoje (4004, D17):**
 - **Marcar:** "Marcar como cobrada fora" cria em `charges` uma cobrança `externa`, só com uma nota livre ("Onde e como foi cobrada"). O riSZon **não sabe qual é** a cobrança no Asaas.
@@ -3986,3 +3986,16 @@ A taxa é **uma por parcela recebida**, e a situação dela depende de **por ond
   - Antes da ASA7, um levantamento por unidade no Asaas (quantas cobranças e parcelamentos sem a referência do riSZon, só leitura, pela chave do Vault) mostra o tamanho real, e a 4019 pode ser ajustada a ele.
 - **O plano 19.34 fica aprovado e guardado.** Nada dele é construído até o dono decidir.
 - **Exceção:** o aviso das assinaturas na tela das mensalidades (19.34.5) é só texto e pode entrar já, no próximo pacote, se o dono quiser.
+
+#### 19.34.10 Aprovação e o que fica para a ASA7 (16/11/2026)
+
+- **Aprovada inteira** (19.34.1 a 19.34.9), com o carnê antigo dentro da 4019 e a assinatura antiga na 4019b. **Nada dela é construído agora.** Ela volta antes da ASA7. O distrato (4020) vem primeiro.
+- **Ajuste na decisão 4 (antiga paga depois de cancelada):**
+  - o aviso ao Gerente e ao Financeiro da Franqueadora já traz **o caminho pronto na tela**: cancelar a cobrança nova e dar baixa na parcela com o valor recebido, com a taxa da rede **a cobrar da unidade**;
+  - o riSZon **não faz sozinho**: o Gerente confirma, e a confirmação fica na auditoria.
+- **Entra já (0.456.4), sem migração:** o aviso das assinaturas na tela de ligar as mensalidades (19.34.5).
+  - O aviso: "Antes de ligar, cancele no painel do Asaas as assinaturas antigas dos clientes que entram."
+  - A marca passa a dizer: "Avisei os clientes e cancelei as assinaturas antigas."
+- **Na lista da ASA7:**
+  - o **levantamento só de leitura no Asaas de cada unidade** (cobranças, parcelamentos e assinaturas sem a referência do riSZon), antes de ligar a unidade;
+  - a **4019 e a 4019b ajustadas** ao tamanho real que o levantamento mostrar.

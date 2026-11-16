@@ -3,7 +3,9 @@
 /**
  * 4018 (19.32.5 e 19.32.10): a unidade liga as mensalidades pelo Asaas a partir
  * de uma data. Antes, a tela mostra quantos clientes entram agora e quantos
- * esperam a ASA4B (os de recorrência), e a unidade marca "Avisei os clientes".
+ * esperam a ASA4B (os de recorrência), e a unidade marca "Avisei os clientes e
+ * cancelei as assinaturas antigas." (19.34.10: sem isso, a assinatura antiga do
+ * painel do Asaas e a mensalidade do riSZon cobrariam o mesmo mês).
  * Nada muda sozinho: até ligar, tudo continua manual.
  */
 import { useEffect, useState, useTransition } from "react";
@@ -69,6 +71,11 @@ export function MensalidadesDaUnidade({ clinicId, clinicName, hoje }: { clinicId
         </li>
       </ul>
       {!ligada && (
+        <p className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          Antes de ligar, cancele no painel do Asaas as assinaturas antigas dos clientes que entram.
+        </p>
+      )}
+      {!ligada && (
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-xs">
             A partir de
@@ -76,7 +83,7 @@ export function MensalidadesDaUnidade({ clinicId, clinicName, hoje }: { clinicId
           </label>
           <label className="flex items-center gap-1 text-xs">
             <input type="checkbox" checked={avisei} onChange={(e) => setAvisei(e.target.checked)} />
-            Avisei os clientes
+            Avisei os clientes e cancelei as assinaturas antigas.
           </label>
           <Button size="sm" disabled={isPending || !avisei} onClick={() => salvar(true)}>
             Ligar

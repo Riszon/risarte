@@ -8,6 +8,7 @@ const SQL = readFileSync("supabase/migrations/4018_asa4_mensalidades_pelo_asaas.
 const ROTINA = readFileSync("src/lib/asaas/cobrancas-automaticas.ts", "utf8");
 const PPR = readFileSync("src/app/(app)/ppr/actions.ts", "utf8");
 const ORTO = readFileSync("src/app/(app)/ortodontia/actions.ts", "utf8");
+const TELA = readFileSync("src/app/(app)/financeiro/cobrancas-automaticas/mensalidades-da-unidade.tsx", "utf8");
 
 const caminhoComum = () => {
   const i = SQL.indexOf("-- 2) O CAMINHO COMUM");
@@ -44,6 +45,10 @@ describe("as regras aprovadas (19.32.5 e 19.32.10)", () => {
   it("nada muda sozinho: a unidade liga a partir de uma data, depois de marcar \"Avisei os clientes\"", () => {
     expect(SQL).toContain("raise exception 'WARNING_REQUIRED'");
     expect(SQL).toContain("and pc.due_date >= public._fees_unit_from(pc.clinic_id)");
+  });
+  it("antes de ligar, a tela pede o cancelamento das assinaturas antigas do painel (19.34.10)", () => {
+    expect(TELA).toContain("Antes de ligar, cancele no painel do Asaas as assinaturas antigas dos clientes que entram.");
+    expect(TELA).toContain("Avisei os clientes e cancelei as assinaturas antigas.");
   });
   it("PPR+: aos 90 dias não cancela; avisa o Gerente a cada 7 dias; suspensa não gera mensalidade", () => {
     expect(SQL).not.toMatch(/status = 'cancelado', cancelled_at = now\(\),\s*cancel_reason = 'Cancelado por falta de pagamento/);

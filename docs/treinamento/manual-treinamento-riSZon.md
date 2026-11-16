@@ -7412,7 +7412,11 @@ automáticas › **Mensalidades pelo Asaas**.
 - A tela mostra quantos clientes **entram agora** (boleto, Pix ou cartão pelo
   link) e quantos **esperam a próxima fase** (os de recorrência), por programa,
   e quantos têm e-mail ou celular para os avisos do Asaas.
-- Escolha a data, marque **"Avisei os clientes"** e clique em **Ligar**.
+- **Antes de ligar, cancele no painel do Asaas as assinaturas antigas dos
+  clientes que entram** *(desde a 0.456.4)*. Se a assinatura antiga continuar
+  ativa, o cliente recebe duas cobranças do mesmo mês: a dela e a do riSZon.
+- Escolha a data, marque **"Avisei os clientes e cancelei as assinaturas
+  antigas."** e clique em **Ligar**.
 - Até ligar, tudo continua manual, como hoje.
 
 **Como funciona depois de ligar:**

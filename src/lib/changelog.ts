@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.456.4",
+    data: "2026-11-16",
+    migracao: null,
+    titulo: "Mensalidades pelo Asaas: o aviso das assinaturas antigas",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Na tela de ligar as mensalidades pelo Asaas, o aviso: antes de ligar, cancele no painel do Asaas as assinaturas antigas dos clientes que entram, para ninguém receber duas cobranças do mesmo mês. A marca passa a ser \"Avisei os clientes e cancelei as assinaturas antigas.\"",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+      },
+    ],
+  },
+  {
     versao: "0.456.3",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4018, ASAAS_MIGRATION).
