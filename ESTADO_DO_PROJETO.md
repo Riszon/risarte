@@ -2,6 +2,22 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧤 0.458.0 — CONCLUIR ATENDIMENTO DE MÊS FECHADO (16/11/2026; migração 0411)
+>
+> Relato OC-00181 (treino, Admin Master): duas apresentações comerciais de
+> 26–27/10 presas "em atendimento" (chamadas em 13 e 15/11, depois da venda já
+> concluída em 09/11) e o Concluir voltando PERIOD_CLOSED: o gatilho
+> `consume_attendance_kit` (0218) baixava o kit com `starts_at::date`, em
+> outubro já FECHADO na Londrina. **0411** (decisões do dono): apresentação
+> comercial não consome o kit; a baixa usa o dia do BRASIL e, com o mês
+> fechado (`is_period_closed`), o dia da conclusão, com a data original no
+> motivo. A tela traduz PERIOD_CLOSED (`agenda/actions.ts`). Ensaio no treino
+> 5/5 (com o "antes" recusando); régua `kit-do-atendimento-oc-00181.test.ts`.
+> Feito no worktree `wt-oc181`. **Não visto na tela.**
+> - ⚠️ Ao recriar `consume_attendance_kit`, levar os dois desvios da 0411.
+> - Achado de passagem (não mexido): `consume_session_kit` usa
+>   `done_at::date` (dia de Greenwich) — das 21h à meia-noite cai no dia seguinte.
+>
 > ## 🎓 0.457.0 — CERTIFICAÇÃO: QUEM SAIU NÃO SEGURA A UNIDADE, E TURMA NOVA NÃO TRAVA (16/11/2026; migração 0411)
 >
 > Relatos OC-00015 e OC-00016 (produção, Admin Master). Decisões do dono:

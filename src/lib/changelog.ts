@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.458.0",
+    data: "2026-11-16",
+    migracao: "0411",
+    titulo: "Concluir atendimento de mês já fechado",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Atendimento: concluir um atendimento de um mês já fechado no Financeiro dava \"Não foi possível atualizar o atendimento\". Agora conclui: o kit de material é baixado no dia de hoje (com a data original no motivo), e a apresentação comercial não consome mais o kit. (OC-00181)",
+        papeis: "todos",
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
     versao: "0.457.0",
     data: "2026-11-16",
     migracao: "0411",

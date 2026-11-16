@@ -400,6 +400,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/11/2026 (relato OC-00181) — PC Administrador (core 0.457.0 → 0.458.0, migração 0411; worktree `wt-oc181`)**
+
+- Bloco 0.457.0 no ESTADO. ⚠️ **Ao recriar `consume_attendance_kit`, levar
+  a 0411** (sem kit na apresentação comercial; mês fechado → dia da conclusão).
+- ⚠️ **DUAS 0411, as duas aplicadas na produção:** `0411_certificacao_dispensa…`
+  (sessão da certificação, 0.457.0) e `0411_kit_do_atendimento…` (esta, 0.458.0).
+  Funções diferentes; nenhuma renomeada (regra: migração aplicada não muda de
+  nome; o treino registra pelo nome do arquivo). Próxima livre do core: **0412**.
+
 **16/11/2026 (relatos OC-00015/OC-00016, certificação) — PC Administrador (core 0.456.3 → 0.457.0, migração 0411)**
 
 - **Quem saiu não segura a unidade; turma nova não trava** (bloco 0.457.0 no

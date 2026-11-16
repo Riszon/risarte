@@ -1599,6 +1599,17 @@ export async function updateAttendance(
     if (error.message.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Sua função não permite esta ação." };
     }
+    // OC-00181: concluir lança o consumo do material no Financeiro; se o mês
+    // daquele lançamento já foi fechado, o banco recusa. A 0411 tira a
+    // apresentação comercial e leva a baixa para o dia da conclusão — esta
+    // frase é a rede de segurança para o que ainda escapar.
+    if (error.message.includes("PERIOD_CLOSED")) {
+      return {
+        ok: false,
+        error:
+          "O mês deste lançamento já está fechado no Financeiro. Peça ao Financeiro para reabrir o mês ou fale com o administrador.",
+      };
+    }
     console.error("update_attendance failed:", error.message);
     return { ok: false, error: "Não foi possível atualizar o atendimento." };
   }

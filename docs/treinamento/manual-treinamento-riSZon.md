@@ -3890,6 +3890,16 @@ a ficha procurava só o atendimento com data de hoje e não mostrava nada.
 estoque** e, quando a sessão concluída é a **última do procedimento**, o
 repasse do procedimento é apurado. Você não digita nada disso.
 
+> **O kit do atendimento e o mês fechado** (desde a 0.458.0, relato OC-00181).
+> O kit de atendimento (gorro, babador) é baixado no **dia do atendimento**.
+> Se esse mês **já foi fechado** no Financeiro — um atendimento antigo que só
+> está sendo concluído agora —, a baixa entra no **dia de hoje**, e o motivo
+> guarda a data original. A **apresentação comercial não consome o kit** (o
+> cliente não senta na cadeira). Antes, concluir um atendimento de mês fechado
+> dava só *"Não foi possível atualizar o atendimento"*; se algum mês fechado
+> ainda barrar, a tela agora diz *"O mês deste lançamento já está fechado no
+> Financeiro"*.
+
 **O repasse é por procedimento, não por sessão** (desde a versão 0.386.0).
 Um procedimento de 3 sessões entra no repasse **uma vez**, com o valor da
 tabela, quando as 3 estiverem concluídas — antes disso, nada aparece em
