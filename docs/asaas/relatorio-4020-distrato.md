@@ -157,4 +157,4 @@ Mensagens: você não deve receber nenhuma.
   - o Asaas só aceita a partir de **17/11**;
   - eu peço e aviso quando estiver esperando a autorização.
 - **A produção da 4020:** depois do seu roteiro e do "pode".
-- **Ortodontia na produção:** o levantamento `docs/asaas/levantamento-ortodontia-em-venda-cancelada.sql` (só leitura). Com o resultado, eu proponho a correção, sem alterar nada antes da sua aprovação.
+- **Ortodontia na produção:** levantamento rodado em 16/11/2026, sem nenhuma linha. Não há o que corrigir.

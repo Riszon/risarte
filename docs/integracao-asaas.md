@@ -4413,3 +4413,8 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
   - É diferente do estorno **inteiro** (18.7.3), em que o split volta (`REFUNDED`) e a taxa vira "a cobrar".
 - **O aviso basta para a 4020a:** a lista `refunds` do aviso traz o valor e o comprovante, e o riSZon grava a devolução como paga por estorno, sem desfazer o recebimento.
 - **Falta:** a prova do cartão parcelado (estorno parcial do parcelamento em 17/11).
+
+**Levantamento da Ortodontia na produção (16/11/2026, rodado pelo dono no SQL Editor):**
+- `docs/asaas/levantamento-ortodontia-em-venda-cancelada.sql`: **"Success. No rows returned"**.
+- Nenhuma venda cancelada tem caso de Ortodontia ainda ativo ou mensalidade em aberto. **Não há o que corrigir nos dados de hoje.**
+- Daqui para a frente, a 4020 cuida disso no distrato: o caso fica interrompido e as mensalidades futuras caem.
