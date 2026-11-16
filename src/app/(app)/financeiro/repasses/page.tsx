@@ -124,14 +124,20 @@ export default async function PayoutsPage(
     .eq("clinic_id", clinicId)
     .in("role", ["dentist", "clinical_coordinator", "planner_dentist"]);
 
-  const providers = (staffRows ?? []).map((s) => {
+  // 0413 (funções de apoio): a mesma pessoa pode ter duas destas funções na
+  // unidade. Uma linha por pessoa; o nível vem da linha que o tem (a
+  // principal — é nela que o nível é gravado).
+  const porPessoa = new Map<string, { id: string; name: string; levelId: string | null }>();
+  for (const s of staffRows ?? []) {
     const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
-    return {
-      id: s.user_id as string,
-      name: (p?.full_name as string) ?? "—",
-      levelId: (s.career_level_id as string | null) ?? null,
-    };
-  });
+    const id = s.user_id as string;
+    const levelId = (s.career_level_id as string | null) ?? null;
+    const atual = porPessoa.get(id);
+    if (!atual || (!atual.levelId && levelId)) {
+      porPessoa.set(id, { id, name: (p?.full_name as string) ?? "—", levelId });
+    }
+  }
+  const providers = [...porPessoa.values()];
   const nameById = new Map(providers.map((p) => [p.id, p.name]));
 
   // AP141 (0398): o "pago em parte" é lido À PARTE — sem a 0398 no banco a

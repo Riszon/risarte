@@ -297,7 +297,8 @@ export default async function HomePage() {
           <ul className="mt-3 space-y-1.5">
             {session.unidadesFechadas.map((u) => (
               <li
-                key={u.clinicId}
+                // 0413: a mesma unidade pode aparecer com duas funções fechadas.
+                key={`${u.clinicId}:${u.role}`}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2"
               >
                 <span>

@@ -530,7 +530,10 @@ export async function liberarUnidadeSemMissao(
         ? "Esta pessoa não tem função nesta unidade."
         : msg.includes("NOTE_REQUIRED")
           ? "Escreva o motivo de liberar sem a missão."
-          : error.code === "PGRST202"
+          : msg.includes("ROLE_REQUIRED")
+            ? // 0413: com função de apoio na unidade, é preciso dizer qual liberar.
+              "Esta pessoa tem mais de uma função nesta unidade. Escolha qual liberar."
+            : error.code === "PGRST202"
             ? "O banco ainda não recebeu a migração 0276."
             : "Não foi possível liberar. Nada foi alterado.",
     };

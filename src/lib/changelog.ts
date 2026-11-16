@@ -62,6 +62,26 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.461.0",
+    data: "2026-11-16",
+    migracao: "0413",
+    titulo: "Preparação para mais de uma função na mesma unidade",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O sistema real passa a abrir e fechar por função dentro da unidade: quem tiver duas funções numa unidade e for certificado em uma delas trabalha nela, mesmo que a outra ainda esteja esperando a missão. E o mesmo aviso do sino não chega mais duas vezes para a mesma pessoa.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Esta é a primeira parte das funções de apoio (cobertura de um colega ausente). Por enquanto nada muda no dia a dia: cada pessoa continua com uma função por unidade até a próxima entrega.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.460.0",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é do Empresarial (1048, EMPRESARIAL_MIGRATION).

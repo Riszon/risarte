@@ -47,6 +47,30 @@ describe("tranca do sistema real por unidade e função (0276)", () => {
     ]);
   });
 
+  it("⚠️ 0413: duas funções na MESMA unidade — abre pela certificada, e só a outra fica fechada", () => {
+    const leitura = lerAcessoPorUnidade({
+      data: [
+        linha("A", true, "certificado", "asb"),
+        linha("A", false, "aguardando_missao", "receptionist"),
+      ],
+      error: null,
+    });
+    const r = aplicarTranca(["A"], leitura);
+    expect([...r.liberadas]).toEqual(["A"]);
+    expect(r.fechadas).toEqual([
+      { clinicId: "A", clinicName: "Unidade A", role: "receptionist", motivo: "aguardando_missao" },
+    ]);
+    // A ordem das linhas não muda a resposta (antes, a última linha vencia).
+    const invertida = lerAcessoPorUnidade({
+      data: [
+        linha("A", false, "aguardando_missao", "receptionist"),
+        linha("A", true, "certificado", "asb"),
+      ],
+      error: null,
+    });
+    expect([...aplicarTranca(["A"], invertida).liberadas]).toEqual(["A"]);
+  });
+
   it("⚠️ 0277: a unidade fechada que o banco já escondeu da lista ainda é EXPLICADA", () => {
     // A lista de funções da pessoa chega sem C (o banco esconde); a regra cita C.
     const leitura = lerAcessoPorUnidade({

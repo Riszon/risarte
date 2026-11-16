@@ -288,7 +288,15 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     const { liberadas, fechadas } = aplicarTranca([...memberClinics.keys()], leitura);
     unidadesFechadas = fechadas;
     for (const id of [...memberClinics.keys()]) {
-      if (liberadas.has(id)) continue;
+      if (liberadas.has(id)) {
+        // 0413: unidade aberta por uma função, com outra ainda fechada — a
+        // fechada sai da sessão (o banco já a esconde; isto é a 2ª rede).
+        const fechadasAqui = fechadas.filter((f) => f.clinicId === id).map((f) => f.role);
+        if (fechadasAqui.length > 0 && rolesByClinic[id]) {
+          rolesByClinic[id] = rolesByClinic[id].filter((r) => !fechadasAqui.includes(r));
+        }
+        continue;
+      }
       memberClinics.delete(id);
       delete rolesByClinic[id];
     }

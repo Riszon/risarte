@@ -2,6 +2,22 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 👥 0.461.0 — FUNÇÕES DE APOIO, F1: OS LEITORES PRONTOS PARA DUAS FUNÇÕES NA MESMA UNIDADE (16/11/2026; migrações 0413 e 2012)
+>
+> Plano aprovado pelo dono (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`.
+> A trava `unique (user_id, clinic_id)` CONTINUA (sai na F2). EV-361.
+> - ⚠️ **`assignment_kind`** (principal | apoio) em `user_clinic_roles_all`;
+>   uma principal por pessoa por unidade (`user_clinic_roles_one_principal`).
+>   **Nível de carreira, repasse e prêmio do Indica leem a PRINCIPAL** (régua
+>   reprova migração nova que leia o nível sem `assignment_kind`).
+> - ⚠️ **A tranca é por FUNÇÃO:** `system_closed_clinics` tem `role` (PK de 3
+>   colunas); a janela `user_clinic_roles` esconde só a função fechada;
+>   `grant_clinic_access`/`revoke_clinic_access` ganharam `p_role`
+>   (`ROLE_REQUIRED` com duas funções). App: `aplicarTranca` agrupa por unidade.
+> - ⚠️ **Aviso igual no mesmo instante entra uma vez** (gatilho
+>   `notifications_dedupe` em `notifications`).
+> - Ensaio no treino 15/15 (desfeito). 2012 é da faixa do Indica (INDICA 0.9.1).
+
 > ## 🔐 0.460.0 / EMPRESARIAL 0.108.0 / 1048 — PERMISSÕES EXPLICADAS E AS DO EMPRESARIAL NA MATRIZ (16/11/2026)
 >
 > Pedido do dono: ver e personalizar quem pode o quê no Empresarial ("hoje não

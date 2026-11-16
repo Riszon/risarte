@@ -400,6 +400,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/11/2026 (funções de apoio, F1) — PC Administrador (core 0.460.0 → 0.461.0, migração 0413; Indica 0.9.0 → 0.9.1, migração 2012)**
+
+- **Leitores prontos para duas funções na mesma unidade** (bloco 0.461.0 no
+  ESTADO; plano aprovado em `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`, D1–D15).
+  ⚠️ **`assignment_kind`**: nível, repasse e prêmio pela PRINCIPAL. ⚠️ **A
+  tranca é por função** (`system_closed_clinics.role`; grant/revoke com
+  `p_role`). ⚠️ Aviso igual no mesmo instante entra uma vez
+  (`notifications_dedupe`). A trava de uma função por unidade só sai na F2.
+- ✅ 0413 e 2012 no treino (ensaio 15/15, desfeito). ⏳ Produção: o dono roda a
+  0413 e DEPOIS a 2012, antes do push.
+
 **16/11/2026 (permissões do Empresarial) — PC Administrador (core 0.459.1 → 0.460.0; Empresarial 0.107.0 → 0.108.0, migração 1048)**
 
 - **Permissões explicadas e as do Empresarial na matriz** (bloco 0.460.0 no
