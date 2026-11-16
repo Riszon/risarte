@@ -105,6 +105,8 @@ export function AprovacoesPendentes({ pendentes }: { pendentes: ConclusaoPendent
                         {p.retrato.map((i) => (
                           <span key={i.chave} className="rounded-full bg-muted px-2 py-0.5 text-xs">
                             {i.rotulo}: <strong>{i.feito ?? "—"}</strong> de {i.minimo}
+                            {i.aproveitadoDe &&
+                              ` (aproveitada de ${ROLE_LABELS[i.aproveitadoDe as UserRole] ?? i.aproveitadoDe})`}
                           </span>
                         ))}
                       </span>

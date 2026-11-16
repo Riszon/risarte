@@ -48,11 +48,20 @@ export function retratoDaMedicao(p: ProgressoDaMissao, agora: Date) {
       rotulo: i.rotulo,
       minimo: i.minimo,
       feito: i.feito,
+      // 0412 (AP172): o número veio de outra certificação, não do treino.
+      ...(i.aproveitadoDe ? { aproveitado_de: i.aproveitadoDe } : {}),
     })),
   };
 }
 
-export type ItemDoRetrato = { chave: string; rotulo: string; minimo: number; feito: number | null };
+export type ItemDoRetrato = {
+  chave: string;
+  rotulo: string;
+  minimo: number;
+  feito: number | null;
+  /** 0412: função da certificação de onde a tarefa foi aproveitada. */
+  aproveitadoDe?: string;
+};
 
 /** Lê o retrato que veio do banco — sem confiar no formato. */
 export function lerRetrato(v: unknown): ItemDoRetrato[] {
@@ -65,6 +74,7 @@ export function lerRetrato(v: unknown): ItemDoRetrato[] {
       rotulo: String(i.rotulo ?? i.chave ?? ""),
       minimo: Number(i.minimo ?? 0),
       feito: typeof i.feito === "number" ? i.feito : null,
+      ...(typeof i.aproveitado_de === "string" ? { aproveitadoDe: i.aproveitado_de } : {}),
     }));
 }
 

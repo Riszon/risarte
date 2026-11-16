@@ -2,6 +2,24 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🎓 0.459.0 — CERTIFICAÇÃO: APROVEITAR AS TAREFAS DE OUTRA CERTIFICAÇÃO (16/11/2026; migração 0412)
+>
+> AP172 (pedido do dono no OC-00016), decisões D1–D4 como recomendado:
+> o Admin escolhe pessoa por pessoa ("missão completa" é o padrão); só
+> aproveita quando a outra certificação exigiu pelo menos o mesmo número;
+> só novatos; só de certificação já obtida. Manual "⚠️ A missão só começa
+> quando você aceita"; EV-358.
+> - ⚠️ **Aproveitável = `_training_reusable_items`** (lê o RETRATO do
+>   certificado: `snapshot.itens` com `minimo` e `feito`). Congelado na
+>   convocação em `training_enrollments.reused_items`.
+> - ⚠️ **`open_training_campaign` ganhou `p_reduced` (8 parâmetros, drop +
+>   create).** Ao recriar, partir da 0412. O app só manda `p_reduced` quando há
+>   escolha.
+> - ⚠️ **Medição: a tarefa aproveitada não vai ao treino** (`aproveitadaPara`):
+>   só vale se o feito de lá cobre o mínimo de HOJE. Todo caminho que mede uma
+>   matrícula passa `aproveitadas: lerAproveitadas(reused_items)`.
+> - Ensaio no treino 10/10 (transação desfeita). Não visto na tela.
+
 > ## 🧤 0.458.0 — CONCLUIR ATENDIMENTO DE MÊS FECHADO (16/11/2026; migração 0411)
 >
 > Relato OC-00181 (treino, Admin Master): duas apresentações comerciais de

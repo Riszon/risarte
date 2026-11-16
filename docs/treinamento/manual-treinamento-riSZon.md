@@ -1621,6 +1621,16 @@ Três coisas para saber sobre turmas de várias unidades:
 - **Quem já está numa turma aberta na mesma função não é convocado de novo**:
   na lista ele aparece apagado, com *"já na turma TR-…"*. É a mesma missão; ela
   continua na turma onde começou.
+- **Quem já é certificado em outra função pode aproveitar as tarefas em
+  comum** (desde a versão 0.459.0, só em turma de novatos). Na lista, abaixo
+  da pessoa, aparece *"Já certificado em Dentista: N tarefa(s) em comum"* e
+  duas opções: **Missão completa** (já vem marcada) ou **Só as tarefas
+  diferentes**. Uma tarefa só é aproveitada quando a outra certificação exigiu
+  **pelo menos o mesmo número**: se o Dentista fez 5 chamadas e o Coordenador
+  exige 15, as 15 continuam valendo. A escolha fica gravada na convocação.
+  Na missão da pessoa, a tarefa aproveitada já aparece cumprida, com *"Aproveitada
+  da certificação de …"*. Quem faz duas missões ao mesmo tempo não precisa
+  disso: a tarefa feita uma vez já conta nas duas.
 
 Na lista de turmas, **abra uma unidade para ver o progresso de cada pessoa**:
 ele é medido no treino na hora em que você abre, para a tela continuar rápida

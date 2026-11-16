@@ -1654,7 +1654,60 @@ export type ItemDoProgresso = {
   feito: number | null;
   cumprido: boolean;
   motivo?: string;
+  /**
+   * 0412 (AP172): a tarefa veio de outra certificação da pessoa — `feito` é o
+   * número que ela fez lá, e não foi medida de novo no treino.
+   */
+  aproveitadoDe?: UserRole;
 };
+
+/**
+ * UMA TAREFA APROVEITADA DE OUTRA CERTIFICAÇÃO (0412, AP172), congelada na
+ * matrícula no dia da convocação (`reused_items`). Só entra quando a outra
+ * certificação exigiu pelo menos o mesmo número (decisão D2) — a conta é do
+ * banco (`_training_reusable_items`).
+ */
+export type TarefaAproveitada = {
+  chave: string;
+  role: UserRole;
+  certified_at: string;
+  minimo: number;
+  feito: number;
+};
+
+/** Lê `reused_items` do banco — sem confiar no formato. */
+export function lerAproveitadas(v: unknown): TarefaAproveitada[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((i): i is Record<string, unknown> => typeof i === "object" && i !== null)
+    .filter(
+      (i) =>
+        typeof i.chave === "string" &&
+        typeof i.role === "string" &&
+        typeof i.minimo === "number" &&
+        typeof i.feito === "number"
+    )
+    .map((i) => ({
+      chave: String(i.chave),
+      role: i.role as UserRole,
+      certified_at: String(i.certified_at ?? ""),
+      minimo: Number(i.minimo),
+      feito: Number(i.feito),
+    }));
+}
+
+/**
+ * A tarefa aproveitada que vale para este critério — só se o que a pessoa fez
+ * lá cobre o mínimo de HOJE. Meta aumentada depois da convocação volta a ser
+ * medida no treino (aproveitar nunca pode dar por cumprido o que não está).
+ */
+export function aproveitadaPara(
+  chave: string,
+  minimo: number,
+  aproveitadas: readonly TarefaAproveitada[]
+): TarefaAproveitada | null {
+  return aproveitadas.find((a) => a.chave === chave && a.feito >= minimo) ?? null;
+}
 
 export type ProgressoDaMissao = {
   itens: ItemDoProgresso[];
@@ -1679,11 +1732,24 @@ export type ProgressoDaMissao = {
  */
 export function progressoDaMissao(
   missao: readonly { indicador: Indicador; minimo: number }[],
-  contagens: Readonly<Record<string, ResultadoDaContagem | undefined>>
+  contagens: Readonly<Record<string, ResultadoDaContagem | undefined>>,
+  aproveitadas: readonly TarefaAproveitada[] = []
 ): ProgressoDaMissao {
   const itens: ItemDoProgresso[] = missao
     .filter((m) => m.minimo > 0)
     .map(({ indicador, minimo }) => {
+      // 0412: aproveitada de outra certificação — não depende da contagem.
+      const a = aproveitadaPara(indicador.chave, minimo, aproveitadas);
+      if (a) {
+        return {
+          chave: indicador.chave,
+          rotulo: indicador.rotulo,
+          minimo,
+          feito: a.feito,
+          cumprido: true,
+          aproveitadoDe: a.role,
+        };
+      }
       const c = contagens[indicador.chave];
       if (!c) {
         return {
@@ -1757,6 +1823,11 @@ export type CandidatoDaUnidade = Candidato & {
    * Ausente antes da 0411 chegar ao banco — tratado como "não está".
    */
   turma_aberta?: string | null;
+  /**
+   * 0412 (AP172): tarefas desta função que dá para aproveitar de outra
+   * certificação da pessoa. Vazio/ausente = nada a aproveitar.
+   */
+  aproveitaveis?: TarefaAproveitada[];
 };
 
 /** 0411: a pessoa já está numa turma aberta nesta função (não entra de novo). */

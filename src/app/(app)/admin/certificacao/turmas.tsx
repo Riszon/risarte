@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import {
   ESTADO_ROTULO,
+  INDICADORES,
   POLITICAS_DE_ACESSO,
   POLITICA_AJUDA,
   POLITICA_ROTULO,
@@ -177,6 +178,57 @@ function SeletorDeUnidades({
 }
 
 /**
+ * APROVEITAR TAREFAS DE OUTRA CERTIFICAÇÃO (0412, AP172) — a escolha do Admin,
+ * pessoa por pessoa (D1). "Missão completa" é o padrão; "só as tarefas
+ * diferentes" dispensa as que a pessoa já cumpriu numa certificação que exigiu
+ * pelo menos o mesmo número (D2, a conta é do banco).
+ */
+function OpcaoDeAproveitamento({
+  candidato,
+  reduzida,
+  mudar,
+}: {
+  candidato: CandidatoDaUnidade;
+  reduzida: boolean;
+  mudar: (sim: boolean) => void;
+}) {
+  const itens = candidato.aproveitaveis ?? [];
+  const deOnde = [...new Set(itens.map((i) => ROLE_LABELS[i.role] ?? i.role))].join(", ");
+  const nome = (chave: string) => INDICADORES.find((i) => i.chave === chave)?.rotulo ?? chave;
+  const grupo = `aproveitar-${chaveDaConvocacao(candidato)}`;
+  return (
+    <div className="mb-1 ml-8 space-y-1 rounded-md border border-dashed border-primary/40 p-2 text-xs">
+      <p className="text-muted-foreground">
+        Já certificado em {deOnde}: {itens.length} tarefa(s) em comum (
+        {itens.map((i) => nome(i.chave)).join(", ")}).
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <input
+            type="radio"
+            name={grupo}
+            checked={!reduzida}
+            onChange={() => mudar(false)}
+            className="size-3.5 accent-primary"
+          />
+          Missão completa
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <input
+            type="radio"
+            name={grupo}
+            checked={reduzida}
+            onChange={() => mudar(true)}
+            className="size-3.5 accent-primary"
+          />
+          Só as tarefas diferentes
+        </label>
+      </div>
+    </div>
+  );
+}
+
+/**
  * ABRIR UMA TURMA — escolher as unidades, o tipo, e CONFERIR a lista.
  *
  * ⚠️ A prévia não é enfeite. Convocar é um ato que a equipe inteira sente:
@@ -201,6 +253,9 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
     lista: CandidatoDaUnidade[];
   } | null>(null);
   const [fora, setFora] = useState<Set<string>>(new Set());
+  // 0412 (AP172): quem o Admin marcou como "só as tarefas diferentes".
+  // O padrão é a missão completa (decisão D1).
+  const [reduzidos, setReduzidos] = useState<Set<string>>(new Set());
   const [politica, setPolitica] = useState<PoliticaDeAcesso>("mantem");
   const [prazo, setPrazo] = useState("");
   const [nota, setNota] = useState("");
@@ -260,7 +315,13 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
     e.preventDefault();
     const fd = new FormData();
     for (const id of escolhidas) fd.append("clinic_ids", id);
-    for (const c of convocados) fd.append("convocados", chaveDaConvocacao(c));
+    for (const c of convocados) {
+      fd.append("convocados", chaveDaConvocacao(c));
+      // Só quem tem o que aproveitar NESTA prévia (novatos, D3).
+      if (tipo === "novatos" && (c.aproveitaveis?.length ?? 0) > 0 && reduzidos.has(chaveDaConvocacao(c))) {
+        fd.append("reduzidos", chaveDaConvocacao(c));
+      }
+    }
     fd.set("kind", tipo);
     fd.set("note", nota);
     fd.set("access_policy", tipo === "reciclagem" ? politica : "mantem");
@@ -273,6 +334,7 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
         toast.success("Turma aberta. As pessoas já veem a convocação no Início.");
         setEscolhidas(new Set());
         setFora(new Set());
+        setReduzidos(new Set());
         setPrevia(null);
         setNota("");
         router.refresh();
@@ -486,8 +548,8 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
                                   );
                                 }
                                 return (
+                                  <div key={chave}>
                                   <label
-                                    key={chave}
                                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/40 has-[:checked]:bg-accent/60"
                                   >
                                     <input
@@ -510,6 +572,19 @@ function AbrirTurma({ unidades }: { unidades: UnidadeParaTurma[] }) {
                                       </span>
                                     )}
                                   </label>
+                                  {(c.aproveitaveis?.length ?? 0) > 0 && !fora.has(chave) && (
+                                    <OpcaoDeAproveitamento
+                                      candidato={c}
+                                      reduzida={reduzidos.has(chave)}
+                                      mudar={(sim) => {
+                                        const novo = new Set(reduzidos);
+                                        if (sim) novo.add(chave);
+                                        else novo.delete(chave);
+                                        setReduzidos(novo);
+                                      }}
+                                    />
+                                  )}
+                                  </div>
                                 );
                               })}
                             </div>

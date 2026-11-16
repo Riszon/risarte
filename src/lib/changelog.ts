@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.459.0",
+    data: "2026-11-16",
+    migracao: "0412",
+    titulo: "Certificação: aproveitar as tarefas de outra certificação",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Ao abrir uma turma de novatos, quem já é certificado em outra função aparece com as tarefas em comum, e o Admin escolhe para cada pessoa: missão completa ou só as tarefas diferentes. A tarefa só é aproveitada quando a outra certificação exigiu pelo menos o mesmo número. Na missão da pessoa, ela já aparece cumprida, com \"Aproveitada da certificação de …\".",
+        papeis: "todos",
+        manual: "⚠️ A missão só começa quando você aceita",
+      },
+    ],
+  },
+  {
     versao: "0.458.0",
     data: "2026-11-16",
     migracao: "0411",

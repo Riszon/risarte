@@ -400,6 +400,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/11/2026 (AP172, certificação) — PC Administrador (core 0.458.0 → 0.459.0, migração 0412)**
+
+- **Aproveitar as tarefas de outra certificação** (bloco 0.459.0 no ESTADO).
+  ⚠️ Aproveitável = `_training_reusable_items` (retrato do certificado);
+  congelado em `reused_items`. ⚠️ `open_training_campaign` tem 8 parâmetros
+  (`p_reduced`); ao recriar, partir da 0412. ⚠️ Quem mede matrícula passa
+  `aproveitadas: lerAproveitadas(reused_items)`.
+- ✅ 0412 no treino (ensaio 10/10, desfeito). ⏳ Produção: o dono roda a 0412
+  ANTES do push (o app lê `reused_items` no Início).
+
 **16/11/2026 (relato OC-00181) — PC Administrador (core 0.457.0 → 0.458.0, migração 0411; worktree `wt-oc181`)**
 
 - Bloco 0.458.0 no ESTADO. ⚠️ **Ao recriar `consume_attendance_kit`, levar

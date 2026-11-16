@@ -13,7 +13,7 @@ import { resolveSla, type SlaSettingRow } from "@/lib/sla";
 import { contarEtapasDaCompra } from "./compras/trilha-dados";
 import { contagemDaTela } from "@/lib/contagem";
 import { startOfTodayInBrazil } from "@/lib/dates";
-import { resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certificacao";
+import { lerAproveitadas, resumoDaMissao, type MetaDoTreino, type Medicao } from "@/lib/certificacao";
 import { guardarProgresso, medirMatricula, registrarSeCumprida } from "@/lib/certificacao-servidor";
 import type { MissaoNaTela } from "@/components/missao-de-certificacao";
 import { selosDeCertificacao, type SeloDeCertificacao } from "@/lib/conquistas";
@@ -574,7 +574,7 @@ export async function missoesAbertas(
   const { data, error } = await supabase
     .from("training_enrollments")
     .select(
-      "id, role, status, started_at, access_suspended_at, approval_status, clinic_id, training_campaigns!inner(status, access_policy, deadline, kind)"
+      "id, role, status, started_at, access_suspended_at, approval_status, clinic_id, reused_items, training_campaigns!inner(status, access_policy, deadline, kind)"
     )
     .eq("user_id", userId)
     // 0281: a concluída também aparece enquanto a turma está aberta — é o
@@ -639,7 +639,13 @@ export async function missoesAbertas(
     // abertura do Início para devolver uma resposta que já se sabe qual é.
     const medicao: Medicao | null =
       d.status === "em_andamento" && startedAt
-        ? await medirMatricula({ email, role: papel, started_at: startedAt, metas: metasDoPapel })
+        ? await medirMatricula({
+            email,
+            role: papel,
+            started_at: startedAt,
+            metas: metasDoPapel,
+            aproveitadas: lerAproveitadas(d.reused_items),
+          })
         : null;
 
     // ⚠️ 0281: MEDIU E CUMPRIU → REGISTRA. É aqui que a missão vira certificado

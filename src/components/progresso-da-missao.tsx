@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleAlert } from "lucide-react";
 import type { Medicao } from "@/lib/certificacao";
+import { ROLE_LABELS } from "@/lib/roles";
 
 /**
  * O PROGRESSO DA MISSÃO — o mesmo desenho no cartão da pessoa e na lista do
@@ -48,7 +49,12 @@ export function ProgressoDaMissao({
           {itens.map((i) => (
             <span
               key={i.chave}
-              title={i.motivo ?? i.rotulo}
+              title={
+                i.motivo ??
+                (i.aproveitadoDe
+                  ? `${i.rotulo} — aproveitada da certificação de ${ROLE_LABELS[i.aproveitadoDe] ?? i.aproveitadoDe}`
+                  : i.rotulo)
+              }
               className={
                 i.feito === null
                   ? "rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400"
@@ -114,6 +120,11 @@ export function ProgressoDaMissao({
               </div>
               {i.motivo && (
                 <p className="text-xs text-amber-700 dark:text-amber-400">{i.motivo}</p>
+              )}
+              {i.aproveitadoDe && (
+                <p className="text-xs text-muted-foreground">
+                  Aproveitada da certificação de {ROLE_LABELS[i.aproveitadoDe] ?? i.aproveitadoDe}
+                </p>
               )}
             </li>
           );
