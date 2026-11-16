@@ -3759,7 +3759,7 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
   - `test:indica` 246/0.
 
 
-### 19.34 Entrega 5 — reemissão da cobrança externa: PLANO (16/11/2026; migração 4019; AGUARDA APROVAÇÃO)
+### 19.34 Entrega 5 — reemissão da cobrança externa: PLANO (16/11/2026; migração 4019; APROVADO com ajustes em 16/11/2026 — 19.34.2 a 19.34.8; o parcelamento e a assinatura deixam de ser só recusados: 19.34.4 e 19.34.5; a construção espera a decisão da prioridade, 19.34.9)
 
 **Como é hoje (4004, D17):**
 - **Marcar:** "Marcar como cobrada fora" cria em `charges` uma cobrança `externa`, só com uma nota livre ("Onde e como foi cobrada"). O riSZon **não sabe qual é** a cobrança no Asaas.
@@ -3857,3 +3857,132 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
   - se (b) for aprovado, também a adoção.
   - Pagador sem contato: **nenhuma mensagem enviada**.
 - **Levantamento na produção, só leitura:** `docs/asaas/levantamento-cobrancas-externas.sql` (quantas externas abertas por unidade, a mais antiga, quantas vencidas).
+
+#### 19.34.1 Levantamento na produção (16/11/2026)
+
+- `docs/asaas/levantamento-cobrancas-externas.sql`, rodado pelo dono no SQL Editor da produção: **"Success. No rows returned"**. Nenhuma parcela está marcada como cobrada fora.
+- ⚠️ **Isso não mede as cobranças antigas que existem no Asaas das unidades**, só as que foram marcadas no riSZon. O uso real começa quando as unidades forem ligadas, na ASA7.
+
+#### 19.34.2 Decisões do dono (16/11/2026)
+
+A leitura "cobrada por fora, ainda não paga" está certa. A que já foi paga continua com a baixa à mão.
+
+1. **(a)** Cancelar a cobrança antiga no Asaas e emitir uma nova, com split, multa, juros e desconto pela regra. A adoção (b) fica fora.
+2. **(a)** O caminho **"Não está no Asaas"**, com a confirmação obrigatória registrada na auditoria.
+3. **Com ajuste:**
+   - **Aceita**, com uma segunda confirmação, só quando o CPF da cobrança antiga é o do **próprio paciente** ou o de um **responsável financeiro da ficha dele** (`client_guardians`).
+   - Qualquer outro CPF é **recusado**, e a tela explica por quê.
+   - A cobrança nova sai **sempre no nome do pagador atual do riSZon**.
+4. **(a)** Se a antiga for paga depois de cancelada, o riSZon reconhece o aviso e **não dá baixa sozinho**. Avisa o **Gerente** e o **Financeiro da Franqueadora**.
+5. **(a)** A parcela vencida segue a 14.3: a nova data vai de hoje até 7 dias. Acima disso, o caminho é a renegociação.
+
+#### 19.34.3 O que o Asaas permite: prova no sandbox (16/11/2026)
+
+Sondagem na conta sandbox de Londrina, com um cliente sem contato e os avisos desligados (nada enviado). Tudo o que ela criou foi apagado no fim.
+
+**Parcelamento (carnê) de 4 boletos, criado pela API sem a referência do riSZon, como se fosse pelo painel:**
+
+| Teste | Resultado |
+|---|---|
+| Apagar **uma parcela pendente** (`DELETE /payments/{id}`) | ✅ Aceito. Só ela fica apagada; as outras continuam pendentes e pagáveis. |
+| Apagar a parcela **paga** | ❌ Recusado: "Só é possível remover cobranças pendentes ou vencidas." |
+| Apagar o **parcelamento inteiro** (`DELETE /installments/{id}`) com uma parcela paga | ❌ Recusado: "Somente é possível remover parcelamentos com cobranças pendentes ou vencidas." |
+| **Restaurar** a parcela apagada (`POST /payments/{id}/restore`) | ✅ Aceito. Ela volta a ser **pendente e pagável**. |
+
+**Assinatura mensal de boleto:**
+
+| Teste | Resultado |
+|---|---|
+| Apagar **só a cobrança** do mês | ✅ Aceito, mas a assinatura **continua ativa** e gera a do mês seguinte. |
+| Apagar a **assinatura** (`DELETE /subscriptions/{id}`) | ✅ Aceito. As cobranças pendentes dela também ficam apagadas. |
+
+**O que isso muda no plano:**
+- **Carnê:** o caminho seguro é apagar **parcela por parcela**, só as pendentes ou vencidas. Apagar o parcelamento inteiro falha assim que uma parcela foi paga, que é o caso comum.
+- **Restaurar:** qualquer um pode restaurar no painel a cobrança apagada. O riSZon passa a reconhecer o código gravado também no aviso de **restaurada**: avisa o Gerente e o Financeiro da Franqueadora ("a cobrança antiga voltou a valer: apague-a de novo no Asaas").
+- **Assinatura:** apagar só a cobrança do mês não resolve. É preciso apagar a assinatura.
+
+#### 19.34.4 Ponto 1: o carnê antigo do Asaas entra na 4019
+
+É o caso mais comum. A cobrança avulsa vira um carnê de uma parcela só, e as duas usam o mesmo caminho.
+
+1. **Achar.** A busca pelo CPF (19.34) mostra os **parcelamentos** do pagador, com quantas parcelas estão pagas, pendentes e vencidas. O usuário também pode colar o código de qualquer parcela, e o riSZon acha o carnê inteiro (`GET /installments/{id}/payments`).
+2. **Casar.**
+   - O riSZon propõe um **casamento**: cada parcela pendente ou vencida do Asaas com uma parcela **em aberto** do riSZon do mesmo cliente, pela ordem do vencimento. Mostra lado a lado o valor e o vencimento de cada uma, com a diferença destacada.
+   - O usuário confirma ou troca o par.
+   - As parcelas **pagas** no Asaas aparecem só para conferência. A baixa delas no riSZon continua à mão.
+3. **Nada fica pagável.** **Toda** parcela pendente ou vencida do carnê precisa ter um par **ou** ser marcada "**apagar sem parcela no riSZon**" (só Gerente, Financeiro e Admin Master, com motivo). Sem isso, a operação é recusada.
+4. **Executar,** uma parcela por vez:
+   - o riSZon grava os códigos e trava;
+   - apaga no Asaas as pendentes, uma a uma;
+   - fecha as externas;
+   - emite as novas. Cada parcela vai pelo seu caminho: a vencida pela 14.3, a futura pelo caminho normal.
+5. **Falha no meio.** Se uma parcela foi paga no meio da operação (o Asaas recusa apagar), o riSZon **para nela**:
+   - as já apagadas seguem, com a cobrança nova;
+   - a paga fica marcada para baixa à mão;
+   - as restantes continuam externas, com o motivo na tela.
+   - Nunca ficam duas vivas na mesma parcela.
+
+**Tamanho:** cabe na 4019. A avulsa é o mesmo caminho com uma parcela.
+
+#### 19.34.5 Ponto 2: a assinatura antiga do Asaas — segunda etapa (4019b)
+
+A assinatura do Asaas cobra a **mensalidade** (PPR+ ou Ortodontia), e não a parcela da venda. Por isso não passa pela marcação de cobrança externa. O risco real é na hora de **ligar as mensalidades** (4018): a mensalidade do riSZon e a assinatura antiga do painel cobrariam o mesmo mês **em dobro**.
+
+- **Até a 4019b (agora, sem construir nada no banco):**
+  - a tela de ligar as mensalidades (Financeiro › Cobranças automáticas) ganha o aviso: "Antes de ligar, cancele no painel do Asaas as assinaturas antigas dos clientes que entram";
+  - o "Avisei os clientes" passa a dizer também "e cancelei as assinaturas antigas".
+- **Na 4019b:**
+  - ao ligar, o riSZon lista as **assinaturas ativas** da conta da unidade (`GET /subscriptions?status=ACTIVE`) e casa pelo CPF com os clientes que entram;
+  - mostra a lista e apaga as escolhidas, com a confirmação (Gerente, Financeiro e Admin Master). As cobranças pendentes delas caem junto;
+  - a que ficar ativa aparece no aviso. Sem confirmação, a mensalidade daquele cliente não liga.
+- **Recomendação:** a 4019b vem junto da ASA7, antes da primeira unidade ligar as mensalidades.
+
+#### 19.34.6 Ponto 3: a taxa da rede nas três situações já aprovadas
+
+A taxa é **uma por parcela recebida**, e a situação dela depende de **por onde o dinheiro entrou**:
+
+| Caminho | Taxa a reter pelo split | Retida | A cobrar da unidade |
+|---|---|---|---|
+| **Hoje,** externa paga à mão | — | — | ✅ |
+| **Trazida,** cobrança nova emitida e não paga | ✅ (prevista no split) | — | — |
+| **Trazida,** nova paga pelo Asaas com split | — | ✅ | — |
+| **Trazida,** antiga paga depois de cancelada (decisão 4): a nova é cancelada e a baixa é à mão | — (o split da nova nunca roda) | — | ✅ |
+| **"Não está no Asaas",** depois emitida e paga pelo Asaas | — | ✅ | — |
+
+- **Sem cobrar em dobro.** O ensaio prova, em cada caminho, que a soma de retida mais a cobrar da parcela é **uma taxa só**.
+- **Quebrando:** com `--quebrar=dobro`, a nova cancelada continua com a taxa retida, e o ensaio tem de reprovar.
+
+#### 19.34.7 Ponto 4: o aviso ao paciente
+
+- **Emissão:** a cobrança nova sai pelo caminho normal. O Asaas manda ao pagador o aviso de **cobrança criada**, com o boleto ou link novo, pela régua da unidade (4007).
+- **Depois da operação, a tela avisa quem está operando:**
+  - "O paciente vai receber o aviso do Asaas com o boleto novo. **O boleto antigo deixou de valer: oriente o paciente a descartá-lo.**"
+  - Se o pagador está com "Não receber avisos" ou sem e-mail e celular: "**Nenhum aviso vai sair.** Envie você o boleto novo."
+  - Os botões **Copiar link** e **Enviar pelo WhatsApp**.
+  - No carnê, um link só com **todos os boletos novos**, pela lista do 1B (`/boletos/`).
+- **Reenvio:** o responsável pelo reenvio é **quem fez a operação**. A auditoria guarda quem foi, quando e se o aviso do Asaas saiu ou não.
+
+#### 19.34.8 Ponto 5: quem pode
+
+| Ação | Recepcionista | Gerente | Financeiro (Franqueadora) | Admin Master |
+|---|---|---|---|---|
+| **Trazer para o riSZon** (achar, casar, apagar a antiga e emitir a nova) | ✅ | ✅ | ✅ | ✅ |
+| **Não está no Asaas** | — | ✅ | ✅ | ✅ |
+| **Aceitar outro pagador** (paciente ou responsável financeiro da ficha) | — | ✅ | ✅ | ✅ |
+| **Apagar parcela do carnê sem par no riSZon** | — | ✅ | ✅ | ✅ |
+
+**Como fica no sistema:**
+- duas permissões novas no Painel de permissões:
+  - `acao.cobranca.trazer_externa` (padrão nos quatro papéis);
+  - `acao.cobranca.externa_excecao` (padrão: Gerente, Financeiro e Admin Master);
+- o Recepcionista segue limitado à sua unidade.
+
+#### 19.34.9 Ponto 6: a prioridade (recomendação)
+
+- **Recomendo seguir antes para o distrato (4020) e as peças da exceção, e voltar à 4019 (com a 4019b) antes da ASA7.**
+- **Por quê:**
+  - o distrato é usado **o tempo todo**, mexe em dinheiro que volta e completa a exceção da 4017a;
+  - a reemissão é uma ferramenta de **migração**, para trazer carnês e cobranças antigas no dia em que cada unidade liga o Asaas.
+  - Antes da ASA7, um levantamento por unidade no Asaas (quantas cobranças e parcelamentos sem a referência do riSZon, só leitura, pela chave do Vault) mostra o tamanho real, e a 4019 pode ser ajustada a ele.
+- **O plano 19.34 fica aprovado e guardado.** Nada dele é construído até o dono decidir.
+- **Exceção:** o aviso das assinaturas na tela das mensalidades (19.34.5) é só texto e pode entrar já, no próximo pacote, se o dono quiser.
