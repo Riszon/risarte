@@ -407,7 +407,7 @@ Syncthing se comportarem de forma estranha.**
   `progressoDaImplantacao(passos, medidas)`**, medidas pela porta
   `medidasDaImplantacao` (1046); passo novo = medida nova na função E em
   `medir`. ⚠️ Concluir à mão exige motivo.
-- ⏳ 1046 só no treino.
+- ✅ 1046 nos dois bancos (produção pelo dono em 16/11/2026; conferido de fora).
 
 **15/11/2026 (vagas no banco) — PC Administrador (Empresarial 0.104.0 → 0.105.0, migração 1045)**
 

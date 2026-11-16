@@ -78,7 +78,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - Ensaio no treino 15/15 (`scripts/empresarial-ensaio-1046.mjs`, desfeito) e
 >   quebrando 2 vezes; régua `implantacao-medida.test.ts` (14), provada
 >   quebrando. Manual do Empresarial 7.3. **Não visto na tela.**
-> - ⏳ **1046 só no treino**; o dono roda na produção antes do push.
+> - ✅ **1046 nos dois bancos** (produção pelo dono em 16/11/2026, conferência
+>   true·true·false; conferido de fora: sem login recusa com "permission
+>   denied", a de controle responde "não encontrada", a chave de serviço lê
+>   vazio — não é pessoa, não enxerga lead).
 
 > ## 💼 EMPRESARIAL 0.105.0 / 1045 — AS VAGAS DO CONTRATO CONFERIDAS PELO BANCO (15/11/2026)
 >
