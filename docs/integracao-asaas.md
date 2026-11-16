@@ -3999,3 +3999,206 @@ A taxa é **uma por parcela recebida**, e a situação dela depende de **por ond
 - **Na lista da ASA7:**
   - o **levantamento só de leitura no Asaas de cada unidade** (cobranças, parcelamentos e assinaturas sem a referência do riSZon), antes de ligar a unidade;
   - a **4019 e a 4019b ajustadas** ao tamanho real que o levantamento mostrar.
+
+### 19.35 Entrega 6 — distrato com checklist: PLANO (16/11/2026; migração 4020; AGUARDA APROVAÇÃO)
+
+#### 19.35.1 Como é hoje
+
+**Contrato** (`open_plan_cancellation` e `apply_plan_cancellation`, última versão na 4017a):
+- O Gerente ou o Admin Master abre o cancelamento. O acerto é:
+  - feito = sessões feitas a preço de tabela × desconto;
+  - multa = pendente × % do contrato;
+  - devido = feito + multa;
+  - diferença = devido − pago.
+- O termo é assinado. Ao aplicar:
+  - o riSZon cancela no Asaas os boletos vivos (`comBoletosCancelados`, com a confirmação);
+  - cancela só as parcelas **em aberto** (a **parcial** fica para trás);
+  - se o cliente deve, cria uma parcela; se a unidade devolve, cria uma conta a pagar 1.9.03, "definir a forma de devolução". **Nenhuma devolução sai pelo Asaas.**
+- **Não existe checklist.** Nada obriga a conferir as pendências antes de efetivar (D12).
+
+**Venda direta** (`cancel_direct_sale`):
+- Recepção, Gerente ou Admin cancelam.
+- O que já foi pago **não tem acerto, nem conta a pagar, nem devolução**.
+- O cancelamento também desfaz as sessões **já feitas**.
+
+**Acordo de renegociação:**
+- O acordo de uma venda só tem a exceção (4017a).
+- O acordo que **junta várias vendas** é recusado (`MULTI_SALE`).
+- A venda direta com parcela do acordo paga também é recusada (`DIRECT_SALE_PAID`).
+
+**Devolução:**
+- Só existem o estorno **inteiro** pelo Asaas (cobrança avulsa e parcelamento do cartão) e a **devolução por Pix da conta da unidade** (4014, com o termo e a autorização do Financeiro).
+- O aviso de estorno parcial (`PAYMENT_PARTIALLY_REFUNDED`) só manda "tratar à mão".
+
+**Indica +Risos:** o cancelamento só estorna os pontos **na carência** (indicação "fechou"). Depois de "convertida" (1ª parcela paga), nada volta.
+
+**Riso+ Social:** os pontos nascem da mensalidade paga do PPR+. O estorno de uma mensalidade pelo Asaas deixa os pontos, e a unidade desfaz à mão.
+
+**Lista dos boletos (forma 2):** cancelar um boleto não revoga a lista. O Gerente é avisado para reenviar.
+
+#### 19.35.2 O que o Asaas permite no estorno parcial: prova no sandbox (16/11/2026)
+
+Sondagem na conta sandbox de Londrina, com um cliente sem contato (nada enviado) e o cartão de teste do sandbox.
+
+| Meio | Estorno parcial | Resultado |
+|---|---|---|
+| **Pix** | `POST /payments/{id}/refund` com `value` | ✅ Aceito. Dois estornos parciais seguidos (R$ 5 + R$ 5 de R$ 20) também. Cada um fica **"aguardando a autorização"** (`AWAITING_CRITICAL_ACTION_AUTHORIZATION`): o titular da conta autoriza no painel do Asaas, como no estorno de hoje. O riSZon nunca pede o código. |
+| **Boleto** | `POST /payments/{id}/refund` | ❌ "Somente é possível estornar cobranças cuja a forma de pagamento seja cartão de crédito ou Pix." O estorno do boleto (`bankSlip/refund`) é pelo link do pagador, e exige celular válido. |
+| **Cartão parcelado** | `POST /installments/{id}/refund` com `value` | ⏳ No dia da aprovação: "Esta transação só pode ser estornada parcialmente **no próximo dia**." |
+| **Cartão parcelado, uma parcela só** | `POST /payments/{id}/refund` | ❌ "Não é possível estornar individualmente esta cobrança." O parcial é sempre **do parcelamento**. |
+| **Cartão à vista** | — | Não provado: o sandbox recusou o cartão de teste nas três tentativas (é o problema já registrado na 19.23: valores pequenos são recusados, e desta vez nem R$ 150 passou). |
+
+**Consequências:**
+- O estorno parcial pelo Asaas vale para **Pix e cartão**.
+- O **boleto**, o dinheiro, a maquininha e o depósito continuam com a **devolução por Pix da conta da unidade** (4014).
+- No cartão parcelado, o estorno parcial só vale **a partir do dia seguinte à aprovação**.
+- **Falta provar antes de construir** (com o "pode", porque a autorização é sua, no painel do sandbox):
+  - o parcial do parcelamento no dia seguinte: em quais parcelas o Asaas desconta e o que acontece com o split;
+  - o parcial do Pix depois da autorização: se o Asaas devolve parte do split à franqueadora (decide a taxa, 19.35.6).
+- Não contradiz a especificação (a 19.19 já dizia que o Asaas aceita o parcial do parcelamento), mas acrescenta a regra do "dia seguinte".
+
+#### 19.35.3 O distrato não é automático: o Gerente é avisado e decide
+
+- **Nenhum contrato é distratado sozinho.**
+- **O que gera o aviso ao Gerente** (decisão 1):
+  - o **pedido de distrato** registrado na ficha por qualquer papel que atende (Recepção, Gerente, Comercial), com o motivo;
+  - o **contrato em atraso** há 60 dias ou mais (pela regra do selo), com o aviso repetido a cada 7 dias, como o do PPR+ aos 90 dias.
+- **O Gerente decide:**
+  - **Abrir o distrato**;
+  - ou **Manter o contrato**, com o motivo. O aviso do atraso para até o próximo vencimento perdido.
+- **Quem abre:** Gerente da unidade ou Admin Master, como hoje (matriz 9.3). O Financeiro da Franqueadora acompanha todos, sem concluir.
+
+#### 19.35.4 A checklist (D12)
+
+**Abrir o distrato não cancela nada.**
+- As cobranças continuam vivas.
+- O que for pago enquanto ele está aberto entra no acerto, que é recalculado na hora de efetivar.
+
+**Cada item fica "Feito" ou "Não se aplica, com motivo"** (o modelo do fechamento das dívidas, 0408):
+
+| # | Item | O que a tela mostra |
+|---|---|---|
+| 1 | **Pendências do tratamento** | Consultas futuras (canceladas ao efetivar), procedimentos em andamento, peças em laboratório |
+| 2 | **Feitos × pagos** | O acerto, com as sessões feitas, o pago (incluindo a parte da venda nos acordos, 19.35.5) e a diferença |
+| 3 | **Multa contratual** | O % do contrato e o valor. O Gerente não muda o %; a dispensa da multa é a do item 9 |
+| 4 | **Acordos de renegociação** | Cada acordo da venda: a parte dela, o pago, o aberto e o que acontece com o acordo |
+| 5 | **Cobranças no Asaas** | Os boletos vivos, os links de cartão e as listas da forma 2 que serão cancelados, para confirmar |
+| 6 | **Devolução ao paciente** | O valor, por onde sai (19.35.6) e a autorização do Financeiro da Franqueadora |
+| 7 | **Taxa da rede** | O que continua devido e em qual das três situações. Só informa: a dispensa é à mão, do Financeiro da Franqueadora ou do Admin Master |
+| 8 | **Pontos** | Indica +Risos e Riso+ Social que voltam (19.35.8) |
+| 9 | **Termo de distrato assinado** | O termo com o acerto (o fluxo de assinatura que já existe, anexado à venda) |
+
+**Efetivar:** só com os 9 itens resolvidos e o termo assinado. **Antes disso, nada é cancelado no Asaas** (D12).
+
+#### 19.35.5 O acordo de renegociação no acerto
+
+- **A parte de cada venda:**
+  - é a proporção do **principal das parcelas de origem** daquela venda no acordo (`payment_renegotiation_sources`);
+  - na **cadeia** (acordo de acordo), a proporção se multiplica a cada elo.
+- **O pago no acordo:**
+  - o que o cliente pagou nas parcelas do acordo entra no "pago" de cada venda, **na mesma proporção**;
+  - é o que a 4017a já faz para o acordo de uma venda só, agora para todos.
+- **O acordo de várias vendas** (decisão 2):
+  - **(a) reduzir.** As parcelas em aberto do acordo perdem a parte da venda distratada, na proporção, com os centavos na última. Os boletos vivos delas são cancelados e reemitidos com o valor novo, e o acordo continua para as outras vendas. A redução é a favor do pagador, então não pede assinatura nova: o pagador recebe o aviso do Asaas com os boletos novos e, na forma 2, a lista nova. Recomendado.
+  - **(b) refazer.** O acordo inteiro é cancelado e um novo acordo das outras vendas sai, com assinatura pela ZapSign.
+- **O acordo de uma venda só:** as parcelas em aberto caem, como na exceção da 4017a.
+- **O acordo que ainda não vale:** é cancelado antes, sem a franqueadora (4017a).
+- **Com o distrato, as recusas `MULTI_SALE` e `DIRECT_SALE_PAID` deixam de existir:** esses casos passam a ir pelo distrato, e a exceção continua para o resto.
+
+#### 19.35.6 A devolução ao paciente: estorno parcial pelo Asaas
+
+O valor a devolver é o resultado do acerto, e sai assim (decisão 3):
+- **(a) Asaas primeiro, para as partes pagas por Pix ou cartão do Asaas:**
+  - o estorno parcial sai nos pagamentos desses meios, **do mais recente para o mais antigo**, até o valor;
+  - no cartão parcelado, sai pelo parcelamento e só a partir do dia seguinte à aprovação.
+  - **O que faltar** (boleto, dinheiro, maquininha, depósito) vai pela **devolução por Pix da conta da unidade** (4014), com o termo do distrato já anexado.
+  - Recomendado.
+- **(b)** Sempre a devolução por Pix da conta da unidade.
+- **(c)** O Gerente escolhe pagamento a pagamento.
+
+**Em qualquer caso:**
+- **Quem autoriza:** o Gerente pede, e o Financeiro da Franqueadora ou o Admin Master autorizam (como na 4014). No Asaas, o estorno ainda passa pela autorização do titular da conta, no painel.
+- **Como fica registrado:** a devolução fica como **devolução ao paciente**, uma conta a pagar paga e ligada à venda. O meio é "estorno pelo Asaas" ou "Pix da unidade".
+  - **O recebimento original não é desfeito.** A parcela continua paga, e por isso a taxa sobre o que entrou continua devida.
+- **O aviso de estorno parcial do Asaas passa a ser tratado:** grava o estorno na cobrança e fecha a devolução pedida. O estorno parcial feito direto no painel continua com o aviso "tratar à mão".
+
+#### 19.35.7 A taxa da rede: a regra travada
+
+- **A taxa continua devida no distrato e no estorno** (D13), sobre tudo o que o cliente pagou.
+- **Só o Financeiro da Franqueadora ou o Admin Master dispensam, à mão, com o motivo,** na auditoria. A porta de hoje (`network_fee_waive_after_refund`) passa a aceitar também a devolução do distrato.
+- **Nas três situações:**
+  - **a reter pelo split** (parcela em aberto com cobrança viva): a parcela é cancelada, e a linha "a reter" cai junto, porque nada foi recebido;
+  - **retida:** continua retida. Se o Asaas devolver parte do split no estorno parcial (a provar, 19.35.2), essa parte vira **a cobrar da unidade**;
+  - **a cobrar da unidade:** continua a cobrar.
+- **O ensaio prova** que a soma de retida mais a cobrar de cada parcela recebida é **uma taxa só**, antes e depois do distrato.
+
+#### 19.35.8 Os pontos
+
+- **Indica +Risos** (decisão 5):
+  - **(a)** No distrato da venda indicada, os pontos ainda **em carência** são estornados (como hoje). Os já **disponíveis** também são estornados. Se o embaixador já resgatou, fica um **lançamento negativo**, descontado dos próximos pontos, e o Financeiro é avisado. Recomendado.
+  - **(b)** Como hoje: só os da carência. Os disponíveis ficam, e o caso aparece para o Financeiro.
+- **Riso+ Social:** o estorno de uma mensalidade do PPR+ (pelo Asaas ou no distrato) passa a tirar os pontos dela sozinho, pelo mesmo caminho de quando a baixa é desfeita (`ppr_mark_charge_paid`).
+- **`npm run test:indica`** roda antes de publicar. O ensaio prova os dois.
+
+#### 19.35.9 A venda direta
+
+Decisão 4:
+- **(a)** Venda direta **sem nada pago** continua com o cancelamento simples, como hoje. **Com algo pago** (inclusive parcela do acordo), passa pelo distrato:
+  - o acerto é feito × pago, **sem multa**, porque não há contrato com multa;
+  - as sessões **feitas continuam feitas** (hoje o cancelamento as desfaz);
+  - a devolução segue a 19.35.6.
+  - Recomendado.
+- **(b)** Igual, com a multa de uma tabela da rede.
+
+#### 19.35.10 Os boletos em aberto e a forma 2
+
+- **Ao efetivar, o riSZon cancela no Asaas, nesta ordem e com a confirmação do item 5:**
+  - os boletos vivos das parcelas **em aberto e parciais** da venda;
+  - os boletos das parcelas do acordo que caem (no acordo de várias vendas, os que são reemitidos com o valor menor);
+  - o cartão parcelado ainda não aprovado.
+- **Parcela parcial** (decisão 6): o saldo dela cai com as outras, e o que já foi pago entra no acerto.
+- **Forma 2:**
+  - a lista da venda é **revogada**, e a página `/boletos/` passa a mostrar "Cancelado — não pague este boleto" em cada um;
+  - se o acordo de várias vendas continua, sai uma **lista nova** com os boletos reemitidos, e o Gerente é avisado para reenviar.
+- **Falha no meio:** vale a regra da 1B. A operação para, os boletos já cancelados ficam registrados (`boleto_op_failures`), e o distrato não é efetivado pela metade.
+- **Boleto cancelado e pago mesmo assim:** vale o alerta da 4015.
+
+#### 19.35.11 Decisões para o dono
+
+1. **O aviso ao Gerente:**
+   - (a) pedido registrado + contrato em atraso há 60 dias, repetido a cada 7 dias (recomendado);
+   - (b) só o pedido registrado.
+2. **O acordo de várias vendas:**
+   - (a) reduzir as parcelas abertas na proporção e reemitir (recomendado);
+   - (b) cancelar e refazer o acordo das outras vendas com assinatura.
+3. **A devolução:**
+   - (a) estorno parcial pelo Asaas primeiro, o resto por Pix da unidade (recomendado);
+   - (b) sempre Pix da unidade;
+   - (c) o Gerente escolhe por pagamento.
+4. **A venda direta com algo pago:**
+   - (a) distrato com acerto, sem multa, e as sessões feitas ficam feitas (recomendado);
+   - (b) com a multa de uma tabela.
+5. **Indica +Risos depois de convertida:**
+   - (a) estorna também os disponíveis, com o lançamento negativo se já resgatou (recomendado);
+   - (b) só os da carência, como hoje.
+6. **A parcela parcial:**
+   - (a) o saldo cai com as outras (recomendado);
+   - (b) fica em aberto para o Gerente decidir.
+7. **O tamanho:**
+   - (a) em duas partes (recomendado):
+     - **4020:** aviso, checklist, acerto com os acordos, venda direta, boletos e forma 2, pontos; a devolução por Pix da unidade;
+     - **4020a:** o estorno parcial pelo Asaas, com o aviso tratado, depois das duas provas do 19.35.2;
+   - (b) tudo numa entrega só.
+
+#### 19.35.12 Provas
+
+- **Ensaio no treino**, provado quebrando:
+  - `--quebrar=antes`: cancela no Asaas antes da checklist concluída;
+  - `--quebrar=proporcao`: o acordo de várias vendas sem a proporção;
+  - `--quebrar=taxa`: a taxa some na devolução;
+  - `--quebrar=pontos`: os pontos ficam;
+  - `--quebrar=lista`: a lista continua valendo.
+- **Sandbox** (pagador sem contato, nada enviado):
+  - o distrato com boletos vivos e com a forma 2;
+  - na 4020a, o estorno parcial de Pix e de cartão parcelado, com o "pode" para a autorização no painel.
+- **`test:indica`**, e os ensaios anteriores por cima.
