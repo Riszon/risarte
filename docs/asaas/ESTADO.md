@@ -43,9 +43,11 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   nos três casos (tarifa fixa, percentual com mínimo e máximo, boleto pago pelo
   QR Code PIX) e a diferença máxima por meio de pagamento **antes de implementar**.
 - **ASA4B:** Pix Automático com jornada sem pagamento inicial e split desde a
-  primeira parcela. Cartão recorrente **em aberto**: mandar o objeto
-  `creditCard` faria o cartão passar pelo servidor do riSZon, o que é proibido.
-- **Respostas do Asaas (16/11/2026, 19.37):** respondidas as perguntas 1, 5, 13, 14 e 15; em parte, a 6 e a 10; técnicas abertas: 2, 3, 4, 7, 8, 9, 11 e 12; com o comercial: 16 a 20 e a tarifa do débito. As propostas (saldo antes do estorno, recusa, débito desabilitado, régua do estorno pendente) aguardam a aprovação do dono.
+  primeira parcela. Cartão recorrente pela **assinatura do Asaas**, com o token
+  lido na consulta da cobrança e o IP do paciente guardado na contratação (o
+  cartão nunca passa pelo riSZon; resposta do Asaas, 19.37). **Falta só a
+  tokenização habilitada nas contas**, com o comercial do Asaas.
+- **Respostas do Asaas (16/11/2026, 19.37):** respondidas as perguntas 1, 5, 13, 14 e 15; em parte, a 6 e a 10; técnicas abertas: 2, 3, 4, 7, 8, 9, 11 e 12; com o comercial: 16 a 20 e a tarifa do débito. **Propostas aprovadas (1a a 5a):** a conferência do saldo antes do estorno total, a recusa e a régua do estorno pendente entram na 4020a; a marca do débito desabilitado entra na ASA7. O arredondamento do split por parcela foi conferido: igual ao Asaas.
 - **ASA7:** decidir a lista de IPs autorizados (IP fixo da Vercel: US$ 100/mês
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
   **Na homologação (ASA7), provar também:** a recusa do cartão **pelo banco emissor**

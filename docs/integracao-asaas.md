@@ -457,7 +457,7 @@ Toda ação de cobrança grava autor, data e motivo na auditoria.
 | ASA2 — Webhooks e baixa | Rota por conta, idempotência, baixa pela função existente, fechamento da venda (D21), sinalização "em dia" ou "em atraso", aba Cobrança e comunicação; Painel de cobranças com a visão "A receber do Asaas" (16.8.1) | Pagamento simulado dá baixa, fecha a venda e atualiza a sinalização sem ação humana |
 | ASA3 — Split | Aba Taxas da franquia sobre `network_fees`; `split_recipients`, `charge_splits`; marca de retido na origem; teto de segurança; painel de repasses, mostrando por unidade quanto foi recebido com split e quanto por fora (dinheiro, maquininha, cobrança externa), e as dispensas do período (quitação por valor menor) com valor, autor e motivo. Antes de implementar: os cálculos da compensação da tarifa nos três casos e a diferença máxima por meio de pagamento, para aprovação (seção 13.2, item 1); "Repasses a receber" no Painel de repasses (16.8.2) | No prazo, o repasse liquidado é exatamente o percentual sobre o valor pago, nos três meios; formato da entrada confirmado; nenhuma conta a pagar em dobro |
 | ASA4 — Gatilhos de contrato | Emissão na assinatura; renegociação assinada no ZapSign; cartão parcelado; venda direta; mensalidades do PPR+ e da Ortodontia; reemissão de cobrança externa; distrato com checklist | Contrato de teste gera N cobranças corretas; distrato só cancela ao efetivar; `npm run test:indica` verde |
-| ASA4B — Recorrência | Pix Automático (jornada sem pagamento inicial, com split desde a primeira parcela) e cartão de crédito recorrente: autorização, token, cobrança mensal vinculada, falha e cancelamento. O cartão recorrente só entra quando o token puder ser obtido sem o cartão passar pelo riSZon (seção 13.2, item 3) | Autorização ativa gera débito no ciclo seguinte com split; recusa volta para o link |
+| ASA4B — Recorrência | Pix Automático (jornada sem pagamento inicial, com split desde a primeira parcela) e cartão de crédito recorrente: autorização, token, cobrança mensal vinculada, falha e cancelamento. O cartão recorrente vai pela assinatura do Asaas, com o token lido na consulta da cobrança depois que o paciente paga a fatura e o IP do paciente guardado na contratação: o cartão nunca passa pelo riSZon (resposta do Asaas, 19.37). **Falta só a tokenização habilitada nas contas, com o comercial do Asaas** | Autorização ativa gera débito no ciclo seguinte com split; recusa volta para o link |
 | ASA5 — Empresarial | Aba Empresarial sobre `split_rules`; implantação e mensalidade com split para a RisLife; emissão em lote; aposentar o cliente e a Edge Function antigos | Implantação e mensalidade de teste pagas com o repasse correto, sobre o valor pago |
 | ASA6 — Cobrança mensal e conciliação | Cobrança mensal a partir das contas a pagar de taxa e das taxas fixas; rotina de conciliação e painel | Fechamento de um mês de teste gera a cobrança certa por unidade, sem duplicar o razão |
 | ASA7 — Homologação e produção | Interruptor de produção, roteiro com o financeiro, monitor da fila, Copiar de outra unidade, teste real do split | Piloto de 30 dias sem divergência aberta; Central de cada unidade pronta |
@@ -4448,7 +4448,7 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 - **Conferido de fora:** as 11 portas novas barram o anônimo (401), e as tabelas novas não mostram nada a ele.
 - **Junto com a 4020 foram:** a correção do 1º vencimento da renegociação e o aviso das assinaturas antigas.
 
-### 19.37 Respostas do Asaas à primeira lista (Isadora, equipe de integrações, 16/11/2026) — PROPOSTAS AGUARDAM APROVAÇÃO
+### 19.37 Respostas do Asaas à primeira lista (Isadora, equipe de integrações, 16/11/2026) — APROVADO (1a a 5a, com o ajuste de 19.37.5)
 
 #### 19.37.1 O que o Asaas respondeu
 
@@ -4598,3 +4598,33 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 5. **Onde construir:**
    - (a) os itens 1 e 3 entram na **4020a**, porque mexem no estorno; o item 2 entra na **ASA7** (recomendado);
    - (b) uma entrega própria, antes da 4020a.
+
+#### 19.37.5 Aprovação (Jeferson, 16/11/2026)
+
+**Respostas: 1a, 2a, 3a, 4a, 5a.**
+1. **O saldo mínimo da franqueadora:** a tela mostra a referência, e o dono decide o número na Central.
+2. **O estorno total:** o saldo é conferido antes, e a recusa do Asaas é tratada.
+3. **A marca do débito na Central:** sem ela, a unidade sai da prontidão para a produção.
+4. **Os avisos do estorno pendente:** com 1 dia útil, a cada 7 dias, no 25º dia, e a queda aos 30.
+5. **Onde construir:** os itens 1 e 3 na **4020a**; o item 2 na **ASA7**.
+
+**Ajuste: a tela da unidade não mostra o saldo da franqueadora.**
+- **Quando o estorno não pode ser pedido por falta de saldo da franqueadora,** a tela da unidade diz:
+  > "O estorno pelo Asaas está temporariamente indisponível. O Financeiro da Franqueadora já foi avisado. Enquanto isso, você pode esperar o aviso de que o estorno voltou a ficar disponível, ou combinar com o Financeiro a devolução por Pix da conta da unidade."
+- **O valor do saldo e a parte da franqueadora** aparecem só para o Financeiro da Franqueadora e o Admin Master (no aviso e na tela deles).
+- **Quando o saldo volta ao mínimo,** quem pediu recebe o aviso "o estorno voltou a ficar disponível".
+
+**O arredondamento por parcela: conferido no sandbox (16/11/2026).**
+- **O teste:** a conta principal do sandbox, com o split do riSZon para a carteira de Londrina (17,4341% + R$ 0,02), em 3× de R$ 1.000,00 (333,33 + 333,33 + 333,34), no cartão e no boleto. Os dois parcelamentos foram apagados depois.
+
+| Parcela | Cartão: líquido | Split do Asaas | Previsão do riSZon | Boleto: líquido | Split do Asaas | Previsão do riSZon |
+|---|---|---|---|---|---|---|
+| 1 (R$ 333,33) | 321,54 | 56,07 | 56,07 | 331,34 | 57,78 | 57,78 |
+| 2 (R$ 333,33) | 321,54 | 56,07 | 56,07 | 331,34 | 57,78 | 57,78 |
+| 3 (R$ 333,34) | 321,55 | 56,07 | 56,07 | 331,35 | 57,78 | 57,78 |
+
+- **Diferença: R$ 0,00 em todas.** O Asaas calcula o split de cada parcela sobre o líquido dela, cortado no centavo, como o riSZon prevê.
+- **Os centavos que vão para a última** são os do **valor das parcelas** (333,34), e não os do split. O riSZon já faz assim desde a 4013 (`PARCELADO_ASAAS_VALORES`). **Nada a ajustar.**
+- **O limite da conferência:** ela usou o líquido informado pelo Asaas. A previsão do líquido pelo riSZon (a tarifa) já é conferida na tolerância de R$ 0,10 (S5).
+
+**A tabela de fases foi corrigida:** o cartão recorrente da ASA4B não está mais bloqueado pela regra do cartão. Falta só a tokenização habilitada nas contas, com o comercial do Asaas.
