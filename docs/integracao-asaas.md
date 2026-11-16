@@ -4441,3 +4441,9 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 - **De fora** (sem login), as duas funções continuam barrando o anônimo (401), e `boleto_lists` e `sale_cancel_exceptions` não mostram nada a ele.
 - **O efeito:** o "Anexar termo assinado" da renegociação volta a funcionar na produção.
 - **Continua fora da produção:** a correção 1 (o 1º vencimento da renegociação) é código e vai com a 4020.
+
+**A 4020 na produção (16/11/2026):**
+- **A conferência:** o dono rodou a 4020 no SQL Editor da produção, e a conferência bateu: 23 funções novas, 3 tabelas, 6 colunas, o aviso de 60 dias, 0 cancelamentos abertos antes e o distrato no cancelamento.
+- **A publicação:** `main` em 7d05d68f (com o `main` da outra sessão junto), e a produção mostra **0.459.1**.
+- **Conferido de fora:** as 11 portas novas barram o anônimo (401), e as tabelas novas não mostram nada a ele.
+- **Junto com a 4020 foram:** a correção do 1º vencimento da renegociação e o aviso das assinaturas antigas.
