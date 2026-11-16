@@ -5171,3 +5171,9 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
   - o mesmo depois das linhas (zero);
   - um "a mais" de verdade, acima de R$ 0,10 (marca e aviso);
   - provado quebrando, com a regra antiga de volta, o ensaio reprova.
+
+**Construída em 16/11/2026, a pedido do dono ("Pode construir"):**
+- **Versões:** migração `4018a_asa3_marca_do_split_a_mais.sql`, core 0.461.1, Asaas 0.18.1.
+- **Ensaio:** `scripts/asaas-ensaio-4018a-marca-do-split.mjs`, 7/7. Com a regra antiga de volta, 3 falhas.
+- **No treino:** as 4 marcas (R$ 90,76) zeradas, conferência `true | 0 | 0`. A prova do "mês limpo" da 4021a parte do zero.
+- **Na produção:** só a migração, sem código. Ela não depende da 4021.

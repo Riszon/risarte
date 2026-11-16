@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.461.1",
+    data: "2026-11-16",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4018a).
+    migracao: null,
+    titulo: "O aviso de split acima do devido deixa de disparar à toa",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Nas mensalidades do PPR+ e da Ortodontia pagas pelo Asaas, o aviso \"Split: repasse acima do devido\" disparava mesmo com o repasse certo, e a marca ficava no Painel de repasses. Agora a conferência espera as taxas da mensalidade, a marca se corrige sozinha, e o aviso só sai acima da tolerância da Central (R$ 0,10). O dinheiro sempre esteve certo.",
+        papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.461.0",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4021, ASAAS_MIGRATION).
