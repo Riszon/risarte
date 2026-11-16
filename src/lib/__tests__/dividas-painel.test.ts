@@ -9,6 +9,8 @@ import {
   indicadoresDoPainel,
   linhasDoPainel,
   saudeFinanceira,
+  dividasDoCartao,
+  acordosDoCartao,
   dreDoDevedor,
   type FotoDoMes,
 } from "@/lib/finance/dividas-painel";
@@ -157,5 +159,35 @@ describe("saúde financeira (4.6)", () => {
   it("custo financeiro vem da 4.2.01 (gasto positivo)", () => {
     const d = dreDoDevedor([{ accountCode: "4.2.01", block: "resultado_financeiro", amountCents: -800 }, { accountCode: "1.1.01", block: "receita_bruta", amountCents: 5000 }], 3, () => 5000);
     expect(d).toEqual({ receitaBrutaCents: 5000, custoFinanceiroCents: 800, meses: 3 });
+  });
+});
+
+describe("o que forma cada número do Painel (clique no cartão)", () => {
+  const rows = [
+    linha({ id: "a", status: "inadimplente", saldoCents: 5000, negativada: true, propostaCents: 3000, custasCents: 200 }),
+    linha({ id: "b", status: "em_atraso", saldoCents: 2000, protestada: true, clinicId: "C", clinicName: "Cambé" }),
+    linha({ id: "c", status: "judicial", saldoCents: 1000, judicial: true }),
+    linha({ id: "q", status: "quitada_encerrada", saldoCents: 0, pagoCents: 9000, negativada: true }),
+  ];
+  const acordos = [
+    { clinicId: "L", situacao: "em_andamento", dividas: ["a"], descontoCents: 700, abertas: [{ faltaCents: 100, vencimento: "2026-11-20" }] },
+    { clinicId: "L", situacao: "quebrado", dividas: ["a"], descontoCents: 999, abertas: [] },
+    { clinicId: "L", situacao: "cumprido", dividas: ["q"], descontoCents: 300, abertas: [] },
+    { clinicId: "L", situacao: "desfeito", dividas: ["a"], descontoCents: 50, abertas: [] },
+  ];
+  const ind = indicadoresDoPainel(rows, acordos, HOJE);
+  const soma = (c: Parameters<typeof dividasDoCartao>[0]) => dividasDoCartao(c, rows).reduce((t, r) => t + (r.saldoCents ?? 0), 0);
+  it("a lista de cada cartão soma o número do cartão", () => {
+    expect(soma("devido")).toBe(ind.totais.devidoCents);
+    expect(soma("sem_proposta")).toBe(ind.totais.semPropostaCents);
+    expect(soma("inadimplentes")).toBe(ind.inadimplentes.valorCents);
+    expect(soma("em_atraso")).toBe(ind.emAtraso.valorCents);
+    expect(soma("negativadas")).toBe(ind.negativadas.valorCents);
+    expect(dividasDoCartao("quitado", rows).reduce((t, r) => t + (r.pagoCents ?? 0), 0)).toBe(ind.quitadoCents);
+  });
+  it("restrição por CNPJ; acordos valendo e os que deram economia", () => {
+    expect(dividasDoCartao("restricao", rows, "C").map((r) => r.id)).toEqual(["b"]);
+    expect(acordosDoCartao("acordos", acordos, rows).map((a) => a.situacao)).toEqual(["em_andamento", "quebrado"]);
+    expect(acordosDoCartao("economia_obtida", acordos, rows).reduce((t, a) => t + a.descontoCents, 0)).toBe(ind.economiaObtidaCents);
   });
 });

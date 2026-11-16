@@ -843,17 +843,25 @@ Anexos) ou **não se aplica** (com o motivo). Tudo resolvido, a dívida vai para
 para tudo o que está embaixo: **Devedor** (**Rede consolidada** ou um CNPJ),
 **Etiqueta** e **Sem as contestadas e judiciais**. Dívida baixada nunca entra.
 
-- **Os cartões:** **Total devido** (com quanto disso está contestado ou na
-  Justiça), **Estimado para regularizar** (a proposta, quando há; senão o
-  devido), **Custo total para regularizar** (com as custas de cartório),
-  **Economia potencial** e o desconto médio (**só onde há proposta** — dívida
-  sem proposta não conta como desconto), **Sem proposta** (o que falta
-  negociar), **Propostas atuais**, **Já quitado** e **Economia já obtida** (o
-  desconto dos acordos em dia ou cumpridos). Depois, quantidade e valor **em
-  atraso**, **inadimplentes**, **negativadas**, **protestadas**, **com ação
-  judicial**, e os **acordos valendo** (saldo, parcelas dos próximos 30 dias e
-  quantos estão quebrados). **CNPJs com restrição** lista quem tem negativação,
-  protesto ou ação.
+- **Os números, em três blocos** *(desde a 0.456.1)*:
+  - **Quanto se deve:** o **Total devido** em destaque (com quanto disso está
+    contestado ou na Justiça) e uma barra que separa o que **tem proposta** do
+    que **ainda não tem**; ao lado, **Estimado para regularizar** (a proposta,
+    quando há; senão o devido), **Custo total para regularizar** (com as
+    custas de cartório), **Economia potencial** e o desconto médio (**só onde
+    há proposta**), **Propostas atuais** e **Sem proposta**.
+  - **O que pede atenção** (cada um com a sua cor e o seu ícone): quantas
+    dívidas e quanto **em atraso**, **inadimplentes**, **negativadas**,
+    **protestadas** e **com ação judicial**; embaixo, os **CNPJs com
+    restrição**.
+  - **O que já foi resolvido e o que está em acordo:** **Já quitado**,
+    **Economia já obtida** (o desconto dos acordos em dia ou cumpridos) e
+    **Acordos valendo** (saldo, parcelas dos próximos 30 dias e quantos estão
+    quebrados).
+- **Todo número abre a lista do que o forma** *(desde a 0.456.1)*: clique no
+  cartão (ou no CNPJ com restrição) e aparecem as dívidas — ou os acordos —
+  que somam aquele valor, com o total no rodapé, seguindo o filtro do Painel.
+  O código abre a dívida.
 - **Os gráficos:** **evolução mensal do saldo devedor** (na rede, uma linha
   para a rede e uma para cada CNPJ; marcando **Ver também o quitado no mês e
   as dívidas novas**, as barras do mês), **quanto se deve por credor,

@@ -69,6 +69,20 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   com "permission denied", a de controle responde "não encontrada"). O
 >   código subiu antes, no push de outra sessão (sem efeito sem a 1045).
 
+> ## 🏦 0.456.1 — PAINEL DAS DÍVIDAS: NÚMEROS CLICÁVEIS E EM BLOCOS (15/11/2026; sem migração)
+>
+> Pedido do dono (imagem do Painel no treino): todo cartão abre a lista do
+> que o forma, e um visual com hierarquia (três blocos com cor e ícone).
+> `financeiro/dividas/cartoes-do-painel.tsx` (`CartoesDoPainel`, janela
+> `ListaDoCartao`). Manual 2.3; EV-354.
+> - ⚠️ **A lista de cada cartão = `dividasDoCartao` / `acordosDoCartao`**
+>   (`dividas-painel.ts`), a mesma regra da conta do número — régua em
+>   `dividas-painel.test.ts` (a lista soma o cartão). Cartão novo no Painel
+>   entra em `CARTOES_DO_PAINEL` com a sua regra.
+> - Visto na tela pelo servidor local de teste (Financeiro de teste), nos
+>   temas claro e escuro: as listas de Inadimplentes (2, R$ 4.600), Economia
+>   potencial, Já quitado, o CNPJ com restrição e Acordos valendo (vazio).
+
 > ## 🏦 0.456.0 — LEVANTAMENTO DE DÍVIDAS, FASE 8: AVISOS E SIMULADOR (15/11/2026; migração 0410)
 >
 > Plano em `docs/Financeiro/DIVIDAS-PLANO.md` (4.4, D12, fase 8). **As 8

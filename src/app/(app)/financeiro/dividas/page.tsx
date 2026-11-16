@@ -162,6 +162,11 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
               base={base}
               linhas={linhas}
               acordos={acordos.acordos.map((a) => ({
+                id: a.id,
+                codigo: a.codigo,
+                principalId: a.principalId,
+                totalCents: a.totalCents,
+                supplierName: base.credores.find((c) => c.id === a.supplierId)?.nome,
                 clinicId: a.clinicId,
                 situacao: a.situacao,
                 dividas: a.dividas.map((x) => x.debtId),

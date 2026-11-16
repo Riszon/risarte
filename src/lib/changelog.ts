@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.456.1",
+    data: "2026-11-15",
+    migracao: null,
+    titulo: "Painel das Dívidas: números clicáveis e em blocos",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "No Painel do Levantamento de Dívidas, todo número abre a lista do que o forma: clique no Total devido, nas Inadimplentes, na Economia potencial, num CNPJ com restrição… e aparecem as dívidas (ou os acordos) que somam aquele valor, com o total e o link para cada uma.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Os números do Painel ficaram em três blocos, cada um com a sua cor: quanto se deve (o total em destaque, com a barra do que tem e do que não tem proposta), o que pede atenção (atraso, inadimplência, negativação, protesto, ação judicial) e o que já foi resolvido ou está em acordo.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
     versao: "0.456.0",
     data: "2026-11-15",
     migracao: "0410",
