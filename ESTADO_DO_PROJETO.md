@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🛒 0.463.0 — VENDA DIRETA V3: O CAIXA EM UMA JANELA (16/11/2026; sem migração) — NA BRANCH `feature/venda-direta-v3`, NÃO PUBLICADO
+> ## 🛒 0.463.0 — VENDA DIRETA V3: O CAIXA EM UMA JANELA (16/11/2026; sem migração)
 >
 > Pedido do dono (a venda direta "confusa, em duas abas, tudo à mão"). Plano e
 > decisões em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` (VD3-1 a VD3-4). Esta
@@ -31,8 +31,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   ⚠️ O teste achou o selo da situação VAZIO na aba Sessões: constante de
 >   arquivo "use client" chega vazia à página de servidor — o selo mora em
 >   `SELO_DA_VENDA` (`venda-direta-caixa.ts`, régua). Resíduo no treino: a
->   VD-00587 e o aviso dela a 1 Consultor real. O `.docx` do manual não foi
->   regerado (fazer na junção com o `main`).
+>   VD-00587 e o aviso dela a 1 Consultor real. Publicado no `main` em 16/11/2026
+>   ("pode publicar" do dono), com o Word do manual regerado.
 >
 > ## 👥 0.462.0 — FUNÇÕES DE APOIO, F2: AS COBERTURAS NO BANCO (16/11/2026; migração 0414)
 >

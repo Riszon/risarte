@@ -404,9 +404,9 @@ Syncthing se comportarem de forma estranha.**
 **16/11/2026 (venda direta v3, VD3-1) — PC Administrador (core 0.462.0 → 0.463.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
 - **O caixa da venda direta em uma janela** (bloco 0.463.0 no ESTADO; plano e
-  decisões do dono em `docs/comercial/VENDA-DIRETA-V3-PLANO.md`). ⚠️ **NÃO
-  está no `main`:** espera o teste do dono. Ao juntar: conferir a versão (outra
-  sessão pode ter usado a 0.463.0), regerar o Word (`npm run manual:docx`).
+  decisões do dono em `docs/comercial/VENDA-DIRETA-V3-PLANO.md`). Publicado no
+  `main` em 16/11/2026 com o "pode publicar" do dono (a versão era 0.462.0 e
+  virou 0.463.0 na junção: outra sessão tinha usado a 0.462.0).
 - ⚠️ **Regras de tela do caixa = `src/lib/venda-direta-caixa.ts`** (espelho de
   `setDirectSaleConditions`). ⚠️ **"Recebi R$ …" é a baixa da parcela**
   (`registerReceipt`), que conclui a venda no banco; exige o termo assinado.
@@ -423,6 +423,18 @@ Syncthing se comportarem de forma estranha.**
   real. Não testado na tela: Asaas, parcelado, desconto, permuta, Coordenador,
   cancelamento. Próximas: VD3-2 (termo pela ZapSign, migração nova), VD3-3,
   VD3-4.
+
+**16/11/2026 (funções de apoio, F2) — PC Administrador (core 0.461.0 → 0.462.0, migração 0414)**
+
+- **As coberturas no banco** (bloco 0.462.0 no ESTADO). ⚠️ Trava nova
+  `unique (user_id, clinic_id, role)`; apoio só por `role_coverages` e pelas
+  portas (só Admin). ⚠️ A janela esconde a linha vencida; a rotina
+  `risarte-coverage-daily` encerra. ⚠️ Semente/script com `on conflict
+  (user_id, clinic_id)` leva `where assignment_kind = principal`.
+- ✅ 0414 nos dois bancos (treino: ensaio 26/26, desfeito; produção pelo dono em
+  16/11/2026; conferido de fora: tabelas e colunas novas, limites padrão só
+  avisando, a combinação proibida semeada; dar cobertura e a rotina recusam sem
+  login, e a chave de serviço para em NOT_ALLOWED). Publicado. Próxima: F3.
 
 **16/11/2026 (funções de apoio, F1) — PC Administrador (core 0.460.0 → 0.461.0, migração 0413; Indica 0.9.0 → 0.9.1, migração 2012)**
 

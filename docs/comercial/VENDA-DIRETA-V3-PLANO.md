@@ -10,8 +10,8 @@ Pedido do dono, 16/11/2026, com a tela do treino (prontuário, aba
 > manual, contrato e pagamento. A venda é feita dentro da clínica: poucos
 > cliques e rápido.
 
-**Status: VD3-1 CONSTRUÍDA em 16/11/2026 (core 0.463.0, sem migração), na branch
-`feature/venda-direta-v3` — espera o teste do dono para ir ao `main`.
+**Status: VD3-1 CONSTRUÍDA em 16/11/2026 (core 0.463.0, sem migração), testada de ponta a ponta no
+treino (VD-00587) e publicada no `main` no mesmo dia.
 VD3-2 a VD3-4: não construídas.**
 
 ## 0. O que o dono já respondeu (16/11/2026)
