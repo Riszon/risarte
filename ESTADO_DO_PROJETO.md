@@ -11,7 +11,13 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **PPR+:** a 1ª mensalidade sai na assinatura; a suspensão aos 30 dias é sozinha; aos 90, o Gerente decide.
 > - **Taxa e selo:** a taxa da rede fica retida, sem dobro, e a mensalidade vencida entra no selo.
 >
-> Ensaio 49/49, provado quebrando; sandbox 2/2. **Falta:** teste do dono, a 4018 na produção e o `main`. Spec 19.32 a 19.33; manual 13g.16; EV-356.
+> Ensaio 49/49, provado quebrando; sandbox 2/2. **Na produção em 16/11/2026:**
+> - o dono rodou a 4018, e a conferência vista bateu: 2, 29, 0, 0;
+> - `main` em 6ce70ffb, produção mostrando 0.456.3 (a outra sessão publicou outra 0.456.2 antes);
+> - conferido de fora: as portas novas barram o anônimo;
+> - nenhuma unidade ligou as mensalidades.
+>
+> **Falta:** o teste do dono. Spec 19.32 a 19.33; manual 13g.16; EV-356.
 
 > ## 💳 0.455.1 — EXCEÇÃO: CANCELAR VENDA COM ACORDO DE RENEGOCIAÇÃO (15/11/2026; Asaas 0.15.0, migração 4017a)
 >
