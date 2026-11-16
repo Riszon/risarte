@@ -4629,7 +4629,7 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 
 **A tabela de fases foi corrigida:** o cartão recorrente da ASA4B não está mais bloqueado pela regra do cartão. Falta só a tokenização habilitada nas contas, com o comercial do Asaas.
 
-## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 CONSTRUÍDA (16/11/2026; ver 20.15 e 20.16); 4021a a seguir
+## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 CONSTRUÍDA (16/11/2026; ver 20.15 e 20.16); 4021a EM PLANO (20.17)
 
 ### 20.1 O que já existe (levantado no código em 16/11/2026)
 
@@ -5017,3 +5017,102 @@ Os campos nascem **em branco**. **Sem eles, a cobrança mensal não sai**, e a t
   - A cobrança foi cancelada e reemitida.
   - Paga pela simulação, a baixa veio pelo aviso do Asaas.
   - A tarifa ficou com a franqueadora.
+
+### 20.17 A 4021a — a conciliação da rede: PLANO (16/11/2026; AGUARDA APROVAÇÃO)
+
+**O que ela responde:** "toda taxa da rede de cada unidade, em cada mês, está em um lugar só, e o dinheiro bate?". A 4021a só **confere e mostra**. Ela não cobra, não dispensa e não muda nenhum lançamento.
+
+#### 20.17.1 A conta do mês (por unidade e na rede)
+
+Para cada unidade e cada mês, do 1º mês da cobrança mensal até o último mês fechado:
+
+| | |
+|---|---|
+| **Devido** | as taxas percentuais do mês (todas as linhas não estornadas) + as taxas fixas do mês |
+| = **Retido pelo split** | o que o Asaas já repassou |
+| + **A reter** | o cartão parcelado à espera do crédito |
+| + **Faturado** | o que está numa cobrança mensal (prévia, aprovada, emitida ou paga) |
+| + **Dispensado** | contestação aceita, saldo anterior dispensado, dispensa no estorno |
+| + **Ainda a cobrar** | o que entra na próxima prévia (os ajustes) |
+| **Diferença** | **tem de ser R$ 0,00** |
+
+E o dinheiro, por cobrança paga:
+- **pago no Asaas** = faturado + multa e juros;
+- o **caixa da unidade** (contas de taxa pagas pela cobrança) = faturado − créditos compensados;
+- o **caixa da franqueadora** = o mesmo valor.
+
+#### 20.17.2 A rotina da noite e as divergências
+
+Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues` (tabela nova) **o que não bater**:
+
+| Tipo | Quando | O caminho na tela |
+|---|---|---|
+| **Linha em dois donos** | uma linha faturada a mais do que vale (cobrada duas vezes, ou cobrada e retida, ou cobrada e dispensada) | o crédito entra sozinho na próxima prévia; a divergência fecha quando ele for faturado |
+| **Linha sem dono** | uma linha do mês, já existente quando a prévia abriu, que não foi faturada nem está como "ainda a cobrar" | refazer a prévia, ou dispensar com motivo |
+| **Pago diferente do faturado** | a cobrança paga a menor, ou paga sem a baixa completa | a baixa à mão nas Contas a pagar |
+| **Caixa diferente** | o caixa da unidade ou o da franqueadora não bate com a cobrança paga | revisão do Financeiro |
+| **Split a mais** | o Asaas repassou mais do que o devido (S5, acima da tolerância da Central) | a devolução à unidade, decidida pelo Financeiro |
+| **Conta a pagar desatualizada** | a conta de taxa do mês não bate com as linhas dela (mês fechado sem o ajuste) | o ajuste no mês aberto |
+| **Diferença da conta do mês** | a soma da 20.17.1 não fecha em zero | revisão do Financeiro |
+
+**Como a lista se mantém:**
+- A divergência **fecha sozinha** quando o problema some (marcada "resolvida pela rotina").
+- Ela **não se repete:** uma só por tipo, linha e mês. O valor é atualizado.
+- **"Em atraso com a rede":** as cobranças vencidas há 30 dias ou mais aparecem numa lista à parte, sem virar divergência. O aviso já sai pela 4021.
+
+#### 20.17.3 O painel
+
+- **A conta do mês:** por unidade e na rede, o mês escolhido, cada parcela da conta clicável, mostrando as linhas.
+- **As divergências abertas:** o tipo, a unidade, o mês, o valor, desde quando, e o caminho.
+- **"Em atraso com a rede":** unidade, mês, valor e dias de atraso.
+- **A planilha:** do mês e das divergências.
+
+#### 20.17.4 A prova
+
+**No ensaio:**
+- **o mês limpo:** todas as origens da 20.3 e os casos da 4021 (estorno depois do fechamento, contestação aceita antes e depois da emissão, parcelado a reter, saldo anterior parcelado, crédito compensado, mês fechado) — **zero divergências**, e a conta do mês fecha em R$ 0,00;
+- **cada defeito plantado gera a divergência certa:** a linha cobrada duas vezes, a linha de fora, o "a reter" cobrado, a baixa sem as contas, o split a mais e a conta a pagar desatualizada;
+- **cada uma fecha sozinha** quando o defeito é desfeito.
+
+**Provado quebrando:** cada conferência da rotina desligada de propósito tem de reprovar.
+- `--quebrar=dobro`: não vê a linha em dois donos;
+- `--quebrar=fora`: não vê a linha sem dono;
+- `--quebrar=baixa`: não vê o pago diferente;
+- `--quebrar=soma`: a conta do mês sem uma parcela.
+
+**No sandbox:** não há chamada nova ao Asaas. A prova é a mesma cobrança paga da 4021, conferida pela rotina.
+
+#### 20.17.5 Decisões para o dono
+
+1. **Onde fica o painel:**
+   - (a) uma aba **"Conciliação"** dentro de Financeiro › Rede › Cobrança da rede (recomendado). O "Conciliação" de hoje é o do banco, e um segundo com o mesmo nome confundiria;
+   - (b) uma tela separada, "Conciliação da rede".
+2. **Ignorar uma divergência:**
+   - (a) o Financeiro ou o Admin marcam "Ignorar", com o motivo (na auditoria). Se o valor mudar, ela volta a abrir (recomendado);
+   - (b) não se ignora: só fecha quando o problema some.
+3. **O aviso:**
+   - (a) um resumo por dia ao Financeiro da Franqueadora, só quando aparecer divergência nova (recomendado);
+   - (b) um aviso por divergência;
+   - (c) nenhum: só o painel.
+4. **A unidade vê:**
+   - (a) o Gerente e o franqueado veem a conta do mês e as divergências da sua unidade, só leitura (recomendado);
+   - (b) só o Financeiro e o Admin.
+5. **Desde quando:**
+   - (a) do 1º mês da cobrança mensal de cada unidade (recomendado). Antes dele, a conta não fecha por definição: é o saldo anterior;
+   - (b) desde a ASA3 (novembro de 2026), só informativo.
+6. **A tolerância:**
+   - (a) zero centavo na conta do mês e na cobrança paga; o split a mais usa a tolerância que já está na Central (R$ 0,10) (recomendado);
+   - (b) a mesma tolerância da Central para tudo.
+
+#### 20.17.6 A ordem depois da 4021a
+
+**Seguindo o que você aprovou:** as peças da ASA7 no sandbox, o piloto em Londrina, e a ASA4B, a ASA5 e a ASA8 durante o piloto.
+
+**A 4020a** (o estorno parcial pelo Asaas) depende da prova do cartão parcelado de amanhã. A ordem entre ela e a 4021a fica com você.
+
+#### 20.17.7 Tamanho
+
+- **A construção:** uma migração (4021a): a tabela, a rotina, as leituras e a marca de ignorar.
+- **A tela:** a aba do painel.
+- **A prova:** o ensaio com os defeitos plantados.
+- **Sem chamada nova ao Asaas.**
