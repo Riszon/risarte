@@ -985,6 +985,23 @@ export function conferirPlanilha(entrada: LinhaDaPlanilha[], ctx: Contexto): Con
     });
   }
 
+  // UM protesto por dívida (achado em 15/11/2026): a dívida marcada
+  // "Protestada? Sim" na aba Dívidas E ligada a uma linha da aba Protestos
+  // gerava dois — um de cada aba. Quando há linha ligada, o protesto vem só
+  // dela (é a que tem data, protocolo e anuência); o da coluna sai.
+  for (const p of linhas) {
+    if (p.aba !== "protestos" || !p.dados || decisaoEfetiva(p) === "ignorar") continue;
+    const link = (p.dados as DadosDoProtesto).link;
+    const chave = link && "source_key" in link ? link.source_key : null;
+    if (!chave) continue;
+    const alvo = porChave.get(normalizar(chave));
+    const d = alvo?.dados as DadosDaDivida | null | undefined;
+    if (alvo && d?.protest) {
+      d.protest = null;
+      alvo.avisos.push({ nivel: "aviso", texto: `O protesto desta dívida vem da aba Protestos (linha ${p.numero}), com os detalhes de lá.` });
+    }
+  }
+
   // Erro só segura quem vai ser gravado.
   for (const l of linhas) if (decisaoEfetiva(l) === "ignorar") l.bloqueia = false;
 

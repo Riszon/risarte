@@ -722,10 +722,30 @@ o saldo na implantação e o que já foi pago depois — **Ver e salvar em PDF**
 
 **Importar planilha** *(desde a 0.448.0)*. No alto do Levantamento,
 **Importar planilha** traz muitas dívidas de uma vez — a primeira carga é a
-planilha que o Financeiro já usava. **Baixar planilha-modelo** entrega uma
-planilha vazia com as mesmas colunas, as listas de escolha (devedor,
-categoria, natureza, situação, origem) e uma aba **Como preencher**. Só o
-Financeiro da Franqueadora (e o Admin Master) importa.
+planilha que o Financeiro já usava. Só o Financeiro da Franqueadora (e o
+Admin Master) importa.
+
+**A planilha-modelo** *(refeita na 0.456.2)*. **Baixar planilha-modelo**
+entrega uma planilha vazia com as mesmas colunas e as listas de escolha
+(devedor, categoria, natureza, situação, origem):
+- Ela abre na aba **Como preencher**: o passo a passo, uma tabela com cada
+  coluna (o que colocar, se é obrigatório e um exemplo) e os cuidados que
+  evitam erro na conferência. Passar o mouse no título de uma coluna mostra a
+  mesma explicação.
+- Na aba **Dívidas**, uma linha por dívida; o **nº (#)** se preenche sozinho
+  quando a linha tem dados.
+- **Dívida protestada:** marque **Protestada? = Sim** e preencha ali o
+  **Cartório** e as **Custas**. Ela aparece **sozinha** na aba **Protestos**,
+  na mesma linha, com devedor, credor, cartório, custas, "Já está" = Sim e o
+  nº da dívida (em cinza, travados: para mudar, mude na aba Dívidas). Na aba
+  Protestos complete só o que é do protesto (em amarelo): quantidade de
+  títulos, valor protestado (já vem com o da dívida; troque se for outro),
+  protocolo, data, carta de anuência e observações.
+- **Protesto que não está na aba Dívidas:** use a parte livre no fim da aba
+  Protestos (fundo azul claro, depois da faixa escura), com "Já está" = Não ou
+  Verificar.
+- Uma dívida com "Protestada? = Sim" **e** a linha dela na aba Protestos vira
+  **um** protesto só, o da aba Protestos (com os detalhes de lá).
 
 1. **Escolha o arquivo** (.xlsx, .xls ou .csv). O sistema lê a planilha no seu
    computador, acha as abas das **dívidas** e dos **protestos** e diz qual
@@ -7385,7 +7405,7 @@ Cada pedido gera um aviso.
 
 ### 13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas
 
-*(desde a versão 0.456.2)*
+*(desde a versão 0.456.3)*
 
 **Ligar na unidade (Gerente ou Admin Master):** Financeiro › Cobranças
 automáticas › **Mensalidades pelo Asaas**.
@@ -7427,7 +7447,7 @@ unidade cobra por fora e dá a baixa à mão. Para passar um cliente para boleto
 Pix ou cartão pelo link, use **Passar para…** na adesão ou no caso, com a
 concordância do cliente (fica registrada).
 
-**Evidência:** EV-355; `scripts/asaas-ensaio-asa4-mensalidades.mjs`.
+**Evidência:** EV-356; `scripts/asaas-ensaio-asa4-mensalidades.mjs`.
 
 ## 14. Checklists
 

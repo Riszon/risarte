@@ -62,8 +62,8 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.456.2",
-    data: "2026-11-15",
+    versao: "0.456.3",
+    data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4018, ASAAS_MIGRATION).
     migracao: null,
     titulo: "Mensalidades do PPR+ e da Ortodontia pelo Asaas",
@@ -88,6 +88,35 @@ export const CHANGELOG: Versao[] = [
           "A mensalidade vencida passa a contar no selo \"Em atraso\", pela mesma regra de dias úteis. Cancelar a adesão do PPR+ passa a cancelar as mensalidades dos meses que ainda não venceram.",
         papeis: ["unit_manager", "receptionist"],
         manual: "13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+      },
+    ],
+  },
+  {
+    versao: "0.456.2",
+    data: "2026-11-15",
+    migracao: null,
+    titulo: "Planilha-modelo das Dívidas: o protesto aparece sozinho",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Na planilha-modelo do Levantamento de Dívidas, marcar \"Protestada? = Sim\" na aba Dívidas faz a dívida aparecer sozinha na aba Protestos, com devedor, credor, cartório, custas e o nº da dívida já preenchidos e travados. Lá só se completa o que é do protesto: quantidade, valor, protocolo, data, carta de anuência e observações.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A planilha-modelo abre na aba Como preencher, com o passo a passo, cada coluna explicada (o que colocar, se é obrigatória e um exemplo) e os cuidados que evitam erro. O nº da dívida se preenche sozinho, e o título de cada coluna mostra a explicação ao passar o mouse.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Na importação, a dívida marcada como protestada que também tem a sua linha na aba Protestos entra com um protesto só (o da aba Protestos), e não dois.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
       },
     ],
   },

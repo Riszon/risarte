@@ -296,6 +296,20 @@ describe("a conferência da aba Protestos", () => {
     expect((p.dados as DadosDoProtesto).protest).toMatchObject({ amount_cents: 30000, cancel_cost_cents: 4550, protested_on: "2025-03-05" });
   });
 
+  it("dívida 'Protestada? Sim' com linha ligada na aba Protestos: UM protesto só, o da aba Protestos", () => {
+    const r = conferirPlanilha(
+      [divida(2, { chave: "7", protestada: "Sim", cartorio: "1º Tabelionato de Protesto", custas: 45.5 }), protesto(2, { ja_esta: "Sim", vinculada: "7" })],
+      ctx()
+    );
+    const d = r.linhas[0].dados as DadosDaDivida;
+    expect(d.protest).toBeNull();
+    expect(r.linhas[0].avisos.some((a) => /vem da aba Protestos/.test(a.texto))).toBe(true);
+    expect((r.linhas[1].dados as DadosDoProtesto).protest).toMatchObject({ notary_name: "1º Tabelionato de Protesto", cancel_cost_cents: 4550 });
+    // Sem linha ligada, a coluna da aba Dívidas continua valendo.
+    const so = conferirPlanilha([divida(2, { chave: "7", protestada: "Sim", cartorio: "Cartório X" })], ctx());
+    expect((so.linhas[0].dados as DadosDaDivida).protest).toMatchObject({ notary_name: "Cartório X" });
+  });
+
   it("nº que não existe na aba Dívidas é erro", () => {
     const r = conferirPlanilha([divida(2, { chave: "7" }), protesto(2, { ja_esta: "Sim", vinculada: "99" })], ctx());
     expect(r.linhas[1].temErro).toBe(true);
