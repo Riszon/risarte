@@ -143,7 +143,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   (`scripts/empresarial-ensaio-1047.mjs`, desfeito) e quebrando 2 vezes;
 >   régua `planilha-empresas.test.ts` (13). Manual do Empresarial 8.1.
 >   **Não visto na tela do sistema.**
-> - ⏳ **1047 só no treino**; o dono roda na produção antes do push.
+> - ✅ **1047 nos dois bancos** (produção pelo dono em 16/11/2026, conferência
+>   true·true·false; conferido de fora: sem login recusa com "permission
+>   denied", a de controle responde "não encontrada").
 
 > ## 💼 EMPRESARIAL 0.106.0 / 1046 — O GANHO NO CARTÃO E A IMPLANTAÇÃO MEDIDA PELO SISTEMA (16/11/2026)
 >

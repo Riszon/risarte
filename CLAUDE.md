@@ -442,7 +442,7 @@ Syncthing se comportarem de forma estranha.**
   ⚠️ **Coluna nova = `COLUNAS_EMPRESAS`** (planilha-empresas.ts) + o campo
   na 1047 (régua confere). ⚠️ **ExcelJS: validação por FAIXA**, nunca por
   célula (duplicava).
-- ⏳ 1047 só no treino.
+- ✅ 1047 nos dois bancos (produção pelo dono em 16/11/2026; conferido de fora).
 
 **16/11/2026 (implantação medida) — PC Administrador (Empresarial 0.105.0 → 0.106.0, migração 1046)**
 
