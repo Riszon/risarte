@@ -13,7 +13,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > fechado (`is_period_closed`), o dia da conclusão, com a data original no
 > motivo. A tela traduz PERIOD_CLOSED (`agenda/actions.ts`). Ensaio no treino
 > 5/5 (com o "antes" recusando); régua `kit-do-atendimento-oc-00181.test.ts`.
-> Feito no worktree `wt-oc181`. **Não visto na tela.**
+> Feito no worktree `wt-oc181`. **Não visto na tela.** ✅ **0411 aplicada nos
+> dois bancos** (produção pelo dono em 16/11/2026; função de gatilho não é
+> conferível de fora pela API).
 > - ⚠️ Ao recriar `consume_attendance_kit`, levar os dois desvios da 0411.
 > - Achado de passagem (não mexido): `consume_session_kit` usa
 >   `done_at::date` (dia de Greenwich) — das 21h à meia-noite cai no dia seguinte.

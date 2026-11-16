@@ -404,6 +404,7 @@ Syncthing se comportarem de forma estranha.**
 
 - Bloco 0.457.0 no ESTADO. ⚠️ **Ao recriar `consume_attendance_kit`, levar
   a 0411** (sem kit na apresentação comercial; mês fechado → dia da conclusão).
+- ✅ 0411 (kit) aplicada nos dois bancos (produção pelo dono, 16/11/2026).
 - ⚠️ **DUAS 0411, as duas aplicadas na produção:** `0411_certificacao_dispensa…`
   (sessão da certificação, 0.457.0) e `0411_kit_do_atendimento…` (esta, 0.458.0).
   Funções diferentes; nenhuma renomeada (regra: migração aplicada não muda de
