@@ -6,7 +6,11 @@ import { getSessionContext, requireAdminMaster } from "@/lib/auth";
 import type { SessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { empresarialDb } from "@/lib/empresarial/db";
-import { canWorkOnCompanies, isProgramManager } from "@/lib/empresarial/access";
+import {
+  canConfigureProgram,
+  canWorkOnCompanies,
+  isProgramManager,
+} from "@/lib/empresarial/access";
 import { BENEFIT_TYPES } from "@/lib/empresarial/constants";
 import { lerGenero, lerModelo, problemasDoModelo } from "@/lib/empresarial/contrato";
 import { maskDocument } from "@/lib/empresarial/documents";
@@ -23,12 +27,8 @@ export type ActionResult = { ok: boolean; error?: string };
  * ou o Consultor RisLife responsável por ela (1039: a RLS confere qual é).
  */
 function canEditConfig(session: SessionContext, companyId: string | null): boolean {
-  if (companyId === null) {
-    return (
-      session.isAdminMaster ||
-      Object.values(session.rolesByClinic).flat().includes("franchisor_staff")
-    );
-  }
+  // A regra da REDE é das Configurações do programa (matriz, 1048).
+  if (companyId === null) return canConfigureProgram(session);
   return canWorkOnCompanies(session);
 }
 
@@ -123,7 +123,7 @@ export async function saveSplitRules(
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   // A divisão da receita é do gestor, também na empresa (1039).
-  if (!canEditConfig(session, companyId) || !isProgramManager(session)) {
+  if (companyId === null ? !canConfigureProgram(session) : !isProgramManager(session)) {
     return { ok: false, error: "Sem permissão." };
   }
   const fr = num(field(formData, "first_payment_risarte_pct")) ?? 0;
@@ -411,7 +411,7 @@ export async function salvarGrupoDeBeneficios(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const id = field(formData, "group_id");
   const nome = field(formData, "name");
@@ -453,7 +453,7 @@ export async function excluirGrupoDeBeneficios(
   groupId: string
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const db = await empresarialDb();
   const { error } = await db.from("benefit_groups").delete().eq("id", groupId);
@@ -484,7 +484,7 @@ export async function criarGrupoDeBeneficios(
   formData: FormData
 ): Promise<ActionResult & { groupId?: string }> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const nome = field(formData, "name");
   if (!nome) return { ok: false, error: "Dê um nome ao grupo." };
@@ -550,7 +550,7 @@ export async function salvarItensDoGrupo(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const itens: Record<string, unknown>[] = [];
   for (const i of indicesDoFormulario(formData, "proc_")) {
@@ -668,7 +668,7 @@ function vantagensDoFormulario(formData: FormData): VantagemEscolhida[] {
  */
 export async function salvarVantagem(formData: FormData): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const id = field(formData, "perk_id");
   const name = field(formData, "name");
@@ -711,7 +711,7 @@ export async function salvarVantagem(formData: FormData): Promise<ActionResult> 
  */
 export async function excluirVantagem(perkId: string): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const db = await empresarialDb();
   const { error } = await db.from("perks").delete().eq("id", perkId);
@@ -746,7 +746,7 @@ export async function salvarContratoDaRede(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const modelo = lerModelo(formData);
   const problemas = problemasDoModelo(modelo);
@@ -804,7 +804,7 @@ export async function salvarDadosDaContratada(
   formData: FormData
 ): Promise<ActionResult> {
   const session = await getSessionContext();
-  if (!isProgramManager(session)) return { ok: false, error: "Sem permissão." };
+  if (!canConfigureProgram(session)) return { ok: false, error: "Sem permissão." };
 
   const cpf = field(formData, "rep_cpf");
   if (cpf && cpf.replace(/\D/g, "").length !== 11) {

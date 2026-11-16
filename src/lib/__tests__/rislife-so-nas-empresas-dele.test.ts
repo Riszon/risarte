@@ -89,8 +89,9 @@ describe("o banco: o consultor só nas empresas e nos leads dele (1039)", () => 
   });
 
   it("a empresa nasce com o consultor como responsável — nunca em nome de outro", () => {
+    // 1048: e só com a permissão "carteira" da matriz.
     expect(pols.get("companies.companies_insert")).toMatch(
-      /is_program_manager\(\)\s+or assigned_consultant_id = \(select auth\.uid\(\)\)/
+      /is_program_manager\(\)\s+or \(assigned_consultant_id = \(select auth\.uid\(\)\) and empresarial\.pode\('acao\.empresarial\.carteira'\)\)/
     );
   });
 
@@ -118,8 +119,9 @@ describe("a tela segue o banco", () => {
   });
 
   it("as configurações da rede seguem só com o gestor", () => {
+    // 1048: pela permissão "Configurações do programa" — que o consultor não tem.
     expect(ler("src/app/(app)/empresarial/configuracoes/page.tsx")).toContain(
-      'if (!isProgramManager(session)) redirect("/empresarial");'
+      'if (!canConfigureProgram(session)) redirect("/empresarial");'
     );
   });
 

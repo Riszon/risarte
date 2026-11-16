@@ -19,7 +19,10 @@ import {
   type LinhaDaPlanilha,
 } from "@/lib/empresarial/importacao";
 import { lerPorLotes } from "@/lib/paginar";
-import { canWorkOnCompanies, isProgramManager } from "@/lib/empresarial/access";
+import {
+  canManageEmployees as podeCadastrarTitulares,
+  isProgramManager,
+} from "@/lib/empresarial/access";
 import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
 
 export type ActionResult = { ok: boolean; error?: string };
@@ -31,12 +34,8 @@ export type ActionResult = { ok: boolean; error?: string };
  * `canUseClinic`, que o consultor não tem.
  */
 function canManageEmployees(session: SessionContext): boolean {
-  if (canWorkOnCompanies(session)) return true;
-  return Object.values(session.rolesByClinic)
-    .flat()
-    .some((r) =>
-      ["sdr", "receptionist", "unit_manager", "franchisee"].includes(r)
-    );
+  // 1048: vem da matriz ("Cadastrar titulares e dependentes"); o alcance é do banco.
+  return podeCadastrarTitulares(session);
 }
 
 function field(formData: FormData, key: string): string | null {

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import type { Capability, MatrizPermissoes } from "@/lib/permissions";
+import { EXPLICACOES } from "@/lib/permissoes-explicacoes";
 import { formatBrDateTime } from "@/lib/dates";
 import {
   alternar,
@@ -129,12 +130,47 @@ function SeloNaoSalvo() {
   );
 }
 
+/**
+ * O QUE A PERMISSÃO FAZ, LIGADA E DESLIGADA (pedido do dono, 16/11/2026).
+ * Os textos moram em `permissoes-explicacoes.ts`, escritos a partir do
+ * código; a régua reprova permissão sem eles.
+ */
+function descricaoDa(cap: Capability): string {
+  return EXPLICACOES[cap.id]?.descricao ?? cap.descricao;
+}
+
+function ExplicacaoDaPermissao({ cap, compacta = false }: { cap: Capability; compacta?: boolean }) {
+  const e = EXPLICACOES[cap.id];
+  if (!e) return null;
+  const corpo = (
+    <div className="mt-1 grid gap-1.5 text-xs sm:grid-cols-2">
+      <p className="rounded-md border border-emerald-600/30 bg-emerald-600/5 p-2">
+        <span className="font-medium text-emerald-700 dark:text-emerald-400">Se liberado: </span>
+        {e.seLigado}
+      </p>
+      <p className="rounded-md border bg-muted/40 p-2">
+        <span className="font-medium">Se bloqueado: </span>
+        {e.seDesligado}
+      </p>
+    </div>
+  );
+  if (!compacta) return corpo;
+  return (
+    <details className="mt-0.5">
+      <summary className="cursor-pointer text-xs text-muted-foreground underline-offset-2 hover:underline">
+        O que muda ao liberar ou bloquear
+      </summary>
+      {corpo}
+    </details>
+  );
+}
+
 function SeloDoBanco() {
   return (
     <Badge
       variant="outline"
       className="gap-1 text-[10px] font-normal"
-      title="O banco de dados também decide: ligar aqui abre a tela, mas os dados podem vir vazios."
+      title="O banco de dados também decide: liberar além do padrão abre a tela, mas o sistema ainda pode recusar a gravação ou mostrar os dados vazios."
     >
       <Database className="size-3" />o banco também decide
     </Badge>
@@ -379,7 +415,8 @@ export function PermissionsMatrix({
                                 )}
                                 {mudou && <SeloNaoSalvo />}
                               </div>
-                              <p className="text-xs text-muted-foreground">{cap.descricao}</p>
+                              <p className="text-xs text-muted-foreground">{descricaoDa(cap)}</p>
+                              <ExplicacaoDaPermissao cap={cap} compacta />
                             </div>
                             <button
                               type="button"
@@ -494,7 +531,8 @@ export function PermissionsMatrix({
             <div className="min-w-0 space-y-1">
               <p className="text-xs uppercase text-muted-foreground">{cap.grupo}</p>
               <h2 className="text-lg font-semibold">{cap.rotulo}</h2>
-              <p className="text-sm text-muted-foreground">{cap.descricao}</p>
+              <p className="text-sm text-muted-foreground">{descricaoDa(cap)}</p>
+              <ExplicacaoDaPermissao cap={cap} />
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {cap.dependeDoBanco && <SeloDoBanco />}
                 {foraDoPadrao(rascunho, padrao, cap.id) && <SeloForaDoPadrao />}

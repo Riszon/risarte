@@ -62,6 +62,29 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.460.0",
+    data: "2026-11-16",
+    // Sem migração do CORE: a desta entrega é do Empresarial (1048, EMPRESARIAL_MIGRATION).
+    migracao: null,
+    titulo: "Permissões explicadas e as permissões do Empresarial",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Em Administração → Permissões, cada permissão agora diz o que é, o que a pessoa passa a ver e fazer se estiver LIBERADA e o que some ou é recusado se estiver BLOQUEADA — escrito a partir do que o sistema faz de verdade.",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Empresarial ganhou o grupo “Ações — Empresarial” em Permissões: Gerir o programa (todas as empresas), Trabalhar na própria carteira, Cobranças das empresas, Cadastrar titulares e dependentes e Configurações do programa. Nascem com quem já podia; o que você mudar vale na tela e no banco.",
+        papeis: [],
+        manual: "13b. Para o Admin Master: alterar permissões",
+      },
+    ],
+  },
+  {
     versao: "0.459.1",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4020, ASAAS_MIGRATION).

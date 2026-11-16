@@ -80,14 +80,13 @@ describe("AP50: as funções do Empresarial que gravam conferem quem chama", () 
       join(__dirname, "..", "..", "app", "(app)", "empresarial", "[companyId]", "employee-actions.ts"),
       "utf8"
     );
-    const papeisDoBanco = [...banco.matchAll(/'(\w+)'/g)].map((m) => m[1]).sort();
+    // 1048: os DOIS perguntam à mesma permissão da matriz ("Cadastrar
+    // titulares e dependentes"); os padrões do banco e do catálogo são
+    // comparados em permissoes-empresarial.test.ts.
     const trechoDaTela = tela.slice(tela.indexOf("function canManageEmployees"), tela.indexOf("function field"));
-    const papeisDaTela = [...trechoDaTela.matchAll(/"(\w+)"/g)].map((m) => m[1]).sort();
-    expect(papeisDaTela.length).toBeGreaterThan(0);
-    expect(papeisDoBanco).toEqual(papeisDaTela);
-    expect(banco).toContain("empresarial.is_program_manager()");
-    // 1039: na tela entra também o Consultor RisLife (`canWorkOnCompanies`);
-    // no banco ele passa pelas regras "é a empresa dele" (`is_my_company`).
-    expect(trechoDaTela).toContain("canWorkOnCompanies(session)");
+    expect(banco).toContain("empresarial.pode('acao.empresarial.titulares')");
+    expect(trechoDaTela).toContain("podeCadastrarTitulares(session)");
+    const acesso = readFileSync(join(__dirname, "..", "empresarial", "access.ts"), "utf8");
+    expect(acesso).toContain('return pode(session, "acao.empresarial.titulares");');
   });
 });
