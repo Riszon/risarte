@@ -436,6 +436,14 @@ Syncthing se comportarem de forma estranha.**
   NOT_ALLOWED). Publicado; OC-00015 e OC-00016 respondidos como resolvidos
   (0.457.0). AP172 e AP173 no backlog, ligados ao OC-00016. Não visto na tela.
 
+**16/11/2026 (importar empresas) — PC Administrador (Empresarial 0.106.0 → 0.107.0, migração 1047)**
+
+- **Importar empresas por planilha** (bloco "EMPRESARIAL 0.107.0" no ESTADO).
+  ⚠️ **Coluna nova = `COLUNAS_EMPRESAS`** (planilha-empresas.ts) + o campo
+  na 1047 (régua confere). ⚠️ **ExcelJS: validação por FAIXA**, nunca por
+  célula (duplicava).
+- ⏳ 1047 só no treino.
+
 **16/11/2026 (implantação medida) — PC Administrador (Empresarial 0.105.0 → 0.106.0, migração 1046)**
 
 - **O ganho no cartão e a implantação medida pelo sistema** (bloco

@@ -35,6 +35,7 @@ import {
 import type { Company } from "@/lib/empresarial/types";
 import type { BillingModel, CompanyCategory } from "@/lib/empresarial/documents";
 import { CompanyFormDialog } from "./company-form-dialog";
+import { ImportarEmpresasDialog } from "./importar-empresas-dialog";
 import { CampoDeBusca } from "@/components/campo-de-busca";
 
 export const metadata: Metadata = { title: "Risarte Empresarial" };
@@ -291,6 +292,7 @@ export default async function EmpresarialPage(props: {
                 <Settings className="mr-1 size-4" />
                 Configurações
               </Button>
+          <ImportarEmpresasDialog className={BOTAO_NO_CABECALHO} />
           <CompanyFormDialog consultants={consultants} noCabecalho />
           </>
         )}

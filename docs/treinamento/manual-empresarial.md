@@ -1179,6 +1179,55 @@ rural, autônomo, obra civil, estrangeira. Ela sugere o tipo de documento.
 **Preços de adesão da empresa** — mudar um valor aqui cria um **override**
 (aparece *Voltar ao padrão da rede*), e a mensalidade passa a usar o valor dela.
 
+### 8.1. Importar empresas por planilha (migração)
+
+Para levar ao sistema, de uma vez, as empresas que **já fazem parte** do
+programa. Só o **gestor do programa** importa (é o mesmo que cadastra empresa
+nova).
+
+1. Em **Empresarial**, clique em **Importar empresas** e depois em **Modelo**.
+   A planilha vem com a logo e três abas:
+   - **Como preencher** — o passo a passo, o que vai em cada coluna, um
+     exemplo e a lista do que conferir antes de importar;
+   - **Empresas** — **uma linha por empresa**. Os títulos em **vinho** (com
+     \*) são obrigatórios: documento principal (CNPJ da matriz), razão social,
+     início do contrato, quem paga, mensalidade (por titular ou valor fixo),
+     boletos (único ou um por CNPJ) e dia do vencimento. Passe o mouse no
+     título para ver como preencher;
+   - **Outros CNPJs** — filiais e outros documentos. A coluna **Empresa** tem
+     a setinha ▼ com as empresas já preenchidas na aba Empresas.
+2. Nas colunas com setinha ▼, **escolha na lista** (quem paga, unidade,
+   consultor…). A lista de unidades e de consultores vem do sistema no momento
+   em que o modelo é baixado.
+3. Preencha **só o que foi combinado diferente** da rede. Preço em branco = o
+   preço da rede. **Unidades da parceria** em branco ou *Todas* = qualquer
+   unidade.
+4. Volte em **Importar empresas**, **Escolher planilha** e **Conferir e
+   importar**.
+
+**A planilha entra inteira ou não entra.** Se alguma linha tiver problema, nada
+é gravado e a janela lista a **aba, a linha do Excel e o motivo** (por
+exemplo, *"Empresas, linha 8: falta o dia do vencimento"*). Corrija e escolha o
+arquivo de novo.
+
+> **Empresa que já está no sistema é recusada** (*"empresa já cadastrada no
+> sistema"*). A importação não altera cadastro existente: tire a linha da
+> planilha e, se precisar, ajuste a empresa pela ficha.
+
+> **O que a importação NÃO faz** (de propósito):
+> - **não cadastra titulares e dependentes** — depois de importar, abra cada
+>   empresa e use a planilha própria (aba **Titulares → Importar Excel**, seção
+>   9);
+> - **não gera cobrança de implantação** — as empresas já estão no programa; a
+>   mensalidade segue o ciclo normal;
+> - **não copia benefícios** — a empresa usa os **benefícios padrão da rede**;
+>   o que for diferente se ajusta em **Plano & Benefícios**.
+
+> **"Um boleto por CNPJ"** precisa de pelo menos mais um documento na aba
+> **Outros CNPJs** — sem ele, seria um boleto só com outro nome, e a linha é
+> recusada.
+
+
 ---
 
 ## 9. Titulares e dependentes

@@ -20,6 +20,17 @@ import {
 } from "@/lib/empresarial/documents";
 import { formatCpf, formatPhone } from "@/lib/masks";
 import type { CompanyAddress } from "@/lib/empresarial/types";
+import { createClient } from "@/lib/supabase/server";
+import { naoConseguiConferir } from "@/lib/contagem";
+import {
+  conferirPlanilhaDeEmpresas,
+  recusaDaImportacaoDeEmpresas,
+  type ErroDaPlanilha,
+} from "@/lib/empresarial/planilha-empresas";
+import {
+  completarPrecos,
+  contextoDaImportacaoDeEmpresas,
+} from "@/lib/empresarial/importacao-empresas-servidor";
 
 export type ActionResult = { ok: boolean; error?: string };
 export type CreateCompanyResult = ActionResult & { companyId?: string };
@@ -320,4 +331,69 @@ export async function setCompanyStatus(
   revalidatePath("/empresarial");
   revalidatePath(`/empresarial/${companyId}`);
   return { ok: true };
+}
+
+// -----------------------------------------------------------------------------
+// 1047 — IMPORTAR EMPRESAS POR PLANILHA (migração; pedido do dono, 16/11/2026)
+// -----------------------------------------------------------------------------
+
+export type ImportarEmpresasResult = ActionResult & {
+  importadas?: number;
+  /** A lista de linhas recusadas (aba, linha do Excel, motivo). */
+  erros?: ErroDaPlanilha[];
+};
+
+/**
+ * Importa as empresas da planilha modelo. As células chegam como o navegador
+ * as leu (cada aba em `header: 1`); a CONFERÊNCIA roda aqui, no servidor, com
+ * o que o banco diz (documentos já cadastrados, unidades, consultores). Tudo
+ * ou nada: qualquer linha com problema recusa a planilha inteira.
+ */
+export async function importarEmpresas(
+  celulasEmpresas: unknown[][],
+  celulasDocumentos: unknown[][]
+): Promise<ImportarEmpresasResult> {
+  const session = await getSessionContext();
+  if (!isProgramManager(session)) {
+    return { ok: false, error: "Só o gestor do programa pode importar empresas." };
+  }
+  if (!Array.isArray(celulasEmpresas) || !Array.isArray(celulasDocumentos)) {
+    return { ok: false, error: "Não foi possível ler a planilha." };
+  }
+  const db = await empresarialDb();
+  const supabase = await createClient();
+  const ctx = await contextoDaImportacaoDeEmpresas(db, supabase);
+  if (!ctx) {
+    return { ok: false, error: naoConseguiConferir("as empresas já cadastradas, as unidades e os consultores") };
+  }
+  const conferida = conferirPlanilhaDeEmpresas(celulasEmpresas, celulasDocumentos, ctx);
+  if (conferida.erros.length > 0) {
+    return {
+      ok: false,
+      error: `A planilha não foi importada: ${conferida.erros.length} problema(s). Nada foi gravado.`,
+      erros: conferida.erros,
+    };
+  }
+  const empresas = completarPrecos(conferida.empresas, ctx.precoDaRede);
+  const { data, error } = await db.rpc("importar_empresas", {
+    p_empresas: empresas.map(({ empresa, documentos, unidades, precos }) => ({
+      empresa,
+      documentos,
+      unidades,
+      precos,
+    })),
+  });
+  if (error) {
+    console.error("importarEmpresas failed:", error.message);
+    return { ok: false, error: recusaDaImportacaoDeEmpresas(error.message) };
+  }
+  const importadas = Number(data ?? 0);
+  await logAudit({
+    action: "create",
+    entityType: "empresarial_company_import",
+    entityId: session.userId,
+    details: { importadas },
+  });
+  revalidatePath("/empresarial");
+  return { ok: true, importadas };
 }

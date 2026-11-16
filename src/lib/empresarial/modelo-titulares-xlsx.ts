@@ -120,6 +120,17 @@ function linhasDeDados(ws: ExcelJS.Worksheet, nColunas: number, colunasDeTexto: 
   }
 }
 
+/**
+ * UMA validação por faixa, nunca célula a célula: o ExcelJS ordena os
+ * endereços como texto ("E10" antes de "E6") e gravava a mesma regra duas
+ * vezes (E10:E505 e E6:E505, uma por cima da outra). Ver
+ * `modelo-empresas-xlsx.ts`; régua em planilha-titulares.test.ts.
+ */
+type ComValidacoes = { dataValidations: { add(endereco: string, v: ExcelJS.DataValidation): void } };
+function validarFaixa(ws: ExcelJS.Worksheet, faixa: string, v: ExcelJS.DataValidation) {
+  (ws as unknown as ComValidacoes).dataValidations.add(faixa, v);
+}
+
 function listaFixa(valores: readonly string[]): string {
   return `"${valores.join(",")}"`;
 }
@@ -346,19 +357,19 @@ function montarTitulares(wb: ExcelJS.Workbook) {
   const i0 = PRIMEIRA_LINHA;
   const iN = ULTIMA_LINHA;
   const f = (formula: string) => ({ formula, result: "" });
+  validarFaixa(ws, `E${i0}:E${iN}`, {
+    type: "list",
+    allowBlank: true,
+    formulae: [listaFixa(planos)],
+    showInputMessage: true,
+    promptTitle: "Plano de Dependentes",
+    prompt: "Individual = 1 dependente; Familiar = até 3; Familiar + extras = 4 ou mais. Em branco = sem dependentes.",
+    showErrorMessage: true,
+    errorStyle: "stop",
+    errorTitle: "Escolha na lista",
+    error: `Use uma das opções: ${planos.join(", ")}.`,
+  });
   for (let r = i0; r <= iN; r++) {
-    ws.getCell(`E${r}`).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: [listaFixa(planos)],
-      showInputMessage: true,
-      promptTitle: "Plano de Dependentes",
-      prompt: "Individual = 1 dependente; Familiar = até 3; Familiar + extras = 4 ou mais. Em branco = sem dependentes.",
-      showErrorMessage: true,
-      errorStyle: "stop",
-      errorTitle: "Escolha na lista",
-      error: `Use uma das opções: ${planos.join(", ")}.`,
-    };
     // H: "Nome — CPF" (⚠️ mesmo formato de textoDaLista, planilha-titulares.ts).
     ws.getCell(`H${r}`).value = f(`IF(OR(TRIM(A${r})="",TRIM(B${r})=""),"",TRIM(A${r})&" — "&TRIM(B${r}))`);
     // I: o limite do plano.
@@ -433,29 +444,29 @@ function montarDependentes(wb: ExcelJS.Workbook) {
   const limites = `${ABA_TITULARES}!$I$${i0}:$I$${iN}`;
   const planosDosTitulares = `${ABA_TITULARES}!$E$${i0}:$E$${iN}`;
   const parentescos = RELATIONSHIPS.map((x) => RELATIONSHIP_LABELS[x]);
+  validarFaixa(ws, `A${i0}:A${iN}`, {
+    type: "list",
+    allowBlank: true,
+    formulae: [listaDeTitulares],
+    showInputMessage: true,
+    promptTitle: "Titular",
+    prompt: "Escolha o colaborador na lista. Titular já cadastrado antes, fora desta planilha? Digite o CPF dele.",
+    // Sem trava: digitar o CPF de um titular que já está na empresa vale.
+    showErrorMessage: false,
+  });
+  validarFaixa(ws, `D${i0}:D${iN}`, {
+    type: "list",
+    allowBlank: true,
+    formulae: [listaFixa(parentescos)],
+    showInputMessage: true,
+    promptTitle: "Parentesco",
+    prompt: "Clique na setinha e escolha.",
+    showErrorMessage: true,
+    errorStyle: "stop",
+    errorTitle: "Escolha na lista",
+    error: `Use uma das opções: ${parentescos.join(", ")}.`,
+  });
   for (let r = i0; r <= iN; r++) {
-    ws.getCell(`A${r}`).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: [listaDeTitulares],
-      showInputMessage: true,
-      promptTitle: "Titular",
-      prompt: "Escolha o colaborador na lista. Titular já cadastrado antes, fora desta planilha? Digite o CPF dele.",
-      // Sem trava: digitar o CPF de um titular que já está na empresa vale.
-      showErrorMessage: false,
-    };
-    ws.getCell(`D${r}`).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: [listaFixa(parentescos)],
-      showInputMessage: true,
-      promptTitle: "Parentesco",
-      prompt: "Clique na setinha e escolha.",
-      showErrorMessage: true,
-      errorStyle: "stop",
-      errorTitle: "Escolha na lista",
-      error: `Use uma das opções: ${parentescos.join(", ")}.`,
-    };
     // F: a conferência da linha (o limite do plano do titular).
     const m = `MATCH(A${r},${chaves},0)`;
     const lim = `INDEX(${limites},${m})`;

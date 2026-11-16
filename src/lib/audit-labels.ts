@@ -320,6 +320,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   empresarial_employee: "Colaborador (Empresarial)",
   empresarial_employee_file: "Arquivo do colaborador",
   empresarial_employee_import: "Importação de colaboradores",
+  empresarial_company_import: "Importação de empresas",
   empresarial_dependent: "Dependente (Empresarial)",
   empresarial_billing: "Cobrança da empresa",
   empresarial_adhesion_pricing: "Preço da adesão (Empresarial)",

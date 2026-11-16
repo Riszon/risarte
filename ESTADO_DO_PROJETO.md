@@ -115,6 +115,36 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - conferido de fora: a função nova barra o anônimo (401).
 >
 > A exceção (só o Financeiro da Franqueadora ou o Admin Master, para o acordo de uma venda só) vem na entrega logo depois da 4017. Spec 19.28.11 a 19.28.14; manual 6.6.
+> ## 💼 EMPRESARIAL 0.107.0 / 1047 — IMPORTAR EMPRESAS POR PLANILHA (MIGRAÇÃO) (16/11/2026)
+>
+> Pedido do dono: levar ao sistema as empresas que já estão no programa, por
+> uma planilha modelo com instruções. Decisões dele: benefícios = padrão da
+> rede; documento que já existe = linha recusada; sem cobrança de implantação.
+> - **Modelo** `/empresarial/modelo-empresas` (só gestor do programa;
+>   `modelo-empresas-xlsx.ts`): abas Como preencher, **Empresas** (44
+>   colunas: identificação, contrato, cobrança, preços opcionais, tratamento e
+>   carência, quem assina, endereço, consultor) e **Outros CNPJs** (empresa
+>   escolhida numa lista "Razão — Documento"); listas de unidades e
+>   consultores numa aba escondida `Listas`.
+> - ⚠️ **Colunas, listas e conferência = `planilha-empresas.ts`** (pura;
+>   gerador e leitura usam a mesma lista). A conferência roda NO SERVIDOR
+>   (`importarEmpresas`, contexto em `importacao-empresas-servidor.ts`);
+>   tudo ou nada, erro com aba e linha do Excel.
+> - **1047:** `empresarial.importar_empresas(jsonb)` (invoker): empresa,
+>   documentos, unidades da parceria e preços (o branco = o da rede, porque a
+>   linha da empresa substitui a da rede inteira); `DOCUMENT_EXISTS` desfaz.
+> - ⚠️ **Validação de planilha no ExcelJS: UMA por faixa**
+>   (`dataValidations.add("E6:E505")`), nunca célula a célula — ele ordena os
+>   endereços como texto e gravava a regra DUAS vezes (E10:E505 sobre
+>   E6:E505). Corrigido também no modelo de titulares (estava assim desde a
+>   0.103.0); régua nos dois testes.
+> - Visto no Excel de verdade (COM): listas nas linhas 6 e 250, aba Listas
+>   escondida, lista de empresas compacta. Ensaio no treino 13/13
+>   (`scripts/empresarial-ensaio-1047.mjs`, desfeito) e quebrando 2 vezes;
+>   régua `planilha-empresas.test.ts` (13). Manual do Empresarial 8.1.
+>   **Não visto na tela do sistema.**
+> - ⏳ **1047 só no treino**; o dono roda na produção antes do push.
+
 > ## 💼 EMPRESARIAL 0.106.0 / 1046 — O GANHO NO CARTÃO E A IMPLANTAÇÃO MEDIDA PELO SISTEMA (16/11/2026)
 >
 > Relato do dono (produção): a empresa fechada não mostrava o cartão de ganho
