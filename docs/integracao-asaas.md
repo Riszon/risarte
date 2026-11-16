@@ -875,7 +875,7 @@ As diferenças são sempre **a favor da unidade** (o repasse nunca passa do perc
 
 - **S1.** F = percentual × tarifa, arredondado para baixo no centavo (generalizado em 18.2).
 - **S2.** Boleto: a menor tarifa entre código de barras e QR Code Pix.
-- **S3.** Mensageria **fora** do F até a resposta do Asaas (o Jeferson envia a pergunta em 13/11/2026).
+- **S3.** Mensageria **fora** do F. **Definitiva desde 16/11/2026:** o Asaas confirmou que a mensageria não entra no `netValue` (19.37).
 - **S4. Não existe desconto de pontualidade nas taxas da franquia.** O split retém o **percentual cheio**. O recebimento fora do split vira conta a pagar de taxa e entra na cobrança mensal da franqueadora à unidade (ASA6): paga em dia, valor cheio; em atraso, com multa e juros. A **multa e os juros da cobrança à unidade** ficam configuráveis na aba Taxas da franquia, **no nível da rede**; os percentuais são do Jeferson, conforme o contrato de franquia.
   - **Hoje (13/11/2026):** o desconto de pontualidade está em `network_fees.punctuality_discount_percent` (rede e exceção da unidade), aplicado só no pagamento da conta a pagar até o vencimento (`payable_punctuality_discount`, 0235). Na produção, está **zerado** em todas as taxas (rede, Londrina e Cambé). As contas a pagar de taxa **não têm multa nem juros calculados**: só os campos para informar à mão o que foi pago (`paid_fee_cents`, `paid_interest_cents`, conta 4.2.01).
 - **S5.** Diferença **a menor** de até **R$ 0,10 por cobrança** é absorvida, sem conta a pagar; acima disso, vira conta a pagar da unidade. O limite é configuração da rede. Repasse **a maior** vira divergência para o Financeiro da Franqueadora. **O valor que vale é o liquidado no aviso `PAYMENT_SPLIT_DONE`**: o riSZon grava e compara com o esperado (ajuste 2).
@@ -930,7 +930,7 @@ Percentuais de exemplo **diferentes por taxa e não redondos** (para pegar erro 
 
 ### 18.6 Pendências com o Asaas que afetam a ASA3
 
-- [ ] Mensageria no `netValue` (produção) — perguntado pelo Jeferson em 13/11/2026.
+- [x] Mensageria no `netValue` (produção): **não entra**; é debitada à parte, no recebimento (resposta do Asaas, 16/11/2026, 19.37).
 - [ ] Cartão de débito na fatura de cobrança `CREDIT_CARD` (se aceitar, a tarifa do débito entra como a menor).
 - [x] Arredondamento do `percentualValue` × `netValue` — **para baixo** (medido no sandbox em 13/11/2026, 18.5.1).
 - [ ] Split em chargeback (gerente de contas).
@@ -4447,3 +4447,154 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 - **A publicação:** `main` em 7d05d68f (com o `main` da outra sessão junto), e a produção mostra **0.459.1**.
 - **Conferido de fora:** as 11 portas novas barram o anônimo (401), e as tabelas novas não mostram nada a ele.
 - **Junto com a 4020 foram:** a correção do 1º vencimento da renegociação e o aviso das assinaturas antigas.
+
+### 19.37 Respostas do Asaas à primeira lista (Isadora, equipe de integrações, 16/11/2026) — PROPOSTAS AGUARDAM APROVAÇÃO
+
+#### 19.37.1 O que o Asaas respondeu
+
+1. **Mensageria:**
+   - não entra no `netValue`: é debitada à parte, no extrato, quando a cobrança é recebida;
+   - o `netValue` desconta só a tarifa do meio de pagamento, e a base do split não muda.
+2. **Arredondamento:**
+   - o split percentual é sobre o `netValue`, e cada recebedor recebe no mínimo R$ 0,01;
+   - nos parcelamentos, os centavos das primeiras parcelas são arredondados para baixo, e a diferença vai para a última.
+3. **Cartão de débito:**
+   - se a conta tiver o débito habilitado, a fatura de uma cobrança `CREDIT_CARD` também oferece o débito;
+   - desabilita-se no painel, em Minha conta › Configurações › Configurações do sistema › "Disponibilizar recebimento por Cartão de Débito".
+4. **Estorno:**
+   - a autorização é exigida quando o titular tem o token de ações críticas ativo, inclusive pela API;
+   - no Pix, dá para dispensar o token com a validação de saque via webhook (opção de estornos Pix);
+   - não dá para cancelar o estorno pela API. Ele cai se o titular recusar ou se a autorização não vier em **30 dias**, e o valor volta ao saldo;
+   - no estorno **total** com split, o valor do split é descontado de quem recebeu. **Se essa carteira não tiver saldo, o estorno é recusado**;
+   - avisos: `PAYMENT_REFUND_IN_PROGRESS`, `PAYMENT_REFUNDED`, `PAYMENT_PARTIALLY_REFUNDED` e, no Pix recusado, `PAYMENT_REFUND_DENIED` com o motivo em `additionalInfo.denialReason`. **Não há aviso enquanto o pedido espera a autorização.**
+5. **Cartão recorrente:**
+   - nunca mandar o IP do servidor: guardar o IP do paciente na contratação e usar nas cobranças seguintes;
+   - o indicado é a assinatura do Asaas;
+   - o `creditCardToken` vem pelo `GET /v3/payments/{id}`, depois que o paciente paga a fatura;
+   - na produção, depende da tokenização habilitada na conta.
+6. **Split em assinatura:** `PUT /v3/subscriptions/{id}` atualiza o split das próximas cobranças e, com `updatePendingPayments: true`, também o das pendentes.
+7. **Contestação:**
+   - perdida ou não contestada: a cobrança é estornada por inteiro, e o split é estornado de todas as contas;
+   - ganha: a cobrança volta ao status anterior, e os repasses são restabelecidos.
+8. **Comercial:** a chave de API entre CNPJs, as subcontas, as tarifas, o volume, o Pix Automático, o split de 100% e a tarifa do débito ficam com o time comercial. O Jeferson trata com eles.
+
+#### 19.37.2 As 20 perguntas: o que ficou respondido
+
+| # | Pergunta | Situação |
+|---|---|---|
+| 1 | Mensageria nas cobranças avulsas | ✅ **Respondida**: fora do `netValue`, debitada à parte no recebimento |
+| 2 | Mensageria no parcelamento no cartão (uma vez ou por parcela) | ⏳ Aberta |
+| 3 | Split na antecipação do cartão parcelado | ⏳ Aberta |
+| 4 | Contestação no parcelamento: por parcela ou pelo parcelamento | ⏳ Aberta |
+| 5 | Split na contestação | ✅ **Respondida**: perdida, o split é estornado de todas as contas; ganha, é restabelecido. *Ficou aberto:* as parcelas ainda não creditadas |
+| 6 | Estorno de parcelamento com parcelas já creditadas | 🟡 **Em parte**: no estorno total, o split sai de quem recebeu, e sem saldo é recusado. *Ficaram abertos:* a conta que emitiu sem saldo e o prazo máximo para estornar |
+| 7 | Novas tentativas no link do parcelamento | ⏳ Aberta |
+| 8 | Tarifa do parcelado: dia da criação ou da aprovação | ⏳ Aberta |
+| 9 | Boleto removido e pago mesmo assim (CIP) | ⏳ Aberta |
+| 10 | Cartão de débito na fatura de cartão | 🟡 **Em parte**: sim, se a conta tiver o débito habilitado, e dá para desabilitar. *A tarifa do débito* ficou com o comercial |
+| 11 | A unidade como pagadora do próprio boleto | ⏳ Aberta |
+| 12 | Limite diário de criação de cobranças na produção | ⏳ Aberta |
+| 13 | Token do cartão pela fatura do Asaas | ✅ **Respondida**: pelo `GET /v3/payments/{id}` depois do pagamento, com a tokenização habilitada na conta |
+| 14 | IP na cobrança com token | ✅ **Respondida**: o IP do paciente na contratação, nunca o do servidor |
+| 15 | Split em assinatura | ✅ **Respondida**: `PUT /v3/subscriptions/{id}`, e `updatePendingPayments: true` para as pendentes |
+| 16 | Chave de API entre CNPJs | ⏳ Com o comercial |
+| 17 | Subcontas para as novas unidades | ⏳ Com o comercial |
+| 18 | Tarifas e negociação pelo volume da rede | ⏳ Com o comercial |
+| 19 | Pix Automático em Londrina e Cambé | ⏳ Com o comercial |
+| 20 | Split de 100% para a RisLife | ⏳ Com o comercial |
+
+**Resumo:**
+- **Respondidas:** 1, 5, 13, 14 e 15.
+- **Em parte:** 6 e 10.
+- **Técnicas abertas:** 2, 3, 4, 7, 8, 9, 11 e 12.
+- **Com o comercial:** 16 a 20, mais a tarifa do débito.
+- **Respostas que não eram perguntas da lista:** o arredondamento (item 2) e os avisos do estorno (item 4).
+
+#### 19.37.3 O que muda, ponto a ponto (propostas: nada é construído antes da aprovação)
+
+**1. Estorno recusado quando a carteira que recebeu o split não tem saldo.**
+- **O que valia (prova de 13/11 no sandbox, 18.7.3, caso E2):** o estorno total foi feito, e a carteira sem saldo ficou **negativa** (−R$ 0,33).
+- **O que o Asaas responde para a produção:** o estorno é **recusado**.
+- **Qual vale:** a resposta escrita do Asaas, para a produção. O sandbox não reproduz a regra de saldo da produção (como não reproduz a tarifa e a antecipação). O riSZon passa a tratar os dois casos: a recusa (o que a produção faz) e o saldo negativo (o que já está construído na 4009 e continua como rede de segurança).
+- **Proposta (a), a reserva:** o **saldo mínimo da conta da franqueadora** já existe na Central (aba Taxas da franquia, 4009), com o aviso ao Financeiro da Franqueadora quando o saldo fica abaixo. Ele nasceu **em branco**. A proposta é dar um valor a ele.
+  - **Sugestão de partida:** o maior repasse de split que a franqueadora recebeu num único dia nos últimos 90 dias, × 2, mostrado na tela como referência.
+  - **Quem decide o número:** o dono. A tela mostra a referência.
+- **Proposta (b), conferir antes de pedir:** antes de um estorno total, o riSZon calcula a parte da franqueadora naquela cobrança (o split que ela recebeu) e lê o saldo dela no Asaas. Sem saldo, o pedido **não vai** ao Asaas, e a tela diz:
+  > "A conta da franqueadora não tem saldo para devolver R$ X, a parte dela nesta cobrança, e o Asaas recusaria o estorno. Avise o Financeiro da Franqueadora para repor o saldo da conta Asaas da franqueadora; depois, peça o estorno de novo."
+  - O Financeiro da Franqueadora recebe o aviso na hora.
+- **Proposta (c), a recusa que vier mesmo assim:** a recusa do Asaas (na resposta do pedido ou pelo `PAYMENT_REFUND_DENIED`, com o motivo):
+  - a cobrança volta para "Paga";
+  - a tela mostra a mesma orientação, com o motivo do Asaas;
+  - quem pediu, o Gerente e o Financeiro são avisados.
+- **RisLife (registrar na ASA5):**
+  - **O risco:** a carteira da RisLife recebe 100% da implantação e 50% da mensalidade do Empresarial. O estorno total de uma implantação precisa de **todo** o valor no saldo da RisLife.
+  - **Na ASA5:** o mesmo saldo mínimo (configurável na Central), o mesmo aviso e a mesma conferência antes do pedido, valendo para a carteira da RisLife.
+- **Efeito no distrato (4020): nenhum.** A devolução do distrato sai por Pix da conta da unidade, fora do Asaas, e não mexe no split.
+- **Efeito no estorno parcial (4020a):**
+  - **Pela prova de 16/11 (19.36.1):** no estorno **parcial** do Pix, o Asaas **não mexe no split**, e o valor sai todo da conta da unidade. Então a reserva da franqueadora não entra; o que conta é o **saldo da unidade**.
+  - **Proposta:** antes de pedir o parcial, o riSZon lê o saldo da conta da unidade. Sem saldo, não pede, e a tela orienta a usar a devolução por Pix da conta da unidade (o caminho que já existe).
+  - **O cartão parcelado:** a prova de amanhã (17/11) diz se, no parcial do parcelamento, o Asaas mexe no split. Se mexer, a conferência da proposta (b) passa a valer também para ele.
+
+**2. Cartão de débito desabilitado nas contas das unidades (decisão do dono).**
+- **A API não permite ler essa configuração.** Procurei na documentação (`/v3/myAccount` e as rotas de conta e de configuração) e não há campo nem rota que diga se o débito está habilitado. O Asaas também não disse que há.
+- **Proposta:** vira um **item de conferência à mão**:
+  - **Na Central** de cada unidade (aba Conta e tarifas), a marca **"Cartão de débito desabilitado no painel do Asaas"**, com quem conferiu e quando (Gerente ou Admin Master; na auditoria).
+  - **Na verificação semanal das contas:** unidade sem a marca, ou com a marca há mais de 90 dias, gera aviso ao Gerente e ao Admin Master ("confira no painel do Asaas que o débito está desabilitado"). A falta da marca **derruba a prontidão** da unidade para a produção.
+  - **Na lista da ASA7:** "desabilitar o débito no painel de cada unidade (Minha conta › Configurações › Configurações do sistema) e marcar na Central".
+  - **Para o Asaas:** entra na próxima lista a pergunta "há como ler pela API se o débito está habilitado?". Se houver, a marca passa a ser conferida sozinha.
+
+**3. O estorno esperando a autorização** (não há aviso nesse estado, e o pedido cai em 30 dias).
+- **Hoje (4009):** a rotina diária consulta os pedidos pendentes e avisa quando passa de 1 dia útil. O pedido cancelado volta a cobrança para "Paga".
+- **Proposta, a régua do pedido pendente:**
+  - **Consulta:** todo dia, a rotina lê no Asaas cada estorno pedido (`GET /v3/payments/{id}`, a lista `refunds`).
+  - **1 dia útil sem autorização:** aviso a **quem pediu e ao Gerente** da unidade: "o estorno de R$ X espera a autorização do titular no painel do Asaas".
+  - **A cada 7 dias**, o mesmo aviso; no **25º dia**: "o pedido cai em 5 dias se não for autorizado".
+  - **Caiu** (30 dias sem autorização, ou recusado pelo titular):
+    - o pedido fica **"Caiu sem autorização"** (ou "Recusado pelo titular"), e a cobrança volta para "Paga";
+    - quem pediu, o Gerente e o Financeiro da Franqueadora são avisados;
+    - se o estorno era a devolução de um distrato (4020a), a devolução volta para "pedir", e a tela oferece a devolução por Pix da conta da unidade.
+  - **Na tela:** a ficha e a lista de devoluções (Financeiro › Cobranças automáticas) mostram, para cada pedido pendente, **há quantos dias espera** e **em quantos dias cai**.
+
+**4. Estorno de Pix sem o token (validação de saque via webhook): não usar agora.**
+- **Agora:** a autorização continua humana, no painel do Asaas.
+- **Registrado como possibilidade futura:** o Asaas manda a requisição de estorno Pix ao riSZon, que valida e aprova sozinho. Exige o webhook de autenticação, a regra de quem pode estornar e quanto, e a decisão do dono.
+
+**5. ASA4B, o desenho indicado pelo Asaas (registrado, sem construir).**
+- **O cartão recorrente** vai pela **assinatura do Asaas**, com o split.
+- **O IP do paciente:**
+  - é guardado na **contratação** (quando ele paga a primeira fatura) e usado nas cobranças seguintes; nunca o do servidor;
+  - **entra no termo de privacidade**: o riSZon guarda o IP do paciente para a cobrança recorrente no cartão.
+- **O token:** o `creditCardToken` vem pela consulta da cobrança (`GET /v3/payments/{id}`) depois do pagamento da fatura. Os dados do cartão nunca passam pelo riSZon, o que resolve o bloqueio que existia (13.2).
+- **Na produção:** depende da **tokenização habilitada** em cada conta, pelo comercial do Asaas. Entra na lista da ASA7.
+- **A troca das taxas da rede numa assinatura ativa:** `PUT /v3/subscriptions/{id}` com `updatePendingPayments: true`.
+
+**6. A mensageria: nada muda na fórmula do split.**
+- **Confirmado:** a mensageria não está no `netValue`. **S3 fica definitiva:** a mensageria fica fora do F, e a base do split continua o `netValue` (só a tarifa do meio).
+- **A tabela de custo por cobrança** (17.4 e o "Custo na tela"):
+  - **e-mail e SMS:** R$ 0,99 por cobrança, uma vez, **debitada à parte no extrato quando a cobrança é recebida** (não no `netValue`);
+  - **WhatsApp e ligação:** por disparo, como já estava.
+  - A frase da tela passa a ser: "cobrada uma vez por cobrança, à parte, quando ela é recebida".
+- **Continua aberta:** a mensageria por parcela no cartão parcelado (pergunta 2). Até a resposta, o parcelado continua no cadastro sem avisos (19.19.3).
+
+**Um ponto para conferir, achado na resposta do arredondamento (item 2):**
+- **O Asaas:** nos parcelamentos, arredonda para baixo os centavos do split das primeiras parcelas e põe a diferença na última.
+- **A conferência:** se a previsão do split por parcela do riSZon (4013, "parte fixa rateada") faz a mesma conta. Se não fizer, a diferença de centavos fica dentro da tolerância de R$ 0,10 (S5) e não gera divergência, mas a previsão deve espelhar o Asaas.
+- **Proposta:** conferir no ensaio e, se precisar, ajustar a previsão na 4020a.
+
+#### 19.37.4 Decisões para o dono
+
+1. **O saldo mínimo da franqueadora:**
+   - (a) a referência na tela, com o número decidido pelo dono (recomendado);
+   - (b) um valor fixo agora (diga qual).
+2. **Conferir o saldo antes do estorno total e o tratamento da recusa (1b e 1c):**
+   - (a) sim (recomendado);
+   - (b) só o tratamento da recusa.
+3. **A marca do débito na Central e a verificação semanal (2):**
+   - (a) como proposto, derrubando a prontidão (recomendado);
+   - (b) só o aviso, sem mexer na prontidão.
+4. **A régua do estorno pendente (3):**
+   - (a) como proposta: 1 dia útil, a cada 7 dias, o aviso do 25º dia e a queda aos 30 (recomendado);
+   - (b) outro ritmo (diga qual).
+5. **Onde construir:**
+   - (a) os itens 1 e 3 entram na **4020a**, porque mexem no estorno; o item 2 entra na **ASA7** (recomendado);
+   - (b) uma entrega própria, antes da 4020a.

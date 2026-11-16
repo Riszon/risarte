@@ -45,6 +45,7 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
 - **ASA4B:** Pix Automático com jornada sem pagamento inicial e split desde a
   primeira parcela. Cartão recorrente **em aberto**: mandar o objeto
   `creditCard` faria o cartão passar pelo servidor do riSZon, o que é proibido.
+- **Respostas do Asaas (16/11/2026, 19.37):** respondidas as perguntas 1, 5, 13, 14 e 15; em parte, a 6 e a 10; técnicas abertas: 2, 3, 4, 7, 8, 9, 11 e 12; com o comercial: 16 a 20 e a tarifa do débito. As propostas (saldo antes do estorno, recusa, débito desabilitado, régua do estorno pendente) aguardam a aprovação do dono.
 - **ASA7:** decidir a lista de IPs autorizados (IP fixo da Vercel: US$ 100/mês
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
   **Na homologação (ASA7), provar também:** a recusa do cartão **pelo banco emissor**
