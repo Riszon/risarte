@@ -12,9 +12,11 @@ import {
   percentualDoPlano,
   previaDoCaixa,
   recebidoNoBalcao,
+  SELO_DA_VENDA,
   type RegraDoCaixa,
 } from "@/lib/venda-direta-caixa";
 import { isoDateIn, BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { readFileSync } from "node:fs";
 
 const diaDe = (d: Date) => isoDateIn(d, BRAZIL_TIME_ZONE);
 // 16/11/2026, 14h05 no Brasil.
@@ -304,5 +306,23 @@ describe("onde a venda parou", () => {
     expect(etapaDoCaixa({ ...v, cancelled: true, closed: true })).toBe(
       "cancelada"
     );
+  });
+});
+
+describe("selo da situação nas telas de servidor", () => {
+  it("toda situação tem rótulo", () => {
+    for (const s of Object.values(SELO_DA_VENDA)) {
+      expect(s.rotulo.length).toBeGreaterThan(0);
+      expect(s.estilo.length).toBeGreaterThan(0);
+    }
+  });
+  it("o prontuário (servidor) não lê o selo do arquivo de navegador", () => {
+    // Constante de módulo "use client" chega vazia à página: o selo saía em branco.
+    const pagina = readFileSync(
+      "src/app/(app)/prontuarios/[id]/page.tsx",
+      "utf8"
+    );
+    expect(pagina).not.toMatch(/DIRECT_SALE_STATUS_(LABEL|STYLE)/);
+    expect(pagina).toContain("SELO_DA_VENDA[s.status].rotulo");
   });
 });

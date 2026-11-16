@@ -415,20 +415,14 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ **Disco C: chegou a 0 no `npm run verificar`** com 5 GB livres e o
   servidor de teste no ar; passou depois de encerrar o servidor (o `next dev`
   da porta 3100 sobrevive ao parar a tarefa: encerrar pelo processo da porta).
-- Não clicado na tela: Finalizar, Termo assinado e Recebi (uma venda de teste
-  na Unidade Teste avisa 1 Consultor real do treino). Próximas: VD3-2 (termo
-  pela ZapSign, migração nova), VD3-3, VD3-4.
-**16/11/2026 (funções de apoio, F2) — PC Administrador (core 0.461.0 → 0.462.0, migração 0414)**
-
-- **As coberturas no banco** (bloco 0.462.0 no ESTADO). ⚠️ Trava nova
-  `unique (user_id, clinic_id, role)`; apoio só por `role_coverages` e pelas
-  portas (só Admin). ⚠️ A janela esconde a linha vencida; a rotina
-  `risarte-coverage-daily` encerra. ⚠️ Semente/script com `on conflict
-  (user_id, clinic_id)` leva `where assignment_kind = principal`.
-- ✅ 0414 nos dois bancos (treino: ensaio 26/26, desfeito; produção pelo dono em
-  16/11/2026; conferido de fora: tabelas e colunas novas, limites padrão só
-  avisando, a combinação proibida semeada; dar cobertura e a rotina recusam sem
-  login, e a chave de serviço para em NOT_ALLOWED). Publicado. Próxima: F3.
+- ⚠️ **Constante de arquivo "use client" chega VAZIA à página de servidor**
+  (o selo da venda saía em branco): rótulo e estilo para página moram em lib
+  pura (`SELO_DA_VENDA`).
+- Testado de ponta a ponta com o OK do dono: VD-00587 (Unidade Teste, R$ 300,00
+  em dinheiro), conferida no banco. Uma venda de teste lá avisa 1 Consultor
+  real. Não testado na tela: Asaas, parcelado, desconto, permuta, Coordenador,
+  cancelamento. Próximas: VD3-2 (termo pela ZapSign, migração nova), VD3-3,
+  VD3-4.
 
 **16/11/2026 (funções de apoio, F1) — PC Administrador (core 0.460.0 → 0.461.0, migração 0413; Indica 0.9.0 → 0.9.1, migração 2012)**
 

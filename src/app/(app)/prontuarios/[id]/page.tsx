@@ -94,13 +94,13 @@ import {
   BotaoVendaDireta,
   CaixaPeloEndereco,
 } from "@/components/venda-direta/caixa";
-import { etapaDoCaixa, oQueFalta } from "@/lib/venda-direta-caixa";
+import {
+  SELO_DA_VENDA,
+  etapaDoCaixa,
+  oQueFalta,
+} from "@/lib/venda-direta-caixa";
 import { formatBRL } from "@/lib/pricing";
 import { DirectSaleSessionsList } from "./direct-sale-sessions-list";
-import {
-  DIRECT_SALE_STATUS_LABEL,
-  DIRECT_SALE_STATUS_STYLE,
-} from "../../comercial/venda-direta/direct-sale-item";
 import {
   getUnitSchedulingData,
   type AgendaFormConfig,
@@ -3789,10 +3789,10 @@ export default async function ClientDetailPage(
                           <span
                             className={cn(
                               "rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                              DIRECT_SALE_STATUS_STYLE[s.status]
+                              SELO_DA_VENDA[s.status].estilo
                             )}
                           >
-                            {DIRECT_SALE_STATUS_LABEL[s.status]}
+                            {SELO_DA_VENDA[s.status].rotulo}
                           </span>
                           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                             {s.items

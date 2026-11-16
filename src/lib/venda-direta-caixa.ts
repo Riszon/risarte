@@ -312,3 +312,34 @@ export function oQueFalta(v: SituacaoDaVenda): string {
   if (!v.contractSigned) return "falta assinar";
   return "falta receber";
 }
+
+/**
+ * O selo da situação da venda, para telas de SERVIDOR (prontuário, listas).
+ * ⚠️ Não importar o rótulo de `direct-sale-item.tsx` numa página: ele é um
+ * arquivo de navegador, e constante de lá chega vazia ao servidor (o selo saía
+ * em branco — visto no teste de 16/11/2026).
+ */
+export const SELO_DA_VENDA: Record<
+  "aguardando_fechamento" | "cobranca_emitida" | "concluida" | "cancelada",
+  { rotulo: string; estilo: string }
+> = {
+  aguardando_fechamento: {
+    rotulo: "Aguardando fechamento",
+    estilo:
+      "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200",
+  },
+  cobranca_emitida: {
+    rotulo: "Fechamento pendente",
+    estilo:
+      "border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-200",
+  },
+  concluida: {
+    rotulo: "Concluída",
+    estilo:
+      "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200",
+  },
+  cancelada: {
+    rotulo: "Cancelada",
+    estilo: "border-border bg-muted text-muted-foreground",
+  },
+};

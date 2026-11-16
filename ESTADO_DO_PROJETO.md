@@ -26,10 +26,12 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **Não feito nesta entrega:** o termo pela ZapSign (VD3-2, migração nova),
 >   o Pix na janela (VD3-3), "Atender agora" (VD3-4), o motivo ao desmarcar o
 >   termo (D5: hoje só esconde o botão de quem não é Gerente), a agenda.
-> - **Visto na tela** no servidor local de teste, como a Recepção de teste: a
->   venda nova até antes do Finalizar, o Vender, a fila e as etapas de vendas
->   abertas. **Não clicado:** Finalizar, Termo assinado, Recebi (avisariam uma
->   pessoa real no treino — espera o OK do dono). O `.docx` do manual não foi
+> - **Visto na tela** no servidor local de teste, como a Recepção de teste: o
+>   Vender, a fila, as etapas de vendas abertas e uma venda de teste de ponta a ponta com o OK do dono (VD-00587, cliente "Teste do portão 1 (pode ignorar)", Unidade Teste, R$ 300,00 em dinheiro): Finalizar, Termo assinado e Recebi pela janela; conferido no banco, só lendo — venda concluída com a fonte `balcao`, parcela paga, baixa registrada, receita e recebimento no razão (1.1.02), sessão em aberto, sem exceção. Não testado na tela: o caminho pelo Asaas (Pix/boleto/cartão), o parcelado, o desconto, a permuta, o Coordenador e o cancelamento.
+>   ⚠️ O teste achou o selo da situação VAZIO na aba Sessões: constante de
+>   arquivo "use client" chega vazia à página de servidor — o selo mora em
+>   `SELO_DA_VENDA` (`venda-direta-caixa.ts`, régua). Resíduo no treino: a
+>   VD-00587 e o aviso dela a 1 Consultor real. O `.docx` do manual não foi
 >   regerado (fazer na junção com o `main`).
 >
 > ## 👥 0.462.0 — FUNÇÕES DE APOIO, F2: AS COBERTURAS NO BANCO (16/11/2026; migração 0414)
