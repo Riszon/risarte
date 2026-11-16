@@ -4382,3 +4382,12 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
   - Dentista, Planner, ASB, TSB e SDR não veem o selo "Em atraso" da mensalidade vencida, nem pela porta do banco; o Gerente vê;
   - a Recepção não pede a exceção (a tela mostra a orientação de chamar o Gerente);
   - quem pediu não autoriza o próprio pedido, nem o Admin Master.
+
+**Ajuste das provas da 4020a (16/11/2026):**
+- **O achado:** as subcontas do sandbox (Londrina, Cambé, RisLife, Fundo) foram criadas pela API com e-mail fictício (`@example.com`, `scripts/asaas-sandbox-contas.mjs`), então **ninguém entra no painel delas** para autorizar uma ação crítica.
+- **O preparo de Londrina:** o estorno de R$ 30,00 do Pix `pay_0_blm0obr9otp97u` fica pendente para sempre no sandbox. Nada mudou no riSZon: a baixa e a taxa continuam.
+- **Na produção é diferente:** cada unidade tem a sua conta, com o titular de verdade, que autoriza no próprio painel (18.7.1).
+- **As provas, refeitas pela conta principal do sandbox** (a que o dono acessa, como na prova de 13/11), com o split de 17% para a carteira de Londrina: `scripts/asaas-prova-estorno-parcial-raiz-sandbox.mjs`.
+  - **Pix:** `pay_0_w36c3upvx52rdg`, R$ 100,00 pago, split de R$ 16,66 liquidado. O estorno parcial de R$ 30,00 está **aguardando a autorização** no painel da conta principal.
+  - **Cartão parcelado:** parcelamento `64cff44d…`, 3× de R$ 100,00, aprovado em 16/11 (split de R$ 16,37 por parcela, ainda pendente). O estorno parcial de R$ 120,00 é pedido em 17/11 (`--pedir-cartao`).
+  - **A leitura:** `--ler` mostra os estornos, o split e os avisos que chegaram.
