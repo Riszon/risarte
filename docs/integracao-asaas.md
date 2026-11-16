@@ -4000,7 +4000,7 @@ A taxa é **uma por parcela recebida**, e a situação dela depende de **por ond
   - o **levantamento só de leitura no Asaas de cada unidade** (cobranças, parcelamentos e assinaturas sem a referência do riSZon), antes de ligar a unidade;
   - a **4019 e a 4019b ajustadas** ao tamanho real que o levantamento mostrar.
 
-### 19.35 Entrega 6 — distrato com checklist: PLANO (16/11/2026; migração 4020; AGUARDA APROVAÇÃO)
+### 19.35 Entrega 6 — distrato com checklist: PLANO (16/11/2026; migração 4020; APROVADO com ajustes em 16/11/2026 — 19.35.13; a 19.35.7 foi corrigida pelo ajuste 2; a construção espera o "pode")
 
 #### 19.35.1 Como é hoje
 
@@ -4202,3 +4202,106 @@ Decisão 4:
   - o distrato com boletos vivos e com a forma 2;
   - na 4020a, o estorno parcial de Pix e de cartão parcelado, com o "pode" para a autorização no painel.
 - **`test:indica`**, e os ensaios anteriores por cima.
+
+#### 19.35.13 Aprovação com ajustes (Jeferson, 16/11/2026)
+
+**Respostas: 1a, 2a, 3a com ajuste, 4a, 5b, 6a, 7a.** O que mudou no plano, ponto a ponto.
+
+**1. Aviso ao Gerente (1a).**
+- **Gatilhos:** o pedido de distrato registrado na ficha, ou o contrato em atraso há 60 dias, com o aviso repetido a cada 7 dias.
+- **O prazo de 60 dias** fica configurável na Central › Financeiro, no nível da rede (`finance_settings`, padrão 60), com o histórico da Central.
+
+**2. Acordo de várias vendas (2a).**
+- As parcelas em aberto do acordo são reduzidas na proporção e reemitidas.
+- **O termo de distrato descreve como o acordo fica:** a tabela das parcelas **antes e depois** (número, vencimento, valor), com o total que deixa de ser cobrado.
+- ⚖️ **Esse trecho do termo é marcado para a revisão do jurídico.** No modelo, ele vem entre as marcas "[REVISÃO JURÍDICA]", e a lista dos textos a revisar ganha a linha dele.
+
+**3. Devolução (3a com ajuste): quem autoriza.**
+
+| Devolução | Quem pede no riSZon | Quem autoriza |
+|---|---|---|
+| **Estorno pelo Asaas** (Pix ou cartão) | Quem tem a liberação de estorno do Asaas (`acao.cobranca.estorno`), a regra já aprovada | **No painel do Asaas**, pelo titular da conta. **Não passa pela franqueadora.** |
+| **Pix da conta da unidade** | O Gerente | O Financeiro da Franqueadora ou o Admin Master, com o termo de distrato anexado (como na 4014) |
+
+- O Financeiro da Franqueadora **vê todas as devoluções, dos dois tipos**, de todas as unidades, na mesma lista.
+- **Nos dois casos, a taxa da rede continua devida.** Só o Financeiro da Franqueadora ou o Admin Master dispensam, à mão.
+
+**4. Venda direta com algo pago (4a).** O distrato faz o acerto sem multa, e as sessões feitas continuam feitas.
+
+**5. Indica +Risos (5b).**
+- **Como hoje:** só os pontos em carência são estornados. Os já disponíveis ficam, e o caso aparece para o Financeiro na lista do distrato.
+- **A regra do programa não muda nesta entrega.**
+- A ideia de rever os pontos depois da conversão foi para o **backlog (AP170)**, para o dono decidir no Indica +Risos.
+
+**6. Parcela parcial (6a).** O saldo dela cai com as outras, e o que foi pago entra no acerto.
+
+**7. Duas partes (7a).**
+- **4020** agora.
+- **4020a** depois das duas provas do estorno parcial (19.35.14).
+- Até a 4020a, a devolução do distrato sai pela **devolução por Pix da conta da unidade**. Depois dela, o estorno pelo Asaas vem primeiro.
+
+**Ajuste 2: o cartão parcelado já aprovado (corrige a 19.35.7).**
+- No parcelado aprovado, **as parcelas já estão pagas** no riSZon. A taxa delas fica **"a reter pelo split"** até cada crédito mensal do Asaas.
+- **No distrato, essas linhas não caem:** continuam a reter, e viram retidas a cada crédito.
+- **Só cai a taxa "a reter" de parcela em aberto,** que não foi recebida (por exemplo, o boleto vivo cancelado).
+- **O ensaio inclui o caso:** um parcelado 12× aprovado, distratado no 3º mês, mantém as 12 linhas, com as 2 retidas e as 10 a reter, e nenhuma cai.
+
+A 19.35.7 passa a dizer:
+- **a reter pelo split, de parcela em aberto** (não recebida): cai com a parcela;
+- **a reter pelo split, de parcela paga** (cartão parcelado aprovado): **não cai**; vira retida a cada crédito;
+- **retida:** continua retida. Se o Asaas devolver parte do split no estorno parcial, essa parte vira a cobrar da unidade;
+- **a cobrar da unidade:** continua a cobrar.
+
+**Ajuste 3: o prazo do distrato aberto.**
+- Distrato aberto e não efetivado gera **aviso ao Gerente a cada 7 dias**.
+- **Depois de 30 dias** sem efetivar, o **Financeiro da Franqueadora** também é avisado, também a cada 7 dias.
+- **Nada expira sozinho.** O distrato só sai do aberto quando é efetivado ou descartado, com o motivo.
+
+**Ajuste 4: a multa do contrato (item 3 da checklist), a regra de hoje.**
+- **De onde vem o %:** da configuração comercial, em cascata: o da unidade, se houver, senão o da rede, senão zero (`cancellation_penalty_percent`). A multa incide sobre o **não executado**.
+- **Quem muda o %:** só o **Admin Master**, na Central (configuração comercial da rede ou da unidade). A mudança fica no **histórico da Central** (auditoria de `commercial_rules`) e vale para os cancelamentos abertos depois dela.
+- **No cancelamento em si, não há dispensa da multa:**
+  - o acerto grava o % e o valor no momento da abertura (`plan_cancellations.penalty_percent` / `penalty_cents`);
+  - ninguém altera esses valores na tela.
+- **Depois de efetivado:**
+  - o que o cliente deve vira uma parcela da venda;
+  - essa parcela aceita a **quitação por valor menor** (4004): Gerente ou Admin Master, com motivo obrigatório, na auditoria. O principal dispensado vai ao razão (1.9.02).
+  - É o único caminho de hoje para "perdoar" a multa, e é por parcela, não por regra.
+- **A 4020 mantém isso.** O item 3 mostra o %, a origem (rede ou unidade), o valor e, num texto, como ela pode ser dispensada depois. Nada muda na regra.
+
+**Confirmações:**
+- **O valor do acerto gera a taxa da rede quando é recebido.** O que o cliente paga (feito + multa − já pago) vira uma parcela da venda, e a baixa dela passa pelo mesmo caminho de toda baixa:
+  - pelo Asaas com split: a reter, depois retida;
+  - à mão: a cobrar da unidade.
+  - **O ensaio prova.**
+- **Ortodontia.**
+  - **Hoje o cancelamento não mexe no caso nem nas mensalidades** (`apply_plan_cancellation` não toca `ortho_cases`). **A 4020 acrescenta:**
+    - no distrato da venda com caso de Ortodontia (`ortho_cases.negotiation_id`), o caso passa a **interrompido**;
+    - as **mensalidades futuras do lote** caem, com o boleto cancelado no Asaas antes, pelo caminho da 4018;
+    - as vencidas continuam como dívida e aparecem no item 2.
+  - **PPR+:** a adesão tem o cancelamento próprio, fora do distrato.
+- **Entre abrir e efetivar:**
+  - os avisos do Asaas continuam saindo, e os boletos continuam valendo;
+  - o termo diz ao cliente: "As cobranças em aberto continuam valendo até a assinatura deste termo";
+  - o que for pago nesse intervalo entra no acerto, recalculado ao efetivar.
+- **O Empresarial fica fora desta entrega.**
+
+#### 19.35.14 As duas provas do estorno parcial (para a 4020a)
+
+Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador sem contato: nada é enviado.
+- **Pix:**
+  - uma cobrança Pix de Londrina, paga pela simulação;
+  - o estorno parcial pedido pelo riSZon fica **aguardando a autorização**;
+  - o dono autoriza **no painel do sandbox**, digitando ele mesmo o código no Asaas. O riSZon não pede nem registra o código.
+  - Depois, o riSZon lê o que voltou: o aviso `PAYMENT_PARTIALLY_REFUNDED` e o split.
+- **Cartão parcelado:**
+  - um parcelado de Londrina aprovado em 16/11;
+  - o estorno parcial só é aceito **no dia seguinte** (17/11);
+  - depois, a mesma leitura: em quais parcelas o Asaas descontou e o que aconteceu com o split.
+
+**Preparo feito (16/11/2026, 09:27), na conta sandbox de Londrina:**
+- A venda direta do cliente "Prova 4020a estorno parcial sem contato" (`779f8b03…`), sem contato: entrada em Pix de R$ 100,00 e 3× de R$ 100 no cartão parcelado pelo Asaas, pelo caminho do riSZon, com split. Ela **não pode ser cancelada** até as provas acabarem.
+- **Pix** (`pay_0_blm0obr9otp97u`, cobrança `6d9f6cf4…`):
+  - pago pela simulação, com a baixa pelo aviso e o split de R$ 16,99 liquidado (`DONE`);
+  - o estorno parcial de **R$ 30,00** foi pedido e está **aguardando a autorização** (`AWAITING_CRITICAL_ACTION_AUTHORIZATION`).
+- **Cartão parcelado** (parcelamento `febf5a8a…`): aprovado com o cartão de teste, e as 3 parcelas com a baixa. O estorno parcial fica para **17/11**.
