@@ -2,6 +2,22 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 👥 0.462.0 — FUNÇÕES DE APOIO, F2: AS COBERTURAS NO BANCO (16/11/2026; migração 0414)
+>
+> Plano aprovado (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Sem botão ainda (F3). EV-362.
+> - ⚠️ **A trava agora é `unique (user_id, clinic_id, role)`.** Linha de apoio só
+>   com `coverage_id`; até 2 de apoio, combinação proibida e principal
+>   obrigatória no gatilho `_support_role_guard`. Script/semente com
+>   `on conflict (user_id, clinic_id)` precisa do `where assignment_kind = principal`.
+> - ⚠️ **Cobertura = `role_coverages`**; a linha de apoio nasce/sai só por
+>   `_role_coverage_activate`/`_role_coverage_finish` (portas: grant/end/cancel/
+>   review, só Admin). A temporária libera o sistema real pela fonte `cobertura`.
+> - ⚠️ **A janela `user_clinic_roles` esconde a linha com `ends_at` vencido**;
+>   rotina `role_coverage_daily` (00:05) começa, avisa 2 dias antes e encerra.
+> - Limites da rede (`coverage_settings`) nascem só avisando (D13). O espelho do
+>   treino leva só a função principal.
+> - Ensaio no treino 26/26 (desfeito). Código CB- (não AP-, que é do backlog).
+
 > ## 👥 0.461.0 — FUNÇÕES DE APOIO, F1: OS LEITORES PRONTOS PARA DUAS FUNÇÕES NA MESMA UNIDADE (16/11/2026; migrações 0413 e 2012)
 >
 > Plano aprovado pelo dono (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`.

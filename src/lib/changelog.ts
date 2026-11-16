@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.462.0",
+    data: "2026-11-16",
+    migracao: "0414",
+    titulo: "Funções de apoio: as coberturas no sistema",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O sistema passou a guardar as funções de apoio (cobertura de um colega ausente ou acúmulo fixo), com motivo, datas, limites e fim automático. Ainda não há botão: o Admin passa a dar a função de apoio na ficha do Risartano na próxima entrega.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
     versao: "0.461.0",
     data: "2026-11-16",
     migracao: "0413",

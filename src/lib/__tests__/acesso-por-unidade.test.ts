@@ -113,7 +113,14 @@ describe("tranca do sistema real por unidade e função (0276)", () => {
     const noSql = new Set(
       [...sql.matchAll(/(?:then|else) '([a-z_]+)'/g)].map((m) => m[1])
     );
-    const doCheck = sql.match(/source in \(([^)]*)\)/)?.[1] ?? "";
+    // O CHECK das fontes que vale é o mais recente: a 0414 acrescentou
+    // 'cobertura' (funções de apoio, D6).
+    const check0414 = readFileSync(
+      join(process.cwd(), "supabase/migrations", "0414_funcoes_de_apoio_coberturas.sql"),
+      "utf8"
+    );
+    const doCheck = check0414.match(/check \(source in \(([^)]*)\)\)/)?.[1] ?? "";
+    expect(doCheck).toContain("'cobertura'");
     for (const m of doCheck.matchAll(/'([a-z_]+)'/g)) noSql.add(m[1]);
     // A régua precisa ter achado algo — zero seria "não medi", não "bate".
     expect(noSql.size).toBeGreaterThan(5);

@@ -256,6 +256,9 @@ async function espelharPessoaCtx(ctx: Ctx, idProd: string): Promise<string | nul
       .from("user_clinic_roles")
       .select("clinic_id, role, unit_scope, role_unit_access ( clinic_id )")
       .eq("user_id", idProd)
+      // 0414: só a função PRINCIPAL vai ao treino. A de apoio depende de uma
+      // cobertura (que não é copiada) e não tem tranca lá para praticar.
+      .eq("assignment_kind", "principal")
       .returns<
         {
           clinic_id: string;

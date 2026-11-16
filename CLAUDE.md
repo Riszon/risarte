@@ -400,6 +400,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**16/11/2026 (funções de apoio, F2) — PC Administrador (core 0.461.0 → 0.462.0, migração 0414)**
+
+- **As coberturas no banco** (bloco 0.462.0 no ESTADO). ⚠️ Trava nova
+  `unique (user_id, clinic_id, role)`; apoio só por `role_coverages` e pelas
+  portas (só Admin). ⚠️ A janela esconde a linha vencida; a rotina
+  `risarte-coverage-daily` encerra. ⚠️ Semente/script com `on conflict
+  (user_id, clinic_id)` leva `where assignment_kind = principal`.
+- ✅ 0414 no treino (ensaio 26/26, desfeito). ⏳ Produção: o dono roda a 0414
+  antes do push.
+
 **16/11/2026 (funções de apoio, F1) — PC Administrador (core 0.460.0 → 0.461.0, migração 0413; Indica 0.9.0 → 0.9.1, migração 2012)**
 
 - **Leitores prontos para duas funções na mesma unidade** (bloco 0.461.0 no

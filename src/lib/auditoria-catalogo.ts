@@ -196,6 +196,9 @@ export const TABELAS: Record<string, string> = {
   "public.treatment_plan_ortho": "Proposta ortodôntica da opção do plano",
   "public.plan_negotiation_ortho": "Acordo ortodôntico da negociação",
   "public.ortho_billing_batches": "Lote de mensalidades ortodônticas",
+  "public.role_coverages": "Função de apoio (cobertura)",
+  "public.role_incompatibilities": "Combinação de funções proibida",
+  "public.coverage_settings": "Limites das funções de apoio",
   // ------------------------------------------------------ assinaturas digitais (0340)
   "public.signature_settings": "Configuração das assinaturas digitais",
   "public.signature_templates": "Modelo de documento para assinatura",

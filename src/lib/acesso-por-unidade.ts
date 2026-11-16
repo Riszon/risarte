@@ -11,6 +11,8 @@ export const MOTIVOS_DE_ACESSO = [
   "sistema_fechado",
   "anterior",
   "manual",
+  // 0414 (funções de apoio, D6): a cobertura temporária libera pelo período.
+  "cobertura",
   "sem_metas",
   "certificado",
   "aguardando_grupo",
@@ -24,6 +26,7 @@ export const ROTULO_DO_MOTIVO: Record<MotivoDeAcesso, string> = {
   sistema_fechado: "Sistema real fechado na ficha",
   anterior: "Liberado antes do portão",
   manual: "Liberado sem missão pelo Admin",
+  cobertura: "Liberado pela cobertura (função de apoio)",
   sem_metas: "Função sem metas definidas",
   certificado: "Missão cumprida",
   aguardando_grupo: "Aguardando o grupo da unidade cumprir",

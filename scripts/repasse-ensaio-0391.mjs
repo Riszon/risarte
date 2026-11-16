@@ -143,7 +143,7 @@ try {
   await c.query("delete from public.user_clinic_roles_all where clinic_id=$1 and role='clinical_coordinator' and user_id <> $2", [clinica, dent]);
   await c.query(
     `insert into public.user_clinic_roles_all (user_id, clinic_id, role) values ($1,$2,'clinical_coordinator')
-     on conflict (user_id, clinic_id) do update set role = 'clinical_coordinator'`, [dent, clinica]);
+     on conflict (user_id, clinic_id) where assignment_kind = 'principal' do update set role = 'clinical_coordinator'`, [dent, clinica]);
   const livres = await todos(
     `select p.id from public.profiles p
       where p.is_active and not p.is_admin_master and p.id <> $2
