@@ -465,6 +465,8 @@ Toda ação de cobrança grava autor, data e motivo na auditoria.
 
 Dependências: ASA2 depende de ASA1; ASA3 de ASA2; ASA4, ASA4B, ASA5 e ASA6 dependem de ASA3. A ASA5 pode andar em paralelo à ASA4.
 
+**ASA5 — acréscimo do Jeferson (15/11/2026):** todo mês, a empresa recebe, junto com o boleto da mensalidade, a **lista de titulares e dependentes** daquele mês. Fica registrado para a ASA5, sem construir agora (19.32.8).
+
 Método: plano aprovado antes do código, uma fase por vez, testes de cada fluxo, commit ao fim de cada sessão e `ESTADO_DO_PROJETO.md` atualizado.
 
 ---
@@ -3444,7 +3446,7 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
   - as telas pelo navegador;
   - o cancelamento do cartão parcelado do acordo no Asaas (o caminho é o da 4013, já provado no sandbox).
 
-### 19.32 Entrega 4 — mensalidades do PPR+ e da Ortodontia pelo Asaas: PLANO (15/11/2026; migração 4018; AGUARDA APROVAÇÃO)
+### 19.32 Entrega 4 — mensalidades do PPR+ e da Ortodontia pelo Asaas: PLANO (15/11/2026; migração 4018; APROVADO com ajustes — 19.32.5 a 19.32.9; a construção espera o "pode")
 
 **O que a especificação já decidiu:**
 - D15 e a seção 6: "Mensalidade do PPR+ e da Ortodontia | Automático, no ciclo mensal | Unidade | Uma cobrança por mensalidade, com split".
@@ -3523,3 +3525,147 @@ Também roda o `npm run test:indica`, porque o cancelamento reverte pontos em ca
     - `--quebrar=trava`: a baixa à mão passa com a cobrança viva.
 - **Sandbox, sem envio:** uma mensalidade de cada programa, emitida e paga pela simulação do sandbox, com o split.
 - `npm run test:indica`, porque os pontos do Riso+ Social entram na baixa.
+
+#### 19.32.5 APROVAÇÃO com ajustes (Jeferson, 15/11/2026) — o que mudou no plano
+
+**Decisões: 1a, 2a com ajuste, 3a, 4a, 5a.**
+1. **PPR+:** a adesão passa a aceitar boleto e Pix avulsos pelo Asaas. A recorrência entra na ASA4B.
+2. **Ortodontia (ajuste):** boleto, Pix e **cartão de crédito à vista pelo link da fatura do Asaas**; dinheiro no balcão, pela regra já aprovada (4011); a maquininha só enquanto a chave da rede estiver ligada, saindo junto com a da venda direta.
+   - **Os meios de hoje do caso de Ortodontia** (`ortho_case_terms.billing_method`) e o que acontece com cada um:
+
+     | Meio de hoje | O que acontece na 4018 |
+     |---|---|
+     | `boleto` (o padrão) | Vai ao Asaas, um boleto por mês, pela janela. |
+     | `pix_recorrente` | Passa a sair como **Pix avulso** pelo Asaas, uma cobrança por mês. A recorrência de verdade é da ASA4B. |
+     | `credito_recorrente` | Passa a sair como **cartão de crédito à vista pelo link** do Asaas, um por mês. O paciente digita o cartão a cada mês até a ASA4B. |
+     | `debito_recorrente` | Não existe no Asaas (D20). Passa a sair como **boleto**, e a tela avisa a unidade para combinar com o paciente. |
+     | `cartao_parcelado` (maquininha) | Continua na maquininha, com a baixa à mão, **enquanto a chave da rede estiver ligada**. Desligada a chave, o caso novo não oferece mais esse meio; o caso antigo segue até o fim do lote. |
+     | `avista_periodo` (pago de uma vez no período) | Não há mensalidade a cobrar: o pagamento é um só, como hoje, à mão. |
+
+   - **Meios do caso novo:** boleto, Pix, cartão à vista pelo link, dinheiro e, só com a chave ligada, maquininha.
+3. **Sem multa nem juros na mensalidade.**
+   - O desconto de pontualidade da Ortodontia vai no boleto como **desconto do Asaas até o vencimento**. Quem paga depois paga o valor cheio.
+   - A taxa da rede incide sobre o **valor efetivamente pago**.
+   - **Prova no sandbox:** uma mensalidade paga até o vencimento (com o desconto) e outra depois (cheia), com o split e a taxa conferidos nas duas.
+4. **A 1ª mensalidade do PPR+** nasce na assinatura da adesão, e o pagamento dela ativa a adesão sozinho.
+5. **Ortodontia: um boleto por mês, pela janela.** "Todos os boletos agora" para a Ortodontia fica registrado como ideia, sem construir.
+
+**Adesões e tratamentos que já existem (decisão do Jeferson):**
+- Entram na rotina automática só a partir de uma **data que a unidade liga na Central** (Cobranças automáticas › "Mensalidades pelo Asaas a partir de…"). É uma chave separada da das vendas.
+- **Antes de ligar,** a tela mostra quantos clientes passam a receber os avisos do Asaas: os titulares do PPR+ e os pacientes da Ortodontia com mensalidade a vencer depois da data, e quantos têm e-mail ou celular. A unidade marca **"Avisei os clientes"** para ligar. Fica na auditoria.
+- **Nada muda sozinho.** Até a unidade ligar, tudo continua manual, como hoje.
+- A adesão nova e o caso novo, depois de a unidade ligar, já nascem na rotina.
+
+#### 19.32.6 Os pontos que faltavam
+
+**1. O custo por mensalidade** (valores do treino: a mensalidade mediana do PPR+ é R$ 99,90 e a da Ortodontia, R$ 176,00).
+- **Premissas:**
+  - tarifas do Asaas **sem promoção**: boleto e Pix R$ 1,99; cartão à vista 2,99% + R$ 0,49;
+  - mensageria R$ 0,99 por cobrança, se a régua da unidade tiver e-mail ou SMS ligado;
+  - taxas da rede de produção, 17% no total (6 + 2 + 3 + 6), cada uma arredondada para baixo.
+- **As tarifas de produção ainda dependem da resposta do Asaas** (pergunta 18 da lista).
+
+| Mensalidade | Meio | Tarifa | Mensageria | Taxa da rede (17%) | Sobra para a unidade |
+|---|---|---|---|---|---|
+| PPR+ R$ 99,90 | Boleto | 1,99 | 0,99 | 16,98 | **79,94** |
+| PPR+ R$ 99,90 | Pix | 1,99 | 0,99 | 16,98 | **79,94** |
+| PPR+ R$ 99,90 | Cartão à vista | 3,48 | 0,99 | 16,98 | **78,45** |
+| Ortodontia R$ 176,00 | Boleto | 1,99 | 0,99 | 29,92 | **143,10** |
+| Ortodontia R$ 176,00 | Pix | 1,99 | 0,99 | 29,92 | **143,10** |
+| Ortodontia R$ 176,00 | Cartão à vista | 5,75 | 0,99 | 29,92 | **139,34** |
+
+- **Com o desconto de pontualidade** (exemplo de 5%, pago até o vencimento): a Ortodontia de R$ 176,00 é paga por R$ 167,20.
+  - A taxa da rede cai para R$ 28,40, porque incide sobre o pago.
+  - No boleto, sobram R$ 135,82.
+
+**2. O cliente que para de pagar.**
+- **A regra de hoje do PPR+** (`ppr_refresh_delinquency`, botão à mão):
+  - a mensalidade vencida fica "atrasada";
+  - com **30 dias** de atraso (`suspend_after_days`), a adesão fica **suspensa**;
+  - com **90 dias** (`cancel_after_days`), é **cancelada**;
+  - paga a pendência, a suspensa volta a ativa.
+  - Os prazos são configuráveis em Configurações do PPR+.
+  - Hoje a geração do mês inclui a adesão suspensa.
+- **Proposta:**
+  - **A verificação de atraso roda sozinha todo dia** (hoje é botão).
+  - **Adesão suspensa não gera mensalidade nova.** A dívida que ela já tem continua cobrada pelo Asaas. Paga a pendência e reativada, a geração volta no mês seguinte, sem cobrar os meses da suspensão.
+  - **Avisos:**
+    - na suspensão e no cancelamento: ao Gerente e à Recepção da unidade;
+    - quando a adesão chega a **2 mensalidades vencidas**: ao Gerente.
+    - O paciente recebe os avisos da régua do Asaas.
+  - **No cancelamento** (à mão ou pelos 90 dias):
+    - as mensalidades de meses que **ainda não venceram** são canceladas, com o boleto cancelado no Asaas;
+    - as **já vencidas** continuam como dívida, com o boleto valendo.
+  - **Ortodontia:** continua só marcando atrasada, sem suspender sozinha (Q5 da Ortodontia). O Gerente decide suspender ou interromper o caso, e as mensalidades futuras caem como hoje, com o boleto cancelado no Asaas.
+
+**3. As datas** (o nascimento da mensalidade e a janela).
+- **O vencimento** é o **dia de cobrança da adesão** (`billing_day`, 1 a 28) de cada mês.
+- **Proposta:** a mensalidade (a linha no riSZon) nasce **no dia 1 do mês anterior ao vencimento**. A cobrança no Asaas nasce pela janela, 15 dias antes do vencimento, como as parcelas.
+  - Exemplo com o dia 10: a mensalidade de dezembro nasce em 1º/11, o boleto sai em 25/11 e vence em 10/12.
+  - Gerando no dia 1 do **próprio** mês, as adesões com dia de cobrança até 15 teriam o boleto criado com menos de 15 dias, e o lembrete de 5 ou 10 dias antes poderia não sair.
+- **A 1ª mensalidade do PPR+:**
+  - vence no dia de cobrança do mês corrente, se faltarem ao menos 3 dias; senão, no do mês seguinte;
+  - a cobrança nasce na hora da assinatura.
+
+**4. A taxa da rede: as três situações já aprovadas** (17.3 e 4013), no lugar de "nasce como retida".
+- **A reter pelo split:** a cobrança foi emitida com o split e ainda não foi paga. A taxa não entra na conta a pagar da unidade.
+- **Retida:** pago pelo Asaas, o split liquidou. Não entra na conta a pagar.
+- **A cobrar da unidade:** paga **por fora** (dinheiro, maquininha, baixa à mão) ou sem split. É a única que vira conta a pagar.
+- **O que muda na 4018:** hoje essas três situações só reconhecem a **parcela de venda**. Elas passam a reconhecer a mensalidade (as origens `ppr_charge` e `ortho_charge` de `split_charges`).
+- **A prova** (ensaio, provado quebrando com `--quebrar=retida`): a mesma mensalidade paga pelo Asaas não aparece na conta a pagar de taxa; paga em dinheiro, aparece uma vez; o total nunca é cobrado duas vezes.
+
+**5. O selo "Em atraso".**
+- **Hoje:** o selo (`client_overdue_badges`, 4006) só olha a **parcela de venda**. A mensalidade vencida não entra.
+- **Proposta:** a mensalidade vencida do PPR+ e da Ortodontia **entra no selo**, pela mesma regra: N dias úteis depois do vencimento (padrão 3) e a mesma permissão `acao.cobranca.selo_atraso`.
+  - **Dentista, Planner, TSB, ASB e SDR nunca veem**, mesmo marcados na matriz (regra da 4006, mantida).
+
+**6. Riso+ Social e Indica +Risos.**
+- A baixa pelo aviso do Asaas chama a **mesma** regra da baixa à mão: a ativação, a reativação e os **pontos do Riso+ Social**. O ensaio confere os pontos nas duas baixas.
+- O Indica +Risos não lê mensalidade. O `npm run test:indica` roda junto.
+
+**7. O levantamento na produção:** `docs/asaas/levantamento-ppr-cancelado-com-mensalidade-aberta.sql`.
+- É só leitura. Lista as adesões do PPR+ canceladas com mensalidade em aberto ou atrasada, com unidade, titular, meses, valor e quantas já venceram.
+- Conferido no treino (0 casos lá).
+- A correção é proposta depois do resultado.
+
+#### 19.32.7 Tipos novos de mensalidade: o caminho genérico
+
+**O que seria preciso para um tipo novo, em linguagem simples:**
+- **Do jeito "específico"** (PPR+ e Ortodontia escritos dentro do caminho comum):
+  - cada tipo novo mexe em uns **8 pontos do caminho do Asaas**: a lista, a emissão, a descrição, a baixa pelo aviso, o estorno, as travas, o cancelamento e a taxa da rede;
+  - são uns **3 a 4 dias** de trabalho, com risco de quebrar os tipos que já existem.
+- **Do jeito "genérico"** (o caminho comum trabalha com a cobrança de qualquer origem; cada origem só informa o que é dela):
+  - um tipo novo é **uma migração pequena**, com 4 funções da origem: quem paga, o valor e o vencimento; o que acontece na baixa; o que acontece no cancelamento; a lista do que vence;
+  - mais a tela dele: **1 a 2 dias**;
+  - o caminho do Asaas fica reaproveitado inteiro, sem mexer no que já funciona.
+
+**A diferença na 4018:**
+- O genérico deixa a 4018 uns **15 a 20% maior**: uma camada de "origem", com as 4 funções para o PPR+ e as 4 para a Ortodontia.
+- **O risco é parecido**, porque a **parcela de venda continua no caminho de hoje**, intocada. O genérico vale para as origens novas (a mensalidade e as futuras).
+
+**Recomendação:** construir a 4018 já genérica, como o Jeferson pediu, porque a alteração não é grande.
+- `charges.source_id` passa a ligar a cobrança a qualquer origem (junto de `source_type`, que já existe).
+- **O caminho comum** (a lista, a emissão, a baixa pelo aviso, as travas e o cancelamento) chama as funções da origem pelo tipo. Nenhuma regra presa a "PPR+" ou "Ortodontia" fica no caminho comum.
+- **Cada origem informa:**
+  - quem paga;
+  - o valor, o desconto até o vencimento e o vencimento;
+  - a descrição;
+  - o que acontece na baixa e no cancelamento;
+  - se a unidade ligou.
+
+#### 19.32.8 O Risarte Empresarial continua na ASA5
+
+- Não entra na 4018. Ele tem características próprias:
+  - quem emite é a franqueadora, na conta dela;
+  - o pagador é uma empresa (CNPJ);
+  - o split vai para a RisLife: implantação 100%; mensalidade 50% RisLife e 50% Risarte, configurável;
+  - a unidade não recebe nada.
+- **Registrado na ASA5** (informação nova do Jeferson, 15/11/2026): todo mês, a empresa recebe junto com o boleto a **lista de titulares e dependentes** daquele mês.
+
+#### 19.32.9 A situação das entregas anteriores (15/11/2026)
+
+- **4015a: na produção.** O Jeferson rodou a pré-conferência (0 travados) e a 4015a, e a conferência bateu: 2, 3, 0, 0. Produção na 0.453.1, conferida de fora. O passo a passo foi entregue e executado.
+- **4017 (renegociação): na produção.** A conferência bateu: 24, 2, 0, 0, true. Produção na 0.454.1, conferida de fora.
+  - **Falta:** o teste do Jeferson pelas telas e o envio real do termo pela ZapSign, que só sai com o "pode" dele.
+- **4017a (exceção do cancelamento, 1a, 2a, 3b, 4a): na produção.** A conferência bateu: 7, 1, 3, true. Produção na 0.455.1, conferida de fora.
+  - **Falta:** o teste do Jeferson pelas telas.
