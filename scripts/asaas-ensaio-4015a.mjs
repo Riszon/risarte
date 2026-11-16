@@ -53,7 +53,9 @@ async function servidor(sql, params = []) {
     return `erro: ${e.message}`;
   }
 }
-const recusou = (r) => typeof r === "string" && r.includes("RENEGOTIATED_OPEN");
+// 4020: com o distrato, abrir o termo com acordo pendente é recusado com
+// PENDING_FIRST (cancele o acordo pendente antes); a trava continua.
+const recusou = (r) => typeof r === "string" && (r.includes("RENEGOTIATED_OPEN") || r.includes("PENDING_FIRST"));
 const passou = (r) => Array.isArray(r);
 
 try {

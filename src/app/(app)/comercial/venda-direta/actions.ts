@@ -313,7 +313,7 @@ export async function cancelDirectSale(
   saleId: string,
   /** 4017a: a pessoa confirmou que o cancelamento cancela os boletos vivos (venda e acordo). */
   confirmarCancelamento = false
-): Promise<DirectSaleResult & { acordo?: boolean; precisaConfirmar?: number }> {
+): Promise<DirectSaleResult & { acordo?: boolean; distrato?: boolean; precisaConfirmar?: number }> {
   const session = await getSessionContext();
   const info = await saleClinic(saleId);
   if (!info) return { ok: false, error: "Venda não encontrada." };
@@ -361,8 +361,21 @@ export async function cancelDirectSale(
     const m = error.message;
     const acordo = mensagemDoAcordoEmAberto(m);
     if (acordo) return { ok: false, error: acordo, acordo: true };
+    // 4020 (4a): com algo pago, o cancelamento é o distrato, com o acerto.
+    if (m.includes("DISTRATO_REQUIRED")) {
+      return {
+        ok: false,
+        error:
+          "O cliente já pagou parte desta venda. O cancelamento é pelo distrato, com o acerto do que foi feito e do que foi pago (sem multa). Use \"Abrir distrato\" (Gerente ou Admin Master).",
+        distrato: true,
+      };
+    }
     if (m.includes("ALREADY_CLOSED")) {
-      return { ok: false, error: "Venda já concluída — não pode ser cancelada." };
+      return {
+        ok: false,
+        error: "Venda já concluída: o cancelamento é pelo distrato, com o acerto do que foi feito e do que foi pago (Gerente ou Admin Master).",
+        distrato: true,
+      };
     }
     if (m.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Você não pode cancelar esta venda direta." };

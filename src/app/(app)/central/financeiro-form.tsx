@@ -37,6 +37,8 @@ export type ValoresDaRede = {
   gateway_rounding_tolerance_cents?: number | null;
   /** 4006 — dias úteis até o selo "Em atraso"; `null` = banco sem a 4006. */
   overdue_badge_business_days?: number | null;
+  /** 4020 — dias de atraso do contrato que avisam o Gerente (distrato); `null` = banco sem a 4020. */
+  distrato_overdue_days?: number | null;
 };
 
 /** A linha da unidade, crua: `null` = segue a rede. */
@@ -167,9 +169,14 @@ export function FinanceiroDaRede({
   const [diasDoSelo, setDiasDoSelo] = useState(String(rede.overdue_badge_business_days ?? 3));
   const ds = Number(diasDoSelo);
   const seloInvalido = temSelo && (!Number.isInteger(ds) || ds < 0 || ds > 15);
+  // 4020: os dias de atraso que avisam o Gerente para decidir o distrato (só na REDE).
+  const temDistrato = clinicId === null && rede.distrato_overdue_days != null;
+  const [diasDoDistrato, setDiasDoDistrato] = useState(String(rede.distrato_overdue_days ?? 60));
+  const dd = Number(diasDoDistrato);
+  const distratoInvalido = temDistrato && (!Number.isInteger(dd) || dd < 15 || dd > 365);
   const reemissaoInvalida = temReemissao && (!Number.isInteger(d) || d < 0 || d > 30);
   const invalido =
-    m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0) || reemissaoInvalida || arredInvalido || seloInvalido;
+    m === null || j === null || Number.isNaN(m) || Number.isNaN(j) || Number.isNaN(t ?? 0) || reemissaoInvalida || arredInvalido || seloInvalido || distratoInvalido;
   const acimaDoLimite = (m ?? 0) > 2;
 
   return (
@@ -249,6 +256,22 @@ export function FinanceiroDaRede({
               </span>
             </label>
           )}
+          {temDistrato && (
+            <label className="block text-sm font-medium">
+              Distrato: avisar o Gerente com o contrato em atraso há quantos dias (15 a 365)
+              <input
+                value={diasDoDistrato}
+                onChange={(e) => setDiasDoDistrato(e.target.value)}
+                disabled={!canEdit}
+                inputMode="numeric"
+                className={cn(fieldClass, distratoInvalido && "border-destructive")}
+              />
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                Nada é distratado sozinho: o Gerente é avisado (a cada 7 dias) e decide abrir o distrato ou manter o contrato,
+                com o motivo.
+              </span>
+            </label>
+          )}
         </div>
         <p className="text-[11px] text-muted-foreground">
           Teto da inadimplência: acima dele a unidade acende em <strong>Recebíveis</strong> e no painel da rede. Não é um
@@ -271,6 +294,7 @@ export function FinanceiroDaRede({
                   ...(temReemissao ? { reissueMaxDays: d } : {}),
                   ...(temArredondamento ? { roundingToleranceCents: arredCents } : {}),
                   ...(temSelo ? { overdueBadgeBusinessDays: ds } : {}),
+                  ...(temDistrato ? { distratoOverdueDays: dd } : {}),
                 },
                 "Configuração salva."
               )

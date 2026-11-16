@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { openPlanCancellation } from "@/app/(app)/apresentacao/[clientId]/cancellation-actions";
 import { AcordosDaVenda } from "@/components/commercial/acordos-da-venda";
+import { DistratoDaVenda } from "@/components/commercial/distrato-da-venda";
 import {
   CANCELLATION_DESTINATIONS,
   CANCELLATION_DESTINATION_LABELS,
@@ -162,16 +163,20 @@ export function CancelPlanCard({
 
   if (!open) {
     return (
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-xs text-muted-foreground"
-          onClick={() => setOpen(true)}
-        >
-          <Ban className="mr-1 size-4" />
-          {rotulo ? `Cancelar · ${rotulo}` : "Cancelar tratamento"}
-        </Button>
+      <div className="space-y-2">
+        {/* 4020: o pedido de distrato e a decisão do Gerente. */}
+        <DistratoDaVenda clientId={clientId} negotiationId={negotiationId} aoAbrirContrato={() => setOpen(true)} />
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-xs text-muted-foreground"
+            onClick={() => setOpen(true)}
+          >
+            <Ban className="mr-1 size-4" />
+            {rotulo ? `Cancelar · ${rotulo}` : "Cancelar tratamento"}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -264,7 +269,7 @@ export function CancelPlanCard({
             disabled={isPending || errors.length > 0}
             onClick={submit}
           >
-            Gerar termo de cancelamento
+            Gerar termo de distrato
           </Button>
         </div>
         {comAcordo && <AcordosDaVenda clientId={clientId} negotiationId={negotiationId} />}

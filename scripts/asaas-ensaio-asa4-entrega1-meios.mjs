@@ -60,6 +60,13 @@ try {
   // As migrações antigas, rodadas de novo aqui, não conhecem as origens novas de
   // cobrança (4017 e 4018): dentro desta transação desfeita, elas ficam sem origem.
   await c.query("update public.charges set auto_origin = null where auto_origin not in ('assinatura', 'venda_direta', 'rotina', 'rodar_agora', 'restante')");
+  // A 4011, rodada de novo aqui, não conhece o meio da 4013 (cartão parcelado pelo
+  // Asaas), que já existe no treino pelas provas: dentro desta transação desfeita,
+  // ele vira o cartão parcelado comum.
+  await c.query("alter table public.payment_installments disable trigger user");
+  await c.query("update public.direct_sales set payment_method = 'cartao_parcelado' where payment_method = 'cartao_parcelado_asaas'");
+  await c.query("update public.payment_installments set payment_method = 'cartao_parcelado' where payment_method = 'cartao_parcelado_asaas'");
+  await c.query("alter table public.payment_installments enable trigger user");
   let sql = readFileSync(ARQ, "utf8");
   await c.query(sql);
   await c.query("savepoint dup");

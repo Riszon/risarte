@@ -24,12 +24,15 @@ export function CancellationSteps({
   status,
   signedAt,
   appliedAt,
+  checklistPendente = 0,
 }: {
   id: string;
   clientId: string;
   status: string;
   signedAt: string | null;
   appliedAt: string | null;
+  /** 4020: itens da checklist do distrato ainda abertos (0 = pronto). */
+  checklistPendente?: number;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -100,11 +103,13 @@ export function CancellationSteps({
         <Button
           size="sm"
           variant="destructive"
-          disabled={isPending || !signed}
+          disabled={isPending || !signed || checklistPendente > 0}
           title={
-            signed
-              ? "Cancela as sessões pendentes e as cobranças em aberto"
-              : "O cliente precisa assinar o termo antes"
+            checklistPendente > 0
+              ? `Conclua a checklist do distrato antes (faltam ${checklistPendente} item(ns))`
+              : signed
+                ? "Cancela as sessões pendentes e as cobranças em aberto"
+                : "O cliente precisa assinar o termo antes"
           }
           onClick={() =>
             run(

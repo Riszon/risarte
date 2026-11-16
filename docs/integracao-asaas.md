@@ -4305,3 +4305,80 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
   - pago pela simulação, com a baixa pelo aviso e o split de R$ 16,99 liquidado (`DONE`);
   - o estorno parcial de **R$ 30,00** foi pedido e está **aguardando a autorização** (`AWAITING_CRITICAL_ACTION_AUTHORIZATION`).
 - **Cartão parcelado** (parcelamento `febf5a8a…`): aprovado com o cartão de teste, e as 3 parcelas com a baixa. O estorno parcial fica para **17/11**.
+
+### 19.36 Construção do distrato (4020), em 16/11/2026
+
+**Versões:** core 0.456.5, Asaas 0.17.0, migração 4020. O aviso das assinaturas (0.456.4) vai junto. Construída no treino e no projeto de teste; **não está na produção**. A produção espera o roteiro de teste do dono (4017, 4017a e 4018) e o "pode".
+
+**O banco (4020):**
+- **O pedido e o atraso:**
+  - `distrato_requests`, `distrato_request` (Recepção, Gerente, Coordenação, Comercial) e `distrato_request_keep` (Gerente ou Admin, com motivo);
+  - `_distrato_watch_run` na rotina diária: o atraso de N dias (`finance_settings.distrato_overdue_days`, padrão 60, na Central), o pedido e o distrato aberto, a cada 7 dias; depois de 30 dias aberto, também o Financeiro.
+- **A checklist:** `distrato_checklist` (8 itens; o 9º é o termo assinado), `distrato_checklist_set` e `_distrato_ready`, que recusa `CHECKLIST_INCOMPLETE` e `SETTLEMENT_CHANGED`.
+- **O acerto com os acordos:**
+  - `_distrato_share` (a proporção do principal da origem, multiplicada na cadeia), `_distrato_agreements`, `_distrato_agreement_plan` e `_distrato_apply_agreements` (cai ou reduz, com os centavos na última; o plano fica em `plan_cancellations.agreement_changes`);
+  - `open_plan_cancellation` conta a parte da venda no pago e recusa `PENDING_FIRST` com acordo que ainda não vale;
+  - a trava da 4015a deixa abrir o distrato (o distrato trata os acordos).
+- **A venda direta:** `open_direct_sale_distrato` (sem multa) e `_apply_direct_sale_distrato` (as sessões feitas ficam); `cancel_direct_sale` recusa `DISTRATO_REQUIRED` com algo pago.
+- **Efetivar** (`apply_plan_cancellation`):
+  - a checklist;
+  - a parcial cai;
+  - os acordos;
+  - a Ortodontia (`_distrato_ortho`: o caso interrompido, as futuras caem);
+  - o Indica convertido avisa o Financeiro;
+  - a devolução não vira conta sozinha: o Gerente é avisado para pedir.
+- **A devolução:** `distrato_refunds`, `distrato_refund_request` (o termo na pasta `devolucoes`) e `distrato_refund_decide` (Financeiro ou Admin, nunca quem pediu; conta a pagar 1.9.03); `devolucoes_read` junta as três devoluções (distrato, cartão parcelado e estorno pelo Asaas).
+- **Riso+ Social:** o aviso de estorno da mensalidade do PPR+ (`_gateway_apply_event`) tira os pontos dela; a mensalidade continua paga, como na 4018.
+- **As leituras:** `distrato_read`, `distratos_read` e `distrato_sale_status`.
+
+**O servidor e as telas:**
+- **Efetivar** (`cancellation-actions.ts`): confere a checklist **antes** de cancelar qualquer boleto; cancela no Asaas os boletos das parcelas em aberto e parciais, as dos acordos (o cartão parcelado não aprovado, inteiro) e as mensalidades futuras da Ortodontia; depois reemite as parcelas reduzidas dos acordos.
+- **Telas:**
+  - o termo vira "Termo de distrato", com o acordo antes e depois ([REVISÃO JURÍDICA]) e a frase das cobranças valendo até a assinatura; a checklist; a devolução com o anexo;
+  - o "Pedir distrato" e a decisão na ficha e na venda direta;
+  - "Distratos e devoluções" em Financeiro › Cobranças automáticas;
+  - o prazo do aviso na Central.
+
+**Refinamentos na construção (para o dono saber):**
+- **Pagamento depois do termo** (19.35.4 dizia "recalculado ao efetivar"): para o termo assinado continuar valendo o que diz, o efetivar é **recusado** (`SETTLEMENT_CHANGED`), e a tela orienta a descartar e abrir de novo. Assim o número do termo assinado é sempre o número efetivado.
+- **A lista da forma 2** (19.35.10 dizia "revogada"): a lista **continua no ar** e mostra cada boleto como "Cancelado" (a revogação faria a página recusar o link inteiro). A prova no sandbox mostrou "pago, cancelado, cancelado, cancelado".
+- **Venda direta já concluída:** a 1ª baixa fecha a venda direta, e o cancelamento simples já recusava a venda concluída. O caminho dela agora é o distrato, e a mensagem diz isso.
+- **A quebra `--quebrar=lista`** do plano virou **`--quebrar=parcial`** (a parcial não cai), porque a lista não é revogada.
+
+**Provas:**
+- **Ensaio no treino** (`scripts/asaas-ensaio-asa4-distrato.mjs --confirmar`): **63/63**. Provado quebrando:
+
+  | Modo | O que quebra | Resultado |
+  |---|---|---|
+  | `--quebrar=antes` | efetiva sem a checklist | 3 falhas |
+  | `--quebrar=proporcao` | a parte da venda vira 100% | 4 falhas |
+  | `--quebrar=taxa` | a taxa some no distrato | 2 falhas |
+  | `--quebrar=pontos` | o estorno deixa os pontos | 1 falha |
+  | `--quebrar=parcial` | a parcial não cai | 1 falha |
+
+  O ensaio prova:
+  - o pedido e a decisão;
+  - o aviso do atraso (sem repetir no mesmo dia; o "manter" para o aviso);
+  - a proporção (57,84% no cenário) e a redução do acordo de duas vendas, sem encerrar o acordo;
+  - a parcial;
+  - o pagamento depois do termo;
+  - o acordo pendente;
+  - a Ortodontia;
+  - a venda direta com o cartão parcelado aprovado: as linhas **a reter** não caem;
+  - a devolução (termo, valor, quem autoriza, conta 1.9.03, a lista do Financeiro);
+  - o Riso+ Social;
+  - o Dentista sem acesso.
+- **Sandbox** (`asaas-asa4-distrato.integracao.test.ts`): **4/4**, pagador sem contato, nada enviado. Venda direta na forma 2 com 4 boletos vivos e a lista:
+  - o 1º pago pela simulação, com a baixa pelo aviso;
+  - o cancelamento simples recusado;
+  - abrir o distrato não apaga nada no Asaas;
+  - sem a checklist, recusado;
+  - com a checklist, os 3 boletos em aberto apagados no Asaas, o pago intocado, e a lista "pago, cancelado, cancelado, cancelado".
+- **Também passaram:**
+  - os ensaios anteriores: renegociação 73/73, 4017a 39/39, 4015a 13/13, 1B 42/42, mensalidades 54/54, 4013 34/34, 4014 31/31, 4012 43/43, 4011 60/60;
+  - os ajustes: a 4015a aceita `PENDING_FIRST`; a 4011 neutraliza, na transação, o meio da 4013; as mensalidades ganharam os papéis do selo;
+  - `test:indica` 246/0; a suíte, 4554 testes.
+- **O teste dos papéis** (pedido do dono, no treino):
+  - Dentista, Planner, ASB, TSB e SDR não veem o selo "Em atraso" da mensalidade vencida, nem pela porta do banco; o Gerente vê;
+  - a Recepção não pede a exceção (a tela mostra a orientação de chamar o Gerente);
+  - quem pediu não autoriza o próprio pedido, nem o Admin Master.

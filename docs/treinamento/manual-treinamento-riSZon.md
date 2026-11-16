@@ -7453,6 +7453,82 @@ concordância do cliente (fica registrada).
 
 **Evidência:** EV-356; `scripts/asaas-ensaio-asa4-mensalidades.mjs`.
 
+### 13g.17. Distrato com checklist
+
+*(desde a versão 0.456.5)*
+
+**Nada é distratado sozinho.**
+- **Pedido de distrato:** na ficha, no cartão do tratamento (ou na venda direta),
+  quem atende (Recepção, Gerente, Coordenação, Comercial) clica em **Pedir
+  distrato** e escreve o motivo. O Gerente é avisado.
+- **Contrato em atraso:** com parcela vencida há 60 dias ou mais (o prazo é da
+  rede, na Central › Financeiro), o Gerente é avisado, e o aviso se repete a
+  cada 7 dias.
+- **O Gerente decide:** **Abrir distrato** ou **Manter o contrato**, com o
+  motivo. Mantido, o aviso do atraso para até o próximo vencimento perdido. A
+  lista dos pedidos fica em Financeiro › Cobranças automáticas.
+
+**Abrir o distrato (Gerente ou Admin Master):**
+- **Contrato:** **Cancelar tratamento** gera o **termo de distrato**.
+- **Venda direta:** **Abrir distrato**. Com algo pago, o cancelamento simples é
+  recusado: o caminho é o distrato, sem multa, e as sessões feitas continuam
+  feitas.
+- **Abrir não cancela nada.** Os boletos continuam valendo até a assinatura,
+  e o termo diz isso ao cliente.
+- Se houver um acordo de renegociação que ainda não vale, cancele o acordo
+  pendente antes.
+
+**A checklist (no termo):** cada item fica **Feito** ou **Não se aplica**, com
+o motivo:
+1. Pendências do tratamento (sessões, consultas e, na Ortodontia, o caso e as
+   mensalidades).
+2. Feitos × pagos (o acerto).
+3. Multa contratual: o % é da configuração comercial (unidade ou rede), que só
+   o Admin Master muda, na Central. Depois de efetivado, a parcela do acerto
+   aceita a quitação por valor menor (Gerente ou Admin Master, com motivo).
+4. Acordos de renegociação: a parte desta venda em cada acordo.
+5. Cobranças no Asaas que serão canceladas.
+6. Devolução ao paciente.
+7. Taxa da rede (continua devida).
+8. Pontos (Indica +Risos: só a carência volta).
+
+O 9º passo é o **termo assinado**. Sem os 8 itens, o **Efetivar** fica bloqueado.
+
+**O acordo de várias vendas:** a parte de cada venda é a proporção das parcelas
+de origem. No distrato de uma delas:
+- as parcelas abertas do acordo são **reduzidas** nessa proporção;
+- o termo mostra a tabela **antes e depois** (trecho marcado para a revisão do
+  jurídico);
+- o pago no acordo entra no acerto na mesma proporção.
+
+No acordo só desta venda, as parcelas abertas caem.
+
+**Ao efetivar:**
+- caem as sessões não feitas e as parcelas em aberto e parciais (o pago delas
+  está no acerto), e os boletos são cancelados no Asaas antes;
+- a lista dos boletos (forma 2) continua no ar e mostra cada um como
+  "Cancelado";
+- **Ortodontia:** o caso fica interrompido e as mensalidades futuras caem; as
+  vencidas continuam como dívida.
+
+**Se entrar pagamento depois do termo,** o Efetivar é recusado: descarte o termo
+e abra o distrato de novo, para o acerto sair certo.
+
+**A devolução (quando a unidade devolve):**
+1. Depois de efetivar, o Gerente pede a devolução no termo, com o termo
+   assinado anexado.
+2. O Financeiro da Franqueadora ou o Admin Master autorizam (nunca quem pediu),
+   e vira conta a pagar (1.9.03), paga por Pix da conta da unidade.
+
+O recebimento original não é desfeito, e a taxa da rede continua devida (a
+dispensa é à mão, do Financeiro ou do Admin). O estorno parcial pelo Asaas entra
+na próxima etapa (4020a).
+
+**O distrato aberto:** o Gerente é avisado a cada 7 dias. Depois de 30 dias, o
+Financeiro da Franqueadora também. Nada expira sozinho.
+
+**Evidência:** EV-357; `scripts/asaas-ensaio-asa4-distrato.mjs`.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

@@ -3,6 +3,9 @@
 import { mensagemDoAcordoEmAberto } from "@/lib/acordo-em-aberto";
 import { prepararParcelasDoAcordo } from "@/lib/renegociacao/excecao";
 import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
+import { cancelarCobrancasDasMensalidades } from "@/lib/asaas/mensalidades";
+import { criarCobrancasAutomaticas } from "@/lib/asaas/cobrancas-automaticas";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -53,6 +56,14 @@ export async function openPlanCancellation(input: {
       return {
         ok: false,
         error: "Já existe um termo de cancelamento em aberto para este plano.",
+      };
+    }
+    if (m.includes("PENDING_FIRST")) {
+      return {
+        ok: false,
+        error:
+          "Há um acordo de renegociação desta venda que ainda não vale (aguardando autorização ou assinatura). Cancele o acordo pendente antes de abrir o distrato.",
+        acordo: true,
       };
     }
     if (m.includes("ALREADY_CANCELLED")) {
@@ -138,23 +149,53 @@ export async function applyPlanCancellation(input: {
 
   // 4015: aplicar o cancelamento cancela no Asaas os boletos vivos das parcelas
   // em aberto da venda, na mesma operação (com a confirmação da tela).
-  const { data: canc } = await supabase.from("plan_cancellations").select("negotiation_id, exception_id").eq("id", input.id).maybeSingle();
-  const { data: abertas } = canc?.negotiation_id
-    ? await supabase.from("payment_installments").select("id").eq("negotiation_id", canc.negotiation_id).eq("status", "em_aberto")
-    : { data: [] as { id: string }[] };
+  const { data: canc } = await supabase
+    .from("plan_cancellations")
+    .select("negotiation_id, direct_sale_id, exception_id, checklist_required, kind")
+    .eq("id", input.id)
+    .maybeSingle();
+  const distrato = Boolean(canc?.checklist_required);
+  const negotiationId = (canc?.negotiation_id as string | null) ?? null;
+  const directSaleId = (canc?.direct_sale_id as string | null) ?? null;
+  // 4020 (D12): no distrato, nada é cancelado no Asaas antes de a checklist
+  // estar concluída e o termo assinado (o banco confere de novo ao efetivar).
+  if (distrato) {
+    const admin = createAdminClient();
+    const pronto = await admin.rpc("_distrato_ready", { p_id: input.id });
+    if (pronto.error) return { ok: false, error: mensagemDoDistrato(pronto.error.message) ?? "Não foi possível conferir o distrato." };
+  }
+  // A parcial também cai no distrato (6a).
+  let abertas: { id: string }[] = [];
+  if (negotiationId || directSaleId) {
+    let q = supabase.from("payment_installments").select("id").in("status", distrato ? ["em_aberto", "parcial"] : ["em_aberto"]);
+    q = negotiationId ? q.eq("negotiation_id", negotiationId) : q.eq("direct_sale_id", directSaleId as string);
+    abertas = ((await q).data ?? []) as { id: string }[];
+  }
   // 4017a: com a exceção, as parcelas do acordo em aberto também caem (os
   // boletos delas no Asaas; o cartão parcelado ainda não aprovado, inteiro).
-  const doAcordo = canc?.exception_id && canc.negotiation_id
-    ? await prepararParcelasDoAcordo({ negotiationId: canc.negotiation_id as string, directSaleId: null, actorId: session.userId })
+  // 4020: no distrato, as de todo acordo da venda (as que caem e as reduzidas).
+  const doAcordo = (canc?.exception_id || distrato) && (negotiationId || directSaleId)
+    ? await prepararParcelasDoAcordo({ negotiationId, directSaleId, actorId: session.userId })
     : { ok: true as const, installmentIds: [] as string[] };
   if (!doAcordo.ok) return { ok: false, error: doAcordo.error };
+  // 4020: as mensalidades futuras da Ortodontia da venda caem; as cobranças
+  // vivas delas são canceladas no Asaas antes.
+  if (distrato && negotiationId) {
+    const admin = createAdminClient();
+    const { data: futuras } = await admin.rpc("_distrato_ortho_future", { p_neg: negotiationId });
+    const ids = ((futuras ?? []) as string[]).filter(Boolean);
+    if (ids.length) {
+      const r = await cancelarCobrancasDasMensalidades({ tipo: "ortho_charge", ids, actorId: session.userId, motivo: "distrato da venda" });
+      if (!r.ok) return { ok: false, error: `As mensalidades da Ortodontia não foram canceladas no Asaas, então nada foi mudado. ${r.error}` };
+    }
+  }
   const op = await comBoletosCancelados<unknown>({
     operacao: "cancelamento do plano",
     motivo: "cancelamento do plano",
     installmentIds: [...(abertas ?? []).map((x) => x.id as string), ...doAcordo.installmentIds],
     actorId: session.userId,
     confirmar: Boolean(input.confirmarCancelamento),
-    venda: { negotiationId: (canc?.negotiation_id as string | undefined) ?? null },
+    venda: { negotiationId, directSaleId },
     tentar: async () => {
       const r = await supabase.rpc("apply_plan_cancellation", { p_id: input.id });
       return { error: r.error };
@@ -176,6 +217,8 @@ export async function applyPlanCancellation(input: {
     if (m.includes("ALREADY_APPLIED")) {
       return { ok: false, error: "Este cancelamento já foi efetivado." };
     }
+    const d = mensagemDoDistrato(m);
+    if (d) return { ok: false, error: d };
     if (m.includes("EXCEPTION_INVALID")) {
       return {
         ok: false,
@@ -198,6 +241,20 @@ export async function applyPlanCancellation(input: {
     entityType: "plan_cancellation_apply",
     entityId: input.id,
   });
+  // 4020 (19.35.5): a parcela do acordo de várias vendas, reduzida, volta à
+  // rotina das cobranças com o valor novo (o boleto antigo já foi cancelado).
+  if (distrato) {
+    const admin = createAdminClient();
+    const { data: depois } = await admin.from("plan_cancellations").select("agreement_changes").eq("id", input.id).maybeSingle();
+    const reduzidos = new Set(
+      (((depois?.agreement_changes ?? []) as { acordo: string; acao: string }[]) || [])
+        .filter((x) => x.acao === "reduzir")
+        .map((x) => x.acordo)
+    );
+    for (const renegotiationId of reduzidos) {
+      await criarCobrancasAutomaticas({ origem: "gatilho", ator: session.userId, renegotiationId }).catch(() => null);
+    }
+  }
   revalidatePath(`/cancelamentos/${input.id}/termo`);
   revalidatePath(`/prontuarios/${input.clientId}`);
   revalidatePath(`/apresentacao/${input.clientId}`);
@@ -230,4 +287,14 @@ export async function discardPlanCancellation(input: {
 
   revalidatePath(`/apresentacao/${input.clientId}`);
   return { ok: true };
+}
+
+/** 4020: as recusas do distrato (D12). Devolve null quando não é do distrato. */
+function mensagemDoDistrato(m: string): string | null {
+  if (m.includes("CHECKLIST_INCOMPLETE"))
+    return "Conclua a checklist do distrato antes de efetivar: cada item fica \"Feito\" ou \"Não se aplica\", com o motivo.";
+  if (m.includes("SETTLEMENT_CHANGED"))
+    return "Entrou pagamento depois do termo, então o acerto do termo não vale mais. Descarte este termo e abra o distrato de novo, para o termo sair com o acerto certo.";
+  if (m.includes("TERM_NOT_SIGNED")) return "O termo precisa estar assinado pelo cliente antes de efetivar o distrato.";
+  return null;
 }

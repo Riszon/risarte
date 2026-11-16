@@ -62,6 +62,43 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.456.5",
+    data: "2026-11-16",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4020, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Distrato com checklist",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O cancelamento do tratamento vira o DISTRATO: antes de efetivar, o Gerente conclui uma checklist de 8 itens (pendências, feitos × pagos, multa, acordos, cobranças no Asaas, devolução, taxa da rede e pontos) e colhe o termo assinado. Antes disso, nada é cancelado, nem no Asaas.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.17. Distrato com checklist",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Nada é distratado sozinho: o pedido de distrato registrado na ficha e o contrato em atraso há 60 dias (configurável na Central) avisam o Gerente, a cada 7 dias, e ele abre o distrato ou mantém o contrato, com o motivo. O distrato aberto há mais de 30 dias avisa também o Financeiro da Franqueadora.",
+        papeis: ["unit_manager", "receptionist", "finance_franchisor"],
+        manual: "13g.17. Distrato com checklist",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O acordo de renegociação que junta várias vendas: no distrato de uma delas, as parcelas abertas do acordo são reduzidas na proporção daquela venda (o termo mostra antes e depois), e o pago no acordo entra no acerto na mesma proporção. A venda direta com algo pago passa pelo distrato, sem multa, e as sessões feitas continuam feitas.",
+        papeis: ["unit_manager", "receptionist"],
+        manual: "13g.17. Distrato com checklist",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A devolução do distrato por Pix da conta da unidade: o Gerente pede com o termo assinado anexado e o Financeiro da Franqueadora ou o Admin Master autorizam. Em Financeiro › Cobranças automáticas, o Financeiro vê todas as devoluções, dos dois tipos. A taxa da rede continua devida.",
+        papeis: ["unit_manager", "finance_franchisor"],
+        manual: "13g.17. Distrato com checklist",
+      },
+    ],
+  },
+  {
     versao: "0.456.4",
     data: "2026-11-16",
     migracao: null,

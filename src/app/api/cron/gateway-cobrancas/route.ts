@@ -30,5 +30,8 @@ export async function GET(request: Request) {
     if (!x.error) atraso += Number(x.data ?? 0);
   }
   const r = await criarCobrancasAutomaticas({ origem });
-  return Response.json({ ok: true, origem, criadas: r.criadas, falhas: r.falhas, puladas: r.puladas, motivo: r.motivo, mensalidadesGeradas: geradas, atraso });
+  // 4020 (19.35.3): o contrato em atraso e o distrato aberto avisam o Gerente
+  // (a cada 7 dias; o distrato aberto há mais de 30, também o Financeiro).
+  const distrato = await admin.rpc("_distrato_watch_run").then((x) => (x.error ? null : x.data));
+  return Response.json({ ok: true, origem, criadas: r.criadas, falhas: r.falhas, puladas: r.puladas, motivo: r.motivo, mensalidadesGeradas: geradas, atraso, distrato });
 }

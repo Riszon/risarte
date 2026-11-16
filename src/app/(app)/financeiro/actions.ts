@@ -49,6 +49,8 @@ export async function saveFinanceSettings(input: {
   roundingToleranceCents?: number;
   /** 4006 — dias úteis até o selo "Em atraso". Só na REDE; `undefined` = não mexe. */
   overdueBadgeBusinessDays?: number;
+  /** 4020 — dias de atraso do contrato que avisam o Gerente para decidir o distrato. Só na REDE. */
+  distratoOverdueDays?: number;
 }): Promise<FinanceResult> {
   const session = await getSessionContext();
   const supabase = await createClient();
@@ -100,6 +102,12 @@ export async function saveFinanceSettings(input: {
   ) {
     return { ok: false, error: "Os dias úteis do selo \"Em atraso\" vão de 0 a 15." };
   }
+  if (
+    input.distratoOverdueDays !== undefined &&
+    (!Number.isInteger(input.distratoOverdueDays) || input.distratoOverdueDays < 15 || input.distratoOverdueDays > 365)
+  ) {
+    return { ok: false, error: "Os dias de atraso que avisam o Gerente sobre o distrato vão de 15 a 365." };
+  }
   const teto = input.overduePercent ?? null;
   if (teto !== null && (!Number.isFinite(teto) || teto < 0 || teto > 100)) {
     return {
@@ -134,6 +142,7 @@ export async function saveFinanceSettings(input: {
       ...(naRede && input.overdueBadgeBusinessDays !== undefined
         ? { overdue_badge_business_days: input.overdueBadgeBusinessDays }
         : {}),
+      ...(naRede && input.distratoOverdueDays !== undefined ? { distrato_overdue_days: input.distratoOverdueDays } : {}),
       updated_at: new Date().toISOString(),
       updated_by: session.userId,
     },

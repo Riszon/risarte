@@ -37,6 +37,7 @@ import {
 } from "./actions";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
 import { AcordosDaVenda } from "@/components/commercial/acordos-da-venda";
+import { DistratoDaVenda } from "@/components/commercial/distrato-da-venda";
 import { CustoDoParcelado } from "@/components/commercial/custo-do-parcelado";
 import { FlowSection } from "@/components/commercial/flow-section";
 import { MoneySummary } from "@/components/commercial/money-summary";
@@ -964,6 +965,12 @@ export function SaleItem({
                 {comAcordo && sale.clientId && (
                   <div className="mt-2">
                     <AcordosDaVenda clientId={sale.clientId} directSaleId={sale.id} />
+                  </div>
+                )}
+                {/* 4020 (4a): com algo pago, o cancelamento é o distrato. */}
+                {sale.clientId && (
+                  <div className="mt-2">
+                    <DistratoDaVenda clientId={sale.clientId} directSaleId={sale.id} />
                   </div>
                 )}
               </div>

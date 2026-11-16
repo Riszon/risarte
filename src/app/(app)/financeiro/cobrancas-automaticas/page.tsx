@@ -8,6 +8,8 @@ import { PainelDasCobrancasAutomaticas, type DadosDoPainel } from "./painel";
 import { OperacoesInterrompidas, type OperacaoInterrompida } from "./operacoes-interrompidas";
 import { PedidosDeExcecao, type PedidoDeExcecao } from "./pedidos-de-excecao";
 import { MensalidadesDaUnidade } from "./mensalidades-da-unidade";
+import { DistratosEDevolucoes } from "./distratos-e-devolucoes";
+import type { Devolucao, DistratosDaRede } from "./distrato-actions";
 import { todayInBrazil } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Cobranças automáticas" };
@@ -30,6 +32,9 @@ export default async function CobrancasAutomaticasPage() {
   const { data: interrompidas } = await supabase.rpc("boleto_op_failures_read", { p_clinic_id: unidade });
   // 4017a: os pedidos de exceção (a rede para o Financeiro e o Admin; a unidade para o Gerente).
   const { data: pedidosDeExcecao } = await supabase.rpc("sale_cancel_exceptions_read");
+  // 4020: os distratos (pedidos, avisos do atraso e abertos) e todas as devoluções.
+  const { data: distratos } = await supabase.rpc("distratos_read");
+  const { data: devolucoes } = await supabase.rpc("devolucoes_read");
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
@@ -54,6 +59,7 @@ export default async function CobrancasAutomaticasPage() {
       ) : (
         <>
           <PedidosDeExcecao itens={((pedidosDeExcecao ?? []) as PedidoDeExcecao[])} />
+          <DistratosEDevolucoes distratos={(distratos ?? null) as DistratosDaRede | null} devolucoes={((devolucoes ?? []) as Devolucao[])} />
           {/* 4018: a chave das mensalidades pelo Asaas, da unidade ativa (Gerente ou Admin). */}
           {session.activeClinic?.id && (
             <MensalidadesDaUnidade clinicId={session.activeClinic.id} clinicName={session.activeClinic.name} hoje={todayInBrazil()} />
