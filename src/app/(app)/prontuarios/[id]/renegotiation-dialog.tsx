@@ -30,6 +30,7 @@ import {
 } from "@/lib/finance/renegotiation";
 import type { InstallmentView } from "@/lib/finance/receivables";
 import { saveRenegotiation } from "./receivables-actions";
+import { addDaysIso } from "@/lib/dates";
 import { descontoPorComponente } from "@/lib/renegociacao/desconto";
 import { FRASE_DA_ESPERA } from "@/lib/renegociacao/termo-texto";
 
@@ -67,7 +68,9 @@ export function RenegotiationDialog({
   const [isPending, startTransition] = useTransition();
   const [downPayment, setDownPayment] = useState("0,00");
   const [count, setCount] = useState(3);
-  const [firstDue, setFirstDue] = useState(today);
+  // O 1º vencimento novo nasce uma semana à frente: o banco recusa hoje (o termo
+  // ficaria sem prazo para ser assinado, FIRST_DUE_TOO_SOON), e amanhã é o mínimo.
+  const [firstDue, setFirstDue] = useState(addDaysIso(today, 7));
   const [method, setMethod] = useState("boleto");
   // 4017: a descrição da permuta e a forma dos boletos (null = a da venda de origem).
   const [descricao, setDescricao] = useState("");
@@ -264,6 +267,7 @@ export function RenegotiationDialog({
               <Input
                 className="h-9 text-sm"
                 type="date"
+                min={addDaysIso(today, 1)}
                 value={firstDue}
                 onChange={(e) => {
                   setFirstDue(e.target.value);
