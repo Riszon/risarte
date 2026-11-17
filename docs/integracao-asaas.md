@@ -5177,3 +5177,4 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 - **Ensaio:** `scripts/asaas-ensaio-4018a-marca-do-split.mjs`, 7/7. Com a regra antiga de volta, 3 falhas.
 - **No treino:** as 4 marcas (R$ 90,76) zeradas, conferência `true | 0 | 0`. A prova do "mês limpo" da 4021a parte do zero.
 - **Na produção:** só a migração, sem código. Ela não depende da 4021.
+- **A consulta só de leitura na produção** (rodada pelo dono em 16/11/2026): "No rows returned". Nenhuma marca de split a mais; o defeito não chegou a marcar nada lá.
