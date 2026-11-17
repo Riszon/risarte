@@ -209,3 +209,33 @@ describe("a reavaliação dentro da Fase 5 (C1)", () => {
     expect(appointmentTypeOptions("treatment_start")).toContain("reevaluation");
   });
 });
+
+// 0420 (combinada com a sessão "Módulo de Ortodontia", 17/11/2026): com a 0417,
+// a instalação do aparelho é só uma sessão do plano. O fim do plano ignora as
+// sessões de Ortodontia; o fim da ortodontia é a entrega das contenções.
+describe("0420 — a instalação ortodôntica não termina o plano", () => {
+  const sql0420 = readFileSync(
+    join(process.cwd(), "supabase/migrations/0420_fim_do_tratamento_instalacao_ortodontica.sql"),
+    "utf8"
+  ).replace(/\r\n/g, "\n");
+  const gatilho = sql0420.slice(
+    sql0420.indexOf("create or replace function public.treatment_closure_on_session("),
+    sql0420.lastIndexOf("$$;")
+  );
+  it("reconhece a Ortodontia pelo mesmo critério da 0417 (a especialidade)", () => {
+    expect(sql0420).toContain("p.specialty ilike '%ortod%'");
+  });
+  it("a sessão de Ortodontia concluída nunca termina o plano", () => {
+    expect(gatilho).toContain("if public._sessao_ortodontica(new.procedure_id) then return null; end if;");
+  });
+  it("a instalação pendente não impede o fim do resto do plano", () => {
+    expect(gatilho.match(/and not public\._sessao_ortodontica\(s\.procedure_id\)/g)?.length).toBeGreaterThanOrEqual(3);
+  });
+  it("a regra 'sobra tratamento?' não muda: a ortodontia em andamento continua segurando", () => {
+    expect(sql0420).not.toContain("create or replace function public._tratamento_em_aberto(");
+  });
+  it("a interna não responde a ninguém de fora, e o gatilho segue blindado", () => {
+    expect(sql0420).toContain("revoke execute on function public._sessao_ortodontica(uuid) from public, anon, authenticated;");
+    expect(gatilho).toContain("raise warning 'treatment_closure_on_session");
+  });
+});

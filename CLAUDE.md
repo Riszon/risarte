@@ -400,6 +400,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (fim do tratamento, 0420) — PC Administrador (core 0.470.0, migração 0420; worktree `wt-fim-tratamento`)**
+
+- **A instalação ortodôntica não termina o plano** (bloco 0.470.0 no ESTADO;
+  combinada com a sessão "Módulo de Ortodontia"). ⚠️ Ao recriar
+  `treatment_closure_on_session`, partir da 0420 (filtro `_sessao_ortodontica`).
+  ⚠️ A 0.469.0/0417 (AP175) é da ortodontia, ainda sem push: ela entra ABAIXO
+  da 0.470.0 no changelog.
+
 **17/11/2026 (fim do tratamento, Etapa 2) — PC Administrador (core 0.467.0, publicada DEPOIS da 0.468.0 da F4 — a versão do sistema segue 0.468.0; migração 0418, aplicada na produção pelo dono em 17/11/2026; worktree `wt-fim-tratamento`)**
 
 - **O motor do fim do tratamento** (bloco 0.467.0 no ESTADO; plano e as 30

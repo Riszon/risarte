@@ -14,6 +14,9 @@ if (quebrar === "ortho") sql = sql.replace("and o.status in ('aguardando_inicio'
 if (quebrar === "urgencia") sql = sql.replace("    when v_phase = 'commercial_conversion' and v_type = 'treatment_start' then 'treatment_start'\n    when v_phase = 'follow_up' and v_type = 'reevaluation'", "    when v_phase = 'acquisition' and v_type in ('urgency', 'emergency') then 'treatment_start'\n    when v_phase = 'commercial_conversion' and v_type = 'treatment_start' then 'treatment_start'\n    when v_phase = 'follow_up' and v_type = 'reevaluation'");
 if (quebrar === "pergunta") sql = sql.replace("      v_asked, coalesce(v_auto, false), v_user);", "      v_asked, coalesce(v_auto, false), v_user) where false;");
 
+// Sem quebra, a 0420 (a instalação não termina o plano) vai por cima: o
+// ensaio prova que a correção não quebrou nada da 0418.
+if (!quebrar) sql += "\n" + readFileSync(W + "supabase/migrations/0420_fim_do_tratamento_instalacao_ortodontica.sql", "utf8");
 if (quebrar && sql === readFileSync(W + "supabase/migrations/0418_fim_do_tratamento_o_motor.sql", "utf8")) throw new Error(`a quebra "${quebrar}" não achou o que quebrar: não mediu nada`);
 const c = await connect();
 let ok = 0, falhou = 0;

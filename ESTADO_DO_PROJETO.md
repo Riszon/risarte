@@ -24,6 +24,16 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   conferido de fora: sem login as portas e a rotina recusam, a chave de serviço
 >   para em NOT_ALLOWED, `coverage_notices` existe. Não visto na tela.
 
+> ## 🦷 0.470.0 — FIM DO TRATAMENTO: A INSTALAÇÃO ORTODÔNTICA NÃO TERMINA O PLANO (17/11/2026; migração 0420)
+>
+> Correção da 0418, combinada com a sessão "Módulo de Ortodontia": com a 0417
+> (AP175, 0.469.0, ainda sem push), a instalação é só sessão do plano, e o plano
+> com só a instalação abria a pergunta do fim logo depois de instalar.
+> - ⚠️ **`_sessao_ortodontica`** = o critério da 0417 (`specialty ilike %ortod%`).
+>   `treatment_closure_on_session` recriada na 0420: ao recriar, partir dela.
+> - Ensaio 6/6 (`scripts/ensaio-fim-do-tratamento-0420.mjs`, provado quebrando)
+>   e o da 0418 com a 0420 por cima, 35/35. Versão 0.470.0 (a 0.469.0 é da AP175).
+>
 > ## 🏁 0.467.0 — FIM DO TRATAMENTO, ETAPA 2: O MOTOR (17/11/2026; migração 0418)
 >
 > Plano, achados e as 30 decisões do dono em `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`

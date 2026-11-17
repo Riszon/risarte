@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.470.0",
+    data: "2026-11-17",
+    migracao: "0420",
+    titulo: "Fim do tratamento: instalar o aparelho não pergunta mais sobre reavaliação",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Concluir a sessão de instalação do aparelho ortodôntico não abre mais a pergunta \"necessita de reavaliação?\". Para a ortodontia, ela aparece na entrega das contenções. Num plano com instalação e outros procedimentos, a pergunta aparece quando os outros terminam.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "Fluxo 2c — O fim do tratamento",
+      },
+    ],
+  },
+  {
     versao: "0.468.0",
     data: "2026-11-17",
     migracao: "0419",

@@ -5301,7 +5301,9 @@ abre uma tarefa com dono, que só some quando é resolvida.
 
 **Quando acontece.** Na última sessão concluída de cada plano: o plano
 original, cada plano complementar, a venda direta. Na ortodontia, na **entrega
-das contenções**. A situação do plano passa sozinha para **Em tratamento** (na
+das contenções** — concluir a **instalação** do aparelho não abre a pergunta
+(desde a 0.470.0); num plano com instalação e outros procedimentos, ela abre
+quando os outros terminam. A situação do plano passa sozinha para **Em tratamento** (na
 1ª sessão) e **Concluído** (na última).
 
 **Fim de um plano × fim do tratamento.** O cliente só sai do Início de
