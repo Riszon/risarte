@@ -403,8 +403,8 @@ Syncthing se comportarem de forma estranha.**
 **17/11/2026 (venda direta v3, portas e D5) — PC Administrador (core 0.477.0 → 0.478.0, sem migração; worktree `wt-venda-direta`)**
 
 - Agenda e Comercial abrem o caixa; desmarcar o termo é só do Gerente, com
-  motivo na Auditoria (bloco 0.478.0 no ESTADO). ⚠️ **NÃO está no `main`:** espera
-  o dono. ⚠️ A trava da D5 é do app, não do banco.
+  motivo na Auditoria (bloco 0.478.0 no ESTADO). Publicado com o "pode publicar" do
+  dono (17/11/2026). ⚠️ A trava da D5 é do app, não do banco.
 
 **17/11/2026 (fim do tratamento, Etapa 5) — PC Administrador (core 0.477.0, migração 0426; worktree `wt-fim-tratamento`)**
 
