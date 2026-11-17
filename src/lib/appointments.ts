@@ -14,6 +14,8 @@ export const APPOINTMENT_TYPES = [
   "emergency",
   "revision",
   "redo",
+  // AP176 (0425): o único tipo que vira manutenção do caso ortodôntico.
+  "ortho_maintenance",
 ] as const;
 
 export type AppointmentType = (typeof APPOINTMENT_TYPES)[number];
@@ -29,6 +31,7 @@ export const APPOINTMENT_TYPE_LABELS: Record<AppointmentType, string> = {
   emergency: "Emergência",
   revision: "Revisão",
   redo: "Refação",
+  ortho_maintenance: "Manutenção ortodôntica",
 };
 
 export const APPOINTMENT_STATUSES = [
@@ -62,6 +65,8 @@ export const TYPE_PROVIDER_ROLES: Record<AppointmentType, UserRole[]> = {
   // Revisão/refação do controle de qualidade — feita por dentista.
   revision: ["dentist"],
   redo: ["dentist"],
+  // AP176: como o retorno (decisão do dono, 17/11/2026).
+  ortho_maintenance: ["clinical_coordinator", "dentist"],
 };
 
 /**
@@ -129,9 +134,19 @@ export const EXCEPTIONAL_TYPES: AppointmentType[] = [
 
 /** Options offered in the scheduling dialog for a client in a given phase. */
 export function appointmentTypeOptions(
-  phase: JourneyPhase | null
+  phase: JourneyPhase | null,
+  /** AP176: o cliente tem caso ortodôntico em tratamento ou em acompanhamento. */
+  opts: { orthoOpen?: boolean } = {}
 ): AppointmentType[] {
   if (!phase) return [...APPOINTMENT_TYPES];
+  const options = optionsForPhase(phase);
+  // AP176: a manutenção ortodôntica só aparece para quem tem caso aberto, e
+  // logo depois do tipo da fase — é o compromisso mais frequente desse paciente.
+  if (opts.orthoOpen) options.splice(1, 0, "ortho_maintenance");
+  return options;
+}
+
+function optionsForPhase(phase: JourneyPhase): AppointmentType[] {
   const auto = PHASE_APPOINTMENT_TYPE[phase];
   const options = [auto];
   if (phase === "treatment_start") options.push("treatment_session");

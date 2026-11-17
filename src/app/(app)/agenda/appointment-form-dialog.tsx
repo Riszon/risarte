@@ -63,6 +63,11 @@ import {
 import { AgendaPeekDialog } from "./agenda-peek-dialog";
 import { EscolherCliente } from "./escolher-cliente";
 import {
+  dicaDoTipo,
+  emSeguida,
+  horarioEmSeguida,
+} from "@/lib/ortodontia/agenda";
+import {
   formatIsoDateInBrazil,
   weekdayOf,
 } from "@/lib/dates";
@@ -195,9 +200,17 @@ export function AppointmentFormDialog({
   const isControlledOpen = open !== undefined;
   const actualOpen = isControlledOpen ? open : internalOpen;
   const setActualOpen = (o: boolean) => {
+    // AP176: fechar encerra a sequência "em seguida".
+    if (!o) setSeguida(null);
     if (isControlledOpen) onOpenChange?.(o);
     else setInternalOpen(o);
   };
+  // AP176: o segundo atendimento do mesmo dia, preparado depois de salvar o
+  // primeiro (sessão do plano ↔ manutenção ortodôntica).
+  const [seguida, setSeguida] = useState<{
+    tipo: AppointmentType;
+    hora: string | null;
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [unitId, setUnitId] = useState("");
   const [unitClients, setUnitClients] = useState<
@@ -348,7 +361,9 @@ export function AppointmentFormDialog({
 
   const typeOptions = isEdit
     ? [...APPOINTMENT_TYPES]
-    : appointmentTypeOptions(schedulingInfo?.phase ?? null);
+    : appointmentTypeOptions(schedulingInfo?.phase ?? null, {
+        orthoOpen: Boolean(schedulingInfo?.orto),
+      });
   const typeItems = typeOptions.map((t) => ({
     value: t,
     label: APPOINTMENT_TYPE_LABELS[t],
@@ -804,6 +819,18 @@ export function AppointmentFormDialog({
       formData.set("participant_ids", validParticipantIds.join(","));
     }
 
+    // AP176: outro tratamento em paralelo = dois atendimentos seguidos no
+    // mesmo dia. Só na criação, e uma vez (o segundo não puxa um terceiro).
+    const proximo =
+      !isEdit && !seguida
+        ? emSeguida({
+            type,
+            date: slotDate,
+            orto: schedulingInfo?.orto ?? null,
+            sessoesAAgendar: pendingSessions.filter((s) => !sessionIds.includes(s.id)).length,
+          })
+        : null;
+
     startTransition(async () => {
       const result = isEdit
         ? await updateAppointment(appointment!.id, formData)
@@ -817,6 +844,23 @@ export function AppointmentFormDialog({
             description: "O profissional foi avisado.",
             duration: 8000,
           });
+        }
+        if (proximo) {
+          // A janela fica aberta, já com o segundo atendimento: mesmo dia,
+          // começando quando o primeiro termina.
+          const hora = horarioEmSeguida(slotTime, Number(duration));
+          setSeguida({ tipo: proximo.tipo, hora });
+          setType(proximo.tipo);
+          setProviderId(proximo.providerId ?? "");
+          setDate(slotDate);
+          setTime(hora ?? "");
+          setSessionIds([]);
+          setNotes("");
+          setParticipantIds([]);
+          getClientPendingSessions(clientId).then(setPendingSessions);
+          getClientSchedulingInfo(clientId).then((info) => info && setSchedulingInfo(info));
+          router.refresh();
+          return;
         }
         setActualOpen(false);
         router.refresh();
@@ -850,6 +894,28 @@ export function AppointmentFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* AP176: o primeiro atendimento foi salvo; este é o segundo. */}
+          {seguida && (
+            <div className="space-y-2 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">
+              <p>
+                <strong>Agendamento salvo.</strong> Agora{" "}
+                {seguida.tipo === "ortho_maintenance"
+                  ? "a manutenção ortodôntica"
+                  : "a sessão do plano"}{" "}
+                no mesmo dia, logo em seguida
+                {seguida.hora ? ` (a partir das ${seguida.hora})` : ""}. Confira o
+                profissional e o horário e salve — ou deixe para outro dia.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setActualOpen(false)}
+              >
+                Agora não
+              </Button>
+            </div>
+          )}
           {pickUnit && (
             <div className="space-y-2">
               <Label>Unidade *</Label>
@@ -1001,6 +1067,53 @@ export function AppointmentFormDialog({
                 em qualquer dia/horário, mesmo já ocupado.
               </p>
             )}
+            {/* AP176: o hábito antigo (sessão ou retorno com o ortodontista)
+                não entra mais no cronograma do caso. */}
+            {(() => {
+              const dica = dicaDoTipo({
+                type,
+                providerId,
+                orto: schedulingInfo?.orto ?? null,
+              });
+              return dica ? (
+                <p className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                  <Info className="mt-px size-3.5 shrink-0" />
+                  <span>
+                    {dica}{" "}
+                    <button
+                      type="button"
+                      className="font-medium underline underline-offset-2"
+                      onClick={() => setType("ortho_maintenance")}
+                    >
+                      Trocar para Manutenção ortodôntica
+                    </button>
+                  </span>
+                </p>
+              ) : null;
+            })()}
+            {/* AP176: avisa ANTES de salvar que o segundo atendimento vem em
+                seguida — sessão do plano ↔ manutenção prevista na semana. */}
+            {!isEdit &&
+              !seguida &&
+              (() => {
+                const prox = emSeguida({
+                  type,
+                  date,
+                  orto: schedulingInfo?.orto ?? null,
+                  sessoesAAgendar: pendingSessions.filter((s) => !sessionIds.includes(s.id)).length,
+                });
+                if (!prox) return null;
+                return (
+                  <p className="flex items-start gap-1.5 rounded-md border border-primary/30 bg-primary/5 p-2 text-xs">
+                    <Info className="mt-px size-3.5 shrink-0 text-primary" />
+                    <span>
+                      {prox.tipo === "ortho_maintenance"
+                        ? `Este paciente tem manutenção ortodôntica prevista para ${prox.prevista.split("-").reverse().join("/")}. Ao salvar, a janela já prepara a manutenção no mesmo dia, logo em seguida a este atendimento.`
+                        : "Este paciente tem sessões do plano a agendar. Ao salvar, a janela já prepara uma sessão no mesmo dia, logo em seguida a esta manutenção."}
+                    </span>
+                  </p>
+                );
+              })()}
           </div>
 
           <div className="space-y-2">

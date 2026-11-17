@@ -224,7 +224,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
           <Stethoscope className="mr-1 size-3.5" /> Desenvolvimento clínico
         </Button>
         {canSchedule && isOpen && (
-          <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/agenda?cliente=${c.client_id}&tipo=treatment_session`} />}>
+          <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/agenda?cliente=${c.client_id}&tipo=ortho_maintenance`} />}>
             <CalendarPlus className="mr-1 size-3.5" /> Agendar
           </Button>
         )}

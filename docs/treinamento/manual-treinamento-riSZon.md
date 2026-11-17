@@ -2152,10 +2152,32 @@ marcada por engano (desfaz a prorrogação).
 
 - Ao iniciar o caso, o sistema gera as **manutenções previstas**: uma a cada
   intervalo (30 dias por padrão), do início até o término previsto.
-- A recepção **agenda como sempre**, em Agenda, com o **ortodontista do caso**
-  (sessão de tratamento, início de tratamento ou retorno). O sistema **liga
-  sozinho** o agendamento à manutenção prevista mais próxima (até 45 dias de
-  diferença) — ou cria uma manutenção extra. Ela passa a **Agendada**.
+- A recepção agenda a manutenção em Agenda com o tipo **Manutenção
+  ortodôntica** (desde a 0.476.0). O tipo só aparece para quem tem caso
+  **em tratamento** ou **em acompanhamento** — o controle da contenção usa o
+  mesmo tipo —, e os botões **Agendar** da ficha do caso e da tela Atenção já
+  abrem com ele escolhido. O sistema **liga sozinho** o agendamento à
+  manutenção prevista mais próxima (até 45 dias de diferença) — ou cria uma
+  manutenção extra. Ela passa a **Agendada**.
+- **Só esse tipo vira manutenção.** Sessão de tratamento e retorno não entram
+  mais no cronograma do caso, mesmo com o ortodontista. Se alguém escolher
+  sessão ou retorno com o ortodontista de quem tem caso aberto, a janela
+  pergunta se não é manutenção e oferece **Trocar para Manutenção
+  ortodôntica**. Os agendamentos que já estavam ligados a uma manutenção
+  continuam ligados.
+- **Outro dentista ou o Coordenador** pode fazer a manutenção (o termo já diz
+  que outro ortodontista da equipe pode continuar): ela entra no cronograma do
+  caso e o **repasse vai para quem fez**.
+- **Outro tratamento junto com a ortodontia** (uma restauração, uma limpeza,
+  um implante): são **dois atendimentos seguidos no mesmo dia**, cada um com o
+  seu tipo e o seu repasse — a mesma consulta não é sessão do plano e
+  manutenção ao mesmo tempo. A agenda ajuda: ao agendar a **sessão do plano**
+  numa semana em que o paciente tem manutenção prevista, a janela avisa e, ao
+  salvar, **já prepara a manutenção no mesmo dia, logo em seguida** (com o
+  ortodontista do caso e o horário em que a sessão termina). O contrário
+  também: ao agendar a manutenção de quem tem sessões do plano a agendar, ela
+  prepara a sessão em seguida. Confira o profissional e o horário e salve, ou
+  clique **Agora não**.
 - **Sessão de um plano nunca é manutenção** (desde a 0.469.0). Se o
   agendamento leva uma sessão do plano de tratamento — a instalação do
   aparelho, uma restauração, uma limpeza, uma radiografia, inclusive de um
@@ -2410,7 +2432,8 @@ EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
 (0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254;
 mensalidades por lote (0.367.0): EV-255 a EV-257; os avisos da rotina
 (0.368.0): EV-258; sessão de plano não é manutenção e a instalação inicia o
-caso (0.469.0): EV-368.
+caso (0.469.0): EV-368; o tipo Manutenção ortodôntica e os atendimentos
+seguidos (0.476.0): EV-375.
 
 ### 2.9. O prontuário: o que você vê primeiro *(desde a 0.369.0)*
 

@@ -471,6 +471,16 @@ Syncthing se comportarem de forma estranha.**
   NOT_ALLOWED). Não visto na tela.
 
 
+**17/11/2026 (ortodontia, AP176) — PC Administrador (core 0.475.0 → 0.476.0, migração 0425)**
+
+- **O tipo "Manutenção ortodôntica"** (bloco 0.476.0 no ESTADO). ⚠️ **Tipo de
+  agendamento novo mora em três lugares**: `APPOINTMENT_TYPES`,
+  `TYPE_PROVIDER_ROLES` e `_provider_serves_type` (régua pela migração mais
+  nova). ⚠️ Valor novo de enum: só comparar como texto na própria migração.
+  ⚠️ Dicas da agenda para ortodontia = `src/lib/ortodontia/agenda.ts`.
+- ✅ 0425 no treino (ensaio 10/10, desfeito). ⏳ Produção pendente; push só
+  depois dela.
+
 **17/11/2026 (ortodontia, AP175) — PC Administrador (core 0.468.0 → 0.469.0, migração 0417)**
 
 - **Sessão de plano não é manutenção; a instalação inicia o caso** (bloco

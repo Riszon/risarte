@@ -159,6 +159,27 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   e o da 0418 com a 0420 por cima, 35/35. Versão 0.470.0 (a 0.469.0 é da AP175).
 >   ✅ **0420 no treino e na produção** (o dono, 17/11/2026; conferido de fora).
 >
+> ## 🦷 0.476.0 — ORTODONTIA, AP176: O TIPO "MANUTENÇÃO ORTODÔNTICA" (17/11/2026; migração 0425)
+>
+> Etapa B do AP175, com as decisões do dono (17/11/2026): tipo novo
+> `ortho_maintenance`, o ÚNICO que vira manutenção do caso (em tratamento ou
+> em acompanhamento; o controle da contenção usa o mesmo); atendem dentista e
+> Coordenador; os já ligados continuam; com o tipo próprio a manutenção liga
+> seja quem for que atenda e o repasse vai para quem fez. **Outro tratamento
+> em paralelo = dois atendimentos seguidos no mesmo dia** (opção 1 do dono):
+> a janela avisa e, ao salvar, já prepara o segundo (`emSeguida`).
+> - ⚠️ **Tipo de agendamento novo = `APPOINTMENT_TYPES` + `TYPE_PROVIDER_ROLES`
+>   + `_provider_serves_type`** (a régua agora lê a migração MAIS NOVA que
+>   define a função). Valor de enum novo não pode ser USADO na mesma
+>   migração (só comparar como texto).
+> - ⚠️ Ao recriar `ortho_appointment_sync`, partir da 0425.
+> - ✅ 0425 no treino (reaplicada; ensaio 10/10 com ela gravada, e o da 0417
+>   de novo, 23/23). ⏳ **Produção pendente** (conferência esperada
+>   `1 · 1 · 1 · 0`); push só depois. A 0423 (Jornada) e a 0424 (Venda
+>   direta) são de outras sessões. EV-375. Na tela (servidor local + treino):
+>   a lista de tipos, o link da ortodontia e a pergunta do hábito antigo; o
+>   "em seguida" depois de salvar só por teste.
+
 > ## 🦷 0.469.0 — ORTODONTIA, AP175: SESSÃO DE PLANO NÃO É MANUTENÇÃO (17/11/2026; migração 0417)
 >
 > Relato da sessão da Jornada (16/11/2026), confirmado no treino em transação

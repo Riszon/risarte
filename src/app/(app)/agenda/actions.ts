@@ -38,6 +38,7 @@ import {
   isoDateIn,
   monthRangeOf,
   startOfDayInBrazil,
+  todayInBrazil,
   weekdayOf,
 } from "@/lib/dates";
 import {
@@ -143,6 +144,7 @@ import {
 } from "@/lib/appointments";
 import type { UserRole } from "@/lib/roles";
 import type { JourneyPhase, JourneyStatus } from "@/lib/journey";
+import type { OrtoNaAgenda } from "@/lib/ortodontia/agenda";
 
 export type ActionResult = { ok: boolean; error?: string; warning?: string };
 
@@ -1810,7 +1812,49 @@ export type SchedulingInfo = {
   /** I4: cadastro incompleto trava o agendamento. */
   registrationComplete: boolean;
   missingFields: string[];
+  /** AP176: caso ortodôntico em tratamento ou em acompanhamento (senão nulo). */
+  orto: OrtoNaAgenda | null;
 };
+
+/**
+ * AP176: o caso ortodôntico aberto do cliente, para a janela de agendamento
+ * oferecer a "Manutenção ortodôntica" e sugerir os atendimentos seguidos. A
+ * leitura obedece à regra de linha (`ortho_can_view`): quem não vê a
+ * ortodontia recebe nulo e a janela fica como era.
+ */
+async function lerOrtoNaAgenda(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clientId: string
+): Promise<OrtoNaAgenda | null> {
+  const { data: caso, error } = await supabase
+    .from("ortho_cases")
+    .select("id, status, orthodontist_id, orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )")
+    .eq("client_id", clientId)
+    .in("status", ["em_tratamento", "contencao"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !caso) return null;
+  const desde = addDaysIso(todayInBrazil(), -7);
+  const { data: previstas } = await supabase
+    .from("ortho_maintenances")
+    .select("planned_date")
+    .eq("case_id", caso.id as string)
+    .eq("status", "prevista")
+    .is("appointment_id", null)
+    .gte("planned_date", desde)
+    .order("planned_date", { ascending: true })
+    .limit(12);
+  const orto = Array.isArray(caso.orthodontist) ? caso.orthodontist[0] : caso.orthodontist;
+  return {
+    status: caso.status as OrtoNaAgenda["status"],
+    orthodontistId: (caso.orthodontist_id as string | null) ?? null,
+    orthodontistName: (orto as { full_name?: string } | null)?.full_name ?? null,
+    previstas: (previstas ?? [])
+      .map((m) => m.planned_date as string | null)
+      .filter((d): d is string => Boolean(d)),
+  };
+}
 
 /** Campos que o cadastro precisa ter (I4) — mesma régua do formulário. */
 const CLIENT_FIELDS_SELECT =
@@ -1893,7 +1937,7 @@ export async function getClientSchedulingInfo(
   await getSessionContext();
   const supabase = await createClient();
 
-  const [{ data: client }, { data: lastAppointments }, contagemDosResponsaveis] =
+  const [{ data: client }, { data: lastAppointments }, contagemDosResponsaveis, orto] =
     await Promise.all([
       supabase
         .from("clients")
@@ -1910,6 +1954,7 @@ export async function getClientSchedulingInfo(
         .from("client_guardians")
         .select("id", { count: "exact", head: true })
         .eq("client_id", clientId),
+      lerOrtoNaAgenda(supabase, clientId),
     ]);
 
   if (!client) return null;
@@ -1927,6 +1972,7 @@ export async function getClientSchedulingInfo(
     lastAppointment: lastAppointments?.[0] ?? null,
     registrationComplete: missing.length === 0,
     missingFields: missing,
+    orto,
   };
 }
 

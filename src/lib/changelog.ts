@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.476.0",
+    data: "2026-11-17",
+    migracao: "0425",
+    titulo: "Agenda: o tipo \"Manutenção ortodôntica\" e os dois atendimentos seguidos no mesmo dia",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novo tipo de agendamento \"Manutenção ortodôntica\", oferecido só para quem tem caso ortodôntico em tratamento ou em acompanhamento. É o único que entra no cronograma do caso: sessão de tratamento e retorno não viram mais manutenção, mesmo com o ortodontista. Outro dentista ou o Coordenador também pode fazer a manutenção, e o repasse vai para quem fez. Os botões \"Agendar\" da ortodontia já abrem com esse tipo.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager", "sdr"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Para quem faz outro tratamento junto com a ortodontia, a agenda sugere os dois atendimentos no mesmo dia, um logo depois do outro: ao salvar a sessão do plano numa semana com manutenção prevista, a janela já prepara a manutenção em seguida (e o contrário, com sessão do plano a agendar). E pergunta se não é manutenção quando alguém escolhe sessão ou retorno com o ortodontista do caso.",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.475.0",
     data: "2026-11-17",
     migracao: "0424",
