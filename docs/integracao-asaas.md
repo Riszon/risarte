@@ -4870,6 +4870,7 @@ A resposta confirma o que já estava registrado sobre a mensageria (17.4), o Wha
   - **Na produção, a conferência deve dar `gatilho_novo 1 · linhas_sem_razao 0`.**
 - As duas leituras do Painel de repasses passam a ver as mensalidades.
 - **Desfazer:** `docs/asaas/desfazer-4018c.sql`. Tira o gatilho e volta as leituras do painel; os lançamentos no razão ficam, porque corrigem o razão.
+- **Na produção (17/11/2026):** o dono rodou a 4018c no SQL Editor, e a conferência bateu: `gatilho_novo 1 · linhas_sem_razao 0`. Foi a primeira da sequência depois da 0427 da Jornada. O código (o rótulo "Mensalidade (fora do Asaas)") só sobe com a publicação do `main`.
 
 **As provas:**
 - **O ensaio novo** (`scripts/asaas-ensaio-4018c-taxa-retida-no-razao.mjs`): 24/24. Ele prova **as duas ordens com o mesmo resultado** (a baixa antes do aviso e o aviso antes da baixa), o repasse menor, o repasse maior e nenhum aviso falso.
