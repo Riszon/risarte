@@ -41,6 +41,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - O checklist aparece por fechamento aberto, em qualquer fase (C1).
 > - Ensaio 20/20 (`scripts/ensaio-fim-do-tratamento-0421.mjs`, provado
 >   quebrando) e o da 0418 com 0420 e 0421 por cima, 35/35. Não visto na tela.
+> - ✅ **0421 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: colunas novas, nenhuma avaliação sem nível, as 4 funções com a assinatura nova e fechadas para quem não está logado.
 >
 > ## 🦷 0.470.0 — FIM DO TRATAMENTO: A INSTALAÇÃO ORTODÔNTICA NÃO TERMINA O PLANO (17/11/2026; migração 0420)
 >
