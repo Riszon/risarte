@@ -24,3 +24,12 @@ test("4021 pela tela: Central e Cobrança da rede", async ({ page, context }) =>
   await page.waitForLoadState("networkidle");
   expect(page.url()).not.toContain("cobranca-da-rede");
 });
+
+test("4021a pela tela: a aba Conferência das taxas", async ({ page, context }) => {
+  test.setTimeout(180_000);
+  await entrarComo(context, "admin@example.com", CENARIO.ldn, DOMINIO);
+  await page.goto(`${APP_PUBLICADO}/financeiro/cobranca-da-rede?aba=conferencia`);
+  await expect(page.getByText("Divergências abertas", { exact: false }).first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("button", { name: "Conferir agora" })).toBeVisible();
+  await foto(page, "4021a-conferencia");
+});
