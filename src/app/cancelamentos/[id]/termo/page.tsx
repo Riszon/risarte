@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatBRL } from "@/lib/pricing";
 import { PrintButton } from "@/app/renegociacoes/[id]/acordo/print-button";
 import { CancellationSteps } from "./cancellation-steps";
+import { todayInBrazil } from "@/lib/dates";
+import { CANAL_DOS_RISCOS_DO_CANCELAMENTO, type CanalDosRiscosDoCancelamento, type DestinoDoCancelamento, type FimDoCancelamento } from "@/lib/fim-do-cancelamento";
 import { ChecklistDoDistrato } from "./checklist-do-distrato";
 import { DevolucaoDoDistrato } from "./devolucao-do-distrato";
 import { lerDistrato, type DistratoLido } from "@/app/(app)/financeiro/cobrancas-automaticas/distrato-actions";
@@ -40,7 +42,7 @@ export default async function CancellationTermPage(
   const { data: c } = await supabase
     .from("plan_cancellations")
     .select(
-      "id, code, created_at, status, reason, notes, destination, follow_up_return_at, contract_cents, executed_cents, pending_cents, penalty_percent, penalty_cents, due_cents, paid_cents, reversed_cents, agreement_paid_cents, agreement_card_pending_cents, client_owes_cents, clinic_refunds_cents, term_signed_at, applied_at, negotiation_id, direct_sale_id, kind, checklist_required, clinic_id, client_id, clinic:clinics!plan_cancellations_clinic_id_fkey ( name ), client:clients!plan_cancellations_client_id_fkey ( full_name, cpf )"
+      "id, code, created_at, status, reason, notes, destination, follow_up_return_at, contract_cents, executed_cents, pending_cents, penalty_percent, penalty_cents, due_cents, paid_cents, reversed_cents, agreement_paid_cents, agreement_card_pending_cents, client_owes_cents, clinic_refunds_cents, term_signed_at, applied_at, negotiation_id, direct_sale_id, kind, checklist_required, clinic_id, client_id, risks_required, risks_informed, risks_channel, risks_informed_on, risks_registered_at, clinic:clinics!plan_cancellations_clinic_id_fkey ( name ), client:clients!plan_cancellations_client_id_fkey ( full_name, cpf )"
     )
     .eq("id", id)
     .maybeSingle();
@@ -97,6 +99,23 @@ export default async function CancellationTermPage(
   const pending = (sessions ?? []).filter(
     (s) => s.status !== "done" && s.status !== "cancelled"
   );
+
+  // 0426: o que a efetivação faz com a fase (pela regra única) e os riscos.
+  const hoje = todayInBrazil();
+  const { data: infoRows } = await supabase.rpc("cancellation_end_info", { p_id: id });
+  const info = (Array.isArray(infoRows) ? infoRows[0] : infoRows) as
+    | { segue_em_tratamento: boolean; fase: string; kind: string }
+    | undefined;
+  const fim: FimDoCancelamento | null = info
+    ? {
+        kind: info.kind,
+        segueEmTratamento: info.segue_em_tratamento,
+        fase: info.fase,
+        destino: (c.destination as DestinoDoCancelamento | null) ?? null,
+        retorno: (c.follow_up_return_at as string | null) ?? null,
+        riscosPendentes: Boolean(c.risks_required) && !c.risks_registered_at,
+      }
+    : null;
 
   const owes = Number(c.client_owes_cents ?? 0);
   const refunds = Number(c.clinic_refunds_cents ?? 0);
@@ -372,6 +391,19 @@ export default async function CancellationTermPage(
         </section>
       )}
 
+      {Boolean(c.risks_informed) && (
+        <section className="mb-5">
+          <h2 className="mb-1 font-semibold">Riscos clínicos informados ao paciente</h2>
+          <p className="whitespace-pre-wrap text-xs">{c.risks_informed as string}</p>
+          <p className="mt-1 text-[11px] text-neutral-600">
+            Informados por{" "}
+            {CANAL_DOS_RISCOS_DO_CANCELAMENTO[c.risks_channel as CanalDosRiscosDoCancelamento] ?? c.risks_channel}
+            {c.risks_informed_on ? ` em ${fmtDate(c.risks_informed_on as string)}` : ""}, pelo Coordenador
+            Clínico. Há procedimento começado e não terminado neste plano.
+          </p>
+        </section>
+      )}
+
       {c.notes && (
         <section className="mb-5">
           <h2 className="mb-1 font-semibold">Observações</h2>
@@ -414,6 +446,8 @@ export default async function CancellationTermPage(
           status={c.status as string}
           signedAt={(c.term_signed_at as string | null) ?? null}
           appliedAt={(c.applied_at as string | null) ?? null}
+          fim={fim}
+          hoje={hoje}
         />
       </div>
     </div>

@@ -1,6 +1,6 @@
 # 4020a — Estorno de parte pelo Asaas: relatório e roteiro de teste (17/11/2026)
 
-**Situação:** construída; está no projeto de teste (risarte-asaas.vercel.app, **0.477.0**, Asaas 0.20.0). **Não está na produção.** Spec 19.38.6 e 19.38.7; manual 13g.19; EV-378.
+**Situação:** construída; está no projeto de teste (risarte-asaas.vercel.app, **0.478.0**, Asaas 0.20.0). **Não está na produção.** Spec 19.38.6 e 19.38.7; manual 13g.19; EV-379.
 
 ## O que foi feito
 

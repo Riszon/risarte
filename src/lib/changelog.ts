@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.477.0",
+    versao: "0.478.0",
     data: "2026-11-17",
     // Sem migração do CORE: as desta entrega são da integração Asaas (4020a, 4021 e 4021a, ASAAS_MIGRATION).
     migracao: null,
@@ -136,6 +136,35 @@ export const CHANGELOG: Versao[] = [
           "Parcela estornada inteira fica \"Estornada\": a baixa é desfeita e ela não volta a ser cobrada sozinha. Só o Gerente reabre, com motivo. No distrato, a devolução pode sair como estorno pelo Asaas, escolhendo a cobrança. A taxa da rede continua devida.",
         papeis: ["unit_manager", "franchisee", "finance_franchisor"],
         manual: "13g.19. Estorno de parte (cartão e Pix)",
+      },
+    ],
+  },
+  {
+    versao: "0.477.0",
+    data: "2026-11-17",
+    migracao: "0426",
+    titulo: "O cancelamento passa pelo Coordenador e decide a fase na efetivação",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Para onde o cliente vai é decidido na hora de efetivar o cancelamento, pela mesma regra do fim do tratamento: se sobra outro tratamento (outra venda, venda direta, ortodontia ou complemento), ele fica na Fase 5; se não sobra, o Gerente escolhe Reavaliação ou Acompanhamento (retorno sugerido de 6 meses). Nenhum cliente fica mais esquecido na Fase 5 depois de um cancelamento.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Com procedimento começado e não terminado, o termo de cancelamento só é assinado depois que o Coordenador registra os riscos clínicos informados ao cliente (o texto, o meio e a data). O registro sai impresso no termo.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O cancelamento efetivado chama o Coordenador: avaliar o que foi feito (Reavaliação) ou contatar o cliente (Acompanhamento). O plano cancelado passa a aparecer como \"Cancelado\".",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
       },
     ],
   },

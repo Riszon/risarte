@@ -2,15 +2,15 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.477.0 — ASA4: O ESTORNO DE PARTE PELO ASAAS (17/11/2026; Asaas 0.20.0, migração 4020a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.478.0 — ASA4: O ESTORNO DE PARTE PELO ASAAS (17/11/2026; Asaas 0.20.0, migração 4020a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
-> "Estornar parte" na ficha (Pix, cartão e cartão parcelado) e no distrato, sempre com motivo. Cartão com a confirmação reforçada (valor, paciente, repartição prevista, "sai na hora e não pode ser desfeito"); acima do valor da Central (em branco = todos), o Gerente ou o franqueado confirma. O riSZon grava o que o Asaas fez e avisa se diferir da previsão. Parcela estornada inteira fica "Estornada" (só o Gerente reabre). A taxa da rede continua devida. Ensaio 38/38, provado quebrando. Spec 19.38.6 e 19.38.7; manual 13g.19; EV-378. **Falta:** a prova do sandbox em 18/11 (o Asaas recusa o parcial do cartão no dia da aprovação), o teste do dono e a produção (só com o "pode").
+> "Estornar parte" na ficha (Pix, cartão e cartão parcelado) e no distrato, sempre com motivo. Cartão com a confirmação reforçada (valor, paciente, repartição prevista, "sai na hora e não pode ser desfeito"); acima do valor da Central (em branco = todos), o Gerente ou o franqueado confirma. O riSZon grava o que o Asaas fez e avisa se diferir da previsão. Parcela estornada inteira fica "Estornada" (só o Gerente reabre). A taxa da rede continua devida. Ensaio 38/38, provado quebrando. Spec 19.38.6 e 19.38.7; manual 13g.19; EV-379. **Falta:** a prova do sandbox em 18/11 (o Asaas recusa o parcial do cartão no dia da aprovação), o teste do dono e a produção (só com o "pode").
 
-> ## 💳 0.477.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.478.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
-> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-377.
+> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-378.
 
-> ## 💳 0.477.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.478.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
 > - **A prévia** do mês que fechou, por unidade: as taxas fixas (proporcionais no mês incompleto) e o "a cobrar" das percentuais, linha a linha, com a origem e o paciente abreviado. Cada linha entra pelo **delta** (o que vale hoje menos o já faturado): nunca duas vezes, e o "a reter" nunca entra.
 > - **A unidade** confere ou contesta; o silêncio leva à aprovação (avisos na abertura e 1 dia útil antes do fim). O Financeiro decide; depois da emissão, a contestação aceita vira **crédito** no mês seguinte (compensação, sem caixa).
@@ -18,7 +18,27 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **A emissão** sai pela conta da franqueadora, com a unidade (CNPJ) como pagadora, só por e-mail; a baixa pelo aviso do Asaas paga as contas de taxa da unidade; o caixa da franqueadora vai num lançamento só de caixa; multa e juros no financeiro, sem taxa sobre taxa; a tarifa é da franqueadora. Mês fechado: a dispensa entra no mês aberto, como ajuste.
 > - **A configuração nasce em branco** (Central › Rede › Taxas da franquia); exemplo só no treino e no sandbox, marcado.
 >
-> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-376; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-377; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> ## ✂️ 0.477.0 — FIM DO TRATAMENTO, ETAPA 5: O CANCELAMENTO PELO CAMINHO DO FIM (17/11/2026; migração 0426)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (5.3; D10, D11, D12, D25).
+> - ⚠️ **NÃO recria `open_plan_cancellation`/`apply_plan_cancellation`**: são
+>   da integração Asaas (4017a/4020) e, num banco do zero, rodam depois do core.
+>   Tudo entra por gatilhos em `plan_cancellations` e portas novas.
+> - ⚠️ **A fase é decidida na efetivação**: a tela chama
+>   `prepare_cancellation_apply` antes do `apply_plan_cancellation`; a trava
+>   `plan_cancellation_end_guard` recusa o esquecido na Fase 5
+>   (DESTINATION_REQUIRED) e a saída com tratamento sobrando (TREATMENT_STILL_OPEN).
+> - ⚠️ **D25**: `plan_cancellations.risks_required` (calculado ao abrir) trava a
+>   assinatura até `register_cancellation_risks` (Coordenador).
+> - ⚠️ **`treatment_closures.scope` ganhou 'cancelamento'** (com
+>   `cancellation_id`); o Coordenador avalia (um nível) ou contata.
+> - O plano vira "cancelado" (`treatment_plans.lifecycle`) quando não sobra venda viva dele.
+> - Só o contrato; a venda direta segue como estava (só os riscos valem para ela).
+> - Ensaio 25/25 (`scripts/ensaio-fim-do-tratamento-0426.mjs`, provado
+>   quebrando; o termo é marcado sem checklist para medir só a 0426). Não visto na tela.
+> - ✅ **0426 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: as colunas dos riscos e o cancellation_id existem; as 3 portas novas fecham para quem não está logado.
+>
 > ## ⚡ 0.475.0 — VENDA DIRETA V3, VD3-4: ATENDER AGORA (ENCAIXE) E A SALA AO CHAMAR (17/11/2026; migração 0424)
 >
 > Decisões do dono A1–A4 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §9. EV-374.

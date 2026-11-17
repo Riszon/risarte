@@ -82,6 +82,7 @@ import {
 } from "./journey-section";
 import { FimDoTratamento } from "./fim-do-tratamento";
 import { AbandonoNaFicha } from "./abandono";
+import { RiscosDoCancelamento, type TermoComRiscosPendentes } from "./riscos-do-cancelamento";
 import type { Abandono } from "@/lib/abandono";
 
 type FechamentoRow = {
@@ -896,6 +897,15 @@ export default async function ClientDetailPage(
         registeredAt: d.registered_at,
       };
     });
+  // 0426 (D25): termo de cancelamento esperando o registro dos riscos.
+  const termosComRiscos: TermoComRiscosPendentes[] = await supabase
+    .from("plan_cancellations")
+    .select("id, code")
+    .eq("client_id", client.id)
+    .eq("status", "rascunho")
+    .eq("risks_required", true)
+    .is("risks_registered_at", null)
+    .then(({ data, error }) => (error ? [] : ((data ?? []) as TermoComRiscosPendentes[])));
   // O "agora" da página, para os dias desde a última atividade.
   const agoraDaFicha = Date.parse(hojeBr + "T12:00:00-03:00");
 
@@ -2949,6 +2959,7 @@ export default async function ClientDetailPage(
     vendasDiretasAbertas.length +
     fechamentos.length +
     (abandono ? 1 : 0) +
+    termosComRiscos.length +
     anamnesisAlerts.length +
     (anamnesisNudge ? 1 : 0) +
     (qcRedoPending ? 1 : 0) +
@@ -3217,6 +3228,12 @@ export default async function ClientDetailPage(
           ehRecepcao={session.isAdminMaster || clinicRoles.includes("receptionist")}
           ehCoordenador={session.isAdminMaster || clinicRoles.includes("clinical_coordinator")}
           ehGerente={session.isAdminMaster || clinicRoles.includes("unit_manager")}
+        />
+        <RiscosDoCancelamento
+          clientId={client.id}
+          termos={termosComRiscos}
+          ehCoordenador={session.isAdminMaster || clinicRoles.includes("clinical_coordinator")}
+          hoje={hojeBr}
         />
         {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
         {anamnesisAlerts.map((a, i) => (

@@ -3747,6 +3747,18 @@ não. O plano complementar só protege enquanto tem movimento (30 dias, em
 Prazos). Em cada linha: **Abrir ficha** ou **Iniciar contato**, que abre a
 tarefa de contato com você.
 
+**O cancelamento passa por você (desde a 0.477.0).** Duas tarefas novas na
+ficha:
+
+- **Cancelamento: registrar os riscos informados ao cliente.** Quando o plano
+  cancelado tem procedimento começado e não terminado, o termo só pode ser
+  assinado depois do seu registro: os riscos que você explicou ao cliente, por
+  qual meio e em que data. O registro sai impresso no termo.
+- **Depois da efetivação:** se o cliente foi para a Reavaliação, você avalia o
+  que foi feito (**Registrar reavaliação**, um nível só); se foi para o
+  Acompanhamento, você contata o cliente (**Registrar contato**), como no fim
+  do tratamento.
+
 ### 6.3. Dentista Planner
 
 **Objetivo:** montar plano e orçamento. **Duração:** 75 minutos.
@@ -5131,6 +5143,16 @@ venda.
 - Se **não sobra tratamento**, o termo pede o destino como sempre:
   **Reavaliação** (Fase 6) ou **Acompanhamento** (Fase 7, com a data de
   retorno).
+- **Desde a 0.477.0, a fase é decidida na efetivação**, não na abertura do
+  termo. Ao clicar em **Efetivar cancelamento**, o sistema confere de novo se
+  sobra tratamento (outra venda, venda direta, ortodontia ou complemento). Se
+  sobra, o cliente fica na Fase 5. Se não sobra, o termo pergunta para onde ele
+  vai (o retorno do Acompanhamento é sugerido em 6 meses), e o Coordenador é
+  chamado: avaliação na Reavaliação, contato no Acompanhamento. O plano passa a
+  aparecer como **Cancelado**.
+- **Procedimento começado e não terminado:** o botão **Marcar termo como
+  assinado** fica travado até o Coordenador registrar os riscos informados ao
+  cliente. O registro sai impresso no termo.
 - **Venda com parcelas num acordo de renegociação ainda em aberto não é
   cancelada** (desde a versão 0.453.1). Isso vale também para o acordo que
   espera a autorização do Gerente. A tela diz o código do acordo (RN-…) e
@@ -5528,8 +5550,13 @@ Gerente decide entre a Fase 7 com retorno e o cancelamento formal. Agendar
 encerra a tarefa em qualquer etapa. A lista "Clientes sem próximo passo"
 mostra quem ficou sem horário e sem tarefa (ver 6.1, 6.2 e 6.6).
 
-**O que ainda vem** (próximas etapas do plano): o cancelamento
-passando pelo Coordenador; os prazos por dia útil da unidade.
+**O cancelamento** (desde a 0.477.0): a fase é decidida na efetivação pela
+mesma regra ("sobra tratamento?"); o Coordenador registra os riscos quando há
+procedimento interrompido (antes da assinatura) e é chamado depois (avaliação
+ou contato); o plano vira "Cancelado" (ver 6.2 e 6.6).
+
+**O que ainda vem** (próximas etapas do plano): os prazos por dia útil da
+unidade, os avisos de tarefa parada e os indicadores.
 
 ### Fluxo 3 — Encerrar a sessão
 
@@ -8047,7 +8074,7 @@ Financeiro da Franqueadora também. Nada expira sozinho.
 
 ### 13g.18. Cobrança mensal da rede
 
-*(desde a versão 0.477.0)*
+*(desde a versão 0.478.0)*
 
 **O que é:** a cobrança que a franqueadora faz à unidade, uma vez por mês, das
 taxas da rede que **não** foram retidas pelo split:
@@ -8128,7 +8155,7 @@ A decisão não se refaz.
 fechamento ou no pagamento) e quando sai a nota dos royalties. O riSZon guarda
 os dois jeitos, e nada trava por isso.
 
-**A conferência das taxas** *(desde a versão 0.477.0)* — aba **Conferência das
+**A conferência das taxas** *(desde a versão 0.478.0)* — aba **Conferência das
 taxas**, em Cobrança da rede:
 - **A conta do mês,** por unidade, do primeiro mês da cobrança mensal em diante:
   devido = retido pelo split + a reter + faturado + dispensado + ainda a cobrar.
@@ -8152,12 +8179,12 @@ taxas**, em Cobrança da rede:
   unidade, só leitura.
 - A conferência não muda nenhum lançamento.
 
-**Evidência:** EV-376 e EV-377; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
+**Evidência:** EV-377 e EV-378; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
 `scripts/asaas-ensaio-asa6-conferencia.mjs`.
 
 ### 13g.19. Estorno de parte (cartão e Pix)
 
-*(desde a versão 0.477.0)*
+*(desde a versão 0.478.0)*
 
 **Para que serve:** devolver **parte** do que o paciente pagou pelo Asaas (ou o
 total do cartão parcelado), sem sair do riSZon. Sempre com motivo.
@@ -8219,7 +8246,7 @@ a "Paga".
 **Auditoria:** o pedido, o valor, o motivo, quem pediu, quem confirmou ou
 cancelou, a previsão, o que o Asaas fez e a reabertura de parcela (com motivo).
 
-**Evidência:** EV-378; `scripts/asaas-ensaio-4020a-estorno-parcial.mjs`.
+**Evidência:** EV-379; `scripts/asaas-ensaio-4020a-estorno-parcial.mjs`.
 
 ## 14. Checklists
 

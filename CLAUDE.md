@@ -400,6 +400,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (fim do tratamento, Etapa 5) — PC Administrador (core 0.477.0, migração 0426; worktree `wt-fim-tratamento`)**
+
+- **O cancelamento pelo caminho do fim** (bloco 0.477.0 no ESTADO). ⚠️ Não
+  recriar `open_plan_cancellation`/`apply_plan_cancellation` no core (a 4020
+  rodaria por cima): mudar o cancelamento por gatilho em `plan_cancellations`
+  ou numa migração do Asaas. ⚠️ A tela de efetivar chama
+  `prepare_cancellation_apply` antes. ⚠️ Escopo de fechamento novo: 'cancelamento'.
+
 **17/11/2026 (venda direta v3, VD3-4) — PC Administrador (core 0.474.0 → 0.475.0, migração 0424; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
 - **Atender agora (encaixe) e a sala ao chamar** (bloco 0.475.0 no ESTADO). ✅
