@@ -79,7 +79,20 @@ import {
   type ClientAppointment,
   type HistoryEntry,
 } from "./journey-section";
-import { PendingDecision } from "./pending-decision";
+import { FimDoTratamento } from "./fim-do-tratamento";
+
+type FechamentoRow = {
+  id: string;
+  scope: Fechamento["scope"];
+  status: Fechamento["status"];
+  answer: Fechamento["answer"];
+  asked_user_id: string | null;
+  auto_yes: boolean;
+  treatment_end: boolean;
+  changed_by_coordinator: boolean;
+  created_at: string;
+  treatment_closure_contacts: { reached: boolean }[] | null;
+};
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-loader";
 import { loadPprOffer } from "@/lib/ppr/offer-loader";
@@ -200,8 +213,8 @@ import type {
 import { roomLabel } from "@/lib/rooms";
 import { allowedNextPhases, PHASE_LABELS, PILLAR_LABELS } from "@/lib/journey";
 import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
+import type { Fechamento } from "@/lib/fim-do-tratamento";
 import type {
-  DecisionKind,
   JourneyPhase,
   JourneyStatus,
   MethodologyPillar,
@@ -465,7 +478,7 @@ export default async function ClientDetailPage(
     { data: guardians },
     { data: dependents },
     { data: appointmentChanges },
-    { data: openDecisions },
+    { data: fechamentoRows },
   ] = await Promise.all([
     supabase
       .from("journey_phase_history")
@@ -506,12 +519,17 @@ export default async function ClientDetailPage(
       .order("changed_at", { ascending: false })
       .limit(50)
       .returns<AppointmentChangeRow[]>(),
+    // 0416: o fim do tratamento — as tarefas abertas do fechamento. Sem a
+    // migração num banco, a leitura falha e o painel segue sem elas.
     supabase
-      .from("journey_decisions")
-      .select("id, kind, assignee_user_id")
+      .from("treatment_closures")
+      .select(
+        "id, scope, status, answer, asked_user_id, auto_yes, treatment_end, changed_by_coordinator, created_at, treatment_closure_contacts ( reached )"
+      )
       .eq("client_id", id)
-      .is("resolved_at", null)
-      .returns<{ id: string; kind: DecisionKind; assignee_user_id: string | null }[]>(),
+      .neq("status", "encerrado")
+      .order("created_at")
+      .returns<FechamentoRow[]>(),
   ]);
 
   // LGPD: every view of a client record is audited.
@@ -781,11 +799,23 @@ export default async function ClientDetailPage(
     (roles) => roles.includes("planner_dentist")
   );
 
-  const decisions = openDecisions ?? [];
-  const canAnswerDecision =
-    session.isAdminMaster ||
-    clinicRoles.includes("clinical_coordinator") ||
-    decisions.some((d) => d.assignee_user_id === session.userId);
+  // 0416: o fim do tratamento (as tarefas abertas do fechamento).
+  const fechamentos: Fechamento[] = (fechamentoRows ?? []).map((f) => {
+    const contatos = f.treatment_closure_contacts ?? [];
+    return {
+      id: f.id,
+      scope: f.scope,
+      status: f.status,
+      answer: f.answer,
+      askedUserId: f.asked_user_id,
+      autoYes: f.auto_yes,
+      treatmentEnd: f.treatment_end,
+      changedByCoordinator: f.changed_by_coordinator,
+      createdAt: f.created_at,
+      tentativas: contatos.length,
+      tentativasSemSucesso: contatos.filter((c) => !c.reached).length,
+    };
+  });
 
   // Was the client transferred away from the clinic the viewer belongs to?
   const currentClinicEntry = (clinicHistory ?? []).find((h) => !h.ended_at);
@@ -2835,7 +2865,7 @@ export default async function ClientDetailPage(
   // O painel "Precisa de atenção" conta o que vai mostrar.
   const avisosDaFicha =
     vendasDiretasAbertas.length +
-    decisions.length +
+    fechamentos.length +
     anamnesisAlerts.length +
     (anamnesisNudge ? 1 : 0) +
     (qcRedoPending ? 1 : 0) +
@@ -3085,13 +3115,14 @@ export default async function ClientDetailPage(
             venda com o termo assinado e o pagamento confirmado.
           </AtencaoItem>
         ))}
-        <PendingDecision
-          decisions={decisions.map((d) => ({
-            id: d.id,
-            kind: d.kind,
-            isAssignee: d.assignee_user_id === session.userId,
-          }))}
-          canAnswer={canAnswerDecision}
+        <FimDoTratamento
+          clientId={client.id}
+          fechamentos={fechamentos}
+          userId={session.userId}
+          ehCoordenador={session.isAdminMaster || clinicRoles.includes("clinical_coordinator")}
+          ehRecepcao={session.isAdminMaster || clinicRoles.includes("receptionist")}
+          clienteNaFase5={client.journey_phase === "treatment_start"}
+          hoje={todayInBrazil()}
         />
         {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
         {anamnesisAlerts.map((a, i) => (

@@ -379,6 +379,16 @@ export default async function ProceduresPage(
         (ritaRows ?? []).map((r) => [r.id, { canOffer: r.rita_can_offer, role: r.rita_role, patientName: r.patient_name }])
       );
 
+  // 0416 (D17): a reavaliação obrigatória, lida À PARTE — sem a migração
+  // num banco, o painel não aparece.
+  const { data: reavRows, error: reavErro } = await supabase
+    .from("procedures")
+    .select("id, requires_reevaluation")
+    .returns<{ id: string; requires_reevaluation: boolean }[]>();
+  const reavaliacaoPorProcedimento: Record<string, boolean> | null = reavErro
+    ? null
+    : Object.fromEntries((reavRows ?? []).map((r) => [r.id, r.requires_reevaluation]));
+
   const [{ data: kitDetailRows }, { data: kitItemRows }] = await Promise.all([
     supabase.rpc("procedure_kits_detail", { p_clinic_id: activeClinicId }),
     supabase
@@ -683,6 +693,7 @@ export default async function ProceduresPage(
         }
         podeVincularGrupo={canSeeCatalog}
         rita={ritaPorProcedimento}
+        reavaliacao={reavaliacaoPorProcedimento}
       />
     </div>
   );

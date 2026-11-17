@@ -72,6 +72,7 @@ import {
 } from "@/lib/finance/repasse-percentual";
 import { RepasseValorOuPercentual } from "./repasse-valor-percentual";
 import { GruposDoProcedimento, type GrupoParaVincular } from "./grupos-do-procedimento";
+import { ReavaliacaoDoProcedimento } from "./reavaliacao-do-procedimento";
 import { RitaDoProcedimento } from "./rita-do-procedimento";
 import type { RitaDoProcedimento as RitaDoProc } from "@/lib/rita-procedimento";
 import {
@@ -745,6 +746,7 @@ export function ProceduresEditor({
   grupos: gruposDeProcedimentos = null,
   podeVincularGrupo = false,
   rita: ritaPorProcedimento = null,
+  reavaliacao: reavaliacaoPorProcedimento = null,
 }: {
   procedures: Procedure[];
   specialties: string[];
@@ -786,6 +788,9 @@ export function ProceduresEditor({
   /** 0369 (Rita, 0A.5): os campos da assistente virtual, por procedimento
    *  (nulo = o banco ainda sem a 0369; o painel não aparece). */
   rita?: Record<string, RitaDoProc> | null;
+  /** 0416 (D17): a reavaliação presencial obrigatória, por procedimento
+   *  (nulo = o banco ainda sem a 0416; o painel não aparece). */
+  reavaliacao?: Record<string, boolean> | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -873,6 +878,7 @@ export function ProceduresEditor({
         podeVincularGrupo={podeVincularGrupo}
         rita={ritaPorProcedimento ? (ritaPorProcedimento[p.id] ?? null) : null}
         podeMarcarRita={isAdmin}
+        reavaliacaoObrigatoria={reavaliacaoPorProcedimento ? (reavaliacaoPorProcedimento[p.id] ?? false) : null}
       />
     );
   };
@@ -1297,6 +1303,7 @@ function ProcedureRow({
   podeVincularGrupo,
   rita,
   podeMarcarRita,
+  reavaliacaoObrigatoria,
 }: {
   procedure: Procedure;
   specialties: string[];
@@ -1341,6 +1348,7 @@ function ProcedureRow({
   podeVincularGrupo: boolean;
   rita: RitaDoProc | null;
   podeMarcarRita: boolean;
+  reavaliacaoObrigatoria: boolean | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [showKits, setShowKits] = useState(false);
@@ -1811,6 +1819,10 @@ function ProcedureRow({
 
       {networkMode && rita && (podeMarcarRita || rita.canOffer || rita.role) && (
         <RitaDoProcedimento procedureId={p.id} rita={rita} podeEditar={podeMarcarRita} />
+      )}
+      {/* 0416 (D17): reavaliação presencial obrigatória no fim do plano. */}
+      {networkMode && reavaliacaoObrigatoria !== null && (podeMarcarRita || reavaliacaoObrigatoria) && (
+        <ReavaliacaoDoProcedimento procedureId={p.id} obrigatoria={reavaliacaoObrigatoria} podeEditar={podeMarcarRita} />
       )}
 
       {showHistory && <ChangeHistory changes={changes} />}

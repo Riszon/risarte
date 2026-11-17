@@ -79,6 +79,11 @@ import {
   CaixaVendaDireta,
   type AlvoDoCaixa,
 } from "@/components/venda-direta/caixa";
+import { PerguntaDoFimDialog } from "../prontuarios/[id]/pergunta-do-fim-dialog";
+import {
+  perguntaPendenteDoAtendimento,
+  type PerguntaPendente,
+} from "../prontuarios/[id]/fim-do-tratamento-actions";
 
 export type PanelAppointment = {
   id: string;
@@ -441,6 +446,14 @@ export function AttendancePanel({
     Record<string, string>
   >({});
 
+  // 0416: a pergunta do fim do plano, aberta logo depois de concluir.
+  const [perguntaDoFim, setPerguntaDoFim] = useState<PerguntaPendente | null>(null);
+  async function procurarPerguntaDoFim(clientId: string | null) {
+    if (!clientId) return;
+    const p = await perguntaPendenteDoAtendimento(clientId);
+    if (p) setPerguntaDoFim(p);
+  }
+
   function openConclude(a: PanelAppointment) {
     const checks: Record<string, boolean> = {};
     for (const s of a.sessions ?? []) checks[s.id] = true;
@@ -682,6 +695,8 @@ export function AttendancePanel({
   return (
     <>
       <CaixaVendaDireta alvo={vender} onClose={() => setVender(null)} />
+      {/* 0416: a pergunta do fim do plano, que não fecha sem resposta. */}
+      <PerguntaDoFimDialog pergunta={perguntaDoFim} onRespondida={() => setPerguntaDoFim(null)} />
       {/* OC-00085: encerrar a avaliação interrompida, com motivo. */}
       <Dialog
         open={encerrarSemEnviar !== null}
@@ -1003,6 +1018,7 @@ export function AttendancePanel({
                     pedirParaParar(a.id);
                     setConcludeFor(null);
                     router.refresh();
+                    void procurarPerguntaDoFim(a.clientId);
                   }
                 );
               }}
@@ -1310,7 +1326,10 @@ export function AttendancePanel({
                           // precisar lembrar de parar (a outra metade do
                           // relato OC-00060). Se a gravação for de outro
                           // atendimento, a barra ignora o pedido.
-                          () => pedirParaParar(a.id)
+                          () => {
+                            pedirParaParar(a.id);
+                            void procurarPerguntaDoFim(a.clientId);
+                          }
                         )
                       }
                     >
