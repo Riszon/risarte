@@ -133,8 +133,16 @@ describe("AP133 (0378) — o banco confere a função do profissional do horári
   const sql = semComentarios(m0378);
 
   it("⚠️ a lista do banco é o espelho de TYPE_PROVIDER_ROLES", () => {
+    // Vale a migração MAIS NOVA que define a função (a 0425 acrescentou a
+    // manutenção ortodôntica): comparar com a 0378 deixaria o tipo novo de fora.
+    const definem = readdirSync(join(process.cwd(), MIG))
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .filter((f) => ler(`${MIG}/${f}`).includes("function public._provider_serves_type("));
+    expect(definem.length).toBeGreaterThan(0);
+    const atual = semComentarios(ler(`${MIG}/${definem[definem.length - 1]}`));
     const doBanco: Record<string, string[]> = {};
-    for (const m of sql.matchAll(/when '([a-z_]+)'\s+then array\[([^\]]*)\]/g)) {
+    for (const m of atual.matchAll(/when '([a-z_]+)'\s+then array\[([^\]]*)\]/g)) {
       doBanco[m[1]] = [...m[2].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
     }
     // Zero linhas = a busca não achou o que medir, não "está igual".

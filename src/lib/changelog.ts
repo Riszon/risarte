@@ -62,11 +62,11 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.473.0",
+    versao: "0.477.0",
     data: "2026-11-17",
-    // Sem migração do CORE: as desta entrega são da integração Asaas (4021 e 4021a, ASAAS_MIGRATION).
+    // Sem migração do CORE: as desta entrega são da integração Asaas (4020a, 4021 e 4021a, ASAAS_MIGRATION).
     migracao: null,
-    titulo: "Cobrança mensal da rede e Conferência das taxas",
+    titulo: "Cobrança mensal da rede, Conferência das taxas e estorno de parte pelo Asaas",
     mudancas: [
       {
         tipo: "novidade",
@@ -115,6 +115,157 @@ export const CHANGELOG: Versao[] = [
           "Um vencimento só: com a cobrança mensal ligada na unidade, as taxas vencem no dia da cobrança mensal. A conta de taxa cancelada à mão não volta sozinha (nem pelo \"Gerar taxas fixas do mês\"). A Conferência das taxas mostra a taxa fixa prevista do mês que ainda não fechou.",
         papeis: ["finance_franchisor", "unit_manager", "franchisee"],
         manual: "13g.18. Cobrança mensal da rede",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Estornar parte: na ficha (cobrança paga pelo Asaas ou o cartão parcelado), o estorno com valor, sempre com motivo. No parcelado, a tela mostra antes como o Asaas deve repartir (as parcelas inteiras primeiro e a parte da seguinte); depois do pedido, o riSZon grava o que o Asaas fez e avisa quem pediu e o Financeiro se for diferente.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g.19. Estorno de parte (cartão e Pix)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Estorno de cartão com confirmação reforçada: o valor, o paciente, a repartição e o aviso de que no cartão o estorno sai na hora e não pode ser desfeito. Acima do valor definido na Central (em branco = todos), quem pede não confirma sozinho: o Gerente ou o franqueado confirma antes de ir ao Asaas.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g.19. Estorno de parte (cartão e Pix)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Parcela estornada inteira fica \"Estornada\": a baixa é desfeita e ela não volta a ser cobrada sozinha. Só o Gerente reabre, com motivo. No distrato, a devolução pode sair como estorno pelo Asaas, escolhendo a cobrança. A taxa da rede continua devida.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+        manual: "13g.19. Estorno de parte (cartão e Pix)",
+      },
+    ],
+  },
+  {
+    versao: "0.476.0",
+    data: "2026-11-17",
+    migracao: "0425",
+    titulo: "Agenda: o tipo \"Manutenção ortodôntica\" e os dois atendimentos seguidos no mesmo dia",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novo tipo de agendamento \"Manutenção ortodôntica\", oferecido só para quem tem caso ortodôntico em tratamento ou em acompanhamento. É o único que entra no cronograma do caso: sessão de tratamento e retorno não viram mais manutenção, mesmo com o ortodontista. Outro dentista ou o Coordenador também pode fazer a manutenção, e o repasse vai para quem fez. Os botões \"Agendar\" da ortodontia já abrem com esse tipo.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager", "sdr"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Para quem faz outro tratamento junto com a ortodontia, a agenda sugere os dois atendimentos no mesmo dia, um logo depois do outro: ao salvar a sessão do plano numa semana com manutenção prevista, a janela já prepara a manutenção em seguida (e o contrário, com sessão do plano a agendar). E pergunta se não é manutenção quando alguém escolhe sessão ou retorno com o ortodontista do caso.",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
+    versao: "0.475.0",
+    data: "2026-11-17",
+    migracao: "0424",
+    titulo: "Venda direta: Atender agora (encaixe) e a sala escolhida ao chamar",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cliente sem atendimento hoje: no caixa da venda direta, Atender agora cria um ENCAIXE na hora (Avaliação ou Urgência), com o profissional e a duração, por cima da agenda. Ele já fica escolhido na venda.",
+        papeis: ["receptionist", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Ao chamar um atendimento presencial sem sala marcada (como o encaixe), quem atende escolhe a sala antes — numa janela com as salas da unidade; as que têm alguém em atendimento ficam bloqueadas.",
+        papeis: ["dentist", "clinical_coordinator", "unit_manager", "receptionist"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O encaixe agora pode ser Avaliação também (antes, só Urgência e Emergência passavam por cima da agenda). Cadastro incompleto continua sem agendar: o caixa mostra o que falta e o atalho para completar.",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
+    versao: "0.474.0",
+    data: "2026-11-17",
+    migracao: "0423",
+    titulo: "Abandono de tratamento e a lista de clientes sem próximo passo",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cliente com sessão pendente e nada agendado há 30 dias vira tarefa da Recepção: reagendar. Agendar a próxima sessão encerra a tarefa sozinha. Depois de 3 tentativas registradas, ou se o cliente disser que não quer marcar, a tarefa passa ao Coordenador.",
+        papeis: ["receptionist"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Coordenador contata o cliente e, se ele não voltar, faz o registro de abandono com os riscos clínicos informados (o texto, o meio e a data). O registro fica no prontuário e não muda a venda.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Com o abandono registrado, o Gerente decide: Acompanhamento (Fase 7) com retorno, com as sessões abertas para a volta, ou o cancelamento formal. A tarefa só termina quando o termo é aberto.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Nova lista \"Clientes sem próximo passo\" (botão na Jornada): quem está na Fase 5 ou 6 sem horário marcado e sem tarefa aberta, com o motivo e os dias parado. Dá para abrir a ficha ou começar o contato ali mesmo. Os dois prazos (30 dias) ficam em Prazos.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
+    versao: "0.473.0",
+    data: "2026-11-17",
+    migracao: "0422",
+    titulo: "Fim do tratamento: uma decisão por cliente, com as considerações e o horário do Coordenador",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O cliente que terminou mais de uma coisa (o plano e uma venda direta, por exemplo) recebia uma decisão \"necessita de reavaliação?\" para cada uma. Agora é uma decisão só, que diz tudo o que terminou; o que terminar depois entra nela. As decisões repetidas que já existiam foram juntadas na mais prudente.",
+        papeis: ["dentist", "clinical_coordinator", "receptionist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Uma venda direta ainda em aberto (sem termo assinado ou pagamento confirmado) não abre mais a decisão do fim do tratamento: ela espera a venda ser fechada.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Concluindo o atendimento pela ficha, a janela da decisão também abre — e abre de novo sempre que quem precisa responder entra na ficha.",
+        papeis: ["dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No Sim e no Não sei, quem executou escreve as considerações para o Coordenador: o que olhar com mais atenção na reavaliação. Elas aparecem na ficha.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Se o cliente já tem horário com o Coordenador, a janela mostra a data e quantos dias faltam, e a reavaliação fica nesse horário (a Recepção não marca outro). Com mais de 30 dias, dá para manter ou pedir uma reavaliação mais próxima — também pelo Coordenador, na ficha.",
+        papeis: ["dentist", "clinical_coordinator", "receptionist"],
+        manual: "6.2. Coordenador Clínico",
       },
     ],
   },

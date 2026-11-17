@@ -338,8 +338,9 @@ mensalidades, forma) que só existe depois do ORTO8.
 Relato da sessão da Jornada, confirmado no treino. Decisões do dono: a
 instalação é **só a sessão do plano** (O6, um repasse) e **concluí-la inicia o
 caso**; quem conclui vira o ortodontista (Q3 deixa de valer no agendamento).
-**Etapa A** entregue na 0.469.0 (migração 0417). **Etapa B** (pendente): o tipo
-de agendamento "Manutenção ortodôntica"; com ele, só esse tipo vira
-manutenção. Ponto de contato com a Jornada: ela reage à passagem do caso para
+**Etapa A** entregue na 0.469.0 (migração 0417). **Etapa B** (AP176) entregue
+na 0.476.0 (migração 0425): o tipo de agendamento "Manutenção ortodôntica", o
+único que vira manutenção; outro tratamento em paralelo = dois atendimentos
+seguidos no mesmo dia, com a agenda sugerindo o segundo. Ponto de contato com a Jornada: ela reage à passagem do caso para
 "contencao" por gatilho próprio (0418) — nenhuma das duas recria
 `ortho_deliver_retainers`.

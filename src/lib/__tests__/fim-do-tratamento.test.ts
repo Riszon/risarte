@@ -3,6 +3,11 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   botoesDaResposta,
+  CONSIDERACOES_MINIMO,
+  horarioLonge,
+  LIMITE_DIAS_DO_HORARIO,
+  oQueTerminou,
+  pedeConsideracoes,
   desfechosDoContato,
   detalheDoFechamento,
   NIVEIS_DE_QUALIDADE,
@@ -45,6 +50,11 @@ const base: Fechamento = {
   createdAt: "2026-11-16T12:00:00Z",
   tentativas: 0,
   tentativasSemSucesso: 0,
+  groupedInto: null,
+  escopos: ["plano"],
+  dentistNotes: null,
+  horario: null,
+  waitChoice: null,
 };
 
 describe("a regra única 'sobra tratamento?' (3.1)", () => {
@@ -321,5 +331,121 @@ describe("regras puras da Etapa 3", () => {
   it("com queixa, só chamar para revisar", () => {
     expect(desfechosDoContato(true)).toEqual(["revisar"]);
     expect(desfechosDoContato(false)).toEqual(["revisar", "aguardar_retorno", "novo_planejamento"]);
+  });
+});
+
+// 0422 — relato OC-00185: três decisões repetidas para o mesmo cliente, uma
+// delas de uma venda direta que nem tinha sido fechada, e nenhuma janela pelo
+// caminho da ficha. Agora: UMA decisão por cliente, venda direta só fechada,
+// as considerações de quem executou e o horário com o Coordenador.
+describe("0422 — uma decisão por cliente (OC-00185)", () => {
+  const s22 = readFileSync(
+    join(process.cwd(), "supabase/migrations/0422_fim_do_tratamento_uma_decisao_por_cliente.sql"),
+    "utf8"
+  ).replace(/\r\n/g, "\n");
+  const fn = (nome: string) => {
+    const i = s22.indexOf(`create or replace function public.${nome}(`);
+    expect(i, `a 0422 não cria ${nome}: não dá para medir`).toBeGreaterThanOrEqual(0);
+    return s22.slice(i, s22.indexOf("\n$$;", i));
+  };
+
+  it("o banco impede duas decisões abertas para o mesmo cliente", () => {
+    expect(s22).toMatch(
+      /create unique index if not exists treatment_closures_one_decision\s+on public\.treatment_closures \(client_id\)\s+where grouped_into is null and status in \('pergunta', 'coordenador', 'reavaliacao', 'contato'\);/
+    );
+  });
+  it("o que termina depois entra na decisão aberta, como seguidor (E1)", () => {
+    const a = fn("_abrir_fechamento");
+    expect(a).toContain("grouped_into)");
+    expect(a).toContain("v_lider.id)");
+  });
+  it("as repetidas antigas se juntam na mais prudente (E2)", () => {
+    expect(s22).toMatch(/order by case f\.status when 'reavaliacao' then 0 when 'coordenador' then 1/);
+  });
+  it("o seguidor acompanha o líder e é promovido quando o líder sai", () => {
+    expect(fn("treatment_closure_sync_group")).toContain(
+      "if new.status = 'encerrado' and new.outcome in ('reavaliado', 'reaberto') then"
+    );
+  });
+  it("venda direta só abre a decisão depois de fechada", () => {
+    expect(fn("_fechamento_do_plano")).toContain("d.id = p_direct_sale_id and d.status = 'concluida'");
+    expect(fn("treatment_closure_on_direct_sale")).toContain("new.status = 'concluida'");
+  });
+  it("Sim e Não sei na pergunta pedem as considerações (F2); o Coordenador não as edita (F3)", () => {
+    const r = fn("answer_treatment_closure");
+    expect(r).toContain(`length(coalesce(v_notas, '')) < ${CONSIDERACOES_MINIMO} then`);
+    expect(r).toContain("dentist_notes = case when v_f.status = 'pergunta' then");
+  });
+  it("o horário com o Coordenador: o próximo, de quem é Coordenador na unidade (F1)", () => {
+    const h = fn("_horario_com_coordenador");
+    expect(h).toContain("r.role = 'clinical_coordinator'");
+    expect(h).toContain("a.status in ('scheduled', 'confirmed')");
+    expect(h).toContain("order by a.starts_at");
+  });
+  it(`a mais de ${LIMITE_DIAS_DO_HORARIO} dias o Sim pede a escolha (F4)`, () => {
+    expect(fn("answer_treatment_closure")).toContain(
+      `v_slot.dias > ${LIMITE_DIAS_DO_HORARIO} and p_far_choice is null then`
+    );
+  });
+  it("com horário próximo, a Recepção NÃO é chamada para agendar outro", () => {
+    const r = fn("_fechamento_reavaliar");
+    const i = r.indexOf(`if v_slot.dias <= ${LIMITE_DIAS_DO_HORARIO} or p_far_choice = 'manter' then`);
+    expect(i, "não achei o ramo do horário mantido").toBeGreaterThanOrEqual(0);
+    const ramo = r.slice(i, r.indexOf("elsif", i));
+    expect(ramo).not.toContain("'Agendar reavaliação");
+  });
+  it("o seguidor não responde nem recebe contato", () => {
+    expect(fn("answer_treatment_closure")).toContain("if v_f.grouped_into is not null then raise exception 'GROUPED'");
+    expect(fn("treatment_closure_contacts_guard")).toContain("raise exception 'GROUPED'");
+  });
+  it("as portas novas são só de quem está logado", () => {
+    for (const f of ["answer_treatment_closure(uuid, text, text, text)", "request_sooner_reevaluation(uuid)", "closure_coordinator_slot(uuid)"]) {
+      expect(s22).toContain(`revoke execute on function public.${f} from public, anon, authenticated;`);
+      expect(s22).toContain(`grant execute on function public.${f} to authenticated;`);
+    }
+    for (const f of ["_horario_com_coordenador(uuid, uuid)", "_fechamento_reavaliar(uuid, uuid, text)", "_fechamento_do_plano(uuid, uuid, uuid, uuid, uuid)"]) {
+      expect(s22).toContain(`revoke execute on function public.${f} from public, anon, authenticated;`);
+      expect(s22).not.toContain(`grant execute on function public.${f}`);
+    }
+  });
+  it("toda recusa nova vira frase", () => {
+    const codigos = [...s22.matchAll(/raise exception '([A-Z_]+)'/g)].map((m) => m[1]);
+    expect(codigos.length).toBeGreaterThan(5);
+    for (const c of new Set(codigos)) {
+      if (c === "INVALID_ANSWER") continue; // a tela só manda as três respostas
+      expect(recusaDoFechamento(c), c).not.toBe(recusaDoFechamento("algo estranho"));
+    }
+  });
+});
+
+describe("regras puras da 0422", () => {
+  it("o seguidor não tem botão de resposta", () => {
+    const quem = { userId: "dentista", ehCoordenador: true, clienteNaFase5: false };
+    expect(botoesDaResposta(base, quem).length).toBeGreaterThan(0);
+    expect(botoesDaResposta({ ...base, groupedInto: "lider" }, quem)).toEqual([]);
+  });
+  it("considerações só no Sim e no Não sei da pergunta", () => {
+    expect(pedeConsideracoes("pergunta", "sim")).toBe(true);
+    expect(pedeConsideracoes("pergunta", "nao_sei")).toBe(true);
+    expect(pedeConsideracoes("pergunta", "nao")).toBe(false);
+    expect(pedeConsideracoes("coordenador", "sim")).toBe(false);
+  });
+  it("longe é mais de 30 dias", () => {
+    expect(horarioLonge(null)).toBe(false);
+    expect(horarioLonge({ startsAt: "2026-12-01T13:00:00Z", dias: 30 })).toBe(false);
+    expect(horarioLonge({ startsAt: "2027-02-15T13:00:00Z", dias: 31 })).toBe(true);
+  });
+  it("a frase diz tudo o que terminou e o horário ligado", () => {
+    expect(oQueTerminou(["plano", "venda_direta"])).toContain(" e ");
+    const f = {
+      ...base,
+      status: "reavaliacao" as const,
+      escopos: ["plano", "venda_direta"] as Fechamento["escopos"],
+      horario: { startsAt: "2026-11-20T17:00:00Z", dias: 3 },
+    };
+    const d = detalheDoFechamento(f);
+    expect(d).toContain(oQueTerminou(f.escopos));
+    expect(d).toContain("faltam 3 dias");
+    expect(d).not.toContain("A Recepção agenda");
   });
 });

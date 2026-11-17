@@ -4630,7 +4630,7 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 
 **A tabela de fases foi corrigida:** o cartão recorrente da ASA4B não está mais bloqueado pela regra do cartão. Falta só a tokenização habilitada nas contas, com o comercial do Asaas.
 
-### 19.38 A 4020a — o estorno parcial pelo Asaas: PLANO (17/11/2026; AGUARDA APROVAÇÃO)
+### 19.38 A 4020a — o estorno parcial pelo Asaas: PLANO (17/11/2026; APROVADO com 1a–4a e os três cuidados; CONSTRUÍDA em 17/11/2026 — 19.38.6 e 19.38.7)
 
 #### 19.38.1 A prova do cartão parcelado (17/11/2026, 12:09, conta principal do sandbox)
 
@@ -4758,6 +4758,52 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 - **O servidor:** o pedido e a leitura.
 - **A tela:** o botão na ficha, a confirmação com a repartição do parcelado e a devolução do distrato.
 - **A prova:** o ensaio quebrado e o sandbox.
+
+#### 19.38.6 Aprovação (17/11/2026)
+
+O dono aprovou com **1a, 2a, 3a e 4a** e três cuidados:
+
+1. **O cartão sem autorização do Asaas.**
+   - Todo estorno de cartão (parcial ou total) tem a confirmação reforçada: o valor, o paciente, a repartição, o aviso "no cartão o estorno sai na hora e não pode ser desfeito" e o motivo.
+   - Acima de um valor da Central (rede; em branco = todos), quem pede não confirma sozinho: o Gerente ou o franqueado confirma.
+2. **A repartição é previsão.** Depois do estorno, o riSZon grava o que o Asaas fez, lido da API; se for diferente, avisa quem pediu e o Financeiro.
+3. **A parcela estornada inteira, fora do distrato:** a baixa é desfeita e ela fica encerrada como "Estornada", sem voltar a ser cobrada sozinha. Só o Gerente reabre, com motivo. No distrato, é cancelada com as outras. A taxa da rede continua devida ("a cobrar").
+
+Decidido também: o parcial na ficha e no distrato, sempre com motivo; o cartão em processamento avisa o Financeiro depois de 5 dias úteis; quem pede = os papéis do estorno total, o Financeiro da Franqueadora e o Admin Master. As duas perguntas novas ao Asaas estão na 19.39.
+
+#### 19.38.7 Construção (17/11/2026; core 0.477.0, Asaas 0.20.0, migração 4020a)
+
+**O banco (4020a):**
+- `gateway_split_settings.card_refund_confirm_above_cents` (em branco = todo estorno de cartão) e `card_refund_limit_save`/`card_refund_limit_read` (Admin Master e Financeiro da Franqueadora).
+- `refund_requests`: o pedido, com o valor, o motivo, a previsão (`expected_split`), o que o Asaas fez (`actual_split`, `split_differs`) e a situação (`confirmar`, `enviar`, `enviado`, `cancelado`, `falhou`, `sem_saldo`).
+- `refund_request_preview`, `refund_request_create`, `refund_request_confirm` (quem pediu não confirma: SELF_CONFIRM), `refund_request_cancel`.
+- `charge_refunds` ganha o valor, o pedido, o comprovante e a situação "caiu".
+- O aviso `PAYMENT_PARTIALLY_REFUNDED` (`_charge_refund_partial_event`): a parcela continua paga, a taxa continua.
+- A parcela "Estornada": `payment_installments.refund_closed_at` (gatilho na baixa desfeita pelo estorno), `installment_refund_reopen` (Gerente ou Admin, com motivo).
+- A régua: Pix no 1º dia útil, a cada 7 dias, no 25º dia e a queda aos 30 (`_refund_fell`); cartão há mais de 5 dias úteis, aviso ao Financeiro.
+- O distrato: `distrato_refund_request` com a forma `estorno_asaas` e a cobrança; `distrato_refund_decide` cria o pedido já confirmado pelo Financeiro.
+- A 4021 foi regerada para conter o ramo do aviso parcial: a 4020a e a 4021 podem ser rodadas em qualquer ordem.
+
+**O servidor:** `src/lib/asaas/estorno-parcial.ts` lê o saldo, chama o Asaas (`refundPaymentValue`, `refundInstallmentValue`), lê cada parcela e grava a repartição real; a rotina do dia (`gateway-split-diario`) roda a régua.
+
+**A tela:**
+- "Estornar parte" na cobrança paga e no cartão parcelado;
+- "Pedidos de estorno" e "Parcelas estornadas" no topo da aba Financeiro da ficha;
+- o limite na Central;
+- a forma e a cobrança na devolução do distrato.
+
+**As provas:**
+- Ensaio `scripts/asaas-ensaio-4020a-estorno-parcial.mjs`: 38/38, provado quebrando (parcial 36/37, taxa 36/37, parcela 35/37, confirma 33/37, régua 33/38).
+- Os vizinhos passaram: distrato 64/64, 4021 106/106, conferência 28/28, mensalidades 54/54.
+- Testes de unidade, a suíte inteira (4820), tsc e eslint limpos.
+- **Sandbox (17/11/2026, o parcelado de Londrina 3× R$ 100,00 aprovado em 16/11):**
+  - o pedido de R$ 120,00 pelo Admin, confirmado pelo Gerente, foi ao Asaas;
+  - o Asaas **recusou**: "Esta transação só pode ser estornada parcialmente no próximo dia".
+  - O pedido ficou "Não saiu" com o motivo, e nada foi estornado. A recusa foi tratada como deve.
+  - A mensagem agora explica em palavras de quem pede: "peça de novo amanhã".
+  - **A prova é repetida em 18/11** (`asaas-4020a-estorno-parcial.integracao.test.ts`).
+
+**Fato novo do Asaas (sandbox):** no cartão, o estorno **parcial** não é aceito no mesmo dia da aprovação da transação. (O total no mesmo dia não foi provado.) Não contradiz a especificação; entra no manual (13g.19).
 
 ### 19.39 Segunda resposta do Asaas (João Lima, suporte N1, 17/11/2026) — só o que é novo
 

@@ -2152,10 +2152,32 @@ marcada por engano (desfaz a prorrogação).
 
 - Ao iniciar o caso, o sistema gera as **manutenções previstas**: uma a cada
   intervalo (30 dias por padrão), do início até o término previsto.
-- A recepção **agenda como sempre**, em Agenda, com o **ortodontista do caso**
-  (sessão de tratamento, início de tratamento ou retorno). O sistema **liga
-  sozinho** o agendamento à manutenção prevista mais próxima (até 45 dias de
-  diferença) — ou cria uma manutenção extra. Ela passa a **Agendada**.
+- A recepção agenda a manutenção em Agenda com o tipo **Manutenção
+  ortodôntica** (desde a 0.476.0). O tipo só aparece para quem tem caso
+  **em tratamento** ou **em acompanhamento** — o controle da contenção usa o
+  mesmo tipo —, e os botões **Agendar** da ficha do caso e da tela Atenção já
+  abrem com ele escolhido. O sistema **liga sozinho** o agendamento à
+  manutenção prevista mais próxima (até 45 dias de diferença) — ou cria uma
+  manutenção extra. Ela passa a **Agendada**.
+- **Só esse tipo vira manutenção.** Sessão de tratamento e retorno não entram
+  mais no cronograma do caso, mesmo com o ortodontista. Se alguém escolher
+  sessão ou retorno com o ortodontista de quem tem caso aberto, a janela
+  pergunta se não é manutenção e oferece **Trocar para Manutenção
+  ortodôntica**. Os agendamentos que já estavam ligados a uma manutenção
+  continuam ligados.
+- **Outro dentista ou o Coordenador** pode fazer a manutenção (o termo já diz
+  que outro ortodontista da equipe pode continuar): ela entra no cronograma do
+  caso e o **repasse vai para quem fez**.
+- **Outro tratamento junto com a ortodontia** (uma restauração, uma limpeza,
+  um implante): são **dois atendimentos seguidos no mesmo dia**, cada um com o
+  seu tipo e o seu repasse — a mesma consulta não é sessão do plano e
+  manutenção ao mesmo tempo. A agenda ajuda: ao agendar a **sessão do plano**
+  numa semana em que o paciente tem manutenção prevista, a janela avisa e, ao
+  salvar, **já prepara a manutenção no mesmo dia, logo em seguida** (com o
+  ortodontista do caso e o horário em que a sessão termina). O contrário
+  também: ao agendar a manutenção de quem tem sessões do plano a agendar, ela
+  prepara a sessão em seguida. Confira o profissional e o horário e salve, ou
+  clique **Agora não**.
 - **Sessão de um plano nunca é manutenção** (desde a 0.469.0). Se o
   agendamento leva uma sessão do plano de tratamento — a instalação do
   aparelho, uma restauração, uma limpeza, uma radiografia, inclusive de um
@@ -2410,7 +2432,8 @@ EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
 (0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254;
 mensalidades por lote (0.367.0): EV-255 a EV-257; os avisos da rotina
 (0.368.0): EV-258; sessão de plano não é manutenção e a instalação inicia o
-caso (0.469.0): EV-368.
+caso (0.469.0): EV-368; o tipo Manutenção ortodôntica e os atendimentos
+seguidos (0.476.0): EV-375.
 
 ### 2.9. O prontuário: o que você vê primeiro *(desde a 0.369.0)*
 
@@ -3322,6 +3345,19 @@ agende uma avaliação para hoje e registre a chegada.
 **Checklist final:** ☐ cadastrei ☐ agendei ☐ registrei chegada ☐ sei onde ver a
 fase do paciente ☐ sei que não sou eu quem chama
 
+**Reagendar o tratamento (desde a 0.474.0).** Quando um cliente em tratamento
+tem sessão pendente e nada agendado há 30 dias (prazo em Prazos), a ficha
+dele mostra no "Precisa de atenção" a tarefa **Reagendar o tratamento**, e
+você recebe o aviso no sino. Ligue ou mande mensagem:
+
+- **Conseguiu marcar?** Agende a sessão (botão **Agendar sessão**): a tarefa
+  some sozinha.
+- **Não conseguiu?** Clique em **Registrar tentativa**, diga como foi e se
+  falou com o cliente. Depois de **3 tentativas**, a tarefa passa ao
+  Coordenador.
+- **Falou e o cliente não quer marcar?** Escreva o que ele disse e marque
+  **encaminhar ao Coordenador já**.
+
 ### 6.1a. Venda direta: o caixa da recepção
 
 *(desde a versão 0.463.0)*
@@ -3384,6 +3420,29 @@ de prótese. Ela começa e termina **na mesma janela**.
        **Todas as cobranças da venda** e em Recebíveis.
      - Se a unidade ainda não usa o Asaas (ou a cobrança automática está
        desligada), **Confirmar que recebeu**.
+
+**Sem atendimento hoje? Atender agora (encaixe)** *(desde a versão 0.475.0)*:
+toda venda direta é ligada a um atendimento. Se o cliente chegou sem horário,
+no bloco **Atendimento** do caixa clique em **Atender agora (encaixe)**:
+
+1. Escolha **Avaliação** ou **Urgência**.
+2. Escolha **quem vai atender** (os profissionais da unidade que atendem
+   esse tipo) e a **duração** (30 min já vem marcado).
+3. **Criar o encaixe e continuar** — o atendimento nasce agora (o próximo
+   horário de 5 em 5 minutos), por cima da agenda, e já fica escolhido na
+   venda.
+
+- **Sem sala:** o encaixe pode ficar sem sala. Quem atender escolhe a sala
+  ao **Chamar** (veja abaixo).
+- **Cadastro incompleto:** o encaixe não é criado. O bloco diz o que falta
+  e oferece **Completar cadastro**.
+- Quem cria o encaixe é a Recepção ou a SDR (quem agenda na Agenda).
+
+**Chamar sem sala** *(desde a versão 0.475.0)*: na tela **Atendimento**, ao
+clicar em **Chamar** num atendimento presencial sem sala marcada, abre
+**Em qual sala?** com as salas da unidade. Escolha uma livre — a que tem
+alguém em atendimento fica bloqueada. Unidade sem sala cadastrada chama como
+antes.
 
 **Venda concluída** *(desde a versão 0.472.0)*: **Enviar comprovante por
 WhatsApp** abre a conversa com o cliente e o texto pronto (unidade,
@@ -3631,6 +3690,15 @@ do cliente, no painel **Precisa de atenção**, e no seu sino:
 Enquanto nada aconteceu, você pode **mudar a resposta** de quem executou
 (**Mudar para Sim** ou **Mudar para Não**).
 
+**Uma decisão por cliente (desde a 0.473.0).** O cliente tem **uma** decisão
+do fim aberta por vez; a linha diz tudo o que terminou ("Terminou: plano e
+venda direta"). As **considerações de quem executou** aparecem na linha —
+leia antes da reavaliação. Se o cliente **já tinha horário com você**, a
+reavaliação é nele e a linha mostra a data e os dias que faltam; com mais de
+30 dias, aparece o aviso e o botão **Pedir reavaliação mais próxima** (a
+Recepção é avisada com prioridade). Na reavaliação, cada plano continua com
+o seu controle de qualidade.
+
 **O controle de qualidade em cinco níveis (desde a 0.471.0).** Na
 reavaliação, você avalia **cada procedimento** do plano que terminou, no
 cockpit de avaliação (o botão **Avaliar procedimentos** da ficha leva até
@@ -3660,6 +3728,24 @@ próximo passo é **Chamar para revisar**.
 daqui a 6 meses) e avisa a Recepção. O botão recusa enquanto houver
 procedimento sem avaliar ou com Revisar/Refazer em aberto: espere a revisão ou
 a refação e avalie de novo.
+
+**O abandono de tratamento (desde a 0.474.0).** Quando a Recepção não consegue
+reagendar um cliente parado (3 tentativas) ou ele diz que não quer marcar, a
+tarefa chega a você: **Possível abandono**. Contate o cliente
+(**Registrar contato**). Se ele voltar, basta agendar: a tarefa some. Se não
+voltar, clique em **Registrar abandono** e escreva **os riscos clínicos que
+você informou ao cliente**, por qual meio (ligação, mensagem, pessoalmente,
+carta ou e-mail) e em que data. É a proteção jurídica da clínica: fica no
+prontuário, não apaga nada e não muda a venda. Depois disso, o Gerente decide.
+
+**Clientes sem próximo passo.** Na **Jornada**, o botão **Clientes sem próximo
+passo** lista quem está na Fase 5 ou 6 **sem horário marcado e sem nenhuma
+tarefa aberta**, com o motivo (sessões sem horário, ortodontia suspensa,
+plano complementar parado, reavaliação sem horário) e os dias desde a última
+atividade. A ortodontia em tratamento protege o cliente da lista; a suspensa,
+não. O plano complementar só protege enquanto tem movimento (30 dias, em
+Prazos). Em cada linha: **Abrir ficha** ou **Iniciar contato**, que abre a
+tarefa de contato com você.
 
 ### 6.3. Dentista Planner
 
@@ -4160,6 +4246,26 @@ aparece: a reavaliação já fica pedida. O Coordenador pode mudar a sua
 resposta enquanto o próximo passo não aconteceu. A revisão e a refação pedidas
 pelo controle de qualidade **não** repetem a pergunta.
 
+**Uma decisão por cliente (desde a 0.473.0, relato OC-00185).**
+
+- **Uma só.** Se o cliente terminou mais de uma coisa (por exemplo, o plano e
+  uma venda direta), a janela diz tudo o que terminou e você responde **uma
+  vez**. O que terminar depois, enquanto a decisão está aberta, **entra nela**
+  — mesmo que você já tenha respondido.
+- **Venda direta só depois de fechada.** Uma venda direta ainda em aberto
+  (sem termo assinado ou pagamento confirmado) não abre a pergunta.
+- **Pelo Atendimento ou pela ficha.** Concluindo pela ficha, a janela abre
+  igual; e abre de novo sempre que você entra na ficha com a decisão
+  pendente.
+- **Considerações para o Coordenador.** No **Sim** e no **Não sei**, escreva
+  o que o Coordenador deve olhar com mais atenção (pelo menos 10 letras). No
+  **Não**, é opcional. O Coordenador lê, mas não edita.
+- **O cliente já tem horário com o Coordenador?** A janela mostra a data, a
+  hora e quantos dias faltam. Respondendo **Sim**, a reavaliação fica **nesse
+  horário** — a Recepção não marca outro. Se faltam **mais de 30 dias**, a
+  janela avisa e pede para escolher: **manter** o horário ou **pedir uma
+  reavaliação mais próxima** (a Recepção é avisada com prioridade).
+
 > **O kit do atendimento e o mês fechado** (desde a 0.458.0, relato OC-00181).
 > O kit de atendimento (gorro, babador) é baixado no **dia do atendimento**.
 > Se esse mês **já foi fechado** no Financeiro — um atendimento antigo que só
@@ -4564,6 +4670,21 @@ Planner recebe o aviso para criar uma **versão nova**.
 
 **Objetivo:** responder pela unidade. **Duração:** 90 minutos (é a função com
 mais telas).
+
+**O abandono de tratamento: a sua decisão (desde a 0.474.0).** Quando o
+Coordenador registra o abandono de um cliente, a ficha mostra **Abandono
+registrado: o Gerente decide**, com os riscos informados. Clique em
+**Decidir**:
+
+- **Acompanhamento (Fase 7) com retorno**: o cliente vai para a Fase 7 com a
+  data do retorno (sugerida: daqui a 6 meses). As sessões pendentes ficam
+  abertas para quando ele voltar. A Recepção e o Coordenador são avisados.
+- **Cancelamento formal**: a tarefa continua com você até o termo de
+  cancelamento ser aberto (aba **Plano** da ficha), com o acerto financeiro de
+  sempre.
+
+Se o cliente agendar antes da sua decisão, a tarefa some sozinha. A lista
+**Clientes sem próximo passo** (botão na Jornada) também é sua.
 
 Módulos: Financeiro, Estoque, Compras, Comercial, Relatórios, Planos,
 Risartanos, Empresarial.
@@ -5358,7 +5479,8 @@ sucesso do tratamento é o **Coordenador Clínico**. Por isso o fim de cada plan
 abre uma tarefa com dono, que só some quando é resolvida.
 
 **Quando acontece.** Na última sessão concluída de cada plano: o plano
-original, cada plano complementar, a venda direta. Na ortodontia, na **entrega
+original, cada plano complementar, a venda direta (desde a 0.473.0, só a venda
+**fechada**). Na ortodontia, na **entrega
 das contenções** — concluir a **instalação** do aparelho não abre a pergunta
 (desde a 0.470.0); num plano com instalação e outros procedimentos, ela abre
 quando os outros terminam. A situação do plano passa sozinha para **Em tratamento** (na
@@ -5374,9 +5496,13 @@ ele passa a **"Tratamento Finalizado"** e sai da Fase 5 conforme a resposta.
 
 **O passo a passo:**
 
-1. **Quem executou responde** (janela no Atendimento; ver 6.4): *"Este cliente
-   necessita de consulta de reavaliação com o Coordenador Clínico?"*
-2. **Sim** → a Recepção agenda a reavaliação. Sem outro tratamento, o cliente
+1. **Quem executou responde** (janela no Atendimento ou na ficha; ver 6.4):
+   *"Este cliente necessita de consulta de reavaliação com o Coordenador
+   Clínico?"* — **uma decisão por cliente**, com as considerações para o
+   Coordenador no Sim e no Não sei (desde a 0.473.0).
+2. **Sim** → a Recepção agenda a reavaliação — **a não ser que o cliente já
+   tenha horário com o Coordenador**: aí a reavaliação é nele (mais de 30 dias:
+   manter ou pedir uma mais próxima). Sem outro tratamento, o cliente
    vai para a **Reavaliação**; com outro tratamento, a consulta acontece dentro
    da Fase 5.
 3. **Não** → o **Coordenador** contata o cliente e registra (ver 6.2): chamar
@@ -5395,7 +5521,14 @@ pedida.
 procedimento na reavaliação, satisfação e queixa no contato, e a saída da
 Reavaliação só com tudo aprovado (ver 6.2).
 
-**O que ainda vem** (próximas etapas do plano): o abandono de tratamento; a lista "Clientes sem próximo passo"; o cancelamento
+**O abandono e a lista** (desde a 0.474.0): sessão pendente sem nada agendado
+há 30 dias vira tarefa da Recepção (reagendar); 3 tentativas levam ao
+Coordenador (contato e registro de abandono com os riscos informados); o
+Gerente decide entre a Fase 7 com retorno e o cancelamento formal. Agendar
+encerra a tarefa em qualquer etapa. A lista "Clientes sem próximo passo"
+mostra quem ficou sem horário e sem tarefa (ver 6.1, 6.2 e 6.6).
+
+**O que ainda vem** (próximas etapas do plano): o cancelamento
 passando pelo Coordenador; os prazos por dia útil da unidade.
 
 ### Fluxo 3 — Encerrar a sessão
@@ -7342,7 +7475,7 @@ Pix e o link continuam os mesmos, e **o paciente não recebe aviso**.
 *(desde a versão 0.444.0)*
 
 **Para que serve:** devolver ao pagador uma cobrança paga pelo Asaas, pedindo
-pelo riSZon (estorno **total**; parcial e contestação no cartão continuam à mão).
+pelo riSZon (estorno **total**; o estorno de **parte** está na seção 13g.19; a contestação no cartão continua à mão).
 
 **Quem pode:** quem tem o **acesso de autorização da conta Asaas da unidade**
 (o código que o Asaas manda por SMS ou pelo aplicativo). Por padrão o
@@ -7914,7 +8047,7 @@ Financeiro da Franqueadora também. Nada expira sozinho.
 
 ### 13g.18. Cobrança mensal da rede
 
-*(desde a versão 0.473.0)*
+*(desde a versão 0.477.0)*
 
 **O que é:** a cobrança que a franqueadora faz à unidade, uma vez por mês, das
 taxas da rede que **não** foram retidas pelo split:
@@ -7995,7 +8128,7 @@ A decisão não se refaz.
 fechamento ou no pagamento) e quando sai a nota dos royalties. O riSZon guarda
 os dois jeitos, e nada trava por isso.
 
-**A conferência das taxas** *(desde a versão 0.473.0)* — aba **Conferência das
+**A conferência das taxas** *(desde a versão 0.477.0)* — aba **Conferência das
 taxas**, em Cobrança da rede:
 - **A conta do mês,** por unidade, do primeiro mês da cobrança mensal em diante:
   devido = retido pelo split + a reter + faturado + dispensado + ainda a cobrar.
@@ -8019,8 +8152,74 @@ taxas**, em Cobrança da rede:
   unidade, só leitura.
 - A conferência não muda nenhum lançamento.
 
-**Evidência:** EV-372 e EV-373; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
+**Evidência:** EV-376 e EV-377; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
 `scripts/asaas-ensaio-asa6-conferencia.mjs`.
+
+### 13g.19. Estorno de parte (cartão e Pix)
+
+*(desde a versão 0.477.0)*
+
+**Para que serve:** devolver **parte** do que o paciente pagou pelo Asaas (ou o
+total do cartão parcelado), sem sair do riSZon. Sempre com motivo.
+
+**Onde:** ficha do paciente › aba **Financeiro** › **Estornar parte** (na
+cobrança paga pelo Asaas no Pix ou no cartão, e no cartão parcelado da venda).
+No distrato, na devolução, escolha **Estorno pelo Asaas** e a cobrança.
+
+**Quem pede:** os mesmos do estorno total (os papéis liberados na Central), o
+Financeiro da Franqueadora e o Admin Master.
+
+**Passo a passo:**
+
+1. **Estornar parte**. A tela mostra o paciente e quanto ainda pode ser
+   estornado. Escreva o valor (em branco = o total) e o motivo.
+2. **No cartão parcelado**, a tela mostra a **previsão** de como o Asaas vai
+   repartir: as parcelas **inteiras** primeiro e a **parte** da seguinte.
+3. **No cartão**, o aviso em vermelho: *o estorno sai na hora e não pode ser
+   desfeito*.
+4. **Acima do valor da Central** (Central › Rede › Taxas da franquia, campo
+   **Estorno de cartão: acima de quanto o Gerente ou o franqueado confirma**;
+   em branco = todo estorno de cartão), o botão diz **Pedir (vai
+   para a confirmação)**. O pedido aparece no topo da aba Financeiro, em
+   **Pedidos de estorno**, e o **Gerente ou o franqueado** confirma (nunca quem
+   pediu). Antes de ir ao Asaas, quem pediu, o Gerente, o franqueado ou o
+   Financeiro podem **cancelar o pedido**, com motivo.
+5. Depois do pedido, o riSZon **lê no Asaas o que ele fez** e mostra em
+   **O Asaas fez**. Se for diferente da previsão, avisa quem pediu e o
+   Financeiro.
+
+**O que acontece com as parcelas:**
+
+- **Parcela estornada inteira:** a baixa é desfeita e a parcela fica
+  **"Estornada"**. Ela **não volta a ser cobrada sozinha**. Só o **Gerente**
+  (ou o Admin Master) **reabre**, com motivo, em **Parcelas estornadas**.
+- **Parte de uma parcela:** a parcela continua paga; a devolução fica
+  registrada.
+- **No distrato**, as parcelas seguem o distrato (são canceladas com as outras),
+  e a devolução fica **"Paga pelo Asaas"** quando o Asaas conclui.
+- **A taxa da rede continua devida** pela unidade (fica "a cobrar").
+
+**Pix:** o estorno de parte do Pix espera a autorização da conta Asaas da
+unidade (como no total, seção 13g.7). O riSZon avisa no 1º dia útil, a cada 7
+dias e no 25º dia; aos 30 dias sem autorização, o pedido cai e a cobrança volta
+a "Paga".
+
+**Cartão em processamento:** passados 5 dias úteis, o Financeiro é avisado.
+
+**Quando não sai:**
+
+- **No mesmo dia da aprovação do cartão**, o Asaas não aceita estorno de
+  **parte**: a tela diz *peça de novo amanhã*. Nada é
+  estornado.
+- **Sem saldo** na conta Asaas da unidade, o pedido fica parado, e quem pediu é
+  avisado quando o estorno voltar a ficar disponível (ou use a devolução por Pix
+  da conta da unidade).
+- **Outras recusas:** a tela mostra o motivo que o Asaas deu.
+
+**Auditoria:** o pedido, o valor, o motivo, quem pediu, quem confirmou ou
+cancelou, a previsão, o que o Asaas fez e a reabertura de parcela (com motivo).
+
+**Evidência:** EV-378; `scripts/asaas-ensaio-4020a-estorno-parcial.mjs`.
 
 ## 14. Checklists
 

@@ -400,6 +400,31 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (venda direta v3, VD3-4) — PC Administrador (core 0.474.0 → 0.475.0, migração 0424; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **Atender agora (encaixe) e a sala ao chamar** (bloco 0.475.0 no ESTADO). ✅
+  0424 na produção (o dono, 17/11/2026; conferida de fora) e no treino. Publicado.
+- ⚠️ **Encaixe = Urgência/Emergência OU `is_fit_in`** — quem recriar
+  `check_appointment_conflict` parte da 0424 (a Ortodontia, 0425, foi avisada).
+- ⚠️ **`npm run migrar:teste` NÃO tem modo de só listar** (`--listar` é
+  ignorado e aplica tudo o que falta no registro do treino).
+- ⚠️ **Disco**: 2,3 GB livres em 17/11 — as worktrees das outras sessões
+  (cerca de 700 MB cada) enchem o C:. A montagem do zero precisa de folga.
+**17/11/2026 (fim do tratamento, Etapa 4) — PC Administrador (core 0.474.0, migração 0423; worktree `wt-fim-tratamento`)**
+
+- **O abandono e a lista "Clientes sem próximo passo"** (bloco 0.474.0 no
+  ESTADO). ⚠️ Uma tarefa de abandono aberta por cliente; agendar encerra. ⚠️ A
+  Fase 7 pelo abandono deixa as sessões abertas. ⚠️ Prazos novos em
+  `inactivity_settings` (`abandon_no_schedule_days`, `stalled_treatment_days`):
+  manter `INACTIVITY_KEYS` (`src/lib/sla.ts`) igual.
+
+**17/11/2026 (fim do tratamento, OC-00185) — PC Administrador (core 0.473.0, migração 0422; worktree `wt-fim-tratamento`)**
+
+- **Uma decisão por cliente** (bloco 0.473.0 no ESTADO). ⚠️ `answer_treatment_closure`
+  (4 parâmetros) e `_fechamento_reavaliar` (3) foram recriadas na 0422: ao
+  recriar, partir dela. ⚠️ Seguidor (`grouped_into`) não responde nem recebe
+  contato (GROUPED). Próximo: Etapa 4 (sessão da Jornada).
+
 **17/11/2026 (venda direta v3, VD3-3) — PC Administrador (core 0.471.0 → 0.472.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
 - **O Pix na janela** (bloco 0.472.0 no ESTADO). Publicado com o "pode publicar" do dono
@@ -445,6 +470,17 @@ Syncthing se comportarem de forma estranha.**
   coluna existem, sem login a porta recusa, a chave de serviço para em
   NOT_ALLOWED). Não visto na tela.
 
+
+**17/11/2026 (ortodontia, AP176) — PC Administrador (core 0.475.0 → 0.476.0, migração 0425)**
+
+- **O tipo "Manutenção ortodôntica"** (bloco 0.476.0 no ESTADO). ⚠️ **Tipo de
+  agendamento novo mora em três lugares**: `APPOINTMENT_TYPES`,
+  `TYPE_PROVIDER_ROLES` e `_provider_serves_type` (régua pela migração mais
+  nova). ⚠️ Valor novo de enum: só comparar como texto na própria migração.
+  ⚠️ Dicas da agenda para ortodontia = `src/lib/ortodontia/agenda.ts`.
+- ✅ 0425 nos dois bancos (treino: ensaio 10/10, desfeito; produção pelo dono
+  em 17/11/2026, conferência 1·1·1·0; conferido de fora). Publicado depois da
+  migração. AP176 fechado.
 
 **17/11/2026 (ortodontia, AP175) — PC Administrador (core 0.468.0 → 0.469.0, migração 0417)**
 

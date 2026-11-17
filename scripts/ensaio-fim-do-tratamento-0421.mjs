@@ -14,7 +14,10 @@ let sql = original;
 if (quebrar === "trava") sql = sql.replace("     where plan_id = v_plan and status = 'reavaliacao';", "     where plan_id = v_plan and status = 'nenhum';");
 if (quebrar === "queixa") sql = sql.replace("if p_complaint and p_outcome <> 'revisar' then", "if false then");
 if (quebrar === "saida") sql = sql.replace("              where f.client_id = p_client_id and f.status = 'reavaliacao') then", "              where false) then");
-if (quebrar && sql === original) throw new Error(`a quebra "${quebrar}" não achou o que quebrar: não mediu nada`);
+// 0422 por cima (não recria as funções que estas quebras tocam).
+const S0422 = readFileSync(W + "supabase/migrations/0422_fim_do_tratamento_uma_decisao_por_cliente.sql", "utf8");
+sql += "\n" + S0422;
+if (quebrar && sql === original + "\n" + S0422) throw new Error(`a quebra "${quebrar}" não achou o que quebrar: não mediu nada`);
 
 const c = await connect();
 let ok = 0, falhou = 0;
@@ -90,7 +93,7 @@ try {
   await conclui(A.client_id);
   let f = await fech(A.client_id);
   await asUser(DENT);
-  await c.query(`select public.answer_treatment_closure($1, 'sim')`, [f.id]);
+  await c.query(`select public.answer_treatment_closure($1, 'sim', 'Considerações de ensaio para o Coordenador', 'manter')`, [f.id]);
   await asSuper();
   check((await fech(A.client_id)).status === "reavaliacao", "aguardando a reavaliação");
   const itA = await itens(A.plan_id);
@@ -121,7 +124,7 @@ try {
   await conclui(B.client_id);
   f = await fech(B.client_id);
   await asUser(DENT);
-  await c.query(`select public.answer_treatment_closure($1, 'sim')`, [f.id]);
+  await c.query(`select public.answer_treatment_closure($1, 'sim', 'Considerações de ensaio para o Coordenador', 'manter')`, [f.id]);
   // Sem a avaliação feita, também não sai (a trava do fechamento aberto).
   await asUser(COORD);
   await espera("concluir a reavaliação sem avaliar", () => c.query(`select public.conclude_reevaluation($1, null)`, [B.client_id]), "QUALITY_PENDING");

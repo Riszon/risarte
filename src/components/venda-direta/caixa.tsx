@@ -77,6 +77,7 @@ import {
 import type { DirectSaleRow } from "@/app/(app)/comercial/venda-direta/direct-sale-item";
 import { AcoesDoTermo, textoDoTermoAssinado } from "./termo";
 import { PagamentoPeloAsaas } from "./pagamento";
+import { AtenderAgora } from "./encaixe";
 import { whatsappLink } from "@/lib/whatsapp";
 import { comprovanteDaVenda } from "@/lib/venda-direta-caixa";
 
@@ -307,6 +308,7 @@ function Conteudo({ alvo, onClose }: { alvo: AlvoDoCaixa; onClose: () => void })
           <VendaNova
             dados={dados}
             appointmentIdInicial={alvo.appointmentId ?? null}
+            recarregar={recarregar}
             isPending={isPending}
             startTransition={startTransition}
             onLancada={async (id, fechar, erroDoTermo) => {
@@ -736,8 +738,11 @@ function VendaNova({
   isPending,
   startTransition,
   onLancada,
+  recarregar,
 }: {
   dados: DadosDoCaixa;
+  /** VD3-4: relê o caixa (o encaixe recém-criado entra na lista). */
+  recarregar: () => Promise<void>;
   appointmentIdInicial: string | null;
   isPending: boolean;
   startTransition: (fn: () => Promise<void>) => void;
@@ -753,6 +758,9 @@ function VendaNova({
         : "") || atendimentoPadrao(ctx.appointments, agora, diaDe)
   );
   const [trocandoAtendimento, setTrocandoAtendimento] = useState(false);
+  // VD3-4: o bloco "Atender agora" (encaixe) aberto.
+  const [encaixe, setEncaixe] = useState(false);
+  const temAtendimentoHoje = ctx.appointments.some((a) => diaDe(new Date(a.startsAt)) === diaDe(agora));
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [notes, setNotes] = useState("");
   const [comObs, setComObs] = useState(false);
@@ -861,10 +869,15 @@ function VendaNova({
             )}
           </p>
         ) : ctx.appointments.length === 0 ? (
-          <p className="rounded-lg border border-rose-300 bg-rose-50 p-2 text-xs text-rose-800">
-            Este cliente não tem atendimento. Agende primeiro (toda venda direta
-            é ligada a um atendimento) e volte aqui.
-          </p>
+          // VD3-4: sem atendimento, o encaixe nasce aqui mesmo.
+          <AtenderAgora
+            clientId={dados.clientId}
+            aoCriar={async (id) => {
+              await recarregar();
+              setAppointmentId(id);
+              setTrocandoAtendimento(false);
+            }}
+          />
         ) : (
           <select
             aria-label="Atendimento relacionado"
@@ -883,6 +896,28 @@ function VendaNova({
               </option>
             ))}
           </select>
+        )}
+        {ctx.appointments.length > 0 && !temAtendimentoHoje && (
+          encaixe ? (
+            <AtenderAgora
+              clientId={dados.clientId}
+              aoFechar={() => setEncaixe(false)}
+              aoCriar={async (id) => {
+                await recarregar();
+                setAppointmentId(id);
+                setTrocandoAtendimento(false);
+                setEncaixe(false);
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={() => setEncaixe(true)}
+            >
+              Sem atendimento hoje? Atender agora (encaixe)
+            </button>
+          )
         )}
         {excecao && (
           <p className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">

@@ -77,7 +77,7 @@ export function repartirPeloAsaas(a: {
  */
 export function explicarRecusaDoEstorno(mensagem: string): string {
   if (/estornada parcialmente no pr[oó]ximo dia/i.test(mensagem)) {
-    return "No cartão, o Asaas só aceita estorno de parte a partir do dia seguinte à aprovação. Nada foi estornado: peça de novo amanhã (ou estorne o total hoje).";
+    return "No cartão, o Asaas só aceita estorno de parte a partir do dia seguinte à aprovação. Nada foi estornado: peça de novo amanhã.";
   }
   return mensagem;
 }

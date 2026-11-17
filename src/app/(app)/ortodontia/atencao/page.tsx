@@ -209,7 +209,7 @@ export default async function OrtoAtencaoPage(props: PageProps<"/ortodontia/aten
                       <Phone className="size-3.5" /> {c.client.phone}
                     </a>
                   )}
-                  <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/agenda?cliente=${c.client_id}&tipo=treatment_session`} />}>
+                  <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/agenda?cliente=${c.client_id}&tipo=ortho_maintenance`} />}>
                     <CalendarPlus className="mr-1 size-3.5" /> Agendar
                   </Button>
                   <Button size="sm" variant="ghost" nativeButton={false} render={<Link href={`/ortodontia/casos/${c.id}`} />}>

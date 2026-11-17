@@ -2,11 +2,15 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.462.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.477.0 — ASA4: O ESTORNO DE PARTE PELO ASAAS (17/11/2026; Asaas 0.20.0, migração 4020a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
-> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-373.
+> "Estornar parte" na ficha (Pix, cartão e cartão parcelado) e no distrato, sempre com motivo. Cartão com a confirmação reforçada (valor, paciente, repartição prevista, "sai na hora e não pode ser desfeito"); acima do valor da Central (em branco = todos), o Gerente ou o franqueado confirma. O riSZon grava o que o Asaas fez e avisa se diferir da previsão. Parcela estornada inteira fica "Estornada" (só o Gerente reabre). A taxa da rede continua devida. Ensaio 38/38, provado quebrando. Spec 19.38.6 e 19.38.7; manual 13g.19; EV-378. **Falta:** a prova do sandbox em 18/11 (o Asaas recusa o parcial do cartão no dia da aprovação), o teste do dono e a produção (só com o "pode").
 
-> ## 💳 0.461.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.477.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+>
+> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-377.
+
+> ## 💳 0.477.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
 > - **A prévia** do mês que fechou, por unidade: as taxas fixas (proporcionais no mês incompleto) e o "a cobrar" das percentuais, linha a linha, com a origem e o paciente abreviado. Cada linha entra pelo **delta** (o que vale hoje menos o já faturado): nunca duas vezes, e o "a reter" nunca entra.
 > - **A unidade** confere ou contesta; o silêncio leva à aprovação (avisos na abertura e 1 dia útil antes do fim). O Financeiro decide; depois da emissão, a contestação aceita vira **crédito** no mês seguinte (compensação, sem caixa).
@@ -14,7 +18,79 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **A emissão** sai pela conta da franqueadora, com a unidade (CNPJ) como pagadora, só por e-mail; a baixa pelo aviso do Asaas paga as contas de taxa da unidade; o caixa da franqueadora vai num lançamento só de caixa; multa e juros no financeiro, sem taxa sobre taxa; a tarifa é da franqueadora. Mês fechado: a dispensa entra no mês aberto, como ajuste.
 > - **A configuração nasce em branco** (Central › Rede › Taxas da franquia); exemplo só no treino e no sandbox, marcado.
 >
-> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-372; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-376; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> ## ⚡ 0.475.0 — VENDA DIRETA V3, VD3-4: ATENDER AGORA (ENCAIXE) E A SALA AO CHAMAR (17/11/2026; migração 0424)
+>
+> Decisões do dono A1–A4 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §9. EV-374.
+> - ⚠️ **ENCAIXE agora é também uma MARCA** (`appointments.is_fit_in`, 0424),
+>   não só o tipo Urgência/Emergência: passa pelo conflito de horário do
+>   profissional e da sala (`check_appointment_conflict` recriada — partir
+>   dela) e pelas regras de horário da Agenda (`checkAgendaRules`, `fit_in=1`).
+>   Fechamentos e bloqueios continuam valendo.
+> - **Atender agora** no caixa (`src/components/venda-direta/encaixe.tsx`,
+>   `dadosDoEncaixe`/`atenderAgora` em `caixa-actions.ts`): Avaliação ou
+>   Urgência, o profissional, 15–60 min, a partir do próximo intervalo de 5
+>   min (`proximoIntervalo`), pelo MESMO `createAppointment` da Agenda (quem
+>   agenda, cadastro completo I4, função do profissional).
+> - ⚠️ **Chamar presencial sem sala exige a sala** numa unidade com sala ativa
+>   (`update_attendance` recriada → `ROOM_REQUIRED`); a escolha grava e chama
+>   numa transação (`call_attendance_with_room`). Tela: `atendimento/sala-ao-chamar.tsx`.
+>   Unidade sem sala (Londrina e Cambé no treino) chama como antes.
+> - ✅ **0424 na produção** (o dono rodou em 17/11/2026; conferido de fora: a coluna `is_fit_in`, `call_attendance_with_room` recusa sem login e para em NOT_ALLOWED com a chave de serviço). Publicado logo depois.
+> - ✅ **0424 no treino** (ensaio 11/11 em transação desfeita, provado quebrando:
+>   conflito, sala). ⚠️ O `migrar:teste` NÃO tem `--listar`: aplicou junto a
+>   **4018a e 4018b** (sessão do Asaas, já no `main`, fora do registro do
+>   treino); rodaram sem erro. ⚠️ Até a publicação, o Chamar sem sala no site
+>   do treino mostra erro (a tela de lá não tem a escolha da sala).
+> - **Visto na tela** (servidor local): cadastro incompleto bloqueado com
+>   "Completar cadastro"; encaixe de Urgência criado em Londrina com o Dentista
+>   de Teste e já escolhido na venda; Chamar sem sala na Unidade Teste abriu
+>   "Em qual sala?", gravou a Sala 2 e seguiu para o cockpit. Resíduo: o
+>   encaixe de Londrina e o agendamento de teste da Unidade Teste (ambos
+>   concluídos). A venda não foi finalizada (avisaria pessoas reais).
+> ## 🧭 0.474.0 — FIM DO TRATAMENTO, ETAPA 4: O ABANDONO E A LISTA (17/11/2026; migração 0423)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (seções 6 e 7; D16, D19).
+> - ⚠️ **`treatment_abandonments`: uma aberta por cliente** (índice
+>   `treatment_abandonments_one_open`). Etapas: reagendar (Recepção) → contato
+>   (Coordenador) → gerente → cancelamento → encerrado. Grava só pelas portas.
+> - ⚠️ **Quem abre é a varredura diária** `treatment_abandonment_scan` (cron
+>   `risarte-abandono-daily`, 03:20 UTC; prazo `abandon_no_schedule_days`).
+>   Fase 5 + sessão `pending` + nenhum horário futuro + última atividade
+>   (`_ultima_atividade`) além do prazo.
+> - ⚠️ **Agendar encerra** (gatilho `treatment_abandonment_on_appointment`); o
+>   termo de cancelamento cumpre a decisão "cancelamento"
+>   (`treatment_abandonment_on_cancellation`).
+> - ⚠️ **Fase 7 pelo abandono NÃO fecha as sessões** (D16.4): elas seguram a volta.
+> - A lista: `clients_without_next_step` (Coordenador e Gerente), página
+>   `/jornada/sem-proximo-passo`; prazo `stalled_treatment_days`.
+> - Ensaio 35/35 (`scripts/ensaio-fim-do-tratamento-0423.mjs`, provado
+>   quebrando); régua `abandono.test.ts`. O treino não tem Gerente em
+>   Londrina: o ensaio cria um na transação. Não visto na tela.
+> - ✅ **0423 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: as 2 tabelas (vazias), os 2 prazos (30 dias) e as 6 funções fechadas para quem não está logado.
+>
+> ## 🩺 0.473.0 — FIM DO TRATAMENTO: UMA DECISÃO POR CLIENTE (17/11/2026; migração 0422; relato OC-00185)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`, 12.2. Defeito confirmado: uma
+> pergunta por plano/venda sem agrupar; venda direta não fechada abria pergunta;
+> sem janela pelo caminho da ficha.
+> - ⚠️ **Líder e seguidores:** `treatment_closures.grouped_into`. Só o líder é a
+>   decisão (índice único `treatment_closures_one_decision`); o gatilho
+>   `treatment_closure_sync_group` espelha o líder nos seguidores e promove um
+>   seguidor quando o líder sai como reavaliado/reaberto. A qualidade continua
+>   por plano (cada fechamento encerra o seu).
+> - ⚠️ **`answer_treatment_closure` tem 4 parâmetros** (considerações e a escolha
+>   manter/antecipar); `_fechamento_reavaliar` tem 3. Recriadas na 0422: ao
+>   recriar, partir dela. Novas: `_fechamento_do_plano`, `_horario_com_coordenador`,
+>   `closure_coordinator_slot`, `request_sooner_reevaluation`, gatilho
+>   `treatment_closure_on_direct_sale` (venda direta só abre ao virar `concluida`).
+> - Horário com o Coordenador (F1): o próximo agendado/confirmado com quem é
+>   Coordenador na unidade, de qualquer tipo; > 30 dias pede manter/antecipar.
+> - Ensaio 25/25 (`scripts/ensaio-fim-do-tratamento-0422.mjs`, provado
+>   quebrando), 0418 com 0420+0421+0422 35/35, 0421 com a 0422 20/20; régua
+>   provada quebrando. Não visto na tela.
+> - ✅ **0422 aplicada na produção (17/11/2026)**: conferência 6·0·1·1·true·3·false·true·false (nenhum cliente com duas decisões); conferida de fora: sem login, `answer_treatment_closure` (4 parâmetros), `request_sooner_reevaluation`, `closure_coordinator_slot` e `_horario_com_coordenador` recusam; as colunas novas existem. Push depois da migração.
+>
 > ## 💳 0.472.0 — VENDA DIRETA V3, VD3-3: O PIX NA JANELA (17/11/2026; sem migração)
 >
 > Plano e decisões P1–P3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §8. EV-371.
@@ -100,6 +176,28 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   e o da 0418 com a 0420 por cima, 35/35. Versão 0.470.0 (a 0.469.0 é da AP175).
 >   ✅ **0420 no treino e na produção** (o dono, 17/11/2026; conferido de fora).
 >
+> ## 🦷 0.476.0 — ORTODONTIA, AP176: O TIPO "MANUTENÇÃO ORTODÔNTICA" (17/11/2026; migração 0425)
+>
+> Etapa B do AP175, com as decisões do dono (17/11/2026): tipo novo
+> `ortho_maintenance`, o ÚNICO que vira manutenção do caso (em tratamento ou
+> em acompanhamento; o controle da contenção usa o mesmo); atendem dentista e
+> Coordenador; os já ligados continuam; com o tipo próprio a manutenção liga
+> seja quem for que atenda e o repasse vai para quem fez. **Outro tratamento
+> em paralelo = dois atendimentos seguidos no mesmo dia** (opção 1 do dono):
+> a janela avisa e, ao salvar, já prepara o segundo (`emSeguida`).
+> - ⚠️ **Tipo de agendamento novo = `APPOINTMENT_TYPES` + `TYPE_PROVIDER_ROLES`
+>   + `_provider_serves_type`** (a régua agora lê a migração MAIS NOVA que
+>   define a função). Valor de enum novo não pode ser USADO na mesma
+>   migração (só comparar como texto).
+> - ⚠️ Ao recriar `ortho_appointment_sync`, partir da 0425.
+> - ✅ **0425 nos dois bancos**: treino (reaplicada; ensaio 10/10 com ela
+>   gravada, e o da 0417 de novo, 23/23) e produção (o dono, 17/11/2026;
+>   conferência `1 · 1 · 1 · 0`; conferido de fora: a produção aceita o tipo
+>   `ortho_maintenance` e recusa um tipo inventado). Push depois da migração. A 0423 (Jornada) e a 0424 (Venda
+>   direta) são de outras sessões. EV-375. Na tela (servidor local + treino):
+>   a lista de tipos, o link da ortodontia e a pergunta do hábito antigo; o
+>   "em seguida" depois de salvar só por teste.
+
 > ## 🦷 0.469.0 — ORTODONTIA, AP175: SESSÃO DE PLANO NÃO É MANUTENÇÃO (17/11/2026; migração 0417)
 >
 > Relato da sessão da Jornada (16/11/2026), confirmado no treino em transação
