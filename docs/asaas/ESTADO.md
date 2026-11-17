@@ -57,9 +57,9 @@ resposta escrita do Asaas (11/11/2026) e o que ficou para cada fase.
   tokenização habilitada nas contas**, com o comercial do Asaas.
 - **Respostas do Asaas (16/11/2026, 19.37):** respondidas as perguntas 1, 5, 13, 14 e 15; em parte, a 6 e a 10; técnicas abertas: 2, 3, 4, 7, 8, 9, 11 e 12; com o comercial: 16 a 20 e a tarifa do débito. **Propostas aprovadas (1a a 5a):** a conferência do saldo antes do estorno total, a recusa e a régua do estorno pendente entram na 4020a; a marca do débito desabilitado entra na ASA7. O arredondamento do split por parcela foi conferido: igual ao Asaas.
 - **Segunda resposta do Asaas (17/11/2026, 19.39):** sem nenhum aviso de e-mail ou SMS ligado, não há mensageria. O comprovante do Asaas vem mesmo com os avisos desligados (ele já está na ficha desde a 4007; falta, como melhoria, nas mensalidades, na lista da forma 2, na cobrança mensal e no 1C). O sandbox não dispara WhatsApp: a prova vai para a ASA7. Os Correios ficam fora. **Aberto:** a mensageria no parcelado; o token no estorno de cartão; a repartição do estorno do parcelado.
-- **ASA7:** decidir a lista de IPs autorizados
-  **Na homologação, provar também o envio por WhatsApp** (o sandbox não dispara). (IP fixo da Vercel: US$ 100/mês
+- **ASA7:** decidir a lista de IPs autorizados (IP fixo da Vercel: US$ 100/mês
   por projeto, compartilhado). **Nunca** ativar a lista no Asaas sem IP fixo.
+  **Na homologação, provar também o envio por WhatsApp** (o sandbox não dispara; 19.39).
   **Na homologação (ASA7), provar também:** a recusa do cartão **pelo banco emissor**
   no cartão parcelado (o sandbox só recusa por dado inválido ou cartão vencido; 19.19.7
   item 4): o paciente tenta de novo no mesmo link, sem parcelamento novo.
