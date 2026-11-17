@@ -177,6 +177,19 @@ export async function estornarParcelamento(input: { blockId: string; reason: str
   if (error) return { ok: false, error: mensagemDoEstorno(error.message) };
   const chk = (Array.isArray(data) ? data[0] : data) as { account_id: string; asaas_installment_id: string; charge_ids: string[] } | null;
   if (!chk) return { ok: false, error: "Parcelamento não encontrado." };
+  // 4020a (cuidado 1): o estorno do parcelamento inteiro também passa pela confirmação
+  // reforçada (o pedido nasce em refund_requests; acima do limite, o Gerente ou o franqueado confirma).
+  const { data: pedido, error: ep } = await supabase.rpc("refund_request_create", { p: { block_id: input.blockId, amount_cents: null, reason: input.reason } });
+  if (!ep && pedido) {
+    const p = pedido as { id: string; needs_confirm: boolean };
+    await logAudit({ action: "update", entityType: "charge_block", entityId: input.blockId, clinicId, details: { refund: true, reason: input.reason, request: p.id } });
+    revalidatePath("/comercial", "layout");
+    if (p.needs_confirm) return { ok: true };
+    const { enviarPedidoDeEstorno } = await import("@/lib/asaas/estorno-parcial");
+    const e = await enviarPedidoDeEstorno(p.id, session.userId);
+    return e.ok ? { ok: true } : { ok: false, error: e.error };
+  }
+  if (ep && !/does not exist|schema cache/i.test(ep.message)) return { ok: false, error: mensagemDoEstorno(ep.message) };
   const r = await estornarParcelamentoNoAsaas({
     accountId: chk.account_id,
     asaasInstallmentId: chk.asaas_installment_id,

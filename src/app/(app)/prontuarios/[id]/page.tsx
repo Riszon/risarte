@@ -70,6 +70,7 @@ import { AvisosDeCobranca } from "./avisos-de-cobranca";
 import { carregarContasDaUnidade } from "../../financeiro/contas-da-unidade";
 import { CancelPlanCard } from "./cancel-plan-card";
 import { DistratoDaVenda } from "@/components/commercial/distrato-da-venda";
+import { PedidosDeEstorno } from "@/components/financeiro/pedidos-de-estorno";
 import { loadClientReceivables } from "./receivables-loader";
 import { viewInstallment } from "@/lib/finance/receivables";
 import { corteDoAtraso, parcelaEmAtraso, selosDeAtraso } from "@/lib/finance/selo-atraso";
@@ -3916,6 +3917,7 @@ export default async function ClientDetailPage(
             alertCount={lateInstallmentCount}
           >
             <AvisosDeCobranca clientId={client.id} />
+            <PedidosDeEstorno clientId={client.id} />
             {/* 4020 (19.35.3): o pedido de distrato de cada contrato fechado, onde a
                 Recepção trabalha (ela não tem a aba Plano). O Gerente abre o
                 distrato do contrato pelo "Cancelar tratamento", na aba Plano. */}

@@ -128,3 +128,12 @@ export async function salvarQuemPedeEstorno(clinicId: string, gerenteTambem: boo
   revalidatePath("/central", "layout");
   return { ok: true };
 }
+
+/** 4020a (cuidado 1): o limite da confirmação do estorno de cartão (rede). */
+export async function salvarLimiteDoEstornoDeCartao(cents: number | null): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("card_refund_limit_save", { p_cents: cents });
+  if (error) return { ok: false, error: /NOT_ALLOWED/.test(error.message) ? "Sua função não permite esta ação." : "Não foi possível gravar." };
+  revalidatePath("/central/rede/taxas");
+  return { ok: true };
+}

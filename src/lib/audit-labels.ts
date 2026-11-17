@@ -94,6 +94,9 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   franchise_billing_settings: "Configuração da cobrança mensal da rede",
   franchise_billing_unit_settings: "Configuração da cobrança mensal da unidade",
   reconciliation_issue: "Conferência das taxas: divergência ignorada",
+  refund_request: "Pedido de estorno (pedido, confirmação ou cancelamento)",
+  card_refund_limit: "Limite da confirmação do estorno de cartão",
+  installment_refund_reopen: "Parcela estornada reaberta",
   gateway_charges_panel: "Planilha do Painel de cobranças",
   franchise_payouts: "Planilha dos Repasses da franquia",
   // 4011 (ASA4, entrega 1): meio por parcela, dinheiro e permuta.

@@ -150,6 +150,9 @@ export async function pedirDevolucaoDoDistrato(input: {
   reason: string;
   termPath: string;
   termName: string;
+  /** 4020a: o estorno pelo Asaas primeiro (numa cobrança paga), ou o Pix da conta da unidade. */
+  method?: "estorno_asaas" | "pix_unidade";
+  chargeId?: string | null;
 }): Promise<Resultado> {
   await getSessionContext();
   const supabase = await createClient();
@@ -160,6 +163,8 @@ export async function pedirDevolucaoDoDistrato(input: {
       reason: input.reason,
       term_path: input.termPath,
       term_name: input.termName,
+      method: input.method ?? "pix_unidade",
+      charge_id: input.chargeId ?? null,
     },
   });
   if (error) return { ok: false, error: mensagem(error.message) };
@@ -169,9 +174,20 @@ export async function pedirDevolucaoDoDistrato(input: {
 
 export async function decidirDevolucaoDoDistrato(input: { id: string; approve: boolean; note: string }): Promise<Resultado> {
   await getSessionContext();
+  const session = await getSessionContext();
   const supabase = await createClient();
-  const { error } = await supabase.rpc("distrato_refund_decide", { p_id: input.id, p_approve: input.approve, p_note: input.note });
+  const { data, error } = await supabase.rpc("distrato_refund_decide", { p_id: input.id, p_approve: input.approve, p_note: input.note });
   if (error) return { ok: false, error: mensagem(error.message) };
+  // 4020a: a devolução pelo estorno do Asaas vai agora (a autorização do Financeiro é a confirmação).
+  if (input.approve && data) {
+    const { data: dr } = await supabase.from("distrato_refunds").select("method").eq("id", input.id).maybeSingle();
+    if (dr?.method === "estorno_asaas") {
+      const { enviarPedidoDeEstorno } = await import("@/lib/asaas/estorno-parcial");
+      const e = await enviarPedidoDeEstorno(String(data), session.userId);
+      revalidatePath("/financeiro/cobrancas-automaticas");
+      if (!e.ok) return { ok: false, error: `Autorizada, mas o estorno não saiu: ${e.error}` };
+    }
+  }
   revalidatePath("/financeiro/cobrancas-automaticas");
   return { ok: true };
 }
@@ -269,4 +285,28 @@ export async function situacaoDoDistratoDaVenda(input: {
   });
   if (error) return { ok: false, error: mensagem(error.message) };
   return { ok: true, s: data as SituacaoDoDistratoDaVenda };
+}
+
+/** 4020a: as cobranças pagas pelo Asaas (Pix ou cartão à vista) do cliente do distrato — o estorno vem primeiro. */
+export async function cobrancasParaEstornoDoDistrato(cancellationId: string): Promise<{ id: string; valor: number; pagaEm: string | null; meio: string }[]> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data: pc } = await supabase.from("plan_cancellations").select("client_id").eq("id", cancellationId).maybeSingle();
+  if (!pc?.client_id) return [];
+  const { data } = await supabase
+    .from("charges")
+    .select("id, paid_cents, paid_on, billing_type")
+    .eq("client_id", pc.client_id)
+    .in("status", ["paga", "liquidada"])
+    .in("billing_type", ["PIX", "CREDIT_CARD"])
+    .is("installment_block", null)
+    .eq("is_external", false)
+    .not("asaas_payment_id", "is", null)
+    .order("paid_on", { ascending: false });
+  return ((data ?? []) as { id: string; paid_cents: number | null; paid_on: string | null; billing_type: string }[]).map((c) => ({
+    id: c.id,
+    valor: Number(c.paid_cents ?? 0),
+    pagaEm: c.paid_on,
+    meio: c.billing_type === "PIX" ? "Pix" : "Cartão",
+  }));
 }

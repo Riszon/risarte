@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { LimiteDoEstornoDeCartao } from "@/components/financeiro/limite-do-estorno-de-cartao";
 import { CobrancaMensalConfig, type ConfigLida } from "./cobranca-mensal-config";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,6 +81,9 @@ export async function AbaTaxasDaRede({
   const semMigracao = !!error && /does not exist|schema cache/i.test(error.message);
   if (error && !semMigracao) console.error("gateway split read failed:", error.message);
 
+  // 4020a: o limite da confirmação do estorno de cartão (só quem configura a rede lê).
+  const limite = podeEditar ? await supabase.rpc("card_refund_limit_read") : { data: null };
+  const limiteDoCartao = (limite.data as { cents?: number | null } | null)?.cents ?? null;
   const lido = (data ?? null) as {
     settings: {
       tolerance_cents: number;
@@ -130,6 +134,9 @@ export async function AbaTaxasDaRede({
               podeEditar={podeEditar}
               inicialCentavos={lido.settings?.min_balance_cents == null ? null : Number(lido.settings.min_balance_cents)}
             />
+            <div className="pt-4">
+              <LimiteDoEstornoDeCartao podeEditar={podeEditar} inicialCentavos={limiteDoCartao} />
+            </div>
           </CardContent>
         </Card>
       )}

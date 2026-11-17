@@ -1,6 +1,7 @@
 import { origemDaRotina } from "@/lib/cron-auth";
 import { comecarRodada, terminarRodada } from "@/lib/asaas/rodadas";
 import { conferirEstornos, conferirSaldosDoSplit } from "@/lib/asaas/split-servidor";
+import { conferirReguaDosEstornos } from "@/lib/asaas/estorno-parcial";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { todayInBrazil } from "@/lib/dates";
 
@@ -35,10 +36,15 @@ export async function GET(request: Request) {
     console.error("gateway refunds routine failed:", e instanceof Error ? e.message : e);
     return null;
   });
+  // 4020a (19.37, item 3): a régua dos pedidos pendentes e o saldo que voltou.
+  const regua = await conferirReguaDosEstornos().catch((e) => {
+    console.error("refund regua failed:", e instanceof Error ? e.message : e);
+    return null;
+  });
   const saldos = await conferirSaldosDoSplit(todayInBrazil()).catch((e) => {
     console.error("gateway split balance routine failed:", e instanceof Error ? e.message : e);
     return 0;
   });
   await terminarRodada(rodada, { ok: !fila.error, criadas: Number(fila.data ?? 0), detalhes: { avisosDeSaldo: saldos } });
-  return Response.json({ ok: true, naFila: fila.data ?? 0, estornos, avisosDeSaldo: saldos });
+  return Response.json({ ok: true, naFila: fila.data ?? 0, estornos, regua, avisosDeSaldo: saldos });
 }

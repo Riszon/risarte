@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { EstornoComValor } from "@/components/financeiro/estorno-com-valor";
 import { toast } from "sonner";
 import { CreditCard, Copy, ExternalLink, MessageCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -162,6 +163,8 @@ export function ParcelamentoDaVendaBloco({
             Estornar parcelamento
           </Button>
         )}
+        {/* 4020a: o estorno de PARTE do parcelamento (as inteiras primeiro, a parte da seguinte). */}
+        {p.pode_estornar && p.estornar_permitido && modo === null && p.block && <EstornoComValor clientId="" blockId={p.block} />}
       </div>
 
       <DevolucaoDoParcelamento p={p} aoMudar={aoMudar} />

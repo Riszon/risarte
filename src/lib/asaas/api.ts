@@ -473,7 +473,38 @@ export function updatePaymentSplit(cred: AsaasCredential, id: string, splits: Sp
 }
 
 /** Um estorno como o Asaas devolve na cobrança. */
-export type AsaasRefund = { status?: string | null; value?: number | null; dateCreated?: string | null };
+export type AsaasRefund = {
+  status?: string | null;
+  value?: number | null;
+  dateCreated?: string | null;
+  /** 4020a: a cobrança da parcela, no estorno do parcelamento. */
+  paymentId?: string | null;
+  transactionReceiptUrl?: string | null;
+};
+
+/**
+ * 4020a: o estorno PARCIAL (com o valor) de uma cobrança Pix ou cartão
+ * (`POST /v3/payments/{id}/refund` com `value`). O Pix pode ficar esperando a
+ * autorização do titular; o cartão sai na hora ou em processamento.
+ */
+export function refundPaymentValue(cred: AsaasCredential, id: string, valueReais: number, description: string, opts?: Opts): Promise<AsaasPayment & { refunds?: AsaasRefund[] | null }> {
+  return asaasRequest<AsaasPayment & { refunds?: AsaasRefund[] | null }>(
+    { ...cred, method: "POST", path: "/payments/{id}/refund", params: { id }, body: { value: valueReais, description: description.slice(0, 200) } },
+    opts
+  );
+}
+
+/**
+ * 4020a: o estorno PARCIAL do parcelamento (`POST /v3/installments/{id}/refund`
+ * com `value`). Provado no sandbox em 17/11/2026: o Asaas reparte — as parcelas
+ * inteiras primeiro, e a parte da seguinte.
+ */
+export function refundInstallmentValue(cred: AsaasCredential, id: string, valueReais: number, description: string, opts?: Opts): Promise<{ status?: string | null; refunds?: AsaasRefund[] | null }> {
+  return asaasRequest<{ status?: string | null; refunds?: AsaasRefund[] | null }>(
+    { ...cred, method: "POST", path: "/installments/{id}/refund", params: { id }, body: { value: valueReais, description: description.slice(0, 200) } },
+    opts
+  );
+}
 
 /** `POST /v3/payments/{id}/refund` — estorno TOTAL de Pix ou cartão. Pode ficar aguardando a autorização do titular. */
 export function refundPayment(cred: AsaasCredential, id: string, description: string, opts?: Opts): Promise<AsaasPayment & { refunds?: AsaasRefund[] | null }> {

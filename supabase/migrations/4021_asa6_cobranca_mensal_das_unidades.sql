@@ -1732,7 +1732,9 @@ begin
   end if;
   v_link := '/prontuarios/' || c.client_id::text;
   -- 4021 (ASA6): a cobrança mensal da rede tem o ramo dela.
-  if c.source_type = 'franchise_monthly' then return public._franchise_monthly_event(c.id, e.event, p); end if;
+  if c.source_type = 'franchise_monthly' and to_regprocedure('public._franchise_monthly_event(uuid,text,jsonb)') is not null then
+    return public._franchise_monthly_event(c.id, e.event, p);
+  end if;
 
   if e.event in ('PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_DUNNING_RECEIVED') then
     return public._gateway_on_paid(c.id, case when e.event = 'PAYMENT_CONFIRMED' then 'PAYMENT_CONFIRMED' else 'PAYMENT_RECEIVED' end, p);
@@ -1822,6 +1824,12 @@ begin
       'Um pagamento pelo Asaas foi estornado. A baixa foi desfeita e a parcela voltou a ficar em aberto; a taxa da rede continua devida (pode ser dispensada pelo Financeiro).',
       v_link);
     return 'estornada';
+
+  elsif e.event = 'PAYMENT_PARTIALLY_REFUNDED'
+        and to_regprocedure('public._charge_refund_partial_event(uuid,jsonb)') is not null
+        and exists (select 1 from public.charge_refunds f where f.charge_id = c.id and f.status = 'pedido' and f.amount_cents is not null) then
+    -- 4020a: o estorno parcial pedido pelo riSZon (o pedido fecha, com o comprovante).
+    return public._charge_refund_partial_event(c.id, p);
 
   elsif e.event in ('PAYMENT_PARTIALLY_REFUNDED', 'PAYMENT_RECEIVED_IN_CASH_UNDONE') then
     perform public._gateway_notify(c.gateway_account_id, lower(e.event), e.asaas_event_id, c.clinic_id, true, true, true,

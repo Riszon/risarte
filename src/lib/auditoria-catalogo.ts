@@ -149,6 +149,7 @@ export const TABELAS: Record<string, string> = {
   "public.franchise_monthly_notices": "Avisos da cobrança mensal da rede",
   "public.reconciliation_issues": "Conferência das taxas — divergências",
   "public.reconciliation_runs": "Conferência das taxas — rodadas da rotina",
+  "public.refund_requests": "Pedidos de estorno (o valor, a confirmação e a repartição)",
   "public.charge_splits": "Split de cobrança (o que foi enviado e liquidado)",
   "public.charge_split_updates": "Split de cobrança atualizado pela fila",
   "public.charge_refunds": "Pedido de estorno",

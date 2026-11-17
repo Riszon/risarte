@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { EstornoComValor } from "@/components/financeiro/estorno-com-valor";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Copy, MessageCircle, Undo2 } from "lucide-react";
@@ -148,6 +149,7 @@ export function SplitDaCobranca({
           <Button size="sm" variant="outline" className="h-7 text-xs" disabled={boletoBloqueado} onClick={() => setAbrir(true)}>
             <Undo2 className="mr-1 size-3" /> Pedir estorno
           </Button>
+          {!boleto && <EstornoComValor clientId={clientId} chargeId={chargeId} />}
           {boleto && !dados.boleto?.termoDeclarado && (
             <span className="text-muted-foreground">
               O estorno de boleto pede o termo de privacidade declarado pelo Admin Master. Até lá, faça no painel do Asaas.
