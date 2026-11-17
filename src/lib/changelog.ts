@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.471.1",
+    data: "2026-11-17",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4018b, só o banco).
+    migracao: null,
+    titulo: "Taxas da rede: o acordo vai para a unidade certa; a conta cancelada não volta",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Taxas da rede: entrando pela franqueadora, o acordo de uma unidade era gravado na clínica da franqueadora, embora a caixa mostrasse a unidade. Agora a tela abre e grava na unidade que a caixa mostra.",
+        papeis: ["finance_franchisor"],
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A conta de taxa da rede cancelada à mão não volta mais sozinha (nem pelo \"Gerar taxas fixas do mês\", nem por um recebimento do mês). Só a conta que a própria apuração cancelou por falta de valor é refeita.",
+        papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.471.0",
     data: "2026-11-17",
     migracao: "0421",
