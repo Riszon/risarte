@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.462.1",
+    data: "2026-11-17",
+    // Sem migração do CORE: as desta entrega são da integração Asaas (4021 e 4021a, ajustadas).
+    migracao: null,
+    titulo: "Correções da cobrança mensal e de Taxas da rede",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Taxas da rede: entrando pela franqueadora, o acordo de uma unidade era gravado na clínica da franqueadora, embora a caixa mostrasse a unidade. Agora a tela abre e grava na unidade que a caixa mostra.",
+        papeis: ["finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Um vencimento só: com a cobrança mensal ligada na unidade, as taxas vencem no dia da cobrança mensal. A conta de taxa cancelada à mão não volta sozinha (nem pelo \"Gerar taxas fixas do mês\"). A Conferência das taxas mostra a taxa fixa prevista do mês que ainda não fechou.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+    ],
+  },
+  {
     versao: "0.462.0",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4021a, ASAAS_MIGRATION).

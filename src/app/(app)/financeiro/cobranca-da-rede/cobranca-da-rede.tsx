@@ -61,9 +61,9 @@ export function CobrancaDaRede({
 }) {
   return (
     <div className="space-y-5">
-      {daRede && <AbrirPrevia unidades={unidades} />}
+      {daRede && <AbrirPrevia unidades={unidades} inicial={saldo?.clinicId ?? lido?.clinic.id ?? null} />}
       {lido && <Demonstrativo lido={lido} />}
-      {saldo && <SaldoAnteriorCard saldo={saldo} />}
+      {saldo && <SaldoAnteriorCard saldo={saldo} falta={unidades.find((u) => u.id === saldo.clinicId)?.falta ?? []} nome={unidades.find((u) => u.id === saldo.clinicId)?.nome ?? null} />}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold">Meses</h2>
         {lista.length === 0 ? (
@@ -114,10 +114,10 @@ export function CobrancaDaRede({
   );
 }
 
-function AbrirPrevia({ unidades }: { unidades: { id: string; nome: string; falta: string[] }[] }) {
+function AbrirPrevia({ unidades, inicial }: { unidades: { id: string; nome: string; falta: string[] }[]; inicial: string | null }) {
   const router = useRouter();
   const [pendente, start] = useTransition();
-  const [unidade, setUnidade] = useState(unidades[0]?.id ?? "");
+  const [unidade, setUnidade] = useState(inicial && unidades.some((u) => u.id === inicial) ? inicial : (unidades[0]?.id ?? ""));
   const anterior = (() => {
     const d = new Date();
     d.setDate(1);
@@ -134,7 +134,14 @@ function AbrirPrevia({ unidades }: { unidades: { id: string; nome: string; falta
         para abrir à mão.
       </p>
       <div className="flex flex-wrap items-end gap-2">
-        <select className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm" value={unidade} onChange={(e) => setUnidade(e.target.value)}>
+        <select
+          className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm"
+          value={unidade}
+          onChange={(e) => {
+            setUnidade(e.target.value);
+            router.push(`${CAMINHO}?saldo=${e.target.value}`);
+          }}
+        >
           {unidades.map((u) => (
             <option key={u.id} value={u.id}>
               {u.nome}
@@ -480,7 +487,7 @@ function Linha({
   );
 }
 
-function SaldoAnteriorCard({ saldo }: { saldo: SaldoAnterior }) {
+function SaldoAnteriorCard({ saldo, falta, nome }: { saldo: SaldoAnterior; falta: string[]; nome: string | null }) {
   const router = useRouter();
   const [pendente, start] = useTransition();
   const [decisao, setDecisao] = useState<"incluir" | "parcelar" | "dispensar">("incluir");
@@ -489,7 +496,10 @@ function SaldoAnteriorCard({ saldo }: { saldo: SaldoAnterior }) {
   const total = saldo.lines.reduce((s, l) => s + Number(l.open_cents), 0);
   return (
     <section className="space-y-3 rounded-lg border p-4">
-      <h2 className="text-sm font-semibold">Saldo anterior (antes do 1º mês da cobrança mensal{saldo.first_period ? `, ${mesAno(saldo.first_period)}` : ""})</h2>
+      <h2 className="text-sm font-semibold">
+        Saldo anterior{nome ? ` de ${nome}` : ""} (antes do 1º mês da cobrança mensal{saldo.first_period ? `, ${mesAno(saldo.first_period)}` : ""})
+      </h2>
+      {falta.length > 0 && <p className="text-xs text-red-700">Falta configurar nesta unidade: {falta.join(", ")}.</p>}
       <p className="text-xs text-muted-foreground">
         As contas de taxa da rede em aberto antes da cobrança mensal. A primeira cobrança não as inclui sozinha: decida aqui,
         por unidade, com o motivo.

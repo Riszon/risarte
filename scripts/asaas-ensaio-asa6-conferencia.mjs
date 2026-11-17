@@ -77,8 +77,10 @@ try {
   await c.query("update public.franchise_monthly_batches set status = 'cancelada' where clinic_id = any($1)", [[U, CAMBE]]);
   await c.query("update public.split_charges set reversed = true where clinic_id = $1 and period_month < '2026-11-01'", [U]);
   await c.query("update public.fiscal_periods set status = 'open' where clinic_id = any($1) and year = 2026 and month between 8 and 10", [[U, franq, HQ]]);
-  await c.query("update public.payables set status = 'cancelada' where clinic_id = $1 and network_fee is not null and fee_period between '2026-08-01' and '2026-10-01'", [U]);
+  await c.query("update public.payables set status = 'cancelada', cancel_reason = 'Sem valor apurado no mês' where clinic_id = $1 and network_fee is not null and fee_period between '2026-08-01' and '2026-10-01'", [U]);
+  await c.query("delete from public.franchise_billing_unit_settings where clinic_id <> $1", [U]);
   await c.query("delete from public.reconciliation_issues");
+  await c.query("delete from public.network_fees where kind = 'fixed' and clinic_id is not null");
   await c.query("delete from public.reconciliation_runs");
   await c.query("update public.network_fees set amount_cents = case fee when 'sistema' then 30000 else 50000 end where clinic_id is null and fee in ('sistema', 'sdr')");
   await pessoa(P.financeiro, "select public.franchise_billing_settings_save($1::jsonb)", [JSON.stringify({ fine_percent: "2", interest_percent_month: "1", due_day: "10", period_kind: "mes_calendario", preview_days: "5", partial_month_rule: "cheio", example_values: true })]);
@@ -133,7 +135,15 @@ try {
   }
   const aSet = (await um("select public._franchise_month_account($1, $2) j", [U, SET])).j;
   conf("setembro: o retido e o a reter aparecem na conta", n(aSet.retido) === 9000 && n(aSet.a_reter) === 12000);
-  conf("sem divergência nova, nenhum resumo ao Financeiro", !(await um("select 1 x from public.notifications where title = 'Conferência das taxas: divergência nova'")));
+  conf("sem divergência nova, nenhum resumo ao Financeiro", !(await um("select 1 x from public.notifications where title = 'Conferência das taxas: divergência nova' and created_at = now()")));
+
+  // A taxa fixa do mês corrente, antes da conta a pagar nascer: aparece como PREVISTA.
+  const nov = "2026-11-01";
+  await c.query("delete from public.payables where clinic_id = $1 and network_fee in ('sistema', 'sdr') and fee_period = $2 and paid_amount_cents = 0 and not exists (select 1 from public.franchise_monthly_items i where i.payable_id = payables.id)", [U, nov]).catch(() => {});
+  const prev = await todos("select * from public._franchise_month_lines($1, $2) where ref_type = 'previsto'", [U, nov]);
+  const aNov = (await um("select public._franchise_month_account($1, $2) j", [U, nov])).j;
+  conf(`novembro: as fixas entram como previstas no devido, e a conta fecha (${prev.length} prevista(s), devido ${aNov.devido})`,
+    prev.length === 2 && n(aNov.diferenca) === 0 && prev.every((x) => n(x.devido) === n(x.ainda) && n(x.devido) > 0));
 
   // --- 2) cada defeito plantado gera a divergência certa ----------------------------
   const tem = async (kind, ref) => !!(await um("select 1 x from public.reconciliation_issues where status = 'aberta' and kind = $1 and ($2::uuid is null or ref_id = $2)", [kind, ref ?? null]));

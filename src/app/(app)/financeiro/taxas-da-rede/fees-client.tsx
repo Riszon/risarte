@@ -141,7 +141,7 @@ function RuleRow({
               : formatBRL(rule.amountCents)}
           </span>
           <span className="w-24 text-right text-xs text-muted-foreground">
-            vence dia {rule.dueDay}
+            vence dia {rule.dueDay}*
           </span>
           {canEdit && (
             <>
@@ -194,7 +194,7 @@ function RuleRow({
           </label>
         )}
         <label className="block">
-          <Label className="text-[11px]">Vence dia</Label>
+          <Label className="text-[11px]">Vence dia (sem a cobrança mensal)</Label>
           <Input
             className="h-8 w-20"
             value={dueDay}
@@ -777,6 +777,10 @@ export function NetworkFeesView({
             percentuais sobre o valor recebido. Os números abaixo{" "}
             <strong>não incluem campanha</strong> — a campanha aparece na faixa
             verde acima e no apurado do mês.
+          </p>
+          <p className="pb-1 text-[11px] text-muted-foreground">
+            <strong>Vencimento:</strong> com a cobrança mensal ligada na unidade, vale o dia da cobrança mensal (Central ›
+            Taxas da franquia, quadro &ldquo;Cobrança mensal às unidades&rdquo;). O &ldquo;vence dia&rdquo; de cada taxa vale só sem ela.
           </p>
           {unit.map((r) => (
             <RuleRow

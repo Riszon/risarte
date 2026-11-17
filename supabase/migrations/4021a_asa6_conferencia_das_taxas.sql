@@ -58,6 +58,35 @@ alter table public.reconciliation_runs enable row level security;
 -- -----------------------------------------------------------------------------
 -- 1) A CONTA DO MÊS, linha a linha (cada linha de taxa e cada taxa fixa)
 -- -----------------------------------------------------------------------------
+-- A taxa fixa PREVISTA do mês que ainda não tem a conta a pagar (ela nasce no
+-- dia 1º, ou na prévia): o valor da Central, com o mês incompleto e a dispensa.
+create or replace function public._franchise_fixed_expected(p_clinic_id uuid, p_fee text, p_period date)
+returns bigint language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_cfg record;
+  v_total bigint;
+  v_start date; v_end date; v_rule text; v_from date; v_to date; v_days integer; v_dim integer;
+begin
+  select * into v_cfg from public.network_fee_for(p_clinic_id, p_fee, p_period);
+  if v_cfg is null or not v_cfg.active or v_cfg.amount_cents <= 0 then return 0; end if;
+  if exists (select 1 from public.network_fee_fixed_waivers w where w.clinic_id = p_clinic_id and w.fee = p_fee and w.period = p_period) then return 0; end if;
+  v_total := v_cfg.amount_cents;
+  select s.started_on, s.ended_on, n.partial_month_rule into v_start, v_end, v_rule
+    from public.franchise_billing_unit_settings s cross join public.franchise_billing_settings n
+   where s.clinic_id = p_clinic_id and n.id;
+  if v_start is not null or v_end is not null then
+    v_from := greatest(p_period, coalesce(v_start, p_period));
+    v_to := least((p_period + interval '1 month' - interval '1 day')::date, coalesce(v_end, (p_period + interval '1 month' - interval '1 day')::date));
+    v_days := v_to - v_from + 1;
+    v_dim := (p_period + interval '1 month')::date - p_period;
+    if v_days <= 0 then return 0;
+    elsif v_days < v_dim and v_rule = 'proporcional' then v_total := round(v_total * v_days::numeric / v_dim)::bigint;
+    end if;
+  end if;
+  return v_total;
+end;
+$$;
+
 create or replace function public._franchise_month_lines(p_clinic_id uuid, p_period date)
 returns table (ref_type text, ref_id uuid, fee text, devido bigint, retido bigint, a_reter bigint,
                dispensado bigint, faturado bigint, ainda bigint)
@@ -84,7 +113,16 @@ language sql stable security definer set search_path = '' as $$
     from public.payables p
     join public.network_fee_types t on t.key = p.network_fee and t.kind = 'fixed'
     left join public.network_fee_fixed_waivers w on w.clinic_id = p.clinic_id and w.fee = p.network_fee and w.period = p.fee_period
-   where p.clinic_id = p_clinic_id and p.fee_period = p_period;
+   where p.clinic_id = p_clinic_id and p.fee_period = p_period
+  union all
+  -- A taxa fixa PREVISTA (sem a conta a pagar ainda): devida e "ainda a cobrar".
+  select 'previsto', null::uuid, t.key,
+         public._franchise_fixed_expected(p_clinic_id, t.key, p_period), 0, 0, 0, 0,
+         public._franchise_fixed_expected(p_clinic_id, t.key, p_period)
+    from public.network_fee_types t
+   where t.kind = 'fixed' and t.active
+     and not exists (select 1 from public.payables p where p.clinic_id = p_clinic_id and p.network_fee = t.key and p.fee_period = p_period)
+     and public._franchise_fixed_expected(p_clinic_id, t.key, p_period) > 0;
 $$;
 
 -- O faturado do mês contado À PARTE (todas as linhas de cobrança mensal do mês,
@@ -350,6 +388,7 @@ $$;
 -- -----------------------------------------------------------------------------
 -- 4) PERMISSÕES, AUDITORIA E CONFERÊNCIA
 -- -----------------------------------------------------------------------------
+revoke execute on function public._franchise_fixed_expected(uuid, text, date) from public, anon, authenticated;
 revoke execute on function public._franchise_month_lines(uuid, date) from public, anon, authenticated;
 revoke execute on function public._franchise_month_invoiced(uuid, date) from public, anon, authenticated;
 revoke execute on function public._franchise_month_account(uuid, date) from public, anon, authenticated;

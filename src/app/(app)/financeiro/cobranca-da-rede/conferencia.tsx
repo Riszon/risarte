@@ -126,7 +126,8 @@ export function ConferenciaDasTaxas({ lido, unidadeAberta }: { lido: Conferencia
         <h2 className="text-sm font-semibold">A conta de {mesAno(lido.period)}</h2>
         <p className="text-xs text-muted-foreground">
           Devido = retido pelo split + a reter + faturado + dispensado + ainda a cobrar. A diferença tem de ser R$ 0,00. A
-          conferência parte do 1º mês da cobrança mensal de cada unidade.
+          conferência parte do 1º mês da cobrança mensal de cada unidade. No mês que ainda não fechou, a taxa fixa entra como
+          prevista (o valor da Central) até a conta a pagar nascer, no dia 1º ou na prévia.
         </p>
         {lido.units.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma unidade com a cobrança mensal ligada.</p>
@@ -187,9 +188,9 @@ export function ConferenciaDasTaxas({ lido, unidadeAberta }: { lido: Conferencia
               </thead>
               <tbody className="divide-y">
                 {lido.lines.map((l) => (
-                  <tr key={l.ref_id} className={cn(Number(l.ainda) < 0 && "bg-red-50 text-red-900 dark:bg-red-500/10 dark:text-red-200")}>
+                  <tr key={l.ref_id ?? `${l.ref_type}-${l.fee}`} className={cn(Number(l.ainda) < 0 && "bg-red-50 text-red-900 dark:bg-red-500/10 dark:text-red-200")}>
                     <td className="px-2 py-1">
-                      {l.fee_label} {l.ref_type === "payable" ? "(fixa)" : ""}
+                      {l.fee_label} {l.ref_type === "payable" ? "(fixa)" : l.ref_type === "previsto" ? "(fixa, prevista)" : ""}
                     </td>
                     {[l.devido, l.retido, l.a_reter, l.dispensado, l.faturado, l.ainda].map((v, k) => (
                       <td key={k} className="px-2 py-1 text-right tabular-nums">

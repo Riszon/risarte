@@ -125,6 +125,11 @@ try {
 
   // A unidade sem linhas próprias antigas (as de novembro não entram: o mês está aberto).
   await c.query("update public.split_charges set reversed = true where clinic_id = any($1) and period_month < $2", [[U, CAMBE, TESTE], "2026-11-01"]);
+  // O ensaio parte da configuração em branco (o treino pode ter os valores de exemplo do dono).
+  await c.query("update public.franchise_billing_settings set fine_percent = null, interest_percent_month = null, due_day = null, period_kind = null, preview_days = null, partial_month_rule = null, revenue_recognition = null, example_values = false where id");
+  await c.query("delete from public.franchise_billing_unit_settings");
+  await c.query("delete from public.network_fees where kind = 'fixed' and clinic_id is not null");
+  await c.query("update public.network_fees set amount_cents = 0 where kind = 'fixed' and clinic_id is null");
   // As cobranças mensais que a prova do sandbox deixou no treino (exemplo) saem do caminho.
   await c.query("update public.franchise_monthly_batches set status = 'cancelada' where clinic_id = any($1)", [[U, CAMBE, TESTE]]);
   // Os meses do ensaio começam abertos (o treino tem setembro e outubro fechados);
@@ -403,6 +408,17 @@ try {
   // --- 13) a dispensa do saldo anterior ------------------------------------------
   const pbT = await um("select total_cents from public.franchise_prior_balance where clinic_id = $1", [U]);
   conf(`a fotografia do saldo anterior guarda o total (${pbT.total_cents})`, n(pbT.total_cents) === T);
+
+  // --- 13b) a conta cancelada à mão não volta sozinha; um vencimento só ------------
+  const nov = "2026-11-01";
+  await c.query("select public.refresh_network_fee_payable($1, 'sistema', $2)", [U, nov]);
+  const pn = await um("select id, due_date from public.payables where clinic_id = $1 and network_fee = 'sistema' and fee_period = $2", [U, nov]);
+  conf(`com a cobrança mensal ligada, a conta de taxa vence no dia da cobrança mensal (dia 10: ${iso(pn?.due_date)})`, iso(pn?.due_date) === "2026-12-10");
+  await c.query("update public.payables set status = 'cancelada', cancel_reason = 'Cancelada a pedido do dono (teste)' where id = $1", [pn.id]);
+  await c.query("select public.refresh_network_fee_payable($1, 'sistema', $2)", [U, nov]);
+  await c.query("select public.charge_fixed_network_fees(2026, 11)");
+  conf("a conta cancelada à mão não volta (nem pelo \"Gerar taxas fixas do mês\")", (await um("select status from public.payables where id = $1", [pn.id])).status === "cancelada"
+    && n((await um("select count(*) n from public.payables where clinic_id = $1 and network_fee = 'sistema' and fee_period = $2", [U, nov])).n) === 1);
 
   // --- 14) nenhuma regra de acesso chama função fechada --------------------------
   const fechadas = await todos(`

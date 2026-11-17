@@ -1541,7 +1541,7 @@ declare
   v_due date;
   v_franchisor uuid;
   v_label text := public.network_fee_label(p_fee);
-  v_start date; v_end date; v_rule text; v_from date; v_to date; v_days integer; v_dim integer;
+  v_start date; v_end date; v_rule text; v_mdue integer; v_from date; v_to date; v_days integer; v_dim integer;
 begin
   select * into v_cfg from public.network_fee_for(p_clinic_id, p_fee, p_period);
   if v_cfg is null then return; end if;
@@ -1583,9 +1583,27 @@ begin
   v_due := (p_period + interval '1 month')::date
            + (coalesce(v_cfg.due_day, 10) - 1);
 
+  -- 4021: com a cobrança mensal ligada na unidade (o mês a partir do 1º), vale o
+  -- vencimento DELA, não o dia de cada taxa (um só vencimento na tela).
+  select coalesce(s.due_day, n.due_day) into v_mdue
+    from public.franchise_billing_unit_settings s cross join public.franchise_billing_settings n
+   where s.clinic_id = p_clinic_id and n.id and s.monthly_from is not null and s.monthly_from <= p_period;
+  if v_mdue is not null then
+    v_due := make_date(extract(year from p_period + interval '1 month')::int,
+                       extract(month from p_period + interval '1 month')::int, v_mdue);
+  end if;
+
   select id into v_payable from public.payables
    where clinic_id = p_clinic_id and network_fee = p_fee
      and fee_period = p_period;
+
+  -- 4021: a conta cancelada À MÃO (por quem decide, com o motivo) não volta sozinha.
+  -- Só a cancelada pela própria apuração ("Sem valor apurado no mês") é refeita.
+  if v_payable is not null and exists (
+       select 1 from public.payables x where x.id = v_payable and x.status = 'cancelada'
+          and coalesce(x.cancel_reason, '') <> 'Sem valor apurado no mês') then
+    return;
+  end if;
 
   if v_total <= 0 then
     if v_payable is not null then
@@ -1835,6 +1853,13 @@ AS $function$
      and gc.cpf_cnpj = public.cpf_digits(coalesce(g.cpf, k.cpf, u.cnpj))
    where c.id = p_charge_id;
 $function$;
+
+-- Os pagamentos de cobrança mensal feitos antes da coluna do lote: ligados ao lote pago.
+update public.payable_payments pp
+   set franchise_batch_id = b.id
+  from public.franchise_monthly_batches b
+ where pp.franchise_batch_id is null and b.status = 'paga' and pp.clinic_id = b.clinic_id
+   and pp.paid_at = b.paid_on and pp.reference = 'Cobrança mensal da rede ' || to_char(b.period, 'MM/YYYY');
 
 -- -----------------------------------------------------------------------------
 -- 15) PERMISSÕES

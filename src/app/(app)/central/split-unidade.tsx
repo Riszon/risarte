@@ -120,8 +120,8 @@ export function SaldoMinimo({ inicialCentavos, podeEditar }: { inicialCentavos: 
         )}
       </div>
       <span className="block text-xs text-muted-foreground">
-        Estornos devolvem o split desta conta; se ela ficar sem saldo, fica negativa. Abaixo deste valor, o Financeiro é
-        avisado. Em branco = sem aviso (o saldo negativo avisa sempre).
+        O estorno total devolve o split desta conta; sem saldo, o Asaas recusa o estorno. Abaixo deste valor, o
+        Financeiro é avisado. Em branco = sem aviso.
       </span>
     </label>
   );

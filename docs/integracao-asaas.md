@@ -5345,3 +5345,40 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
   | `soma` | 4 falhas |
 
 - **A 4021** continua 103/103.
+
+### 20.18 O teste do dono (17/11/2026, v0.462.0): achados e correções (core 0.462.1)
+
+1. **"Caixa diferente" de −R$ 800,00 em Londrina, 10/2026:**
+   - **Não foi falha da baixa.** A baixa lançou os dois caixas: R$ 800,00 da unidade (`payable_cash`) e R$ 800,00 da franqueadora (`receipt_cash`).
+   - **A causa:** a cobrança de exemplo foi paga antes de existir o vínculo de cada pagamento com o lote (`payable_payments.franchise_batch_id`, criado no ensaio da 4021a). A conferência não achou o vínculo.
+   - **A correção:** a 4021 liga ao lote os pagamentos já feitos (pela unidade, pela referência e pela data). No treino, a divergência fechou sozinha.
+2. **Fixas de Cambé dando "falta o valor":**
+   - **O acordo de Cambé** (R$ 250,00 e R$ 350,00) foi gravado em 13/11 na clínica **da franqueadora**, não em Cambé.
+   - **O defeito** é de Financeiro › Taxas da rede (FIN8.1, também na produção): entrando pela franqueadora, a caixa mostrava a 1ª unidade, mas a tela gravava na clínica ativa.
+   - **Corrigido:** a unidade padrão agora é a mesma que a caixa mostra. No treino, o acordo foi movido para Cambé.
+   - **Consulta só de leitura para a produção:** `docs/asaas/levantamento-acordo-na-franqueadora.sql`.
+3. **As fixas do mês corrente:** elas só ganham a conta a pagar no dia 1º (ou na prévia). Agora a Conferência mostra a taxa fixa **prevista** (o valor da Central) até a conta nascer, e a tela diz isso.
+4. **"Gerar taxas fixas do mês":**
+   - **Ele fica:** não gera em dobro (uma conta por unidade, taxa e mês).
+   - **A correção:** antes, ele reabriria uma conta **cancelada à mão** (como as de outubro e novembro da produção). Agora a conta cancelada à mão não volta sozinha, nem pelo botão, nem pela apuração; só a cancelada pela própria apuração ("Sem valor apurado no mês") é refeita.
+5. **Dois vencimentos:**
+   - **Com a cobrança mensal ligada na unidade** (do 1º mês em diante), a conta de cada taxa vence no dia da cobrança mensal.
+   - **O "vence dia" de cada taxa** vale só sem ela. A tela de Taxas da rede diz isso.
+6. **O aviso da unidade errada:** a caixa de escolha abre na unidade mostrada; o saldo anterior mostra o nome e o que falta **daquela** unidade; trocar a unidade abre o saldo dela.
+7. **O texto do saldo mínimo:** "sem saldo, o Asaas recusa o estorno" (não "fica negativa").
+
+**O teste de papéis:**
+- **Pela API:** `scripts/asaas-teste-papeis-cobranca-mensal.mjs`, 14/14.
+  - O Gerente lê e contesta só a própria unidade, mas não aprova nem decide.
+  - Dentista, Planner, ASB, TSB, SDR e Recepcionista não veem a lista, o demonstrativo, a conferência, as tabelas nem a cobrança, e não contestam.
+- **Pela tela:** no `e2e-publicado/conferencia-4021.spec.ts`.
+
+**O treino preparado para o teste de ponta a ponta,** em Cambé (`scripts/asaas-preparar-teste-cobranca-mensal.mjs`):
+- **O que foi criado:**
+  - um CNPJ de exemplo;
+  - o e-mail `financeiro.cambe@example.com`;
+  - o 1º mês = 10/2026;
+  - o Gerente de teste também Gerente de Cambé;
+  - três recebimentos à mão em 20/10/2026: dinheiro (CBE-00055), maquininha e depósito (CBE-00033).
+- **A prévia de outubro** (conferida num ensaio desfeito): tecnologia R$ 250,00, SDR R$ 350,00 e 12 linhas "a cobrar" com a origem e o paciente. Total R$ 727,28.
+- **O pagamento:** simulado por `scripts/asaas-sandbox-pagar-cobranca-mensal.mjs "Risarte Cambé - Centro" --confirmar`.
