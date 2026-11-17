@@ -20,6 +20,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - Só o contrato; a venda direta segue como estava (só os riscos valem para ela).
 > - Ensaio 25/25 (`scripts/ensaio-fim-do-tratamento-0426.mjs`, provado
 >   quebrando; o termo é marcado sem checklist para medir só a 0426). Não visto na tela.
+> - ✅ **0426 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: as colunas dos riscos e o cancellation_id existem; as 3 portas novas fecham para quem não está logado.
 >
 > ## ⚡ 0.475.0 — VENDA DIRETA V3, VD3-4: ATENDER AGORA (ENCAIXE) E A SALA AO CHAMAR (17/11/2026; migração 0424)
 >
