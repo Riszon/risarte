@@ -400,6 +400,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (fim do tratamento, Etapa 4) — PC Administrador (core 0.474.0, migração 0423; worktree `wt-fim-tratamento`)**
+
+- **O abandono e a lista "Clientes sem próximo passo"** (bloco 0.474.0 no
+  ESTADO). ⚠️ Uma tarefa de abandono aberta por cliente; agendar encerra. ⚠️ A
+  Fase 7 pelo abandono deixa as sessões abertas. ⚠️ Prazos novos em
+  `inactivity_settings` (`abandon_no_schedule_days`, `stalled_treatment_days`):
+  manter `INACTIVITY_KEYS` (`src/lib/sla.ts`) igual.
+
 **17/11/2026 (fim do tratamento, OC-00185) — PC Administrador (core 0.473.0, migração 0422; worktree `wt-fim-tratamento`)**
 
 - **Uma decisão por cliente** (bloco 0.473.0 no ESTADO). ⚠️ `answer_treatment_closure`

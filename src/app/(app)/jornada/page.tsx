@@ -324,6 +324,17 @@ export default async function JourneyPage(props: PageProps<"/jornada">) {
               Cadastrar cliente
             </Button>
           )}
+          {!isFranchisor &&
+            hasRoleInClinic(session, clinicId, ["clinical_coordinator", "unit_manager"]) && (
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/jornada/sem-proximo-passo" />}
+              >
+                Clientes sem próximo passo
+              </Button>
+            )}
           {!isFranchisor && (
             <Button
               size="sm"

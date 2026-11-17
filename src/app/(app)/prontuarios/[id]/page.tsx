@@ -80,6 +80,8 @@ import {
   type HistoryEntry,
 } from "./journey-section";
 import { FimDoTratamento } from "./fim-do-tratamento";
+import { AbandonoNaFicha } from "./abandono";
+import type { Abandono } from "@/lib/abandono";
 
 type FechamentoRow = {
   id: string;
@@ -855,6 +857,46 @@ export default async function ClientDetailPage(
           return r ? { startsAt: r.starts_at, dias: r.dias } : null;
         })
     : null;
+
+  // 0423: o abandono de tratamento (a tarefa aberta, uma por cliente). Sem a
+  // migração num banco, a leitura falha e o painel segue sem ela.
+  const abandono: Abandono | null = await supabase
+    .from("treatment_abandonments")
+    .select(
+      "id, status, origin, last_activity_at, risks_informed, risks_channel, risks_informed_on, registered_at, treatment_abandonment_attempts ( stage )"
+    )
+    .eq("client_id", client.id)
+    .neq("status", "encerrado")
+    .maybeSingle()
+    .then(({ data, error }) => {
+      if (error || !data) return null;
+      const d = data as unknown as {
+        id: string;
+        status: Abandono["status"];
+        origin: Abandono["origin"];
+        last_activity_at: string | null;
+        risks_informed: string | null;
+        risks_channel: Abandono["risksChannel"];
+        risks_informed_on: string | null;
+        registered_at: string | null;
+        treatment_abandonment_attempts: { stage: string }[] | null;
+      };
+      const tentativas = d.treatment_abandonment_attempts ?? [];
+      return {
+        id: d.id,
+        status: d.status,
+        origin: d.origin,
+        lastActivityAt: d.last_activity_at,
+        tentativasRecepcao: tentativas.filter((t) => t.stage === "reagendar").length,
+        tentativasCoordenador: tentativas.filter((t) => t.stage === "contato").length,
+        risksInformed: d.risks_informed,
+        risksChannel: d.risks_channel,
+        risksInformedOn: d.risks_informed_on,
+        registeredAt: d.registered_at,
+      };
+    });
+  // O "agora" da página, para os dias desde a última atividade.
+  const agoraDaFicha = Date.parse(hojeBr + "T12:00:00-03:00");
 
   // Was the client transferred away from the clinic the viewer belongs to?
   const currentClinicEntry = (clinicHistory ?? []).find((h) => !h.ended_at);
@@ -2905,6 +2947,7 @@ export default async function ClientDetailPage(
   const avisosDaFicha =
     vendasDiretasAbertas.length +
     fechamentos.length +
+    (abandono ? 1 : 0) +
     anamnesisAlerts.length +
     (anamnesisNudge ? 1 : 0) +
     (qcRedoPending ? 1 : 0) +
@@ -3164,6 +3207,15 @@ export default async function ClientDetailPage(
           hoje={hojeBr}
           horarioAtual={horarioAtual}
           clientName={client.full_name}
+        />
+        <AbandonoNaFicha
+          clientId={client.id}
+          abandono={abandono}
+          agoraMs={agoraDaFicha}
+          hoje={hojeBr}
+          ehRecepcao={session.isAdminMaster || clinicRoles.includes("receptionist")}
+          ehCoordenador={session.isAdminMaster || clinicRoles.includes("clinical_coordinator")}
+          ehGerente={session.isAdminMaster || clinicRoles.includes("unit_manager")}
         />
         {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
         {anamnesisAlerts.map((a, i) => (

@@ -284,6 +284,8 @@ export const TABELAS: Record<string, string> = {
   "public.treatment_sessions": "Sessão de tratamento",
   "public.treatment_closures": "Fim do tratamento (fechamento do plano)",
   "public.treatment_closure_contacts": "Contato do fim do tratamento",
+  "public.treatment_abandonments": "Abandono de tratamento",
+  "public.treatment_abandonment_attempts": "Tentativa de contato do abandono",
   "public.user_clinic_roles_all": "Função do usuário na unidade",
   "public.user_environments": "Porta do usuário (treino / sistema)",
   // -------------------------------------------------- Risarte Empresarial

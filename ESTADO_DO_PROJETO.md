@@ -2,6 +2,26 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧭 0.474.0 — FIM DO TRATAMENTO, ETAPA 4: O ABANDONO E A LISTA (17/11/2026; migração 0423)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (seções 6 e 7; D16, D19).
+> - ⚠️ **`treatment_abandonments`: uma aberta por cliente** (índice
+>   `treatment_abandonments_one_open`). Etapas: reagendar (Recepção) → contato
+>   (Coordenador) → gerente → cancelamento → encerrado. Grava só pelas portas.
+> - ⚠️ **Quem abre é a varredura diária** `treatment_abandonment_scan` (cron
+>   `risarte-abandono-daily`, 03:20 UTC; prazo `abandon_no_schedule_days`).
+>   Fase 5 + sessão `pending` + nenhum horário futuro + última atividade
+>   (`_ultima_atividade`) além do prazo.
+> - ⚠️ **Agendar encerra** (gatilho `treatment_abandonment_on_appointment`); o
+>   termo de cancelamento cumpre a decisão "cancelamento"
+>   (`treatment_abandonment_on_cancellation`).
+> - ⚠️ **Fase 7 pelo abandono NÃO fecha as sessões** (D16.4): elas seguram a volta.
+> - A lista: `clients_without_next_step` (Coordenador e Gerente), página
+>   `/jornada/sem-proximo-passo`; prazo `stalled_treatment_days`.
+> - Ensaio 35/35 (`scripts/ensaio-fim-do-tratamento-0423.mjs`, provado
+>   quebrando); régua `abandono.test.ts`. O treino não tem Gerente em
+>   Londrina: o ensaio cria um na transação. Não visto na tela.
+>
 > ## 🩺 0.473.0 — FIM DO TRATAMENTO: UMA DECISÃO POR CLIENTE (17/11/2026; migração 0422; relato OC-00185)
 >
 > Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`, 12.2. Defeito confirmado: uma

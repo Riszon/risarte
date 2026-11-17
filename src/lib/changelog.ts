@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.474.0",
+    data: "2026-11-17",
+    migracao: "0423",
+    titulo: "Abandono de tratamento e a lista de clientes sem próximo passo",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cliente com sessão pendente e nada agendado há 30 dias vira tarefa da Recepção: reagendar. Agendar a próxima sessão encerra a tarefa sozinha. Depois de 3 tentativas registradas, ou se o cliente disser que não quer marcar, a tarefa passa ao Coordenador.",
+        papeis: ["receptionist"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Coordenador contata o cliente e, se ele não voltar, faz o registro de abandono com os riscos clínicos informados (o texto, o meio e a data). O registro fica no prontuário e não muda a venda.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Com o abandono registrado, o Gerente decide: Acompanhamento (Fase 7) com retorno, com as sessões abertas para a volta, ou o cancelamento formal. A tarefa só termina quando o termo é aberto.",
+        papeis: ["unit_manager"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Nova lista \"Clientes sem próximo passo\" (botão na Jornada): quem está na Fase 5 ou 6 sem horário marcado e sem tarefa aberta, com o motivo e os dias parado. Dá para abrir a ficha ou começar o contato ali mesmo. Os dois prazos (30 dias) ficam em Prazos.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.473.0",
     data: "2026-11-17",
     migracao: "0422",

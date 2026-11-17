@@ -3322,6 +3322,19 @@ agende uma avaliação para hoje e registre a chegada.
 **Checklist final:** ☐ cadastrei ☐ agendei ☐ registrei chegada ☐ sei onde ver a
 fase do paciente ☐ sei que não sou eu quem chama
 
+**Reagendar o tratamento (desde a 0.474.0).** Quando um cliente em tratamento
+tem sessão pendente e nada agendado há 30 dias (prazo em Prazos), a ficha
+dele mostra no "Precisa de atenção" a tarefa **Reagendar o tratamento**, e
+você recebe o aviso no sino. Ligue ou mande mensagem:
+
+- **Conseguiu marcar?** Agende a sessão (botão **Agendar sessão**): a tarefa
+  some sozinha.
+- **Não conseguiu?** Clique em **Registrar tentativa**, diga como foi e se
+  falou com o cliente. Depois de **3 tentativas**, a tarefa passa ao
+  Coordenador.
+- **Falou e o cliente não quer marcar?** Escreva o que ele disse e marque
+  **encaminhar ao Coordenador já**.
+
 ### 6.1a. Venda direta: o caixa da recepção
 
 *(desde a versão 0.463.0)*
@@ -3669,6 +3682,24 @@ próximo passo é **Chamar para revisar**.
 daqui a 6 meses) e avisa a Recepção. O botão recusa enquanto houver
 procedimento sem avaliar ou com Revisar/Refazer em aberto: espere a revisão ou
 a refação e avalie de novo.
+
+**O abandono de tratamento (desde a 0.474.0).** Quando a Recepção não consegue
+reagendar um cliente parado (3 tentativas) ou ele diz que não quer marcar, a
+tarefa chega a você: **Possível abandono**. Contate o cliente
+(**Registrar contato**). Se ele voltar, basta agendar: a tarefa some. Se não
+voltar, clique em **Registrar abandono** e escreva **os riscos clínicos que
+você informou ao cliente**, por qual meio (ligação, mensagem, pessoalmente,
+carta ou e-mail) e em que data. É a proteção jurídica da clínica: fica no
+prontuário, não apaga nada e não muda a venda. Depois disso, o Gerente decide.
+
+**Clientes sem próximo passo.** Na **Jornada**, o botão **Clientes sem próximo
+passo** lista quem está na Fase 5 ou 6 **sem horário marcado e sem nenhuma
+tarefa aberta**, com o motivo (sessões sem horário, ortodontia suspensa,
+plano complementar parado, reavaliação sem horário) e os dias desde a última
+atividade. A ortodontia em tratamento protege o cliente da lista; a suspensa,
+não. O plano complementar só protege enquanto tem movimento (30 dias, em
+Prazos). Em cada linha: **Abrir ficha** ou **Iniciar contato**, que abre a
+tarefa de contato com você.
 
 ### 6.3. Dentista Planner
 
@@ -4594,6 +4625,21 @@ Planner recebe o aviso para criar uma **versão nova**.
 **Objetivo:** responder pela unidade. **Duração:** 90 minutos (é a função com
 mais telas).
 
+**O abandono de tratamento: a sua decisão (desde a 0.474.0).** Quando o
+Coordenador registra o abandono de um cliente, a ficha mostra **Abandono
+registrado: o Gerente decide**, com os riscos informados. Clique em
+**Decidir**:
+
+- **Acompanhamento (Fase 7) com retorno**: o cliente vai para a Fase 7 com a
+  data do retorno (sugerida: daqui a 6 meses). As sessões pendentes ficam
+  abertas para quando ele voltar. A Recepção e o Coordenador são avisados.
+- **Cancelamento formal**: a tarefa continua com você até o termo de
+  cancelamento ser aberto (aba **Plano** da ficha), com o acerto financeiro de
+  sempre.
+
+Se o cliente agendar antes da sua decisão, a tarefa some sozinha. A lista
+**Clientes sem próximo passo** (botão na Jornada) também é sua.
+
 Módulos: Financeiro, Estoque, Compras, Comercial, Relatórios, Planos,
 Risartanos, Empresarial.
 
@@ -5429,7 +5475,14 @@ pedida.
 procedimento na reavaliação, satisfação e queixa no contato, e a saída da
 Reavaliação só com tudo aprovado (ver 6.2).
 
-**O que ainda vem** (próximas etapas do plano): o abandono de tratamento; a lista "Clientes sem próximo passo"; o cancelamento
+**O abandono e a lista** (desde a 0.474.0): sessão pendente sem nada agendado
+há 30 dias vira tarefa da Recepção (reagendar); 3 tentativas levam ao
+Coordenador (contato e registro de abandono com os riscos informados); o
+Gerente decide entre a Fase 7 com retorno e o cancelamento formal. Agendar
+encerra a tarefa em qualquer etapa. A lista "Clientes sem próximo passo"
+mostra quem ficou sem horário e sem tarefa (ver 6.1, 6.2 e 6.6).
+
+**O que ainda vem** (próximas etapas do plano): o cancelamento
 passando pelo Coordenador; os prazos por dia útil da unidade.
 
 ### Fluxo 3 — Encerrar a sessão
