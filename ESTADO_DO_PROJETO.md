@@ -198,8 +198,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   conferência `1 · 1 · 1 · 0`; conferido de fora: a produção aceita o tipo
 >   `ortho_maintenance` e recusa um tipo inventado). Push depois da migração. A 0423 (Jornada) e a 0424 (Venda
 >   direta) são de outras sessões. EV-375. Na tela (servidor local + treino):
->   a lista de tipos, o link da ortodontia e a pergunta do hábito antigo; o
->   "em seguida" depois de salvar só por teste.
+>   a lista de tipos, o link da ortodontia, a pergunta do hábito antigo e o
+>   "em seguida" de ponta a ponta (17/11/2026; os dois agendamentos de teste
+>   de 14/12 do Thiago ficaram cancelados no treino).
 
 > ## 🦷 0.469.0 — ORTODONTIA, AP175: SESSÃO DE PLANO NÃO É MANUTENÇÃO (17/11/2026; migração 0417)
 >
