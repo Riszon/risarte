@@ -187,7 +187,7 @@ export function ConferenciaDasTaxas({ lido, unidadeAberta }: { lido: Conferencia
               </thead>
               <tbody className="divide-y">
                 {lido.lines.map((l) => (
-                  <tr key={l.ref_id} className={cn(Number(l.ainda) < 0 && "bg-red-50")}>
+                  <tr key={l.ref_id} className={cn(Number(l.ainda) < 0 && "bg-red-50 text-red-900 dark:bg-red-500/10 dark:text-red-200")}>
                     <td className="px-2 py-1">
                       {l.fee_label} {l.ref_type === "payable" ? "(fixa)" : ""}
                     </td>
