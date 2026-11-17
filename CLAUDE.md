@@ -478,8 +478,9 @@ Syncthing se comportarem de forma estranha.**
   `TYPE_PROVIDER_ROLES` e `_provider_serves_type` (régua pela migração mais
   nova). ⚠️ Valor novo de enum: só comparar como texto na própria migração.
   ⚠️ Dicas da agenda para ortodontia = `src/lib/ortodontia/agenda.ts`.
-- ✅ 0425 no treino (ensaio 10/10, desfeito). ⏳ Produção pendente; push só
-  depois dela.
+- ✅ 0425 nos dois bancos (treino: ensaio 10/10, desfeito; produção pelo dono
+  em 17/11/2026, conferência 1·1·1·0; conferido de fora). Publicado depois da
+  migração. AP176 fechado.
 
 **17/11/2026 (ortodontia, AP175) — PC Administrador (core 0.468.0 → 0.469.0, migração 0417)**
 

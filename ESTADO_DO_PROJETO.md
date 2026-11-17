@@ -173,9 +173,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   define a função). Valor de enum novo não pode ser USADO na mesma
 >   migração (só comparar como texto).
 > - ⚠️ Ao recriar `ortho_appointment_sync`, partir da 0425.
-> - ✅ 0425 no treino (reaplicada; ensaio 10/10 com ela gravada, e o da 0417
->   de novo, 23/23). ⏳ **Produção pendente** (conferência esperada
->   `1 · 1 · 1 · 0`); push só depois. A 0423 (Jornada) e a 0424 (Venda
+> - ✅ **0425 nos dois bancos**: treino (reaplicada; ensaio 10/10 com ela
+>   gravada, e o da 0417 de novo, 23/23) e produção (o dono, 17/11/2026;
+>   conferência `1 · 1 · 1 · 0`; conferido de fora: a produção aceita o tipo
+>   `ortho_maintenance` e recusa um tipo inventado). Push depois da migração. A 0423 (Jornada) e a 0424 (Venda
 >   direta) são de outras sessões. EV-375. Na tela (servidor local + treino):
 >   a lista de tipos, o link da ortodontia e a pergunta do hábito antigo; o
 >   "em seguida" depois de salvar só por teste.
