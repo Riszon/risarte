@@ -319,3 +319,63 @@ nascendo na assinatura), D4 e D5.
 
 Sem migração. Teste no treino nas unidades com Asaas de sandbox (Londrina,
 Cambé), com o pagamento simulado pelo aviso do Asaas.
+
+---
+
+## 9. VD3-4 — "Atender agora" (plano da etapa, 17/11/2026)
+
+**Status: decidido pelo dono e CONSTRUÍDO em 17/11/2026 (core 0.475.0, migração 0424), na branch; 0424 aplicada no treino.**
+
+**Decisões do dono (17/11/2026):**
+- **A1:** o "Atender agora" agenda como **ENCAIXE**, enquadrado como
+  **Avaliação** ou **Urgência**. → O encaixe deixa de ser só o tipo
+  Urgência/Emergência: vira uma marca do agendamento (`is_fit_in`), que passa
+  por cima do conflito de horário do profissional e da sala, como a urgência.
+- **A2:** ok — Recepção, SDR, Admin.
+- **A3:** manter a regra I4 (cadastro incompleto não agenda), com o atalho
+  para completar o cadastro.
+- **A4:** encaixe sem cadeira livre fica **sem sala** até o dentista chamar;
+  ao **Chamar** um atendimento presencial sem sala, o dentista **escolhe a
+  sala obrigatoriamente** — para não travar o encaixe nem mexer em outros
+  horários. (Vale para qualquer atendimento presencial sem sala, nas unidades
+  que têm salas cadastradas.)
+
+### O que existe hoje (lido no código)
+
+- Toda venda direta é ligada a um atendimento. Sem atendimento, o caixa diz
+  "Agende primeiro e volte aqui" — a recepção sai da janela, vai à Agenda,
+  cria o agendamento e reabre a venda.
+- O agendamento passa por `createAppointment` (Agenda), que confere: quem
+  agenda (Recepção, SDR, Admin — **o Gerente não agenda**), o cadastro
+  completo (I4: cadastro incompleto não é agendado), o horário não pode estar
+  no passado, as regras e bloqueios da agenda, o profissional (função e
+  conflito de horário), a sala e o limite de cadeiras.
+
+### Como fica
+
+1. Cliente sem atendimento de hoje → o caixa mostra **"Atender agora"**.
+2. Abre um bloco curto, na própria janela: **profissional** (só os da unidade
+   que atendem o tipo e estão **livres agora**), **tipo** (já escolhido, ver
+   A1) e **duração** (30 min, troca com um clique). O horário é o **próximo
+   intervalo de 5 minutos** (o sistema não agenda no passado).
+3. **Criar e continuar** → o agendamento nasce pelo MESMO caminho da Agenda
+   (todas as regras acima valem) e já fica escolhido na venda. Segue o
+   Finalizar de sempre.
+4. Cadastro incompleto: o bloco diz o que falta e oferece **Completar
+   cadastro** (A3).
+
+Sem migração.
+
+### Decisões pedidas
+
+- **A1 — O tipo do atendimento de balcão.** *Recomendo:* **Avaliação**, com
+  troca rápida para **Urgência** (dor, quebrou). Os outros tipos (sessão,
+  início de tratamento) são do plano de tratamento e não entram aqui.
+- **A2 — Quem vê o "Atender agora".** *Recomendo:* quem já pode agendar
+  (Recepção, SDR, Admin). O Gerente fecha a venda, mas hoje não agenda —
+  mudar isso é outra decisão (a regra da Agenda), fora desta entrega.
+- **A3 — Cadastro incompleto.** *Recomendo manter a regra I4* (não agenda),
+  mostrando o que falta e o atalho **Completar cadastro**. Alternativa:
+  liberar só o "Atender agora" com o cadastro incompleto (abre exceção à I4).
+- **A4 — A sala.** *Recomendo:* a primeira sala livre da unidade, escolhida
+  sozinha (troca se quiser); unidade sem salas cadastradas, sem sala.

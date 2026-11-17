@@ -80,6 +80,7 @@ import {
   type AlvoDoCaixa,
 } from "@/components/venda-direta/caixa";
 import { PerguntaDoFimDialog } from "../prontuarios/[id]/pergunta-do-fim-dialog";
+import { SalaAoChamarDialog, type ChamarSemSala } from "./sala-ao-chamar";
 import {
   perguntaPendenteDoAtendimento,
   type PerguntaPendente,
@@ -462,10 +463,15 @@ export function AttendancePanel({
     setConcludeFor(a);
   }
 
+  // VD3-4 (0424, A4): o atendimento presencial sem sala pede a sala ao chamar.
+  const [semSala, setSemSala] = useState<ChamarSemSala | null>(null);
+
   function run(
     action: () => Promise<{ ok: boolean; error?: string }>,
     msg: string,
-    onSuccess?: () => void
+    onSuccess?: () => void,
+    /** Chamar sem sala: quem é, para abrir a escolha da sala. */
+    chamando?: { appointmentId: string; clientName: string }
   ) {
     startTransition(async () => {
       const result = await action();
@@ -473,6 +479,8 @@ export function AttendancePanel({
         toast.success(msg);
         if (onSuccess) onSuccess();
         else router.refresh();
+      } else if (chamando && result.error?.startsWith("ROOM_REQUIRED:")) {
+        setSemSala({ ...chamando, depois: onSuccess ?? (() => router.refresh()) });
       } else {
         toast.error(result.error ?? "Algo deu errado.");
       }
@@ -697,6 +705,7 @@ export function AttendancePanel({
       <CaixaVendaDireta alvo={vender} onClose={() => setVender(null)} />
       {/* 0418: a pergunta do fim do plano, que não fecha sem resposta. */}
       <PerguntaDoFimDialog pergunta={perguntaDoFim} onRespondida={() => setPerguntaDoFim(null)} />
+      <SalaAoChamarDialog alvo={semSala} onClose={() => setSemSala(null)} />
       {/* OC-00085: encerrar a avaliação interrompida, com motivo. */}
       <Dialog
         open={encerrarSemEnviar !== null}
@@ -1181,7 +1190,8 @@ export function AttendancePanel({
                                   ehAvaliacao ? `/avaliacao/${a.clientId}` : `/prontuarios/${a.clientId}`
                                 );
                               } else router.refresh();
-                            }
+                            },
+                            { appointmentId: a.id, clientName: a.clientName }
                           )
                         }
                       >

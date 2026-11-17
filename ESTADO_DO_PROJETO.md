@@ -2,6 +2,34 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## ⚡ 0.475.0 — VENDA DIRETA V3, VD3-4: ATENDER AGORA (ENCAIXE) E A SALA AO CHAMAR (17/11/2026; migração 0424) — NA BRANCH `feature/venda-direta-v3`, NÃO PUBLICADO
+>
+> Decisões do dono A1–A4 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §9. EV-374.
+> - ⚠️ **ENCAIXE agora é também uma MARCA** (`appointments.is_fit_in`, 0424),
+>   não só o tipo Urgência/Emergência: passa pelo conflito de horário do
+>   profissional e da sala (`check_appointment_conflict` recriada — partir
+>   dela) e pelas regras de horário da Agenda (`checkAgendaRules`, `fit_in=1`).
+>   Fechamentos e bloqueios continuam valendo.
+> - **Atender agora** no caixa (`src/components/venda-direta/encaixe.tsx`,
+>   `dadosDoEncaixe`/`atenderAgora` em `caixa-actions.ts`): Avaliação ou
+>   Urgência, o profissional, 15–60 min, a partir do próximo intervalo de 5
+>   min (`proximoIntervalo`), pelo MESMO `createAppointment` da Agenda (quem
+>   agenda, cadastro completo I4, função do profissional).
+> - ⚠️ **Chamar presencial sem sala exige a sala** numa unidade com sala ativa
+>   (`update_attendance` recriada → `ROOM_REQUIRED`); a escolha grava e chama
+>   numa transação (`call_attendance_with_room`). Tela: `atendimento/sala-ao-chamar.tsx`.
+>   Unidade sem sala (Londrina e Cambé no treino) chama como antes.
+> - ✅ **0424 no treino** (ensaio 11/11 em transação desfeita, provado quebrando:
+>   conflito, sala). ⚠️ O `migrar:teste` NÃO tem `--listar`: aplicou junto a
+>   **4018a e 4018b** (sessão do Asaas, já no `main`, fora do registro do
+>   treino); rodaram sem erro. ⚠️ Até a publicação, o Chamar sem sala no site
+>   do treino mostra erro (a tela de lá não tem a escolha da sala).
+> - **Visto na tela** (servidor local): cadastro incompleto bloqueado com
+>   "Completar cadastro"; encaixe de Urgência criado em Londrina com o Dentista
+>   de Teste e já escolhido na venda; Chamar sem sala na Unidade Teste abriu
+>   "Em qual sala?", gravou a Sala 2 e seguiu para o cockpit. Resíduo: o
+>   encaixe de Londrina e o agendamento de teste da Unidade Teste (ambos
+>   concluídos). A venda não foi finalizada (avisaria pessoas reais).
 > ## 🧭 0.474.0 — FIM DO TRATAMENTO, ETAPA 4: O ABANDONO E A LISTA (17/11/2026; migração 0423)
 >
 > Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (seções 6 e 7; D16, D19).

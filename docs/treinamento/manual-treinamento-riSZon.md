@@ -3398,6 +3398,29 @@ de prótese. Ela começa e termina **na mesma janela**.
      - Se a unidade ainda não usa o Asaas (ou a cobrança automática está
        desligada), **Confirmar que recebeu**.
 
+**Sem atendimento hoje? Atender agora (encaixe)** *(desde a versão 0.475.0)*:
+toda venda direta é ligada a um atendimento. Se o cliente chegou sem horário,
+no bloco **Atendimento** do caixa clique em **Atender agora (encaixe)**:
+
+1. Escolha **Avaliação** ou **Urgência**.
+2. Escolha **quem vai atender** (os profissionais da unidade que atendem
+   esse tipo) e a **duração** (30 min já vem marcado).
+3. **Criar o encaixe e continuar** — o atendimento nasce agora (o próximo
+   horário de 5 em 5 minutos), por cima da agenda, e já fica escolhido na
+   venda.
+
+- **Sem sala:** o encaixe pode ficar sem sala. Quem atender escolhe a sala
+  ao **Chamar** (veja abaixo).
+- **Cadastro incompleto:** o encaixe não é criado. O bloco diz o que falta
+  e oferece **Completar cadastro**.
+- Quem cria o encaixe é a Recepção ou a SDR (quem agenda na Agenda).
+
+**Chamar sem sala** *(desde a versão 0.475.0)*: na tela **Atendimento**, ao
+clicar em **Chamar** num atendimento presencial sem sala marcada, abre
+**Em qual sala?** com as salas da unidade. Escolha uma livre — a que tem
+alguém em atendimento fica bloqueada. Unidade sem sala cadastrada chama como
+antes.
+
 **Venda concluída** *(desde a versão 0.472.0)*: **Enviar comprovante por
 WhatsApp** abre a conversa com o cliente e o texto pronto (unidade,
 procedimentos, total, como pagou, data, código). Revise e envie.

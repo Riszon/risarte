@@ -7,6 +7,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasRoleInClinic } from "@/lib/auth";
+import { funcoesAtendemOTipo } from "@/lib/appointments";
+import type { UserRole } from "@/lib/roles";
+import { proximoIntervalo } from "@/lib/venda-direta-caixa";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import {
@@ -441,4 +445,98 @@ export async function confirmarRecebimento(saleId: string): Promise<ResultadoDoC
   const confirmada = await closeDirectSaleStep(saleId, "payment_confirmed", true);
   if (!confirmada.ok) return { ok: false, error: confirmada.error, saleId };
   return { ok: true, saleId, closed: confirmada.closed };
+}
+
+// ---------------------------------------------------------------------------
+// VD3-4 — "Atender agora": o ENCAIXE criado na própria janela (decisões A1–A4,
+// docs/comercial/VENDA-DIRETA-V3-PLANO.md §9). Pelo MESMO caminho da Agenda
+// (`createAppointment`): quem agenda, cadastro completo (I4), bloqueios da
+// agenda e a função do profissional continuam valendo. O encaixe passa pelo
+// conflito de horário do profissional e da sala e pode ficar sem sala (0424).
+// ---------------------------------------------------------------------------
+
+export type ProfissionalDoEncaixe = { userId: string; nome: string };
+export type TipoDoEncaixe = "evaluation" | "urgency";
+
+export async function dadosDoEncaixe(clientId: string): Promise<
+  | {
+      ok: true;
+      podeAgendar: boolean;
+      faltaNoCadastro: string[];
+      profissionais: Record<TipoDoEncaixe, ProfissionalDoEncaixe[]>;
+    }
+  | { ok: false; error: string }
+> {
+  const session = await getSessionContext();
+  const supabase = await createClient();
+  const { data: client } = await supabase.from("clients").select("clinic_id").eq("id", clientId).maybeSingle();
+  if (!client) return { ok: false, error: "Cliente não encontrado." };
+  const clinicId = client.clinic_id as string;
+  // A2: quem já agenda na Agenda (Recepção, SDR, Admin).
+  const podeAgendar =
+    session.isAdminMaster ||
+    hasRoleInClinic(session, clinicId, ["receptionist"]) ||
+    Object.values(session.rolesByClinic).some((r) => r.includes("sdr"));
+  const { getClientRegistrationGaps } = await import("../../agenda/actions");
+  const gaps = await getClientRegistrationGaps(clientId);
+  const { data: equipe } = await supabase.rpc("unit_scheduling_staff", { p_clinic_id: clinicId });
+  const linhas = (equipe ?? []) as { user_id: string; role: UserRole; full_name?: string | null }[];
+  const ids = [...new Set(linhas.map((l) => l.user_id))];
+  const { data: perfis } = ids.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", ids)
+    : { data: [] as { id: string; full_name: string | null }[] };
+  const nome = new Map((perfis ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? "Profissional"]));
+  const porTipo = (tipo: TipoDoEncaixe) => {
+    const out: ProfissionalDoEncaixe[] = [];
+    for (const id of ids) {
+      const funcoes = linhas.filter((l) => l.user_id === id).map((l) => l.role);
+      if (funcoesAtendemOTipo(tipo, funcoes)) out.push({ userId: id, nome: nome.get(id) ?? "Profissional" });
+    }
+    return out.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  };
+  return {
+    ok: true,
+    podeAgendar,
+    faltaNoCadastro: gaps,
+    profissionais: { evaluation: porTipo("evaluation"), urgency: porTipo("urgency") },
+  };
+}
+
+/** Cria o encaixe AGORA (o próximo intervalo de 5 min) e devolve o id. */
+export async function atenderAgora(input: {
+  clientId: string;
+  providerUserId: string;
+  tipo: TipoDoEncaixe;
+  duracao: number;
+}): Promise<{ ok: true; appointmentId: string; aviso?: string } | { ok: false; error: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data: client } = await supabase.from("clients").select("clinic_id").eq("id", input.clientId).maybeSingle();
+  if (!client) return { ok: false, error: "Cliente não encontrado." };
+  const { data: hora, time: horario } = proximoIntervalo(new Date());
+  const fd = new FormData();
+  fd.set("clinic_id", client.clinic_id as string);
+  fd.set("client_id", input.clientId);
+  fd.set("type", input.tipo);
+  fd.set("date", hora);
+  fd.set("time", horario);
+  fd.set("duration", String(Math.max(15, Math.min(120, Math.round(input.duracao)))));
+  fd.set("provider_user_id", input.providerUserId);
+  fd.set("fit_in", "1");
+  fd.set("notes", "Encaixe pelo caixa da venda direta (Atender agora).");
+  const { createAppointment } = await import("../../agenda/actions");
+  const r = await createAppointment(fd);
+  if (!r.ok) return { ok: false, error: r.error ?? "Não foi possível criar o encaixe." };
+  // O id do encaixe recém-criado: o do cliente, neste horário, marcado.
+  const { data: novo } = await supabase
+    .from("appointments")
+    .select("id")
+    .eq("client_id", input.clientId)
+    .eq("is_fit_in", true)
+    .eq("provider_user_id", input.providerUserId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!novo) return { ok: false, error: "O encaixe foi criado, mas não consegui achá-lo. Reabra a venda." };
+  return { ok: true, appointmentId: novo.id as string, aviso: r.warning };
 }

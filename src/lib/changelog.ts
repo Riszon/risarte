@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.475.0",
+    data: "2026-11-17",
+    migracao: "0424",
+    titulo: "Venda direta: Atender agora (encaixe) e a sala escolhida ao chamar",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cliente sem atendimento hoje: no caixa da venda direta, Atender agora cria um ENCAIXE na hora (Avaliação ou Urgência), com o profissional e a duração, por cima da agenda. Ele já fica escolhido na venda.",
+        papeis: ["receptionist", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Ao chamar um atendimento presencial sem sala marcada (como o encaixe), quem atende escolhe a sala antes — numa janela com as salas da unidade; as que têm alguém em atendimento ficam bloqueadas.",
+        papeis: ["dentist", "clinical_coordinator", "unit_manager", "receptionist"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O encaixe agora pode ser Avaliação também (antes, só Urgência e Emergência passavam por cima da agenda). Cadastro incompleto continua sem agendar: o caixa mostra o que falta e o atalho para completar.",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
     versao: "0.474.0",
     data: "2026-11-17",
     migracao: "0423",

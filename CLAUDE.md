@@ -400,6 +400,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (venda direta v3, VD3-4) — PC Administrador (core 0.474.0 → 0.475.0, migração 0424; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **Atender agora (encaixe) e a sala ao chamar** (bloco 0.475.0 no ESTADO). ⚠️
+  **NÃO está no `main`:** espera o dono. ⚠️ **0424 já está no TREINO**: o
+  Chamar sem sala do site do treino dá erro até publicar.
+- ⚠️ **Encaixe = Urgência/Emergência OU `is_fit_in`** — quem recriar
+  `check_appointment_conflict` parte da 0424 (a Ortodontia, 0425, foi avisada).
+- ⚠️ **`npm run migrar:teste` NÃO tem modo de só listar** (`--listar` é
+  ignorado e aplica tudo o que falta no registro do treino).
+- ⚠️ **Disco**: 2,3 GB livres em 17/11 — as worktrees das outras sessões
+  (cerca de 700 MB cada) enchem o C:. A montagem do zero precisa de folga.
 **17/11/2026 (fim do tratamento, Etapa 4) — PC Administrador (core 0.474.0, migração 0423; worktree `wt-fim-tratamento`)**
 
 - **O abandono e a lista "Clientes sem próximo passo"** (bloco 0.474.0 no

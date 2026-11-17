@@ -452,3 +452,24 @@ export function comprovanteDaVenda(v: {
     `${v.codigo ? ` Código ${v.codigo}.` : ""} Obrigado!`
   );
 }
+
+// ---------------------------------------------------------------------------
+// VD3-4 — o horário do encaixe: o próximo intervalo de 5 minutos, no Brasil
+// (o sistema não agenda no passado).
+// ---------------------------------------------------------------------------
+export function proximoIntervalo(agora: Date): { data: string; time: string } {
+  const ms = 5 * 60_000;
+  // +1 min de folga: o horário não pode virar "passado" entre a tela e o banco.
+  const alvo = new Date(Math.ceil((agora.getTime() + 60_000) / ms) * ms);
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(alvo);
+  const v = (t: string) => partes.find((p) => p.type === t)?.value ?? "00";
+  return { data: `${v("year")}-${v("month")}-${v("day")}`, time: `${v("hour")}:${v("minute")}` };
+}

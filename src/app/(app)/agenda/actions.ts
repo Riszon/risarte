@@ -155,6 +155,8 @@ type ParsedAppointment = {
   notes: string | null;
   room_id: string | null;
   is_online: boolean;
+  /** VD3-4 (0424): encaixe — só vai no INSERT (`fit_in=1` no formulário). */
+  is_fit_in?: boolean;
 };
 
 function parseAppointmentForm(
@@ -203,6 +205,7 @@ function parseAppointmentForm(
       notes,
       room_id: roomId,
       is_online: isOnline,
+      ...(String(formData.get("fit_in") ?? "") === "1" ? { is_fit_in: true } : {}),
     },
   };
 }
@@ -381,7 +384,10 @@ async function checkAgendaRules(
   excludeId?: string
 ): Promise<{ block?: string; warn?: string }> {
   const type = String(formData.get("type") ?? "");
-  const isEncaixe = type === "urgency" || type === "emergency";
+  // VD3-4 (0424): o encaixe é o tipo urgência/emergência OU a marca de encaixe
+  // (o "Atender agora" do caixa da venda direta, como Avaliação ou Urgência).
+  const isEncaixe =
+    type === "urgency" || type === "emergency" || String(formData.get("fit_in") ?? "") === "1";
   const isOnline = type === "commercial_presentation";
   const roomId = isOnline ? "" : String(formData.get("room_id") ?? "");
   const providerId = String(formData.get("provider_user_id") ?? "");
@@ -1545,6 +1551,70 @@ async function qualAtendimentoEstaAberto(
   return `Este profissional ainda está em atendimento com ${quem} — agendamento de ${quando}${onde}. Conclua esse atendimento (ele aparece em "Em atendimento") antes de chamar outro cliente.`;
 }
 
+/** O código que a tela Atendimento reconhece para abrir a escolha da sala. */
+const SALA_OBRIGATORIA = "ROOM_REQUIRED: Escolha a sala de atendimento para chamar este cliente.";
+
+export type SalaParaChamar = { id: string; name: string; ocupada: boolean };
+
+/**
+ * VD3-4 (0424, A4): as salas ativas da unidade do atendimento, com as que têm
+ * alguém em atendimento agora marcadas (não servem para chamar).
+ */
+export async function salasParaChamar(
+  appointmentId: string
+): Promise<{ ok: true; salas: SalaParaChamar[] } | { ok: false; error: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data: appt } = await supabase
+    .from("appointments")
+    .select("clinic_id")
+    .eq("id", appointmentId)
+    .maybeSingle();
+  if (!appt) return { ok: false, error: "Atendimento não encontrado." };
+  const { data: salas, error } = await supabase
+    .from("clinic_rooms")
+    .select("id, name, sort_order")
+    .eq("clinic_id", appt.clinic_id as string)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .order("sort_order")
+    .order("name");
+  if (error) return { ok: false, error: "Não foi possível ler as salas." };
+  const { data: emUso } = await supabase
+    .from("appointments")
+    .select("room_id")
+    .eq("clinic_id", appt.clinic_id as string)
+    .eq("attendance", "in_service")
+    .not("room_id", "is", null);
+  const ocupadas = new Set((emUso ?? []).map((a) => a.room_id as string));
+  return {
+    ok: true,
+    salas: (salas ?? []).map((s) => ({ id: s.id as string, name: s.name as string, ocupada: ocupadas.has(s.id as string) })),
+  };
+}
+
+/** VD3-4 (0424, A4): grava a sala escolhida e chama, numa transação (o banco confere). */
+export async function chamarComSala(appointmentId: string, roomId: string): Promise<ActionResult> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("call_attendance_with_room", {
+    p_appointment_id: appointmentId,
+    p_room_id: roomId,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("ROOM_BUSY")) return { ok: false, error: "Esta sala está com um atendimento em curso. Escolha outra." };
+    if (m.includes("ROOM_INVALID")) return { ok: false, error: "Sala inválida para esta unidade." };
+    if (m.includes("NOT_PROVIDER")) return { ok: false, error: "Apenas o profissional do agendamento pode chamar este cliente." };
+    if (m.includes("CLIENT_BUSY")) return { ok: false, error: "Este cliente já está em atendimento com outro profissional." };
+    if (m.includes("PROVIDER_BUSY")) return { ok: false, error: await qualAtendimentoEstaAberto(supabase, appointmentId) };
+    console.error("call_attendance_with_room failed:", m);
+    return { ok: false, error: "Não foi possível chamar. Tente de novo." };
+  }
+  revalidatePath("/atendimento");
+  return { ok: true };
+}
+
 export async function updateAttendance(
   appointmentId: string,
   state: "in_service" | "done" | "gave_up"
@@ -1588,6 +1658,10 @@ export async function updateAttendance(
         error:
           "A sala/cadeira já está ocupada por um atendimento não concluído. Conclua-o antes de chamar outro cliente para esta sala.",
       };
+    }
+    // VD3-4 (0424, A4): presencial sem sala — quem chama escolhe a sala.
+    if (error.message.includes("ROOM_REQUIRED")) {
+      return { ok: false, error: SALA_OBRIGATORIA };
     }
     if (error.message.includes("NOT_WAITING")) {
       return {
