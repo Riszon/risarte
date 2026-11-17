@@ -33,6 +33,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   `treatment_closure_on_session` recriada na 0420: ao recriar, partir dela.
 > - Ensaio 6/6 (`scripts/ensaio-fim-do-tratamento-0420.mjs`, provado quebrando)
 >   e o da 0418 com a 0420 por cima, 35/35. Versão 0.470.0 (a 0.469.0 é da AP175).
+>   ✅ **0420 no treino e na produção** (o dono, 17/11/2026; conferido de fora).
 >
 > ## 🏁 0.467.0 — FIM DO TRATAMENTO, ETAPA 2: O MOTOR (17/11/2026; migração 0418)
 >

@@ -407,6 +407,9 @@ Syncthing se comportarem de forma estranha.**
   `treatment_closure_on_session`, partir da 0420 (filtro `_sessao_ortodontica`).
   ⚠️ A 0.469.0/0417 (AP175) é da ortodontia, ainda sem push: ela entra ABAIXO
   da 0.470.0 no changelog.
+- ✅ 0420 nos dois bancos (treino por `migrar:teste`; produção pelo dono em
+  17/11/2026; conferido de fora: `_sessao_ortodontica` existe, sem login recusa).
+  Publicada. Não vista na tela.
 
 **17/11/2026 (fim do tratamento, Etapa 2) — PC Administrador (core 0.467.0, publicada DEPOIS da 0.468.0 da F4 — a versão do sistema segue 0.468.0; migração 0418, aplicada na produção pelo dono em 17/11/2026; worktree `wt-fim-tratamento`)**
 
