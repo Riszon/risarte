@@ -403,8 +403,8 @@ Syncthing se comportarem de forma estranha.**
 
 **16/11/2026 (venda direta v3, VD3-2) — PC Administrador (core 0.464.0 → 0.465.0, migração 0415; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
-- **O termo da venda direta pela ZapSign** (bloco 0.465.0 no ESTADO). ⚠️ **NÃO
-  está no `main`:** espera o dono ler o texto do termo (V3) e rodar a 0415.
+- **O termo da venda direta pela ZapSign** (bloco 0.465.0 no ESTADO). ✅ Texto
+  aprovado e **0415 na produção** (o dono, 16/11/2026; conferido de fora). Publicado.
 - ⚠️ **Quem envia o termo = quem FECHA a venda direta** (porta
   `direct_sale_term_package`); a Recepção não tem a permissão geral de envio.
 - ⚠️ **Termo assinado = gatilho do banco** (`signature_packages_direct_sale_signed`);
