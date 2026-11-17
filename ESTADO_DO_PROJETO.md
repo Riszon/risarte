@@ -36,7 +36,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   banco). **Não clicado:** Assinar agora (link), WhatsApp, papel pela tela
 >   (o papel foi provado no ensaio do banco). Resíduo no treino: VD-00592 e o
 >   ASS-000099 (cliente "Teste do portão 2 (pode ignorar)").
-> - ⏳ **Antes da produção:** o dono LER o texto do termo (V3) e rodar a 0415.
+> - ✅ Texto do termo aprovado pelo dono (16/11/2026). ⏳ Falta o dono rodar a 0415 na produção.
 >
 > ## 👥 0.464.0 — FUNÇÕES DE APOIO, F3: AS TELAS (16/11/2026; sem migração)
 >

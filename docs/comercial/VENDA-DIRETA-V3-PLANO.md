@@ -214,7 +214,7 @@ nascendo na assinatura), D4 e D5.
 
 ## 7. VD3-2 — o termo pela ZapSign (plano da etapa, 16/11/2026)
 
-**Status: aprovado (V1–V3 como recomendado) e CONSTRUÍDO em 16/11/2026 (core 0.465.0, migração 0415), na branch. Antes da produção: o dono lê o texto do termo e roda a 0415.**
+**Status: aprovado (V1–V3 como recomendado) e CONSTRUÍDO em 16/11/2026 (core 0.465.0, migração 0415), na branch. Texto do termo lido e APROVADO pelo dono em 16/11/2026 (segue com a marca de provisório no PDF até a revisão do jurídico). Falta: o dono rodar a 0415 na produção.**
 
 ### O que foi lido no código antes de planejar
 
