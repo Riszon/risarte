@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.472.0 — VENDA DIRETA V3, VD3-3: O PIX NA JANELA (17/11/2026; sem migração) — NA BRANCH `feature/venda-direta-v3`, NÃO PUBLICADO
+> ## 💳 0.472.0 — VENDA DIRETA V3, VD3-3: O PIX NA JANELA (17/11/2026; sem migração)
 >
 > Plano e decisões P1–P3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §8. EV-371.
 > - **A cobrança da vez na caixa Pagamento**: `src/components/venda-direta/pagamento.tsx`

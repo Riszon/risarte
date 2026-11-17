@@ -278,7 +278,7 @@ nascendo na assinatura), D4 e D5.
 
 ## 8. VD3-3 — o Pix (e o boleto, o cartão) na janela (plano da etapa, 17/11/2026)
 
-**Status: aprovado (P1–P3 como recomendado) e CONSTRUÍDO em 17/11/2026 (core 0.472.0, sem migração), na branch.**
+**Status: aprovado (P1–P3 como recomendado) e CONSTRUÍDO em 17/11/2026 (core 0.472.0, sem migração) e publicado no mesmo dia.**
 
 ### O que já existe (lido no código)
 

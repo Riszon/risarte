@@ -402,8 +402,8 @@ Syncthing se comportarem de forma estranha.**
 
 **17/11/2026 (venda direta v3, VD3-3) — PC Administrador (core 0.471.0 → 0.472.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
-- **O Pix na janela** (bloco 0.472.0 no ESTADO). ⚠️ **NÃO está no `main`:**
-  espera o dono testar. Dependência nova: `qrcode` 1.5.4.
+- **O Pix na janela** (bloco 0.472.0 no ESTADO). Publicado com o "pode publicar" do dono
+  (17/11/2026). Dependência nova: `qrcode` 1.5.4.
 - ⚠️ **`sale_charges_read`**: "agendada para hoje" = a cobrança ainda vai
   nascer; o meio da cobrança é `PIX` (maiúsculas); a leitura pode estourar o
   tempo durante a baixa — tela que pergunta de novo tem de aguentar a falha.
