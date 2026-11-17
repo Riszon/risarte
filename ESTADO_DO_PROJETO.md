@@ -2,6 +2,25 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## ✂️ 0.477.0 — FIM DO TRATAMENTO, ETAPA 5: O CANCELAMENTO PELO CAMINHO DO FIM (17/11/2026; migração 0426)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (5.3; D10, D11, D12, D25).
+> - ⚠️ **NÃO recria `open_plan_cancellation`/`apply_plan_cancellation`**: são
+>   da integração Asaas (4017a/4020) e, num banco do zero, rodam depois do core.
+>   Tudo entra por gatilhos em `plan_cancellations` e portas novas.
+> - ⚠️ **A fase é decidida na efetivação**: a tela chama
+>   `prepare_cancellation_apply` antes do `apply_plan_cancellation`; a trava
+>   `plan_cancellation_end_guard` recusa o esquecido na Fase 5
+>   (DESTINATION_REQUIRED) e a saída com tratamento sobrando (TREATMENT_STILL_OPEN).
+> - ⚠️ **D25**: `plan_cancellations.risks_required` (calculado ao abrir) trava a
+>   assinatura até `register_cancellation_risks` (Coordenador).
+> - ⚠️ **`treatment_closures.scope` ganhou 'cancelamento'** (com
+>   `cancellation_id`); o Coordenador avalia (um nível) ou contata.
+> - O plano vira "cancelado" (`treatment_plans.lifecycle`) quando não sobra venda viva dele.
+> - Só o contrato; a venda direta segue como estava (só os riscos valem para ela).
+> - Ensaio 25/25 (`scripts/ensaio-fim-do-tratamento-0426.mjs`, provado
+>   quebrando; o termo é marcado sem checklist para medir só a 0426). Não visto na tela.
+>
 > ## ⚡ 0.475.0 — VENDA DIRETA V3, VD3-4: ATENDER AGORA (ENCAIXE) E A SALA AO CHAMAR (17/11/2026; migração 0424)
 >
 > Decisões do dono A1–A4 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §9. EV-374.

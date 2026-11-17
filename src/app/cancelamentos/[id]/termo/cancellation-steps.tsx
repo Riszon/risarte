@@ -1,7 +1,7 @@
 "use client";
 
 import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,14 @@ import {
   discardPlanCancellation,
   signPlanCancellation,
 } from "@/app/(app)/apresentacao/[clientId]/cancellation-actions";
+import {
+  DESTINO_DO_CANCELAMENTO_LABEL,
+  pedeDestino,
+  type DestinoDoCancelamento,
+  type FimDoCancelamento,
+} from "@/lib/fim-do-cancelamento";
+import { retornoSugerido } from "@/lib/fim-do-tratamento";
+import { prepararEfetivacao } from "./fim-do-cancelamento-actions";
 
 /**
  * 0206 — os passos do cancelamento, fora do documento impresso.
@@ -25,6 +33,8 @@ export function CancellationSteps({
   signedAt,
   appliedAt,
   checklistPendente = 0,
+  fim = null,
+  hoje,
 }: {
   id: string;
   clientId: string;
@@ -33,9 +43,18 @@ export function CancellationSteps({
   appliedAt: string | null;
   /** 4020: itens da checklist do distrato ainda abertos (0 = pronto). */
   checklistPendente?: number;
+  /** 0426: o que a efetivação faz com a fase e se os riscos estão pendentes. */
+  fim?: FimDoCancelamento | null;
+  /** Hoje no Brasil (aaaa-mm-dd), vindo do servidor. */
+  hoje: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // 0426 (D10, D12): o destino é decidido na efetivação, pela regra única.
+  const [destino, setDestino] = useState<DestinoDoCancelamento | "">(fim?.destino ?? "");
+  const [retorno, setRetorno] = useState(fim?.retorno ?? retornoSugerido(hoje));
+  const comDestino = pedeDestino(fim);
+  const naFase5 = fim?.kind === "contrato" && fim?.fase === "treatment_start";
 
   function run(fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) {
     startTransition(async () => {
@@ -72,6 +91,7 @@ export function CancellationSteps({
   }
 
   const signed = status === "assinado";
+  const riscosPendentes = Boolean(fim?.riscosPendentes) && !signed;
 
   return (
     <div className="space-y-3 rounded-lg border p-3">
@@ -83,11 +103,54 @@ export function CancellationSteps({
         </p>
       </div>
 
+      {riscosPendentes && (
+        <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+          Há procedimento começado e não terminado. O termo só pode ser assinado depois que o
+          Coordenador Clínico registrar os riscos informados ao cliente (na ficha do cliente).
+        </p>
+      )}
+
+      {naFase5 && fim?.segueEmTratamento && (
+        <p className="text-xs text-muted-foreground">
+          O cliente segue em tratamento com outra venda: ao efetivar, ele fica na Fase 5.
+        </p>
+      )}
+      {comDestino && (
+        <div className="space-y-1.5 rounded-md border p-2 text-xs">
+          <p className="font-medium">Não sobra outro tratamento. Para onde o cliente vai?</p>
+          {(Object.keys(DESTINO_DO_CANCELAMENTO_LABEL) as DestinoDoCancelamento[]).map((d) => (
+            <label key={d} className="flex items-start gap-2">
+              <input
+                type="radio"
+                name="destino"
+                className="mt-0.5"
+                checked={destino === d}
+                onChange={() => setDestino(d)}
+              />
+              {DESTINO_DO_CANCELAMENTO_LABEL[d]}
+            </label>
+          ))}
+          {destino === "follow_up" && (
+            <label className="block space-y-1">
+              <span className="text-muted-foreground">Retorno previsto (sugerido: 6 meses)</span>
+              <input
+                type="date"
+                value={retorno}
+                min={hoje}
+                onChange={(e) => setRetorno(e.target.value)}
+                className="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm"
+              />
+            </label>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
           variant={signed ? "outline" : "default"}
-          disabled={isPending}
+          disabled={isPending || riscosPendentes}
+          title={riscosPendentes ? "O Coordenador precisa registrar os riscos antes" : undefined}
           onClick={() =>
             run(
               () => signPlanCancellation({ id, clientId, signed: !signed }),
@@ -113,8 +176,15 @@ export function CancellationSteps({
           }
           onClick={() =>
             run(
-              // 4015: com boletos já entregues, a tela confirma antes de cancelá-los.
-              () => comConfirmacaoDeBoletos((confirmar) => applyPlanCancellation({ id, clientId, confirmarCancelamento: confirmar })),
+              async () => {
+                // 0426: primeiro o destino pela regra única; depois a efetivação.
+                if (naFase5) {
+                  const p = await prepararEfetivacao({ id, destino: comDestino ? destino || null : null, retorno });
+                  if (!p.ok) return p;
+                }
+                // 4015: com boletos já entregues, a tela confirma antes de cancelá-los.
+                return comConfirmacaoDeBoletos((confirmar) => applyPlanCancellation({ id, clientId, confirmarCancelamento: confirmar }));
+              },
               "Cancelamento efetivado."
             )
           }

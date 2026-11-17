@@ -13,7 +13,8 @@
 
 import { formatInBrazil } from "@/lib/dates";
 
-export type EscopoDoFechamento = "plano" | "venda_direta" | "ortodontia" | "urgencia";
+/** 0426: "cancelamento" — o plano cancelado chama o Coordenador (D11). */
+export type EscopoDoFechamento = "plano" | "venda_direta" | "ortodontia" | "urgencia" | "cancelamento";
 
 export type SituacaoDoFechamento =
   | "pergunta"
@@ -99,6 +100,7 @@ export const ESCOPO_LABEL: Record<EscopoDoFechamento, string> = {
   venda_direta: "venda direta",
   ortodontia: "ortodontia (contenção entregue)",
   urgencia: "atendimento de urgência",
+  cancelamento: "plano cancelado",
 };
 
 export const CANAL_LABEL: Record<CanalDoContato, string> = {

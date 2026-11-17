@@ -1,5 +1,6 @@
 "use server";
 
+import { recusaDoCancelamento } from "@/lib/fim-do-cancelamento";
 import { mensagemDoAcordoEmAberto } from "@/lib/acordo-em-aberto";
 import { prepararParcelasDoAcordo } from "@/lib/renegociacao/excecao";
 import { comBoletosCancelados } from "@/lib/asaas/boletos-da-operacao";
@@ -121,6 +122,9 @@ export async function signPlanCancellation(input: {
     if (error.message.includes("NOT_ALLOWED")) {
       return { ok: false, error: "Sua função não permite esta ação." };
     }
+    // 0426 (D25): sem o registro dos riscos, o termo não é assinado.
+    const fim = recusaDoCancelamento(error.message);
+    if (fim) return { ok: false, error: fim };
     console.error("sign_plan_cancellation failed:", error.message);
     return { ok: false, error: "Não foi possível registrar a assinatura." };
   }
@@ -232,6 +236,9 @@ export async function applyPlanCancellation(input: {
         error: "Cancelar tratamento é do Gerente da unidade ou do Admin Master.",
       };
     }
+    // 0426 (D10): a fase pela regra única na efetivação.
+    const fim = recusaDoCancelamento(m);
+    if (fim) return { ok: false, error: fim };
     console.error("apply_plan_cancellation failed:", m);
     return { ok: false, error: "Não foi possível efetivar o cancelamento." };
   }
