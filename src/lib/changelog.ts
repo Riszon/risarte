@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.478.0",
+    data: "2026-11-17",
+    migracao: null,
+    titulo: "Venda direta: o caixa também pela Agenda e pelo Comercial; desmarcar o termo pede motivo",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na Agenda, os detalhes do agendamento têm o botão Vender (venda direta): abre o caixa com aquele atendimento já escolhido.",
+        papeis: ["receptionist", "unit_manager"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Em Comercial → Venda direta, cada venda em aberto tem Abrir no caixa: o fechamento (termo pela ZapSign, pagamento) é feito na mesma janela.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Desmarcar o termo assinado de uma venda direta é só do Gerente e pede o motivo, que fica registrado na Auditoria.",
+        papeis: ["unit_manager"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
     versao: "0.477.0",
     data: "2026-11-17",
     migracao: "0426",

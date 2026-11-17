@@ -476,8 +476,14 @@ export function SaleItem({
     which: "contract" | "payment_issued" | "payment_confirmed",
     value: boolean
   ) {
+    // D5: desmarcar o termo pede o motivo (fica na Auditoria).
+    let motivo: string | undefined;
+    if (which === "contract" && !value) {
+      motivo = window.prompt("Motivo de desmarcar o termo assinado (fica na Auditoria):")?.trim() ?? "";
+      if (!motivo) return;
+    }
     startTransition(async () => {
-      const r = await closeDirectSaleStep(sale.id, which, value);
+      const r = await closeDirectSaleStep(sale.id, which, value, motivo);
       if (r.ok) {
         if (r.closed) toast.success("Venda direta CONCLUÍDA! 🎉");
         else toast.success("Fechamento atualizado.");
@@ -555,6 +561,20 @@ export function SaleItem({
 
       {expanded && (
         <div className="mt-3 space-y-4 border-t pt-3">
+          {/* VD3 (plano §2): a lista do Comercial usa a MESMA janela do caixa
+              para fechar (termo pela ZapSign, Pix, Recebi). */}
+          {sale.clientId && !sale.cancelled && sale.status !== "concluida" && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+              <span>Para fechar (termo, pagamento), use o caixa da venda direta.</span>
+              <BotaoContinuarVenda
+                clientId={sale.clientId}
+                clientName={sale.clientName}
+                saleId={sale.id}
+                rotulo="Abrir no caixa"
+                destaque
+              />
+            </div>
+          )}
           {/* PASSO 1 — o que foi vendido. */}
           <FlowSection
             step={1}

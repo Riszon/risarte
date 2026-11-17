@@ -2,6 +2,22 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🛒 0.478.0 — VENDA DIRETA V3: A AGENDA E O COMERCIAL ABREM O CAIXA; D5 (17/11/2026; sem migração) — NA BRANCH `feature/venda-direta-v3`, NÃO PUBLICADO
+>
+> Fecha o que o plano (§2, §5) já tinha decidido. EV-377.
+> - **Agenda**: "Vender (venda direta)" nos detalhes do agendamento
+>   (`agenda/appointment-info-dialog.tsx`), para quem altera a situação
+>   (Recepção, Gerente, Admin), fora da apresentação comercial e de cancelado/
+>   falta. Abre o mesmo `CaixaVendaDireta` com o atendimento escolhido.
+> - **Comercial → Venda direta**: "Abrir no caixa" em cada venda aberta.
+> - **D5**: desmarcar o termo é só do Gerente (ou Admin) e exige motivo
+>   (≥ 5 letras), gravado na Auditoria (`closeDirectSaleStep`, 4º parâmetro).
+>   ⚠️ A trava é do SERVIDOR do app, não do banco (`direct_sale_close_step`
+>   ainda aceita quem fecha) — levar ao banco é migração nova.
+> - Visto na tela: o botão na Agenda abriu o caixa com o encaixe de teste já
+>   escolhido (sem lançar). A D5 e o "Abrir no caixa" têm régua
+>   (`venda-direta-portas.test.ts`, provada quebrando), não foram clicados.
+>
 > ## ✂️ 0.477.0 — FIM DO TRATAMENTO, ETAPA 5: O CANCELAMENTO PELO CAMINHO DO FIM (17/11/2026; migração 0426)
 >
 > Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (5.3; D10, D11, D12, D25).

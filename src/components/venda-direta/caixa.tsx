@@ -1419,6 +1419,9 @@ function Fechamento({
   const permuta = meioDaVez === "permuta";
   const [permutaTexto, setPermutaTexto] = useState("");
   const [comAcordo, setComAcordo] = useState(false);
+  // D5: desmarcar o termo pede o motivo.
+  const [desmarcando, setDesmarcando] = useState(false);
+  const [motivo, setMotivo] = useState("");
   // Um token por janela aberta: duplo clique não vira dois recebimentos.
   const [token] = useState(() => crypto.randomUUID());
 
@@ -1600,15 +1603,13 @@ function Fechamento({
                 Trocar a forma de pagamento
               </button>
             )}
-            {/* D5: desfazer à mão é só do Gerente. */}
-            {venda.isManager && venda.contractSigned && (
+            {/* D5: desfazer à mão é só do Gerente, com motivo (Auditoria). */}
+            {venda.isManager && venda.contractSigned && !desmarcando && (
               <button
                 type="button"
                 className="text-muted-foreground hover:underline"
                 disabled={isPending}
-                onClick={() =>
-                  agir(() => closeDirectSaleStep(venda.id, "contract", false), "Termo desmarcado.")
-                }
+                onClick={() => setDesmarcando(true)}
               >
                 Desmarcar o termo
               </button>
@@ -1622,6 +1623,36 @@ function Fechamento({
               Cancelar venda
             </button>
           </div>
+          {desmarcando && (
+            <div className="flex flex-wrap items-center gap-1.5 rounded-md border p-2">
+              <input
+                aria-label="Motivo de desmarcar o termo"
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Motivo (fica na Auditoria)"
+                className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs"
+              />
+              <Button size="sm" variant="outline" disabled={isPending} onClick={() => { setDesmarcando(false); setMotivo(""); }}>
+                Voltar
+              </Button>
+              <Button
+                size="sm"
+                disabled={isPending || motivo.trim().length < 5}
+                onClick={() =>
+                  agir(async () => {
+                    const r = await closeDirectSaleStep(venda.id, "contract", false, motivo);
+                    if (r.ok) {
+                      setDesmarcando(false);
+                      setMotivo("");
+                    }
+                    return r;
+                  }, "Termo desmarcado.")
+                }
+              >
+                Desmarcar
+              </Button>
+            </div>
+          )}
           {comAcordo && venda.clientId && (
             <AcordosDaVenda clientId={venda.clientId} directSaleId={venda.id} />
           )}

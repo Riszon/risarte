@@ -3463,7 +3463,13 @@ abre onde parou.
 
 **Em "⋯ Mais"**: trocar a forma de pagamento, cancelar a venda (o termo
 ainda aberto na ZapSign é cancelado junto), abrir o distrato; **desmarcar o
-termo** é só do Gerente.
+termo** é só do Gerente e pede o **motivo**, que fica na Auditoria *(desde a
+versão 0.478.0)*.
+
+**Outras portas para o mesmo caixa** *(desde a versão 0.478.0)*: na **Agenda**,
+abra os detalhes do agendamento e clique em **Vender (venda direta)** — o
+atendimento já vem escolhido. Em **Comercial → Venda direta**, cada venda em
+aberto tem **Abrir no caixa**.
 
 **Erros frequentes:** tentar receber antes do termo assinado; procurar o
 fechamento na aba Sessões & Procedimentos (ela mostra só os procedimentos e
