@@ -11,6 +11,7 @@ import {
   carregarAcessoPorUnidade,
   carregarAmbientesDoUsuario,
   carregarClinicas,
+  carregarCoberturas,
   carregarFuncoes,
   medalhasDe,
 } from "../../dados";
@@ -75,6 +76,12 @@ export default async function AcessoSemCadastroPage(
       carregarCertificacoes(supabase, [perfil.id]),
     ]);
   const acesso = acessos.get(perfil.id) ?? null;
+  // 0414: as funções de apoio (coberturas) agendadas e ativas.
+  const coberturas = await carregarCoberturas(
+    supabase,
+    perfil.id,
+    (id) => funcoes.find((f) => f.clinicId === id)?.clinicName ?? "Unidade"
+  );
   const enderecos = await carregarEnderecos(supabase);
   // 0262: o acesso de um Admin só o Admin Principal altera.
   const hierarquia = await carregarHierarquia(supabase, session, perfil.id);
@@ -164,6 +171,7 @@ export default async function AcessoSemCadastroPage(
         treinoConfigurado={treinoConfigurado()}
         acesso={acesso}
         funcoes={funcoes}
+        coberturas={coberturas}
         clinicas={clinicas}
         loginsLivres={[]}
         isAdmin={mexeNoAcesso}

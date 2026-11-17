@@ -1189,6 +1189,47 @@ continuar em Cambé — e **desligar da equipe**, que é o cadastro inteiro).
 **Só o Admin Master mexe no acesso**; Gerente, Franqueado e Franqueadora/RH veem
 para saber o que está valendo.
 
+**Funções de apoio: ajudar em outra função na mesma unidade** *(desde a
+0.464.0)*. Cada pessoa tem **uma função principal** em cada unidade (o cargo
+dela). Quando alguém precisa ajudar em outra função (um colega de férias, uma
+função que a unidade não tem), o Admin Master usa, na aba **Acesso**, o botão
+**Adicionar função de apoio** e escolhe:
+
+- a **unidade** (só as unidades onde a pessoa já tem a função principal) e a
+  **função de apoio**;
+- o tipo: **Cobertura temporária** (com **começa em** e **último dia**, até
+  90 dias, contando coberturas emendadas) ou **Acúmulo fixo** (sem data de fim,
+  para a unidade que não tem quem faça a função);
+- o **motivo** (férias, licença, falta, desligamento/vaga aberta, unidade sem a
+  função, outro) e uma explicação. Para *vaga aberta*, a **previsão de
+  contratação**.
+
+O que vale:
+
+- A pessoa **soma** o que as funções podem fazer na unidade. No Início aparece
+  *"Você está cobrindo Recepção em Cambé até 29/11"*, e o menu mostra a função
+  com *(apoio)*. A pessoa recebe um aviso no sino quando a cobertura começa, 2
+  dias antes de acabar e quando acaba.
+- **A cobertura temporária termina sozinha** no dia seguinte ao último dia, e
+  libera o sistema real daquela função **pelo período**, sem missão. Ela não
+  entra em turma de certificação.
+- **O acúmulo fixo** passa pelo portão como qualquer função (missão) e é
+  **revisto a cada 90 dias**: o botão **Revisado** empurra a próxima revisão.
+  Revisão vencida aparece em vermelho.
+- No máximo **duas funções de apoio** por pessoa na unidade, sem repetir função.
+  **Comprador e Financeiro da Franqueadora nunca juntos** (quem compra não é
+  quem paga).
+- **Encerrar agora** (com motivo) tira a função de apoio na hora. A cobertura
+  agendada que ainda não começou se **cancela**. Nada se apaga: fica o
+  histórico de quem cobriu o quê, quando e por quê.
+- Repasse, nível de carreira, metas e prêmio do Indica continuam pela **função
+  principal**. A lixeira da lista de funções vale só para a principal.
+- Quem deixa a função principal na unidade, ou é desligado, tem as coberturas
+  encerradas sozinhas.
+
+Com duas funções na unidade, o bloco **"Sistema real em cada unidade"** mostra
+uma linha por função: a pessoa pode estar aberta em uma e fechada na outra.
+
 **Admin Principal e outros Admins.** O dono do sistema é o **Admin Principal**.
 Ele pode tornar outras pessoas **Admin** — na aba **Acesso** da ficha, botão
 **Tornar Admin** (e **Retirar Admin**). Um Admin faz tudo no sistema, em todas as

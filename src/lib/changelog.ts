@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.464.0",
+    data: "2026-11-16",
+    migracao: null,
+    titulo: "Funções de apoio: cobrir um colega em outra função",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha do Risartano, aba Acesso, o Admin pode dar uma função de apoio a quem já trabalha na unidade: cobertura temporária (com início e fim, até 90 dias) ou acúmulo fixo, sempre com motivo. A pessoa soma o que as funções podem fazer, vê no Início \"Você está cobrindo…\" e recebe avisos no começo, 2 dias antes do fim e no fim. A temporária termina sozinha.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No bloco \"Sistema real em cada unidade\" da ficha, quem tem duas funções na unidade aparece com uma linha por função, e liberar ou retirar a liberação vale só para aquela função.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.463.0",
     data: "2026-11-16",
     // Sem migração: o caixa usa as mesmas regras e funções do banco de antes.

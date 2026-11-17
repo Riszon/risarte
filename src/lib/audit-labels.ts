@@ -300,6 +300,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   system_report_attachments: "Anexo de relato",
   training_campaigns: "Turma de certificação",
   training_enrollments: "Matrícula na certificação",
+  role_coverages: "Função de apoio (cobertura)",
   training_requirements: "Metas da certificação",
   training_settings: "Configuração da certificação",
   // ----------------------------------------------------------------- PPR+

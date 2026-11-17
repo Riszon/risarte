@@ -127,6 +127,8 @@ type Props = {
   activeClinicId: string | null;
   /** Roles the user holds at the ACTIVE clinic (confusion-proofing). */
   activeClinicRoles: UserRole[];
+  /** 0414: quais delas são de APOIO (cobertura) — aparecem marcadas. */
+  activeClinicSupportRoles?: UserRole[];
   /** Sidebar minimizada? Vem do cookie (server) para não "piscar" ao carregar. */
   initialCollapsed: boolean;
   /** Grupo Administração aberto? Também vem do cookie, pelo mesmo motivo. */
@@ -359,6 +361,7 @@ export function AppSidebar({
   clinics,
   activeClinicId,
   activeClinicRoles,
+  activeClinicSupportRoles = [],
   initialCollapsed,
   initialAdminAberto,
 }: Props) {
@@ -650,7 +653,13 @@ export function AppSidebar({
               {isAdminMaster
                 ? "Admin Master"
                 : activeClinicRoles.length > 0
-                  ? activeClinicRoles.map((r) => ROLE_LABELS[r]).join(", ")
+                  ? activeClinicRoles
+                      .map((r) =>
+                        activeClinicSupportRoles.includes(r)
+                          ? `${ROLE_LABELS[r]} (apoio)`
+                          : ROLE_LABELS[r]
+                      )
+                      .join(", ")
                   : "—"}
             </span>
           </p>

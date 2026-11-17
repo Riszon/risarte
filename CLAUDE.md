@@ -401,6 +401,13 @@ Syncthing se comportarem de forma estranha.**
 `ESTADO_DO_PROJETO.md`)*
 
 
+**16/11/2026 (funções de apoio, F3) — PC Administrador (core 0.463.0 → 0.464.0, sem migração)**
+
+- **As telas das funções de apoio** (bloco 0.464.0 no ESTADO; manual 2.5).
+  ⚠️ Regra da tela em `src/lib/funcoes-de-apoio.ts`; a sessão traz
+  `coberturas`. Falta a F4 (painel "Equipe e coberturas" e avisos à
+  Franqueadora). Não visto na tela.
+
 **16/11/2026 (venda direta v3, VD3-1) — PC Administrador (core 0.462.0 → 0.463.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
 - **O caixa da venda direta em uma janela** (bloco 0.463.0 no ESTADO; plano e

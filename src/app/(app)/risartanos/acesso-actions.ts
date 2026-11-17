@@ -17,6 +17,11 @@ import { isTreino } from "@/lib/environment";
 import { SOMENTE_CONSULTA_NO_TREINO } from "@/lib/espelho";
 import { agendarEspelho } from "@/lib/espelho-treino";
 import {
+  ehMotivoDeCobertura,
+  ehTipoDeCobertura,
+  recusaDaCobertura,
+} from "@/lib/funcoes-de-apoio";
+import {
   escopoAceitoPelaFuncao,
   RECUSA_DO_ESCOPO_DO_FINANCEIRO,
 } from "@/lib/finance/escopo";
@@ -505,7 +510,9 @@ export async function definirAmbiente(
 export async function liberarUnidadeSemMissao(
   userId: string,
   clinicId: string,
-  motivo: string
+  motivo: string,
+  /** 0413: com mais de uma função na unidade, qual liberar. */
+  role?: UserRole
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
@@ -520,6 +527,7 @@ export async function liberarUnidadeSemMissao(
     p_user_id: userId,
     p_clinic_id: clinicId,
     p_note: motivo.trim(),
+    ...(role ? { p_role: role } : {}),
   });
   if (error) {
     console.error("liberarUnidadeSemMissao falhou:", error.message);
@@ -556,7 +564,9 @@ export async function liberarUnidadeSemMissao(
  */
 export async function retirarLiberacaoDaUnidade(
   userId: string,
-  clinicId: string
+  clinicId: string,
+  /** 0413: só a desta função (sem ela, todas da unidade, como antes). */
+  role?: UserRole
 ): Promise<ActionResult> {
   if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
   await requireAdminMaster();
@@ -567,6 +577,7 @@ export async function retirarLiberacaoDaUnidade(
   const { data: retirou, error } = await supabase.rpc("revoke_clinic_access", {
     p_user_id: userId,
     p_clinic_id: clinicId,
+    ...(role ? { p_role: role } : {}),
   });
   if (error) {
     console.error("retirarLiberacaoDaUnidade falhou:", error.message);
@@ -755,7 +766,7 @@ export async function addUserRole(
 
   if (error) {
     const friendly = error.code === "23505"
-      ? "Esta pessoa já tem uma função nesta clínica. Remova a atual antes de adicionar outra."
+      ? "Esta pessoa já tem uma função principal nesta clínica. Para ela ajudar em outra função, use Adicionar função de apoio."
       : "Não foi possível atribuir a função.";
     if (error.code !== "23505") {
       console.error("addUserRole failed:", error.message);
@@ -878,6 +889,16 @@ export async function removeUserRole(
   if (bloqueio) return { ok: false, error: bloqueio };
 
   const supabase = await createClient();
+  // 0414: a função de APOIO sai encerrando a cobertura (fica o registro);
+  // apagar a linha deixaria a cobertura "ativa" sem a função.
+  const { data: linha } = await supabase
+    .from("user_clinic_roles")
+    .select("assignment_kind")
+    .eq("id", roleRowId)
+    .maybeSingle<{ assignment_kind: string | null }>();
+  if (linha?.assignment_kind === "apoio") {
+    return { ok: false, error: "Esta é uma função de apoio: use Encerrar agora, na cobertura." };
+  }
   const { error } = await supabase
     .from("user_clinic_roles")
     .delete()
@@ -897,4 +918,115 @@ export async function removeUserRole(
   agendarEspelho({ pessoa: userId });
   reaquecer();
   return { ok: true };
+}
+
+// ---- FUNÇÕES DE APOIO (0414; plano em docs/equipe/FUNCOES-DE-APOIO-PLANO.md) ----
+// D1: só o Admin Master dá, encerra, cancela e revisa. A regra mora no banco
+// (`grant_role_coverage` e as outras portas); aqui só se traduz a recusa.
+
+export async function darFuncaoDeApoio(input: {
+  userId: string;
+  clinicId: string;
+  role: UserRole;
+  tipo: string;
+  inicio: string;
+  fim: string | null;
+  motivoCategoria: string;
+  motivo: string;
+  previsaoDeContratacao: string | null;
+}): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
+  await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(input.userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
+  if (!ehTipoDeCobertura(input.tipo)) return { ok: false, error: "Escolha o tipo." };
+  if (!ehMotivoDeCobertura(input.motivoCategoria)) return { ok: false, error: "Escolha o motivo." };
+  const texto = input.motivo.trim();
+  if (!texto) return { ok: false, error: "Escreva o motivo." };
+  if (texto.length > 300) return { ok: false, error: "Motivo longo demais (até 300 letras)." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("grant_role_coverage", {
+    p_user_id: input.userId,
+    p_clinic_id: input.clinicId,
+    p_role: input.role,
+    p_kind: input.tipo,
+    p_starts_on: input.inicio,
+    p_ends_on: input.tipo === "temporaria" ? input.fim : null,
+    p_reason_category: input.motivoCategoria,
+    p_reason: texto,
+    p_hiring_forecast: input.motivoCategoria === "desligamento" ? input.previsaoDeContratacao : null,
+  });
+  if (error) {
+    console.error("darFuncaoDeApoio:", error.message);
+    return { ok: false, error: recusaDaCobertura(error.message) };
+  }
+
+  await logAudit({
+    action: "create",
+    entityType: "role_coverages",
+    entityId: input.userId,
+    details: { clinicId: input.clinicId, role: input.role, tipo: input.tipo },
+  });
+  revalidatePath("/risartanos", "layout");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+async function mexerNaCobertura(
+  rpc: "end_role_coverage" | "cancel_role_coverage",
+  coberturaId: string,
+  userId: string,
+  motivo: string
+): Promise<ActionResult> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
+  await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
+  if (!motivo.trim()) return { ok: false, error: "Escreva o motivo." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc(rpc, { p_id: coberturaId, p_reason: motivo.trim() });
+  if (error) {
+    console.error(rpc, error.message);
+    return { ok: false, error: recusaDaCobertura(error.message) };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "role_coverages",
+    entityId: coberturaId,
+    details: { acao: rpc === "end_role_coverage" ? "encerrada" : "cancelada" },
+  });
+  revalidatePath("/risartanos", "layout");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Encerrar agora a cobertura ativa (com motivo). A função de apoio sai na hora. */
+export async function encerrarFuncaoDeApoio(coberturaId: string, userId: string, motivo: string) {
+  return mexerNaCobertura("end_role_coverage", coberturaId, userId, motivo);
+}
+
+/** Cancelar a cobertura agendada, que ainda não começou. */
+export async function cancelarFuncaoDeApoio(coberturaId: string, userId: string, motivo: string) {
+  return mexerNaCobertura("cancel_role_coverage", coberturaId, userId, motivo);
+}
+
+/** D14: revisar o acúmulo fixo (empurra a próxima revisão). */
+export async function revisarFuncaoDeApoio(
+  coberturaId: string,
+  userId: string
+): Promise<ActionResult & { proxima?: string }> {
+  if (isTreino()) return { ok: false, error: SOMENTE_CONSULTA_NO_TREINO };
+  await requireAdminMaster();
+  const bloqueio = await bloqueioDeHierarquia(userId);
+  if (bloqueio) return { ok: false, error: bloqueio };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("review_role_coverage", { p_id: coberturaId });
+  if (error) {
+    console.error("revisarFuncaoDeApoio:", error.message);
+    return { ok: false, error: recusaDaCobertura(error.message) };
+  }
+  await logAudit({ action: "update", entityType: "role_coverages", entityId: coberturaId, details: { revisada: true } });
+  revalidatePath("/risartanos", "layout");
+  return { ok: true, proxima: typeof data === "string" ? data : undefined };
 }

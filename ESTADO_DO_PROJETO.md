@@ -2,6 +2,18 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 👥 0.464.0 — FUNÇÕES DE APOIO, F3: AS TELAS (16/11/2026; sem migração)
+>
+> Plano (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Manual 2.5; EV-364.
+> - Ficha do Risartano, aba Acesso: **Adicionar função de apoio**, a lista com
+>   Encerrar agora / Cancelar / Revisado (`FuncoesDeApoio`). ⚠️ A regra da tela
+>   mora em `src/lib/funcoes-de-apoio.ts` (espelho do banco: até 2, combinação
+>   proibida). ⚠️ A linha de apoio não sai pela lixeira (`removeUserRole` recusa).
+> - ⚠️ **A sessão tem `coberturas`** (lidas da mesma consulta das funções, sem
+>   ida a mais ao banco): Início "Você está cobrindo…" e menu "(apoio)".
+> - Ficha: "Sistema real em cada unidade" por (unidade, função).
+> - Não visto na tela (no treino a ficha é só consulta).
+
 > ## 🛒 0.463.0 — VENDA DIRETA V3: O CAIXA EM UMA JANELA (16/11/2026; sem migração)
 >
 > Pedido do dono (a venda direta "confusa, em duas abas, tudo à mão"). Plano e

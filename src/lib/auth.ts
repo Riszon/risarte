@@ -108,10 +108,18 @@ export type SessionContext = {
    * há desconexão por inatividade nesta requisição.
    */
   acesso: { limiteMin: number; dia: string } | null;
+  /**
+   * 0414 (funções de apoio): as funções de APOIO valendo agora — o Início e o
+   * menu dizem "Você está cobrindo…". `endsAt` nulo = acúmulo fixo.
+   */
+  coberturas?: { clinicId: string; clinicName: string; role: UserRole; endsAt: string | null }[];
 };
 
 type RoleRow = {
   role: UserRole;
+  /** 0413/0414: principal ou apoio, e o fim da função de apoio. */
+  assignment_kind?: string | null;
+  ends_at?: string | null;
   clinics: Clinic | null;
 };
 
@@ -155,7 +163,7 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
         .single(),
       supabase
         .from("user_clinic_roles")
-        .select("role, clinics ( id, name, type, is_active )")
+        .select("role, assignment_kind, ends_at, clinics ( id, name, type, is_active )")
         .eq("user_id", userId)
         .returns<RoleRow[]>(),
       supabase
@@ -260,10 +268,19 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
 
   const rolesByClinic: Record<string, UserRole[]> = {};
   const memberClinics = new Map<string, Clinic>();
+  const coberturasLidas: NonNullable<SessionContext["coberturas"]> = [];
   for (const row of roleRows ?? []) {
     if (!row.clinics) continue;
     memberClinics.set(row.clinics.id, row.clinics);
     (rolesByClinic[row.clinics.id] ??= []).push(row.role);
+    if (row.assignment_kind === "apoio") {
+      coberturasLidas.push({
+        clinicId: row.clinics.id,
+        clinicName: row.clinics.name,
+        role: row.role,
+        endsAt: row.ends_at ?? null,
+      });
+    }
   }
 
   // ⚠️ A TRANCA POR UNIDADE E FUNÇÃO (0276). Unidade fechada SAI da sessão —
@@ -372,6 +389,10 @@ export const getSessionContext = cache(async function getSessionContext(): Promi
     ambientes,
     unidadesFechadas,
     acessoNaoConferido,
+    // Só as funções de apoio das unidades que ficaram abertas na sessão.
+    coberturas: coberturasLidas.filter(
+      (c) => memberClinics.has(c.clinicId) && (rolesByClinic[c.clinicId] ?? []).includes(c.role)
+    ),
     acesso:
       acessoLido && acessoLido.limiteMin != null && acessoLido.dia
         ? { limiteMin: acessoLido.limiteMin, dia: acessoLido.dia }
