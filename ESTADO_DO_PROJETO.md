@@ -75,9 +75,12 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   `ortho_appointment_sync`, partir da 0417.
 > - Dados: manutenção não realizada presa a sessão de plano é solta; a
 >   realizada fica e a conferência conta (o Financeiro olha).
-> - ✅ 0417 no treino (reaplicada; ensaio 25/25, desfeito). ⏳ **Produção
->   pendente** (conferência esperada `0 · N · 1 · 1 · 0`; N = realizadas para
->   o Financeiro). Medição antes: `docs/ortodontia/AP175-medicao-producao.sql`.
+> - ✅ **0417 nos dois bancos**: treino (reaplicada; ensaio 25/25, desfeito) e
+>   produção (o dono, 17/11/2026; conferência `0 · 0 · 1 · 1 · 0` — nenhuma
+>   manutenção realizada presa a sessão de plano, ou seja, **nenhum repasse em
+>   dobro pago na produção**; conferido de fora: `_ortho_begin_treatment` e
+>   `_ortho_release_maintenance` existem e recusam sem login, a de controle
+>   responde "não encontrada"). Push depois da migração.
 >   A Jornada (0418) lê `ortho_cases.status` e reage à passagem para
 >   "contencao" por gatilho próprio — nada aqui a afeta. EV-368. Não visto na tela.
 

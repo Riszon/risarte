@@ -441,8 +441,10 @@ Syncthing se comportarem de forma estranha.**
   `treatment_session_id` e olhar também `treatment_sessions.appointment_id`.
   ⚠️ Início do caso = `_ortho_begin_treatment`; ao recriar
   `ortho_set_status`/`ortho_appointment_sync`, partir da 0417.
-- ✅ 0417 no treino (ensaio 25/25, desfeito). ⏳ Produção pendente; push só
-  depois dela. Etapa B (tipo "Manutenção ortodôntica") aguarda.
+- ✅ 0417 nos dois bancos (treino: ensaio 25/25, desfeito; produção pelo dono
+  em 17/11/2026, conferência 0·0·1·1·0 — nenhum repasse em dobro pago;
+  conferido de fora). Publicado depois da migração. Etapa B (tipo
+  "Manutenção ortodôntica") aguarda, no backlog.
 
 **17/11/2026 (funções de apoio, F4) — PC Administrador (core → 0.468.0, migração 0419)**
 
