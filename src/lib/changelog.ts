@@ -84,6 +84,49 @@ export const CHANGELOG: Versao[] = [
     ],
   },
   {
+    versao: "0.467.0",
+    data: "2026-11-17",
+    migracao: "0418",
+    titulo: "Fim do tratamento: a pergunta da reavaliação volta a aparecer, e o Coordenador cuida do cliente até o fim",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Ao concluir a última sessão de um plano (o plano original, um complemento, uma venda direta ou a entrega da contenção na ortodontia), abre para quem executou a pergunta \"Este cliente necessita de consulta de reavaliação com o Coordenador Clínico?\". Ela não fecha sem resposta e fica na ficha e no sino até ser respondida. Antes ela nunca aparecia: o cliente terminava o tratamento e ficava parado no Início de Tratamento.",
+        papeis: ["dentist", "clinical_coordinator", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Respondeu \"Não\"? O Coordenador recebe a tarefa de ligar ou mandar mensagem para o cliente e registrar como foi: chamar para revisar, aguardar o retorno (com a data sugerida para 6 meses) ou novo planejamento. Sem falar com o cliente, cada tentativa fica registrada; depois de 3, dá para encerrar sem contato. O Coordenador também pode mudar a resposta de quem executou enquanto nada aconteceu.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O cliente só sai do Início de Tratamento quando não sobra nada: nenhuma sessão por fazer, nenhum plano complementar em andamento e nenhuma ortodontia em andamento. Se sobra, a reavaliação acontece sem mudar a fase, e a agenda passou a oferecer Reavaliação para quem está em tratamento. A situação do plano passa sozinha para Em tratamento e Concluído.",
+        papeis: "todos",
+        manual: "Fluxo 2c — O fim do tratamento",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A urgência não leva mais o cliente novo direto para o Início de Tratamento. Ao concluir o atendimento, a Recepção recebe \"Agendar a avaliação completa\", que some quando a avaliação é agendada.",
+        papeis: ["receptionist", "clinical_coordinator", "dentist"],
+        manual: "Fluxo 2b — Quem move o cliente de fase (e quando)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Admin Master pode marcar, no cartão do procedimento, \"Reavaliação presencial obrigatória no fim do plano\" (prótese, implante, reabilitação...). Com ele no plano, a reavaliação já fica pedida e a pergunta não aparece. E o status \"Tratamento Finalizado\" à mão ficou só para o Admin Master: o sistema marca sozinho.",
+        papeis: "todos",
+        manual: "Fluxo 2c — O fim do tratamento",
+      },
+    ],
+  },
+  {
     versao: "0.465.0",
     data: "2026-11-16",
     migracao: "0415",

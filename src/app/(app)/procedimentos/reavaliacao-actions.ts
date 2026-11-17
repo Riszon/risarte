@@ -1,6 +1,6 @@
 "use server";
 
-// D17 (0416, docs/jornada/FIM-DO-TRATAMENTO-PLANO.md): o procedimento com
+// D17 (0418, docs/jornada/FIM-DO-TRATAMENTO-PLANO.md): o procedimento com
 // "reavaliação presencial obrigatória" faz o fim do plano marcar "Sim" sem
 // perguntar ao dentista (prótese, implante, reabilitação, estética...). Só o
 // Admin Master — o banco confere de novo (`procedures_reevaluation_guard`, e a

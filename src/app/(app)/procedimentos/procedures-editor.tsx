@@ -788,8 +788,8 @@ export function ProceduresEditor({
   /** 0369 (Rita, 0A.5): os campos da assistente virtual, por procedimento
    *  (nulo = o banco ainda sem a 0369; o painel não aparece). */
   rita?: Record<string, RitaDoProc> | null;
-  /** 0416 (D17): a reavaliação presencial obrigatória, por procedimento
-   *  (nulo = o banco ainda sem a 0416; o painel não aparece). */
+  /** 0418 (D17): a reavaliação presencial obrigatória, por procedimento
+   *  (nulo = o banco ainda sem a 0418; o painel não aparece). */
   reavaliacao?: Record<string, boolean> | null;
 }) {
   const router = useRouter();
@@ -1820,7 +1820,7 @@ function ProcedureRow({
       {networkMode && rita && (podeMarcarRita || rita.canOffer || rita.role) && (
         <RitaDoProcedimento procedureId={p.id} rita={rita} podeEditar={podeMarcarRita} />
       )}
-      {/* 0416 (D17): reavaliação presencial obrigatória no fim do plano. */}
+      {/* 0418 (D17): reavaliação presencial obrigatória no fim do plano. */}
       {networkMode && reavaliacaoObrigatoria !== null && (podeMarcarRita || reavaliacaoObrigatoria) && (
         <ReavaliacaoDoProcedimento procedureId={p.id} obrigatoria={reavaliacaoObrigatoria} podeEditar={podeMarcarRita} />
       )}

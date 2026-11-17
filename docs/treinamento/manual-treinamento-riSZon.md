@@ -2408,8 +2408,10 @@ abas. De cima para baixo:
    agendamento, apresentação) e as pílulas: fase e pilar da jornada, o
    odontograma em miniatura, unidade, nascimento e idade.
 2. **Precisa de atenção.** Um painel só, com **uma linha por aviso** e o
-   botão da ação ao lado: a **decisão obrigatória** ("necessita
-   reavaliação?", com Sim/Não na própria linha), os **alertas da anamnese**
+   botão da ação ao lado: as **tarefas do fim do tratamento** (desde a
+   0.467.0: a pergunta "necessita de reavaliação?", com os botões na própria
+   linha; o contato do Coordenador com o cliente; a reavaliação a agendar; a
+   avaliação a agendar depois de uma urgência — ver o Fluxo 2c), os **alertas da anamnese**
    (o que foi marcado, ex.: "Diabetes"), a **anamnese a preencher ou
    atualizar**, o **controle de qualidade pendente**, as **cobranças em
    atraso** e o **cadastro incompleto** (com o botão **Completar**, que já
@@ -3572,6 +3574,35 @@ avaliação. Ele vai para o **Acompanhamento** sem passar pelo Planejamento.
 Precisando de plano novo, o botão é o mesmo de sempre: **Enviar ao Centro de
 Planejamento**.
 
+**Quarta tarefa — o fim de cada plano (desde a 0.467.0).** Você é o
+responsável pelo sucesso do tratamento, e o sistema não deixa o cliente ser
+esquecido no fim. Quando um plano termina, quem executou responde se o cliente
+precisa de reavaliação (ver 6.4). Depois disso, as tarefas aparecem na ficha
+do cliente, no painel **Precisa de atenção**, e no seu sino:
+
+- **"Decisão do Coordenador: necessita de reavaliação?"** — quem executou
+  respondeu "Não sei". Responda Sim ou Não.
+- **"Contatar o cliente e colher o feedback"** — quem executou respondeu
+  "Não". Ligue ou mande mensagem e clique **Registrar contato**: como falou,
+  se conseguiu falar e o que o cliente disse. Depois, escolha:
+  - **Chamar para revisar** → a Recepção agenda a reavaliação;
+  - **Aguardar o retorno** → sem outro tratamento em andamento, o cliente vai
+    para o **Acompanhamento**, com o retorno sugerido para 6 meses (você pode
+    mudar a data);
+  - **Precisa de novo planejamento** → sem outro tratamento em andamento, o
+    cliente vai para o **Centro de Planejamento**.
+
+  Não atendeu? Registre a tentativa: a tarefa continua aberta. Depois de **3
+  tentativas** sem falar com o cliente, dá para encerrar **sem contato** (o
+  cliente vai para o Acompanhamento).
+- **"Aguardando a reavaliação com o Coordenador"** — a Recepção está agendando
+  a consulta. Sem outro tratamento em andamento, o cliente já está na
+  **Reavaliação**; com outro tratamento (por exemplo, a ortodontia), a consulta
+  acontece **sem mudar a fase**, e concluí-la encerra a tarefa.
+
+Enquanto nada aconteceu, você pode **mudar a resposta** de quem executou
+(**Mudar para Sim** ou **Mudar para Não**).
+
 ### 6.3. Dentista Planner
 
 **Objetivo:** montar plano e orçamento. **Duração:** 75 minutos.
@@ -4053,6 +4084,23 @@ a ficha procurava só o atendimento com data de hoje e não mostrava nada.
 **O que acontece automaticamente ao concluir:** o material do kit **baixa do
 estoque** e, quando a sessão concluída é a **última do procedimento**, o
 repasse do procedimento é apurado. Você não digita nada disso.
+
+**A pergunta do fim do plano (desde a 0.467.0).** Quando a sessão que você
+concluiu é a **última de um plano** (o plano original, um complemento ou uma
+venda direta), abre na hora uma janela: *"Este cliente necessita de consulta de
+reavaliação com o Coordenador Clínico?"*. Ela **não fecha sem resposta**:
+
+- **Sim** → a Recepção agenda a reavaliação com o Coordenador.
+- **Não** → o Coordenador liga ou manda mensagem para o cliente e registra como
+  foi.
+- **Não sei** → o Coordenador decide.
+
+A mesma pergunta fica na ficha do cliente, no painel **Precisa de atenção**, e
+no sino, até alguém responder. Se o plano tiver um procedimento marcado como
+**reavaliação obrigatória** (prótese, implante, reabilitação…), a pergunta não
+aparece: a reavaliação já fica pedida. O Coordenador pode mudar a sua
+resposta enquanto o próximo passo não aconteceu. A revisão e a refação pedidas
+pelo controle de qualidade **não** repetem a pergunta.
 
 > **O kit do atendimento e o mês fechado** (desde a 0.458.0, relato OC-00181).
 > O kit de atendimento (gorro, babador) é baixado no **dia do atendimento**.
@@ -5179,6 +5227,10 @@ EV-171, EV-172 e EV-182.
 9. **Dentista** executa, escreve o Desenvolvimento Clínico e conclui →
    **estoque baixa e, na última sessão do procedimento, o repasse é apurado
    automaticamente**.
+10. **Na última sessão do plano**, o sistema pergunta a quem executou se o
+    cliente precisa de reavaliação, e o **Coordenador** cuida do resto até o
+    cliente ir para a Reavaliação ou o Acompanhamento (Fluxo 2c, desde a
+    0.467.0).
 
 **Evidência:** este fluxo está coberto por teste automatizado ponta a ponta
 (`e2e/01-jornada.spec.ts` a `e2e/10-estoque.spec.ts`), o que confirma que cada
@@ -5198,13 +5250,13 @@ mudada à mão, ela passaria a dizer o que a pessoa achou, e não o que acontece
 | O cliente vai de | para | quando |
 |---|---|---|
 | Aquisição | Conversão Clínica | a recepção faz o **check-in** da **avaliação** |
-| Aquisição | Início de Tratamento | check-in de **urgência/emergência** |
 | Conversão Comercial | Início de Tratamento | a **venda fecha** (contrato assinado **e** pagamento confirmado) |
 | Conversão Comercial | Início de Tratamento | check-in da **1ª sessão** |
 | Conversão Comercial | Acompanhamento | o consultor marca a negociação como **perdida** |
-| Início de Tratamento | Reavaliação | resposta **SIM** em "necessita reavaliação?" |
-| Início de Tratamento | Centro de Planejamento | resposta **SIM** em "necessita novo planejamento?" |
-| Início de Tratamento | Acompanhamento | resposta **NÃO** em "necessita novo planejamento?" |
+| Início de Tratamento | Reavaliação | o último plano termina e a resposta é **Sim** (ou o Coordenador escolhe **Chamar para revisar**) |
+| Início de Tratamento | Acompanhamento | o último plano termina, a resposta é **Não** e o Coordenador registra **Aguardar o retorno** (ou **sem contato** depois de 3 tentativas) |
+| Início de Tratamento | Centro de Planejamento | o último plano termina e o Coordenador registra **Precisa de novo planejamento** |
+| Reavaliação | Acompanhamento ou Planejamento | **Concluir a reavaliação** ou **Enviar ao Centro de Planejamento** |
 | Acompanhamento | Reavaliação | check-in de uma **reavaliação** |
 | Acompanhamento | Início de Tratamento | check-in de uma **sessão** |
 | qualquer fase | Reavaliação ou Acompanhamento | **cancelamento de plano** efetivado (o Gerente escolhe o destino) — desde a 0.393.0, só quando não sobra outra venda em tratamento (o plano original ou um complemento); senão a fase não muda |
@@ -5234,6 +5286,55 @@ depois se saber que aquela fase andou sem o fato que deveria tê-la movido.
 > Admin Master, a fase muda pelo seu trabalho. Quando ela parecer travada, o
 > que falta é um passo do fluxo — o check-in que não foi feito, a decisão que
 > ninguém respondeu, o pagamento que não foi confirmado.
+
+> **Urgência não leva mais à Fase 5** (desde a 0.467.0). Quem chega pela
+> urgência ainda não tem tratamento: o check-in não muda a fase, e ao concluir
+> o atendimento a Recepção recebe a tarefa **"Agendar a avaliação completa"**.
+> Ela some quando a avaliação é agendada; o check-in da avaliação leva à
+> Conversão Clínica, como para qualquer cliente novo.
+
+### Fluxo 2c — O fim do tratamento *(desde a 0.467.0)*
+
+**Os princípios:** o cliente **nunca pode ser esquecido**, e o responsável pelo
+sucesso do tratamento é o **Coordenador Clínico**. Por isso o fim de cada plano
+abre uma tarefa com dono, que só some quando é resolvida.
+
+**Quando acontece.** Na última sessão concluída de cada plano: o plano
+original, cada plano complementar, a venda direta. Na ortodontia, na **entrega
+das contenções**. A situação do plano passa sozinha para **Em tratamento** (na
+1ª sessão) e **Concluído** (na última).
+
+**Fim de um plano × fim do tratamento.** O cliente só sai do Início de
+Tratamento quando **não sobra nada**: nenhuma sessão por fazer, nenhum plano
+complementar sendo montado ou negociado, nenhuma ortodontia em andamento
+(aguardando início, em tratamento ou suspensa). Se ainda sobra algo — por
+exemplo, terminou o implante e a ortodontia continua —, a pergunta e o contato
+acontecem igual, mas o cliente **continua na Fase 5**. Quando não sobra nada,
+ele passa a **"Tratamento Finalizado"** e sai da Fase 5 conforme a resposta.
+
+**O passo a passo:**
+
+1. **Quem executou responde** (janela no Atendimento; ver 6.4): *"Este cliente
+   necessita de consulta de reavaliação com o Coordenador Clínico?"*
+2. **Sim** → a Recepção agenda a reavaliação. Sem outro tratamento, o cliente
+   vai para a **Reavaliação**; com outro tratamento, a consulta acontece dentro
+   da Fase 5.
+3. **Não** → o **Coordenador** contata o cliente e registra (ver 6.2): chamar
+   para revisar, aguardar o retorno ou novo planejamento.
+4. **Não sei** → o Coordenador decide.
+
+**O "Tratamento Finalizado" à mão** saiu para quem não é Admin Master: o
+sistema marca sozinho.
+
+**Procedimento com reavaliação obrigatória.** O Admin Master marca, no cartão
+do procedimento (Procedimentos), **"Reavaliação presencial obrigatória no fim
+do plano"**. Com ele no plano, a pergunta não aparece e a reavaliação já fica
+pedida.
+
+**O que ainda vem** (próximas etapas do plano): a avaliação de qualidade em
+cinco níveis (Excelente a Refazer) e a satisfação do cliente no contato; o
+abandono de tratamento; a lista "Clientes sem próximo passo"; o cancelamento
+passando pelo Coordenador; os prazos por dia útil da unidade.
 
 ### Fluxo 3 — Encerrar a sessão
 

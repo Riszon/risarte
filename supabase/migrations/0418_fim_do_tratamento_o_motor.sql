@@ -1,5 +1,5 @@
 -- =============================================================================
--- 0416 — FIM DO TRATAMENTO, ETAPA 2: O MOTOR
+-- 0418 — FIM DO TRATAMENTO, ETAPA 2: O MOTOR
 --
 -- Plano e decisões do dono (16/11/2026): docs/jornada/FIM-DO-TRATAMENTO-PLANO.md
 -- (D2, D3, D9, D13, D17, D21, C1, C2, C3 e o fluxo da seção 2).
@@ -90,7 +90,7 @@ alter table public.procedures
   add column if not exists requires_reevaluation boolean not null default false;
 
 comment on column public.procedures.requires_reevaluation is
-  'D17 (0416): com este procedimento no plano, o fim do plano marca "Sim" para a reavaliação sem perguntar ao dentista. Só o Admin Master muda.';
+  'D17 (0418): com este procedimento no plano, o fim do plano marca "Sim" para a reavaliação sem perguntar ao dentista. Só o Admin Master muda.';
 
 create or replace function public.procedures_reevaluation_guard()
 returns trigger
@@ -921,7 +921,7 @@ begin
 
   select journey_phase into v_phase from public.clients where id = v_client;
 
-  -- 0416 (D13): a urgência/emergência deixou de levar a Fase 1 à Fase 5 —
+  -- 0418 (D13): a urgência/emergência deixou de levar a Fase 1 à Fase 5 —
   -- quem chega pela urgência não tem tratamento; o próximo passo é a
   -- avaliação completa (a tarefa nasce ao concluir o atendimento).
   v_new := case
@@ -1003,7 +1003,7 @@ begin
   end;
   if not v_valid then raise exception 'STATUS_INVALID_FOR_PHASE'; end if;
 
-  -- Role allowed to set this status. 0416 (D9): "Tratamento Finalizado" é
+  -- Role allowed to set this status. 0418 (D9): "Tratamento Finalizado" é
   -- marcado sozinho pelo fim do tratamento; à mão, só o Admin Master.
   v_allowed := public.is_admin_master() or case
     when p_status = 'treatment_finished' then false

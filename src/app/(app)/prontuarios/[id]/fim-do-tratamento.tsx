@@ -32,7 +32,7 @@ import {
 import { registrarContato, responderFechamento } from "./fim-do-tratamento-actions";
 
 /**
- * O FIM DO TRATAMENTO NA FICHA (0416): as tarefas abertas do fechamento, como
+ * O FIM DO TRATAMENTO NA FICHA (0418): as tarefas abertas do fechamento, como
  * linhas do painel "Precisa de atenção". Substitui a pergunta antiga (0019),
  * que nunca chegou a abrir. Cada linha só some quando a tarefa é resolvida.
  */

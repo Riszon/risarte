@@ -22,7 +22,7 @@ import {
 import { responderFechamento, type PerguntaPendente } from "./fim-do-tratamento-actions";
 
 /**
- * A PERGUNTA DO FIM (0416, Passo 2 do plano): abre no Atendimento logo depois
+ * A PERGUNTA DO FIM (0418, Passo 2 do plano): abre no Atendimento logo depois
  * de concluir a última sessão de um plano, para quem executou. Não fecha sem
  * resposta — é a decisão que o desenho original chamava de "bloqueante". A
  * mesma pergunta continua na ficha do cliente e no sino até ser respondida.

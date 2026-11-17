@@ -519,7 +519,7 @@ export default async function ClientDetailPage(
       .order("changed_at", { ascending: false })
       .limit(50)
       .returns<AppointmentChangeRow[]>(),
-    // 0416: o fim do tratamento — as tarefas abertas do fechamento. Sem a
+    // 0418: o fim do tratamento — as tarefas abertas do fechamento. Sem a
     // migração num banco, a leitura falha e o painel segue sem elas.
     supabase
       .from("treatment_closures")
@@ -799,7 +799,7 @@ export default async function ClientDetailPage(
     (roles) => roles.includes("planner_dentist")
   );
 
-  // 0416: o fim do tratamento (as tarefas abertas do fechamento).
+  // 0418: o fim do tratamento (as tarefas abertas do fechamento).
   const fechamentos: Fechamento[] = (fechamentoRows ?? []).map((f) => {
     const contatos = f.treatment_closure_contacts ?? [];
     return {

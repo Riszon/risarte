@@ -1,6 +1,6 @@
 "use server";
 
-// O fim do tratamento (0416): responder a pergunta, registrar o contato e
+// O fim do tratamento (0418): responder a pergunta, registrar o contato e
 // achar a pergunta que acabou de nascer no Atendimento. Quem pode o quê é o
 // banco (`answer_treatment_closure`, `register_closure_contact`); aqui só se
 // traduz a recusa.
@@ -77,7 +77,7 @@ export type PerguntaPendente = {
 
 /**
  * A pergunta que nasceu ao concluir o atendimento e é DESTA pessoa responder.
- * Sem a 0416 no banco a tabela não existe: devolve nada e o Atendimento segue
+ * Sem a 0418 no banco a tabela não existe: devolve nada e o Atendimento segue
  * como antes.
  */
 export async function perguntaPendenteDoAtendimento(

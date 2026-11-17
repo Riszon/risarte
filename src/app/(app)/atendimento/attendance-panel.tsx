@@ -446,7 +446,7 @@ export function AttendancePanel({
     Record<string, string>
   >({});
 
-  // 0416: a pergunta do fim do plano, aberta logo depois de concluir.
+  // 0418: a pergunta do fim do plano, aberta logo depois de concluir.
   const [perguntaDoFim, setPerguntaDoFim] = useState<PerguntaPendente | null>(null);
   async function procurarPerguntaDoFim(clientId: string | null) {
     if (!clientId) return;
@@ -695,7 +695,7 @@ export function AttendancePanel({
   return (
     <>
       <CaixaVendaDireta alvo={vender} onClose={() => setVender(null)} />
-      {/* 0416: a pergunta do fim do plano, que não fecha sem resposta. */}
+      {/* 0418: a pergunta do fim do plano, que não fecha sem resposta. */}
       <PerguntaDoFimDialog pergunta={perguntaDoFim} onRespondida={() => setPerguntaDoFim(null)} />
       {/* OC-00085: encerrar a avaliação interrompida, com motivo. */}
       <Dialog

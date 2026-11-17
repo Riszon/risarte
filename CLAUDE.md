@@ -400,6 +400,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (fim do tratamento, Etapa 2) — PC Administrador (core 0.467.0, publicada DEPOIS da 0.468.0 da F4 — a versão do sistema segue 0.468.0; migração 0418, aplicada na produção pelo dono em 17/11/2026; worktree `wt-fim-tratamento`)**
+
+- **O motor do fim do tratamento** (bloco 0.467.0 no ESTADO; plano e as 30
+  decisões do dono em `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`). ⚠️ **"Sobra
+  tratamento?" = `_tratamento_em_aberto`** (regra única; a Etapa 5 troca a
+  `_outra_venda_em_tratamento`). ⚠️ **O fim de plano = `treatment_closures`**,
+  aberto por gatilho; mudança de fase só por `_jornada_mover_por_evento`.
+  ⚠️ Ao recriar `check_in_appointment`, a urgência NÃO leva mais 1 → 5 (D13).
+- ✅ 0418 no treino (ensaio 35/35, desfeito; conferência batida) e na produção
+  (o dono, 17/11/2026, `audit_attach_all` = 2; conferido de fora: tabelas e
+  coluna existem, sem login a porta recusa, a chave de serviço para em
+  NOT_ALLOWED). Não visto na tela.
+
 
 **17/11/2026 (funções de apoio, F4) — PC Administrador (core → 0.468.0, migração 0419)**
 

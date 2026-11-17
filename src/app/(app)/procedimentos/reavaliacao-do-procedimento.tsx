@@ -1,6 +1,6 @@
 "use client";
 
-// D17 (0416): "Reavaliação presencial obrigatória" no cartão do procedimento.
+// D17 (0418): "Reavaliação presencial obrigatória" no cartão do procedimento.
 // Com ele no plano, o fim do plano já marca "Sim" e a Recepção agenda a
 // consulta com o Coordenador — a pergunta ao dentista não aparece. Só o Admin
 // Master muda.

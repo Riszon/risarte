@@ -11,20 +11,20 @@ import {
 } from "@/lib/fim-do-tratamento";
 import { appointmentTypeOptions } from "@/lib/appointments";
 
-// O FIM DO TRATAMENTO (0416, Etapa 2 do plano
+// O FIM DO TRATAMENTO (0418, Etapa 2 do plano
 // docs/jornada/FIM-DO-TRATAMENTO-PLANO.md). O defeito era total: a pergunta do
 // fim nunca abriu em nenhum dos dois bancos. Esta régua prende o que faz ela
 // abrir — e o que faz o cliente nunca ser esquecido.
 
 const sql = readFileSync(
-  join(process.cwd(), "supabase/migrations/0416_fim_do_tratamento_o_motor.sql"),
+  join(process.cwd(), "supabase/migrations/0418_fim_do_tratamento_o_motor.sql"),
   "utf8"
 ).replace(/\r\n/g, "\n");
 
 /** O corpo de uma função da migração (do `create` ao `$$;`). */
 function corpo(nome: string): string {
   const i = sql.indexOf(`create or replace function public.${nome}(`);
-  expect(i, `a 0416 não cria ${nome}: não dá para medir`).toBeGreaterThanOrEqual(0);
+  expect(i, `a 0418 não cria ${nome}: não dá para medir`).toBeGreaterThanOrEqual(0);
   const fim = sql.indexOf("\n$$;", i);
   return sql.slice(i, fim);
 }

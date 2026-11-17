@@ -24,6 +24,56 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   conferido de fora: sem login as portas e a rotina recusam, a chave de serviço
 >   para em NOT_ALLOWED, `coverage_notices` existe. Não visto na tela.
 
+> ## 🏁 0.467.0 — FIM DO TRATAMENTO, ETAPA 2: O MOTOR (17/11/2026; migração 0418)
+>
+> Plano, achados e as 30 decisões do dono em `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`
+> (versão 3). O defeito era total: a pergunta do fim (0019) nunca abriu em
+> nenhum dos dois bancos — ela esperava o sub-status "Tratamento Finalizado",
+> que só o botão manual marcava.
+> - ⚠️ **"Sobra tratamento?" = `_tratamento_em_aberto`** (regra ÚNICA): sessão
+>   pendente/agendada de QUALQUER venda, complemento em andamento, ortodontia
+>   aguardando início/em tratamento/suspensa (a contenção não segura). A
+>   `_outra_venda_em_tratamento` (0360, cancelamento) ainda é a antiga: a
+>   Etapa 5 troca.
+> - ⚠️ **O fechamento = `treatment_closures`** (+ `treatment_closure_contacts`),
+>   um por plano / venda direta / caso ortodôntico / urgência. Nasce pelos
+>   gatilhos `treatment_closure_on_session` (última sessão concluída de plano
+>   VENDIDO e não cancelado; revisão/refação não refaz a pergunta),
+>   `treatment_closure_on_ortho` (passagem para `contencao`; só LÊ a
+>   ortodontia) e `treatment_closure_on_appointment` (urgência concluída na
+>   Fase 1 → "agendar avaliação"; avaliação agendada resolve; reavaliação
+>   concluída na Fase 5 encerra). Todos blindados: erro vira `raise warning`,
+>   nunca derruba a baixa.
+> - ⚠️ **Situação do plano automática:** "Em tratamento" na 1ª sessão feita,
+>   "Concluído" na última. Reabrir sessão volta o cliente a "Em Tratamento".
+> - ⚠️ **Portas:** `answer_treatment_closure` (quem executou ou o Coordenador;
+>   "Não sei" só quem executou; D21: o Coordenador muda enquanto nada
+>   aconteceu) e `register_closure_contact` (3 tentativas para "sem
+>   contato"; retorno sugerido +6 meses). Fase só muda quando NÃO sobra nada
+>   (`_jornada_mover_por_evento`).
+> - ⚠️ **Check-in sem a regra 1→5 da urgência** (D13). `set_journey_status`:
+>   "Tratamento Finalizado" só o Admin (D9). Saiu o gatilho
+>   `clients_treatment_finished` (0019); `journey_decisions` fica como
+>   histórico vazio.
+> - ⚠️ **`procedures.requires_reevaluation`** (D17): "Sim" automático; só o
+>   Admin (trava `procedures_reevaluation_guard`; a regra `procedures_write`
+>   já era só do Admin). Lido À PARTE na tela de Procedimentos.
+> - Telas: janela da pergunta no Atendimento (não fecha sem resposta,
+>   `pergunta-do-fim-dialog.tsx`), tarefas no "Precisa de atenção"
+>   (`fim-do-tratamento.tsx`, substitui `pending-decision.tsx`), marcação no
+>   cartão do procedimento, Reavaliação na agenda da Fase 5. Regras puras em
+>   `src/lib/fim-do-tratamento.ts`; régua `fim-do-tratamento.test.ts`.
+> - Numerada **0418** (a 0417 é do AP175, ortodontia; a 0416 ficou sem uso).
+>   Feito no worktree `wt-fim-tratamento`, branch `feature/fim-do-tratamento`.
+> - ✅ Ensaio no treino 35/35 em transação desfeita, provado quebrando
+>   (urgência, pergunta, ortodontia); ensaio em `scripts/ensaio-fim-do-tratamento-0418.mjs`.
+>   ✅ **0418 no treino** (`migrar:teste`, 17/11/2026; conferência
+>   `docs/jornada/0418-CONFERENCIA.sql` 2·12·5·0·1·true·false·0). ✅ **0418 na produção** (o dono, 17/11/2026, `audit_attach_all` = 2;
+>   conferido de fora: tabelas e coluna existem, sem login a porta recusa, a
+>   chave de serviço para em NOT_ALLOWED). Publicada depois da 0.468.0 (F4).
+>   **Não visto na tela.** Próximas etapas: 3 (qualidade em cinco níveis +
+>   satisfação), 4 (abandono + lista), 5 (cancelamento), 6 (prazos).
+>
 > ## ✍️ 0.465.0 — VENDA DIRETA V3, VD3-2: O TERMO PELA ZAPSIGN (16/11/2026; migração 0415)
 >
 > Plano e decisões V1–V3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §7. EV-365.
