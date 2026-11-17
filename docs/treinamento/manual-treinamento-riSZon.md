@@ -2109,8 +2109,10 @@ pela tabela de repasse do procedimento de manutenção configurado.
 #### A situação do caso
 
 **Aguardando início** (caso aberto, aparelho ainda não instalado) → **Em
-tratamento** (o botão **Iniciar tratamento** gera o cronograma a partir da
-data e emite o lote de mensalidades) → **Entregar contenções** → **Em
+tratamento** (desde a 0.469.0 **o caso começa sozinho quando a instalação é
+concluída** no atendimento, na data da instalação; o botão **Iniciar
+tratamento** continua para o caso que começou sem passar pela agenda. Os dois
+geram o cronograma a partir da data e emitem o lote de mensalidades) → **Entregar contenções** → **Em
 acompanhamento** → **Dar alta** → **Alta**. A qualquer momento,
 **Interromper** (com motivo obrigatório: desistência, transferência…). Em
 tratamento pode ser **Suspenso** (desde a 0.367.0, com motivo; retoma ou
@@ -2154,6 +2156,16 @@ marcada por engano (desfaz a prorrogação).
   (sessão de tratamento, início de tratamento ou retorno). O sistema **liga
   sozinho** o agendamento à manutenção prevista mais próxima (até 45 dias de
   diferença) — ou cria uma manutenção extra. Ela passa a **Agendada**.
+- **Sessão de um plano nunca é manutenção** (desde a 0.469.0). Se o
+  agendamento leva uma sessão do plano de tratamento — a instalação do
+  aparelho, uma restauração, uma limpeza, uma radiografia, inclusive de um
+  plano complementar feito no meio da ortodontia —, ele é pago e contado pelo
+  plano, e o cronograma da ortodontia não se mexe. Antes, quando o dentista
+  era o mesmo ortodontista, essa sessão virava manutenção, puxava a prevista
+  mais próxima e, na instalação, pagava **dois repasses**.
+- **A instalação é a sessão do plano.** Concluí-la paga **um repasse só** (o
+  do procedimento do plano) e **inicia o caso** sozinho; as manutenções
+  contam a partir dela.
 - **Concluir o atendimento** marca a manutenção como **Realizada** e gera o
   **repasse** do ortodontista. **Não compareceu** marca **Faltou** (e prorroga
   o término previsto). Cancelar o agendamento devolve a manutenção a
@@ -2210,11 +2222,13 @@ parte:
 **Quem inicia o tratamento.** O termo diz o nome do(a) ortodontista que
 **inicia** (ou "a ser designado(a) pela clínica") e que, por necessidade da
 clínica ou do paciente, **outro(a) ortodontista da equipe pode continuar**,
-sem mudar as condições. Caso sem ortodontista escolhido: quando a Recepção
-agenda a **instalação** (início de tratamento ou sessão) com um **dentista da
-unidade**, ele passa a ser o responsável — fica no histórico do caso. Um
-retorno não define, e quem não é dentista não assume. Trocar o responsável em
-**Editar** também fica registrado (de quem → para quem).
+sem mudar as condições. Caso sem ortodontista escolhido: **quem conclui a
+instalação** passa a ser o responsável — fica no histórico do caso (desde a
+0.469.0; antes bastava agendar, e uma sessão de outro procedimento agendada
+antes da instalação definia o ortodontista errado). **Agendar não define.**
+Fora de plano (o caso legado), vale o **Início de tratamento** concluído por
+um dentista ou Coordenador da unidade. Trocar o responsável em **Editar**
+também fica registrado (de quem → para quem).
 
 **O prazo é uma referência.** O termo passou a dizer que os meses previstos
 são uma estimativa, e não um compromisso de conclusão em data certa: a
@@ -2395,7 +2409,8 @@ da ortodontia (desde a 0.364.0).
 EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
 (0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254;
 mensalidades por lote (0.367.0): EV-255 a EV-257; os avisos da rotina
-(0.368.0): EV-258.
+(0.368.0): EV-258; sessão de plano não é manutenção e a instalação inicia o
+caso (0.469.0): EV-368.
 
 ### 2.9. O prontuário: o que você vê primeiro *(desde a 0.369.0)*
 

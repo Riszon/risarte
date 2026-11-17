@@ -332,3 +332,14 @@ mensalidades, forma) que só existe depois do ORTO8.
 | **Q6** | **Desconto por pontualidade:** padrão na configuração (rede → unidade), o Consultor ajusta até o máximo, aplicado na **baixa** quando pago até o vencimento. | Confirmar. |
 | **Q7** | A **emissão** (boleto, pix, recorrência) continua **fora do sistema** até o ASAAS (ORTO4)? | Sim: o sistema registra a forma e controla o lote; a cobrança em si é emitida na conta do ASAAS/banco, e a baixa é feita na tela Mensalidades. |
 | **Q8** | O **Coordenador** vê valores da ortodontia? | **Decidido pelo dono em 28/10/2026: vê.** Hoje não vê (`canViewOrthoMoney` = Gerente, Recepção, Franqueado, Financeiro, Rede). Na ORTO6 o `clinical_coordinator` entra em `ORTHO_MONEY_VIEW_ROLES` e na regra de linha de `ortho_case_terms`/`ortho_charges` (vê; **não dá baixa** — a baixa segue a O2: Gerente e Financeiro). |
+
+## 6. AP175 — sessão de plano não é manutenção (16–17/11/2026)
+
+Relato da sessão da Jornada, confirmado no treino. Decisões do dono: a
+instalação é **só a sessão do plano** (O6, um repasse) e **concluí-la inicia o
+caso**; quem conclui vira o ortodontista (Q3 deixa de valer no agendamento).
+**Etapa A** entregue na 0.469.0 (migração 0417). **Etapa B** (pendente): o tipo
+de agendamento "Manutenção ortodôntica"; com ele, só esse tipo vira
+manutenção. Ponto de contato com a Jornada: ela reage à passagem do caso para
+"contencao" por gatilho próprio (0418) — nenhuma das duas recria
+`ortho_deliver_retainers`.

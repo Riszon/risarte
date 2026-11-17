@@ -433,6 +433,17 @@ Syncthing se comportarem de forma estranha.**
   NOT_ALLOWED). Não visto na tela.
 
 
+**17/11/2026 (ortodontia, AP175) — PC Administrador (core 0.468.0 → 0.469.0, migração 0417)**
+
+- **Sessão de plano não é manutenção; a instalação inicia o caso** (bloco
+  0.469.0 no ESTADO). ⚠️ **A agenda liga as sessões DEPOIS de gravar o
+  agendamento**: gatilho de `appointments` que dependa da sessão tem de ouvir
+  `treatment_session_id` e olhar também `treatment_sessions.appointment_id`.
+  ⚠️ Início do caso = `_ortho_begin_treatment`; ao recriar
+  `ortho_set_status`/`ortho_appointment_sync`, partir da 0417.
+- ✅ 0417 no treino (ensaio 25/25, desfeito). ⏳ Produção pendente; push só
+  depois dela. Etapa B (tipo "Manutenção ortodôntica") aguarda.
+
 **17/11/2026 (funções de apoio, F4) — PC Administrador (core → 0.468.0, migração 0419)**
 
 - **O painel "Equipe e coberturas" e os avisos à Franqueadora** (bloco 0.468.0
