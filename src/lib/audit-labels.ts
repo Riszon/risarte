@@ -176,6 +176,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   direct_sale: "Venda direta",
   direct_sale_cancel: "Venda direta cancelada",
   direct_sale_close: "Venda direta fechada",
+  direct_sale_term: "Termo da venda direta enviado",
   direct_sale_conditions: "Condições da venda direta",
   direct_sale_page: "Tela de venda direta",
   // ----------------------------------------------------------- financeiro

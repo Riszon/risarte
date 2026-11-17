@@ -209,3 +209,67 @@ nascendo na assinatura), D4 e D5.
   um contrato de tratamento.
 - Entre a VD3-1 e a VD3-2 a tela já fica simples, mas o termo ainda é marcado
   à mão.
+
+---
+
+## 7. VD3-2 — o termo pela ZapSign (plano da etapa, 16/11/2026)
+
+**Status: aprovado (V1–V3 como recomendado) e CONSTRUÍDO em 16/11/2026 (core 0.465.0, migração 0415), na branch. Antes da produção: o dono lê o texto do termo e roda a 0415.**
+
+### O que foi lido no código antes de planejar
+
+- O **termo de renegociação** (4017) já faz quase tudo o que a venda direta
+  precisa: documento montado pelo código (texto provisório), pacote pela porta
+  `signature_create_package`, PDF, envio, e o retorno da ZapSign aplicando o
+  efeito (`reagirAoTermo`). A venda direta segue o mesmo caminho.
+- ⚠️ **A Recepção e a SDR NÃO podem enviar para assinatura hoje.** A
+  permissão `acao.assinaturas.enviar` nasce só com Consultor, Assistente,
+  RisLife, Financeiro da Franqueadora e Gerente — e é conferida duas vezes
+  (no app, `canSendSignatures`, e no banco, `signature_create_package`).
+- O contrato "assinado no papel" do Consultor exige o papel anexado (0392,
+  pasta `contratos-papel`, trava `PAPER_REQUIRED`). A venda direta ganha a
+  mesma trava.
+
+### Como fica
+
+1. **"Finalizar"** grava a venda, monta o **Termo de venda direta** e o envia
+   à ZapSign. Quem assina: o cliente (ou o responsável, se menor), sem
+   testemunha, sem assinatura da Risarte (D1).
+2. A caixa **Termo** mostra **"Assinar agora neste aparelho"** (abre o link
+   da ZapSign no aparelho do balcão) e **"Enviar por WhatsApp"** (o link).
+3. Assinou → a ZapSign avisa o riSZon → a venda fica **assinada sozinha**
+   (origem `assinatura_digital`) e, com a unidade ligada no Asaas, a cobrança
+   nasce. A janela se atualiza sozinha enquanto espera.
+4. Sem internet / sem celular: **"Assinado em papel"** com a foto ou o PDF
+   do termo (D6). O botão "Termo assinado" sem anexo **deixa de existir**, e o
+   banco recusa marcar sem papel ou sem ZapSign (trava, como na 0392).
+5. Cancelar a venda com o termo em aberto cancela o documento na ZapSign.
+6. Cadastro sem CPF, data de nascimento ou contato: a janela diz o que falta
+   antes de enviar (a ZapSign exige CPF).
+
+### Decisões pedidas
+
+- **V1 — Quem envia o termo.** *Recomendo:* **quem fecha a venda direta**
+  (Recepção, Gerente, SDR nos procedimentos dela), por uma porta própria do
+  termo da venda direta — **sem** dar à Recepção a permissão geral "Enviar
+  para assinatura" (que também envia contrato, TCLE, orçamento). Alternativa:
+  liberar a permissão geral para a Recepção e a SDR em Administração →
+  Permissões, nos dois ambientes.
+- **V2 — Quem anexa o termo em papel.** *Recomendo:* quem fecha a venda
+  (é a saída quando a internet cai no balcão); fica na Auditoria com o
+  arquivo. Alternativa: só o Gerente (como na renegociação).
+- **V3 — O texto.** Eu escrevo um termo curto e provisório (procedimentos,
+  valor, forma de pagamento, desistência, foro). O PDF sai com a marca de
+  texto provisório, como os outros modelos, até a revisão. *Publicar na
+  produção só depois de o dono ler o texto.*
+
+### Migração (core 0415)
+
+- `signature_packages.origin_type` aceita `direct_sale`;
+- `direct_sales`: `contract_signed_source`, `signature_package_id` e as
+  colunas do papel; trava `PAPER_REQUIRED` em gatilho;
+- porta `direct_sale_term_package` (cria o pacote do termo, conferindo quem
+  fecha) e `_direct_sale_mark_signed` (o retorno da ZapSign marca, sem
+  usuário, em nome de quem enviou);
+- `direct_sale_mark_paper` (anexo + marca, numa transação);
+- `select public.audit_attach_all();`.

@@ -54,6 +54,7 @@ import {
   meiosDaVendaNova,
 } from "@/lib/venda-direta-meios";
 import { todayInBrazil, BRAZIL_TIME_ZONE } from "@/lib/dates";
+import { BotaoContinuarVenda } from "@/components/venda-direta/caixa";
 
 export type DirectSaleRow = {
   id: string;
@@ -931,13 +932,41 @@ export function SaleItem({
                   </p>
                 )}
                 <div className="space-y-1.5">
-                  <StepRow
-                    icon={<FileSignature className="size-3.5" />}
-                    label="Contrato assinado"
-                    done={sale.contractSigned}
-                    disabled={isPending || (!zero && !conditionsReady)}
-                    onToggle={(v) => step("contract", v)}
-                  />
+                  {/* VD3-2 (0415): o termo não se marca à mão — vai pela
+                      ZapSign ou pelo papel anexado, no caixa. Desmarcar segue
+                      aqui para o Gerente. */}
+                  {sale.contractSigned && !zero ? (
+                    <StepRow
+                      icon={<FileSignature className="size-3.5" />}
+                      label="Termo assinado"
+                      done
+                      disabled={isPending || !sale.isManager}
+                      onToggle={(v) => step("contract", v)}
+                    />
+                  ) : !sale.contractSigned && !zero ? (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm">
+                      <FileSignature className="size-3.5" />
+                      <span className="flex-1">
+                        Termo: pela ZapSign ou no papel (com a foto), no caixa da venda.
+                      </span>
+                      {sale.clientId && (
+                        <BotaoContinuarVenda
+                          clientId={sale.clientId}
+                          clientName={sale.clientName}
+                          saleId={sale.id}
+                          rotulo="Abrir no caixa"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <StepRow
+                      icon={<FileSignature className="size-3.5" />}
+                      label="Contrato assinado"
+                      done={sale.contractSigned}
+                      disabled={isPending || (!zero && !conditionsReady)}
+                      onToggle={(v) => step("contract", v)}
+                    />
+                  )}
                   <StepRow
                     icon={<Wallet className="size-3.5" />}
                     label={

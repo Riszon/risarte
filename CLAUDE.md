@@ -401,6 +401,24 @@ Syncthing se comportarem de forma estranha.**
 `ESTADO_DO_PROJETO.md`)*
 
 
+**16/11/2026 (venda direta v3, VD3-2) — PC Administrador (core 0.464.0 → 0.465.0, migração 0415; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **O termo da venda direta pela ZapSign** (bloco 0.465.0 no ESTADO). ⚠️ **NÃO
+  está no `main`:** espera o dono ler o texto do termo (V3) e rodar a 0415.
+- ⚠️ **Quem envia o termo = quem FECHA a venda direta** (porta
+  `direct_sale_term_package`); a Recepção não tem a permissão geral de envio.
+- ⚠️ **Termo assinado = gatilho do banco** (`signature_packages_direct_sale_signed`);
+  **trava `PAPER_REQUIRED`** para quem marca à mão. Caminho novo que marque o
+  termo grava `contract_signed_source`.
+- ⚠️ **`migrar:teste` aplica o que não está no REGISTRO do treino**: aplicou a
+  4020 (sessão do Asaas), que tinha sido aplicada por fora dele. Conferir a
+  lista antes de rodar quando houver outra sessão mexendo no treino.
+- ⚠️ **Testar o aviso da ZapSign no servidor local:** subir com
+  `ZAPSIGN_WEBHOOK_SECRET=<qualquer>` no ambiente e
+  `node scripts/zapsign-simular-webhook.mjs ASS-… signed 1 --segredo=<o mesmo>`.
+- ⚠️ **Venda de teste sem avisar ninguém:** criar a venda direto na tabela (a
+  função de lançamento avisa o Consultor real da Unidade Teste).
+
 **16/11/2026 (funções de apoio, F3) — PC Administrador (core 0.463.0 → 0.464.0, sem migração)**
 
 - **As telas das funções de apoio** (bloco 0.464.0 no ESTADO; manual 2.5).

@@ -441,15 +441,29 @@ export async function reservarEnvio(admin: ReturnType<typeof createAdminClient>,
   return "Não foi possível reservar o envio agora. Tente de novo em instantes.";
 }
 
+/**
+ * VD3-2 (0415, decisão V1): quem FECHA a venda direta envia o termo dela —
+ * a Recepção não tem a permissão geral "Enviar para assinatura". Quem responde
+ * é o banco, com a sessão da pessoa (`direct_sale_can_handle_term`).
+ */
+async function quemFechaAVenda(saleId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("direct_sale_can_handle_term", { p_sale_id: saleId });
+  return !error && data === true;
+}
+
 export async function enviarPacote(input: { session: SessionContext; packageId: string }): Promise<SendResult> {
   const admin = createAdminClient();
   const { data: pkg, error } = await admin
     .from("signature_packages")
-    .select("id, number, clinic_id, client_id, status, created_by, merged_pdf_path, expires_at, cover_data, auth_level_applied")
+    .select("id, number, clinic_id, client_id, status, created_by, merged_pdf_path, expires_at, cover_data, auth_level_applied, origin_type, origin_id")
     .eq("id", input.packageId)
     .maybeSingle();
   if (error || !pkg) return { ok: false, error: "Pacote não encontrado." };
-  if (pkg.created_by !== input.session.userId || !canSendSignatures(input.session, pkg.clinic_id)) {
+  const podeEnviar =
+    canSendSignatures(input.session, pkg.clinic_id) ||
+    (pkg.origin_type === "direct_sale" && !!pkg.origin_id && (await quemFechaAVenda(pkg.origin_id as string)));
+  if (pkg.created_by !== input.session.userId || !podeEnviar) {
     return { ok: false, error: "Só quem preparou o pacote pode enviá-lo." };
   }
   if (pkg.status !== "draft") return { ok: false, error: "Este pacote já foi enviado (ou foi cancelado)." };

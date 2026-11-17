@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.465.0",
+    data: "2026-11-16",
+    migracao: "0415",
+    titulo: "Venda direta: o termo pela assinatura digital",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A venda direta agora tem termo: ao finalizar, o termo vai para a ZapSign. O cliente assina no aparelho do balcão (Assinar agora) ou pelo WhatsApp, e a caixa Termo fica verde sozinha quando ele assina.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Sem internet ou sem celular: Assinado em papel — anexe a foto ou o PDF do termo assinado. Sem o arquivo, o termo não é marcado.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O termo da venda direta não se marca mais à mão: só pela ZapSign ou com o papel anexado. Cancelar a venda cancela também o termo aberto na ZapSign.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
     versao: "0.464.0",
     data: "2026-11-16",
     migracao: null,

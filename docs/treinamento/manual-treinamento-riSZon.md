@@ -3303,9 +3303,24 @@ de prótese. Ela começa e termina **na mesma janela**.
    outros meios começam em 2×. O desconto do programa e o desconto à vista
    entram sozinhos. **Dar desconto** e **Ajustar parcelas** (datas, valores,
    meio de cada parcela) abrem só se você clicar.
-3. **Finalizar: assinar e receber** — a venda é lançada e a janela passa para
-   o fechamento.
-4. **Termo** — quando o cliente assinar, clique em **Termo assinado**.
+3. **Finalizar: assinar e receber** — a venda é lançada, o **termo da venda
+   vai para a assinatura digital (ZapSign)** e a janela passa para o
+   fechamento.
+4. **Termo** *(desde a versão 0.465.0)* — assina o cliente (ou o
+   responsável, se for menor); não há testemunha.
+   - **Assinar agora neste aparelho:** abre o termo para o cliente assinar
+     ali, no aparelho do balcão.
+   - **Enviar por WhatsApp:** abre a conversa com o link, para o cliente
+     assinar no celular dele.
+   - Assinou, a caixa **fica verde sozinha** (a janela confere a cada poucos
+     segundos). Ninguém marca nada.
+   - **Sem internet ou sem celular:** **Assinado em papel (anexar a foto)**.
+     Tire a foto do termo assinado (ou envie o PDF) e clique em **Anexar e
+     marcar assinado**. Sem o arquivo, não dá para marcar.
+   - Recusado ou vencido (o link vale 3 dias): aparece o motivo e **Enviar o
+     termo de novo**.
+   - Faltou CPF, data de nascimento ou contato no cadastro: o termo não sai e
+     a janela diz o que completar; depois, **Enviar o termo**.
 5. **Pagamento**
    - **Dinheiro, permuta ou maquininha:** **Recebi R$ …**. É a baixa da
      cobrança: entra no Financeiro e a venda é concluída. Só libera depois do
@@ -3319,23 +3334,29 @@ abre onde parou.
 
 **Quem faz o quê**
 
-- **Recepção, Gerente e SDR** lançam e fecham.
+- **Recepção, Gerente e SDR** lançam e fecham — e enviam o termo da venda
+  direta, sem precisar da permissão geral de "Enviar para assinatura".
 - **Coordenador Clínico** só lança os procedimentos: o botão dele é **Enviar
   para a recepção**, e a venda vai para a fila **Para receber**.
 - **Atendimento já concluído ou de outro dia:** a venda entra como
   **exceção** sozinha (o certo é vender antes de atender), e o Gerente e o
   Franqueado são avisados. Não há mais caixa para marcar.
 
-**Em "⋯ Mais"**: trocar a forma de pagamento, cancelar a venda, abrir o
-distrato; **desmarcar o termo** é só do Gerente.
+**Em "⋯ Mais"**: trocar a forma de pagamento, cancelar a venda (o termo
+ainda aberto na ZapSign é cancelado junto), abrir o distrato; **desmarcar o
+termo** é só do Gerente.
 
 **Erros frequentes:** tentar receber antes do termo assinado; procurar o
 fechamento na aba Sessões & Procedimentos (ela mostra só os procedimentos e
 uma linha por venda, com **Abrir**).
 
-**O que ainda é feito à mão:** marcar o termo assinado. O envio do termo
-pela assinatura digital, com a marcação automática, está planejado para a
-próxima entrega.
+**O termo não se marca à mão.** Desde a versão 0.465.0, o termo da venda
+direta só fica assinado pela ZapSign ou pelo papel anexado — o sistema recusa
+qualquer outro jeito. Venda de R$ 0,00 (o programa cobre tudo) continua
+fechando sozinha, sem termo.
+
+**O texto do termo é provisório** (o PDF sai marcado assim) até a revisão do
+jurídico.
 
 ### 6.2. Coordenador Clínico
 

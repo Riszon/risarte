@@ -63,6 +63,7 @@ import {
 import {
   carregarCaixa,
   confirmarRecebimento,
+  enviarTermo,
   finalizarVendaDireta,
   receberNoBalcao,
   salvarPagamentoDaVenda,
@@ -74,6 +75,7 @@ import {
   closeDirectSaleStep,
 } from "@/app/(app)/comercial/venda-direta/actions";
 import type { DirectSaleRow } from "@/app/(app)/comercial/venda-direta/direct-sale-item";
+import { AcoesDoTermo, textoDoTermoAssinado } from "./termo";
 
 const TIPO_DO_ATENDIMENTO: Record<string, string> = {
   evaluation: "Avaliação",
@@ -216,6 +218,8 @@ function Conteudo({ alvo, onClose }: { alvo: AlvoDoCaixa; onClose: () => void })
   const [erro, setErro] = useState<string | null>(null);
   const [saleId, setSaleId] = useState<string | null>(alvo.saleId ?? null);
   const [trocandoPagamento, setTrocandoPagamento] = useState(false);
+  // VD3-2: o termo não saiu no Finalizar — o motivo aparece na caixa Termo.
+  const [termoErro, setTermoErro] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const recarregar = useCallback(async () => {
@@ -283,6 +287,8 @@ function Conteudo({ alvo, onClose }: { alvo: AlvoDoCaixa; onClose: () => void })
           <VendaLancada
             venda={venda}
             dados={dados}
+            termoErro={termoErro}
+            atualizar={recarregar}
             trocandoPagamento={trocandoPagamento}
             setTrocandoPagamento={setTrocandoPagamento}
             isPending={isPending}
@@ -300,7 +306,8 @@ function Conteudo({ alvo, onClose }: { alvo: AlvoDoCaixa; onClose: () => void })
             appointmentIdInicial={alvo.appointmentId ?? null}
             isPending={isPending}
             startTransition={startTransition}
-            onLancada={async (id, fechar) => {
+            onLancada={async (id, fechar, erroDoTermo) => {
+              setTermoErro(erroDoTermo ?? null);
               await depois();
               if (fechar) onClose();
               else setSaleId(id);
@@ -731,7 +738,7 @@ function VendaNova({
   appointmentIdInicial: string | null;
   isPending: boolean;
   startTransition: (fn: () => Promise<void>) => void;
-  onLancada: (saleId: string, fechar: boolean) => Promise<void>;
+  onLancada: (saleId: string, fechar: boolean, termoErro?: string) => Promise<void>;
 }) {
   const ctx = dados.contexto;
   const [agora] = useState(() => new Date());
@@ -806,8 +813,9 @@ function VendaNova({
       });
       if (r.ok && r.saleId) {
         if (ctx.canClose) {
-          toast.success("Venda lançada. Agora: assinar e receber.");
-          await onLancada(r.saleId, false);
+          if (r.termoErro) toast.warning(`Venda lançada, mas o termo não saiu: ${r.termoErro}`);
+          else toast.success("Venda lançada e termo enviado. Agora: assinar e receber.");
+          await onLancada(r.saleId, false, r.termoErro);
         } else {
           toast.success("Venda enviada para a recepção fechar.");
           await onLancada(r.saleId, true);
@@ -1033,6 +1041,8 @@ function VendaNova({
 function VendaLancada({
   venda,
   dados,
+  termoErro,
+  atualizar,
   trocandoPagamento,
   setTrocandoPagamento,
   isPending,
@@ -1043,6 +1053,8 @@ function VendaLancada({
 }: {
   venda: DirectSaleRow;
   dados: DadosDoCaixa;
+  termoErro: string | null;
+  atualizar: () => Promise<void>;
   trocandoPagamento: boolean;
   setTrocandoPagamento: (v: boolean) => void;
   isPending: boolean;
@@ -1173,6 +1185,9 @@ function VendaLancada({
       <ResumoFechado venda={venda} />
       <Fechamento
         venda={venda}
+        termo={dados.termos?.[venda.id]}
+        termoErro={termoErro}
+        atualizar={atualizar}
         isPending={isPending}
         startTransition={startTransition}
         depois={depois}
@@ -1262,7 +1277,13 @@ function DefinirPagamento({
         salvarPagamentoDaVenda(venda.id, p.paraEnviar, confirmar)
       );
       if (r.ok) {
-        toast.success("Pagamento definido.");
+        // VD3-2: o termo sai junto, como no Finalizar (só sem termo assinado;
+        // o banco recusa o 2º termo vivo da mesma venda).
+        if (!venda.contractSigned) {
+          const t = await enviarTermo(venda.id);
+          if (t.ok || /já foi enviado/.test(t.error ?? "")) toast.success("Pagamento definido e termo enviado.");
+          else toast.warning(`Pagamento definido, mas o termo não saiu: ${t.error ?? "erro"}`);
+        } else toast.success("Pagamento definido.");
         await depois();
       } else toast.error(r.error ?? "Não foi possível salvar o pagamento.");
     });
@@ -1328,12 +1349,19 @@ function Caixa({
 
 function Fechamento({
   venda,
+  termo,
+  termoErro,
+  atualizar,
   isPending,
   startTransition,
   depois,
   trocarPagamento,
 }: {
   venda: DirectSaleRow;
+  /** VD3-2: ausente quando o banco ainda não tem a 0415 (vale o jeito antigo). */
+  termo: import("@/app/(app)/comercial/venda-direta/caixa-actions").TermoDaVenda | undefined;
+  termoErro: string | null;
+  atualizar: () => Promise<void>;
   isPending: boolean;
   startTransition: (fn: () => Promise<void>) => void;
   depois: () => Promise<void>;
@@ -1383,25 +1411,33 @@ function Fechamento({
           icone={<FileSignature className="size-4" />}
           titulo="Termo"
           feito={venda.contractSigned}
-          feitoTexto={
-            venda.contractSignedByName
-              ? `Assinado — registrado por ${venda.contractSignedByName}.`
-              : "Assinado."
-          }
+          feitoTexto={textoDoTermoAssinado(termo, venda.contractSignedByName)}
         >
-          <p className="text-xs text-muted-foreground">
-            O cliente assina o termo da venda. Marque aqui quando estiver
-            assinado.
-          </p>
-          <Button
-            className="h-10 w-full"
-            disabled={isPending}
-            onClick={() =>
-              agir(() => closeDirectSaleStep(venda.id, "contract", true), "Termo assinado.")
-            }
-          >
-            Termo assinado
-          </Button>
+          {termo ? (
+            <AcoesDoTermo
+              saleId={venda.id}
+              termo={termo}
+              termoErro={termoErro}
+              atualizar={atualizar}
+            />
+          ) : (
+            <>
+              {/* Banco sem a 0415: o jeito de antes, até a migração rodar. */}
+              <p className="text-xs text-muted-foreground">
+                O cliente assina o termo da venda. Marque aqui quando estiver
+                assinado.
+              </p>
+              <Button
+                className="h-10 w-full"
+                disabled={isPending}
+                onClick={() =>
+                  agir(() => closeDirectSaleStep(venda.id, "contract", true), "Termo assinado.")
+                }
+              >
+                Termo assinado
+              </Button>
+            </>
+          )}
         </Caixa>
 
         <Caixa

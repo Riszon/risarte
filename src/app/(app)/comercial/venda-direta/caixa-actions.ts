@@ -6,7 +6,14 @@
 // para a recepção fazer a venda inteira numa janela só.
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionContext } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
+import {
+  enviarTermoDaVendaDireta,
+  linkDoTermo,
+  type LinkDoTermo,
+} from "@/lib/venda-direta-termo";
 import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { isoDateIn, todayInBrazil } from "@/lib/dates";
 import {
@@ -33,6 +40,18 @@ export type DadosDoCaixa = {
   vendidos: Record<string, number>;
   /** As vendas diretas do cliente (as abertas primeiro). */
   vendas: DirectSaleRow[];
+  /** VD3-2 (0415): o termo de cada venda (vazio sem a 0415 no banco). */
+  termos: Record<string, TermoDaVenda>;
+};
+
+export type TermoDaVenda = {
+  /** De onde veio a assinatura: assinatura_digital | papel | nulo. */
+  source: string | null;
+  packageNumber: string | null;
+  /** draft | sent | partially_signed | signed | refused | expired | cancelled */
+  packageStatus: string | null;
+  expiresAt: string | null;
+  paperName: string | null;
 };
 
 /** Tudo o que a janela precisa para um cliente. Lido ao abrir e a cada passo. */
@@ -64,8 +83,43 @@ export async function carregarCaixa(
       contexto,
       vendidos,
       vendas: [...doCliente.sales].sort((a, b) => aberta(a) - aberta(b)),
+      termos: await termosDasVendas(doCliente.sales.map((s) => s.id)),
     },
   };
+}
+
+/**
+ * O termo de cada venda. As vendas vieram pela regra de linha (a pessoa as
+ * vê); a situação do pacote é lida sem ela — a Recepção não lê as
+ * Assinaturas, e aqui só saem número, situação e prazo (nada pessoal).
+ * Banco sem a 0415: a coluna não existe e nada aparece (o caixa mostra o
+ * jeito antigo).
+ */
+async function termosDasVendas(saleIds: string[]): Promise<Record<string, TermoDaVenda>> {
+  if (saleIds.length === 0) return {};
+  const supabase = await createClient();
+  const { data: vendas, error } = await supabase
+    .from("direct_sales")
+    .select("id, contract_signed_source, signature_package_id, contract_paper_name")
+    .in("id", saleIds);
+  if (error || !vendas) return {};
+  const pacotes = vendas.map((v) => v.signature_package_id as string | null).filter((x): x is string => !!x);
+  const admin = createAdminClient();
+  const { data: pkgs } = pacotes.length
+    ? await admin.from("signature_packages").select("id, number, status, expires_at").in("id", pacotes)
+    : { data: [] as { id: string; number: string; status: string; expires_at: string | null }[] };
+  const out: Record<string, TermoDaVenda> = {};
+  for (const v of vendas) {
+    const p = (pkgs ?? []).find((x) => x.id === v.signature_package_id);
+    out[v.id as string] = {
+      source: (v.contract_signed_source as string | null) ?? null,
+      packageNumber: (p?.number as string | undefined) ?? null,
+      packageStatus: (p?.status as string | undefined) ?? null,
+      expiresAt: (p?.expires_at as string | null | undefined) ?? null,
+      paperName: (v.contract_paper_name as string | null) ?? null,
+    };
+  }
+  return out;
 }
 
 /** Contagem dos procedimentos nas vendas diretas recentes da unidade. */
@@ -112,6 +166,8 @@ export type PagamentoDoCaixa = {
 export type ResultadoDoCaixa = {
   ok: boolean;
   error?: string;
+  /** VD3-2: a venda entrou, mas o termo não saiu (o motivo, para a caixa Termo). */
+  termoErro?: string;
   /** A venda existe mesmo quando `ok` é falso (o pagamento é que não entrou). */
   saleId?: string;
   precisaConfirmar?: number;
@@ -219,7 +275,61 @@ export async function finalizarVendaDireta(
       error: `A venda foi lançada, mas o pagamento não entrou: ${pago.error ?? "erro"}`,
     };
   }
-  return { ok: true, saleId: criada.saleId };
+  // VD3-2: o termo já sai junto. Se não sair (cadastro sem CPF, ZapSign fora),
+  // a venda está gravada e a caixa Termo mostra o motivo e o "Enviar o termo".
+  const termo = await enviarTermo(criada.saleId);
+  return { ok: true, saleId: criada.saleId, termoErro: termo.ok ? undefined : termo.error };
+}
+
+/** Monta e envia o termo da venda à ZapSign (quem fecha a venda). */
+export async function enviarTermo(saleId: string): Promise<ResultadoDoCaixa> {
+  const session = await getSessionContext();
+  const r = await enviarTermoDaVendaDireta(session, saleId);
+  if (!r.ok) return { ok: false, error: r.error, saleId };
+  await logAudit({ action: "create", entityType: "direct_sale_term", entityId: saleId });
+  return { ok: true, saleId };
+}
+
+/** O link de assinatura do termo vivo (para assinar no balcão ou mandar). */
+export async function pegarLinkDoTermo(
+  saleId: string
+): Promise<{ ok: true; link: LinkDoTermo } | { ok: false; error: string }> {
+  await getSessionContext();
+  return linkDoTermo(saleId);
+}
+
+/**
+ * "Assinado em papel" (decisão D6/V2): o arquivo já está na pasta
+ * `termos-venda-direta`; o banco confere o arquivo e marca, numa transação.
+ */
+export async function marcarTermoNoPapel(
+  saleId: string,
+  path: string,
+  nome: string
+): Promise<ResultadoDoCaixa> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("direct_sale_mark_paper", {
+    p_sale_id: saleId,
+    p_path: path,
+    p_name: nome,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("NOT_ALLOWED")) return { ok: false, error: "Quem marca o termo é quem fecha a venda direta." };
+    if (m.includes("FILE_NOT_FOUND")) return { ok: false, error: "O arquivo não chegou. Escolha a foto de novo." };
+    if (m.includes("ALREADY_SIGNED")) return { ok: false, error: "O termo desta venda já está assinado." };
+    if (m.includes("SALE_CANCELLED")) return { ok: false, error: "Esta venda foi cancelada." };
+    if (m.includes("CONDITIONS_REQUIRED")) return { ok: false, error: "Defina como o cliente paga antes." };
+    console.error("direct_sale_mark_paper failed:", m);
+    return { ok: false, error: "Não foi possível marcar o termo." };
+  }
+  // A cobrança automática (Asaas) da venda assinada, se a unidade estiver ligada.
+  const { criarCobrancasAutomaticas } = await import("@/lib/asaas/cobrancas-automaticas");
+  await criarCobrancasAutomaticas({ origem: "gatilho", directSaleId: saleId }).catch((e) =>
+    console.error("auto charge on paper term failed:", e instanceof Error ? e.message : e)
+  );
+  return { ok: true, saleId, closed: Boolean((data as { closed?: boolean } | null)?.closed) };
 }
 
 /** Define (ou troca) como o cliente paga numa venda já lançada. */
