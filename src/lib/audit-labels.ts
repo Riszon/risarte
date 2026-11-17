@@ -143,6 +143,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   treatment_plan_option: "Opção do plano",
   planning_supplement: "Complemento do planejamento",
   plan_quality_review: "Revisão de qualidade do plano",
+  treatment_closure: "Fim do tratamento (pergunta e contato)",
   protocol_change_proposal: "Proposta de mudança de protocolo",
   treatment_session: "Sessão de tratamento",
   treatment_sessions: "Sessões de tratamento",
@@ -182,6 +183,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   direct_sale: "Venda direta",
   direct_sale_cancel: "Venda direta cancelada",
   direct_sale_close: "Venda direta fechada",
+  direct_sale_term: "Termo da venda direta enviado",
   direct_sale_conditions: "Condições da venda direta",
   direct_sale_page: "Tela de venda direta",
   // ----------------------------------------------------------- financeiro
@@ -306,6 +308,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   system_report_attachments: "Anexo de relato",
   training_campaigns: "Turma de certificação",
   training_enrollments: "Matrícula na certificação",
+  role_coverages: "Função de apoio (cobertura)",
   training_requirements: "Metas da certificação",
   training_settings: "Configuração da certificação",
   // ----------------------------------------------------------------- PPR+

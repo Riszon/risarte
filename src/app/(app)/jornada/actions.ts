@@ -282,7 +282,9 @@ export async function sendToPlanningCenter(
  * saída da mesma tela.
  */
 export async function concluirReavaliacao(
-  clientId: string
+  clientId: string,
+  /** 0421 (D22): a data do retorno; nulo = a sugerida (daqui a 6 meses). */
+  retorno: string | null = null
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: client } = await supabase
@@ -291,15 +293,35 @@ export async function concluirReavaliacao(
     .eq("id", clientId)
     .single<{ journey_phase: JourneyPhase }>();
 
-  // A trava de verdade é a 0266; aqui a mensagem é amigável.
+  // A trava de verdade é a do banco; aqui a mensagem é amigável.
   if (client?.journey_phase !== "reevaluation") {
     return {
       ok: false,
       error: "Este cliente não está na Reavaliação.",
     };
   }
-  const movido = await moveClientPhase(clientId, "follow_up");
-  if (!movido.ok) return movido;
+  // 0421 (D23): a porta confere o controle de qualidade e grava o retorno.
+  const { error: erroConclusao } = await supabase.rpc("conclude_reevaluation", {
+    p_client_id: clientId,
+    p_return_date: retorno,
+  });
+  if (erroConclusao) {
+    const m = erroConclusao.message;
+    if (m.includes("QUALITY_PENDING"))
+      return {
+        ok: false,
+        error:
+          "Termine o controle de qualidade antes: avalie todos os procedimentos e espere a revisão ou a refação pedidas.",
+      };
+    if (m.includes("RETURN_DATE_PAST"))
+      return { ok: false, error: "A data do retorno tem de ser depois de hoje." };
+    if (m.includes("NOT_ALLOWED"))
+      return { ok: false, error: "Só o Coordenador Clínico conclui a reavaliação." };
+    console.error("conclude_reevaluation:", erroConclusao.code);
+    return { ok: false, error: "Não foi possível concluir a reavaliação." };
+  }
+  revalidatePath(`/prontuarios/${clientId}`);
+  revalidatePath("/jornada");
 
   // 0270: a outra saída da mesma tela encerra a consulta igual ao "Enviar ao
   // Planejamento" — senão o paciente da reavaliação ficaria na sala de espera

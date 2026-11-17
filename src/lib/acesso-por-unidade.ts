@@ -11,6 +11,8 @@ export const MOTIVOS_DE_ACESSO = [
   "sistema_fechado",
   "anterior",
   "manual",
+  // 0414 (funções de apoio, D6): a cobertura temporária libera pelo período.
+  "cobertura",
   "sem_metas",
   "certificado",
   "aguardando_grupo",
@@ -24,6 +26,7 @@ export const ROTULO_DO_MOTIVO: Record<MotivoDeAcesso, string> = {
   sistema_fechado: "Sistema real fechado na ficha",
   anterior: "Liberado antes do portão",
   manual: "Liberado sem missão pelo Admin",
+  cobertura: "Liberado pela cobertura (função de apoio)",
   sem_metas: "Função sem metas definidas",
   certificado: "Missão cumprida",
   aguardando_grupo: "Aguardando o grupo da unidade cumprir",
@@ -125,14 +128,26 @@ export function aplicarTranca(
   if (leitura.tipo === "erro") {
     return { liberadas: new Set(), fechadas: [] };
   }
-  const porUnidade = new Map(leitura.linhas.map((l) => [l.clinic_id, l]));
+  // 0413 (funções de apoio): a pessoa pode ter mais de uma função na unidade,
+  // e a tranca é POR FUNÇÃO. A unidade abre se ALGUMA função dela abriu; cada
+  // função fechada aparece em `fechadas` (o Início explica qual e por quê).
+  const porUnidade = new Map<string, (typeof leitura.linhas)[number][]>();
+  for (const l of leitura.linhas) {
+    const lista = porUnidade.get(l.clinic_id) ?? [];
+    lista.push(l);
+    porUnidade.set(l.clinic_id, lista);
+  }
   const liberadas = new Set<string>();
   const fechadas: UnidadeFechada[] = [];
   const todas = new Set([...unidadesDaPessoa, ...porUnidade.keys()]);
   for (const id of todas) {
-    const l = porUnidade.get(id);
-    if (l?.allowed) liberadas.add(id);
-    else if (l) fechadas.push({ clinicId: id, clinicName: l.clinic_name, role: l.role, motivo: l.reason });
+    const linhas = porUnidade.get(id) ?? [];
+    if (linhas.some((l) => l.allowed)) liberadas.add(id);
+    for (const l of linhas) {
+      if (!l.allowed) {
+        fechadas.push({ clinicId: id, clinicName: l.clinic_name, role: l.role, motivo: l.reason });
+      }
+    }
   }
   return { liberadas, fechadas };
 }

@@ -287,6 +287,13 @@ export async function closeDirectSaleStep(
         error:
           "Defina a forma de pagamento e o parcelamento antes de assinar o contrato ou emitir a cobrança.",
       };
+    // VD3-2 (0415): o termo não se marca à mão — ZapSign ou papel anexado.
+    if (m.includes("PAPER_REQUIRED"))
+      return {
+        ok: false,
+        error:
+          "O termo da venda direta não se marca à mão: envie pela ZapSign ou anexe o termo assinado no papel (abra a venda pelo prontuário ou pela fila Para receber).",
+      };
     console.error("direct_sale_close_step failed:", m);
     return { ok: false, error: "Não foi possível atualizar o fechamento." };
   }
@@ -389,6 +396,9 @@ export async function cancelDirectSale(
     entityId: saleId,
     clinicId: info.clinicId,
   });
+  // VD3-2 (0415): o termo ainda aberto na ZapSign é recusado lá também.
+  const { cancelarTermoDaVenda } = await import("@/lib/venda-direta-termo");
+  await cancelarTermoDaVenda(saleId);
   revalidatePath("/comercial/venda-direta");
   revalidatePath(`/prontuarios/${info.clientId ?? ""}`);
   return { ok: true };

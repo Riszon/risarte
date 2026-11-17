@@ -22,6 +22,10 @@ import type { JourneyPhase } from "@/lib/journey";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { localDaSessao } from "@/lib/odontograma/execucao";
 import {
+  FilaParaReceber,
+  carregarFilaParaReceber,
+} from "@/components/venda-direta/fila-para-receber";
+import {
   AttendancePanel,
   type PanelAppointment,
   type SwapStaff,
@@ -717,6 +721,28 @@ export default async function AtendimentoPage(
   const isCoordinator =
     !consultantView && hasRoleInClinic(session, clinicId, ["clinical_coordinator"]);
 
+  // VD3: a venda direta começa no Atendimento. "Vender" para quem lança;
+  // a fila "Para receber" para quem fecha (o banco confere de novo).
+  const canSell =
+    !consultantView &&
+    Boolean(clinicId) &&
+    (session.isAdminMaster ||
+      hasRoleInClinic(session, clinicId, [
+        "receptionist",
+        "sdr",
+        "clinical_coordinator",
+        "unit_manager",
+      ]));
+  const canCloseSales =
+    !consultantView &&
+    Boolean(clinicId) &&
+    (session.isAdminMaster ||
+      hasRoleInClinic(session, clinicId, ["receptionist", "sdr", "unit_manager"]));
+  const filaParaReceber =
+    canCloseSales && clinicId
+      ? await carregarFilaParaReceber(supabase, clinicId)
+      : [];
+
   // H3.6: Recepção ou Gerente troca o profissional de última hora. Carrega a
   // equipe da unidade para o seletor do novo profissional.
   const canSwapProvider =
@@ -1009,7 +1035,9 @@ export default async function AtendimentoPage(
           Conclua ou registre falta/desistência para liberar a cadeira.
         </p>
       )}
+      <FilaParaReceber vendas={filaParaReceber} />
       <AttendancePanel
+        canSell={canSell}
         appointments={appointments}
         canCheckIn={canCheckIn}
         canCall={canCall}

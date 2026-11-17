@@ -207,6 +207,9 @@ export const TABELAS: Record<string, string> = {
   "public.treatment_plan_ortho": "Proposta ortodôntica da opção do plano",
   "public.plan_negotiation_ortho": "Acordo ortodôntico da negociação",
   "public.ortho_billing_batches": "Lote de mensalidades ortodônticas",
+  "public.role_coverages": "Função de apoio (cobertura)",
+  "public.role_incompatibilities": "Combinação de funções proibida",
+  "public.coverage_settings": "Limites das funções de apoio",
   // ------------------------------------------------------ assinaturas digitais (0340)
   "public.signature_settings": "Configuração das assinaturas digitais",
   "public.signature_templates": "Modelo de documento para assinatura",
@@ -290,6 +293,8 @@ export const TABELAS: Record<string, string> = {
   "public.treatment_plan_stages": "Etapa do plano",
   "public.treatment_plans": "Plano de tratamento",
   "public.treatment_sessions": "Sessão de tratamento",
+  "public.treatment_closures": "Fim do tratamento (fechamento do plano)",
+  "public.treatment_closure_contacts": "Contato do fim do tratamento",
   "public.user_clinic_roles_all": "Função do usuário na unidade",
   "public.user_environments": "Porta do usuário (treino / sistema)",
   // -------------------------------------------------- Risarte Empresarial

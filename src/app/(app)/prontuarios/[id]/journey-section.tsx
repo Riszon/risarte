@@ -133,7 +133,11 @@ export function JourneySection({
   const canSetPillar =
     isAdminMaster || (isPlannerAnywhere && phase === "planning_center");
 
-  const statusOptions = STATUS_BY_PHASE[phase] ?? [];
+  // 0418 (D9): "Tratamento Finalizado" é marcado sozinho pelo fim do
+  // tratamento; à mão, só o Admin Master (o banco recusa os outros).
+  const statusOptions = (STATUS_BY_PHASE[phase] ?? []).filter(
+    (s) => s !== "treatment_finished" || isAdminMaster
+  );
   const canSetStatus = canSetStatusInPhase(phase, {
     isAdminMaster,
     clinicRoles,

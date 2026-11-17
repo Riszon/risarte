@@ -152,6 +152,10 @@ export function appointmentTypeOptions(
   // Planejamento: o check-in da reavaliação só muda a fase a partir da Fase 7
   // (0032), e aqui não muda nada.
   if (phase === "planning_center") options.push("reevaluation");
+  // 0418 (C1, decisão do dono, 16/11/2026): com outro tratamento ainda em
+  // andamento, a reavaliação do fim de um plano acontece DENTRO da Fase 5. O
+  // check-in dela não muda a fase; concluí-la encerra o fechamento do plano.
+  if (phase === "treatment_start") options.push("reevaluation");
   for (const t of EXCEPTIONAL_TYPES) {
     if (!options.includes(t)) options.push(t);
   }

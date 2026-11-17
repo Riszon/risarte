@@ -400,6 +400,148 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (venda direta v3, VD3-3) — PC Administrador (core 0.471.0 → 0.472.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **O Pix na janela** (bloco 0.472.0 no ESTADO). Publicado com o "pode publicar" do dono
+  (17/11/2026). Dependência nova: `qrcode` 1.5.4.
+- ⚠️ **`sale_charges_read`**: "agendada para hoje" = a cobrança ainda vai
+  nascer; o meio da cobrança é `PIX` (maiúsculas); a leitura pode estourar o
+  tempo durante a baixa — tela que pergunta de novo tem de aguentar a falha.
+- ⚠️ **Testar o Pix no treino sem ligar a unidade**: marcar só a venda de
+  teste em `sale_auto_charges` (a cobrança automática de Londrina está
+  desligada) e aplicar o aviso com `_gateway_record_event` +
+  `_gateway_process_event` (o caminho do webhook).
+- ⚠️ **Disco**: chegou a 2,8 GB livres; o cache do npm (1 GB) foi limpo.
+
+**17/11/2026 (fim do tratamento, Etapa 3) — PC Administrador (core 0.471.0, migração 0421; worktree `wt-fim-tratamento`)**
+
+- **O controle de qualidade em cinco níveis** (bloco 0.471.0 no ESTADO).
+  ⚠️ `set_plan_item_quality` (8 parâmetros) e `register_closure_contact` (8)
+  foram recriadas na 0421: ao recriar, partir dela. ⚠️ O nível
+  (`plan_quality_reviews.level`) manda; o `status` é derivado. ⚠️ Sair da
+  Reavaliação só por `conclude_reevaluation` (D23).
+
+**17/11/2026 (fim do tratamento, 0420) — PC Administrador (core 0.470.0, migração 0420; worktree `wt-fim-tratamento`)**
+
+- **A instalação ortodôntica não termina o plano** (bloco 0.470.0 no ESTADO;
+  combinada com a sessão "Módulo de Ortodontia"). ⚠️ Ao recriar
+  `treatment_closure_on_session`, partir da 0420 (filtro `_sessao_ortodontica`).
+  ⚠️ A 0.469.0/0417 (AP175) é da ortodontia, ainda sem push: ela entra ABAIXO
+  da 0.470.0 no changelog.
+- ✅ 0420 nos dois bancos (treino por `migrar:teste`; produção pelo dono em
+  17/11/2026; conferido de fora: `_sessao_ortodontica` existe, sem login recusa).
+  Publicada. Não vista na tela.
+
+**17/11/2026 (fim do tratamento, Etapa 2) — PC Administrador (core 0.467.0, publicada DEPOIS da 0.468.0 da F4 — a versão do sistema segue 0.468.0; migração 0418, aplicada na produção pelo dono em 17/11/2026; worktree `wt-fim-tratamento`)**
+
+- **O motor do fim do tratamento** (bloco 0.467.0 no ESTADO; plano e as 30
+  decisões do dono em `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`). ⚠️ **"Sobra
+  tratamento?" = `_tratamento_em_aberto`** (regra única; a Etapa 5 troca a
+  `_outra_venda_em_tratamento`). ⚠️ **O fim de plano = `treatment_closures`**,
+  aberto por gatilho; mudança de fase só por `_jornada_mover_por_evento`.
+  ⚠️ Ao recriar `check_in_appointment`, a urgência NÃO leva mais 1 → 5 (D13).
+- ✅ 0418 no treino (ensaio 35/35, desfeito; conferência batida) e na produção
+  (o dono, 17/11/2026, `audit_attach_all` = 2; conferido de fora: tabelas e
+  coluna existem, sem login a porta recusa, a chave de serviço para em
+  NOT_ALLOWED). Não visto na tela.
+
+
+**17/11/2026 (ortodontia, AP175) — PC Administrador (core 0.468.0 → 0.469.0, migração 0417)**
+
+- **Sessão de plano não é manutenção; a instalação inicia o caso** (bloco
+  0.469.0 no ESTADO). ⚠️ **A agenda liga as sessões DEPOIS de gravar o
+  agendamento**: gatilho de `appointments` que dependa da sessão tem de ouvir
+  `treatment_session_id` e olhar também `treatment_sessions.appointment_id`.
+  ⚠️ Início do caso = `_ortho_begin_treatment`; ao recriar
+  `ortho_set_status`/`ortho_appointment_sync`, partir da 0417.
+- ✅ 0417 nos dois bancos (treino: ensaio 25/25, desfeito; produção pelo dono
+  em 17/11/2026, conferência 0·0·1·1·0 — nenhum repasse em dobro pago;
+  conferido de fora). Publicado depois da migração. Etapa B (tipo
+  "Manutenção ortodôntica") aguarda, no backlog.
+
+**17/11/2026 (funções de apoio, F4) — PC Administrador (core → 0.468.0, migração 0419)**
+
+- **O painel "Equipe e coberturas" e os avisos à Franqueadora** (bloco 0.468.0
+  no ESTADO; manual 2.5). ⚠️ Conta única nas funções `_coverage_panel_*_raw`
+  (tela e avisos); ao recriar `role_coverage_daily`, partir da 0419. ⚠️ Os
+  limiares moram também em `coberturas-painel.ts` (régua). Não visto na tela.
+- ✅ 0419 nos dois bancos (treino: ensaio 29/29, desfeito; produção pelo dono em
+  17/11/2026; conferido de fora). Publicado. As 4 entregas do plano estão feitas.
+
+**16/11/2026 (venda direta v3, VD3-2) — PC Administrador (core 0.464.0 → 0.465.0, migração 0415; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **O termo da venda direta pela ZapSign** (bloco 0.465.0 no ESTADO). ✅ Texto
+  aprovado e **0415 na produção** (o dono, 16/11/2026; conferido de fora). Publicado.
+- ⚠️ **Quem envia o termo = quem FECHA a venda direta** (porta
+  `direct_sale_term_package`); a Recepção não tem a permissão geral de envio.
+- ⚠️ **Termo assinado = gatilho do banco** (`signature_packages_direct_sale_signed`);
+  **trava `PAPER_REQUIRED`** para quem marca à mão. Caminho novo que marque o
+  termo grava `contract_signed_source`.
+- ⚠️ **`migrar:teste` aplica o que não está no REGISTRO do treino**: aplicou a
+  4020 (sessão do Asaas), que tinha sido aplicada por fora dele. Conferir a
+  lista antes de rodar quando houver outra sessão mexendo no treino.
+- ⚠️ **Testar o aviso da ZapSign no servidor local:** subir com
+  `ZAPSIGN_WEBHOOK_SECRET=<qualquer>` no ambiente e
+  `node scripts/zapsign-simular-webhook.mjs ASS-… signed 1 --segredo=<o mesmo>`.
+- ⚠️ **Venda de teste sem avisar ninguém:** criar a venda direto na tabela (a
+  função de lançamento avisa o Consultor real da Unidade Teste).
+
+**16/11/2026 (funções de apoio, F3) — PC Administrador (core 0.463.0 → 0.464.0, sem migração)**
+
+- **As telas das funções de apoio** (bloco 0.464.0 no ESTADO; manual 2.5).
+  ⚠️ Regra da tela em `src/lib/funcoes-de-apoio.ts`; a sessão traz
+  `coberturas`. Falta a F4 (painel "Equipe e coberturas" e avisos à
+  Franqueadora). Não visto na tela.
+
+**16/11/2026 (venda direta v3, VD3-1) — PC Administrador (core 0.462.0 → 0.463.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **O caixa da venda direta em uma janela** (bloco 0.463.0 no ESTADO; plano e
+  decisões do dono em `docs/comercial/VENDA-DIRETA-V3-PLANO.md`). Publicado no
+  `main` em 16/11/2026 com o "pode publicar" do dono (a versão era 0.462.0 e
+  virou 0.463.0 na junção: outra sessão tinha usado a 0.462.0).
+- ⚠️ **Regras de tela do caixa = `src/lib/venda-direta-caixa.ts`** (espelho de
+  `setDirectSaleConditions`). ⚠️ **"Recebi R$ …" é a baixa da parcela**
+  (`registerReceipt`), que conclui a venda no banco; exige o termo assinado.
+- ⚠️ **Turbopack recusa `node_modules` por junção** ("points out of the
+  filesystem root"): worktree que vai subir servidor precisa de `npm ci`.
+- ⚠️ **Disco C: chegou a 0 no `npm run verificar`** com 5 GB livres e o
+  servidor de teste no ar; passou depois de encerrar o servidor (o `next dev`
+  da porta 3100 sobrevive ao parar a tarefa: encerrar pelo processo da porta).
+- ⚠️ **Constante de arquivo "use client" chega VAZIA à página de servidor**
+  (o selo da venda saía em branco): rótulo e estilo para página moram em lib
+  pura (`SELO_DA_VENDA`).
+- Testado de ponta a ponta com o OK do dono: VD-00587 (Unidade Teste, R$ 300,00
+  em dinheiro), conferida no banco. Uma venda de teste lá avisa 1 Consultor
+  real. Não testado na tela: Asaas, parcelado, desconto, permuta, Coordenador,
+  cancelamento. Próximas: VD3-2 (termo pela ZapSign, migração nova), VD3-3,
+  VD3-4.
+
+**16/11/2026 (funções de apoio, F2) — PC Administrador (core 0.461.0 → 0.462.0, migração 0414)**
+
+- **As coberturas no banco** (bloco 0.462.0 no ESTADO). ⚠️ Trava nova
+  `unique (user_id, clinic_id, role)`; apoio só por `role_coverages` e pelas
+  portas (só Admin). ⚠️ A janela esconde a linha vencida; a rotina
+  `risarte-coverage-daily` encerra. ⚠️ Semente/script com `on conflict
+  (user_id, clinic_id)` leva `where assignment_kind = principal`.
+- ✅ 0414 nos dois bancos (treino: ensaio 26/26, desfeito; produção pelo dono em
+  16/11/2026; conferido de fora: tabelas e colunas novas, limites padrão só
+  avisando, a combinação proibida semeada; dar cobertura e a rotina recusam sem
+  login, e a chave de serviço para em NOT_ALLOWED). Publicado. Próxima: F3.
+
+**16/11/2026 (funções de apoio, F1) — PC Administrador (core 0.460.0 → 0.461.0, migração 0413; Indica 0.9.0 → 0.9.1, migração 2012)**
+
+- **Leitores prontos para duas funções na mesma unidade** (bloco 0.461.0 no
+  ESTADO; plano aprovado em `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`, D1–D15).
+  ⚠️ **`assignment_kind`**: nível, repasse e prêmio pela PRINCIPAL. ⚠️ **A
+  tranca é por função** (`system_closed_clinics.role`; grant/revoke com
+  `p_role`). ⚠️ Aviso igual no mesmo instante entra uma vez
+  (`notifications_dedupe`). A trava de uma função por unidade só sai na F2.
+- ✅ 0413 e 2012 nos dois bancos (treino: ensaio 15/15, desfeito; produção pelo
+  dono em 16/11/2026; conferido de fora: as funções com `assignment_kind`
+  "principal", `system_closed_clinics.role` existe, liberar/tirar com a função
+  recusam sem login e param em NOT_ALLOWED pela chave de serviço; o corpo da
+  2012 não dá para ler de fora, só que a função existe). Publicado. Próxima: F2.
+
 **16/11/2026 (permissões do Empresarial) — PC Administrador (core 0.459.1 → 0.460.0; Empresarial 0.107.0 → 0.108.0, migração 1048)**
 
 - **Permissões explicadas e as do Empresarial na matriz** (bloco 0.460.0 no

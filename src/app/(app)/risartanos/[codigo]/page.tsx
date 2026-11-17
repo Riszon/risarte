@@ -19,6 +19,7 @@ import {
   carregarClinicas,
   carregarEspecialidades,
   carregarFicha,
+  carregarCoberturas,
   carregarFuncoes,
   carregarAcessoPorUnidade,
   carregarAmbientesDoUsuario,
@@ -97,6 +98,14 @@ export default async function FichaDoRisartanoPage(
     // OC-00133: as medalhas — a mesma regra da lista.
     carregarCertificacoes(supabase, acesso ? [acesso.userId] : []),
   ]);
+  // 0414: as funções de apoio (coberturas) agendadas e ativas.
+  const coberturas = acesso
+    ? await carregarCoberturas(
+        supabase,
+        acesso.userId,
+        (id) => funcoes.find((f) => f.clinicId === id)?.clinicName ?? "Unidade"
+      )
+    : [];
   // Clínicas e logins livres só servem ao Admin (é ele quem mexe em acesso).
   const clinicas = adminEdita ? await carregarClinicas(supabase) : [];
   const loginsLivres =
@@ -281,6 +290,7 @@ export default async function FichaDoRisartanoPage(
             treinoConfigurado={treinoConfigurado()}
             acesso={acesso}
             funcoes={funcoes}
+            coberturas={coberturas}
             clinicas={clinicas}
             loginsLivres={loginsLivres}
             isAdmin={mexeNoAcesso}

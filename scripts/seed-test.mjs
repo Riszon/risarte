@@ -183,7 +183,8 @@ async function semear(db) {
     await db.query(
       `insert into public.user_clinic_roles (user_id, clinic_id, role, unit_scope)
        values ($1, $2, $3::user_role, coalesce($4::unit_scope, 'none'::unit_scope))
-       on conflict (user_id, clinic_id) do update set role = excluded.role`,
+       on conflict (user_id, clinic_id) where assignment_kind = 'principal'
+       do update set role = excluded.role`,
       [id, clinicas[codigo], papel, escopo]
     );
   }

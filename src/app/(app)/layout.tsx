@@ -190,6 +190,9 @@ export default async function AppLayout({
             ? (session.rolesByClinic[session.activeClinic.id] ?? [])
             : []
         }
+        activeClinicSupportRoles={(session.coberturas ?? [])
+          .filter((c) => c.clinicId === session.activeClinic?.id)
+          .map((c) => c.role)}
         initialCollapsed={sidebarCollapsed}
         initialAdminAberto={adminAberto}
       />

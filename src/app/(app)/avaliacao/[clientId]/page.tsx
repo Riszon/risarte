@@ -310,106 +310,198 @@ export default async function EvaluationCockpitPage(
     ? await loadAnamnesisWorkspace(clientId, clinicId)
     : { templates: [], fills: [] };
 
-  // Bloco D — checklist de qualidade do último plano CONCLUÍDO (só reavaliação).
-  let qualityChecklist: {
+  // Bloco D — o CONTROLE DE QUALIDADE (0421). Um checklist por plano cujo fim
+  // espera a reavaliação do Coordenador (fechamento em "reavaliacao"), em
+  // QUALQUER fase: com outro tratamento em andamento, a reavaliação acontece
+  // dentro da Fase 5 (C1). Na Reavaliação, também o plano marcado à mão como
+  // "Concluído" antes da 0418 e ainda sem a trava de 100% aprovado.
+  type Checklist = {
     planId: string;
     planTitle: string;
     locked: boolean;
     items: QualityItem[];
     dentists: { id: string; name: string }[];
-  } | null = null;
-  if (flowKind === "reavaliacao") {
-    const concluded = plans.find((p) => p.lifecycle === "concluido");
-    const primary =
-      concluded?.options.find((o) => o.isPrimary) ?? concluded?.options[0] ?? null;
-    if (concluded && primary && primary.items.length > 0) {
-      const itemIds = primary.items.map((i) => i.id);
-      const [{ data: reviews }, { data: planRow }, { data: sessRows }, scheduling] =
-        await Promise.all([
-          supabase
-            .from("plan_quality_reviews")
-            .select(
-              "item_id, status, note, executor_dentist_id, resolution, assigned_dentist_id"
-            )
-            .in("item_id", itemIds)
-            .returns<
-              {
-                item_id: string;
-                status: string;
-                note: string | null;
-                executor_dentist_id: string | null;
-                resolution: string | null;
-                assigned_dentist_id: string | null;
-              }[]
-            >(),
-          supabase
-            .from("treatment_plans")
-            .select("quality_locked")
-            .eq("id", concluded.id)
-            .maybeSingle(),
-          // Sessões dos procedimentos: estado (aberto/agendado/finalizado) +
-          // sugestão do dentista executor (profissional das sessões realizadas).
-          supabase
-            .from("treatment_sessions")
-            .select(
-              "item_id, status, done_at, appointment:appointments!treatment_sessions_appointment_id_fkey ( provider_user_id )"
-            )
-            .in("item_id", itemIds)
-            .order("done_at", { ascending: false, nullsFirst: false }),
-          getUnitSchedulingData(clinicId),
-        ]);
+  };
+  const qualityChecklists: Checklist[] = [];
+  {
+    const { data: closureRows } = await supabase
+      .from("treatment_closures")
+      .select("plan_id")
+      .eq("client_id", clientId)
+      .eq("scope", "plano")
+      .eq("status", "reavaliacao")
+      .returns<{ plan_id: string | null }[]>();
+    const planIds = new Set(
+      (closureRows ?? []).map((r) => r.plan_id).filter((x): x is string => Boolean(x))
+    );
+    if (flowKind === "reavaliacao") {
+      for (const p of plans) if (p.lifecycle === "concluido") planIds.add(p.id);
+    }
+    const alvo = plans.filter((p) => planIds.has(p.id));
+    if (alvo.length > 0) {
+      // A opção VENDIDA (e os itens excluídos na negociação); sem venda, a principal.
+      const { data: negRows } = await supabase
+        .from("plan_negotiations")
+        .select(
+          "id, plan_id, option_id, commercial_sales ( closed_at, cancelled_at ), plan_negotiation_items ( item_id, included )"
+        )
+        .in("plan_id", alvo.map((p) => p.id))
+        .eq("status", "aceita")
+        .returns<
+          {
+            id: string;
+            plan_id: string;
+            option_id: string;
+            commercial_sales:
+              | { closed_at: string | null; cancelled_at: string | null }[]
+              | { closed_at: string | null; cancelled_at: string | null }
+              | null;
+            plan_negotiation_items: { item_id: string; included: boolean }[] | null;
+          }[]
+        >();
+      const vendida = new Map<string, { optionId: string; excluidos: Set<string> }>();
+      for (const n of negRows ?? []) {
+        const vendas = Array.isArray(n.commercial_sales)
+          ? n.commercial_sales
+          : n.commercial_sales
+            ? [n.commercial_sales]
+            : [];
+        if (!vendas.some((v) => v.closed_at && !v.cancelled_at)) continue;
+        vendida.set(n.plan_id, {
+          optionId: n.option_id,
+          excluidos: new Set(
+            (n.plan_negotiation_items ?? []).filter((x) => !x.included).map((x) => x.item_id)
+          ),
+        });
+      }
+      const escolhas = alvo
+        .map((p) => {
+          const v = vendida.get(p.id);
+          const opcao =
+            (v ? p.options.find((o) => o.id === v.optionId) : null) ??
+            p.options.find((o) => o.isPrimary) ??
+            p.options[0] ??
+            null;
+          if (!opcao) return null;
+          const itens = opcao.items.filter((i) => !v?.excluidos.has(i.id));
+          return itens.length > 0 ? { plano: p, opcao, itens } : null;
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null);
+      const itemIds = escolhas.flatMap((e) => e.itens.map((i) => i.id));
+      if (itemIds.length > 0) {
+        const [{ data: reviews }, { data: planRows }, { data: sessRows }, scheduling] =
+          await Promise.all([
+            supabase
+              .from("plan_quality_reviews")
+              .select(
+                "item_id, status, level, note, executor_dentist_id, resolution, assigned_dentist_id"
+              )
+              .in("item_id", itemIds)
+              .returns<
+                {
+                  item_id: string;
+                  status: string;
+                  level: string | null;
+                  note: string | null;
+                  executor_dentist_id: string | null;
+                  resolution: string | null;
+                  assigned_dentist_id: string | null;
+                }[]
+              >(),
+            supabase
+              .from("treatment_plans")
+              .select("id, quality_locked")
+              .in("id", escolhas.map((e) => e.plano.id))
+              .returns<{ id: string; quality_locked: boolean }[]>(),
+            // Sessões dos procedimentos: estado (aberto/agendado/finalizado) +
+            // sugestão do dentista executor (profissional das sessões realizadas).
+            supabase
+              .from("treatment_sessions")
+              .select(
+                "item_id, status, done_at, appointment:appointments!treatment_sessions_appointment_id_fkey ( provider_user_id )"
+              )
+              .in("item_id", itemIds)
+              .order("done_at", { ascending: false, nullsFirst: false }),
+            getUnitSchedulingData(clinicId),
+          ]);
 
-      const byItem = new Map((reviews ?? []).map((r) => [r.item_id, r]));
-      const suggestedByItem = new Map<string, string>();
-      // Agrega o estado das sessões por procedimento.
-      const agg = new Map<string, { total: number; open: number; scheduled: number }>();
-      for (const s of (sessRows ?? []) as {
-        item_id: string;
-        status: string;
-        appointment: { provider_user_id: string | null } | { provider_user_id: string | null }[] | null;
-      }[]) {
-        const a = agg.get(s.item_id) ?? { total: 0, open: 0, scheduled: 0 };
-        a.total += 1;
-        if (s.status !== "done") a.open += 1;
-        if (s.status === "scheduled") a.scheduled += 1;
-        agg.set(s.item_id, a);
-        if (s.status === "done" && !suggestedByItem.has(s.item_id)) {
-          const appt = Array.isArray(s.appointment) ? s.appointment[0] : s.appointment;
-          if (appt?.provider_user_id) suggestedByItem.set(s.item_id, appt.provider_user_id);
+        const byItem = new Map((reviews ?? []).map((r) => [r.item_id, r]));
+        const suggestedByItem = new Map<string, string>();
+        const agg = new Map<string, { total: number; open: number; scheduled: number }>();
+        for (const s of (sessRows ?? []) as {
+          item_id: string;
+          status: string;
+          appointment:
+            | { provider_user_id: string | null }
+            | { provider_user_id: string | null }[]
+            | null;
+        }[]) {
+          const a = agg.get(s.item_id) ?? { total: 0, open: 0, scheduled: 0 };
+          a.total += 1;
+          if (s.status !== "done") a.open += 1;
+          if (s.status === "scheduled") a.scheduled += 1;
+          agg.set(s.item_id, a);
+          if (s.status === "done" && !suggestedByItem.has(s.item_id)) {
+            const appt = Array.isArray(s.appointment) ? s.appointment[0] : s.appointment;
+            if (appt?.provider_user_id) suggestedByItem.set(s.item_id, appt.provider_user_id);
+          }
+        }
+        const procStateOf = (itemId: string): "open" | "scheduled" | "done" => {
+          const a = agg.get(itemId);
+          if (a && a.total > 0 && a.open === 0) return "done";
+          if (a && a.scheduled > 0) return "scheduled";
+          return "open";
+        };
+        const dentists = scheduling.staff
+          .filter((s) => s.roles.includes("dentist"))
+          .map((s) => ({ id: s.userId, name: s.name }));
+        const travado = new Map((planRows ?? []).map((r) => [r.id, r.quality_locked]));
+        const esperando = new Set((closureRows ?? []).map((r) => r.plan_id));
+
+        for (const e of escolhas) {
+          const locked = Boolean(travado.get(e.plano.id));
+          // Já 100% aprovado e sem fechamento esperando: não precisa aparecer.
+          if (locked && !esperando.has(e.plano.id)) continue;
+          qualityChecklists.push({
+            planId: e.plano.id,
+            planTitle: e.opcao.title,
+            locked,
+            dentists,
+            items: e.itens.map((i) => {
+              const r = byItem.get(i.id);
+              return {
+                id: i.id,
+                description: i.description,
+                status: (r?.status as QualityItem["status"]) ?? null,
+                level: (r?.level as QualityItem["level"]) ?? null,
+                note: r?.note ?? null,
+                executorId: r?.executor_dentist_id ?? null,
+                resolution: r?.resolution ?? null,
+                assignedId: r?.assigned_dentist_id ?? null,
+                suggestedExecutorId: suggestedByItem.get(i.id) ?? null,
+                procState: procStateOf(i.id),
+              };
+            }),
+          });
         }
       }
-      const procStateOf = (itemId: string): "open" | "scheduled" | "done" => {
-        const a = agg.get(itemId);
-        if (a && a.total > 0 && a.open === 0) return "done";
-        if (a && a.scheduled > 0) return "scheduled";
-        return "open";
-      };
-      const dentists = scheduling.staff
-        .filter((s) => s.roles.includes("dentist"))
-        .map((s) => ({ id: s.userId, name: s.name }));
-
-      qualityChecklist = {
-        planId: concluded.id,
-        planTitle: primary.title,
-        locked: Boolean(planRow?.quality_locked),
-        dentists,
-        items: primary.items.map((i) => {
-          const r = byItem.get(i.id);
-          return {
-            id: i.id,
-            description: i.description,
-            status: (r?.status as QualityItem["status"]) ?? null,
-            note: r?.note ?? null,
-            executorId: r?.executor_dentist_id ?? null,
-            resolution: r?.resolution ?? null,
-            assignedId: r?.assigned_dentist_id ?? null,
-            suggestedExecutorId: suggestedByItem.get(i.id) ?? null,
-            procState: procStateOf(i.id),
-          };
-        }),
-      };
     }
   }
+  const blocoDaQualidade = qualityChecklists.length > 0 && (
+    <div className="space-y-3">
+      {qualityChecklists.map((q) => (
+        <QualityChecklist
+          key={q.planId}
+          clientId={client.id}
+          planId={q.planId}
+          planTitle={q.planTitle}
+          items={q.items}
+          locked={q.locked}
+          dentists={q.dentists}
+        />
+      ))}
+    </div>
+  );
 
   // -- Envio ao Centro de Planejamento (mesma regra da ficha). ----------------
   const clinicRoles = (session.rolesByClinic[client.clinic_id as string] ??
@@ -540,16 +632,8 @@ export default async function EvaluationCockpitPage(
             {blocoDoOdontograma}
             {/* ORTO7 (R3): a indicação de ortodontia nasce no exame clínico. */}
             {blocoDaIndicacao}
-            {qualityChecklist && (
-              <QualityChecklist
-                clientId={client.id}
-                planId={qualityChecklist.planId}
-                planTitle={qualityChecklist.planTitle}
-                items={qualityChecklist.items}
-                locked={qualityChecklist.locked}
-                dentists={qualityChecklist.dentists}
-              />
-            )}
+            {/* 0421: o controle de qualidade de cada plano que terminou. */}
+            {blocoDaQualidade}
             <MediaCollectionBlock
               clientId={client.id}
               clinicId={clinicId}
@@ -687,6 +771,9 @@ export default async function EvaluationCockpitPage(
               />
             </>
           ) : (
+            <>
+            {/* 0421 (C1): na Fase 5, a reavaliação do fim de um plano acontece aqui. */}
+            {blocoDaQualidade}
             <ClinicalSection
               clientId={client.id}
               clientName={client.full_name}
@@ -700,6 +787,7 @@ export default async function EvaluationCockpitPage(
               anamnesisBlocksPlanning={anamnesisBlocksPlanning}
               anamnesisBlockMessage={anamnesisBlockMessage}
             />
+            </>
           )}
           {!flowKind && blocoDoOdontograma}
         </div>

@@ -5,8 +5,15 @@ função por pessoa e por unidade. Existem situações que em uma unidade algué
 precisa ajudar em outra função quando alguém está ausente ou não tem quem
 desempenha aquela função."*
 
-Situação: **plano para aprovação**. Nada foi alterado. As decisões estão na
-seção 9, cada uma com a recomendação.
+Situação: **APROVADO pelo dono em 16/11/2026, D1 a D15 como recomendado**
+("Sim, como recomendado"). Ordem de execução: F1 → F2 → F3 → F4 (seção 8).
+
+| Entrega | Situação |
+|---|---|
+| F1 | ✅ 0.461.0, migrações 0413 e 2012 (16/11/2026; nos dois bancos, publicada). Ficaram para a F3, por só aparecerem com duas funções: o rótulo da função no chat e no aviso de mudança de fase (já hoje escolhem uma função qualquer entre unidades), a lista de Risartanos sem unidade repetida e a contagem da equipe da certificação. `unit_scheduling_staff` não precisou mudar: a agenda já junta as funções por pessoa. |
+| F2 | ✅ 0.462.0, migração 0414 (16/11/2026; nos dois bancos, publicada). O código da cobertura é **CB-00001** (o plano dizia AP-, que já é o código do backlog). |
+| F3 | ✅ 0.464.0 (saiu como 0.464.0: a 0.463.0 ficou com a venda direta), sem migração (16/11/2026). O chat e o aviso de mudança de fase seguem mostrando uma função qualquer quando há mais de uma (cosmético; já era assim entre unidades). A contagem "N de M" da certificação conta missões (pessoa + função), como antes. |
+| F4 | ✅ 0.468.0 (migração 0419) |
 
 ---
 

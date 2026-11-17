@@ -101,6 +101,7 @@ export default async function NotificationsPage(
     assinaturas: 0,
     rita: 0,
     dividas: 0,
+    equipe: 0,
     outras: 0,
   };
   for (const n of all) counts[categorizeNotification(n.title, n.link)] += 1;

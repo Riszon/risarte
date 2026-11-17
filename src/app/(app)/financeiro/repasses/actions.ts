@@ -93,7 +93,9 @@ export async function setProviderLevel(input: {
     .from("user_clinic_roles")
     .update({ career_level_id: input.levelId })
     .eq("user_id", input.userId)
-    .eq("clinic_id", input.clinicId);
+    .eq("clinic_id", input.clinicId)
+    // 0413: o nível mora na função PRINCIPAL (D8); a de apoio não tem nível.
+    .eq("assignment_kind", "principal");
   if (error) {
     console.error("setProviderLevel failed:", error.message);
     return { ok: false, error: "Não foi possível definir o nível." };

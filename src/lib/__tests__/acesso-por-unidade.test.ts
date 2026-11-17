@@ -47,6 +47,30 @@ describe("tranca do sistema real por unidade e função (0276)", () => {
     ]);
   });
 
+  it("⚠️ 0413: duas funções na MESMA unidade — abre pela certificada, e só a outra fica fechada", () => {
+    const leitura = lerAcessoPorUnidade({
+      data: [
+        linha("A", true, "certificado", "asb"),
+        linha("A", false, "aguardando_missao", "receptionist"),
+      ],
+      error: null,
+    });
+    const r = aplicarTranca(["A"], leitura);
+    expect([...r.liberadas]).toEqual(["A"]);
+    expect(r.fechadas).toEqual([
+      { clinicId: "A", clinicName: "Unidade A", role: "receptionist", motivo: "aguardando_missao" },
+    ]);
+    // A ordem das linhas não muda a resposta (antes, a última linha vencia).
+    const invertida = lerAcessoPorUnidade({
+      data: [
+        linha("A", false, "aguardando_missao", "receptionist"),
+        linha("A", true, "certificado", "asb"),
+      ],
+      error: null,
+    });
+    expect([...aplicarTranca(["A"], invertida).liberadas]).toEqual(["A"]);
+  });
+
   it("⚠️ 0277: a unidade fechada que o banco já escondeu da lista ainda é EXPLICADA", () => {
     // A lista de funções da pessoa chega sem C (o banco esconde); a regra cita C.
     const leitura = lerAcessoPorUnidade({
@@ -89,7 +113,14 @@ describe("tranca do sistema real por unidade e função (0276)", () => {
     const noSql = new Set(
       [...sql.matchAll(/(?:then|else) '([a-z_]+)'/g)].map((m) => m[1])
     );
-    const doCheck = sql.match(/source in \(([^)]*)\)/)?.[1] ?? "";
+    // O CHECK das fontes que vale é o mais recente: a 0414 acrescentou
+    // 'cobertura' (funções de apoio, D6).
+    const check0414 = readFileSync(
+      join(process.cwd(), "supabase/migrations", "0414_funcoes_de_apoio_coberturas.sql"),
+      "utf8"
+    );
+    const doCheck = check0414.match(/check \(source in \(([^)]*)\)\)/)?.[1] ?? "";
+    expect(doCheck).toContain("'cobertura'");
     for (const m of doCheck.matchAll(/'([a-z_]+)'/g)) noSql.add(m[1]);
     // A régua precisa ter achado algo — zero seria "não medi", não "bate".
     expect(noSql.size).toBeGreaterThan(5);

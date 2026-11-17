@@ -500,7 +500,7 @@ quando ela foi; apurar na hora é botão do Painel da rede.
 #### O Painel da rede por área *(desde a 0.341.0, relato OC-00121)*
 
 Em **Rede → Painel da rede** (Admin Master e Financeiro da Franqueadora), no
-alto, o **mês e o ano** — valem para todas as abas — e sete abas:
+alto, o **mês e o ano** — valem para todas as abas — e oito abas:
 
 | Aba | O que mostra de cada unidade | Vermelho | Amarelo |
 |---|---|---|---|
@@ -511,6 +511,7 @@ alto, o **mês e o ano** — valem para todas as abas — e sete abas:
 | **DRE** | receita líquida, resultado e **margem** do mês | prejuízo | margem mais de 2 pontos abaixo da margem da rede |
 | **Hora clínica** *(desde a 0.362.0)* | a **hora clínica** (custo fixo por mês, horas de cadeira, ocupação esperada e real, hora real) nos **3 meses fechados** até o mês escolhido | — | hora mais de 10% acima da hora da rede |
 | **Repasses** *(desde a 0.434.0)* | o repasse dos dentistas no mês (pela finalização do procedimento): repasse, quanto ele representa da produção, descontos, pago, a pagar, vencido e o número de dentistas; **Baixar planilha** no alto | repasse com conta **vencida sem pagar** | relatório parado na aprovação ou ocorrência de falha sem decisão |
+| **Equipe e coberturas** *(desde a 0.468.0)* | quem cobre quem: coberturas agora, equipe em acúmulo, dias-pessoa, função sem titular e o tempo de quem cobre — o mesmo painel de **Risartanos → Equipe e coberturas** (seção 2.5) | função sem titular há mais de 30 dias, emenda acima de 60 dias, revisão vencida há mais de 15 dias, limite passado ou previsão de contratação vencida | cobertura em andamento |
 
 Cada aba é uma **tabela em colunas** (desde a 0.341.1, relato OC-00122). A
 primeira linha, **Rede**, traz o total nas **mesmas colunas** das unidades —
@@ -1188,6 +1189,76 @@ ou inativar a pessoa **em cada unidade** — ela pode ter parado em Londrina e
 continuar em Cambé — e **desligar da equipe**, que é o cadastro inteiro).
 **Só o Admin Master mexe no acesso**; Gerente, Franqueado e Franqueadora/RH veem
 para saber o que está valendo.
+
+**Funções de apoio: ajudar em outra função na mesma unidade** *(desde a
+0.464.0)*. Cada pessoa tem **uma função principal** em cada unidade (o cargo
+dela). Quando alguém precisa ajudar em outra função (um colega de férias, uma
+função que a unidade não tem), o Admin Master usa, na aba **Acesso**, o botão
+**Adicionar função de apoio** e escolhe:
+
+- a **unidade** (só as unidades onde a pessoa já tem a função principal) e a
+  **função de apoio**;
+- o tipo: **Cobertura temporária** (com **começa em** e **último dia**, até
+  90 dias, contando coberturas emendadas) ou **Acúmulo fixo** (sem data de fim,
+  para a unidade que não tem quem faça a função);
+- o **motivo** (férias, licença, falta, desligamento/vaga aberta, unidade sem a
+  função, outro) e uma explicação. Para *vaga aberta*, a **previsão de
+  contratação**.
+
+O que vale:
+
+- A pessoa **soma** o que as funções podem fazer na unidade. No Início aparece
+  *"Você está cobrindo Recepção em Cambé até 29/11"*, e o menu mostra a função
+  com *(apoio)*. A pessoa recebe um aviso no sino quando a cobertura começa, 2
+  dias antes de acabar e quando acaba.
+- **A cobertura temporária termina sozinha** no dia seguinte ao último dia, e
+  libera o sistema real daquela função **pelo período**, sem missão. Ela não
+  entra em turma de certificação.
+- **O acúmulo fixo** passa pelo portão como qualquer função (missão) e é
+  **revisto a cada 90 dias**: o botão **Revisado** empurra a próxima revisão.
+  Revisão vencida aparece em vermelho.
+- No máximo **duas funções de apoio** por pessoa na unidade, sem repetir função.
+  **Comprador e Financeiro da Franqueadora nunca juntos** (quem compra não é
+  quem paga).
+- **Encerrar agora** (com motivo) tira a função de apoio na hora. A cobertura
+  agendada que ainda não começou se **cancela**. Nada se apaga: fica o
+  histórico de quem cobriu o quê, quando e por quê.
+- Repasse, nível de carreira, metas e prêmio do Indica continuam pela **função
+  principal**. A lixeira da lista de funções vale só para a principal.
+- Quem deixa a função principal na unidade, ou é desligado, tem as coberturas
+  encerradas sozinhas.
+
+Com duas funções na unidade, o bloco **"Sistema real em cada unidade"** mostra
+uma linha por função: a pessoa pode estar aberta em uma e fechada na outra.
+
+**Equipe e coberturas: o acompanhamento** *(desde a 0.468.0)*. Em
+**Risartanos**, o botão **Equipe e coberturas** (e, para a Franqueadora, a aba de
+mesmo nome no **Painel da rede**) mostra, mês a mês, se alguma unidade está
+trabalhando com a equipe **enxuta demais** ou **sobrecarregando** alguém. O
+Admin Master, a Franqueadora/Rede e o Financeiro da Franqueadora veem a rede
+inteira; o **Gerente** e o **Franqueado** veem só a própria unidade.
+
+- **Por unidade**, uma bolinha e a frase que explica a cor: coberturas agora
+  (e o limite), quantas pessoas da equipe estão em acúmulo (e o limite em %), os
+  **dias-pessoa** de cobertura no mês (a soma dos dias de todas as coberturas) e
+  os motivos. **Vermelho** quando uma função está **sem titular** (feita só por
+  apoio) há mais de 30 dias, quando temporárias **emendadas** passam de 60 dias
+  seguidos, quando um acúmulo fixo está **sem revisão** há mais de 15 dias depois
+  do vencimento, quando a unidade passa de um limite ou quando a **previsão de
+  contratação** venceu. **Amarelo** quando há cobertura em andamento.
+- **Por pessoa que cobre**, o tempo médio por dia no sistema **antes** (os 30 dias
+  anteriores à cobertura) e **durante** a cobertura, e quantos dias ela entrou
+  **fora do horário** da unidade. Tempo 30% maior que o de antes, ou 5 dias fora
+  do horário, aparecem em vermelho como **sinal de sobrecarga**.
+- ⚠️ **Não é ponto eletrônico.** O sistema vê o que acontece dentro dele: hora
+  extra se confere na folha. O painel diz **para onde olhar**; a conclusão é uma
+  conversa com a unidade. Quem trabalha em duas unidades soma o tempo das duas.
+- **Os avisos** chegam no sino, na aba **Equipe e coberturas**, para o Admin
+  Master, a Franqueadora/Rede e o Gerente e o Franqueado da unidade: função sem
+  titular há mais de 30 dias, emendada passando de 60 dias, revisão vencida
+  (de novo a cada semana depois de 15 dias), unidade acima do limite (uma vez por
+  mês) e sinal de sobrecarga (uma vez por mês, por pessoa). **Os limites só
+  avisam**: passar deles não impede a cobertura.
 
 **Admin Principal e outros Admins.** O dono do sistema é o **Admin Principal**.
 Ele pode tornar outras pessoas **Admin** — na aba **Acesso** da ficha, botão
@@ -2038,8 +2109,10 @@ pela tabela de repasse do procedimento de manutenção configurado.
 #### A situação do caso
 
 **Aguardando início** (caso aberto, aparelho ainda não instalado) → **Em
-tratamento** (o botão **Iniciar tratamento** gera o cronograma a partir da
-data e emite o lote de mensalidades) → **Entregar contenções** → **Em
+tratamento** (desde a 0.469.0 **o caso começa sozinho quando a instalação é
+concluída** no atendimento, na data da instalação; o botão **Iniciar
+tratamento** continua para o caso que começou sem passar pela agenda. Os dois
+geram o cronograma a partir da data e emitem o lote de mensalidades) → **Entregar contenções** → **Em
 acompanhamento** → **Dar alta** → **Alta**. A qualquer momento,
 **Interromper** (com motivo obrigatório: desistência, transferência…). Em
 tratamento pode ser **Suspenso** (desde a 0.367.0, com motivo; retoma ou
@@ -2083,6 +2156,16 @@ marcada por engano (desfaz a prorrogação).
   (sessão de tratamento, início de tratamento ou retorno). O sistema **liga
   sozinho** o agendamento à manutenção prevista mais próxima (até 45 dias de
   diferença) — ou cria uma manutenção extra. Ela passa a **Agendada**.
+- **Sessão de um plano nunca é manutenção** (desde a 0.469.0). Se o
+  agendamento leva uma sessão do plano de tratamento — a instalação do
+  aparelho, uma restauração, uma limpeza, uma radiografia, inclusive de um
+  plano complementar feito no meio da ortodontia —, ele é pago e contado pelo
+  plano, e o cronograma da ortodontia não se mexe. Antes, quando o dentista
+  era o mesmo ortodontista, essa sessão virava manutenção, puxava a prevista
+  mais próxima e, na instalação, pagava **dois repasses**.
+- **A instalação é a sessão do plano.** Concluí-la paga **um repasse só** (o
+  do procedimento do plano) e **inicia o caso** sozinho; as manutenções
+  contam a partir dela.
 - **Concluir o atendimento** marca a manutenção como **Realizada** e gera o
   **repasse** do ortodontista. **Não compareceu** marca **Faltou** (e prorroga
   o término previsto). Cancelar o agendamento devolve a manutenção a
@@ -2139,11 +2222,13 @@ parte:
 **Quem inicia o tratamento.** O termo diz o nome do(a) ortodontista que
 **inicia** (ou "a ser designado(a) pela clínica") e que, por necessidade da
 clínica ou do paciente, **outro(a) ortodontista da equipe pode continuar**,
-sem mudar as condições. Caso sem ortodontista escolhido: quando a Recepção
-agenda a **instalação** (início de tratamento ou sessão) com um **dentista da
-unidade**, ele passa a ser o responsável — fica no histórico do caso. Um
-retorno não define, e quem não é dentista não assume. Trocar o responsável em
-**Editar** também fica registrado (de quem → para quem).
+sem mudar as condições. Caso sem ortodontista escolhido: **quem conclui a
+instalação** passa a ser o responsável — fica no histórico do caso (desde a
+0.469.0; antes bastava agendar, e uma sessão de outro procedimento agendada
+antes da instalação definia o ortodontista errado). **Agendar não define.**
+Fora de plano (o caso legado), vale o **Início de tratamento** concluído por
+um dentista ou Coordenador da unidade. Trocar o responsável em **Editar**
+também fica registrado (de quem → para quem).
 
 **O prazo é uma referência.** O termo passou a dizer que os meses previstos
 são uma estimativa, e não um compromisso de conclusão em data certa: a
@@ -2324,7 +2409,8 @@ da ortodontia (desde a 0.364.0).
 EV-245; a tela do ortodontista (0.364.0): EV-246 a EV-248; do clínico ao plano
 (0.365.0): EV-249 a EV-251; do Comercial ao caso (0.366.0): EV-252 a EV-254;
 mensalidades por lote (0.367.0): EV-255 a EV-257; os avisos da rotina
-(0.368.0): EV-258.
+(0.368.0): EV-258; sessão de plano não é manutenção e a instalação inicia o
+caso (0.469.0): EV-368.
 
 ### 2.9. O prontuário: o que você vê primeiro *(desde a 0.369.0)*
 
@@ -2337,8 +2423,10 @@ abas. De cima para baixo:
    agendamento, apresentação) e as pílulas: fase e pilar da jornada, o
    odontograma em miniatura, unidade, nascimento e idade.
 2. **Precisa de atenção.** Um painel só, com **uma linha por aviso** e o
-   botão da ação ao lado: a **decisão obrigatória** ("necessita
-   reavaliação?", com Sim/Não na própria linha), os **alertas da anamnese**
+   botão da ação ao lado: as **tarefas do fim do tratamento** (desde a
+   0.467.0: a pergunta "necessita de reavaliação?", com os botões na própria
+   linha; o contato do Coordenador com o cliente; a reavaliação a agendar; a
+   avaliação a agendar depois de uma urgência — ver o Fluxo 2c), os **alertas da anamnese**
    (o que foi marcado, ex.: "Diabetes"), a **anamnese a preencher ou
    atualizar**, o **controle de qualidade pendente**, as **cobranças em
    atraso** e o **cadastro incompleto** (com o botão **Completar**, que já
@@ -3234,6 +3322,102 @@ agende uma avaliação para hoje e registre a chegada.
 **Checklist final:** ☐ cadastrei ☐ agendei ☐ registrei chegada ☐ sei onde ver a
 fase do paciente ☐ sei que não sou eu quem chama
 
+### 6.1a. Venda direta: o caixa da recepção
+
+*(desde a versão 0.463.0)*
+
+A venda direta é para o que não passa por avaliação, planejamento e
+Consultor: limpeza, consulta, urgência, restauração, conserto ou manutenção
+de prótese. Ela começa e termina **na mesma janela**.
+
+**Onde abrir**
+
+- **Atendimento** — botão **Vender** no cartão do paciente. O atendimento já
+  vem escolhido. *(É o caminho do dia a dia.)*
+- **Prontuário** — botão **Venda Direta**, no alto. Se o cliente tem
+  atendimento hoje, ele já vem escolhido; se não, escolha na lista.
+- **Atendimento → Para receber** — a lista das vendas diretas **em aberto**
+  da unidade, com o que falta em cada uma e o botão **Continuar**. A venda em
+  aberto também aparece em **Precisa de atenção**, no prontuário.
+
+**Passo a passo**
+
+1. **O que** — clique no atalho do procedimento (os mais vendidos da unidade)
+   ou procure outro. Mude a quantidade na linha, se precisar.
+2. **Como paga** — o **Pix à vista já vem marcado**. Para trocar, clique em
+   outro meio; as parcelas mostram o valor de cada uma. Só aparece o que a
+   regra da unidade permite. **À vista é só Pix, dinheiro ou permuta**; os
+   outros meios começam em 2×. O desconto do programa e o desconto à vista
+   entram sozinhos. **Dar desconto** e **Ajustar parcelas** (datas, valores,
+   meio de cada parcela) abrem só se você clicar.
+3. **Finalizar: assinar e receber** — a venda é lançada, o **termo da venda
+   vai para a assinatura digital (ZapSign)** e a janela passa para o
+   fechamento.
+4. **Termo** *(desde a versão 0.465.0)* — assina o cliente (ou o
+   responsável, se for menor); não há testemunha.
+   - **Assinar agora neste aparelho:** abre o termo para o cliente assinar
+     ali, no aparelho do balcão.
+   - **Enviar por WhatsApp:** abre a conversa com o link, para o cliente
+     assinar no celular dele.
+   - Assinou, a caixa **fica verde sozinha** (a janela confere a cada poucos
+     segundos). Ninguém marca nada.
+   - **Sem internet ou sem celular:** **Assinado em papel (anexar a foto)**.
+     Tire a foto do termo assinado (ou envie o PDF) e clique em **Anexar e
+     marcar assinado**. Sem o arquivo, não dá para marcar.
+   - Recusado ou vencido (o link vale 3 dias): aparece o motivo e **Enviar o
+     termo de novo**.
+   - Faltou CPF, data de nascimento ou contato no cadastro: o termo não sai e
+     a janela diz o que completar; depois, **Enviar o termo**.
+5. **Pagamento**
+   - **Dinheiro, permuta ou maquininha:** **Recebi R$ …**. É a baixa da
+     cobrança: entra no Financeiro e a venda é concluída. Só libera depois do
+     termo assinado.
+   - **Pix, boleto ou cartão pelo Asaas** *(desde a versão 0.472.0)*: depois do
+     termo assinado, a cobrança aparece na própria caixa (leva alguns
+     segundos para nascer no Asaas).
+     - **Pix:** o **QR** para o cliente apontar o celular, **Copiar Pix** e
+       **Enviar por WhatsApp**.
+     - **Boleto e cartão:** **Abrir o link para pagar** (para pagar ali no
+       balcão), **Linha digitável** (boleto) e **Enviar por WhatsApp**.
+     - Pagou, a venda fica **concluída sozinha** — não precisa recarregar.
+     - Parcelado: a janela mostra a parcela da vez; as outras ficam em
+       **Todas as cobranças da venda** e em Recebíveis.
+     - Se a unidade ainda não usa o Asaas (ou a cobrança automática está
+       desligada), **Confirmar que recebeu**.
+
+**Venda concluída** *(desde a versão 0.472.0)*: **Enviar comprovante por
+WhatsApp** abre a conversa com o cliente e o texto pronto (unidade,
+procedimentos, total, como pagou, data, código). Revise e envie.
+
+Fechou a janela no meio? A venda fica em **Para receber**; **Continuar**
+abre onde parou.
+
+**Quem faz o quê**
+
+- **Recepção, Gerente e SDR** lançam e fecham — e enviam o termo da venda
+  direta, sem precisar da permissão geral de "Enviar para assinatura".
+- **Coordenador Clínico** só lança os procedimentos: o botão dele é **Enviar
+  para a recepção**, e a venda vai para a fila **Para receber**.
+- **Atendimento já concluído ou de outro dia:** a venda entra como
+  **exceção** sozinha (o certo é vender antes de atender), e o Gerente e o
+  Franqueado são avisados. Não há mais caixa para marcar.
+
+**Em "⋯ Mais"**: trocar a forma de pagamento, cancelar a venda (o termo
+ainda aberto na ZapSign é cancelado junto), abrir o distrato; **desmarcar o
+termo** é só do Gerente.
+
+**Erros frequentes:** tentar receber antes do termo assinado; procurar o
+fechamento na aba Sessões & Procedimentos (ela mostra só os procedimentos e
+uma linha por venda, com **Abrir**).
+
+**O termo não se marca à mão.** Desde a versão 0.465.0, o termo da venda
+direta só fica assinado pela ZapSign ou pelo papel anexado — o sistema recusa
+qualquer outro jeito. Venda de R$ 0,00 (o programa cobre tudo) continua
+fechando sozinha, sem termo.
+
+**O texto do termo é provisório** (o PDF sai marcado assim) até a revisão do
+jurídico.
+
 ### 6.2. Coordenador Clínico
 
 **Objetivo:** avaliar e preparar o caso. **Duração:** 60 minutos.
@@ -3417,6 +3601,65 @@ Coordenador). Cada item mostra **o dente ou a região** onde acontece.
 avaliação. Ele vai para o **Acompanhamento** sem passar pelo Planejamento.
 Precisando de plano novo, o botão é o mesmo de sempre: **Enviar ao Centro de
 Planejamento**.
+
+**Quarta tarefa — o fim de cada plano (desde a 0.467.0).** Você é o
+responsável pelo sucesso do tratamento, e o sistema não deixa o cliente ser
+esquecido no fim. Quando um plano termina, quem executou responde se o cliente
+precisa de reavaliação (ver 6.4). Depois disso, as tarefas aparecem na ficha
+do cliente, no painel **Precisa de atenção**, e no seu sino:
+
+- **"Decisão do Coordenador: necessita de reavaliação?"** — quem executou
+  respondeu "Não sei". Responda Sim ou Não.
+- **"Contatar o cliente e colher o feedback"** — quem executou respondeu
+  "Não". Ligue ou mande mensagem e clique **Registrar contato**: como falou,
+  se conseguiu falar e o que o cliente disse. Depois, escolha:
+  - **Chamar para revisar** → a Recepção agenda a reavaliação;
+  - **Aguardar o retorno** → sem outro tratamento em andamento, o cliente vai
+    para o **Acompanhamento**, com o retorno sugerido para 6 meses (você pode
+    mudar a data);
+  - **Precisa de novo planejamento** → sem outro tratamento em andamento, o
+    cliente vai para o **Centro de Planejamento**.
+
+  Não atendeu? Registre a tentativa: a tarefa continua aberta. Depois de **3
+  tentativas** sem falar com o cliente, dá para encerrar **sem contato** (o
+  cliente vai para o Acompanhamento).
+- **"Aguardando a reavaliação com o Coordenador"** — a Recepção está agendando
+  a consulta. Sem outro tratamento em andamento, o cliente já está na
+  **Reavaliação**; com outro tratamento (por exemplo, a ortodontia), a consulta
+  acontece **sem mudar a fase**, e concluí-la encerra a tarefa.
+
+Enquanto nada aconteceu, você pode **mudar a resposta** de quem executou
+(**Mudar para Sim** ou **Mudar para Não**).
+
+**O controle de qualidade em cinco níveis (desde a 0.471.0).** Na
+reavaliação, você avalia **cada procedimento** do plano que terminou, no
+cockpit de avaliação (o botão **Avaliar procedimentos** da ficha leva até
+lá). Ele aparece também com o cliente ainda em tratamento, quando outro
+tratamento continua.
+
+| Nível | O que acontece |
+|---|---|
+| **Excelente** | Aprovado; quem executou recebe o aviso |
+| **Bom** | Aprovado |
+| **Aceitável** | Aprovado |
+| **Revisar** | Abre uma sessão de revisão com quem executou (motivo obrigatório) |
+| **Refazer** | Reabre o procedimento: o mesmo dentista refaz, outro refaz, ou vai para o próximo plano (motivo obrigatório) |
+
+Com todos os procedimentos em Excelente, Bom ou Aceitável, a tarefa da
+reavaliação some sozinha. Na **ortodontia** e na **venda direta**, que não têm
+procedimentos de plano para avaliar, use **Registrar reavaliação** na própria
+ficha: um nível só, com o motivo quando for Revisar ou Refazer. As avaliações
+antigas aparecem como Bom (era Aprovado), Revisar (era Revisão) e Refazer (era
+Reprovado).
+
+**No contato com o cliente**, quando conseguir falar, marque também a
+**satisfação de 0 a 10** e se o cliente **tem queixa**. Com queixa, o único
+próximo passo é **Chamar para revisar**.
+
+**Concluir a reavaliação** pede a **data do retorno** (em branco, o sistema usa
+daqui a 6 meses) e avisa a Recepção. O botão recusa enquanto houver
+procedimento sem avaliar ou com Revisar/Refazer em aberto: espere a revisão ou
+a refação e avalie de novo.
 
 ### 6.3. Dentista Planner
 
@@ -3899,6 +4142,23 @@ a ficha procurava só o atendimento com data de hoje e não mostrava nada.
 **O que acontece automaticamente ao concluir:** o material do kit **baixa do
 estoque** e, quando a sessão concluída é a **última do procedimento**, o
 repasse do procedimento é apurado. Você não digita nada disso.
+
+**A pergunta do fim do plano (desde a 0.467.0).** Quando a sessão que você
+concluiu é a **última de um plano** (o plano original, um complemento ou uma
+venda direta), abre na hora uma janela: *"Este cliente necessita de consulta de
+reavaliação com o Coordenador Clínico?"*. Ela **não fecha sem resposta**:
+
+- **Sim** → a Recepção agenda a reavaliação com o Coordenador.
+- **Não** → o Coordenador liga ou manda mensagem para o cliente e registra como
+  foi.
+- **Não sei** → o Coordenador decide.
+
+A mesma pergunta fica na ficha do cliente, no painel **Precisa de atenção**, e
+no sino, até alguém responder. Se o plano tiver um procedimento marcado como
+**reavaliação obrigatória** (prótese, implante, reabilitação…), a pergunta não
+aparece: a reavaliação já fica pedida. O Coordenador pode mudar a sua
+resposta enquanto o próximo passo não aconteceu. A revisão e a refação pedidas
+pelo controle de qualidade **não** repetem a pergunta.
 
 > **O kit do atendimento e o mês fechado** (desde a 0.458.0, relato OC-00181).
 > O kit de atendimento (gorro, babador) é baixado no **dia do atendimento**.
@@ -5025,6 +5285,10 @@ EV-171, EV-172 e EV-182.
 9. **Dentista** executa, escreve o Desenvolvimento Clínico e conclui →
    **estoque baixa e, na última sessão do procedimento, o repasse é apurado
    automaticamente**.
+10. **Na última sessão do plano**, o sistema pergunta a quem executou se o
+    cliente precisa de reavaliação, e o **Coordenador** cuida do resto até o
+    cliente ir para a Reavaliação ou o Acompanhamento (Fluxo 2c, desde a
+    0.467.0).
 
 **Evidência:** este fluxo está coberto por teste automatizado ponta a ponta
 (`e2e/01-jornada.spec.ts` a `e2e/10-estoque.spec.ts`), o que confirma que cada
@@ -5044,13 +5308,13 @@ mudada à mão, ela passaria a dizer o que a pessoa achou, e não o que acontece
 | O cliente vai de | para | quando |
 |---|---|---|
 | Aquisição | Conversão Clínica | a recepção faz o **check-in** da **avaliação** |
-| Aquisição | Início de Tratamento | check-in de **urgência/emergência** |
 | Conversão Comercial | Início de Tratamento | a **venda fecha** (contrato assinado **e** pagamento confirmado) |
 | Conversão Comercial | Início de Tratamento | check-in da **1ª sessão** |
 | Conversão Comercial | Acompanhamento | o consultor marca a negociação como **perdida** |
-| Início de Tratamento | Reavaliação | resposta **SIM** em "necessita reavaliação?" |
-| Início de Tratamento | Centro de Planejamento | resposta **SIM** em "necessita novo planejamento?" |
-| Início de Tratamento | Acompanhamento | resposta **NÃO** em "necessita novo planejamento?" |
+| Início de Tratamento | Reavaliação | o último plano termina e a resposta é **Sim** (ou o Coordenador escolhe **Chamar para revisar**) |
+| Início de Tratamento | Acompanhamento | o último plano termina, a resposta é **Não** e o Coordenador registra **Aguardar o retorno** (ou **sem contato** depois de 3 tentativas) |
+| Início de Tratamento | Centro de Planejamento | o último plano termina e o Coordenador registra **Precisa de novo planejamento** |
+| Reavaliação | Acompanhamento ou Planejamento | **Concluir a reavaliação** ou **Enviar ao Centro de Planejamento** |
 | Acompanhamento | Reavaliação | check-in de uma **reavaliação** |
 | Acompanhamento | Início de Tratamento | check-in de uma **sessão** |
 | qualquer fase | Reavaliação ou Acompanhamento | **cancelamento de plano** efetivado (o Gerente escolhe o destino) — desde a 0.393.0, só quando não sobra outra venda em tratamento (o plano original ou um complemento); senão a fase não muda |
@@ -5080,6 +5344,59 @@ depois se saber que aquela fase andou sem o fato que deveria tê-la movido.
 > Admin Master, a fase muda pelo seu trabalho. Quando ela parecer travada, o
 > que falta é um passo do fluxo — o check-in que não foi feito, a decisão que
 > ninguém respondeu, o pagamento que não foi confirmado.
+
+> **Urgência não leva mais à Fase 5** (desde a 0.467.0). Quem chega pela
+> urgência ainda não tem tratamento: o check-in não muda a fase, e ao concluir
+> o atendimento a Recepção recebe a tarefa **"Agendar a avaliação completa"**.
+> Ela some quando a avaliação é agendada; o check-in da avaliação leva à
+> Conversão Clínica, como para qualquer cliente novo.
+
+### Fluxo 2c — O fim do tratamento *(desde a 0.467.0)*
+
+**Os princípios:** o cliente **nunca pode ser esquecido**, e o responsável pelo
+sucesso do tratamento é o **Coordenador Clínico**. Por isso o fim de cada plano
+abre uma tarefa com dono, que só some quando é resolvida.
+
+**Quando acontece.** Na última sessão concluída de cada plano: o plano
+original, cada plano complementar, a venda direta. Na ortodontia, na **entrega
+das contenções** — concluir a **instalação** do aparelho não abre a pergunta
+(desde a 0.470.0); num plano com instalação e outros procedimentos, ela abre
+quando os outros terminam. A situação do plano passa sozinha para **Em tratamento** (na
+1ª sessão) e **Concluído** (na última).
+
+**Fim de um plano × fim do tratamento.** O cliente só sai do Início de
+Tratamento quando **não sobra nada**: nenhuma sessão por fazer, nenhum plano
+complementar sendo montado ou negociado, nenhuma ortodontia em andamento
+(aguardando início, em tratamento ou suspensa). Se ainda sobra algo — por
+exemplo, terminou o implante e a ortodontia continua —, a pergunta e o contato
+acontecem igual, mas o cliente **continua na Fase 5**. Quando não sobra nada,
+ele passa a **"Tratamento Finalizado"** e sai da Fase 5 conforme a resposta.
+
+**O passo a passo:**
+
+1. **Quem executou responde** (janela no Atendimento; ver 6.4): *"Este cliente
+   necessita de consulta de reavaliação com o Coordenador Clínico?"*
+2. **Sim** → a Recepção agenda a reavaliação. Sem outro tratamento, o cliente
+   vai para a **Reavaliação**; com outro tratamento, a consulta acontece dentro
+   da Fase 5.
+3. **Não** → o **Coordenador** contata o cliente e registra (ver 6.2): chamar
+   para revisar, aguardar o retorno ou novo planejamento.
+4. **Não sei** → o Coordenador decide.
+
+**O "Tratamento Finalizado" à mão** saiu para quem não é Admin Master: o
+sistema marca sozinho.
+
+**Procedimento com reavaliação obrigatória.** O Admin Master marca, no cartão
+do procedimento (Procedimentos), **"Reavaliação presencial obrigatória no fim
+do plano"**. Com ele no plano, a pergunta não aparece e a reavaliação já fica
+pedida.
+
+**O controle de qualidade** (desde a 0.471.0): cinco níveis por
+procedimento na reavaliação, satisfação e queixa no contato, e a saída da
+Reavaliação só com tudo aprovado (ver 6.2).
+
+**O que ainda vem** (próximas etapas do plano): o abandono de tratamento; a lista "Clientes sem próximo passo"; o cancelamento
+passando pelo Coordenador; os prazos por dia útil da unidade.
 
 ### Fluxo 3 — Encerrar a sessão
 
@@ -7597,7 +7914,7 @@ Financeiro da Franqueadora também. Nada expira sozinho.
 
 ### 13g.18. Cobrança mensal da rede
 
-*(desde a versão 0.461.0)*
+*(desde a versão 0.473.0)*
 
 **O que é:** a cobrança que a franqueadora faz à unidade, uma vez por mês, das
 taxas da rede que **não** foram retidas pelo split:
@@ -7678,7 +7995,7 @@ A decisão não se refaz.
 fechamento ou no pagamento) e quando sai a nota dos royalties. O riSZon guarda
 os dois jeitos, e nada trava por isso.
 
-**A conferência das taxas** *(desde a versão 0.462.0)* — aba **Conferência das
+**A conferência das taxas** *(desde a versão 0.473.0)* — aba **Conferência das
 taxas**, em Cobrança da rede:
 - **A conta do mês,** por unidade, do primeiro mês da cobrança mensal em diante:
   devido = retido pelo split + a reter + faturado + dispensado + ainda a cobrar.
@@ -7702,7 +8019,7 @@ taxas**, em Cobrança da rede:
   unidade, só leitura.
 - A conferência não muda nenhum lançamento.
 
-**Evidência:** EV-361 e EV-362; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
+**Evidência:** EV-372 e EV-373; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
 `scripts/asaas-ensaio-asa6-conferencia.mjs`.
 
 ## 14. Checklists

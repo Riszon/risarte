@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { fraseDeCobertura } from "@/lib/funcoes-de-apoio";
 import {
   ArrowRight,
   CheckCircle2,
@@ -282,6 +283,22 @@ export default async function HomePage() {
           página em instantes.
         </p>
       )}
+      {/* 0414: a função de apoio que a pessoa está fazendo agora. */}
+      {(session.coberturas ?? []).length > 0 && (
+        <section className="rounded-xl border border-primary/40 bg-primary/5 p-4 text-sm shadow-sm">
+          <ul className="space-y-1">
+            {(session.coberturas ?? []).map((c) => (
+              <li key={`${c.clinicId}:${c.role}`} className="font-medium">
+                {fraseDeCobertura({ role: c.role, unidade: c.clinicName, endsAt: c.endsAt })}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Enquanto isso, você vê e faz o que a sua função e a de apoio podem fazer
+            na unidade. Dúvida sobre a cobertura? Fale com o Admin.
+          </p>
+        </section>
+      )}
       {session.unidadesFechadas.length > 0 && (
         <section className="rounded-xl border bg-card p-4 text-sm shadow-sm">
           <h2 className="font-semibold">
@@ -297,7 +314,8 @@ export default async function HomePage() {
           <ul className="mt-3 space-y-1.5">
             {session.unidadesFechadas.map((u) => (
               <li
-                key={u.clinicId}
+                // 0413: a mesma unidade pode aparecer com duas funções fechadas.
+                key={`${u.clinicId}:${u.role}`}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2"
               >
                 <span>

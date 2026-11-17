@@ -62,33 +62,11 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.462.1",
+    versao: "0.473.0",
     data: "2026-11-17",
-    // Sem migração do CORE: as desta entrega são da integração Asaas (4021 e 4021a, ajustadas).
+    // Sem migração do CORE: as desta entrega são da integração Asaas (4021 e 4021a, ASAAS_MIGRATION).
     migracao: null,
-    titulo: "Correções da cobrança mensal e de Taxas da rede",
-    mudancas: [
-      {
-        tipo: "correcao",
-        texto:
-          "Taxas da rede: entrando pela franqueadora, o acordo de uma unidade era gravado na clínica da franqueadora, embora a caixa mostrasse a unidade. Agora a tela abre e grava na unidade que a caixa mostra.",
-        papeis: ["finance_franchisor"],
-      },
-      {
-        tipo: "melhoria",
-        texto:
-          "Um vencimento só: com a cobrança mensal ligada na unidade, as taxas vencem no dia da cobrança mensal. A conta de taxa cancelada à mão não volta sozinha (nem pelo \"Gerar taxas fixas do mês\"). A Conferência das taxas mostra a taxa fixa prevista do mês que ainda não fechou.",
-        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
-        manual: "13g.18. Cobrança mensal da rede",
-      },
-    ],
-  },
-  {
-    versao: "0.462.0",
-    data: "2026-11-16",
-    // Sem migração do CORE: a desta entrega é da integração Asaas (4021a, ASAAS_MIGRATION).
-    migracao: null,
-    titulo: "Conferência das taxas da rede",
+    titulo: "Cobrança mensal da rede e Conferência das taxas",
     mudancas: [
       {
         tipo: "novidade",
@@ -104,30 +82,6 @@ export const CHANGELOG: Versao[] = [
         papeis: ["finance_franchisor"],
         manual: "13g.18. Cobrança mensal da rede",
       },
-    ],
-  },
-  {
-    versao: "0.461.1",
-    data: "2026-11-16",
-    // Sem migração do CORE: a desta entrega é da integração Asaas (4018a).
-    migracao: null,
-    titulo: "O aviso de split acima do devido deixa de disparar à toa",
-    mudancas: [
-      {
-        tipo: "correcao",
-        texto:
-          "Nas mensalidades do PPR+ e da Ortodontia pagas pelo Asaas, o aviso \"Split: repasse acima do devido\" disparava mesmo com o repasse certo, e a marca ficava no Painel de repasses. Agora a conferência espera as taxas da mensalidade, a marca se corrige sozinha, e o aviso só sai acima da tolerância da Central (R$ 0,10). O dinheiro sempre esteve certo.",
-        papeis: ["finance_franchisor"],
-      },
-    ],
-  },
-  {
-    versao: "0.461.0",
-    data: "2026-11-16",
-    // Sem migração do CORE: a desta entrega é da integração Asaas (4021, ASAAS_MIGRATION).
-    migracao: null,
-    titulo: "Cobrança mensal da rede às unidades",
-    mudancas: [
       {
         tipo: "novidade",
         texto:
@@ -148,6 +102,330 @@ export const CHANGELOG: Versao[] = [
           "A configuração (Central › Rede › Taxas da franquia, quadro \"Cobrança mensal às unidades\") nasce em branco: multa, juros, vencimento, período, prazo da prévia, o mês incompleto, o e-mail financeiro e o primeiro mês de cada unidade. Sem ela, nada é emitido. A multa e os juros da cobrança à unidade saíram do quadro do split e foram para lá.",
         papeis: ["finance_franchisor"],
         manual: "13g.18. Cobrança mensal da rede",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Nas mensalidades do PPR+ e da Ortodontia pagas pelo Asaas, o aviso \"Split: repasse acima do devido\" disparava mesmo com o repasse certo, e a marca ficava no Painel de repasses. Agora a conferência espera as taxas da mensalidade, a marca se corrige sozinha, e o aviso só sai acima da tolerância da Central (R$ 0,10). O dinheiro sempre esteve certo.",
+        papeis: ["finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Um vencimento só: com a cobrança mensal ligada na unidade, as taxas vencem no dia da cobrança mensal. A conta de taxa cancelada à mão não volta sozinha (nem pelo \"Gerar taxas fixas do mês\"). A Conferência das taxas mostra a taxa fixa prevista do mês que ainda não fechou.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+    ],
+  },
+  {
+    versao: "0.472.1",
+    data: "2026-11-17",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4018b, só o banco).
+    migracao: null,
+    titulo: "Taxas da rede: o acordo vai para a unidade certa; a conta cancelada não volta",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Taxas da rede: entrando pela franqueadora, o acordo de uma unidade era gravado na clínica da franqueadora, embora a caixa mostrasse a unidade. Agora a tela abre e grava na unidade que a caixa mostra.",
+        papeis: ["finance_franchisor"],
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A conta de taxa da rede cancelada à mão não volta mais sozinha (nem pelo \"Gerar taxas fixas do mês\", nem por um recebimento do mês). Só a conta que a própria apuração cancelou por falta de valor é refeita.",
+        papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
+    versao: "0.472.0",
+    data: "2026-11-17",
+    // Sem migração: usa as cobranças do Asaas que já existiam (4005/4012).
+    migracao: null,
+    titulo: "Venda direta: o Pix na própria janela",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na venda direta pelo Asaas, depois do termo assinado, a caixa Pagamento mostra o QR do Pix para o cliente apontar o celular, com Copiar Pix e Enviar por WhatsApp. No boleto e no cartão, Abrir o link para pagar.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A janela confere sozinha: a cobrança aparece assim que nasce no Asaas e, quando o cliente paga, a venda fica concluída sem recarregar.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Venda concluída: Enviar comprovante por WhatsApp, com a unidade, os procedimentos, o total, como pagou, a data e o código da venda.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
+    versao: "0.471.0",
+    data: "2026-11-17",
+    migracao: "0421",
+    titulo: "Controle de qualidade em cinco níveis e a satisfação do cliente no fim do tratamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No controle de qualidade, o Coordenador avalia cada procedimento em cinco níveis: Excelente, Bom e Aceitável aprovam; Revisar e Refazer pedem nova sessão, com o motivo escrito. O Excelente também chega a quem executou. As avaliações antigas passaram a aparecer como Bom, Revisar e Refazer.",
+        papeis: ["clinical_coordinator", "dentist"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O controle de qualidade aparece para cada plano que terminou e espera a reavaliação, também com o cliente ainda em tratamento (por exemplo, terminou o implante e a ortodontia continua). Para ortodontia e venda direta, o Coordenador registra um nível só, na ficha. Com tudo aprovado, a tarefa da reavaliação some sozinha.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No contato com o cliente, o Coordenador registra a satisfação (0 a 10) e se o cliente tem queixa. Com queixa, o próximo passo é sempre chamar para revisar.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Concluir a reavaliação agora pede a data do retorno (em branco, daqui a 6 meses) e só funciona com o controle de qualidade feito e nada para revisar ou refazer. A Recepção é avisada para agendar o retorno.",
+        papeis: ["clinical_coordinator", "receptionist"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
+    versao: "0.470.0",
+    data: "2026-11-17",
+    migracao: "0420",
+    titulo: "Fim do tratamento: instalar o aparelho não pergunta mais sobre reavaliação",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Concluir a sessão de instalação do aparelho ortodôntico não abre mais a pergunta \"necessita de reavaliação?\". Para a ortodontia, ela aparece na entrega das contenções. Num plano com instalação e outros procedimentos, a pergunta aparece quando os outros terminam.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "Fluxo 2c — O fim do tratamento",
+      },
+    ],
+  },
+  {
+    versao: "0.469.0",
+    data: "2026-11-17",
+    migracao: "0417",
+    titulo: "Ortodontia: sessão de outro plano não vira manutenção; concluir a instalação inicia o caso",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Uma sessão de plano (restauração, limpeza, radiografia, inclusive de um plano complementar) agendada com o ortodontista do caso não vira mais manutenção ortodôntica, e a instalação deixou de pagar dois repasses: paga só o do procedimento do plano.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Concluir a sessão de instalação do aparelho inicia o caso ortodôntico sozinho, na data da instalação, com o cronograma e o lote de mensalidades; quem fez a instalação vira o ortodontista responsável se o caso ainda não tinha um. Agendar não define mais o ortodontista.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
+    versao: "0.468.0",
+    data: "2026-11-17",
+    migracao: "0419",
+    titulo: "Equipe e coberturas: a Franqueadora acompanha quem cobre quem",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novo painel \"Equipe e coberturas\" (em Risartanos e no Painel da rede): por unidade, quantas coberturas há agora, quanto da equipe está em acúmulo, os dias-pessoa de cobertura no mês, a função feita só por apoio (sem titular), coberturas emendadas, acúmulos fixos sem revisão e os motivos. Por pessoa, o tempo no sistema antes e durante a cobertura e os dias com acesso fora do horário. A Franqueadora vê a rede; o Gerente e o Franqueado, a própria unidade.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff", "finance_franchisor"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O sino avisa (aba Equipe e coberturas) quando uma função fica mais de 30 dias sem titular, uma cobertura emendada passa de 60 dias, a revisão de um acúmulo fixo vence, a unidade passa do limite de coberturas ou de pessoas em acúmulo, ou alguém mostra sinal de sobrecarga. Cada aviso sai uma vez por fato.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
+    versao: "0.467.0",
+    data: "2026-11-17",
+    migracao: "0418",
+    titulo: "Fim do tratamento: a pergunta da reavaliação volta a aparecer, e o Coordenador cuida do cliente até o fim",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Ao concluir a última sessão de um plano (o plano original, um complemento, uma venda direta ou a entrega da contenção na ortodontia), abre para quem executou a pergunta \"Este cliente necessita de consulta de reavaliação com o Coordenador Clínico?\". Ela não fecha sem resposta e fica na ficha e no sino até ser respondida. Antes ela nunca aparecia: o cliente terminava o tratamento e ficava parado no Início de Tratamento.",
+        papeis: ["dentist", "clinical_coordinator", "unit_manager"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Respondeu \"Não\"? O Coordenador recebe a tarefa de ligar ou mandar mensagem para o cliente e registrar como foi: chamar para revisar, aguardar o retorno (com a data sugerida para 6 meses) ou novo planejamento. Sem falar com o cliente, cada tentativa fica registrada; depois de 3, dá para encerrar sem contato. O Coordenador também pode mudar a resposta de quem executou enquanto nada aconteceu.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O cliente só sai do Início de Tratamento quando não sobra nada: nenhuma sessão por fazer, nenhum plano complementar em andamento e nenhuma ortodontia em andamento. Se sobra, a reavaliação acontece sem mudar a fase, e a agenda passou a oferecer Reavaliação para quem está em tratamento. A situação do plano passa sozinha para Em tratamento e Concluído.",
+        papeis: "todos",
+        manual: "Fluxo 2c — O fim do tratamento",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "A urgência não leva mais o cliente novo direto para o Início de Tratamento. Ao concluir o atendimento, a Recepção recebe \"Agendar a avaliação completa\", que some quando a avaliação é agendada.",
+        papeis: ["receptionist", "clinical_coordinator", "dentist"],
+        manual: "Fluxo 2b — Quem move o cliente de fase (e quando)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Admin Master pode marcar, no cartão do procedimento, \"Reavaliação presencial obrigatória no fim do plano\" (prótese, implante, reabilitação...). Com ele no plano, a reavaliação já fica pedida e a pergunta não aparece. E o status \"Tratamento Finalizado\" à mão ficou só para o Admin Master: o sistema marca sozinho.",
+        papeis: "todos",
+        manual: "Fluxo 2c — O fim do tratamento",
+      },
+    ],
+  },
+  {
+    versao: "0.465.0",
+    data: "2026-11-16",
+    migracao: "0415",
+    titulo: "Venda direta: o termo pela assinatura digital",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A venda direta agora tem termo: ao finalizar, o termo vai para a ZapSign. O cliente assina no aparelho do balcão (Assinar agora) ou pelo WhatsApp, e a caixa Termo fica verde sozinha quando ele assina.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Sem internet ou sem celular: Assinado em papel — anexe a foto ou o PDF do termo assinado. Sem o arquivo, o termo não é marcado.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O termo da venda direta não se marca mais à mão: só pela ZapSign ou com o papel anexado. Cancelar a venda cancela também o termo aberto na ZapSign.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
+    versao: "0.464.0",
+    data: "2026-11-16",
+    migracao: null,
+    titulo: "Funções de apoio: cobrir um colega em outra função",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha do Risartano, aba Acesso, o Admin pode dar uma função de apoio a quem já trabalha na unidade: cobertura temporária (com início e fim, até 90 dias) ou acúmulo fixo, sempre com motivo. A pessoa soma o que as funções podem fazer, vê no Início \"Você está cobrindo…\" e recebe avisos no começo, 2 dias antes do fim e no fim. A temporária termina sozinha.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No bloco \"Sistema real em cada unidade\" da ficha, quem tem duas funções na unidade aparece com uma linha por função, e liberar ou retirar a liberação vale só para aquela função.",
+        papeis: "todos",
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
+    versao: "0.463.0",
+    data: "2026-11-16",
+    // Sem migração: o caixa usa as mesmas regras e funções do banco de antes.
+    migracao: null,
+    titulo: "Venda direta: o caixa em uma janela só",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A venda direta agora começa e termina na mesma janela: o que vende, como paga, assinar e receber. Não é mais preciso lançar no prontuário e ir fechar na aba Sessões & Procedimentos.",
+        papeis: ["receptionist", "unit_manager", "sdr", "clinical_coordinator"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na tela Atendimento, cada paciente ganhou o botão Vender (o atendimento já vem escolhido) e apareceu a fila Para receber, com as vendas diretas em aberto da unidade e o botão Continuar.",
+        papeis: ["receptionist", "unit_manager", "sdr", "clinical_coordinator"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No caixa, o Pix já vem marcado e trocar de meio é um clique; as parcelas aparecem com o valor de cada uma e só o que a regra da unidade permite. Desconto e ajuste de parcelas ficam atrás de um link. Em dinheiro, o botão Recebi R$ … dá a baixa e conclui a venda de uma vez.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "A venda direta aberta pelo prontuário oferecia os meios de pagamento antigos e podia aparecer sem os procedimentos. Agora mostra os meios certos (Pix, cartão e boleto pelo Asaas, dinheiro, permuta) e sempre os procedimentos da venda.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+    ],
+  },
+  {
+    versao: "0.462.0",
+    data: "2026-11-16",
+    migracao: "0414",
+    titulo: "Funções de apoio: as coberturas no sistema",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "O sistema passou a guardar as funções de apoio (cobertura de um colega ausente ou acúmulo fixo), com motivo, datas, limites e fim automático. Ainda não há botão: o Admin passa a dar a função de apoio na ficha do Risartano na próxima entrega.",
+        papeis: "todos",
+      },
+    ],
+  },
+  {
+    versao: "0.461.0",
+    data: "2026-11-16",
+    migracao: "0413",
+    titulo: "Preparação para mais de uma função na mesma unidade",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O sistema real passa a abrir e fechar por função dentro da unidade: quem tiver duas funções numa unidade e for certificado em uma delas trabalha nela, mesmo que a outra ainda esteja esperando a missão. E o mesmo aviso do sino não chega mais duas vezes para a mesma pessoa.",
+        papeis: "todos",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Esta é a primeira parte das funções de apoio (cobertura de um colega ausente). Por enquanto nada muda no dia a dia: cada pessoa continua com uma função por unidade até a próxima entrega.",
+        papeis: "todos",
       },
     ],
   },

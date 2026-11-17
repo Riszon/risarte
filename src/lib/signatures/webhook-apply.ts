@@ -80,9 +80,14 @@ export async function aplicarWebhook(
 async function cobrarNaAssinatura(admin: SupabaseClient, packageId: string): Promise<void> {
   try {
     const { data: pkg } = await admin.from("signature_packages").select("origin_type, origin_id").eq("id", packageId).maybeSingle();
-    if (pkg?.origin_type !== "plan_negotiation" || !pkg.origin_id) return;
+    if (!pkg?.origin_id) return;
     const { criarCobrancasAutomaticas } = await import("@/lib/asaas/cobrancas-automaticas");
-    await criarCobrancasAutomaticas({ origem: "gatilho", negotiationId: pkg.origin_id as string });
+    if (pkg.origin_type === "plan_negotiation") {
+      await criarCobrancasAutomaticas({ origem: "gatilho", negotiationId: pkg.origin_id as string });
+    } else if (pkg.origin_type === "direct_sale") {
+      // VD3-2 (0415): o gatilho do banco já marcou a venda como assinada.
+      await criarCobrancasAutomaticas({ origem: "gatilho", directSaleId: pkg.origin_id as string });
+    }
   } catch (e) {
     console.error("auto charge on signature failed:", e instanceof Error ? e.message : e);
   }

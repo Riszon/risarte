@@ -18,6 +18,7 @@ import {
 } from "@/lib/conquistas";
 import type { Ambiente, PermissoesDeAmbiente } from "@/lib/ambientes";
 import { lerAcessoPorUnidade, type LeituraDoAcesso } from "@/lib/acesso-por-unidade";
+import { lerCoberturas, type CoberturaNaTela } from "@/lib/funcoes-de-apoio";
 import {
   STAFF_PHOTO_BUCKET,
   staffDisplayName,
@@ -257,7 +258,8 @@ export async function carregarAcessos(
       loginActive: perfil.is_active,
       rolesText: partes.join(", "),
       units: unidades,
-      unitClinicIds: unidades.map((u) => u.clinicId),
+      // 0414: com função de apoio, a mesma unidade vem duas vezes — uma basta.
+      unitClinicIds: [...new Set(unidades.map((u) => u.clinicId))],
       roles: [...(funcoesPorUsuario.get(perfil.id) ?? [])],
     });
   }
@@ -651,7 +653,7 @@ export async function carregarFuncoes(
   const { data } = await supabase
     .from("user_clinic_roles")
     .select(
-      "id, clinic_id, role, unit_scope, clinics ( name, type ), role_unit_access ( clinic_id )"
+      "id, clinic_id, role, unit_scope, assignment_kind, coverage_id, clinics ( name, type ), role_unit_access ( clinic_id )"
     )
     .eq("user_id", userId)
     .returns<
@@ -660,6 +662,8 @@ export async function carregarFuncoes(
         clinic_id: string;
         role: UserRole;
         unit_scope: UnitScope | null;
+        assignment_kind: string | null;
+        coverage_id: string | null;
         clinics: { name: string; type: ClinicType } | null;
         role_unit_access: { clinic_id: string }[] | null;
       }[]
@@ -672,7 +676,32 @@ export async function carregarFuncoes(
     clinicType: r.clinics?.type ?? "franchise_unit",
     unitScope: r.unit_scope,
     unitIds: (r.role_unit_access ?? []).map((u) => u.clinic_id),
+    // 0414 (funções de apoio): a linha de apoio vem de uma cobertura.
+    apoio: r.assignment_kind === "apoio",
+    coverageId: r.coverage_id ?? null,
   }));
+}
+
+/**
+ * As coberturas (funções de apoio) agendadas e ativas da pessoa (0414). Banco
+ * sem a migração devolve lista vazia — a ficha abre como antes.
+ */
+export async function carregarCoberturas(
+  supabase: Supa,
+  userId: string,
+  nomeDaUnidade: (id: string) => string
+): Promise<CoberturaNaTela[]> {
+  const { data, error } = await supabase
+    .from("role_coverages")
+    .select("id, code, clinic_id, role, kind, starts_on, ends_on, reason_category, reason, status, review_due_on, hiring_forecast")
+    .eq("user_id", userId)
+    .in("status", ["agendada", "ativa"])
+    .order("starts_on");
+  if (error) {
+    console.error("carregarCoberturas falhou:", error.message);
+    return [];
+  }
+  return lerCoberturas((data ?? []) as Record<string, unknown>[], nomeDaUnidade);
 }
 
 /**

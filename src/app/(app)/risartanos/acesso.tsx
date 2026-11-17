@@ -42,13 +42,17 @@ import {
 import type { StaffAccess } from "@/lib/staff";
 import {
   addUserRole,
+  cancelarFuncaoDeApoio,
   createUser,
+  darFuncaoDeApoio,
   definirAdmin,
   definirAmbiente,
+  encerrarFuncaoDeApoio,
   liberarUnidadeSemMissao,
   removeUserRole,
   retirarLiberacaoDaUnidade,
   resetUserPassword,
+  revisarFuncaoDeApoio,
   setUserActive,
   updateRoleScope,
   type RoleAssignment,
@@ -57,6 +61,20 @@ import { linkStaffUser, unlinkStaffUser } from "./actions";
 import { soAceitaTodasAsUnidades } from "@/lib/finance/escopo";
 import { UnitAccessControl } from "./unit-access-control";
 import { EnviarAcesso } from "./enviar-acesso";
+import {
+  AJUDA_DO_TIPO,
+  MOTIVOS_DE_COBERTURA,
+  ROTULO_DO_MOTIVO_DE_COBERTURA,
+  ROTULO_DO_TIPO,
+  TIPOS_DE_COBERTURA,
+  funcoesDeApoioPossiveis,
+  revisaoVencida,
+  textoDaCobertura,
+  type CoberturaNaTela,
+  type MotivoDeCobertura,
+  type TipoDeCobertura,
+} from "@/lib/funcoes-de-apoio";
+import { formatAnyDateBr, todayInBrazil } from "@/lib/dates";
 
 export type FuncaoDoAcesso = {
   id: string;
@@ -66,6 +84,9 @@ export type FuncaoDoAcesso = {
   clinicType: ClinicType;
   unitScope: UnitScope | null;
   unitIds: string[];
+  /** 0414: função de apoio (vem de uma cobertura); a principal é o cargo. */
+  apoio: boolean;
+  coverageId: string | null;
 };
 
 type Clinica = { id: string; name: string; type: ClinicType };
@@ -91,6 +112,7 @@ export function AcessoDoRisartano({
   treinoConfigurado,
   acesso,
   funcoes,
+  coberturas = [],
   clinicas,
   loginsLivres,
   isAdmin,
@@ -121,6 +143,8 @@ export function AcessoDoRisartano({
   treinoConfigurado: boolean;
   acesso: StaffAccess | null;
   funcoes: FuncaoDoAcesso[];
+  /** 0414: as funções de apoio (coberturas) agendadas e ativas. */
+  coberturas?: CoberturaNaTela[];
   clinicas: Clinica[];
   loginsLivres: { id: string; label: string }[];
   isAdmin: boolean;
@@ -352,9 +376,18 @@ export function AcessoDoRisartano({
                   {rotuloDaFuncao(f.role, staffGenero)}
                   {FRANCHISOR_ROLES.includes(f.role) &&
                     ` · ${UNIT_SCOPE_LABELS[f.unitScope ?? "all"]}`}
+                  {f.apoio ? (
+                    <span className="ml-1.5 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      apoio
+                    </span>
+                  ) : (
+                    funcoes.some((g) => g.apoio && g.clinicId === f.clinicId) && (
+                      <span className="ml-1.5 text-[10px] text-muted-foreground">principal</span>
+                    )
+                  )}
                 </p>
               </div>
-              {isAdmin && (
+              {isAdmin && !f.apoio && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -403,6 +436,13 @@ export function AcessoDoRisartano({
             onFeito={() => router.refresh()}
           />
         )}
+        <FuncoesDeApoio
+          userId={acesso.userId}
+          nome={staffNome}
+          funcoes={funcoes}
+          coberturas={coberturas}
+          isAdmin={isAdmin}
+        />
       </div>
 
       <Ambientes
@@ -669,9 +709,11 @@ function SistemaPorUnidade({
       </p>
     );
   }
-  const porUnidade = new Map(leitura.linhas.map((l) => [l.clinic_id, l]));
+  // 0413: a tranca é por FUNÇÃO — a mesma unidade pode ter duas linhas.
+  const porUnidade = new Map(leitura.linhas.map((l) => [`${l.clinic_id}:${l.role}`, l]));
   // Só a liberação REGISTRADA se retira; certificado é fato histórico e "sem
   // metas" é da função, não da pessoa.
+  // A da cobertura sai encerrando a cobertura, não aqui.
   const retiravel = (m: MotivoDeAcesso) => m === "manual" || m === "anterior";
   const liberavel = (m: MotivoDeAcesso) =>
     m === "aguardando_missao" || m === "aguardando_grupo";
@@ -688,7 +730,7 @@ function SistemaPorUnidade({
       </p>
       <ul className="space-y-1.5">
         {funcoes.map((f) => {
-          const l = porUnidade.get(f.clinicId);
+          const l = porUnidade.get(`${f.clinicId}:${f.role}`);
           const aberta = l?.allowed === true;
           return (
             <li key={f.id} className="space-y-2 rounded-lg border px-3 py-2">
@@ -713,14 +755,14 @@ function SistemaPorUnidade({
                   >
                     {aberta ? "Aberto" : "Fechado"}
                   </span>
-                  {isAdmin && l && liberavel(l.reason) && liberando !== f.clinicId && (
+                  {isAdmin && l && liberavel(l.reason) && liberando !== f.id && (
                     <Button
                       variant="outline"
                       size="sm"
                       className="h-7 px-2 text-xs"
                       disabled={isPending}
                       onClick={() => {
-                        setLiberando(f.clinicId);
+                        setLiberando(f.id);
                         setMotivo("");
                       }}
                     >
@@ -735,7 +777,7 @@ function SistemaPorUnidade({
                       disabled={isPending}
                       onClick={() =>
                         startTransition(async () => {
-                          const r = await retirarLiberacaoDaUnidade(userId, f.clinicId);
+                          const r = await retirarLiberacaoDaUnidade(userId, f.clinicId, f.role);
                           if (!r.ok) {
                             toast.error(r.error ?? "Algo deu errado.");
                             return;
@@ -750,13 +792,13 @@ function SistemaPorUnidade({
                   )}
                 </span>
               </div>
-              {liberando === f.clinicId && (
+              {liberando === f.id && (
                 <div className="space-y-2 rounded-md bg-muted/40 p-2">
-                  <Label htmlFor={`motivo-${f.clinicId}`} className="text-xs">
+                  <Label htmlFor={`motivo-${f.id}`} className="text-xs">
                     Por que liberar sem a missão? (fica registrado)
                   </Label>
                   <Input
-                    id={`motivo-${f.clinicId}`}
+                    id={`motivo-${f.id}`}
                     value={motivo}
                     onChange={(e) => setMotivo(e.target.value)}
                     placeholder="Ex.: veio de outra rede com experiência na função"
@@ -774,7 +816,7 @@ function SistemaPorUnidade({
                       disabled={isPending || !motivo.trim()}
                       onClick={() =>
                         startTransition(async () => {
-                          const r = await liberarUnidadeSemMissao(userId, f.clinicId, motivo);
+                          const r = await liberarUnidadeSemMissao(userId, f.clinicId, motivo, f.role);
                           if (!r.ok) {
                             toast.error(r.error ?? "Algo deu errado.");
                             return;
@@ -1157,8 +1199,9 @@ function NovaFuncao({
   if (clinicas.length === 0) {
     return jaTemTodas ? (
       <p className="text-xs text-muted-foreground">
-        Já existe uma função para cada clínica. Para trocar, remova a atual e
-        adicione a nova.
+        Já existe uma função principal em cada clínica. Para trocar, remova a
+        atual e adicione a nova. Para a pessoa ajudar em outra função, use{" "}
+        <b>Adicionar função de apoio</b>.
       </p>
     ) : null;
   }
@@ -1363,6 +1406,378 @@ function Escolha({
           ))}
         </SelectContent>
       </Select>
+    </div>
+  );
+}
+
+/**
+ * FUNÇÕES DE APOIO (0414; plano em docs/equipe/FUNCOES-DE-APOIO-PLANO.md).
+ *
+ * A pessoa continua com a função PRINCIPAL (o cargo) e pode receber, com
+ * motivo, até duas de apoio na mesma unidade: cobertura temporária (de/até) ou
+ * acúmulo fixo. Só o Admin Master dá, encerra, cancela e revisa (D1). A tela
+ * oferece só o que o banco aceitaria (`funcoesDeApoioPossiveis`); a palavra
+ * final é do banco (`grant_role_coverage`).
+ */
+function FuncoesDeApoio({
+  userId,
+  nome,
+  funcoes,
+  coberturas,
+  isAdmin,
+}: {
+  userId: string;
+  nome: string;
+  funcoes: FuncaoDoAcesso[];
+  coberturas: CoberturaNaTela[];
+  isAdmin: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [abrindo, setAbrindo] = useState(false);
+  const [mexendo, setMexendo] = useState<string | null>(null);
+  const [motivoDoFim, setMotivoDoFim] = useState("");
+  const hoje = todayInBrazil();
+
+  // As unidades onde a pessoa tem a função PRINCIPAL (só nelas cabe apoio).
+  const principais = funcoes.filter((f) => !f.apoio);
+  const [clinicId, setClinicId] = useState(principais[0]?.clinicId ?? "");
+  const [tipo, setTipo] = useState<TipoDeCobertura>("temporaria");
+  const [inicio, setInicio] = useState(hoje);
+  const [fim, setFim] = useState("");
+  const [categoria, setCategoria] = useState<MotivoDeCobertura>("ferias");
+  const [motivo, setMotivo] = useState("");
+  const [previsao, setPrevisao] = useState("");
+  const [role, setRole] = useState<UserRole | "">("");
+
+  const unidade = principais.find((f) => f.clinicId === clinicId);
+  const jaTem = [
+    ...funcoes.filter((f) => f.clinicId === clinicId).map((f) => f.role),
+    ...coberturas.filter((c) => c.clinicId === clinicId).map((c) => c.role),
+  ];
+  const apoiosNaUnidade = new Set([
+    ...funcoes.filter((f) => f.apoio && f.clinicId === clinicId).map((f) => f.role),
+    ...coberturas.filter((c) => c.clinicId === clinicId).map((c) => c.role),
+  ]).size;
+  const possiveis = unidade
+    ? funcoesDeApoioPossiveis({ tipoDaUnidade: unidade.clinicType, jaTem, apoiosNaUnidade })
+    : [];
+  const roleValido: UserRole | "" =
+    role && possiveis.includes(role) ? role : (possiveis[0] ?? "");
+
+  function dar() {
+    if (!roleValido) return;
+    const funcao = roleValido;
+    startTransition(async () => {
+      const r = await darFuncaoDeApoio({
+        userId,
+        clinicId,
+        role: funcao,
+        tipo,
+        inicio,
+        fim: tipo === "temporaria" ? fim || null : null,
+        motivoCategoria: categoria,
+        motivo,
+        previsaoDeContratacao: categoria === "desligamento" ? previsao || null : null,
+      });
+      if (!r.ok) {
+        toast.error(r.error ?? "Algo deu errado.");
+        return;
+      }
+      toast.success(
+        inicio <= hoje
+          ? `${nome} já está com a função de apoio de ${ROLE_LABELS[funcao]}.`
+          : `Cobertura agendada: começa em ${formatAnyDateBr(inicio)}.`
+      );
+      setAbrindo(false);
+      setMotivo("");
+      setFim("");
+      setPrevisao("");
+      router.refresh();
+    });
+  }
+
+  function encerrarOuCancelar(c: CoberturaNaTela) {
+    startTransition(async () => {
+      const r =
+        c.status === "ativa"
+          ? await encerrarFuncaoDeApoio(c.id, userId, motivoDoFim)
+          : await cancelarFuncaoDeApoio(c.id, userId, motivoDoFim);
+      if (!r.ok) {
+        toast.error(r.error ?? "Algo deu errado.");
+        return;
+      }
+      toast.success(c.status === "ativa" ? "Cobertura encerrada." : "Cobertura cancelada.");
+      setMexendo(null);
+      setMotivoDoFim("");
+      router.refresh();
+    });
+  }
+
+  function revisar(c: CoberturaNaTela) {
+    startTransition(async () => {
+      const r = await revisarFuncaoDeApoio(c.id, userId);
+      if (!r.ok) {
+        toast.error(r.error ?? "Algo deu errado.");
+        return;
+      }
+      toast.success(
+        r.proxima ? `Revisado. Próxima revisão em ${formatAnyDateBr(r.proxima)}.` : "Revisado."
+      );
+      router.refresh();
+    });
+  }
+
+  if (coberturas.length === 0 && (!isAdmin || principais.length === 0)) return null;
+
+  return (
+    <div className="space-y-2 rounded-lg border p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Funções de apoio
+      </p>
+      {coberturas.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Nenhuma. Use quando {nome} precisar ajudar em outra função na unidade:
+          cobrir um colega ausente ou fazer uma função que a unidade não tem.
+        </p>
+      ) : (
+        <ul className="space-y-1.5">
+          {coberturas.map((c) => (
+            <li key={c.id} className="space-y-2 rounded-md border px-3 py-2 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="min-w-0">
+                  <span className="font-medium">{c.clinicName}</span>
+                  <span className="text-muted-foreground"> · {textoDaCobertura(c)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {c.code ?? ""} · {ROTULO_DO_TIPO[c.kind]}
+                    {c.status === "agendada" && " · agendada"}
+                    {c.reason ? ` · ${c.reason}` : ""}
+                    {c.hiringForecast &&
+                      ` · contratação prevista para ${formatAnyDateBr(c.hiringForecast)}`}
+                  </span>
+                  {c.kind === "fixa" && c.reviewDueOn && (
+                    <span
+                      className={
+                        revisaoVencida(c, hoje)
+                          ? "block text-xs font-medium text-destructive"
+                          : "block text-xs text-muted-foreground"
+                      }
+                    >
+                      {revisaoVencida(c, hoje) ? "Revisão vencida desde " : "Próxima revisão: "}
+                      {formatAnyDateBr(c.reviewDueOn)}
+                    </span>
+                  )}
+                </span>
+                {isAdmin && mexendo !== c.id && (
+                  <span className="flex flex-wrap gap-1.5">
+                    {c.kind === "fixa" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        disabled={isPending}
+                        onClick={() => revisar(c)}
+                      >
+                        Revisado
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={isPending}
+                      onClick={() => {
+                        setMexendo(c.id);
+                        setMotivoDoFim("");
+                      }}
+                    >
+                      {c.status === "ativa" ? "Encerrar agora" : "Cancelar"}
+                    </Button>
+                  </span>
+                )}
+              </div>
+              {mexendo === c.id && (
+                <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 p-2">
+                  <Input
+                    autoFocus
+                    value={motivoDoFim}
+                    onChange={(e) => setMotivoDoFim(e.target.value)}
+                    placeholder={
+                      c.status === "ativa"
+                        ? "Por que encerrar? Ex.: voltou das férias"
+                        : "Por que cancelar?"
+                    }
+                    className="h-8 min-w-0 flex-1 text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={isPending || !motivoDoFim.trim()}
+                    onClick={() => encerrarOuCancelar(c)}
+                  >
+                    {c.status === "ativa" ? "Encerrar" : "Cancelar cobertura"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setMexendo(null)}
+                  >
+                    Voltar
+                  </Button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {isAdmin && principais.length > 0 && !abrindo && (
+        <Button variant="outline" size="sm" disabled={isPending} onClick={() => setAbrindo(true)}>
+          Adicionar função de apoio
+        </Button>
+      )}
+
+      {isAdmin && abrindo && (
+        <div className="space-y-3 rounded-lg border border-dashed p-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Escolha
+              rotulo="Unidade"
+              itens={principais.map((f) => ({ value: f.clinicId, label: f.clinicName }))}
+              valor={clinicId}
+              aoMudar={(v) => {
+                setClinicId(v);
+                setRole("");
+              }}
+            />
+            {possiveis.length > 0 ? (
+              <Escolha
+                rotulo="Função de apoio"
+                itens={possiveis.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+                valor={roleValido}
+                aoMudar={(v) => setRole(v as UserRole)}
+              />
+            ) : (
+              <p className="self-end text-xs text-muted-foreground">
+                Nesta unidade não cabe outra função de apoio (o máximo é 2, sem
+                repetir função).
+              </p>
+            )}
+          </div>
+
+          <fieldset className="grid gap-2 sm:grid-cols-2">
+            {TIPOS_DE_COBERTURA.map((t) => (
+              <label
+                key={t}
+                className="flex cursor-pointer gap-2 rounded-lg border p-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-accent/60"
+              >
+                <input
+                  type="radio"
+                  name="tipo-de-cobertura"
+                  checked={tipo === t}
+                  onChange={() => setTipo(t)}
+                  className="mt-0.5 size-4 shrink-0 accent-primary"
+                />
+                <span>
+                  <span className="block font-medium">{ROTULO_DO_TIPO[t]}</span>
+                  <span className="block text-xs text-muted-foreground">{AJUDA_DO_TIPO[t]}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="cobertura-inicio" className="text-xs">
+                Começa em
+              </Label>
+              <Input
+                id="cobertura-inicio"
+                type="date"
+                min={hoje}
+                value={inicio}
+                onChange={(e) => setInicio(e.target.value)}
+              />
+            </div>
+            {tipo === "temporaria" && (
+              <div className="space-y-1">
+                <Label htmlFor="cobertura-fim" className="text-xs">
+                  Último dia
+                </Label>
+                <Input
+                  id="cobertura-fim"
+                  type="date"
+                  min={inicio}
+                  value={fim}
+                  onChange={(e) => setFim(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Escolha
+              rotulo="Motivo"
+              itens={MOTIVOS_DE_COBERTURA.map((m) => ({
+                value: m,
+                label: ROTULO_DO_MOTIVO_DE_COBERTURA[m],
+              }))}
+              valor={categoria}
+              aoMudar={(v) => setCategoria(v as MotivoDeCobertura)}
+            />
+            {categoria === "desligamento" && (
+              <div className="space-y-1">
+                <Label htmlFor="cobertura-previsao" className="text-xs">
+                  Previsão de contratação
+                </Label>
+                <Input
+                  id="cobertura-previsao"
+                  type="date"
+                  min={hoje}
+                  value={previsao}
+                  onChange={(e) => setPrevisao(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="cobertura-motivo" className="text-xs">
+              Explique (fica registrado)
+            </Label>
+            <Input
+              id="cobertura-motivo"
+              value={motivo}
+              maxLength={300}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Ex.: férias da Erika"
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Enquanto valer, {nome} soma o que as duas funções podem fazer na
+            unidade. A temporária termina sozinha no dia seguinte ao último dia.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setAbrindo(false)}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              disabled={
+                isPending ||
+                !roleValido ||
+                !motivo.trim() ||
+                !inicio ||
+                (tipo === "temporaria" && !fim) ||
+                (categoria === "desligamento" && !previsao)
+              }
+              onClick={dar}
+            >
+              {inicio <= hoje ? "Dar a função de apoio" : "Agendar a cobertura"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

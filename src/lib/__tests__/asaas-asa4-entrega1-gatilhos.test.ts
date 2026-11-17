@@ -123,8 +123,11 @@ describe("os agendadores (19.10 item 5, 19.14)", () => {
 
 describe("os gatilhos", () => {
   it("ZapSign: contrato do plano assinado cria as cobranças (sem derrubar o 200)", () => {
-    expect(ZAP).toContain('pkg?.origin_type !== "plan_negotiation"');
+    expect(ZAP).toContain('pkg.origin_type === "plan_negotiation"');
     expect(ZAP).toContain('origem: "gatilho", negotiationId');
+    // VD3-2 (0415): o termo da venda direta assinado também cria as cobranças.
+    expect(ZAP).toContain('pkg.origin_type === "direct_sale"');
+    expect(ZAP).toContain('origem: "gatilho", directSaleId');
   });
   it("venda direta nova: contrato assinado e parcelamento salvo", () => {
     expect(VENDA).toContain('step === "contract" && value && ehVendaNova(info.methodRule)');

@@ -5367,6 +5367,12 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 6. **O aviso da unidade errada:** a caixa de escolha abre na unidade mostrada; o saldo anterior mostra o nome e o que falta **daquela** unidade; trocar a unidade abre o saldo dela.
 7. **O texto do saldo mínimo:** "sem saldo, o Asaas recusa o estorno" (não "fica negativa").
 
+**As correções 2 e 4 na produção, separadas (pedido do dono, 17/11/2026):**
+- **A entrega:** a migração `4018b_asa3_conta_cancelada_a_mao.sql` e a tela de Taxas da rede, na 0.472.1, feita a partir do `main`, sem a cobrança mensal.
+- **A produção:** o dono rodou a 4018b, e a conferência bateu (`true | 8`). Depois o `main` foi publicado, e a produção mostra 0.472.1.
+- **Conferido de fora:** a função barra quem não está logado.
+- **A 4021:** ela redefine a mesma função com a mesma trava.
+
 **O teste de papéis:**
 - **Pela API:** `scripts/asaas-teste-papeis-cobranca-mensal.mjs --confirmar`, 14/14.
   - O Gerente lê e contesta só a própria unidade, mas não aprova nem decide.

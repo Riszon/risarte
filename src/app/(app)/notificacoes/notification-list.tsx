@@ -24,6 +24,7 @@ import {
   FileSignature,
   Bot,
   Landmark,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +59,7 @@ const CATEGORY_ICON: Record<NotificationCategory, React.ComponentType<{ classNam
   assinaturas: FileSignature,
   rita: Bot,
   dividas: Landmark,
+  equipe: Users,
   outras: Bell,
 };
 

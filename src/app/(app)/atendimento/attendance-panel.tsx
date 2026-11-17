@@ -12,6 +12,7 @@ import {
   DoorOpen,
   Hourglass,
   MoreHorizontal,
+  ShoppingCart,
   Stethoscope,
   UserRound,
   type LucideIcon,
@@ -74,6 +75,15 @@ import {
   BRAZIL_TIME_ZONE,
 } from "@/lib/dates";
 import { TIPOS_QUE_GRAVAM, pedirGravacao, pedirParaParar } from "@/lib/gravacao";
+import {
+  CaixaVendaDireta,
+  type AlvoDoCaixa,
+} from "@/components/venda-direta/caixa";
+import { PerguntaDoFimDialog } from "../prontuarios/[id]/pergunta-do-fim-dialog";
+import {
+  perguntaPendenteDoAtendimento,
+  type PerguntaPendente,
+} from "../prontuarios/[id]/fim-do-tratamento-actions";
 
 export type PanelAppointment = {
   id: string;
@@ -391,7 +401,10 @@ export function AttendancePanel({
   waitingAlertMinutes,
   canSwapProvider,
   swapStaff,
+  canSell = false,
 }: {
+  /** VD3: quem lança venda direta vê o "Vender" em cada paciente. */
+  canSell?: boolean;
   appointments: PanelAppointment[];
   canCheckIn: boolean;
   canCall: boolean;
@@ -420,6 +433,8 @@ export function AttendancePanel({
   const [confirmCheckIn, setConfirmCheckIn] = useState<PanelAppointment | null>(
     null
   );
+  // VD3: o caixa da venda direta, aberto a partir do paciente.
+  const [vender, setVender] = useState<AlvoDoCaixa | null>(null);
   // H3.6: troca de profissional (qual atendimento + novo profissional + motivo).
   const [swapFor, setSwapFor] = useState<PanelAppointment | null>(null);
   const [swapProviderId, setSwapProviderId] = useState("");
@@ -430,6 +445,14 @@ export function AttendancePanel({
   const [notDoneReasons, setNotDoneReasons] = useState<
     Record<string, string>
   >({});
+
+  // 0418: a pergunta do fim do plano, aberta logo depois de concluir.
+  const [perguntaDoFim, setPerguntaDoFim] = useState<PerguntaPendente | null>(null);
+  async function procurarPerguntaDoFim(clientId: string | null) {
+    if (!clientId) return;
+    const p = await perguntaPendenteDoAtendimento(clientId);
+    if (p) setPerguntaDoFim(p);
+  }
 
   function openConclude(a: PanelAppointment) {
     const checks: Record<string, boolean> = {};
@@ -642,8 +665,28 @@ export function AttendancePanel({
           )}
           <AttendanceTimers a={a} waitingAlertMinutes={waitingAlertMinutes} />
         </div>
-        {action && (
-          <div className="flex flex-wrap items-center gap-1">{action}</div>
+        {(action || (canSell && a.clientId && !comercial)) && (
+          <div className="flex flex-wrap items-center gap-1">
+            {action}
+            {/* VD3: a venda direta começa aqui — o atendimento já é este. */}
+            {canSell && a.clientId && !comercial && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-gold-tinta"
+                onClick={() =>
+                  setVender({
+                    clientId: a.clientId as string,
+                    clientName: a.clientName,
+                    appointmentId: a.id,
+                  })
+                }
+              >
+                <ShoppingCart className="mr-1 size-3.5" />
+                Vender
+              </Button>
+            )}
+          </div>
         )}
       </li>
     );
@@ -651,6 +694,9 @@ export function AttendancePanel({
 
   return (
     <>
+      <CaixaVendaDireta alvo={vender} onClose={() => setVender(null)} />
+      {/* 0418: a pergunta do fim do plano, que não fecha sem resposta. */}
+      <PerguntaDoFimDialog pergunta={perguntaDoFim} onRespondida={() => setPerguntaDoFim(null)} />
       {/* OC-00085: encerrar a avaliação interrompida, com motivo. */}
       <Dialog
         open={encerrarSemEnviar !== null}
@@ -972,6 +1018,7 @@ export function AttendancePanel({
                     pedirParaParar(a.id);
                     setConcludeFor(null);
                     router.refresh();
+                    void procurarPerguntaDoFim(a.clientId);
                   }
                 );
               }}
@@ -1279,7 +1326,10 @@ export function AttendancePanel({
                           // precisar lembrar de parar (a outra metade do
                           // relato OC-00060). Se a gravação for de outro
                           // atendimento, a barra ignora o pedido.
-                          () => pedirParaParar(a.id)
+                          () => {
+                            pedirParaParar(a.id);
+                            void procurarPerguntaDoFim(a.clientId);
+                          }
                         )
                       }
                     >

@@ -79,7 +79,20 @@ import {
   type ClientAppointment,
   type HistoryEntry,
 } from "./journey-section";
-import { PendingDecision } from "./pending-decision";
+import { FimDoTratamento } from "./fim-do-tratamento";
+
+type FechamentoRow = {
+  id: string;
+  scope: Fechamento["scope"];
+  status: Fechamento["status"];
+  answer: Fechamento["answer"];
+  asked_user_id: string | null;
+  auto_yes: boolean;
+  treatment_end: boolean;
+  changed_by_coordinator: boolean;
+  created_at: string;
+  treatment_closure_contacts: { reached: boolean }[] | null;
+};
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-loader";
 import { loadPprOffer } from "@/lib/ppr/offer-loader";
@@ -89,9 +102,18 @@ import { loadOrthoClientBadge } from "@/lib/ortodontia/client-badge-loader";
 import { ProgramasFaixa } from "./programas-faixa";
 import { AtencaoItem, AtencaoPainel } from "./atencao-painel";
 import { abaInicialDoProntuario } from "@/lib/prontuario/aba-inicial";
-import { DirectSaleDialog } from "./direct-sale-dialog";
+import {
+  BotaoContinuarVenda,
+  BotaoVendaDireta,
+  CaixaPeloEndereco,
+} from "@/components/venda-direta/caixa";
+import {
+  SELO_DA_VENDA,
+  etapaDoCaixa,
+  oQueFalta,
+} from "@/lib/venda-direta-caixa";
+import { formatBRL } from "@/lib/pricing";
 import { DirectSaleSessionsList } from "./direct-sale-sessions-list";
-import { SaleItem } from "../../comercial/venda-direta/direct-sale-item";
 import {
   getUnitSchedulingData,
   type AgendaFormConfig,
@@ -191,8 +213,8 @@ import type {
 import { roomLabel } from "@/lib/rooms";
 import { allowedNextPhases, PHASE_LABELS, PILLAR_LABELS } from "@/lib/journey";
 import { carregarGrupos } from "@/lib/procedimentos/grupos-db";
+import type { Fechamento } from "@/lib/fim-do-tratamento";
 import type {
-  DecisionKind,
   JourneyPhase,
   JourneyStatus,
   MethodologyPillar,
@@ -308,6 +330,10 @@ export default async function ClientDetailPage(
   // OC-00093: ?aba=pedidos abre o prontuário na aba do assunto do aviso.
   const abaPedida = (await props.searchParams)?.aba;
   const initialTab = typeof abaPedida === "string" ? abaPedida : null;
+  // VD3: ?venda=<id> abre o caixa da venda direta naquela venda (o "Continuar"
+  // do painel "Precisa de atenção").
+  const vendaPedidaRaw = (await props.searchParams)?.venda;
+  const vendaPedida = typeof vendaPedidaRaw === "string" ? vendaPedidaRaw : null;
   const supabase = await createClient();
 
   const { data: client } = await supabase
@@ -452,7 +478,7 @@ export default async function ClientDetailPage(
     { data: guardians },
     { data: dependents },
     { data: appointmentChanges },
-    { data: openDecisions },
+    { data: fechamentoRows },
   ] = await Promise.all([
     supabase
       .from("journey_phase_history")
@@ -493,12 +519,17 @@ export default async function ClientDetailPage(
       .order("changed_at", { ascending: false })
       .limit(50)
       .returns<AppointmentChangeRow[]>(),
+    // 0418: o fim do tratamento — as tarefas abertas do fechamento. Sem a
+    // migração num banco, a leitura falha e o painel segue sem elas.
     supabase
-      .from("journey_decisions")
-      .select("id, kind, assignee_user_id")
+      .from("treatment_closures")
+      .select(
+        "id, scope, status, answer, asked_user_id, auto_yes, treatment_end, changed_by_coordinator, created_at, treatment_closure_contacts ( reached )"
+      )
       .eq("client_id", id)
-      .is("resolved_at", null)
-      .returns<{ id: string; kind: DecisionKind; assignee_user_id: string | null }[]>(),
+      .neq("status", "encerrado")
+      .order("created_at")
+      .returns<FechamentoRow[]>(),
   ]);
 
   // LGPD: every view of a client record is audited.
@@ -768,11 +799,23 @@ export default async function ClientDetailPage(
     (roles) => roles.includes("planner_dentist")
   );
 
-  const decisions = openDecisions ?? [];
-  const canAnswerDecision =
-    session.isAdminMaster ||
-    clinicRoles.includes("clinical_coordinator") ||
-    decisions.some((d) => d.assignee_user_id === session.userId);
+  // 0418: o fim do tratamento (as tarefas abertas do fechamento).
+  const fechamentos: Fechamento[] = (fechamentoRows ?? []).map((f) => {
+    const contatos = f.treatment_closure_contacts ?? [];
+    return {
+      id: f.id,
+      scope: f.scope,
+      status: f.status,
+      answer: f.answer,
+      askedUserId: f.asked_user_id,
+      autoYes: f.auto_yes,
+      treatmentEnd: f.treatment_end,
+      changedByCoordinator: f.changed_by_coordinator,
+      createdAt: f.created_at,
+      tentativas: contatos.length,
+      tentativasSemSucesso: contatos.filter((c) => !c.reached).length,
+    };
+  });
 
   // Was the client transferred away from the clinic the viewer belongs to?
   const currentClinicEntry = (clinicHistory ?? []).find((h) => !h.ended_at);
@@ -2805,9 +2848,24 @@ export default async function ClientDetailPage(
     rolesNaUnidade: session.rolesByClinic[scheduleClinicId] ?? clinicRoles,
     isPlannerAnywhere,
   });
+  // VD3: venda direta aberta (falta pagamento, termo ou recebimento) aparece
+  // no "Precisa de atenção" de quem pode fechar, com o Continuar.
+  const situacaoDaVenda = (s: (typeof clientDirectSales.sales)[number]) => ({
+    cancelled: s.cancelled,
+    closed: s.status === "concluida",
+    finalCents: s.finalCents,
+    paymentMethod: s.paymentMethod,
+    contractSigned: s.contractSigned,
+    paymentConfirmed: s.paymentConfirmed,
+  });
+  const vendasDiretasAbertas = clientDirectSales.sales.filter((s) => {
+    const etapa = etapaDoCaixa(situacaoDaVenda(s));
+    return s.canClose && (etapa === "pagamento" || etapa === "fechamento");
+  });
   // O painel "Precisa de atenção" conta o que vai mostrar.
   const avisosDaFicha =
-    decisions.length +
+    vendasDiretasAbertas.length +
+    fechamentos.length +
     anamnesisAlerts.length +
     (anamnesisNudge ? 1 : 0) +
     (qcRedoPending ? 1 : 0) +
@@ -2910,12 +2968,9 @@ export default async function ClientDetailPage(
                 )}
                 {/* VD2: venda direta ao lado de "Novo agendamento". */}
                 {directSale.canLaunch && (
-                  <DirectSaleDialog
+                  <BotaoVendaDireta
                     clientId={client.id}
-                    procedures={directSale.procedures}
-                    appointments={directSale.appointments}
-                    programActive={directSale.programActive}
-                    programName={directSale.programName}
+                    clientName={client.full_name}
                   />
                 )}
                 {canScheduleFromFicha && (
@@ -3039,14 +3094,35 @@ export default async function ClientDetailPage(
 
       {/* 28/10/2026: tudo o que pede ação num painel só, uma linha por aviso,
           com o botão da ação ao lado. Sem nada, o painel não aparece. */}
+      {vendaPedida &&
+        clientDirectSales.sales.some((s) => s.id === vendaPedida) && (
+          <CaixaPeloEndereco
+            key={vendaPedida}
+            clientId={client.id}
+            clientName={client.full_name}
+            saleId={vendaPedida}
+          />
+        )}
       <AtencaoPainel quantos={avisosDaFicha}>
-        <PendingDecision
-          decisions={decisions.map((d) => ({
-            id: d.id,
-            kind: d.kind,
-            isAssignee: d.assignee_user_id === session.userId,
-          }))}
-          canAnswer={canAnswerDecision}
+        {vendasDiretasAbertas.map((s) => (
+          <AtencaoItem
+            key={s.id}
+            tom="ambar"
+            titulo={`Venda direta ${s.code ?? ""} em aberto — ${oQueFalta(situacaoDaVenda(s))}`}
+            acao={{ href: `/prontuarios/${client.id}?venda=${s.id}`, rotulo: "Continuar" }}
+          >
+            {formatBRL(s.finalCents)} · {s.items.length} procedimento(s). Só é
+            venda com o termo assinado e o pagamento confirmado.
+          </AtencaoItem>
+        ))}
+        <FimDoTratamento
+          clientId={client.id}
+          fechamentos={fechamentos}
+          userId={session.userId}
+          ehCoordenador={session.isAdminMaster || clinicRoles.includes("clinical_coordinator")}
+          ehRecepcao={session.isAdminMaster || clinicRoles.includes("receptionist")}
+          clienteNaFase5={client.journey_phase === "treatment_start"}
+          hoje={todayInBrazil()}
         />
         {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
         {anamnesisAlerts.map((a, i) => (
@@ -3720,20 +3796,62 @@ export default async function ClientDetailPage(
                   <span className="text-gold-tinta">●</span> Vendas diretas deste cliente
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Procedimentos vendidos direto na clínica. A recepção/gerente
-                  define o pagamento e faz o fechamento aqui mesmo. Cada
-                  procedimento vira uma sessão (em aberto ou já concluído, quando
-                  o atendimento já foi realizado).
+                  Procedimentos vendidos direto na clínica. Cada procedimento
+                  vira uma sessão (em aberto ou já concluído). O pagamento e o
+                  fechamento ficam na janela da venda — botão ao lado de cada
+                  uma.
                 </p>
                 <DirectSaleSessionsList sessions={clientDirectSales.sessions} />
-                {clientDirectSales.sales.map((s) => (
-                  <SaleItem
-                    key={s.id}
-                    sale={s}
-                    showClientLink={false}
-                    defaultExpanded={s.status !== "concluida" && !s.cancelled}
-                  />
-                ))}
+                {clientDirectSales.sales.length > 0 && (
+                  <ul className="divide-y rounded-lg border bg-card">
+                    {clientDirectSales.sales.map((s) => {
+                      const aberta =
+                        !s.cancelled && s.status !== "concluida" && s.canClose;
+                      return (
+                        <li
+                          key={s.id}
+                          className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm"
+                        >
+                          {s.code && (
+                            <span className="rounded border border-border bg-muted/60 px-1 font-mono text-[10px] text-muted-foreground">
+                              {s.code}
+                            </span>
+                          )}
+                          <span
+                            className={cn(
+                              "rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                              SELO_DA_VENDA[s.status].estilo
+                            )}
+                          >
+                            {SELO_DA_VENDA[s.status].rotulo}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                            {s.items
+                              .map((i) =>
+                                i.quantity > 1
+                                  ? `${i.description} ×${i.quantity}`
+                                  : i.description
+                              )
+                              .join(", ")}
+                            {aberta ? ` — ${oQueFalta(situacaoDaVenda(s))}` : ""}
+                          </span>
+                          <span className="font-semibold tabular-nums">
+                            {formatBRL(s.finalCents)}
+                          </span>
+                          {s.clientId && (
+                            <BotaoContinuarVenda
+                              clientId={s.clientId}
+                              clientName={client.full_name}
+                              saleId={s.id}
+                              rotulo={aberta ? "Continuar" : "Abrir"}
+                              destaque={aberta}
+                            />
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             )}
             <TreatmentSection

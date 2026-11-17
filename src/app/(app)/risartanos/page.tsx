@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, UserPlus } from "lucide-react";
+import { Plus, UserPlus, Users } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { FilterForm } from "@/components/filter-form";
@@ -109,16 +109,23 @@ export default async function RisartanosPage(props: PageProps<"/risartanos">) {
             : cadastro, unidades e acesso ao sistema — tudo na mesma ficha.
           </p>
         </div>
-        {alcance.podeCriar && (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {/* Funções de apoio, F4 (0419): quem cobre quem, e por quanto tempo. */}
           <Button
+            variant="outline"
             nativeButton={false}
-            render={<Link href="/risartanos/novo" />}
-            className="shrink-0"
+            render={<Link href="/risartanos/coberturas" />}
           >
-            <Plus className="mr-1 size-4" />
-            Novo Risartano
+            <Users className="mr-1 size-4" />
+            Equipe e coberturas
           </Button>
-        )}
+          {alcance.podeCriar && (
+            <Button nativeButton={false} render={<Link href="/risartanos/novo" />}>
+              <Plus className="mr-1 size-4" />
+              Novo Risartano
+            </Button>
+          )}
+        </div>
       </header>
 
       <AvisoSomenteConsulta />

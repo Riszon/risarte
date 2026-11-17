@@ -70,9 +70,9 @@ export async function TaxasDaRedeConteudo({
   const today = todayInBrazil();
   const year = Number(pick("ano") ?? today.slice(0, 4));
   const month = Number(pick("mes") ?? today.slice(5, 7));
-  // 4021 (achado no teste do dono): entrando pela FRANQUEADORA, a caixa mostrava a
-  // 1ª unidade, mas a tela gravava o acordo na clínica da franqueadora. Agora a
-  // unidade padrão é a mesma que a caixa mostra.
+  // 4018b (achado no teste do dono, 17/11/2026): entrando pela FRANQUEADORA, a
+  // caixa mostrava a 1ª unidade, mas a tela gravava o acordo na clínica da
+  // franqueadora. Agora a unidade padrão é a mesma que a caixa mostra.
   const primeiraUnidade =
     session.clinics
       .filter((c) => c.type !== "franchisor" && c.is_active)

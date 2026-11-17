@@ -180,7 +180,7 @@ const AP45: [string, string][] = [
   ["app/(app)/admin/auditoria/visao-pessoa.tsx", "pessoas.opcoes"],
   ["app/(app)/admin/auditoria/visao-relatorio.tsx", "pessoas.opcoes"],
   ["app/(app)/prontuarios/[id]/planning-section.tsx", "catalog"],
-  ["app/(app)/prontuarios/[id]/direct-sale-dialog.tsx", "procedures"],
+  ["components/venda-direta/caixa.tsx", "ctx.procedures"],
   ["app/(app)/ppr/configuracao/[planId]/benefits-editor.tsx", "procedures"],
   ["app/(app)/avaliacao/[clientId]/quality-checklist.tsx", "dentists"],
   ["app/(app)/prontuarios/[id]/client-procedures-section.tsx", "dentists"],

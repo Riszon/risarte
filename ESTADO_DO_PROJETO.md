@@ -4,7 +4,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 
 > ## 💳 0.462.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
-> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-362.
+> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-373.
 
 > ## 💳 0.461.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
@@ -14,7 +14,283 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **A emissão** sai pela conta da franqueadora, com a unidade (CNPJ) como pagadora, só por e-mail; a baixa pelo aviso do Asaas paga as contas de taxa da unidade; o caixa da franqueadora vai num lançamento só de caixa; multa e juros no financeiro, sem taxa sobre taxa; a tarifa é da franqueadora. Mês fechado: a dispensa entra no mês aberto, como ajuste.
 > - **A configuração nasce em branco** (Central › Rede › Taxas da franquia); exemplo só no treino e no sandbox, marcado.
 >
-> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-361; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-372; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> ## 💳 0.472.0 — VENDA DIRETA V3, VD3-3: O PIX NA JANELA (17/11/2026; sem migração)
+>
+> Plano e decisões P1–P3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §8. EV-371.
+> - **A cobrança da vez na caixa Pagamento**: `src/components/venda-direta/pagamento.tsx`
+>   (`PagamentoPeloAsaas`): QR do Pix desenhado na tela pelo `qrcode` 1.5.4
+>   (dependência nova, P1) a partir do copia e cola guardado; Copiar Pix,
+>   Abrir o link, Linha digitável, WhatsApp para o telefone do cliente.
+>   Regras puras em `venda-direta-caixa.ts` (`cobrancaDaVez`,
+>   `esperandoOAsaas`, `cobrancaParaNascer`, `comprovanteDaVenda`).
+> - ⚠️ **Ao vivo**: confere a cada 5 s enquanto a cobrança espera — e por até
+>   2 min enquanto ela NASCE depois da assinatura. ⚠️ O `sale_charges_read`
+>   devolve **"agendada para hoje"** enquanto a cobrança não nasceu: hoje (ou
+>   antes) conta como "nascendo". ⚠️ O meio da cobrança vem **`PIX`**
+>   (maiúsculas) e o da parcela `pix`. ⚠️ Leitura que falha (o
+>   `sale_charges_read` estourou o tempo na hora da baixa) mantém a tela e
+>   segue conferindo.
+> - **Comprovante pelo WhatsApp** (D4/P2, texto aprovado) na venda concluída,
+>   com a data da conclusão; `loadClientDirectSales` passou a trazer o nome da
+>   unidade e a data de conclusão de cada venda.
+> - **Visto na tela** (servidor local, Recepção de teste, Londrina com o Asaas
+>   de sandbox): Pix → termo (ZapSign de mentira) → assinatura simulada → a
+>   cobrança nasceu no sandbox e o QR apareceu sozinho → aviso
+>   `PAYMENT_RECEIVED` aplicado pelo caminho do webhook → venda concluída
+>   sozinha (VD-00610) → comprovante conferido. O teste achou e corrigiu 4
+>   defeitos (agendada para hoje, `PIX` maiúsculo, leitura com falha, unidade
+>   no comprovante). ⚠️ A cobrança automática de **Londrina está desligada no
+>   treino**: as vendas de teste foram marcadas uma a uma em
+>   `sale_auto_charges` (a unidade não foi ligada). Resíduo: VD-00609,
+>   VD-00610 (pagas, cobranças `liquidada` no sandbox por aviso simulado) e
+>   uma 3ª venda sem cobrança (cliente "Teste Asaas ASA2 Paciente").
+> - Na produção nada muda até a ASA7 (sem Asaas, a caixa segue com
+>   "Confirmar que recebeu").
+>
+> ## 👥 0.468.0 — FUNÇÕES DE APOIO, F4: EQUIPE E COBERTURAS (17/11/2026; migração 0419)
+>
+> Plano (D1–D15, seção 10): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Manual 2.5 e
+> a tabela do Painel da rede; EV-367. **As 4 entregas do plano estão feitas.**
+> - ⚠️ **Uma conta, duas telas e os avisos:** `_coverage_panel_units_raw` e
+>   `_coverage_panel_people_raw` (0419). A tela lê pelas portas (`coverage_panel_*`,
+>   quem vê = `_coverage_visible_clinics`, D12); a rotina `role_coverage_daily`
+>   chama `_coverage_network_notices`, que usa as MESMAS funções. Ao recriar
+>   `role_coverage_daily`, partir da 0419.
+> - ⚠️ **Limiares (30/60/15/30%/5) em dois lugares:** `coberturas-painel.ts` e a
+>   rotina da 0419 (régua `funcoes-de-apoio-f4.test.ts`).
+> - Avisos um por fato (`coverage_notices`, fora da auditoria), link
+>   `/risartanos/coberturas`, categoria **Equipe** no sino.
+> - Limites honestos: tempo ativo não é ponto; `access_sessions` não tem unidade;
+>   "a função principal caiu?" (10.2) **não foi feito** (a auditoria não diz com
+>   qual função a pessoa agiu); a pessoa em cobertura não vê o próprio tempo.
+> - ⚠️ A 0418 é da sessão do fim do tratamento (renumerada da 0416): por isso a
+>   minha é a 0419 e a versão 0.468.0 (0.466.0 = AP175, 0.467.0 = fim do tratamento).
+> - Ensaio no treino 29/29 (desfeito). ✅ 0419 na produção pelo dono em 17/11/2026;
+>   conferido de fora: sem login as portas e a rotina recusam, a chave de serviço
+>   para em NOT_ALLOWED, `coverage_notices` existe. Não visto na tela.
+
+> ## ✅ 0.471.0 — FIM DO TRATAMENTO, ETAPA 3: O CONTROLE DE QUALIDADE (17/11/2026; migração 0421)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (D1, D7, D8, D18, D22, D23, D24, C1).
+> - ⚠️ **Cinco níveis = `plan_quality_reviews.level`**; o `status` (aprovado /
+>   revisao / reprovado) continua, DERIVADO do nível. `set_plan_item_quality`
+>   ganhou `p_level` (8 parâmetros, recriada na 0421: ao recriar, partir dela).
+> - ⚠️ **A trava "100% aprovado" conta a opção VENDIDA** (negociação aceita com
+>   venda fechada, sem os itens excluídos); antes contava a opção principal. Com
+>   a trava, o fechamento do plano encerra como "reavaliado".
+> - ⚠️ **Sem itens de plano (ortodontia, venda direta): `register_closure_quality`**.
+> - ⚠️ **`register_closure_contact` tem 8 parâmetros** (satisfação 0–10 e
+>   queixa; queixa obriga "revisar"). Recriada na 0421.
+> - ⚠️ **Sair da Reavaliação = `conclude_reevaluation`** (QUALITY_PENDING; retorno
+>   +6 meses); "Concluir a reavaliação" não usa mais o `move_client_phase`.
+> - O checklist aparece por fechamento aberto, em qualquer fase (C1).
+> - Ensaio 20/20 (`scripts/ensaio-fim-do-tratamento-0421.mjs`, provado
+>   quebrando) e o da 0418 com 0420 e 0421 por cima, 35/35. Não visto na tela.
+> - ✅ **0421 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: colunas novas, nenhuma avaliação sem nível, as 4 funções com a assinatura nova e fechadas para quem não está logado.
+>
+> ## 🦷 0.470.0 — FIM DO TRATAMENTO: A INSTALAÇÃO ORTODÔNTICA NÃO TERMINA O PLANO (17/11/2026; migração 0420)
+>
+> Correção da 0418, combinada com a sessão "Módulo de Ortodontia": com a 0417
+> (AP175, 0.469.0, ainda sem push), a instalação é só sessão do plano, e o plano
+> com só a instalação abria a pergunta do fim logo depois de instalar.
+> - ⚠️ **`_sessao_ortodontica`** = o critério da 0417 (`specialty ilike %ortod%`).
+>   `treatment_closure_on_session` recriada na 0420: ao recriar, partir dela.
+> - Ensaio 6/6 (`scripts/ensaio-fim-do-tratamento-0420.mjs`, provado quebrando)
+>   e o da 0418 com a 0420 por cima, 35/35. Versão 0.470.0 (a 0.469.0 é da AP175).
+>   ✅ **0420 no treino e na produção** (o dono, 17/11/2026; conferido de fora).
+>
+> ## 🦷 0.469.0 — ORTODONTIA, AP175: SESSÃO DE PLANO NÃO É MANUTENÇÃO (17/11/2026; migração 0417)
+>
+> Relato da sessão da Jornada (16/11/2026), confirmado no treino em transação
+> desfeita: sessão de plano com o ortodontista virava manutenção, a instalação
+> pagava **dois repasses** e uma sessão comum definia o ortodontista. Decisões
+> do dono (16/11/2026): a instalação é **só a sessão do plano** (O6; um
+> repasse), e **concluí-la inicia o caso sozinho**; o tipo "Manutenção
+> ortodôntica" na agenda fica para a etapa B.
+> - ⚠️ **A agenda grava o agendamento e SÓ DEPOIS liga as sessões**
+>   (`link_appointment_sessions`), e desliga a sessão não feita ao concluir
+>   (0105/0176/0314). Por isso `ortho_appointment_sync` dispara também em
+>   `treatment_session_id`, olha as DUAS ligações e solta a manutenção
+>   (`_ortho_release_maintenance`; `ortho_maintenances.from_appointment`).
+>   Mudar só a ligação nunca cria manutenção.
+> - ⚠️ **O início do tratamento é `_ortho_begin_treatment`** (a tela e a
+>   sessão). A instalação é o gatilho `ortho_session_sync` em
+>   `treatment_sessions` (procedimento de especialidade Ortodontia concluído,
+>   caso aguardando). Ao recriar `ortho_set_status` ou
+>   `ortho_appointment_sync`, partir da 0417.
+> - Dados: manutenção não realizada presa a sessão de plano é solta; a
+>   realizada fica e a conferência conta (o Financeiro olha).
+> - ✅ **0417 nos dois bancos**: treino (reaplicada; ensaio 25/25, desfeito) e
+>   produção (o dono, 17/11/2026; conferência `0 · 0 · 1 · 1 · 0` — nenhuma
+>   manutenção realizada presa a sessão de plano, ou seja, **nenhum repasse em
+>   dobro pago na produção**; conferido de fora: `_ortho_begin_treatment` e
+>   `_ortho_release_maintenance` existem e recusam sem login, a de controle
+>   responde "não encontrada"). Push depois da migração.
+>   A Jornada (0418) lê `ortho_cases.status` e reage à passagem para
+>   "contencao" por gatilho próprio — nada aqui a afeta. EV-368. Não visto na tela.
+
+> ## 🏁 0.467.0 — FIM DO TRATAMENTO, ETAPA 2: O MOTOR (17/11/2026; migração 0418)
+>
+> Plano, achados e as 30 decisões do dono em `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`
+> (versão 3). O defeito era total: a pergunta do fim (0019) nunca abriu em
+> nenhum dos dois bancos — ela esperava o sub-status "Tratamento Finalizado",
+> que só o botão manual marcava.
+> - ⚠️ **"Sobra tratamento?" = `_tratamento_em_aberto`** (regra ÚNICA): sessão
+>   pendente/agendada de QUALQUER venda, complemento em andamento, ortodontia
+>   aguardando início/em tratamento/suspensa (a contenção não segura). A
+>   `_outra_venda_em_tratamento` (0360, cancelamento) ainda é a antiga: a
+>   Etapa 5 troca.
+> - ⚠️ **O fechamento = `treatment_closures`** (+ `treatment_closure_contacts`),
+>   um por plano / venda direta / caso ortodôntico / urgência. Nasce pelos
+>   gatilhos `treatment_closure_on_session` (última sessão concluída de plano
+>   VENDIDO e não cancelado; revisão/refação não refaz a pergunta),
+>   `treatment_closure_on_ortho` (passagem para `contencao`; só LÊ a
+>   ortodontia) e `treatment_closure_on_appointment` (urgência concluída na
+>   Fase 1 → "agendar avaliação"; avaliação agendada resolve; reavaliação
+>   concluída na Fase 5 encerra). Todos blindados: erro vira `raise warning`,
+>   nunca derruba a baixa.
+> - ⚠️ **Situação do plano automática:** "Em tratamento" na 1ª sessão feita,
+>   "Concluído" na última. Reabrir sessão volta o cliente a "Em Tratamento".
+> - ⚠️ **Portas:** `answer_treatment_closure` (quem executou ou o Coordenador;
+>   "Não sei" só quem executou; D21: o Coordenador muda enquanto nada
+>   aconteceu) e `register_closure_contact` (3 tentativas para "sem
+>   contato"; retorno sugerido +6 meses). Fase só muda quando NÃO sobra nada
+>   (`_jornada_mover_por_evento`).
+> - ⚠️ **Check-in sem a regra 1→5 da urgência** (D13). `set_journey_status`:
+>   "Tratamento Finalizado" só o Admin (D9). Saiu o gatilho
+>   `clients_treatment_finished` (0019); `journey_decisions` fica como
+>   histórico vazio.
+> - ⚠️ **`procedures.requires_reevaluation`** (D17): "Sim" automático; só o
+>   Admin (trava `procedures_reevaluation_guard`; a regra `procedures_write`
+>   já era só do Admin). Lido À PARTE na tela de Procedimentos.
+> - Telas: janela da pergunta no Atendimento (não fecha sem resposta,
+>   `pergunta-do-fim-dialog.tsx`), tarefas no "Precisa de atenção"
+>   (`fim-do-tratamento.tsx`, substitui `pending-decision.tsx`), marcação no
+>   cartão do procedimento, Reavaliação na agenda da Fase 5. Regras puras em
+>   `src/lib/fim-do-tratamento.ts`; régua `fim-do-tratamento.test.ts`.
+> - Numerada **0418** (a 0417 é do AP175, ortodontia; a 0416 ficou sem uso).
+>   Feito no worktree `wt-fim-tratamento`, branch `feature/fim-do-tratamento`.
+> - ✅ Ensaio no treino 35/35 em transação desfeita, provado quebrando
+>   (urgência, pergunta, ortodontia); ensaio em `scripts/ensaio-fim-do-tratamento-0418.mjs`.
+>   ✅ **0418 no treino** (`migrar:teste`, 17/11/2026; conferência
+>   `docs/jornada/0418-CONFERENCIA.sql` 2·12·5·0·1·true·false·0). ✅ **0418 na produção** (o dono, 17/11/2026, `audit_attach_all` = 2;
+>   conferido de fora: tabelas e coluna existem, sem login a porta recusa, a
+>   chave de serviço para em NOT_ALLOWED). Publicada depois da 0.468.0 (F4).
+>   **Não visto na tela.** Próximas etapas: 3 (qualidade em cinco níveis +
+>   satisfação), 4 (abandono + lista), 5 (cancelamento), 6 (prazos).
+>
+> ## ✍️ 0.465.0 — VENDA DIRETA V3, VD3-2: O TERMO PELA ZAPSIGN (16/11/2026; migração 0415)
+>
+> Plano e decisões V1–V3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §7. EV-365.
+> - **O termo sai no Finalizar** (e ao salvar o pagamento de uma venda que
+>   não tinha): `src/lib/venda-direta-termo.ts` (envio) e
+>   `venda-direta-termo-texto.ts` (texto provisório, regra pura). Assina o
+>   cliente ou o responsável (menor); sem testemunha, sem a Risarte.
+> - ⚠️ **Quem envia = quem FECHA a venda (V1)**, pela porta
+>   `direct_sale_term_package` — a Recepção NÃO ganhou a permissão geral de
+>   envio. `enviarPacote` aceita o pacote de origem `direct_sale` quando o
+>   banco responde `direct_sale_can_handle_term`.
+> - ⚠️ **Assinou na ZapSign → o GATILHO** `signature_packages_direct_sale_signed`
+>   marca a venda (`contract_signed_source = assinatura_digital`, em nome de
+>   quem enviou); vale para o aviso e para o reprocesso da rotina. Erro vira
+>   evento `direct_sale_mark_failed` do pacote, nunca derruba o aviso.
+> - ⚠️ **TRAVA `direct_sales_term_guard`**: pessoa logada não marca o termo
+>   sem ZapSign ou sem papel (`PAPER_REQUIRED`). Sem usuário (aviso, rotinas,
+>   ensaios por SQL) e venda de R$ 0,00 passam. Caminho novo que marque o
+>   termo tem de gravar a origem.
+> - **Papel (V2, quem fecha)**: pasta `termos-venda-direta`
+>   (`<venda>/<uuid>.<ext>`), porta `direct_sale_mark_paper`.
+> - Cancelar a venda cancela o termo vivo na ZapSign (`cancelarTermoDaVenda`).
+> - Comercial → Venda direta: o "Contrato assinado" à mão virou "Abrir no
+>   caixa"; desmarcar segue só para o Gerente.
+> - ✅ **0415 no treino** (ensaio 20/20 em transação desfeita, provado
+>   quebrando: trava, marca, quem); régua `venda-direta-termo.test.ts`,
+>   provada quebrando. ⚠️ O `migrar:teste` aplicou junto a **4020** (distrato,
+>   da sessão do Asaas), que estava fora do registro do treino; rodou sem erro.
+> - **Visto na tela** (servidor local, ZapSign de mentira, Recepção de
+>   teste): pagamento → termo enviado (ASS-000099) → aviso "assinado"
+>   simulado → caixa verde sozinha → Recebi → VD-00592 concluída (conferido no
+>   banco). **Não clicado:** Assinar agora (link), WhatsApp, papel pela tela
+>   (o papel foi provado no ensaio do banco). Resíduo no treino: VD-00592 e o
+>   ASS-000099 (cliente "Teste do portão 2 (pode ignorar)").
+> - ✅ Texto do termo aprovado pelo dono (16/11/2026). ✅ **0415 na produção** (o dono rodou em 16/11/2026; conferido de fora: colunas novas, pasta privada `termos-venda-direta`, as três portas recusam sem login e a chave de serviço para em NOT_ALLOWED; os gatilhos não aparecem pela API). Publicado.
+>
+> ## 👥 0.464.0 — FUNÇÕES DE APOIO, F3: AS TELAS (16/11/2026; sem migração)
+>
+> Plano (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Manual 2.5; EV-364.
+> - Ficha do Risartano, aba Acesso: **Adicionar função de apoio**, a lista com
+>   Encerrar agora / Cancelar / Revisado (`FuncoesDeApoio`). ⚠️ A regra da tela
+>   mora em `src/lib/funcoes-de-apoio.ts` (espelho do banco: até 2, combinação
+>   proibida). ⚠️ A linha de apoio não sai pela lixeira (`removeUserRole` recusa).
+> - ⚠️ **A sessão tem `coberturas`** (lidas da mesma consulta das funções, sem
+>   ida a mais ao banco): Início "Você está cobrindo…" e menu "(apoio)".
+> - Ficha: "Sistema real em cada unidade" por (unidade, função).
+> - Não visto na tela (no treino a ficha é só consulta).
+
+> ## 🛒 0.463.0 — VENDA DIRETA V3: O CAIXA EM UMA JANELA (16/11/2026; sem migração)
+>
+> Pedido do dono (a venda direta "confusa, em duas abas, tudo à mão"). Plano e
+> decisões em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` (VD3-1 a VD3-4). Esta
+> é a **VD3-1**. EV-363.
+> - **Uma janela** (`src/components/venda-direta/caixa.tsx`): o que vende,
+>   como paga, assinar e receber. Abre do **Atendimento** (botão Vender, o
+>   atendimento já escolhido), do prontuário e da fila **Para receber**.
+> - ⚠️ **As regras de tela moram em `src/lib/venda-direta-caixa.ts`** e
+>   espelham `setDirectSaleConditions` e `directSaleViolations`: mudou a conta
+>   do servidor, muda lá (régua `venda-direta-caixa.test.ts`).
+> - ⚠️ **"Recebi R$ …" é a BAIXA da parcela** (`registerReceipt`), que conclui
+>   a venda no banco (4011, `_counter_confirm_sale`) — não é a chave
+>   "pagamento confirmado". Exige o termo assinado.
+> - ⚠️ **A exceção "atendeu antes de vender" é decidida no servidor**
+>   (`atendidoAntesDaVenda`: atendimento concluído ou de dia anterior). O
+>   pop-up antigo marcava exceção para qualquer horário já iniciado.
+> - **Corrigido de passagem** (`direct-sale-loader.ts`): a venda do prontuário
+>   vinha sem a regra do meio (oferecia os meios antigos) e os itens eram
+>   lidos sem filtro (a API corta em 1.000 linhas: a venda aparecia vazia).
+> - `SaleItem` (o painel longo) continua em **Comercial → Venda direta**.
+> - **Não feito nesta entrega:** o termo pela ZapSign (VD3-2, migração nova),
+>   o Pix na janela (VD3-3), "Atender agora" (VD3-4), o motivo ao desmarcar o
+>   termo (D5: hoje só esconde o botão de quem não é Gerente), a agenda.
+> - **Visto na tela** no servidor local de teste, como a Recepção de teste: o
+>   Vender, a fila, as etapas de vendas abertas e uma venda de teste de ponta a ponta com o OK do dono (VD-00587, cliente "Teste do portão 1 (pode ignorar)", Unidade Teste, R$ 300,00 em dinheiro): Finalizar, Termo assinado e Recebi pela janela; conferido no banco, só lendo — venda concluída com a fonte `balcao`, parcela paga, baixa registrada, receita e recebimento no razão (1.1.02), sessão em aberto, sem exceção. Não testado na tela: o caminho pelo Asaas (Pix/boleto/cartão), o parcelado, o desconto, a permuta, o Coordenador e o cancelamento.
+>   ⚠️ O teste achou o selo da situação VAZIO na aba Sessões: constante de
+>   arquivo "use client" chega vazia à página de servidor — o selo mora em
+>   `SELO_DA_VENDA` (`venda-direta-caixa.ts`, régua). Resíduo no treino: a
+>   VD-00587 e o aviso dela a 1 Consultor real. Publicado no `main` em 16/11/2026
+>   ("pode publicar" do dono), com o Word do manual regerado.
+>
+> ## 👥 0.462.0 — FUNÇÕES DE APOIO, F2: AS COBERTURAS NO BANCO (16/11/2026; migração 0414)
+>
+> Plano aprovado (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Sem botão ainda (F3). EV-373.
+> - ⚠️ **A trava agora é `unique (user_id, clinic_id, role)`.** Linha de apoio só
+>   com `coverage_id`; até 2 de apoio, combinação proibida e principal
+>   obrigatória no gatilho `_support_role_guard`. Script/semente com
+>   `on conflict (user_id, clinic_id)` precisa do `where assignment_kind = principal`.
+> - ⚠️ **Cobertura = `role_coverages`**; a linha de apoio nasce/sai só por
+>   `_role_coverage_activate`/`_role_coverage_finish` (portas: grant/end/cancel/
+>   review, só Admin). A temporária libera o sistema real pela fonte `cobertura`.
+> - ⚠️ **A janela `user_clinic_roles` esconde a linha com `ends_at` vencido**;
+>   rotina `role_coverage_daily` (00:05) começa, avisa 2 dias antes e encerra.
+> - Limites da rede (`coverage_settings`) nascem só avisando (D13). O espelho do
+>   treino leva só a função principal.
+> - Ensaio no treino 26/26 (desfeito). Código CB- (não AP-, que é do backlog).
+
+> ## 👥 0.461.0 — FUNÇÕES DE APOIO, F1: OS LEITORES PRONTOS PARA DUAS FUNÇÕES NA MESMA UNIDADE (16/11/2026; migrações 0413 e 2012)
+>
+> Plano aprovado pelo dono (D1–D15): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`.
+> A trava `unique (user_id, clinic_id)` CONTINUA (sai na F2). EV-361.
+> - ⚠️ **`assignment_kind`** (principal | apoio) em `user_clinic_roles_all`;
+>   uma principal por pessoa por unidade (`user_clinic_roles_one_principal`).
+>   **Nível de carreira, repasse e prêmio do Indica leem a PRINCIPAL** (régua
+>   reprova migração nova que leia o nível sem `assignment_kind`).
+> - ⚠️ **A tranca é por FUNÇÃO:** `system_closed_clinics` tem `role` (PK de 3
+>   colunas); a janela `user_clinic_roles` esconde só a função fechada;
+>   `grant_clinic_access`/`revoke_clinic_access` ganharam `p_role`
+>   (`ROLE_REQUIRED` com duas funções). App: `aplicarTranca` agrupa por unidade.
+> - ⚠️ **Aviso igual no mesmo instante entra uma vez** (gatilho
+>   `notifications_dedupe` em `notifications`).
+> - Ensaio no treino 15/15 (desfeito). 2012 é da faixa do Indica (INDICA 0.9.1).
 
 > ## 🔐 0.460.0 / EMPRESARIAL 0.108.0 / 1048 — PERMISSÕES EXPLICADAS E AS DO EMPRESARIAL NA MATRIZ (16/11/2026)
 >

@@ -56,16 +56,20 @@ importância:
 | De → Para | O que faz acontecer | Onde mora |
 |---|---|---|
 | 1 → 2 | check-in num agendamento de **Avaliação** | `check_in_appointment` |
-| 1 → 5 | check-in em **Urgência/Emergência** | `check_in_appointment` |
 | 4 → 5 | **venda fechada** (contrato assinado **e** pagamento confirmado) | `commercial_close_step` |
 | 4 → 5 | check-in na **1ª sessão** de tratamento | `check_in_appointment` |
 | 4 → 7 | negociação marcada como **perdida/cancelada** | `commercial_lost_moves_to_followup` |
-| 5 → 6 | decisão "**necessita reavaliação?**" = SIM | `answer_decision` |
-| 5 → 3 | decisão "**necessita novo planejamento?**" = SIM | `answer_decision` |
-| 5 → 7 | decisão "**necessita novo planejamento?**" = NÃO | `answer_decision` |
+| 5 → 6 | fim do tratamento + resposta **Sim** (ou o Coordenador: **chamar para revisar**) | `answer_treatment_closure`, `register_closure_contact` (0418) |
+| 5 → 7 | fim do tratamento + resposta **Não** + o Coordenador: **aguardar o retorno** ou **sem contato** (3 tentativas) | `register_closure_contact` (0418) |
+| 5 → 3 | fim do tratamento + o Coordenador: **precisa de novo planejamento** | `register_closure_contact` (0418) |
 | 7 → 6 | check-in numa **Reavaliação** | `check_in_appointment` |
 | 7 → 5 | check-in numa **sessão** de tratamento | `check_in_appointment` |
 | → 6 ou 7 | **cancelamento de plano efetivado** (destino escolhido pelo Gerente) | `apply_plan_cancellation` |
+
+**Desde a 0418 (17/11/2026), a urgência não leva mais 1 → 5** (decisão do dono,
+D13): quem chega pela urgência não tem tratamento. O check-in não muda a fase;
+ao concluir, nasce a tarefa da Recepção "agendar a avaliação completa", e o
+check-in da avaliação faz o 1 → 2 de sempre.
 
 Ninguém aperta "mover" em nenhuma dessas linhas — e é por isso que elas saíram
 da matriz. Enquanto estavam lá, existia um atalho para pular justamente o
@@ -102,18 +106,36 @@ fato que deveria tê-la movido.
 Fluxo de atendimento (sala de espera): check-in → "Em espera" → Coordenador/
 Dentista "chama" → "Em atendimento" → conclui. (Tela de painel da unidade.)
 
-## 5. Decisões obrigatórias (fim do tratamento, fase 5)
+## 5. O fim do tratamento (desde a 0418, 17/11/2026)
 
-Ao concluir todos os procedimentos, abre uma decisão **bloqueante** (não fecha
-sem responder) para o profissional do último procedimento:
-"O cliente necessita de consulta de reavaliação com o Coordenador?"
-- SIM → Recepcionista agenda reavaliação → Fase 6.
-- NÃO → alerta ao Coordenador: "Necessita de Novo Planejamento?"
-  - NÃO → Recepcionista agenda em controle de retorno → Fase 7.
-  - SIM → Coordenador envia ao Centro de Planejamento (Fase 3); Recepcionista
-    agenda apresentação (Fase 4).
-- NÃO SEI → vai ao Coordenador decidir (mesmo desdobramento). Aviso em destaque,
-  não some até decidir; aparece nas notificações do Gerente.
+**Plano completo, achados e as 30 decisões do dono:**
+`docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`. Princípios do dono (16/11/2026): **o
+cliente não pode ser esquecido nunca**, e **o principal responsável pelo sucesso
+do tratamento é o Coordenador Clínico**.
+
+O desenho original (0019) esperava o sub-status "Tratamento Finalizado", que só
+o botão manual marcava: a pergunta nunca abriu. Agora:
+
+1. **A última sessão concluída de cada plano** (original, complemento, venda
+   direta) ou a **entrega da contenção** na ortodontia abre um **fechamento**
+   (`treatment_closures`), uma tarefa com dono que só some quando é resolvida.
+2. **Quem executou responde** (janela que não fecha sem resposta): "Este cliente
+   necessita de consulta de reavaliação com o Coordenador Clínico?" Procedimento
+   com **reavaliação obrigatória** no catálogo responde "Sim" sozinho.
+   - **Sim** → Recepção agenda a reavaliação.
+   - **Não** → o Coordenador contata o cliente e registra: chamar para revisar,
+     aguardar o retorno (+6 meses sugeridos) ou novo planejamento; 3 tentativas
+     sem falar → "sem contato".
+   - **Não sei** → o Coordenador decide. Ele também muda a resposta enquanto
+     nada aconteceu.
+3. **A fase só muda no fim do tratamento**, quando não sobra nada
+   (`_tratamento_em_aberto`): nenhuma sessão por fazer, nenhum complemento em
+   andamento, nenhuma ortodontia aguardando início/em tratamento/suspensa. Com
+   algo sobrando, a reavaliação acontece **dentro da Fase 5**.
+
+Próximas etapas do plano: avaliação de qualidade em cinco níveis e satisfação
+do cliente; abandono de tratamento e a lista "Clientes sem próximo passo"; o
+cancelamento passando pelo Coordenador; prazos por dia útil da unidade.
 
 ## 6. Funções por ambiente (decisão 2)
 
