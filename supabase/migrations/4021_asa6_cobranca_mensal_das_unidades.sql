@@ -223,6 +223,11 @@ values ('cobranca-mensal', 'cobranca-mensal', false, 10485760,
 on conflict (id) do update
   set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
+-- O pagamento da conta de taxa feito pela cobrança mensal guarda o lote (a
+-- conferência do caixa, 4021a, casa por ele).
+alter table public.payable_payments add column if not exists franchise_batch_id uuid references public.franchise_monthly_batches(id);
+create index if not exists payable_payments_franchise_batch on public.payable_payments (franchise_batch_id) where franchise_batch_id is not null;
+
 -- A unidade como pagadora (no cadastro do Asaas da conta da franqueadora).
 alter table public.charges drop constraint if exists charges_payer_kind_check;
 alter table public.charges add constraint charges_payer_kind_check
@@ -1136,13 +1141,13 @@ begin
     v_credit := v_credit - v_comp;
     v_cash := r.amt - v_comp;
     if v_comp > 0 then
-      insert into public.payable_payments (clinic_id, payable_id, amount_cents, paid_at, payment_method, reference, notes)
+      insert into public.payable_payments (clinic_id, payable_id, amount_cents, paid_at, payment_method, reference, notes, franchise_batch_id)
       values (b.clinic_id, r.payable_id, v_comp, b.paid_on, null, v_ref,
-              'Compensação do crédito da cobrança mensal (sem saída de caixa).');
+              'Compensação do crédito da cobrança mensal (sem saída de caixa).', b.id);
     end if;
     if v_cash > 0 then
-      insert into public.payable_payments (clinic_id, payable_id, amount_cents, paid_at, payment_method, reference, notes)
-      values (b.clinic_id, r.payable_id, v_cash, b.paid_on, v_method, v_ref, 'Pago pela cobrança mensal da rede (Asaas).')
+      insert into public.payable_payments (clinic_id, payable_id, amount_cents, paid_at, payment_method, reference, notes, franchise_batch_id)
+      values (b.clinic_id, r.payable_id, v_cash, b.paid_on, v_method, v_ref, 'Pago pela cobrança mensal da rede (Asaas).', b.id)
       returning id into v_pay;
       insert into public.financial_entries (clinic_id, account_code, accrual_date, cash_date, amount_cents, direction, status,
         source_type, source_id, description)

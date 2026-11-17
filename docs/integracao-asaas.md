@@ -4629,7 +4629,7 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 
 **A tabela de fases foi corrigida:** o cartão recorrente da ASA4B não está mais bloqueado pela regra do cartão. Falta só a tokenização habilitada nas contas, com o comercial do Asaas.
 
-## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 CONSTRUÍDA (16/11/2026; ver 20.15 e 20.16); 4021a EM PLANO (20.17)
+## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 e 4021a CONSTRUÍDAS (16/11/2026; ver 20.15 a 20.17.10)
 
 ### 20.1 O que já existe (levantado no código em 16/11/2026)
 
@@ -5179,3 +5179,40 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 - **Na produção:** só a migração, sem código. Ela não depende da 4021.
 - **A consulta só de leitura na produção** (rodada pelo dono em 16/11/2026): "No rows returned". Nenhuma marca de split a mais; o defeito não chegou a marcar nada lá.
 - **A 4018a na produção** (rodada pelo dono em 16/11/2026): a conferência bateu (`true | 0 | 0`). Conferido de fora: a função continua fechada para quem não está logado (401, permission denied).
+
+#### 20.17.10 A construção da 4021a (16/11/2026)
+
+**Versões:** core 0.462.0, Asaas 0.19.0, migração 4021a. No treino e no projeto de teste; **não está na produção**. Depende da 4021.
+
+**Onde fica:** Financeiro › Rede › Cobrança da rede › aba **Conferência das taxas**:
+- a conta do mês por unidade, e as linhas da unidade com um clique;
+- as divergências abertas, com o caminho;
+- as **ignoradas**, numa lista própria, com quem ignorou e quando;
+- "Em atraso com a rede";
+- a planilha;
+- o "Conferir agora" (Financeiro ou Admin).
+
+**A rotina** roda pelo cron das cobranças.
+
+**Refinamentos:**
+1. **O caixa da cobrança paga** casa pelo **lote**: o pagamento de cada conta de taxa guarda o lote (coluna nova `payable_payments.franchise_batch_id`, ajustada na 4021, que ainda não está na produção). Casar pelo texto da referência confundiu, no ensaio, um pagamento antigo da prova do sandbox, com o mesmo texto e a mesma data.
+2. **O faturado do mês** é somado à parte, de todas as linhas da cobrança mensal do mês. Por isso a conta do mês é uma conferência de verdade: uma linha de cobrança sem taxa nem conta de origem faz a diferença aparecer.
+3. **O "split a mais"** conta os pagamentos desde o 1º mês da unidade, mesmo no mês corrente.
+
+**A prova:**
+- **Ensaio:** `scripts/asaas-ensaio-asa6-conferencia.mjs`, 27/27.
+  - **O mês limpo** (setembro e outubro, com retido, a reter, crédito aceito depois da emissão, estorno depois do fechamento e duas cobranças pagas): zero divergência, e a conta fecha em R$ 0,00 nos dois meses.
+  - **Os 8 defeitos plantados** geram cada um a sua divergência. O resumo sai uma vez.
+  - **Ignorar:** reabre quando o valor muda.
+  - **Quem vê:** o Gerente vê a sua unidade; não vê Cambé; o Dentista não vê nada.
+  - **Desfeitos os defeitos,** todas fecham sozinhas.
+- **Provado quebrando:**
+
+  | Modo | Resultado |
+  |---|---|
+  | `dobro` | 3 falhas |
+  | `fora` | 1 falha |
+  | `baixa` | 1 falha |
+  | `soma` | 4 falhas |
+
+- **A 4021** continua 103/103.

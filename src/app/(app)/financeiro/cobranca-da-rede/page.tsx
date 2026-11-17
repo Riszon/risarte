@@ -4,6 +4,9 @@ import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { podeVerCobrancaDaRede, type LoteDaLista, type LoteLido, type SaldoAnterior } from "@/lib/finance/cobranca-da-rede";
 import { CobrancaDaRede } from "./cobranca-da-rede";
+import { ConferenciaDasTaxas, type ConferenciaLida } from "./conferencia";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Cobrança da rede" };
 
@@ -19,6 +22,7 @@ export default async function CobrancaDaRedePage(props: { searchParams: Promise<
   if (!podeVerCobrancaDaRede(session)) redirect("/financeiro");
   const sp = await props.searchParams;
   const lote = typeof sp.lote === "string" ? sp.lote : null;
+  const aba = sp.aba === "conferencia" ? "conferencia" : "meses";
   const saldoDe = typeof sp.saldo === "string" ? sp.saldo : null;
   const supabase = await createClient();
   const daRede = session.isAdminMaster || Object.values(session.rolesByClinic).flat().includes("finance_franchisor");
@@ -61,7 +65,26 @@ export default async function CobrancaDaRedePage(props: { searchParams: Promise<
           A unidade confere ou contesta na prévia; o Financeiro da Franqueadora aprova e emite pela conta da franqueadora.
         </p>
       </div>
-      {semMigracao ? (
+      <nav className="flex gap-1 border-b text-sm">
+        {(
+          [
+            ["meses", "Meses", "/financeiro/cobranca-da-rede"],
+            ["conferencia", "Conferência das taxas", "/financeiro/cobranca-da-rede?aba=conferencia"],
+          ] as const
+        ).map(([id, rotulo, href]) => (
+          <Link
+            key={id}
+            href={href}
+            aria-current={aba === id ? "page" : undefined}
+            className={cn("-mb-px border-b-2 px-3 py-2", aba === id ? "border-primary font-medium" : "border-transparent text-muted-foreground")}
+          >
+            {rotulo}
+          </Link>
+        ))}
+      </nav>
+      {aba === "conferencia" ? (
+        <Conferencia supabase={supabase} sp={sp} unidadeFixa={unidade} />
+      ) : semMigracao ? (
         <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           A cobrança mensal ainda não existe neste banco (falta a migração 4021).
         </p>
@@ -77,4 +100,27 @@ export default async function CobrancaDaRedePage(props: { searchParams: Promise<
       )}
     </div>
   );
+}
+
+/** ASA6 (4021a): a aba "Conferência das taxas". O banco decide quem vê o quê. */
+async function Conferencia({
+  supabase,
+  sp,
+  unidadeFixa,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  sp: Record<string, string | string[] | undefined>;
+  unidadeFixa: string | null;
+}) {
+  const mes = typeof sp.mes === "string" && /^\d{4}-\d{2}$/.test(sp.mes) ? `${sp.mes}-01` : null;
+  const unidade = unidadeFixa ?? (typeof sp.unidade === "string" ? sp.unidade : null);
+  const { data, error } = await supabase.rpc("franchise_reconciliation_read", { p_period: mes, p_clinic_id: unidade });
+  if (error) {
+    if (/does not exist|schema cache/i.test(error.message)) {
+      return <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">A conferência ainda não existe neste banco (falta a migração 4021a).</p>;
+    }
+    console.error("franchise reconciliation read failed:", error.message);
+    return <p className="text-sm text-muted-foreground">Não foi possível ler a conferência.</p>;
+  }
+  return <ConferenciaDasTaxas lido={data as ConferenciaLida} unidadeAberta={unidade} />;
 }

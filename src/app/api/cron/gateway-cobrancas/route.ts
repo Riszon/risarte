@@ -37,6 +37,8 @@ export async function GET(request: Request) {
   // das unidades com a configuração completa), o lembrete do prazo, a prévia
   // pronta para aprovação e os avisos de atraso. A EMISSÃO é sempre à mão.
   const cobrancaDaRede = await admin.rpc("_franchise_monthly_cron").then((x) => (x.error ? null : x.data));
+  // 4021a: a conferência das taxas (só confere e mostra; o resumo ao Financeiro só com divergência nova).
+  const conferencia = await admin.rpc("_franchise_reconcile_run").then((x) => (x.error ? null : x.data));
   return Response.json({
     ok: true,
     origem,
@@ -48,5 +50,6 @@ export async function GET(request: Request) {
     atraso,
     distrato,
     cobrancaDaRede,
+    conferencia,
   });
 }

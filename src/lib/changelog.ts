@@ -62,6 +62,29 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.462.0",
+    data: "2026-11-16",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4021a, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Conferência das taxas da rede",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Cobrança da rede › Conferência das taxas: a conta de cada mês por unidade (devido = retido pelo split + a reter + faturado + dispensado + ainda a cobrar, com a diferença em R$ 0,00) e as divergências, conferidas toda noite: linha cobrada duas vezes ou de fora, pago ou caixa diferente, split a mais e conta a pagar desatualizada. Cada uma fecha sozinha quando o problema some; o Financeiro recebe um resumo por dia só quando aparece divergência nova.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O Financeiro da Franqueadora ou o Admin Master podem ignorar uma divergência, com o motivo. Se o valor mudar, ela reabre. As ignoradas ficam numa lista própria, com quem ignorou e quando.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+    ],
+  },
+  {
     versao: "0.461.1",
     data: "2026-11-16",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4018a).

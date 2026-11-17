@@ -7678,7 +7678,32 @@ A decisão não se refaz.
 fechamento ou no pagamento) e quando sai a nota dos royalties. O riSZon guarda
 os dois jeitos, e nada trava por isso.
 
-**Evidência:** EV-361; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs`.
+**A conferência das taxas** *(desde a versão 0.462.0)* — aba **Conferência das
+taxas**, em Cobrança da rede:
+- **A conta do mês,** por unidade, do primeiro mês da cobrança mensal em diante:
+  devido = retido pelo split + a reter + faturado + dispensado + ainda a cobrar.
+  A **diferença** tem de ser R$ 0,00. Clique na unidade para ver as linhas.
+- **As divergências,** conferidas toda noite (e no "Conferir agora"):
+  - linha em dois donos (cobrada duas vezes, ou cobrada e retida);
+  - linha sem dono;
+  - pago diferente do faturado;
+  - caixa diferente;
+  - split a mais (acima de R$ 0,10);
+  - conta a pagar desatualizada;
+  - a diferença da conta do mês.
+
+  Cada uma mostra o caminho e **fecha sozinha** quando o problema some.
+- **Ignorar** (Financeiro da Franqueadora ou Admin Master): com o motivo. Se o
+  valor mudar, a divergência reabre. As ignoradas ficam numa lista própria, com
+  quem ignorou e quando.
+- **Em atraso com a rede:** as cobranças vencidas há 30 dias ou mais.
+- **O resumo do dia** vai ao Financeiro só quando aparece divergência nova.
+- **Quem vê:** o Gerente e o franqueado veem a conta e as divergências da própria
+  unidade, só leitura.
+- A conferência não muda nenhum lançamento.
+
+**Evidência:** EV-361 e EV-362; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
+`scripts/asaas-ensaio-asa6-conferencia.mjs`.
 
 ## 14. Checklists
 

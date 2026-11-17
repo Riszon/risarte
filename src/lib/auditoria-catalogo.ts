@@ -147,6 +147,8 @@ export const TABELAS: Record<string, string> = {
   "public.franchise_prior_balance_lines": "Saldo anterior da cobrança mensal (as contas)",
   "public.franchise_accrual_adjustments": "Ajuste de mês fechado da taxa da rede",
   "public.franchise_monthly_notices": "Avisos da cobrança mensal da rede",
+  "public.reconciliation_issues": "Conferência das taxas — divergências",
+  "public.reconciliation_runs": "Conferência das taxas — rodadas da rotina",
   "public.charge_splits": "Split de cobrança (o que foi enviado e liquidado)",
   "public.charge_split_updates": "Split de cobrança atualizado pela fila",
   "public.charge_refunds": "Pedido de estorno",

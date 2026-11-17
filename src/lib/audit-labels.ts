@@ -93,6 +93,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   franchise_prior_balance: "Saldo anterior da cobrança mensal (incluir, parcelar ou dispensar)",
   franchise_billing_settings: "Configuração da cobrança mensal da rede",
   franchise_billing_unit_settings: "Configuração da cobrança mensal da unidade",
+  reconciliation_issue: "Conferência das taxas: divergência ignorada",
   gateway_charges_panel: "Planilha do Painel de cobranças",
   franchise_payouts: "Planilha dos Repasses da franquia",
   // 4011 (ASA4, entrega 1): meio por parcela, dinheiro e permuta.

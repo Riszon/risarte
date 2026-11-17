@@ -47,6 +47,7 @@ const mensagem = (m: string): string => {
   if (m.includes("INSTALLMENTS_REQUIRED")) return "Para parcelar, escolha de 2 a 24 parcelas.";
   if (m.includes("INVALID_DECISION")) return "Escolha incluir, parcelar ou dispensar.";
   if (m.includes("PERIOD_CLOSED")) return "O mês está fechado na contabilidade.";
+  if (m.includes("ISSUE_NOT_OPEN")) return "Esta divergência não está mais aberta.";
   return "Não foi possível concluir. Tente de novo.";
 };
 
@@ -236,6 +237,22 @@ export async function decidirSaldoAnterior(
     p_installments: parcelas,
     p_reason: motivo,
   });
+  if (r.error) return { ok: false, error: r.error };
+  revalidatePath(CAMINHO);
+  return { ok: true };
+}
+
+// ---- a conferência das taxas (4021a) ----------------------------------------------
+
+export async function conferirAgora(): Promise<Resultado> {
+  const r = await rpc<{ novas: number; abertas: number; fechadas: number }>("franchise_reconciliation_run_now", {});
+  if (r.error) return { ok: false, error: r.error };
+  revalidatePath(CAMINHO);
+  return { ok: true, aviso: `Conferido: ${r.data?.novas ?? 0} nova(s), ${r.data?.abertas ?? 0} aberta(s), ${r.data?.fechadas ?? 0} fechada(s).` };
+}
+
+export async function ignorarDivergencia(issueId: string, motivo: string): Promise<Resultado> {
+  const r = await rpc("franchise_reconciliation_ignore", { p_issue_id: issueId, p_reason: motivo });
   if (r.error) return { ok: false, error: r.error };
   revalidatePath(CAMINHO);
   return { ok: true };
