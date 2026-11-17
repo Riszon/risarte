@@ -17,6 +17,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   (`clients_without_next_step`) e a meta usam a mesma.
 > - O Meu dia: `my_end_of_treatment_summary` (satisfação e notas técnicas do dentista).
 > - Ensaio 21/21 (`scripts/ensaio-fim-do-tratamento-0427.mjs`, provado quebrando). Não visto na tela.
+> - ✅ **0427 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: o prazo de 3 dias úteis, o reminded_at nas duas tarefas e as 3 portas fechadas para quem não está logado.
 
 > ## 🛒 0.478.0 — VENDA DIRETA V3: A AGENDA E O COMERCIAL ABREM O CAIXA; D5 (17/11/2026; sem migração)
 >
