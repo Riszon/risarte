@@ -400,6 +400,13 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (fim do tratamento, OC-00185) — PC Administrador (core 0.473.0, migração 0422; worktree `wt-fim-tratamento`)**
+
+- **Uma decisão por cliente** (bloco 0.473.0 no ESTADO). ⚠️ `answer_treatment_closure`
+  (4 parâmetros) e `_fechamento_reavaliar` (3) foram recriadas na 0422: ao
+  recriar, partir dela. ⚠️ Seguidor (`grouped_into`) não responde nem recebe
+  contato (GROUPED). Próximo: Etapa 4 (sessão da Jornada).
+
 **17/11/2026 (venda direta v3, VD3-3) — PC Administrador (core 0.471.0 → 0.472.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
 - **O Pix na janela** (bloco 0.472.0 no ESTADO). Publicado com o "pode publicar" do dono

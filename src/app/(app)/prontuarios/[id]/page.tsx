@@ -92,6 +92,11 @@ type FechamentoRow = {
   changed_by_coordinator: boolean;
   created_at: string;
   treatment_closure_contacts: { reached: boolean }[] | null;
+  // 0422: a decisão por cliente, as considerações e o horário ligado.
+  grouped_into: string | null;
+  dentist_notes: string | null;
+  wait_choice: "manter" | "antecipar" | null;
+  horario: { starts_at: string; status: string } | { starts_at: string; status: string }[] | null;
 };
 import { AppointmentFormDialog } from "../../agenda/appointment-form-dialog";
 import { loadDirectSaleContext, loadClientDirectSales } from "./direct-sale-loader";
@@ -222,6 +227,7 @@ import type {
 import {
   BRAZIL_TIME_ZONE,
   formatIsoDateBr,
+  isoDateIn,
   startOfTodayInBrazil,
   todayInBrazil,
 } from "@/lib/dates";
@@ -524,7 +530,7 @@ export default async function ClientDetailPage(
     supabase
       .from("treatment_closures")
       .select(
-        "id, scope, status, answer, asked_user_id, auto_yes, treatment_end, changed_by_coordinator, created_at, treatment_closure_contacts ( reached )"
+        "id, scope, status, answer, asked_user_id, auto_yes, treatment_end, changed_by_coordinator, created_at, treatment_closure_contacts ( reached ), grouped_into, dentist_notes, wait_choice, horario:appointments!treatment_closures_linked_appointment_id_fkey ( starts_at, status )"
       )
       .eq("client_id", id)
       .neq("status", "encerrado")
@@ -800,8 +806,15 @@ export default async function ClientDetailPage(
   );
 
   // 0418: o fim do tratamento (as tarefas abertas do fechamento).
-  const fechamentos: Fechamento[] = (fechamentoRows ?? []).map((f) => {
+  // 0422: uma decisão por cliente — o líder leva os escopos dos seguidores;
+  // um seguidor só aparece sozinho na reavaliação fora do plano (o nível da
+  // ortodontia ou da venda direta); a do plano é por procedimento, no cockpit.
+  const hojeBr = todayInBrazil();
+  const todosFechamentos: Fechamento[] = (fechamentoRows ?? []).map((f) => {
     const contatos = f.treatment_closure_contacts ?? [];
+    const ap = Array.isArray(f.horario) ? f.horario[0] : f.horario;
+    const horarioValido = ap && (ap.status === "scheduled" || ap.status === "confirmed") ? ap : null;
+    const seguidores = (fechamentoRows ?? []).filter((g) => g.grouped_into === f.id);
     return {
       id: f.id,
       scope: f.scope,
@@ -814,8 +827,34 @@ export default async function ClientDetailPage(
       createdAt: f.created_at,
       tentativas: contatos.length,
       tentativasSemSucesso: contatos.filter((c) => !c.reached).length,
+      groupedInto: f.grouped_into,
+      escopos: [f.scope, ...seguidores.map((g) => g.scope)],
+      dentistNotes: f.dentist_notes,
+      horario: horarioValido
+        ? {
+            startsAt: horarioValido.starts_at,
+            dias: Math.round(
+              (Date.parse(isoDateIn(new Date(horarioValido.starts_at))) - Date.parse(hojeBr)) / 86_400_000
+            ),
+          }
+        : null,
+      waitChoice: f.wait_choice,
     };
   });
+  const fechamentos = todosFechamentos.filter(
+    (f) => f.groupedInto === null || (f.status === "reavaliacao" && f.scope !== "plano")
+  );
+  // F1: o horário com o Coordenador que já existe, para a decisão em aberto.
+  const horarioAtual = fechamentos.some(
+    (f) => f.groupedInto === null && (f.status === "pergunta" || f.status === "coordenador")
+  )
+    ? await supabase
+        .rpc("closure_coordinator_slot", { p_client_id: client.id })
+        .then(({ data }) => {
+          const r = (Array.isArray(data) ? data[0] : data) as { starts_at: string; dias: number } | undefined;
+          return r ? { startsAt: r.starts_at, dias: r.dias } : null;
+        })
+    : null;
 
   // Was the client transferred away from the clinic the viewer belongs to?
   const currentClinicEntry = (clinicHistory ?? []).find((h) => !h.ended_at);
@@ -3122,7 +3161,9 @@ export default async function ClientDetailPage(
           ehCoordenador={session.isAdminMaster || clinicRoles.includes("clinical_coordinator")}
           ehRecepcao={session.isAdminMaster || clinicRoles.includes("receptionist")}
           clienteNaFase5={client.journey_phase === "treatment_start"}
-          hoje={todayInBrazil()}
+          hoje={hojeBr}
+          horarioAtual={horarioAtual}
+          clientName={client.full_name}
         />
         {/* OC-00062: o alerta diz O QUE foi marcado (ex.: "AIDS"). */}
         {anamnesisAlerts.map((a, i) => (

@@ -17,7 +17,11 @@ if (quebrar === "pergunta") sql = sql.replace("      v_asked, coalesce(v_auto, f
 // Sem quebra, a 0420 (a instalação não termina o plano) vai por cima: o
 // ensaio prova que a correção não quebrou nada da 0418.
 if (!quebrar) sql += "\n" + readFileSync(W + "supabase/migrations/0420_fim_do_tratamento_instalacao_ortodontica.sql", "utf8")
-  + "\n" + readFileSync(W + "supabase/migrations/0421_fim_do_tratamento_qualidade.sql", "utf8");
+  + "\n" + readFileSync(W + "supabase/migrations/0421_fim_do_tratamento_qualidade.sql", "utf8")
+  + "\n" + readFileSync(W + "supabase/migrations/0422_fim_do_tratamento_uma_decisao_por_cliente.sql", "utf8");
+// 0422: o Sim e o Não sei pedem considerações; o horário longe pede escolha.
+const NOTAS = quebrar ? "" : ", 'Considerações de ensaio para o Coordenador', 'manter'";
+const ASSINATURA = quebrar ? "uuid,text" : "uuid,text,text,text";
 if (quebrar && sql === readFileSync(W + "supabase/migrations/0418_fim_do_tratamento_o_motor.sql", "utf8")) throw new Error(`a quebra "${quebrar}" não achou o que quebrar: não mediu nada`);
 const c = await connect();
 let ok = 0, falhou = 0;
@@ -92,13 +96,13 @@ try {
 
   console.log("\n2) Permissões");
   await asUser(RECEP);
-  await espera("recepção não responde", () => c.query(`select public.answer_treatment_closure($1, 'sim')`, [f.id]), "NOT_ALLOWED");
+  await espera("recepção não responde", () => c.query(`select public.answer_treatment_closure($1, 'sim'${NOTAS})`, [f.id]), "NOT_ALLOWED");
   await asUser(COORD);
-  await espera("Coordenador não responde 'Não sei' pelo dentista", () => c.query(`select public.answer_treatment_closure($1, 'nao_sei')`, [f.id]), "COORDINATOR_DECIDES");
+  await espera("Coordenador não responde 'Não sei' pelo dentista", () => c.query(`select public.answer_treatment_closure($1, 'nao_sei'${NOTAS})`, [f.id]), "COORDINATOR_DECIDES");
   await asUser(COORD);
   await espera("só o Admin marca 'Tratamento Finalizado' à mão", () => c.query(`select public.set_journey_status($1, 'treatment_finished')`, [D]), "NOT_ALLOWED");
   await asSuper();
-  const anon = await one(`select has_function_privilege('anon', 'public.answer_treatment_closure(uuid,text)', 'execute') a,
+  const anon = await one(`select has_function_privilege('anon', 'public.answer_treatment_closure(${ASSINATURA})', 'execute') a,
                                  (select bool_or(has_function_privilege('anon', p.oid, 'execute')) from pg_proc p
                                    where p.proname = 'register_closure_contact' and p.pronamespace = 'public'::regnamespace) b,
                                  has_function_privilege('authenticated', 'public._tratamento_em_aberto(uuid)', 'execute') cc,
@@ -127,7 +131,7 @@ try {
   await conclui(B, DENT);
   f = await fech(B);
   await asUser(DENT);
-  await c.query(`select public.answer_treatment_closure($1, 'sim')`, [f.id]);
+  await c.query(`select public.answer_treatment_closure($1, 'sim'${NOTAS})`, [f.id]);
   await asSuper();
   f = await fech(B);
   check(f.status === "reavaliacao" && (await cli(B)).journey_phase === "reevaluation", "status 'reavaliacao' e cliente na Fase 6");
@@ -145,7 +149,7 @@ try {
   check(f && f.status === "pergunta", "o fim do plano abre a pergunta");
   check(cc.journey_status === "in_treatment", `reabrir sessão volta a 'Em Tratamento' (${cc.journey_status})`);
   await asUser(DENT);
-  await c.query(`select public.answer_treatment_closure($1, 'sim')`, [f.id]);
+  await c.query(`select public.answer_treatment_closure($1, 'sim'${NOTAS})`, [f.id]);
   await asSuper();
   check((await cli(C)).journey_phase === "treatment_start", "com tratamento sobrando, a reavaliação é dentro da Fase 5");
   f = await fech(C);
@@ -157,7 +161,7 @@ try {
   await asUser(DENT);
   await c.query(`select public.answer_treatment_closure($1, 'nao')`, [f.id]);
   await asUser(COORD);
-  await c.query(`select public.answer_treatment_closure($1, 'sim')`, [f.id]);
+  await c.query(`select public.answer_treatment_closure($1, 'sim'${NOTAS})`, [f.id]);
   await asSuper();
   f = await fech(D);
   check(f.status === "reavaliacao" && f.changed_by_coordinator, "a troca vale e fica marcada");

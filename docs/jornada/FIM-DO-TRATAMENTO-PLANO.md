@@ -458,6 +458,26 @@ data da última sessão de cada cliente.
 Cada etapa: ensaio no treino em transação desfeita, testes provados quebrando,
 manual e novidades; a migração vai para a produção pelo dono antes do push.
 
+### 12.2. Correção do relato OC-00185 (0.473.0, migração 0422)
+
+O dentista viu **três** decisões "necessita de reavaliação?" para o mesmo
+cliente. Três causas confirmadas: (1) uma pergunta por plano/venda, sem
+agrupar; (2) a venda direta abria a pergunta sem estar fechada; (3) concluindo
+pela ficha, a janela não abria. Aprovado pelo dono:
+
+- **E1.** Uma decisão por cliente; o que termina depois entra nela, mesmo já
+  respondida. Cada plano mantém o seu fechamento (qualidade por plano).
+- **E2.** As repetidas existentes se juntam na mais prudente (Sim > Não sei >
+  Não > sem resposta).
+- Venda direta só depois de fechada; a janela obrigatória pelo Atendimento e
+  pela ficha, e sempre que quem responde abre a ficha.
+- **F1.** O próximo horário (agendado/confirmado) com quem é Coordenador na
+  unidade, de qualquer tipo, fica ligado à decisão: não se agenda outro.
+- **F2/F3.** Considerações de quem executou, obrigatórias no Sim e no Não sei
+  (mínimo 10), opcionais no Não; o Coordenador não edita.
+- **F4/F5.** Mais de 30 dias = longe: quem responde escolhe manter ou
+  antecipar; o Coordenador também pode pedir a reavaliação mais próxima.
+
 ### 12.1. Resultado da Etapa 1 (levantamento, 16/11/2026, só leitura)
 
 Script só de leitura, pela chave de serviço, contando por unidade; nenhum dado

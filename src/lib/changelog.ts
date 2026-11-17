@@ -62,6 +62,49 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.473.0",
+    data: "2026-11-17",
+    migracao: "0422",
+    titulo: "Fim do tratamento: uma decisão por cliente, com as considerações e o horário do Coordenador",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O cliente que terminou mais de uma coisa (o plano e uma venda direta, por exemplo) recebia uma decisão \"necessita de reavaliação?\" para cada uma. Agora é uma decisão só, que diz tudo o que terminou; o que terminar depois entra nela. As decisões repetidas que já existiam foram juntadas na mais prudente.",
+        papeis: ["dentist", "clinical_coordinator", "receptionist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Uma venda direta ainda em aberto (sem termo assinado ou pagamento confirmado) não abre mais a decisão do fim do tratamento: ela espera a venda ser fechada.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Concluindo o atendimento pela ficha, a janela da decisão também abre — e abre de novo sempre que quem precisa responder entra na ficha.",
+        papeis: ["dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No Sim e no Não sei, quem executou escreve as considerações para o Coordenador: o que olhar com mais atenção na reavaliação. Elas aparecem na ficha.",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Se o cliente já tem horário com o Coordenador, a janela mostra a data e quantos dias faltam, e a reavaliação fica nesse horário (a Recepção não marca outro). Com mais de 30 dias, dá para manter ou pedir uma reavaliação mais próxima — também pelo Coordenador, na ficha.",
+        papeis: ["dentist", "clinical_coordinator", "receptionist"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.472.1",
     data: "2026-11-17",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4018b, só o banco).

@@ -3631,6 +3631,15 @@ do cliente, no painel **Precisa de atenção**, e no seu sino:
 Enquanto nada aconteceu, você pode **mudar a resposta** de quem executou
 (**Mudar para Sim** ou **Mudar para Não**).
 
+**Uma decisão por cliente (desde a 0.473.0).** O cliente tem **uma** decisão
+do fim aberta por vez; a linha diz tudo o que terminou ("Terminou: plano e
+venda direta"). As **considerações de quem executou** aparecem na linha —
+leia antes da reavaliação. Se o cliente **já tinha horário com você**, a
+reavaliação é nele e a linha mostra a data e os dias que faltam; com mais de
+30 dias, aparece o aviso e o botão **Pedir reavaliação mais próxima** (a
+Recepção é avisada com prioridade). Na reavaliação, cada plano continua com
+o seu controle de qualidade.
+
 **O controle de qualidade em cinco níveis (desde a 0.471.0).** Na
 reavaliação, você avalia **cada procedimento** do plano que terminou, no
 cockpit de avaliação (o botão **Avaliar procedimentos** da ficha leva até
@@ -4159,6 +4168,26 @@ no sino, até alguém responder. Se o plano tiver um procedimento marcado como
 aparece: a reavaliação já fica pedida. O Coordenador pode mudar a sua
 resposta enquanto o próximo passo não aconteceu. A revisão e a refação pedidas
 pelo controle de qualidade **não** repetem a pergunta.
+
+**Uma decisão por cliente (desde a 0.473.0, relato OC-00185).**
+
+- **Uma só.** Se o cliente terminou mais de uma coisa (por exemplo, o plano e
+  uma venda direta), a janela diz tudo o que terminou e você responde **uma
+  vez**. O que terminar depois, enquanto a decisão está aberta, **entra nela**
+  — mesmo que você já tenha respondido.
+- **Venda direta só depois de fechada.** Uma venda direta ainda em aberto
+  (sem termo assinado ou pagamento confirmado) não abre a pergunta.
+- **Pelo Atendimento ou pela ficha.** Concluindo pela ficha, a janela abre
+  igual; e abre de novo sempre que você entra na ficha com a decisão
+  pendente.
+- **Considerações para o Coordenador.** No **Sim** e no **Não sei**, escreva
+  o que o Coordenador deve olhar com mais atenção (pelo menos 10 letras). No
+  **Não**, é opcional. O Coordenador lê, mas não edita.
+- **O cliente já tem horário com o Coordenador?** A janela mostra a data, a
+  hora e quantos dias faltam. Respondendo **Sim**, a reavaliação fica **nesse
+  horário** — a Recepção não marca outro. Se faltam **mais de 30 dias**, a
+  janela avisa e pede para escolher: **manter** o horário ou **pedir uma
+  reavaliação mais próxima** (a Recepção é avisada com prioridade).
 
 > **O kit do atendimento e o mês fechado** (desde a 0.458.0, relato OC-00181).
 > O kit de atendimento (gorro, babador) é baixado no **dia do atendimento**.
@@ -5358,7 +5387,8 @@ sucesso do tratamento é o **Coordenador Clínico**. Por isso o fim de cada plan
 abre uma tarefa com dono, que só some quando é resolvida.
 
 **Quando acontece.** Na última sessão concluída de cada plano: o plano
-original, cada plano complementar, a venda direta. Na ortodontia, na **entrega
+original, cada plano complementar, a venda direta (desde a 0.473.0, só a venda
+**fechada**). Na ortodontia, na **entrega
 das contenções** — concluir a **instalação** do aparelho não abre a pergunta
 (desde a 0.470.0); num plano com instalação e outros procedimentos, ela abre
 quando os outros terminam. A situação do plano passa sozinha para **Em tratamento** (na
@@ -5374,9 +5404,13 @@ ele passa a **"Tratamento Finalizado"** e sai da Fase 5 conforme a resposta.
 
 **O passo a passo:**
 
-1. **Quem executou responde** (janela no Atendimento; ver 6.4): *"Este cliente
-   necessita de consulta de reavaliação com o Coordenador Clínico?"*
-2. **Sim** → a Recepção agenda a reavaliação. Sem outro tratamento, o cliente
+1. **Quem executou responde** (janela no Atendimento ou na ficha; ver 6.4):
+   *"Este cliente necessita de consulta de reavaliação com o Coordenador
+   Clínico?"* — **uma decisão por cliente**, com as considerações para o
+   Coordenador no Sim e no Não sei (desde a 0.473.0).
+2. **Sim** → a Recepção agenda a reavaliação — **a não ser que o cliente já
+   tenha horário com o Coordenador**: aí a reavaliação é nele (mais de 30 dias:
+   manter ou pedir uma mais próxima). Sem outro tratamento, o cliente
    vai para a **Reavaliação**; com outro tratamento, a consulta acontece dentro
    da Fase 5.
 3. **Não** → o **Coordenador** contata o cliente e registra (ver 6.2): chamar

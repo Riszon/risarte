@@ -6,6 +6,12 @@
 // quando é resolvida. Quem decide o que acontece é o banco
 // (`answer_treatment_closure`, `register_closure_contact`); este arquivo só
 // traduz as situações, diz quem vê cada botão e transforma as recusas em frases.
+//
+// 0422 (relato OC-00185): UMA decisão por cliente. Cada plano continua com o
+// seu fechamento (a qualidade da 0421 é por plano), mas só um é a decisão — o
+// líder; os outros (`groupedInto`) acompanham a resposta dele.
+
+import { formatInBrazil } from "@/lib/dates";
 
 export type EscopoDoFechamento = "plano" | "venda_direta" | "ortodontia" | "urgencia";
 
@@ -36,7 +42,54 @@ export type Fechamento = {
   /** Tentativas de contato registradas e quantas falharam. */
   tentativas: number;
   tentativasSemSucesso: number;
+  /** 0422: o líder da decisão (nulo = este É a decisão do cliente). */
+  groupedInto: string | null;
+  /** 0422: tudo o que terminou nesta decisão (o próprio e os seguidores). */
+  escopos: EscopoDoFechamento[];
+  /** 0422 (F2): as considerações de quem executou, para o Coordenador. */
+  dentistNotes: string | null;
+  /** 0422 (F1): o horário com o Coordenador ligado à decisão. */
+  horario: HorarioComCoordenador | null;
+  /** 0422 (F4/F5): manter o horário distante ou pedir um mais próximo. */
+  waitChoice: "manter" | "antecipar" | null;
 };
+
+/** 0422 (F1): o próximo horário do cliente com quem é Coordenador Clínico. */
+export type HorarioComCoordenador = { startsAt: string; dias: number };
+
+/** 0422 (F4): acima disto, o horário com o Coordenador é "longe demais". */
+export const LIMITE_DIAS_DO_HORARIO = 30;
+
+/** 0422 (F2): o mínimo das considerações no Sim e no Não sei. */
+export const CONSIDERACOES_MINIMO = 10;
+
+export function horarioLonge(h: HorarioComCoordenador | null): boolean {
+  return h !== null && h.dias > LIMITE_DIAS_DO_HORARIO;
+}
+
+/** "20/11 às 14:00 — faltam 3 dias" (no relógio do Brasil). */
+export function textoDoHorario(h: HorarioComCoordenador): string {
+  const quando = formatInBrazil(new Date(h.startsAt), {
+    day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).replace(", ", " às ");
+  const falta = h.dias <= 0 ? "hoje" : h.dias === 1 ? "falta 1 dia" : `faltam ${h.dias} dias`;
+  return `${quando} — ${falta}`;
+}
+
+/** F2: o Sim e o Não sei respondidos na pergunta pedem as considerações. */
+export function pedeConsideracoes(
+  status: SituacaoDoFechamento,
+  resposta: RespostaDoFechamento
+): boolean {
+  return status === "pergunta" && (resposta === "sim" || resposta === "nao_sei");
+}
+
+/** A lista do que terminou, para a frase da decisão. */
+export function oQueTerminou(escopos: EscopoDoFechamento[]): string {
+  const nomes = escopos.map((e) => ESCOPO_LABEL[e]);
+  if (nomes.length <= 1) return nomes[0] ?? "";
+  return `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
+}
 
 export const PERGUNTA_DO_FIM =
   "Este cliente necessita de consulta de reavaliação com o Coordenador Clínico?";
@@ -128,7 +181,7 @@ export function tituloDoFechamento(f: Pick<Fechamento, "status" | "scope">): str
 
 /** A frase de baixo da linha: o que terminou e o que falta. */
 export function detalheDoFechamento(f: Fechamento): string {
-  const o = `Terminou: ${ESCOPO_LABEL[f.scope]}.`;
+  const o = `Terminou: ${oQueTerminou(f.escopos.length > 0 ? f.escopos : [f.scope])}.`;
   const fim = f.treatmentEnd ? " Não sobra outro tratamento." : " Ainda há tratamento em andamento.";
   switch (f.status) {
     case "pergunta":
@@ -136,6 +189,10 @@ export function detalheDoFechamento(f: Fechamento): string {
     case "coordenador":
       return `${o} Quem executou não soube definir; o Coordenador decide.`;
     case "reavaliacao":
+      if (f.horario && f.waitChoice !== "antecipar")
+        return `${o} A reavaliação é no horário com o Coordenador: ${textoDoHorario(f.horario)}.`;
+      if (f.horario && f.waitChoice === "antecipar")
+        return `${o} Foi pedida uma reavaliação antes do horário de ${textoDoHorario(f.horario)}: a Recepção agenda.`;
       return f.autoYes
         ? `${o} O plano tem procedimento de reavaliação obrigatória: a Recepção agenda a consulta.`
         : `${o} A Recepção agenda a consulta de reavaliação.`;
@@ -156,9 +213,11 @@ export function detalheDoFechamento(f: Fechamento): string {
  * quem executou; e o Coordenador muda a resposta enquanto nada aconteceu (D21).
  */
 export function botoesDaResposta(
-  f: Pick<Fechamento, "status" | "answer" | "askedUserId" | "tentativas">,
+  f: Pick<Fechamento, "status" | "answer" | "askedUserId" | "tentativas"> & { groupedInto?: string | null },
   quem: { userId: string; ehCoordenador: boolean; clienteNaFase5: boolean }
 ): RespostaDoFechamento[] {
+  // 0422: quem segue a decisão do cliente não tem resposta própria.
+  if (f.groupedInto) return [];
   const executor = f.askedUserId !== null && f.askedUserId === quem.userId;
   if (f.status === "pergunta") {
     if (executor) return ["sim", "nao", "nao_sei"];
@@ -196,6 +255,12 @@ export function retornoSugerido(hojeIso: string, meses = MESES_DO_RETORNO_SUGERI
 /** As recusas do banco, em português de quem opera. */
 export function recusaDoFechamento(mensagem: string): string {
   const m = mensagem ?? "";
+  if (m.includes("GROUPED")) return "Esta parte segue a decisão do cliente: responda na decisão principal.";
+  if (m.includes("NOTES_REQUIRED"))
+    return `Escreva as considerações para o Coordenador (pelo menos ${CONSIDERACOES_MINIMO} letras).`;
+  if (m.includes("FAR_APPOINTMENT_CHOICE"))
+    return "O horário com o Coordenador está longe: escolha manter ou pedir uma reavaliação mais próxima.";
+  if (m.includes("INVALID_CHOICE")) return "Escolha manter o horário ou pedir uma reavaliação mais próxima.";
   if (m.includes("NOT_ALLOWED")) return "Só quem executou o procedimento ou o Coordenador Clínico responde.";
   if (m.includes("COORDINATOR_DECIDES")) return "O Coordenador decide entre Sim e Não.";
   if (m.includes("ALREADY_CLOSED")) return "Esta tarefa já foi resolvida. Atualize a tela.";

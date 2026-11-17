@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronRight, CircleHelp, ClipboardCheck, PhoneCall } from "lucide-react";
+import { CalendarClock, ChevronRight, CircleHelp, ClipboardCheck, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
   desfechosDoContato,
   detalheDoFechamento,
   ESCALA_DE_SATISFACAO,
+  horarioLonge,
   NIVEIS_DE_QUALIDADE,
   NIVEL_LABEL,
   nivelPedeObservacao,
@@ -32,19 +33,26 @@ import {
   type CanalDoContato,
   type DesfechoDoContato,
   type Fechamento,
+  type HorarioComCoordenador,
   type NivelDeQualidade,
   type RespostaDoFechamento,
 } from "@/lib/fim-do-tratamento";
 import {
+  pedirReavaliacaoMaisProxima,
   registrarContato,
   registrarReavaliacao,
-  responderFechamento,
+  type PerguntaPendente,
 } from "./fim-do-tratamento-actions";
+import { PerguntaDoFimDialog } from "./pergunta-do-fim-dialog";
 
 /**
  * O FIM DO TRATAMENTO NA FICHA (0418): as tarefas abertas do fechamento, como
  * linhas do painel "Precisa de atenção". Substitui a pergunta antiga (0019),
  * que nunca chegou a abrir. Cada linha só some quando a tarefa é resolvida.
+ *
+ * 0422 (OC-00185): uma decisão por cliente. A decisão pendente de quem abre
+ * a ficha abre sozinha (obrigatória); os botões das linhas abrem a mesma
+ * janela, com as considerações e o horário com o Coordenador.
  */
 export function FimDoTratamento({
   clientId,
@@ -54,6 +62,8 @@ export function FimDoTratamento({
   ehRecepcao,
   clienteNaFase5,
   hoje,
+  horarioAtual,
+  clientName,
 }: {
   clientId: string;
   fechamentos: Fechamento[];
@@ -63,19 +73,43 @@ export function FimDoTratamento({
   clienteNaFase5: boolean;
   /** Hoje no Brasil (aaaa-mm-dd), vindo do servidor. */
   hoje: string;
+  /** 0422 (F1): o próximo horário do cliente com o Coordenador, se houver. */
+  horarioAtual: HorarioComCoordenador | null;
+  clientName: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [contatoDe, setContatoDe] = useState<Fechamento | null>(null);
   const [reavaliacaoDe, setReavaliacaoDe] = useState<Fechamento | null>(null);
+  // A janela aberta por um botão da linha (não obrigatória).
+  const [respostaDe, setRespostaDe] = useState<{ f: Fechamento; r: RespostaDoFechamento } | null>(null);
+  // A decisão já respondida aqui (até a ficha recarregar, não reabre).
+  const [respondida, setRespondida] = useState<string | null>(null);
 
   if (fechamentos.length === 0) return null;
 
-  function responder(f: Fechamento, r: RespostaDoFechamento) {
+  function pendente(f: Fechamento): PerguntaPendente {
+    return {
+      id: f.id,
+      scope: f.scope,
+      escopos: f.escopos,
+      clientId,
+      clientName,
+      treatmentEnd: f.treatmentEnd,
+      horario: horarioAtual,
+    };
+  }
+
+  // 0422: a decisão de quem executou abre sozinha quando essa pessoa abre a ficha.
+  const obrigatoria = fechamentos.find(
+    (f) => f.groupedInto === null && f.status === "pergunta" && f.askedUserId === userId && f.id !== respondida
+  );
+
+  function pedirMaisProxima(f: Fechamento) {
     startTransition(async () => {
-      const res = await responderFechamento(clientId, f.id, r);
+      const res = await pedirReavaliacaoMaisProxima(clientId, f.id);
       if (res.ok) {
-        toast.success("Resposta registrada.");
+        toast.success("Pedido registrado. A Recepção foi avisada para agendar com prioridade.");
         router.refresh();
       } else toast.error(res.error ?? "Algo deu errado.");
     });
@@ -88,8 +122,11 @@ export function FimDoTratamento({
         const urgente = f.status === "pergunta" || f.status === "coordenador" || f.status === "contato";
         const cor = urgente ? "text-destructive" : "text-amber-700 dark:text-amber-300";
         const Icone = f.status === "contato" ? PhoneCall : f.status === "reavaliacao" ? ClipboardCheck : CircleHelp;
+        // 0422 (F1): com horário ligado (e sem pedido de antecipar), não se agenda outro.
+        const temHorario = f.horario !== null && f.waitChoice !== "antecipar";
+        const seguidor = f.groupedInto !== null;
         const agenda =
-          ehRecepcao && f.status === "reavaliacao"
+          ehRecepcao && f.status === "reavaliacao" && !temHorario && !seguidor
             ? { href: `/agenda?cliente=${clientId}&tipo=reevaluation`, rotulo: "Agendar reavaliação" }
             : ehRecepcao && f.status === "agendar_avaliacao"
               ? { href: `/agenda?cliente=${clientId}&tipo=evaluation`, rotulo: "Agendar avaliação" }
@@ -106,6 +143,17 @@ export function FimDoTratamento({
                 {detalheDoFechamento(f)}
                 {f.changedByCoordinator && " A resposta foi mudada pelo Coordenador."}
               </p>
+              {f.status === "reavaliacao" && f.horario && horarioLonge(f.horario) && f.waitChoice !== "antecipar" && (
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300">
+                  <CalendarClock className="size-3.5 shrink-0" aria-hidden />
+                  O horário está longe ({f.horario.dias} dias). Dá para pedir uma reavaliação mais próxima.
+                </p>
+              )}
+              {f.dentistNotes && !seguidor && (
+                <p className="mt-1 rounded bg-muted/50 px-2 py-1 text-xs">
+                  <span className="font-medium">Considerações de quem executou:</span> {f.dentistNotes}
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 flex-wrap gap-1.5">
               {botoes.map((r) => (
@@ -114,7 +162,7 @@ export function FimDoTratamento({
                   size="sm"
                   variant={r === "sim" ? "default" : r === "nao" ? "outline" : "ghost"}
                   disabled={isPending}
-                  onClick={() => responder(f, r)}
+                  onClick={() => setRespostaDe({ f, r })}
                 >
                   {f.status === "reavaliacao" || f.status === "contato"
                     ? r === "sim"
@@ -123,6 +171,11 @@ export function FimDoTratamento({
                     : RESPOSTA_LABEL[r]}
                 </Button>
               ))}
+              {f.status === "reavaliacao" && ehCoordenador && !seguidor && temHorario && (
+                <Button size="sm" variant="outline" disabled={isPending} onClick={() => pedirMaisProxima(f)}>
+                  Pedir reavaliação mais próxima
+                </Button>
+              )}
               {f.status === "contato" && ehCoordenador && (
                 <Button size="sm" disabled={isPending} onClick={() => setContatoDe(f)}>
                   Registrar contato
@@ -130,7 +183,7 @@ export function FimDoTratamento({
               )}
               {/* 0421: a reavaliação. Plano: por procedimento, no cockpit;
                   ortodontia e venda direta: um nível, aqui mesmo. */}
-              {f.status === "reavaliacao" && ehCoordenador && f.scope === "plano" && (
+              {f.status === "reavaliacao" && ehCoordenador && f.scope === "plano" && !seguidor && (
                 <Link
                   href={`/avaliacao/${clientId}`}
                   className="inline-flex items-center gap-0.5 rounded-md border bg-background px-2 py-1 text-xs font-medium hover:bg-muted"
@@ -168,6 +221,25 @@ export function FimDoTratamento({
         fechamento={reavaliacaoDe}
         onClose={() => setReavaliacaoDe(null)}
       />
+      {/* A decisão obrigatória de quem executou; senão, a aberta por um botão. */}
+      {obrigatoria ? (
+        <PerguntaDoFimDialog
+          key={obrigatoria.id}
+          pergunta={pendente(obrigatoria)}
+          onRespondida={() => setRespondida(obrigatoria.id)}
+        />
+      ) : (
+        <PerguntaDoFimDialog
+          key={respostaDe ? `${respostaDe.f.id}:${respostaDe.r}` : "nenhuma"}
+          pergunta={respostaDe ? pendente(respostaDe.f) : null}
+          respostas={respostaDe ? botoesDaResposta(respostaDe.f, { userId, ehCoordenador, clienteNaFase5 }) : []}
+          status={respostaDe?.f.status ?? "pergunta"}
+          respostaInicial={respostaDe?.r ?? null}
+          obrigatoria={false}
+          onCancelar={() => setRespostaDe(null)}
+          onRespondida={() => setRespostaDe(null)}
+        />
+      )}
     </>
   );
 }

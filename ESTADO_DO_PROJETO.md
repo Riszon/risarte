@@ -2,6 +2,27 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🩺 0.473.0 — FIM DO TRATAMENTO: UMA DECISÃO POR CLIENTE (17/11/2026; migração 0422; relato OC-00185)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md`, 12.2. Defeito confirmado: uma
+> pergunta por plano/venda sem agrupar; venda direta não fechada abria pergunta;
+> sem janela pelo caminho da ficha.
+> - ⚠️ **Líder e seguidores:** `treatment_closures.grouped_into`. Só o líder é a
+>   decisão (índice único `treatment_closures_one_decision`); o gatilho
+>   `treatment_closure_sync_group` espelha o líder nos seguidores e promove um
+>   seguidor quando o líder sai como reavaliado/reaberto. A qualidade continua
+>   por plano (cada fechamento encerra o seu).
+> - ⚠️ **`answer_treatment_closure` tem 4 parâmetros** (considerações e a escolha
+>   manter/antecipar); `_fechamento_reavaliar` tem 3. Recriadas na 0422: ao
+>   recriar, partir dela. Novas: `_fechamento_do_plano`, `_horario_com_coordenador`,
+>   `closure_coordinator_slot`, `request_sooner_reevaluation`, gatilho
+>   `treatment_closure_on_direct_sale` (venda direta só abre ao virar `concluida`).
+> - Horário com o Coordenador (F1): o próximo agendado/confirmado com quem é
+>   Coordenador na unidade, de qualquer tipo; > 30 dias pede manter/antecipar.
+> - Ensaio 25/25 (`scripts/ensaio-fim-do-tratamento-0422.mjs`, provado
+>   quebrando), 0418 com 0420+0421+0422 35/35, 0421 com a 0422 20/20; régua
+>   provada quebrando. Não visto na tela.
+>
 > ## 💳 0.472.0 — VENDA DIRETA V3, VD3-3: O PIX NA JANELA (17/11/2026; sem migração)
 >
 > Plano e decisões P1–P3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §8. EV-371.
