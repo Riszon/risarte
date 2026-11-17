@@ -126,6 +126,7 @@ try {
   const parcelas = await todos(
     `select i.id, i.amount_cents, i.client_id from public.payment_installments i
       where i.clinic_id = $1 and i.status = 'em_aberto' and i.amount_cents >= 5000 and i.client_id is not null
+        and coalesce(i.payment_method, '') not in ('dinheiro', 'permuta', 'cartao_parcelado', 'cartao_parcelado_asaas', 'credito_recorrente', 'deposito_avista')
         and not exists (select 1 from public.charges ch where ch.payment_installment_id = i.id
                          and ch.status in ('emitindo','emitida','vencida','paga','liquidada','erro_emissao','externa'))
       order by i.amount_cents limit 6`,

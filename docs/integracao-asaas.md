@@ -5487,7 +5487,7 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 - **A prévia de outubro** (conferida num ensaio desfeito): tecnologia R$ 250,00, SDR R$ 350,00 e 12 linhas "a cobrar" com a origem e o paciente. Total R$ 727,28.
 - **O pagamento:** simulado por `scripts/asaas-sandbox-pagar-cobranca-mensal.mjs "Risarte Cambé - Centro" --confirmar`.
 
-## 21. ASA7 — As peças que preparam o piloto: PLANO (17/11/2026; AGUARDA APROVAÇÃO)
+## 21. ASA7 — As peças que preparam o piloto: PLANO (17/11/2026; APROVADO com 1a–6a em 17/11/2026 — 21.6)
 
 **O que entra:** só o que pode ser construído e provado no **sandbox**, antes de qualquer chave de produção. A chave de produção, o interruptor ligado e a primeira unidade de verdade **não entram**: cada um espera a sua aprovação, na hora.
 
@@ -5575,3 +5575,14 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 - **A tela:** a aba das divergências, o botão do levantamento, a cópia e o interruptor.
 - **O documento:** o roteiro da homologação.
 - **Depois dela:** a 4019 e a 4019b, ajustadas pelo levantamento, e então o piloto em Londrina.
+
+### 21.6 Aprovação (17/11/2026)
+
+O dono aprovou o plano com as recomendações **1a, 2a, 3a, 4a, 5a e 6a**:
+1. O interruptor: liga só o Admin Master, com motivo; cada unidade continua precisando da própria prontidão.
+2. O levantamento é obrigatório: sem ele, a unidade não fica "Pronta para cobrar".
+3. A conciliação diária: toda noite, 3 dias para trás, na aba "Divergências com o Asaas" do Painel de cobranças; um resumo por dia ao Financeiro só quando aparecer divergência nova.
+4. Quem vê: o Financeiro da Franqueadora e o Admin Master veem tudo; o Gerente e o franqueado, só a própria unidade, sem ignorar.
+5. Copiar de outra unidade: só os blocos de 21.2, item 5; nunca as taxas.
+6. A lista de IPs autorizados continua desligada, sem IP fixo.
+

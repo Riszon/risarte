@@ -9,7 +9,16 @@
 // sem avisar ninguém; `--quebrar=lista` deixa a lista abrir depois de revogada.
 // Os quatro têm de reprovar o ensaio.
 import { createHash, randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync as lerArquivo } from "node:fs";
+// As migrações antigas, reaplicadas aqui, redefinem CHECKs que os dados das
+// migrações seguintes já não cumprem (ex.: o 'encerrada' da 4017a, as origens
+// novas do pacote de assinatura). Dentro da transação desfeita, o CHECK
+// reaplicado entra "not valid": vale para as linhas novas, não reconfere as antigas.
+const semValidar = (sql) => sql.replace(/(alter table[^;]*?add constraint[^;]*?check\s*\([^;]*\))\s*;/gis, "$1 not valid;");
+const readFileSync = (arq, cod) => {
+  const s = lerArquivo(arq, cod);
+  return String(arq).includes("migrations") ? semValidar(s) : s;
+};
 import { connect } from "./test-db.mjs";
 
 const ARQ = "supabase/migrations/4015_asa4_forma2_todos_os_boletos_agora.sql";
@@ -91,6 +100,9 @@ try {
     conf(`a 4015 roda duas vezes sem erro (${e.message})`, false);
   }
   // 4017 (renegociação assinada) redefine parte da 4015: o ensaio roda por cima dela.
+  // A 4017 reaplicada não conhece o 'encerrada' (criado pela 4017a); dentro da transação
+  // desfeita, a renegociação encerrada do treino passa a 'cancelada' antes da reaplicação.
+  await c.query("update public.payment_renegotiations set status = 'cancelada' where status = 'encerrada'");
   for (const depois of ["4017_asa4_renegociacao_assinada.sql", "4017a_asa4_excecao_cancelar_venda_com_acordo.sql", "4018_asa4_mensalidades_pelo_asaas.sql"]) await c.query(readFileSync(`supabase/migrations/${depois}`, "utf8"));
   if (QUEBRAR === "trava") {
     await c.query("drop trigger if exists payment_installments_charge_lock on public.payment_installments");
@@ -241,9 +253,10 @@ try {
   conf("cancelado pela operação, o boleto da parcela que continua volta pela rotina", (await todos("select 1 from public._auto_charge_due(null, null, $1, 100) where installment_id = $2", [v, p5.id])).length === 1);
   await c.query("update public.charges set status = 'cancelada', cancelled_at = now(), cancelled_by = $2 where id = $1", [p4.charge_id, P.gerente]);
   conf("cancelado À MÃO, não volta sozinho", (await todos("select 1 from public._auto_charge_due(null, null, $1, 100) where installment_id = $2", [v, p4.id])).length === 0);
-  // O aviso de reenvio, um por dia.
-  const avisos = (await um("select count(*)::int n from public.notifications where title = 'A lista de boletos mudou: reenvie o link' and user_id = $1", [P.gerente])).n;
-  conf("a lista mudou: aviso ao Gerente e a quem fechou, uma vez no dia", avisos === 1 && (await um("select count(*)::int n from public.notifications where title = 'A lista de boletos mudou: reenvie o link' and user_id = $1", [P.recepcao])).n === 1);
+  // O aviso de reenvio, um por dia (só os desta transação: now() é o início dela;
+  // o Gerente de teste recebe avisos reais de outras unidades no treino).
+  const avisos = (await um("select count(*)::int n from public.notifications where title = 'A lista de boletos mudou: reenvie o link' and user_id = $1 and created_at >= now()", [P.gerente])).n;
+  conf("a lista mudou: aviso ao Gerente e a quem fechou, uma vez no dia", avisos === 1 && (await um("select count(*)::int n from public.notifications where title = 'A lista de boletos mudou: reenvie o link' and user_id = $1 and created_at >= now()", [P.recepcao])).n === 1);
 
   // --- 5) a troca de 2 para 1: só os de fora do prazo -------------------------------
   const r21 = await modo(P.gerente, "mensal");

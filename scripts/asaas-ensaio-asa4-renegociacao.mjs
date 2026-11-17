@@ -11,7 +11,16 @@
 //   --quebrar=falha       a aplicação deixa de recusar parcela antiga que mudou (falha no meio)
 // Os quatro têm de reprovar o ensaio.
 import { createHash, randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync as lerArquivo } from "node:fs";
+// As migrações antigas, reaplicadas aqui, redefinem CHECKs que os dados das
+// migrações seguintes já não cumprem (ex.: o 'encerrada' da 4017a, as origens
+// novas do pacote de assinatura). Dentro da transação desfeita, o CHECK
+// reaplicado entra "not valid": vale para as linhas novas, não reconfere as antigas.
+const semValidar = (sql) => sql.replace(/(alter table[^;]*?add constraint[^;]*?check\s*\([^;]*\))\s*;/gis, "$1 not valid;");
+const readFileSync = (arq, cod) => {
+  const s = lerArquivo(arq, cod);
+  return String(arq).includes("migrations") ? semValidar(s) : s;
+};
 import { connect } from "./test-db.mjs";
 
 const ARQ = "supabase/migrations/4017_asa4_renegociacao_assinada.sql";
@@ -81,6 +90,8 @@ try {
   // As migrações antigas, rodadas de novo aqui, não conhecem as origens novas de
   // cobrança (4017 e 4018): dentro desta transação desfeita, elas ficam sem origem.
   await c.query("update public.charges set auto_origin = null where auto_origin not in ('assinatura', 'venda_direta', 'rotina', 'rodar_agora', 'restante')");
+  // A 4017 não conhece o 'encerrada' (4017a): a renegociação encerrada do treino vira 'cancelada' aqui dentro.
+  await c.query("update public.payment_renegotiations set status = 'cancelada' where status = 'encerrada'");
   const sql = readFileSync(ARQ, "utf8");
   await c.query(sql);
   await c.query("savepoint dup");

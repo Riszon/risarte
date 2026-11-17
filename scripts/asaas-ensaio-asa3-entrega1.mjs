@@ -135,6 +135,8 @@ try {
   await c.query("update public.network_fee_types set split_account_id = null");
   await c.query("delete from public.network_fee_campaigns where active");
   await c.query("update public.gateway_accounts set split_enabled_declared_at = now(), split_enabled_confirmed_at = null where id = $1", [conta.id]);
+  // O treino pode ter valores de exemplo (o teste do dono, 17/11): o ensaio parte do em branco.
+  await c.query("update public.gateway_split_settings set unit_charge_fine_percent = null, unit_charge_interest_percent = null where id");
 
   // --- 3) a configuração e quem mexe -----------------------------------------------
   const leitura = await comoPessoa(P.financeiro, "select public.gateway_split_read() r");
@@ -156,6 +158,7 @@ try {
   const parcelas = await todos(
     `select i.id, i.amount_cents, i.client_id from public.payment_installments i
       where i.clinic_id = $1 and i.status = 'em_aberto' and i.amount_cents >= 5000 and i.client_id is not null
+        and coalesce(i.payment_method, '') not in ('dinheiro', 'permuta', 'cartao_parcelado', 'cartao_parcelado_asaas', 'credito_recorrente', 'deposito_avista')
         and not exists (select 1 from public.charges ch where ch.payment_installment_id = i.id
                          and ch.status in ('emitindo','emitida','vencida','paga','liquidada','erro_emissao','externa'))
       order by i.amount_cents limit 6`,

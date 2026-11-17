@@ -286,6 +286,10 @@ try {
   conf("vencido: cobrança Vencida", a.r === "vencida" && (await cobranca(c4.id)).status === "vencida");
   conf("vencido: sem aviso individual", (await um("select count(*)::int n from public.notifications")).n === avisosAntesDaVencida);
   await comoServidor();
+  // O resumo é um por conta e por dia: se a rotina de verdade já mandou o de hoje
+  // nesta conta (há vencidas reais no treino), o ensaio apaga essa marca dentro
+  // da transação desfeita, para medir o envio.
+  await c.query("delete from public.gateway_notices where kind = 'resumo_vencidas' and key = public.today_br()::text and account_id = (select gateway_account_id from public.charges where id = $1)", [c4.id]);
   const resumo = (await um("select public._gateway_overdue_summary() n")).n;
   conf("resumo diário das vencidas avisa o Gerente da unidade", resumo >= 1);
   conf("resumo diário: um por dia", (await um("select public._gateway_overdue_summary() n")).n === 0);

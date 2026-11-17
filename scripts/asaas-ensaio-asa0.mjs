@@ -223,8 +223,16 @@ try {
 
   // ---- 6) Regra de linha por papel --------------------------------------------
   await como(gerente);
-  const vg = await c.query("select id from public.gateway_accounts");
-  conf("Gerente lê só a conta da própria unidade", vg.rows.length === 1 && vg.rows[0].id === conta);
+  // O Gerente de teste pode gerir mais de uma unidade no treino (Cambé e Londrina
+  // foram dadas a ele nos testes de 17/11): ele lê a conta desta unidade e só as
+  // das unidades que gere — nunca a da outra unidade do ensaio nem a da raiz.
+  const vg = (await c.query("select id from public.gateway_accounts")).rows.map((x) => x.id);
+  await comoServidor();
+  const geridas = (await c.query(
+    `select a.id from public.gateway_accounts a join public.user_clinic_roles_all r on r.clinic_id = a.clinic_id
+      where r.user_id = $1 and r.role = 'unit_manager'`, [gerente])).rows.map((x) => x.id);
+  await como(gerente);
+  conf("Gerente lê só a conta da própria unidade", vg.includes(conta) && !vg.includes(contaOutra) && !vg.includes(contaRaiz) && vg.every((id) => geridas.includes(id)));
   conf("Gerente não lê o registro de uso da chave", (await um("select count(*)::int n from public.gateway_key_usage")).n === 0);
   await como(coordenador);
   conf("Coordenador não lê conta nenhuma", (await um("select count(*)::int n from public.gateway_accounts")).n === 0);
@@ -242,8 +250,14 @@ try {
   const novo1 = (await ev("evt_ensaio_1")).novo;
   const novo2 = (await ev("evt_ensaio_1")).novo;
   conf("evento repetido não é gravado duas vezes", novo1 === true && novo2 === false && (await um("select count(*)::int n from public.gateway_webhook_events where account_id = $1", [conta])).n === 1);
+  // Desde a 4005, o Admin Master lê o evento bruto ("Avisos com erro"); os outros papéis, não.
+  await como(gerente);
+  const gEv = (await um("select count(*)::int n from public.gateway_webhook_events")).n;
+  await como(coordenador);
+  const cEv = (await um("select count(*)::int n from public.gateway_webhook_events")).n;
   await como(admin);
-  conf("ninguém logado lê o evento bruto", (await um("select count(*)::int n from public.gateway_webhook_events")).n === 0);
+  const aEv = (await um("select count(*)::int n from public.gateway_webhook_events where account_id = $1", [conta])).n;
+  conf("só o Admin Master lê o evento bruto", gEv === 0 && cEv === 0 && aEv === 1);
 
   // ---- 8) Tarifas com vigência ---------------------------------------------------
   await comoServidor();

@@ -141,7 +141,8 @@ try {
     await comoServidor();
     await c.query("set local session_replication_role = replica");
     const id = (await um(
-      "insert into public.direct_sales (clinic_id, client_id, client_name, description, value_cents, contract_signed, closed_at) values ($1, $2, 'Ensaio', 'Ensaio cobrança', 100000, $3, case when $3 then now() end) returning id",
+      // method_rule null = venda direta antiga (antes da 4011): a baixa à mão aceita qualquer meio.
+      "insert into public.direct_sales (clinic_id, client_id, client_name, description, value_cents, contract_signed, closed_at, method_rule) values ($1, $2, 'Ensaio', 'Ensaio cobrança', 100000, $3, case when $3 then now() end, null) returning id",
       [unidade, cli, assinado]
     )).id;
     await c.query("set local session_replication_role = origin");

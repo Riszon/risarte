@@ -7,7 +7,16 @@
 // `--quebrar=autoriza` deixa o Gerente autorizar a própria devolução;
 // `--quebrar=aviso` faz o aviso repetir (sem a trava de um por vez). Os três
 // têm de reprovar o ensaio.
-import { readFileSync } from "node:fs";
+import { readFileSync as lerArquivo } from "node:fs";
+// As migrações antigas, reaplicadas aqui, redefinem CHECKs que os dados das
+// migrações seguintes já não cumprem (ex.: o 'encerrada' da 4017a, as origens
+// novas do pacote de assinatura). Dentro da transação desfeita, o CHECK
+// reaplicado entra "not valid": vale para as linhas novas, não reconfere as antigas.
+const semValidar = (sql) => sql.replace(/(alter table[^;]*?add constraint[^;]*?check\s*\([^;]*\))\s*;/gis, "$1 not valid;");
+const readFileSync = (arq, cod) => {
+  const s = lerArquivo(arq, cod);
+  return String(arq).includes("migrations") ? semValidar(s) : s;
+};
 import { connect } from "./test-db.mjs";
 
 const ARQ13 = "supabase/migrations/4013_asa4_cartao_parcelado_pelo_asaas.sql";
@@ -80,6 +89,9 @@ try {
   }
   // As migrações seguintes redefinem parte desta: o ensaio roda por cima delas,
   // como o banco está de verdade (rodar só esta de novo deixaria as funções antigas).
+  // A 4017 reaplicada não conhece o 'encerrada' (criado pela 4017a); dentro da transação
+  // desfeita, a renegociação encerrada do treino passa a 'cancelada' antes da reaplicação.
+  await c.query("update public.payment_renegotiations set status = 'cancelada' where status = 'encerrada'");
   for (const depois of ["4015_asa4_forma2_todos_os_boletos_agora.sql", "4015a_asa4_recusa_cancelar_venda_com_acordo_aberto.sql", "4017_asa4_renegociacao_assinada.sql", "4017a_asa4_excecao_cancelar_venda_com_acordo.sql", "4018_asa4_mensalidades_pelo_asaas.sql"]) await c.query(readFileSync(`supabase/migrations/${depois}`, "utf8"));
   if (QUEBRAR === "termo") {
     const f = await um("select pg_get_functiondef('public.card_block_return_request(jsonb)'::regprocedure) d");
