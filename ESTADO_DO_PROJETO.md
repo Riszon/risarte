@@ -2,15 +2,15 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.478.0 — ASA4: O ESTORNO DE PARTE PELO ASAAS (17/11/2026; Asaas 0.20.0, migração 4020a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.479.0 — ASA4: O ESTORNO DE PARTE PELO ASAAS (17/11/2026; Asaas 0.20.0, migração 4020a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
-> "Estornar parte" na ficha (Pix, cartão e cartão parcelado) e no distrato, sempre com motivo. Cartão com a confirmação reforçada (valor, paciente, repartição prevista, "sai na hora e não pode ser desfeito"); acima do valor da Central (em branco = todos), o Gerente ou o franqueado confirma. O riSZon grava o que o Asaas fez e avisa se diferir da previsão. Parcela estornada inteira fica "Estornada" (só o Gerente reabre). A taxa da rede continua devida. Ensaio 38/38, provado quebrando. Spec 19.38.6 e 19.38.7; manual 13g.19; EV-379. **Falta:** a prova do sandbox em 18/11 (o Asaas recusa o parcial do cartão no dia da aprovação), o teste do dono e a produção (só com o "pode").
+> "Estornar parte" na ficha (Pix, cartão e cartão parcelado) e no distrato, sempre com motivo. Cartão com a confirmação reforçada (valor, paciente, repartição prevista, "sai na hora e não pode ser desfeito"); acima do valor da Central (em branco = todos), o Gerente ou o franqueado confirma. O riSZon grava o que o Asaas fez e avisa se diferir da previsão. Parcela estornada inteira fica "Estornada" (só o Gerente reabre). A taxa da rede continua devida. Ensaio 38/38, provado quebrando. Spec 19.38.6 e 19.38.7; manual 13g.19; EV-383. **Falta:** a prova do sandbox em 18/11 (o Asaas recusa o parcial do cartão no dia da aprovação), o teste do dono e a produção (só com o "pode").
 
-> ## 💳 0.478.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.479.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
-> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-378.
+> Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-382.
 
-> ## 💳 0.478.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.479.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
 >
 > - **A prévia** do mês que fechou, por unidade: as taxas fixas (proporcionais no mês incompleto) e o "a cobrar" das percentuais, linha a linha, com a origem e o paciente abreviado. Cada linha entra pelo **delta** (o que vale hoje menos o já faturado): nunca duas vezes, e o "a reter" nunca entra.
 > - **A unidade** confere ou contesta; o silêncio leva à aprovação (avisos na abertura e 1 dia útil antes do fim). O Financeiro decide; depois da emissão, a contestação aceita vira **crédito** no mês seguinte (compensação, sem caixa).
@@ -18,7 +18,23 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **A emissão** sai pela conta da franqueadora, com a unidade (CNPJ) como pagadora, só por e-mail; a baixa pelo aviso do Asaas paga as contas de taxa da unidade; o caixa da franqueadora vai num lançamento só de caixa; multa e juros no financeiro, sem taxa sobre taxa; a tarifa é da franqueadora. Mês fechado: a dispensa entra no mês aberto, como ajuste.
 > - **A configuração nasce em branco** (Central › Rede › Taxas da franquia); exemplo só no treino e no sandbox, marcado.
 >
-> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-377; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-381; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> ## 🛒 0.478.0 — VENDA DIRETA V3: A AGENDA E O COMERCIAL ABREM O CAIXA; D5 (17/11/2026; sem migração)
+>
+> Fecha o que o plano (§2, §5) já tinha decidido. EV-377.
+> - **Agenda**: "Vender (venda direta)" nos detalhes do agendamento
+>   (`agenda/appointment-info-dialog.tsx`), para quem altera a situação
+>   (Recepção, Gerente, Admin), fora da apresentação comercial e de cancelado/
+>   falta. Abre o mesmo `CaixaVendaDireta` com o atendimento escolhido.
+> - **Comercial → Venda direta**: "Abrir no caixa" em cada venda aberta.
+> - **D5**: desmarcar o termo é só do Gerente (ou Admin) e exige motivo
+>   (≥ 5 letras), gravado na Auditoria (`closeDirectSaleStep`, 4º parâmetro).
+>   ⚠️ A trava é do SERVIDOR do app, não do banco (`direct_sale_close_step`
+>   ainda aceita quem fecha) — levar ao banco é migração nova.
+> - Visto na tela: o botão na Agenda abriu o caixa com o encaixe de teste já
+>   escolhido (sem lançar). A D5 e o "Abrir no caixa" têm régua
+>   (`venda-direta-portas.test.ts`, provada quebrando), não foram clicados.
+>
 > ## ✂️ 0.477.0 — FIM DO TRATAMENTO, ETAPA 5: O CANCELAMENTO PELO CAMINHO DO FIM (17/11/2026; migração 0426)
 >
 > Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (5.3; D10, D11, D12, D25).
@@ -215,8 +231,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   conferência `1 · 1 · 1 · 0`; conferido de fora: a produção aceita o tipo
 >   `ortho_maintenance` e recusa um tipo inventado). Push depois da migração. A 0423 (Jornada) e a 0424 (Venda
 >   direta) são de outras sessões. EV-375. Na tela (servidor local + treino):
->   a lista de tipos, o link da ortodontia e a pergunta do hábito antigo; o
->   "em seguida" depois de salvar só por teste.
+>   a lista de tipos, o link da ortodontia, a pergunta do hábito antigo e o
+>   "em seguida" de ponta a ponta (17/11/2026; os dois agendamentos de teste
+>   de 14/12 do Thiago ficaram cancelados no treino).
 
 > ## 🦷 0.469.0 — ORTODONTIA, AP175: SESSÃO DE PLANO NÃO É MANUTENÇÃO (17/11/2026; migração 0417)
 >

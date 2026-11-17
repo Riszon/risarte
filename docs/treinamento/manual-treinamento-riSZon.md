@@ -3463,7 +3463,13 @@ abre onde parou.
 
 **Em "⋯ Mais"**: trocar a forma de pagamento, cancelar a venda (o termo
 ainda aberto na ZapSign é cancelado junto), abrir o distrato; **desmarcar o
-termo** é só do Gerente.
+termo** é só do Gerente e pede o **motivo**, que fica na Auditoria *(desde a
+versão 0.478.0)*.
+
+**Outras portas para o mesmo caixa** *(desde a versão 0.478.0)*: na **Agenda**,
+abra os detalhes do agendamento e clique em **Vender (venda direta)** — o
+atendimento já vem escolhido. Em **Comercial → Venda direta**, cada venda em
+aberto tem **Abrir no caixa**.
 
 **Erros frequentes:** tentar receber antes do termo assinado; procurar o
 fechamento na aba Sessões & Procedimentos (ela mostra só os procedimentos e
@@ -8074,7 +8080,7 @@ Financeiro da Franqueadora também. Nada expira sozinho.
 
 ### 13g.18. Cobrança mensal da rede
 
-*(desde a versão 0.478.0)*
+*(desde a versão 0.479.0)*
 
 **O que é:** a cobrança que a franqueadora faz à unidade, uma vez por mês, das
 taxas da rede que **não** foram retidas pelo split:
@@ -8155,7 +8161,7 @@ A decisão não se refaz.
 fechamento ou no pagamento) e quando sai a nota dos royalties. O riSZon guarda
 os dois jeitos, e nada trava por isso.
 
-**A conferência das taxas** *(desde a versão 0.478.0)* — aba **Conferência das
+**A conferência das taxas** *(desde a versão 0.479.0)* — aba **Conferência das
 taxas**, em Cobrança da rede:
 - **A conta do mês,** por unidade, do primeiro mês da cobrança mensal em diante:
   devido = retido pelo split + a reter + faturado + dispensado + ainda a cobrar.
@@ -8179,12 +8185,12 @@ taxas**, em Cobrança da rede:
   unidade, só leitura.
 - A conferência não muda nenhum lançamento.
 
-**Evidência:** EV-377 e EV-378; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
+**Evidência:** EV-381 e EV-382; `scripts/asaas-ensaio-asa6-cobranca-mensal.mjs` e
 `scripts/asaas-ensaio-asa6-conferencia.mjs`.
 
 ### 13g.19. Estorno de parte (cartão e Pix)
 
-*(desde a versão 0.478.0)*
+*(desde a versão 0.479.0)*
 
 **Para que serve:** devolver **parte** do que o paciente pagou pelo Asaas (ou o
 total do cartão parcelado), sem sair do riSZon. Sempre com motivo.
@@ -8246,7 +8252,7 @@ a "Paga".
 **Auditoria:** o pedido, o valor, o motivo, quem pediu, quem confirmou ou
 cancelou, a previsão, o que o Asaas fez e a reabertura de parcela (com motivo).
 
-**Evidência:** EV-379; `scripts/asaas-ensaio-4020a-estorno-parcial.mjs`.
+**Evidência:** EV-383; `scripts/asaas-ensaio-4020a-estorno-parcial.mjs`.
 
 ## 14. Checklists
 

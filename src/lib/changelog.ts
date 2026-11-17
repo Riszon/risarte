@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.478.0",
+    versao: "0.479.0",
     data: "2026-11-17",
     // Sem migração do CORE: as desta entrega são da integração Asaas (4020a, 4021 e 4021a, ASAAS_MIGRATION).
     migracao: null,
@@ -136,6 +136,35 @@ export const CHANGELOG: Versao[] = [
           "Parcela estornada inteira fica \"Estornada\": a baixa é desfeita e ela não volta a ser cobrada sozinha. Só o Gerente reabre, com motivo. No distrato, a devolução pode sair como estorno pelo Asaas, escolhendo a cobrança. A taxa da rede continua devida.",
         papeis: ["unit_manager", "franchisee", "finance_franchisor"],
         manual: "13g.19. Estorno de parte (cartão e Pix)",
+      },
+    ],
+  },
+  {
+    versao: "0.478.0",
+    data: "2026-11-17",
+    migracao: null,
+    titulo: "Venda direta: o caixa também pela Agenda e pelo Comercial; desmarcar o termo pede motivo",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na Agenda, os detalhes do agendamento têm o botão Vender (venda direta): abre o caixa com aquele atendimento já escolhido.",
+        papeis: ["receptionist", "unit_manager"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Em Comercial → Venda direta, cada venda em aberto tem Abrir no caixa: o fechamento (termo pela ZapSign, pagamento) é feito na mesma janela.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Desmarcar o termo assinado de uma venda direta é só do Gerente e pede o motivo, que fica registrado na Auditoria.",
+        papeis: ["unit_manager"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
       },
     ],
   },

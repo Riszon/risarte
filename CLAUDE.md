@@ -400,6 +400,12 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (venda direta v3, portas e D5) — PC Administrador (core 0.477.0 → 0.478.0, sem migração; worktree `wt-venda-direta`)**
+
+- Agenda e Comercial abrem o caixa; desmarcar o termo é só do Gerente, com
+  motivo na Auditoria (bloco 0.478.0 no ESTADO). Publicado com o "pode publicar" do
+  dono (17/11/2026). ⚠️ A trava da D5 é do app, não do banco.
+
 **17/11/2026 (fim do tratamento, Etapa 5) — PC Administrador (core 0.477.0, migração 0426; worktree `wt-fim-tratamento`)**
 
 - **O cancelamento pelo caminho do fim** (bloco 0.477.0 no ESTADO). ⚠️ Não

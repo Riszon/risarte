@@ -259,7 +259,9 @@ export async function setDirectSaleConditions(
 export async function closeDirectSaleStep(
   saleId: string,
   step: "contract" | "payment_issued" | "payment_confirmed",
-  value: boolean
+  value: boolean,
+  /** D5: o motivo de DESMARCAR o termo (obrigatório; vai para a Auditoria). */
+  motivo?: string
 ): Promise<DirectSaleResult> {
   const session = await getSessionContext();
   const info = await saleClinic(saleId);
@@ -269,6 +271,18 @@ export async function closeDirectSaleStep(
     !hasRoleInClinic(session, info.clinicId, [...CLOSE_ROLES])
   ) {
     return { ok: false, error: "Você não pode fechar esta venda direta." };
+  }
+  // D5 (VD3, decisão do dono): desmarcar o termo assinado é só do Gerente (ou
+  // do Admin Master), com motivo escrito — fica na Auditoria.
+  const desmarcandoTermo = step === "contract" && !value;
+  const motivoLimpo = (motivo ?? "").trim();
+  if (desmarcandoTermo) {
+    if (!session.isAdminMaster && !hasRoleInClinic(session, info.clinicId, ["unit_manager"])) {
+      return { ok: false, error: "Só o Gerente desmarca o termo assinado." };
+    }
+    if (motivoLimpo.length < 5) {
+      return { ok: false, error: "Escreva o motivo de desmarcar o termo (pelo menos 5 letras)." };
+    }
   }
 
   const supabase = await createClient();
@@ -302,6 +316,7 @@ export async function closeDirectSaleStep(
     entityType: "direct_sale_close",
     entityId: saleId,
     clinicId: info.clinicId,
+    details: { step, value, ...(desmarcandoTermo ? { motivo: motivoLimpo.slice(0, 300) } : {}) },
   });
   // ASA4 (4012): contrato assinado na venda direta nova → as parcelas pelo
   // Asaas que vencem dentro do prazo nascem agora (o banco decide; idempotente).

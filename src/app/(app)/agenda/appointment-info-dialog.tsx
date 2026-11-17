@@ -4,7 +4,8 @@ import { SeloEmAtraso } from "@/components/selo-em-atraso";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users } from "lucide-react";
+import { ShoppingCart, Users } from "lucide-react";
+import { CaixaVendaDireta, type AlvoDoCaixa } from "@/components/venda-direta/caixa";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -72,6 +73,14 @@ export function AppointmentInfoDialog({
   const [participants, setParticipants] = useState<
     { userId: string; name: string }[] | null
   >(null);
+  // VD3 (plano §2, a 2ª porta): o caixa da venda direta a partir da Agenda.
+  const [vender, setVender] = useState<AlvoDoCaixa | null>(null);
+  const podeVender =
+    canManage &&
+    !!appointment.clients &&
+    appointment.type !== "commercial_presentation" &&
+    appointment.status !== "cancelled" &&
+    appointment.status !== "no_show";
 
   function changeStatus(status: AppointmentStatus) {
     startTransition(async () => {
@@ -130,6 +139,7 @@ export function AppointmentInfoDialog({
     : null;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-sm">
@@ -223,6 +233,27 @@ export function AppointmentInfoDialog({
               <p className="text-sm">{appointment.notes}</p>
             </div>
           )}
+          {podeVender && appointment.clients && (
+            <div className="mt-2 border-t pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-gold-tinta"
+                onClick={() => {
+                  // O caixa abre por cima da agenda, já com este atendimento.
+                  setOpen(false);
+                  setVender({
+                    clientId: appointment.clients!.id,
+                    clientName: appointment.clients!.full_name,
+                    appointmentId: appointment.id,
+                  });
+                }}
+              >
+                <ShoppingCart className="size-3.5" />
+                Vender (venda direta)
+              </Button>
+            </div>
+          )}
           {canManage && (
             <div className="mt-2 border-t pt-2">
               <p className="mb-1 text-xs text-muted-foreground">
@@ -252,5 +283,7 @@ export function AppointmentInfoDialog({
         </div>
       </DialogContent>
     </Dialog>
+    <CaixaVendaDireta alvo={vender} onClose={() => setVender(null)} />
+    </>
   );
 }
