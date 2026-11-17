@@ -1,6 +1,10 @@
 // TESTE DE PAPÉIS da Cobrança da rede e da Conferência das taxas, pela porta do banco (a API),
-// numa transação DESFEITA no treino. Uso: RISARTE_TREINO_POOLER=1 node scripts/asaas-teste-papeis-cobranca-mensal.mjs
+// numa transação DESFEITA no treino. Uso: RISARTE_TREINO_POOLER=1 node scripts/asaas-teste-papeis-cobranca-mensal.mjs --confirmar
 import { connect } from "./test-db.mjs";
+if (!process.argv.includes("--confirmar") && !process.env.CI) {
+  console.log("Mexe no TREINO numa transação desfeita. Rode com --confirmar.");
+  process.exit(2);
+}
 const c = await connect();
 const um = async (s, p = []) => (await c.query(s, p)).rows[0];
 const res = [];

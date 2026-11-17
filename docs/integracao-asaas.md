@@ -5368,7 +5368,7 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 7. **O texto do saldo mínimo:** "sem saldo, o Asaas recusa o estorno" (não "fica negativa").
 
 **O teste de papéis:**
-- **Pela API:** `scripts/asaas-teste-papeis-cobranca-mensal.mjs`, 14/14.
+- **Pela API:** `scripts/asaas-teste-papeis-cobranca-mensal.mjs --confirmar`, 14/14.
   - O Gerente lê e contesta só a própria unidade, mas não aprova nem decide.
   - Dentista, Planner, ASB, TSB, SDR e Recepcionista não veem a lista, o demonstrativo, a conferência, as tabelas nem a cobrança, e não contestam.
 - **Pela tela:** no `e2e-publicado/conferencia-4021.spec.ts`.
