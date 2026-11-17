@@ -4629,6 +4629,135 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 
 **A tabela de fases foi corrigida:** o cartão recorrente da ASA4B não está mais bloqueado pela regra do cartão. Falta só a tokenização habilitada nas contas, com o comercial do Asaas.
 
+### 19.38 A 4020a — o estorno parcial pelo Asaas: PLANO (17/11/2026; AGUARDA APROVAÇÃO)
+
+#### 19.38.1 A prova do cartão parcelado (17/11/2026, 12:09, conta principal do sandbox)
+
+**O pedido:** estorno de **R$ 120,00** do parcelamento `64cff44d…` (3× de R$ 100,00, aprovado em 16/11, split de 17% + R$ 0,16 por parcela para a carteira de Londrina, ainda "aguardando crédito").
+
+**O que o Asaas fez:**
+
+| Parcela | Estorno | Split da rede (R$ 16,37) | Aviso |
+|---|---|---|---|
+| 1 | **R$ 100,00, `DONE` na hora**, sem autorização | **`CANCELLED`** (motivo `PAYMENT_REFUNDED`) | `PAYMENT_REFUNDED` |
+| 2 | **R$ 20,00, `PENDING`** | continua `AWAITING_CREDIT` | nenhum até agora |
+| 3 | nenhum | continua `AWAITING_CREDIT` | — |
+
+**O que isso diz:**
+1. **O Asaas reparte o pedido:** primeiro as parcelas inteiras, a partir da primeira; o resto como **parte** da parcela seguinte.
+   - A resposta da equipe (19.37) dizia "só a parcela inteira". **O sandbox aceitou também a parte de uma parcela.**
+   - Em vez de recusar a parte, o riSZon segue o que o Asaas faz e mostra antes como o pedido vai ser repartido. Na próxima lista, a pergunta vai à equipe: a parte da parcela é aceita na produção?
+2. **No cartão, não há autorização do titular.** O painel da conta principal não pediu nada (o dono conferiu em 17/11). No Pix, a autorização apareceu (16/11).
+   - O `PENDING` do cartão é o **processamento na operadora**. A parcela 2 ficou assim na leitura de hoje; a próxima leitura é em 18/11.
+3. **A parcela estornada inteira, ainda sem crédito:** o split é **cancelado**, e a taxa da rede daquela parcela deixa de ser retida.
+   - Pela regra travada (D13: a taxa continua devida no estorno), ela vira **"a cobrar"** e entra na cobrança mensal.
+   - É o mesmo caminho da 4009 (split cancelado → "a cobrar").
+4. **A parte da parcela:** pelo Pix (19.36.1), a parte estornada sai inteira da conta da unidade, e o split da rede não muda. No cartão, a confirmação vem quando a parte ficar `DONE`.
+
+#### 19.38.2 O que a 4020a faz
+
+**A. O estorno parcial, por quem e onde:**
+- **Na ficha** (bloco "Cobrança pelo Asaas" da parcela paga), o botão **"Estornar parte"**: o valor, o motivo e a confirmação, que mostra:
+  - quanto sai da conta da unidade;
+  - que a taxa da rede continua devida.
+- **No distrato:** a devolução passa a oferecer o **estorno pelo Asaas primeiro** (19.35), quando a cobrança paga foi pelo Asaas e cobre o valor. A **devolução por Pix da conta da unidade** continua como alternativa.
+- **Quem pede:** os mesmos papéis do estorno total (Central, "quem pede estorno": franqueado ou Gerente), o Financeiro da Franqueadora e o Admin Master.
+
+**B. O cartão parcelado:**
+- O pedido vai pelo parcelamento, e a tela mostra antes como o Asaas reparte, por exemplo:
+  > "a parcela 1 inteira (R$ 100,00) e R$ 20,00 da parcela 2"
+- **Parcela inteira estornada:**
+  - a cobrança dela vira "Estornada";
+  - a baixa dela é desfeita, como no estorno total (18.7.3);
+  - a taxa da rede vira "a cobrar".
+- **Parte da parcela:**
+  - a parcela continua paga;
+  - a devolução fica registrada;
+  - a taxa continua.
+
+**C. O Pix:**
+- O pedido fica **"Aguardando a autorização do titular"** no painel do Asaas.
+- O riSZon nunca pede nem guarda o código.
+
+**D. O que chega do Asaas:**
+- **Os avisos:**
+  - `PAYMENT_PARTIALLY_REFUNDED` com a lista `refunds`: valor, situação, comprovante e o identificador do Pix;
+  - `PAYMENT_REFUNDED`, na parcela inteira.
+- **O que o riSZon grava:**
+  - a devolução como **paga por estorno**, sem desfazer o recebimento da parte;
+  - no distrato, a devolução fica "Paga pelo Asaas", com o comprovante.
+- **A leitura do dia** (a mesma da 4009), para o caso de o aviso não chegar.
+
+**E. A régua do pedido pendente** (19.37, item 3, aprovado):
+- **Pix, esperando a autorização:**
+  - o aviso a quem pediu e ao Gerente com 1 dia útil;
+  - o mesmo aviso a cada 7 dias;
+  - no 25º dia: "cai em 5 dias";
+  - **Caiu ou foi recusado:** o pedido fica "Caiu sem autorização" (ou "Recusado pelo titular"), a cobrança volta para "Paga", e no distrato a devolução volta para "pedir", com a devolução por Pix da unidade.
+- **Cartão, em processamento:** o aviso ao Financeiro se passar de 5 dias úteis, porque não há o que o titular faça.
+- **Na tela:** há quantos dias espera e em quantos dias cai.
+
+**F. O saldo** (19.37, item 1, aprovado):
+- **No parcial:** antes de pedir, o riSZon lê o **saldo da conta da unidade** (o parcial sai todo dela). Sem saldo, não pede, e a tela orienta a devolução por Pix da conta da unidade.
+- **No total:**
+  - antes de pedir, o riSZon lê o **saldo da franqueadora** e a parte dela na cobrança (o split volta);
+  - sem saldo, não pede;
+  - a tela da unidade diz só "temporariamente indisponível…" (o ajuste do dono, 19.37.5);
+  - o Financeiro e o Admin veem o saldo e a parte;
+  - quem pediu é avisado quando o saldo voltar ao mínimo.
+- **A recusa que vier mesmo assim** (`PAYMENT_REFUND_DENIED`, ou recusa na resposta):
+  - a cobrança volta para "Paga";
+  - a tela mostra o motivo;
+  - quem pediu, o Gerente e o Financeiro são avisados.
+
+**G. O arredondamento por parcela** (19.37): o ensaio confere que a previsão do split do riSZon no parcelado faz a mesma conta do Asaas (os centavos na última). Se não fizer, a previsão é ajustada.
+
+#### 19.38.3 A prova
+
+**No ensaio, provado quebrando:**
+- `parcial`: o parcial desfaz a baixa;
+- `taxa`: a taxa some no parcial;
+- `parcela`: a parcela inteira não vira "a cobrar";
+- `saldo`: pede sem saldo;
+- `regua`: a queda dos 30 dias não volta a cobrança.
+
+**O ensaio também cobre:**
+- o aviso de cada tipo, com o pagamento real do Pix de 16/11 e o do cartão de hoje como modelo;
+- quem pede e quem não pede;
+- a tela da unidade sem o saldo da franqueadora.
+
+**No sandbox, pelo caminho do riSZon, na conta de Londrina:**
+- **Cartão parcelado:** o pedido real e a leitura dos avisos. Não precisa de autorização.
+- **Pix:** o pedido real, que fica "aguardando a autorização". A subconta de Londrina não tem painel acessível (19.36.1), e a conclusão já foi provada pela conta principal em 16/11.
+
+#### 19.38.4 Decisões para o dono
+
+1. **Onde se pede:**
+   - (a) na ficha ("Estornar parte") e na devolução do distrato, com o estorno pelo Asaas primeiro (recomendado);
+   - (b) só no distrato.
+2. **O cartão parcelado:**
+   - (a) seguir o Asaas: parcelas inteiras primeiro e a parte da seguinte, mostrado antes de confirmar (recomendado);
+   - (b) só parcelas inteiras: o riSZon recusa pedir a parte de uma parcela.
+3. **O cartão em processamento:**
+   - (a) o aviso ao Financeiro depois de 5 dias úteis (recomendado);
+   - (b) outro prazo (diga qual).
+4. **Quem pede:**
+   - (a) os mesmos do estorno total (os papéis da Central), o Financeiro e o Admin (recomendado);
+   - (b) só o Financeiro e o Admin.
+
+**Já aprovados (19.37.5), só entram aqui:**
+- a conferência do saldo antes do estorno total;
+- a recusa;
+- a régua do pendente;
+- a tela da unidade sem o saldo da franqueadora.
+
+#### 19.38.5 Tamanho
+
+- **A migração:** uma, a 4020a, com o valor do parcial, a lista dos estornos e a régua.
+- **O servidor:** o pedido e a leitura.
+- **A tela:** o botão na ficha, a confirmação com a repartição do parcelado e a devolução do distrato.
+- **A prova:** o ensaio quebrado e o sandbox.
+
 ## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 e 4021a CONSTRUÍDAS (16/11/2026; ver 20.15 a 20.17.10)
 
 ### 20.1 O que já existe (levantado no código em 16/11/2026)
