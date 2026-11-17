@@ -3,7 +3,11 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   botoesDaResposta,
+  desfechosDoContato,
   detalheDoFechamento,
+  NIVEIS_DE_QUALIDADE,
+  nivelAprova,
+  nivelPedeObservacao,
   recusaDoFechamento,
   retornoSugerido,
   tituloDoFechamento,
@@ -237,5 +241,85 @@ describe("0420 — a instalação ortodôntica não termina o plano", () => {
   it("a interna não responde a ninguém de fora, e o gatilho segue blindado", () => {
     expect(sql0420).toContain("revoke execute on function public._sessao_ortodontica(uuid) from public, anon, authenticated;");
     expect(gatilho).toContain("raise warning 'treatment_closure_on_session");
+  });
+});
+
+// 0421 — ETAPA 3: o controle de qualidade (D1, D7, D8, D18, D22, D23, D24, C1).
+describe("0421 — os cinco níveis, a satisfação e a saída da Reavaliação", () => {
+  const s21 = readFileSync(
+    join(process.cwd(), "supabase/migrations/0421_fim_do_tratamento_qualidade.sql"),
+    "utf8"
+  ).replace(/\r\n/g, "\n");
+  const fn = (nome: string) => {
+    const i = s21.indexOf(`create or replace function public.${nome}(`);
+    expect(i, `a 0421 não cria ${nome}: não dá para medir`).toBeGreaterThanOrEqual(0);
+    return s21.slice(i, s21.indexOf("\n$$;", i));
+  };
+
+  it("os cinco níveis e a conversão das avaliações antigas (D8)", () => {
+    expect(s21).toContain("level in ('excelente', 'bom', 'aceitavel', 'revisar', 'refazer')");
+    expect(s21).toMatch(/when 'aprovado' then 'bom'\s+when 'revisao' then 'revisar'\s+when 'reprovado' then 'refazer'/);
+  });
+  it("o nível manda no status (quem lia o status continua certo)", () => {
+    const q = fn("set_plan_item_quality");
+    expect(q).toMatch(/when 'revisar' then 'revisao'\s+when 'refazer' then 'reprovado'\s+else 'aprovado'/);
+  });
+  it("a trava conta a opção VENDIDA, sem os excluídos, e encerra o fechamento", () => {
+    const q = fn("set_plan_item_quality");
+    expect(q).toContain("n.status = 'aceita'");
+    expect(q).toContain("ni.included = false");
+    expect(q).toContain("where plan_id = v_plan and status = 'reavaliacao';");
+  });
+  it("o Excelente avisa quem executou (D24)", () => {
+    expect(fn("set_plan_item_quality")).toContain("'Procedimento avaliado como Excelente'");
+  });
+  it("observação obrigatória só em Revisar e Refazer (D7)", () => {
+    expect(fn("register_closure_quality")).toContain("if p_level in ('revisar', 'refazer') and coalesce(btrim(p_note), '') = '' then");
+  });
+  it("o contato pede satisfação e queixa, e queixa obriga revisar (D18)", () => {
+    const c = fn("register_closure_contact");
+    expect(c).toContain("raise exception 'SATISFACTION_REQUIRED'");
+    expect(c).toContain("if p_complaint and p_outcome <> 'revisar' then");
+  });
+  it("sair da Reavaliação só com a avaliação feita e nada para revisar (D23), com retorno (D22)", () => {
+    const r = fn("conclude_reevaluation");
+    expect(r).toContain("f.status = 'reavaliacao'");
+    expect(r).toContain("r.resolution in ('redo_same', 'redo_other')");
+    expect(r).toContain("interval '6 months'");
+  });
+  it("reavaliação concluída na Fase 5 não encerra mais o fechamento sozinha", () => {
+    const a = fn("treatment_closure_on_appointment");
+    expect(a).not.toContain("outcome = 'reavaliado'");
+  });
+  it("as portas novas são só de quem está logado", () => {
+    for (const f of [
+      "set_plan_item_quality(uuid, text, text, uuid, text, uuid, text, text)",
+      "register_closure_quality(uuid, text, text)",
+      "register_closure_contact(uuid, text, boolean, text, text, date, smallint, boolean)",
+      "conclude_reevaluation(uuid, date)",
+    ]) {
+      expect(s21).toContain(`revoke execute on function public.${f} from public, anon, authenticated;`);
+      expect(s21).toContain(`grant execute on function public.${f} to authenticated;`);
+    }
+  });
+  it("toda recusa nova vira frase", () => {
+    const codigos = [...s21.matchAll(/raise exception '([A-Z_]+)'/g)].map((m) => m[1]);
+    for (const c of new Set(codigos)) {
+      if (["INVALID_STATUS", "ITEM_NOT_FOUND", "LOCKED", "NOT_FINALIZED", "RESOLUTION_REQUIRED",
+           "ASSIGNED_REQUIRED", "REPLAN_REASON_REQUIRED", "INVALID_CHANNEL", "CLIENT_NOT_FOUND",
+           "WRONG_PHASE", "QUALITY_PENDING"].includes(c)) continue; // traduzidas em quality-actions / jornada
+      expect(recusaDoFechamento(c), c).not.toBe(recusaDoFechamento("algo estranho"));
+    }
+  });
+});
+
+describe("regras puras da Etapa 3", () => {
+  it("Excelente, Bom e Aceitável aprovam; Revisar e Refazer pedem observação", () => {
+    expect(NIVEIS_DE_QUALIDADE.filter(nivelAprova)).toEqual(["excelente", "bom", "aceitavel"]);
+    expect(NIVEIS_DE_QUALIDADE.filter(nivelPedeObservacao)).toEqual(["revisar", "refazer"]);
+  });
+  it("com queixa, só chamar para revisar", () => {
+    expect(desfechosDoContato(true)).toEqual(["revisar"]);
+    expect(desfechosDoContato(false)).toEqual(["revisar", "aguardar_retorno", "novo_planejamento"]);
   });
 });

@@ -3603,6 +3603,36 @@ do cliente, no painel **Precisa de atenção**, e no seu sino:
 Enquanto nada aconteceu, você pode **mudar a resposta** de quem executou
 (**Mudar para Sim** ou **Mudar para Não**).
 
+**O controle de qualidade em cinco níveis (desde a 0.471.0).** Na
+reavaliação, você avalia **cada procedimento** do plano que terminou, no
+cockpit de avaliação (o botão **Avaliar procedimentos** da ficha leva até
+lá). Ele aparece também com o cliente ainda em tratamento, quando outro
+tratamento continua.
+
+| Nível | O que acontece |
+|---|---|
+| **Excelente** | Aprovado; quem executou recebe o aviso |
+| **Bom** | Aprovado |
+| **Aceitável** | Aprovado |
+| **Revisar** | Abre uma sessão de revisão com quem executou (motivo obrigatório) |
+| **Refazer** | Reabre o procedimento: o mesmo dentista refaz, outro refaz, ou vai para o próximo plano (motivo obrigatório) |
+
+Com todos os procedimentos em Excelente, Bom ou Aceitável, a tarefa da
+reavaliação some sozinha. Na **ortodontia** e na **venda direta**, que não têm
+procedimentos de plano para avaliar, use **Registrar reavaliação** na própria
+ficha: um nível só, com o motivo quando for Revisar ou Refazer. As avaliações
+antigas aparecem como Bom (era Aprovado), Revisar (era Revisão) e Refazer (era
+Reprovado).
+
+**No contato com o cliente**, quando conseguir falar, marque também a
+**satisfação de 0 a 10** e se o cliente **tem queixa**. Com queixa, o único
+próximo passo é **Chamar para revisar**.
+
+**Concluir a reavaliação** pede a **data do retorno** (em branco, o sistema usa
+daqui a 6 meses) e avisa a Recepção. O botão recusa enquanto houver
+procedimento sem avaliar ou com Revisar/Refazer em aberto: espere a revisão ou
+a refação e avalie de novo.
+
 ### 6.3. Dentista Planner
 
 **Objetivo:** montar plano e orçamento. **Duração:** 75 minutos.
@@ -5333,9 +5363,11 @@ do procedimento (Procedimentos), **"Reavaliação presencial obrigatória no fim
 do plano"**. Com ele no plano, a pergunta não aparece e a reavaliação já fica
 pedida.
 
-**O que ainda vem** (próximas etapas do plano): a avaliação de qualidade em
-cinco níveis (Excelente a Refazer) e a satisfação do cliente no contato; o
-abandono de tratamento; a lista "Clientes sem próximo passo"; o cancelamento
+**O controle de qualidade** (desde a 0.471.0): cinco níveis por
+procedimento na reavaliação, satisfação e queixa no contato, e a saída da
+Reavaliação só com tudo aprovado (ver 6.2).
+
+**O que ainda vem** (próximas etapas do plano): o abandono de tratamento; a lista "Clientes sem próximo passo"; o cancelamento
 passando pelo Coordenador; os prazos por dia útil da unidade.
 
 ### Fluxo 3 — Encerrar a sessão

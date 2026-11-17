@@ -67,6 +67,47 @@ export const TENTATIVAS_PARA_SEM_CONTATO = 3;
 /** D22: o retorno sugerido, em meses, quando ninguém escolhe outra data. */
 export const MESES_DO_RETORNO_SUGERIDO = 6;
 
+/** 0421 (D1): os cinco níveis da avaliação presencial do Coordenador. */
+export type NivelDeQualidade = "excelente" | "bom" | "aceitavel" | "revisar" | "refazer";
+
+export const NIVEIS_DE_QUALIDADE: NivelDeQualidade[] = [
+  "excelente",
+  "bom",
+  "aceitavel",
+  "revisar",
+  "refazer",
+];
+
+export const NIVEL_LABEL: Record<NivelDeQualidade, string> = {
+  excelente: "Excelente",
+  bom: "Bom",
+  aceitavel: "Aceitável",
+  revisar: "Revisar",
+  refazer: "Refazer",
+};
+
+/** Excelente, Bom e Aceitável aprovam; Revisar e Refazer pedem nova sessão. */
+export function nivelAprova(n: NivelDeQualidade): boolean {
+  return n === "excelente" || n === "bom" || n === "aceitavel";
+}
+
+/** D7: a observação é obrigatória só em Revisar e Refazer. */
+export function nivelPedeObservacao(n: NivelDeQualidade): boolean {
+  return !nivelAprova(n);
+}
+
+/** D18: a satisfação do cliente no contato, de 0 a 10. */
+export const ESCALA_DE_SATISFACAO = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+
+/**
+ * D18: o que o Coordenador pode decidir depois de falar com o cliente. Com
+ * queixa, só "chamar para revisar" (o banco recusa o resto).
+ */
+export function desfechosDoContato(queixa: boolean | null): DesfechoDoContato[] {
+  if (queixa) return ["revisar"];
+  return ["revisar", "aguardar_retorno", "novo_planejamento"];
+}
+
 /** O título da linha no painel "Precisa de atenção". */
 export function tituloDoFechamento(f: Pick<Fechamento, "status" | "scope">): string {
   switch (f.status) {
@@ -167,6 +208,12 @@ export function recusaDoFechamento(mensagem: string): string {
   if (m.includes("NEEDS_THREE_ATTEMPTS"))
     return `Só dá para encerrar sem contato depois de ${TENTATIVAS_PARA_SEM_CONTATO} tentativas sem falar com o cliente.`;
   if (m.includes("RETURN_DATE_PAST")) return "A data do retorno tem de ser depois de hoje.";
+  if (m.includes("SATISFACTION_REQUIRED")) return "Marque a satisfação do cliente (0 a 10) e se ele tem queixa.";
+  if (m.includes("COMPLAINT_REQUIRES_REVIEW")) return "Com queixa, o próximo passo é chamar o cliente para revisar.";
+  if (m.includes("NOTE_REQUIRED")) return "Em Revisar ou Refazer, escreva o motivo.";
+  if (m.includes("USE_ITEM_EVALUATION")) return "Plano de tratamento se avalia procedimento por procedimento, no cockpit de avaliação.";
+  if (m.includes("NOT_IN_REEVALUATION")) return "Esta tarefa não está mais esperando a reavaliação. Atualize a tela.";
+  if (m.includes("INVALID_LEVEL")) return "Escolha um dos cinco níveis.";
   if (m.includes("NOT_FOUND")) return "Tarefa não encontrada. Atualize a tela.";
   return "Não foi possível registrar. Atualize a tela e tente de novo.";
 }

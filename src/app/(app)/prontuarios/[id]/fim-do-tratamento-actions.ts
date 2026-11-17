@@ -13,6 +13,7 @@ import {
   type CanalDoContato,
   type DesfechoDoContato,
   type EscopoDoFechamento,
+  type NivelDeQualidade,
   type RespostaDoFechamento,
 } from "@/lib/fim-do-tratamento";
 
@@ -47,6 +48,9 @@ export async function registrarContato(
     resumo: string;
     desfecho: DesfechoDoContato | null;
     retorno: string | null;
+    /** 0421 (D18): a satisfação do cliente (0 a 10) e se tem queixa. */
+    satisfacao: number | null;
+    queixa: boolean | null;
   }
 ): Promise<Resultado> {
   await getSessionContext();
@@ -58,9 +62,36 @@ export async function registrarContato(
     p_summary: entrada.resumo.trim() || null,
     p_outcome: entrada.desfecho,
     p_return_date: entrada.retorno || null,
+    p_satisfaction: entrada.falou ? entrada.satisfacao : null,
+    p_complaint: entrada.falou ? entrada.queixa : null,
   });
   if (error) {
     if (!/[A-Z_]{6,}/.test(error.message)) console.error("register_closure_contact:", error.code);
+    return { ok: false, error: recusaDoFechamento(error.message) };
+  }
+  revalidatePath(`/prontuarios/${clientId}`);
+  return { ok: true };
+}
+
+/**
+ * 0421: a reavaliação de um fechamento sem itens de plano (ortodontia, venda
+ * direta) — um nível só. Plano se avalia por procedimento, no cockpit.
+ */
+export async function registrarReavaliacao(
+  clientId: string,
+  closureId: string,
+  nivel: NivelDeQualidade,
+  observacao: string
+): Promise<Resultado> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("register_closure_quality", {
+    p_id: closureId,
+    p_level: nivel,
+    p_note: observacao.trim() || null,
+  });
+  if (error) {
+    if (!/[A-Z_]{6,}/.test(error.message)) console.error("register_closure_quality:", error.code);
     return { ok: false, error: recusaDoFechamento(error.message) };
   }
   revalidatePath(`/prontuarios/${clientId}`);

@@ -18,16 +18,26 @@ import {
   requestItemScheduling,
   requestQualityScheduling,
   setItemQuality,
+  type QualityLevel,
   type QualityResolution,
   type ReplanReason,
 } from "./quality-actions";
 
 type QStatus = "aprovado" | "revisao" | "reprovado";
 
+/** 0421 (D1): os três níveis que aprovam, com a cor de cada um. */
+const APROVA: { level: QualityLevel; label: string; ativo: string }[] = [
+  { level: "excelente", label: "Excelente", ativo: "border-emerald-600 bg-emerald-600 text-white" },
+  { level: "bom", label: "Bom", ativo: "border-emerald-500 bg-emerald-500 text-white" },
+  { level: "aceitavel", label: "Aceitável", ativo: "border-lime-500 bg-lime-500 text-white" },
+];
+
 export type QualityItem = {
   id: string;
   description: string;
   status: QStatus | null;
+  /** 0421: o nível gravado (nulo = ainda não avaliado). */
+  level: QualityLevel | null;
   note: string | null;
   executorId: string | null;
   resolution: string | null;
@@ -88,11 +98,18 @@ export function QualityChecklist({
     });
   }
 
-  function approve(item: QualityItem) {
+  function approve(item: QualityItem, level: QualityLevel) {
     run(
-      () => setItemQuality(clientId, { itemId: item.id, status: "aprovado" }),
+      () =>
+        setItemQuality(clientId, {
+          itemId: item.id,
+          status: "aprovado",
+          level,
+          // D24: o Excelente avisa quem executou.
+          executorId: item.executorId ?? item.suggestedExecutorId ?? null,
+        }),
       () => {},
-      "Procedimento aprovado."
+      `Procedimento avaliado: ${APROVA.find((a) => a.level === level)?.label ?? "aprovado"}.`
     );
   }
 
@@ -127,6 +144,7 @@ export function QualityChecklist({
         setItemQuality(clientId, {
           itemId,
           status: "revisao",
+          level: "revisar",
           note,
           executorId: executorId || null,
         }),
@@ -141,6 +159,7 @@ export function QualityChecklist({
         setItemQuality(clientId, {
           itemId,
           status: "reprovado",
+          level: "refazer",
           note,
           executorId: executorId || null,
           resolution,
@@ -148,7 +167,7 @@ export function QualityChecklist({
           replanReason: resolution === "replan" ? (replanReason || null) : null,
         }),
       () => setReproveItem(null),
-      "Reprovação registrada."
+      "Refazer registrado."
     );
   }
 
@@ -156,7 +175,8 @@ export function QualityChecklist({
   const pending = items.filter(
     (i) => i.status === "revisao" || i.status === "reprovado"
   ).length;
-  // Refação = revisão ou reprovado-refazer → move o cliente para a Fase 5.
+  // Revisar ou Refazer reabre o procedimento; a fase NÃO muda (a 0141 movia
+  // para a Fase 5 e a 0142 desfez). O cliente segue com o Coordenador.
   const redoCount = items.filter(
     (i) =>
       i.status === "revisao" ||
@@ -172,7 +192,7 @@ export function QualityChecklist({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium">Controle de qualidade — {planTitle}</p>
         <span className="text-xs text-muted-foreground">
-          {approvedCount}/{items.length} aprovados
+          {approvedCount}/{items.length} aprovados (Excelente, Bom ou Aceitável)
         </span>
       </div>
 
@@ -194,32 +214,30 @@ export function QualityChecklist({
                 {item.description}
               </span>
               {!locked && item.procState === "done" && (
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    disabled={isPending}
-                    onClick={() => approve(item)}
-                    className={cn(
-                      btn,
-                      item.status === "aprovado"
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    Aprovado
-                  </button>
+                <div className="flex flex-wrap gap-1">
+                  {APROVA.map((a) => (
+                    <button
+                      key={a.level}
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => approve(item, a.level)}
+                      className={cn(btn, item.level === a.level ? a.ativo : "hover:bg-muted")}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
                   <button
                     type="button"
                     disabled={isPending}
                     onClick={() => openRevise(item)}
                     className={cn(
                       btn,
-                      item.status === "revisao"
+                      item.level === "revisar"
                         ? "border-amber-500 bg-amber-500 text-white"
                         : "hover:bg-muted"
                     )}
                   >
-                    Revisão
+                    Revisar
                   </button>
                   <button
                     type="button"
@@ -227,12 +245,12 @@ export function QualityChecklist({
                     onClick={() => openReprove(item)}
                     className={cn(
                       btn,
-                      item.status === "reprovado"
+                      item.level === "refazer"
                         ? "border-rose-500 bg-rose-500 text-white"
                         : "hover:bg-muted"
                     )}
                   >
-                    Reprovado
+                    Refazer
                   </button>
                 </div>
               )}
@@ -266,7 +284,7 @@ export function QualityChecklist({
             )}
             {item.status === "reprovado" && reproveItem !== item.id && (
               <p className="mt-1 text-xs text-rose-700">
-                Reprovado —{" "}
+                Refazer —{" "}
                 {item.resolution === "redo_other"
                   ? `refazer com ${dentistName(item.assignedId)}`
                   : item.resolution === "replan"
@@ -348,7 +366,7 @@ export function QualityChecklist({
       <Dialog open={reproveItem !== null} onOpenChange={(o) => !o && setReproveItem(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Reprovar procedimento</DialogTitle>
+            <DialogTitle>Refazer o procedimento</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <textarea
@@ -452,7 +470,7 @@ export function QualityChecklist({
               }
               onClick={() => reproveItem && confirmReprove(reproveItem)}
             >
-              Confirmar reprovação
+              Confirmar Refazer
             </Button>
           </DialogFooter>
         </DialogContent>

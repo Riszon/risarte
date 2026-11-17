@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.471.0",
+    data: "2026-11-17",
+    migracao: "0421",
+    titulo: "Controle de qualidade em cinco níveis e a satisfação do cliente no fim do tratamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No controle de qualidade, o Coordenador avalia cada procedimento em cinco níveis: Excelente, Bom e Aceitável aprovam; Revisar e Refazer pedem nova sessão, com o motivo escrito. O Excelente também chega a quem executou. As avaliações antigas passaram a aparecer como Bom, Revisar e Refazer.",
+        papeis: ["clinical_coordinator", "dentist"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O controle de qualidade aparece para cada plano que terminou e espera a reavaliação, também com o cliente ainda em tratamento (por exemplo, terminou o implante e a ortodontia continua). Para ortodontia e venda direta, o Coordenador registra um nível só, na ficha. Com tudo aprovado, a tarefa da reavaliação some sozinha.",
+        papeis: ["clinical_coordinator"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No contato com o cliente, o Coordenador registra a satisfação (0 a 10) e se o cliente tem queixa. Com queixa, o próximo passo é sempre chamar para revisar.",
+        papeis: ["clinical_coordinator", "unit_manager"],
+        manual: "6.2. Coordenador Clínico",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Concluir a reavaliação agora pede a data do retorno (em branco, daqui a 6 meses) e só funciona com o controle de qualidade feito e nada para revisar ou refazer. A Recepção é avisada para agendar o retorno.",
+        papeis: ["clinical_coordinator", "receptionist"],
+        manual: "6.2. Coordenador Clínico",
+      },
+    ],
+  },
+  {
     versao: "0.470.0",
     data: "2026-11-17",
     migracao: "0420",

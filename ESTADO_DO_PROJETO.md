@@ -24,6 +24,24 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   conferido de fora: sem login as portas e a rotina recusam, a chave de serviço
 >   para em NOT_ALLOWED, `coverage_notices` existe. Não visto na tela.
 
+> ## ✅ 0.471.0 — FIM DO TRATAMENTO, ETAPA 3: O CONTROLE DE QUALIDADE (17/11/2026; migração 0421)
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (D1, D7, D8, D18, D22, D23, D24, C1).
+> - ⚠️ **Cinco níveis = `plan_quality_reviews.level`**; o `status` (aprovado /
+>   revisao / reprovado) continua, DERIVADO do nível. `set_plan_item_quality`
+>   ganhou `p_level` (8 parâmetros, recriada na 0421: ao recriar, partir dela).
+> - ⚠️ **A trava "100% aprovado" conta a opção VENDIDA** (negociação aceita com
+>   venda fechada, sem os itens excluídos); antes contava a opção principal. Com
+>   a trava, o fechamento do plano encerra como "reavaliado".
+> - ⚠️ **Sem itens de plano (ortodontia, venda direta): `register_closure_quality`**.
+> - ⚠️ **`register_closure_contact` tem 8 parâmetros** (satisfação 0–10 e
+>   queixa; queixa obriga "revisar"). Recriada na 0421.
+> - ⚠️ **Sair da Reavaliação = `conclude_reevaluation`** (QUALITY_PENDING; retorno
+>   +6 meses); "Concluir a reavaliação" não usa mais o `move_client_phase`.
+> - O checklist aparece por fechamento aberto, em qualquer fase (C1).
+> - Ensaio 20/20 (`scripts/ensaio-fim-do-tratamento-0421.mjs`, provado
+>   quebrando) e o da 0418 com 0420 e 0421 por cima, 35/35. Não visto na tela.
+>
 > ## 🦷 0.470.0 — FIM DO TRATAMENTO: A INSTALAÇÃO ORTODÔNTICA NÃO TERMINA O PLANO (17/11/2026; migração 0420)
 >
 > Correção da 0418, combinada com a sessão "Módulo de Ortodontia": com a 0417

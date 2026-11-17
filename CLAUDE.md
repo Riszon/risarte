@@ -400,6 +400,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (fim do tratamento, Etapa 3) — PC Administrador (core 0.471.0, migração 0421; worktree `wt-fim-tratamento`)**
+
+- **O controle de qualidade em cinco níveis** (bloco 0.471.0 no ESTADO).
+  ⚠️ `set_plan_item_quality` (8 parâmetros) e `register_closure_contact` (8)
+  foram recriadas na 0421: ao recriar, partir dela. ⚠️ O nível
+  (`plan_quality_reviews.level`) manda; o `status` é derivado. ⚠️ Sair da
+  Reavaliação só por `conclude_reevaluation` (D23).
+
 **17/11/2026 (fim do tratamento, 0420) — PC Administrador (core 0.470.0, migração 0420; worktree `wt-fim-tratamento`)**
 
 - **A instalação ortodôntica não termina o plano** (bloco 0.470.0 no ESTADO;

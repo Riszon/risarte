@@ -522,6 +522,8 @@ export function SendToPlanningBlock({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // 0421 (D22): a data do retorno; vazia = a sugerida (daqui a 6 meses).
+  const [retorno, setRetorno] = useState("");
 
   const concluir = (
     <ConfirmDialog
@@ -536,6 +538,19 @@ export function SendToPlanningBlock({
         <>
           Use quando a reavaliação <b>não</b> exigir um plano novo. O cliente vai
           para o <b>Acompanhamento</b>, e volta ao Planejamento quando precisar.
+          Só dá para concluir com o controle de qualidade feito e nada para
+          revisar ou refazer.
+          <label className="mt-3 block space-y-1">
+            <span className="text-xs font-medium">
+              Retorno previsto (em branco = daqui a 6 meses)
+            </span>
+            <input
+              type="date"
+              value={retorno}
+              onChange={(e) => setRetorno(e.target.value)}
+              className="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm"
+            />
+          </label>
         </>
       }
       confirmLabel="Concluir"
@@ -545,7 +560,7 @@ export function SendToPlanningBlock({
         const d = decidirEnvio(await pararGravacaoDoCliente(clientId));
         if (d?.bloqueia) return { ok: false, error: d.aviso };
         if (d) toast.info(d.aviso);
-        return concluirReavaliacao(clientId);
+        return concluirReavaliacao(clientId, retorno || null);
       }}
     />
   );

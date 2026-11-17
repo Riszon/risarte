@@ -16,7 +16,8 @@ if (quebrar === "pergunta") sql = sql.replace("      v_asked, coalesce(v_auto, f
 
 // Sem quebra, a 0420 (a instalação não termina o plano) vai por cima: o
 // ensaio prova que a correção não quebrou nada da 0418.
-if (!quebrar) sql += "\n" + readFileSync(W + "supabase/migrations/0420_fim_do_tratamento_instalacao_ortodontica.sql", "utf8");
+if (!quebrar) sql += "\n" + readFileSync(W + "supabase/migrations/0420_fim_do_tratamento_instalacao_ortodontica.sql", "utf8")
+  + "\n" + readFileSync(W + "supabase/migrations/0421_fim_do_tratamento_qualidade.sql", "utf8");
 if (quebrar && sql === readFileSync(W + "supabase/migrations/0418_fim_do_tratamento_o_motor.sql", "utf8")) throw new Error(`a quebra "${quebrar}" não achou o que quebrar: não mediu nada`);
 const c = await connect();
 let ok = 0, falhou = 0;
@@ -98,7 +99,8 @@ try {
   await espera("só o Admin marca 'Tratamento Finalizado' à mão", () => c.query(`select public.set_journey_status($1, 'treatment_finished')`, [D]), "NOT_ALLOWED");
   await asSuper();
   const anon = await one(`select has_function_privilege('anon', 'public.answer_treatment_closure(uuid,text)', 'execute') a,
-                                 has_function_privilege('anon', 'public.register_closure_contact(uuid,text,boolean,text,text,date)', 'execute') b,
+                                 (select bool_or(has_function_privilege('anon', p.oid, 'execute')) from pg_proc p
+                                   where p.proname = 'register_closure_contact' and p.pronamespace = 'public'::regnamespace) b,
                                  has_function_privilege('authenticated', 'public._tratamento_em_aberto(uuid)', 'execute') cc,
                                  has_function_privilege('authenticated', 'public._abrir_fechamento(text,uuid,uuid,uuid,uuid,uuid,uuid,boolean,uuid)', 'execute') d`);
   check(!anon.a && !anon.b, "sem login, as portas recusam");

@@ -18,7 +18,12 @@ import {
   botoesDaResposta,
   CANAL_LABEL,
   DESFECHO_LABEL,
+  desfechosDoContato,
   detalheDoFechamento,
+  ESCALA_DE_SATISFACAO,
+  NIVEIS_DE_QUALIDADE,
+  NIVEL_LABEL,
+  nivelPedeObservacao,
   PERGUNTA_DO_FIM,
   RESPOSTA_LABEL,
   retornoSugerido,
@@ -27,9 +32,14 @@ import {
   type CanalDoContato,
   type DesfechoDoContato,
   type Fechamento,
+  type NivelDeQualidade,
   type RespostaDoFechamento,
 } from "@/lib/fim-do-tratamento";
-import { registrarContato, responderFechamento } from "./fim-do-tratamento-actions";
+import {
+  registrarContato,
+  registrarReavaliacao,
+  responderFechamento,
+} from "./fim-do-tratamento-actions";
 
 /**
  * O FIM DO TRATAMENTO NA FICHA (0418): as tarefas abertas do fechamento, como
@@ -57,6 +67,7 @@ export function FimDoTratamento({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [contatoDe, setContatoDe] = useState<Fechamento | null>(null);
+  const [reavaliacaoDe, setReavaliacaoDe] = useState<Fechamento | null>(null);
 
   if (fechamentos.length === 0) return null;
 
@@ -117,6 +128,22 @@ export function FimDoTratamento({
                   Registrar contato
                 </Button>
               )}
+              {/* 0421: a reavaliação. Plano: por procedimento, no cockpit;
+                  ortodontia e venda direta: um nível, aqui mesmo. */}
+              {f.status === "reavaliacao" && ehCoordenador && f.scope === "plano" && (
+                <Link
+                  href={`/avaliacao/${clientId}`}
+                  className="inline-flex items-center gap-0.5 rounded-md border bg-background px-2 py-1 text-xs font-medium hover:bg-muted"
+                >
+                  Avaliar procedimentos
+                  <ChevronRight className="size-3.5" />
+                </Link>
+              )}
+              {f.status === "reavaliacao" && ehCoordenador && f.scope !== "plano" && (
+                <Button size="sm" disabled={isPending} onClick={() => setReavaliacaoDe(f)}>
+                  Registrar reavaliação
+                </Button>
+              )}
               {agenda && (
                 <Link
                   href={agenda.href}
@@ -136,7 +163,99 @@ export function FimDoTratamento({
         hoje={hoje}
         onClose={() => setContatoDe(null)}
       />
+      <ReavaliacaoDialog
+        clientId={clientId}
+        fechamento={reavaliacaoDe}
+        onClose={() => setReavaliacaoDe(null)}
+      />
     </>
+  );
+}
+
+/** 0421: um nível para a reavaliação da ortodontia ou da venda direta. */
+function ReavaliacaoDialog({
+  clientId,
+  fechamento,
+  onClose,
+}: {
+  clientId: string;
+  fechamento: Fechamento | null;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [nivel, setNivel] = useState<NivelDeQualidade | null>(null);
+  const [obs, setObs] = useState("");
+
+  function fechar() {
+    setNivel(null);
+    setObs("");
+    onClose();
+  }
+
+  function salvar() {
+    if (!fechamento || !nivel) return;
+    startTransition(async () => {
+      const res = await registrarReavaliacao(clientId, fechamento.id, nivel, obs);
+      if (res.ok) {
+        toast.success(
+          nivelPedeObservacao(nivel)
+            ? "Registrado. A Recepção foi avisada para agendar."
+            : "Reavaliação registrada."
+        );
+        fechar();
+        router.refresh();
+      } else toast.error(res.error ?? "Algo deu errado.");
+    });
+  }
+
+  const pedeObs = nivel !== null && nivelPedeObservacao(nivel);
+
+  return (
+    <Dialog open={fechamento !== null} onOpenChange={(o) => !o && fechar()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Reavaliação</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <p className="text-xs text-muted-foreground">
+            Como ficou o resultado? Excelente, Bom e Aceitável encerram a
+            reavaliação; Revisar e Refazer pedem nova sessão.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {NIVEIS_DE_QUALIDADE.map((n) => (
+              <Button
+                key={n}
+                size="sm"
+                type="button"
+                variant={nivel === n ? "default" : "outline"}
+                onClick={() => setNivel(n)}
+              >
+                {NIVEL_LABEL[n]}
+              </Button>
+            ))}
+          </div>
+          <textarea
+            value={obs}
+            onChange={(e) => setObs(e.target.value)}
+            rows={3}
+            placeholder={pedeObs ? "O motivo (obrigatório)" : "Observação (opcional)"}
+            className="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm"
+          />
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={fechar} disabled={isPending}>
+            Cancelar
+          </Button>
+          <Button
+            disabled={isPending || nivel === null || (pedeObs && obs.trim().length === 0)}
+            onClick={salvar}
+          >
+            Registrar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -158,12 +277,15 @@ function ContatoDialog({
   const [resumo, setResumo] = useState("");
   const [desfecho, setDesfecho] = useState<DesfechoDoContato | null>(null);
   const [retorno, setRetorno] = useState(retornoSugerido(hoje));
+  // 0421 (D18): a satisfação do cliente (0 a 10) e se ele tem queixa.
+  const [satisfacao, setSatisfacao] = useState<number | null>(null);
+  const [queixa, setQueixa] = useState<boolean | null>(null);
 
   // Esta tentativa sem sucesso completaria as 3? Então dá para encerrar.
   const podeSemContato =
     !falou && (fechamento?.tentativasSemSucesso ?? 0) + 1 >= TENTATIVAS_PARA_SEM_CONTATO;
   const opcoes: DesfechoDoContato[] = falou
-    ? ["revisar", "aguardar_retorno", "novo_planejamento"]
+    ? desfechosDoContato(queixa)
     : podeSemContato
       ? ["sem_contato"]
       : [];
@@ -175,6 +297,8 @@ function ContatoDialog({
     setResumo("");
     setDesfecho(null);
     setRetorno(retornoSugerido(hoje));
+    setSatisfacao(null);
+    setQueixa(null);
     onClose();
   }
 
@@ -187,6 +311,8 @@ function ContatoDialog({
         resumo,
         desfecho,
         retorno: pedeRetorno ? retorno : null,
+        satisfacao,
+        queixa,
       });
       if (res.ok) {
         toast.success(falou || desfecho ? "Contato registrado." : "Tentativa registrada. A tarefa continua aberta.");
@@ -237,6 +363,59 @@ function ContatoDialog({
             placeholder={falou ? "O que o cliente disse (obrigatório)" : "Observação (opcional)"}
             className="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm"
           />
+          {falou && (
+            <>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">
+                  De 0 a 10, quanto o cliente ficou satisfeito?
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {ESCALA_DE_SATISFACAO.map((n) => (
+                    <Button
+                      key={n}
+                      size="sm"
+                      type="button"
+                      className="h-7 w-8 px-0"
+                      variant={satisfacao === n ? "default" : "outline"}
+                      onClick={() => setSatisfacao(n)}
+                    >
+                      {n}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">O cliente tem alguma queixa?</p>
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    type="button"
+                    variant={queixa === false ? "default" : "outline"}
+                    onClick={() => setQueixa(false)}
+                  >
+                    Não
+                  </Button>
+                  <Button
+                    size="sm"
+                    type="button"
+                    variant={queixa === true ? "default" : "outline"}
+                    onClick={() => {
+                      setQueixa(true);
+                      // Com queixa, só "chamar para revisar".
+                      setDesfecho((d) => (d === "revisar" ? d : null));
+                    }}
+                  >
+                    Sim, tem queixa
+                  </Button>
+                </div>
+                {queixa && (
+                  <p className="text-xs text-destructive">
+                    Com queixa, o próximo passo é chamar o cliente para revisar.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
           {opcoes.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">
@@ -283,7 +462,11 @@ function ContatoDialog({
           <Button
             disabled={
               isPending ||
-              (falou && (resumo.trim().length < 5 || desfecho === null)) ||
+              (falou &&
+                (resumo.trim().length < 5 ||
+                  desfecho === null ||
+                  satisfacao === null ||
+                  queixa === null)) ||
               (pedeRetorno && !retorno)
             }
             onClick={salvar}

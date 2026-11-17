@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 export type QualityResolution = "redo_same" | "redo_other" | "replan";
 /** Motivo da troca no replan (Entrega 4): falha profissional × inviabilidade clínica. */
 export type ReplanReason = "falha" | "inviabilidade";
+/** 0421 (D1): os cinco níveis da avaliação presencial do Coordenador. */
+export type QualityLevel = "excelente" | "bom" | "aceitavel" | "revisar" | "refazer";
 
 /**
  * Bloco D — o Coordenador marca a qualidade de um procedimento do plano
@@ -24,6 +26,8 @@ export async function setItemQuality(
     resolution?: QualityResolution | null;
     assignedId?: string | null;
     replanReason?: ReplanReason | null;
+    /** 0421: o nível manda; o status vem dele. */
+    level?: QualityLevel | null;
   }
 ): Promise<{ ok: boolean; error?: string }> {
   await getSessionContext();
@@ -36,6 +40,7 @@ export async function setItemQuality(
     p_resolution: input.resolution ?? null,
     p_assigned: input.assignedId ?? null,
     p_replan_reason: input.replanReason ?? null,
+    p_level: input.level ?? null,
   });
   if (error) {
     const m = error.message;
@@ -44,7 +49,7 @@ export async function setItemQuality(
     if (m.includes("LOCKED"))
       return { ok: false, error: "Este plano já está 100% aprovado — controle concluído." };
     if (m.includes("NOTE_REQUIRED"))
-      return { ok: false, error: "Descreva o motivo da revisão/reprovação." };
+      return { ok: false, error: "Descreva o motivo de Revisar ou Refazer." };
     if (m.includes("RESOLUTION_REQUIRED"))
       return { ok: false, error: "Escolha o que fazer com o procedimento reprovado." };
     if (m.includes("ASSIGNED_REQUIRED"))
