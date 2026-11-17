@@ -324,7 +324,7 @@ Cambé), com o pagamento simulado pelo aviso do Asaas.
 
 ## 9. VD3-4 — "Atender agora" (plano da etapa, 17/11/2026)
 
-**Status: decidido pelo dono e CONSTRUÍDO em 17/11/2026 (core 0.475.0, migração 0424), na branch; 0424 aplicada no treino.**
+**Status: decidido pelo dono e CONSTRUÍDO em 17/11/2026 (core 0.475.0, migração 0424), e publicado no mesmo dia; 0424 no treino e na produção.**
 
 **Decisões do dono (17/11/2026):**
 - **A1:** o "Atender agora" agenda como **ENCAIXE**, enquadrado como

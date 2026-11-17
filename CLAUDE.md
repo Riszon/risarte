@@ -402,9 +402,8 @@ Syncthing se comportarem de forma estranha.**
 
 **17/11/2026 (venda direta v3, VD3-4) — PC Administrador (core 0.474.0 → 0.475.0, migração 0424; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
-- **Atender agora (encaixe) e a sala ao chamar** (bloco 0.475.0 no ESTADO). ⚠️
-  **NÃO está no `main`:** espera o dono. ⚠️ **0424 já está no TREINO**: o
-  Chamar sem sala do site do treino dá erro até publicar.
+- **Atender agora (encaixe) e a sala ao chamar** (bloco 0.475.0 no ESTADO). ✅
+  0424 na produção (o dono, 17/11/2026; conferida de fora) e no treino. Publicado.
 - ⚠️ **Encaixe = Urgência/Emergência OU `is_fit_in`** — quem recriar
   `check_appointment_conflict` parte da 0424 (a Ortodontia, 0425, foi avisada).
 - ⚠️ **`npm run migrar:teste` NÃO tem modo de só listar** (`--listar` é
