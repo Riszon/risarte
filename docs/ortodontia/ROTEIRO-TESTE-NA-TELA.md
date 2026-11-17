@@ -67,7 +67,7 @@ Telas usadas: `/agenda`, `/atendimento`, `/avaliacao/[cliente]`,
 | # | Quem | Ação | Esperado | Conferência no banco |
 |---|---|---|---|---|
 | P1 | — | Subir `npm run servidor:treino` | Log mostra o banco do treino | — |
-| P2 | — | Conferir que o Planner, o Consultor e o Financeiro da Franqueadora Teste alcançam a Unidade Teste | Sim (senão, parar e avisar o dono) | `providers_with_access(<Unidade Teste>, 'commercial_consultant')` traz o consultor de teste; idem Planner |
+| P2 | — | Conferir que o Planner, o Consultor e o Financeiro da Franqueadora Teste alcançam a Unidade Teste | Sim (senão, parar e avisar o dono). ⚠️ Em 17/11/2026 o Consultor de teste não alcançava nenhuma unidade; o acesso se dá em Risartanos, na ficha da conta de teste (o dono decide) | `providers_with_access(<Unidade Teste>, 'commercial_consultant')` traz o consultor de teste; idem Planner |
 | P3 | Admin | `/ortodontia/configuracao` → **criar ajuste da Unidade Teste**: mensalidade R$ 200,00, 12 parcelas, dia 10, intervalo 30 dias, 24 meses, procedimento de manutenção "Manutenção de aparelho ortodôntico - aparelho removível", pontualidade 5%, limite de pontualidade 10%, mensalidade mínima R$ 150,00, reajuste 5% | Bloco "Risarte Unidade Teste" aparece, separado do padrão da rede | `ortho_settings` com `clinic_id` = Unidade Teste e os valores digitados; a linha da rede **inalterada** |
 | P4 | Recepção | `/prontuarios/novo` → cadastrar "Paciente Roteiro Ortodontia", com CPF de teste (gerador do treino), nascimento 01/01/2000, telefone e endereço completos | Ficha abre, sem "Cadastro incompleto" | `clients` com o nome, `registration_complete = true`, unidade = Unidade Teste |
 | P5 | Recepção | Agendar **Avaliação** com o Coordenador de teste, hoje, no próximo horário livre | Agendamento aparece na agenda | `appointments` tipo `evaluation`, `scheduled` |
@@ -81,10 +81,11 @@ Telas usadas: `/agenda`, `/atendimento`, `/avaliacao/[cliente]`,
 | A2 | Coordenador | Passo 3 do cockpit → **Indicar ortodontia** com observação "classe II" 📸 | Bloco mostra "Ortodontia indicada" | `clinical_evaluations.ortho_indicated = true`, `ortho_indicated_by` = coordenador |
 | A3 | Coordenador | Enviar ao Centro de Planejamento | Fase vai para Centro de Planejamento | `clients.journey_phase = planning_center` |
 | A4 | Planner | `/planejamento/[cliente]` → cartão **"Ortodontia indicada"** visível 📸 | Mostra a observação do Coordenador | — |
-| A5 | Planner | Montar o plano: Opção A com "Aparelho ortodôntico fixo metálico" (1 sessão) **e** uma restauração (para o plano misto) | Itens na opção | `treatment_plan_option_items` com os dois procedimentos |
+| A5 | Planner | Montar o plano: Opção A com "Aparelho ortodôntico fixo metálico" (arcadas superior e inferior) **e** "Limpeza (profilaxia)" (plano misto; a restauração exigiria marcar dente no odontograma) | Itens na opção | `treatment_plan_option_items` com os dois procedimentos |
 | A6 | Planner | Bloco **Proposta ortodôntica** da opção: aparelho fixo, 24 meses, manutenção a cada 30 dias, contenção "ambas" | Bloco salvo | `treatment_plan_ortho` da opção com os valores |
-| A7 | Planner | Montar a sequência e enviar ao Coordenador | Plano "enviado" | `treatment_plans.status` enviado |
-| A8 | Coordenador | Aprovar a opção A | Plano aprovado; fase Conversão comercial | status aprovado; fase `commercial_conversion` |
+| A7 | Planner | Diagnóstico, objetivos, pilar, prioridade dos itens, **Atendimentos e sequência → Confirmar**, **Odontograma — diagnóstico por dente → Finalizar diagnóstico** (o envio recusa sem ele) e enviar ao Coordenador | "Plano … enviado para aprovação." | `treatment_plans.status` enviado |
+| A8 | Coordenador | Prontuário, aba Plano → **Aprovar opção** | Plano aprovado; a fase **continua** Centro de Planejamento | status `approved` |
+| A9 | Planner ou Admin | Aba Plano → **Enviar para apresentação** (regra R3) | "Situação atualizada…" | `lifecycle = aguardando_apresentacao`. A fase muda para Conversão Comercial na apresentação comercial (B1) |
 
 ## 4. Do Comercial ao caso — ORTO8 (B)
 
