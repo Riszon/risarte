@@ -35,6 +35,8 @@ import type { DirectSaleRow } from "./direct-sale-item";
 export type DadosDoCaixa = {
   clientId: string;
   clientName: string;
+  /** VD3-3: o telefone do cliente (WhatsApp do comprovante e da cobrança). */
+  clientPhone: string | null;
   contexto: DirectSaleContext;
   /** Quantas vezes cada procedimento saiu em venda direta na unidade. */
   vendidos: Record<string, number>;
@@ -62,7 +64,7 @@ export async function carregarCaixa(
   const supabase = await createClient();
   const { data: client } = await supabase
     .from("clients")
-    .select("id, full_name, clinic_id")
+    .select("id, full_name, clinic_id, phone")
     .eq("id", clientId)
     .maybeSingle();
   if (!client) return { ok: false, error: "Cliente não encontrado." };
@@ -80,6 +82,7 @@ export async function carregarCaixa(
     dados: {
       clientId,
       clientName: client.full_name as string,
+      clientPhone: (client.phone as string | null) ?? null,
       contexto,
       vendidos,
       vendas: [...doCliente.sales].sort((a, b) => aberta(a) - aberta(b)),

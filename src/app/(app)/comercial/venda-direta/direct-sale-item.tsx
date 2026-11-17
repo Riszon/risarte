@@ -62,6 +62,8 @@ export type DirectSaleRow = {
   code: string | null;
   clinicId: string;
   clinicName: string | null;
+  /** VD3-3: quando a venda foi concluída (ISO); nulo se aberta. */
+  closedAt?: string | null;
   clientId: string | null;
   clientName: string | null;
   subtotalCents: number;

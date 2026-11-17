@@ -14,6 +14,7 @@ import {
   FileSignature,
   Gift,
   Loader2,
+  MessageCircle,
   PartyPopper,
   ShoppingCart,
   TriangleAlert,
@@ -30,7 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { ListaComBusca } from "@/components/ui/lista-com-busca";
 import { PaymentScheduleEditor } from "@/components/payment-schedule-editor";
-import { CobrancasDaVenda } from "@/components/commercial/cobrancas-da-venda";
 import { AcordosDaVenda } from "@/components/commercial/acordos-da-venda";
 import { DistratoDaVenda } from "@/components/commercial/distrato-da-venda";
 import { cn } from "@/lib/utils";
@@ -76,6 +76,9 @@ import {
 } from "@/app/(app)/comercial/venda-direta/actions";
 import type { DirectSaleRow } from "@/app/(app)/comercial/venda-direta/direct-sale-item";
 import { AcoesDoTermo, textoDoTermoAssinado } from "./termo";
+import { PagamentoPeloAsaas } from "./pagamento";
+import { whatsappLink } from "@/lib/whatsapp";
+import { comprovanteDaVenda } from "@/lib/venda-direta-caixa";
 
 const TIPO_DO_ATENDIMENTO: Record<string, string> = {
   evaluation: "Avaliação",
@@ -1128,6 +1131,7 @@ function VendaLancada({
         )}
         <Secao titulo="O que">{itens}</Secao>
         <ResumoFechado venda={venda} />
+        <BotaoComprovante venda={venda} dados={dados} />
         {venda.clientId && (
           <details className="text-xs">
             <summary className="cursor-pointer text-muted-foreground">⋯ Mais</summary>
@@ -1185,6 +1189,8 @@ function VendaLancada({
       <ResumoFechado venda={venda} />
       <Fechamento
         venda={venda}
+        clientName={dados.clientName}
+        clientPhone={dados.clientPhone ?? null}
         termo={dados.termos?.[venda.id]}
         termoErro={termoErro}
         atualizar={atualizar}
@@ -1349,6 +1355,8 @@ function Caixa({
 
 function Fechamento({
   venda,
+  clientName,
+  clientPhone,
   termo,
   termoErro,
   atualizar,
@@ -1358,6 +1366,8 @@ function Fechamento({
   trocarPagamento,
 }: {
   venda: DirectSaleRow;
+  clientName: string;
+  clientPhone: string | null;
   /** VD3-2: ausente quando o banco ainda não tem a 0415 (vale o jeito antigo). */
   termo: import("@/app/(app)/comercial/venda-direta/caixa-actions").TermoDaVenda | undefined;
   termoErro: string | null;
@@ -1516,7 +1526,14 @@ function Fechamento({
             </p>
           ) : (
             <>
-              {ehVendaNova(venda.methodRule) && <CobrancasDaVenda directSaleId={venda.id} />}
+              {ehVendaNova(venda.methodRule) && (
+                <PagamentoPeloAsaas
+                  saleId={venda.id}
+                  clientName={clientName}
+                  clientPhone={clientPhone}
+                  atualizar={atualizar}
+                />
+              )}
               <p className="text-[11px] text-muted-foreground">
                 Pago pelo Asaas, a confirmação chega sozinha. Se a unidade
                 ainda não usa o Asaas, confirme aqui quando receber.
@@ -1578,5 +1595,38 @@ function Fechamento({
         </div>
       </details>
     </>
+  );
+}
+
+/**
+ * VD3-3 (D4/P2): o comprovante pelo WhatsApp, com o texto aprovado pelo dono.
+ * Abre a conversa com o cliente (ou o WhatsApp sem número, se o cadastro não
+ * tem telefone); quem está no balcão revisa e envia.
+ */
+function BotaoComprovante({ venda, dados }: { venda: DirectSaleRow; dados: DadosDoCaixa }) {
+  const texto = comprovanteDaVenda({
+    nome: dados.clientName,
+    unidade: venda.clinicName ?? "nossa clínica",
+    procedimentos: venda.items.map((i) => (i.quantity > 1 ? `${i.description} (×${i.quantity})` : i.description)),
+    totalCents: venda.finalCents,
+    meio: venda.paymentMethod,
+    parcelas: venda.installments,
+    // A data da conclusão (reabrir outro dia não muda o comprovante).
+    data: venda.closedAt ? isoDateIn(new Date(venda.closedAt)) : todayInBrazil(),
+    codigo: venda.code,
+  });
+  const url =
+    whatsappLink(dados.clientPhone ?? null, texto) ??
+    `https://wa.me/?text=${encodeURIComponent(texto)}`;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border bg-background text-sm font-medium hover:bg-muted"
+    >
+      <MessageCircle className="size-4" />
+      Enviar comprovante por WhatsApp
+    </a>
   );
 }

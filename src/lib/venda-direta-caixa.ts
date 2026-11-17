@@ -343,3 +343,112 @@ export const SELO_DA_VENDA: Record<
     estilo: "border-border bg-muted text-muted-foreground",
   },
 };
+
+// ---------------------------------------------------------------------------
+// VD3-3 — o pagamento pelo Asaas na janela e o comprovante (regra pura).
+// ---------------------------------------------------------------------------
+
+/** O mínimo da parcela que a janela usa (o tipo vem de `asaas/cobrancas-da-venda`). */
+export type ParcelaParaJanela = {
+  seq: number;
+  situacao_parcela: string;
+  parcelado?: boolean;
+  /** A parcela é cobrada pelo Asaas (Pix, boleto, cartão). */
+  pelo_asaas?: boolean;
+  /** A cobrança só nasce perto do vencimento (data). */
+  agendada_para?: string | null;
+  cobranca: { status: string; pix: string | null; link: string | null; linha: string | null; meio: string; valor: number } | null;
+};
+
+/**
+ * A cobrança que o cliente paga AGORA: a primeira parcela aberta com cobrança
+ * viva no Asaas (emitida ou vencida). A parcela do cartão parcelado não conta
+ * (paga-se pelo link do parcelamento, no bloco de baixo). Nula = nada a
+ * mostrar em destaque (ainda sendo criada, paga, ou fora do Asaas).
+ */
+export function cobrancaDaVez<P extends ParcelaParaJanela>(parcelas: P[]): P | null {
+  const abertas = [...parcelas]
+    .filter(
+      (p) =>
+        !p.parcelado &&
+        p.situacao_parcela !== "paga" &&
+        p.situacao_parcela !== "cancelada" &&
+        p.situacao_parcela !== "renegociada" &&
+        !!p.cobranca &&
+        ["emitida", "vencida"].includes(p.cobranca.status)
+    )
+    .sort((a, b) => a.seq - b.seq);
+  return abertas[0] ?? null;
+}
+
+/** A janela continua conferindo? Enquanto há cobrança sendo criada ou esperando. */
+export function esperandoOAsaas(parcelas: ParcelaParaJanela[]): boolean {
+  return parcelas.some(
+    (p) =>
+      !p.parcelado &&
+      p.situacao_parcela !== "paga" &&
+      !!p.cobranca &&
+      ["emitindo", "emitida", "vencida"].includes(p.cobranca.status)
+  );
+}
+
+/**
+ * Logo depois da assinatura, a cobrança ainda está NASCENDO: a parcela é do
+ * Asaas, está aberta, não tem cobrança e não está agendada para DEPOIS de
+ * hoje (o banco devolve "agendada para hoje" enquanto ela não nasceu). A
+ * janela confere por um tempo (o caixa limita) — com a cobrança automática
+ * desligada na unidade, ela não nasce e a janela para de perguntar.
+ */
+export function cobrancaParaNascer(parcelas: ParcelaParaJanela[], hoje: string): boolean {
+  return parcelas.some(
+    (p) =>
+      !p.parcelado &&
+      !!p.pelo_asaas &&
+      !p.cobranca &&
+      // "Agendada" para hoje (ou antes) = nasce agora; para depois = não espera.
+      (!p.agendada_para || p.agendada_para.slice(0, 10) <= hoje) &&
+      (p.situacao_parcela === "em_aberto" || p.situacao_parcela === "parcial")
+  );
+}
+
+const MEIO_NO_COMPROVANTE: Record<string, string> = {
+  pix: "Pix",
+  boleto: "boleto",
+  cartao: "cartão de crédito",
+  cartao_parcelado_asaas: "cartão de crédito parcelado",
+  cartao_parcelado: "cartão (maquininha)",
+  dinheiro: "dinheiro",
+  permuta: "permuta",
+};
+
+/**
+ * O COMPROVANTE pelo WhatsApp (decisão D4/P2, texto aprovado pelo dono em
+ * 17/11/2026). Sai do balcão, por quem fechou — não é enviado sozinho.
+ */
+export function comprovanteDaVenda(v: {
+  nome: string;
+  unidade: string;
+  procedimentos: string[];
+  totalCents: number;
+  meio: string | null;
+  parcelas: number;
+  /** 'aaaa-mm-dd' ou ISO. */
+  data: string;
+  codigo: string | null;
+}): string {
+  const primeiro = (v.nome ?? "").trim().split(/\s+/)[0] || "tudo bem";
+  const lista =
+    v.procedimentos.length <= 1
+      ? (v.procedimentos[0] ?? "Procedimento")
+      : `${v.procedimentos.slice(0, -1).join(", ")} e ${v.procedimentos[v.procedimentos.length - 1]}`;
+  const total = (v.totalCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const meio = v.totalCents <= 0 ? "sem custo (coberto pelo programa)" : (MEIO_NO_COMPROVANTE[v.meio ?? ""] ?? v.meio ?? "—");
+  const forma = v.totalCents > 0 && v.parcelas > 1 ? `${meio}, em ${v.parcelas}×` : meio;
+  const [y, m, d] = v.data.slice(0, 10).split("-");
+  const pago = v.totalCents <= 0 ? `${forma}` : `pago em ${forma}`;
+  return (
+    `Olá, ${primeiro}! Sua compra na ${v.unidade} está confirmada. ` +
+    `${lista} — total ${total}, ${pago} em ${d}/${m}/${y}.` +
+    `${v.codigo ? ` Código ${v.codigo}.` : ""} Obrigado!`
+  );
+}

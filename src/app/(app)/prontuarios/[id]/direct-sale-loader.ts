@@ -329,6 +329,12 @@ export async function loadClientDirectSales(
     console.error("loadClientDirectSales items failed:", itemRes.error.message);
   const sessRows = sessRes.data;
   const ruleRows = ruleRes.data;
+  // VD3-3: o nome da unidade de cada venda (o comprovante diz onde comprou).
+  const unidadesIds = [...new Set((saleRows ?? []).map((s) => s.clinic_id as string))];
+  const { data: unidades } = unidadesIds.length
+    ? await supabase.from("clinics").select("id, name").in("id", unidadesIds)
+    : { data: [] as { id: string; name: string }[] };
+  const nomeDaUnidade = new Map((unidades ?? []).map((u) => [u.id as string, u.name as string]));
 
   // Itens agrupados por venda (busca separada — embeds são o ponto frágil).
   const itemsBySale = new Map<
@@ -475,7 +481,8 @@ export async function loadClientDirectSales(
     id: s.id as string,
     code: (s.code as string | null) ?? null,
     clinicId: s.clinic_id as string,
-    clinicName: null,
+    clinicName: nomeDaUnidade.get(s.clinic_id as string) ?? null,
+    closedAt: (s.closed_at as string | null) ?? null,
     clientId: s.client_id as string | null,
     clientName: s.client_name as string | null,
     subtotalCents: s.subtotal_cents as number,

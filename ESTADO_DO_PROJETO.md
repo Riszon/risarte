@@ -2,6 +2,39 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💳 0.472.0 — VENDA DIRETA V3, VD3-3: O PIX NA JANELA (17/11/2026; sem migração) — NA BRANCH `feature/venda-direta-v3`, NÃO PUBLICADO
+>
+> Plano e decisões P1–P3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §8. EV-371.
+> - **A cobrança da vez na caixa Pagamento**: `src/components/venda-direta/pagamento.tsx`
+>   (`PagamentoPeloAsaas`): QR do Pix desenhado na tela pelo `qrcode` 1.5.4
+>   (dependência nova, P1) a partir do copia e cola guardado; Copiar Pix,
+>   Abrir o link, Linha digitável, WhatsApp para o telefone do cliente.
+>   Regras puras em `venda-direta-caixa.ts` (`cobrancaDaVez`,
+>   `esperandoOAsaas`, `cobrancaParaNascer`, `comprovanteDaVenda`).
+> - ⚠️ **Ao vivo**: confere a cada 5 s enquanto a cobrança espera — e por até
+>   2 min enquanto ela NASCE depois da assinatura. ⚠️ O `sale_charges_read`
+>   devolve **"agendada para hoje"** enquanto a cobrança não nasceu: hoje (ou
+>   antes) conta como "nascendo". ⚠️ O meio da cobrança vem **`PIX`**
+>   (maiúsculas) e o da parcela `pix`. ⚠️ Leitura que falha (o
+>   `sale_charges_read` estourou o tempo na hora da baixa) mantém a tela e
+>   segue conferindo.
+> - **Comprovante pelo WhatsApp** (D4/P2, texto aprovado) na venda concluída,
+>   com a data da conclusão; `loadClientDirectSales` passou a trazer o nome da
+>   unidade e a data de conclusão de cada venda.
+> - **Visto na tela** (servidor local, Recepção de teste, Londrina com o Asaas
+>   de sandbox): Pix → termo (ZapSign de mentira) → assinatura simulada → a
+>   cobrança nasceu no sandbox e o QR apareceu sozinho → aviso
+>   `PAYMENT_RECEIVED` aplicado pelo caminho do webhook → venda concluída
+>   sozinha (VD-00610) → comprovante conferido. O teste achou e corrigiu 4
+>   defeitos (agendada para hoje, `PIX` maiúsculo, leitura com falha, unidade
+>   no comprovante). ⚠️ A cobrança automática de **Londrina está desligada no
+>   treino**: as vendas de teste foram marcadas uma a uma em
+>   `sale_auto_charges` (a unidade não foi ligada). Resíduo: VD-00609,
+>   VD-00610 (pagas, cobranças `liquidada` no sandbox por aviso simulado) e
+>   uma 3ª venda sem cobrança (cliente "Teste Asaas ASA2 Paciente").
+> - Na produção nada muda até a ASA7 (sem Asaas, a caixa segue com
+>   "Confirmar que recebeu").
+>
 > ## 👥 0.468.0 — FUNÇÕES DE APOIO, F4: EQUIPE E COBERTURAS (17/11/2026; migração 0419)
 >
 > Plano (D1–D15, seção 10): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Manual 2.5 e
