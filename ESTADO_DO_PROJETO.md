@@ -22,6 +22,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - Ensaio 25/25 (`scripts/ensaio-fim-do-tratamento-0422.mjs`, provado
 >   quebrando), 0418 com 0420+0421+0422 35/35, 0421 com a 0422 20/20; régua
 >   provada quebrando. Não visto na tela.
+> - ✅ **0422 aplicada na produção (17/11/2026)**: conferência 6·0·1·1·true·3·false·true·false (nenhum cliente com duas decisões); conferida de fora: sem login, `answer_treatment_closure` (4 parâmetros), `request_sooner_reevaluation`, `closure_coordinator_slot` e `_horario_com_coordenador` recusam; as colunas novas existem. Push depois da migração.
 >
 > ## 💳 0.472.0 — VENDA DIRETA V3, VD3-3: O PIX NA JANELA (17/11/2026; sem migração)
 >
