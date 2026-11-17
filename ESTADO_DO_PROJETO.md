@@ -21,6 +21,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - Ensaio 35/35 (`scripts/ensaio-fim-do-tratamento-0423.mjs`, provado
 >   quebrando); régua `abandono.test.ts`. O treino não tem Gerente em
 >   Londrina: o ensaio cria um na transação. Não visto na tela.
+> - ✅ **0423 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: as 2 tabelas (vazias), os 2 prazos (30 dias) e as 6 funções fechadas para quem não está logado.
 >
 > ## 🩺 0.473.0 — FIM DO TRATAMENTO: UMA DECISÃO POR CLIENTE (17/11/2026; migração 0422; relato OC-00185)
 >
