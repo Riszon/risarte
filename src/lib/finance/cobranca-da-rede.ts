@@ -92,6 +92,7 @@ export type LoteLido = {
   } | null;
   can_manage: boolean;
   can_contest: boolean;
+  previsto?: { due_date: string | null; finance_email: string | null; missing: string[] | null } | null;
   items: ItemDoLote[];
   info: { retido_cents: number; a_reter_cents: number; dispensado_cents: number } | null;
   notice: string | null;

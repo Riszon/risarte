@@ -1506,6 +1506,14 @@ begin
                 'due_date', ch.due_date, 'value_cents', ch.value_cents, 'paid_cents', ch.paid_cents, 'paid_on', ch.paid_on,
                 'error_code', ch.error_code) end,
     'can_manage', v_manage,
+    -- Para a confirmação da emissão: o vencimento previsto e o e-mail do aviso do Asaas.
+    'previsto', (select jsonb_build_object(
+        'due_date', case when f.due_day is null then null else greatest(
+                      make_date(extract(year from b.period + interval '1 month')::int, extract(month from b.period + interval '1 month')::int, f.due_day),
+                      public.today_br() + 1) end,
+        'finance_email', f.finance_email,
+        'missing', to_jsonb(f.missing))
+      from public._franchise_billing_cfg(b.clinic_id) f),
     'can_contest', public.has_role_in_clinic(b.clinic_id, array['unit_manager', 'franchisee']::public.user_role[]),
     'items', coalesce((select jsonb_agg(to_jsonb(i) - 'clinic_id' || jsonb_build_object('fee_label', public.network_fee_label(i.fee))
                          order by case i.kind when 'fixa' then 1 when 'percentual' then 2 when 'ajuste' then 3 when 'credito' then 4 else 5 end,

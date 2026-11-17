@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import {
@@ -199,7 +200,17 @@ function Demonstrativo({ lido }: { lido: LoteLido }) {
     const m = window.prompt(texto);
     return m && m.trim().length >= 5 ? m.trim() : null;
   };
-  const prontaParaAprovar = b.status === "previa" && !lido.items.some((i) => i.status === "contestado");
+  const temContestacao = lido.items.some((i) => i.status === "contestado");
+  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const janelaAberta = b.status === "previa" && b.preview_deadline >= hoje && !b.unit_ack_at;
+  // Por que ainda não se aprova (fica ao lado do botão, fixo).
+  const motivoDeEsperar = temContestacao
+    ? "Há contestação aberta: decida antes."
+    : janelaAberta
+      ? `Aguardando a conferência da unidade até ${dia(b.preview_deadline)}.`
+      : null;
+  const prontaParaAprovar = b.status === "previa" && !motivoDeEsperar;
+  const [confirmando, setConfirmando] = useState(false);
 
   return (
     <section className="space-y-4 rounded-lg border p-4">
@@ -313,22 +324,55 @@ function Demonstrativo({ lido }: { lido: LoteLido }) {
 
       <footer className="flex flex-wrap gap-2">
         {lido.can_contest && b.status === "previa" && !b.unit_ack_at && (
-          <Button disabled={pendente} onClick={() => acao(() => conferirPrevia(b.id), "Conferida. A prévia vai para a aprovação.")}>
-            Conferi, está de acordo
-          </Button>
+          <span className="flex flex-wrap items-center gap-2">
+            <Button disabled={pendente || temContestacao} onClick={() => acao(() => conferirPrevia(b.id), "Conferida. A prévia vai para a aprovação.")}>
+              Conferi, está de acordo
+            </Button>
+            {temContestacao && <span className="text-xs text-muted-foreground">Há contestação aberta: o Financeiro decide antes.</span>}
+          </span>
         )}
         {lido.can_manage && b.status === "previa" && (
           <>
-            <Button
-              disabled={pendente || !prontaParaAprovar}
-              title={prontaParaAprovar ? undefined : "Decida as contestações antes"}
-              onClick={() => {
-                if (!window.confirm(`Aprovar e emitir a cobrança de ${formatBRL(r.total)} pela conta da franqueadora?`)) return;
-                acao(() => aprovarEEmitir(b.id), "Aprovada e emitida no Asaas.");
-              }}
-            >
-              Aprovar e emitir
-            </Button>
+            <span className="flex flex-wrap items-center gap-2">
+              <Button disabled={pendente || !prontaParaAprovar} onClick={() => setConfirmando(true)}>
+                Aprovar e emitir
+              </Button>
+              {motivoDeEsperar && <span className="text-xs text-muted-foreground">{motivoDeEsperar}</span>}
+            </span>
+            <Dialog open={confirmando} onOpenChange={setConfirmando}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Aprovar e emitir a cobrança mensal</DialogTitle>
+                  <DialogDescription>A cobrança sai pelo Asaas, pela conta da franqueadora (boleto com Pix).</DialogDescription>
+                </DialogHeader>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                  <dt className="text-muted-foreground">Unidade</dt>
+                  <dd>{lido.clinic.legal_name ?? lido.clinic.name}</dd>
+                  <dt className="text-muted-foreground">Mês</dt>
+                  <dd>{mesAno(b.period)}</dd>
+                  <dt className="text-muted-foreground">Valor</dt>
+                  <dd className="font-semibold">{formatBRL(r.total)}</dd>
+                  <dt className="text-muted-foreground">Vencimento</dt>
+                  <dd>{dia(lido.previsto?.due_date ?? null)}</dd>
+                  <dt className="text-muted-foreground">Aviso do Asaas para</dt>
+                  <dd className="break-all">{lido.previsto?.finance_email ?? "—"}</dd>
+                </dl>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setConfirmando(false)} disabled={pendente}>
+                    Voltar
+                  </Button>
+                  <Button
+                    disabled={pendente}
+                    onClick={() => {
+                      setConfirmando(false);
+                      acao(() => aprovarEEmitir(b.id), "Aprovada e emitida no Asaas.");
+                    }}
+                  >
+                    Aprovar e emitir
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button
               variant="outline"
               disabled={pendente}
@@ -419,7 +463,7 @@ function Linha({
       {(i.contest_reason || i.decision_reason) && (
         <tr>
           <td colSpan={6} className="pb-2 text-xs text-muted-foreground">
-            {i.contest_reason && <>Contestação: {i.contest_reason}. </>}
+            {i.contest_reason && <>Contestação: {i.contest_reason.replace(/[.\s]+$/, "")}. </>}
             {i.contest_attachment_path && (
               <button
                 type="button"
@@ -433,7 +477,7 @@ function Linha({
                 Ver o comprovante
               </button>
             )}
-            {i.decision_reason && <> Decisão: {i.decision_reason}.</>}
+            {i.decision_reason && <> Decisão: {i.decision_reason.replace(/[.\s]+$/, "")}.</>}
             {lido.can_manage && i.status === "contestado" && (
               <span className="ml-2 space-x-2">
                 <button
