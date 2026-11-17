@@ -1,7 +1,7 @@
 // ENSAIO DA 4021a (a CONFERÊNCIA DAS TAXAS, spec 20.17) no banco de TREINO, numa
 // transação DESFEITA. O Asaas não é chamado (a emissão e o pagamento passam
 // pelas mesmas portas do servidor e do webhook). Valores de configuração: EXEMPLO.
-// Uso: RISARTE_TREINO_POOLER=1 node scripts/asaas-ensaio-asa6-conferencia.mjs --confirmar [--quebrar=dobro|fora|baixa|soma]
+// Uso: RISARTE_TREINO_POOLER=1 node scripts/asaas-ensaio-asa6-conferencia.mjs --confirmar [--quebrar=dobro|fora|baixa|soma|razao]
 //
 // PROVADO QUEBRANDO (20.17.4): cada conferência da rotina desligada tem de reprovar.
 import { readFileSync } from "node:fs";
@@ -54,6 +54,12 @@ try {
   if (Q === "fora") await trocar("public._franchise_reconcile_found(uuid)", "         and public._franchise_line_due(sc.id) - public._franchise_invoiced_line(sc.id) > 0\n", "         and false\n");
   if (Q === "baixa") await trocar("public._franchise_reconcile_found(uuid)", "       and (b.settled_at is null or", "       and false and (b.settled_at is null or");
   if (Q === "soma") await trocar("public._franchise_month_account(uuid, date)", "s.retido + s.a_reter +", "s.a_reter +");
+  if (Q === "razao") {
+    const f = (await um("select pg_get_functiondef('public._franchise_reconcile_run()'::regprocedure) d")).d;
+    const de = ["             union all", "             select * from public._franchise_ledger_found(u.clinic_id) loop"].join("\n");
+    if (!f.includes(de)) throw new Error("QUEBRA: trecho não achado em _franchise_reconcile_run");
+    await c.query(f.replace(de, " loop"));
+  }
   if (Q) console.log(`   (QUEBRADO de propósito: ${Q})`);
 
   // --- as pessoas e o cenário (o mesmo da 4021: Londrina, setembro e outubro) ----
@@ -98,6 +104,15 @@ try {
   await c.query(`insert into public.charge_splits (charge_id, destination_account_id, wallet_id, percent, percentual_value, fixed_cents, fees, tariff_percent, tariff_fixed_cents, status)
                  values ($1, $2, 'carteira-ensaio-4021a', 6, 6, 0, '{"comercial": 6}'::jsonb, 0, 0, 'enviado')`, [ch0, ROOT]);
   for (const f of ["royalty", "comercial"]) await c.query("select public.refresh_network_fee_payable($1, $2, $3)", [U, f, SET]);
+  // As linhas retidas do cenário entram pelo banco, sem o split de verdade: o
+  // razão delas é lançado como o sistema faz (despesa na unidade, receita na
+  // franqueadora), para o mês limpo não ter "sem lançamento no razão".
+  for (const [id, fee, v] of [[L.retida, "royalty", 9000], [L.reter, "comercial", 12000]]) {
+    const acc = await um("select * from public.network_fee_accounts($1)", [fee]);
+    await c.query(`insert into public.financial_entries (clinic_id, account_code, accrual_date, amount_cents, direction, status, source_type, source_id, description)
+                   values ($1, $2, $3, $4, 'outflow', 'open', 'split_retained', $5, 'ensaio'), ($6, $7, $3, $4, 'inflow', 'open', 'split_retained_revenue', $5, 'ensaio')`,
+      [U, acc.unit_account, SET, v, id, HQ, acc.franchisor_account]);
+  }
 
   const evento = async (ev, payId, ref, p) => {
     const e = await um(`insert into public.gateway_webhook_events (account_id, asaas_event_id, event, payload) values ($1, $2, $3, $4::jsonb) returning id`,
@@ -128,6 +143,15 @@ try {
   // --- 1) o mês limpo: zero divergência e a conta fecha em R$ 0,00 ------------------
   const r0 = (await um("select public._franchise_reconcile_run() j")).j;
   const abertas = await todos("select kind, period, amount_cents, detail from public.reconciliation_issues where status = 'aberta'");
+  if (process.env.DEBUG) {
+    console.log(JSON.stringify(abertas));
+    const sdr = await todos(`select p.id, p.status, p.amount_cents, p.paid_amount_cents, p.fee_period, p.cancel_reason,
+        (select json_agg(json_build_object('t', f.source_type, 's', f.status, 'v', f.amount_cents)) from public.financial_entries f where f.source_id = p.id) e,
+        (select json_agg(json_build_object('v', pp.amount_cents, 'm', pp.payment_method)) from public.payable_payments pp where pp.payable_id = p.id) pg,
+        exists (select 1 from public.network_fee_fixed_waivers w where w.clinic_id = p.clinic_id and w.fee = p.network_fee and w.period = p.fee_period) dispensa
+       from public.payables p where p.clinic_id = $1 and p.network_fee = 'sdr' and p.fee_period = $2`, [U, SET]);
+    console.log(JSON.stringify(sdr));
+  }
   conf(`o mês limpo: zero divergência (${abertas.map((x) => x.kind + ":" + x.amount_cents).join(", ") || "nenhuma"})`, abertas.length === 0 && n(r0.novas) === 0);
   for (const per of [SET, OUT]) {
     const a = (await um("select public._franchise_month_account($1, $2) j", [U, per])).j;
@@ -174,6 +198,11 @@ try {
   await c.query(`insert into public.financial_entries (clinic_id, account_code, accrual_date, cash_date, amount_cents, direction, status, source_type, source_id, description)
                  values ($1, '2.6.01', $2, $2, 700, 'outflow', 'settled', 'payable_cash', $3, 'plantado')`, [U, OUT, pp.id]);
 
+  // i) SEM LANÇAMENTO NO RAZÃO (17/11/2026): uma taxa retida sem a despesa nem a
+  //    receita no razão (o defeito da 4018c), e um pagamento de taxa sem o caixa.
+  const semRazao = await linha("royalty", OUT, 300, { retido: 300 });
+  const semCaixa = (await um(`insert into public.payable_payments (clinic_id, payable_id, amount_cents, paid_at, payment_method, reference)
+                              values ($1, $2, 450, $3, 'pix', 'plantado sem caixa') returning id`, [U, pay.id, OUT])).id;
   const r1 = (await um("select public._franchise_reconcile_run() j")).j;
   conf("linha em dois donos: a cobrada duas vezes", await tem("linha_dois_donos", L.a));
   conf("linha em dois donos: o a reter cobrado", await tem("linha_dois_donos", L.reter));
@@ -183,6 +212,9 @@ try {
   conf("conta a pagar desatualizada", await tem("conta_desatualizada", pay.id));
   conf("caixa diferente", await tem("caixa_diferente", B2));
   conf("a diferença da conta do mês aparece (a linha sem origem)", await tem("diferenca_do_mes", null));
+  conf("sem lançamento no razão: a taxa retida sem a despesa e a receita", await tem("sem_razao", semRazao));
+  conf("sem lançamento no razão: a conta de taxa com valor diferente da despesa", await tem("sem_razao", pay.id));
+  conf("sem lançamento no razão: o pagamento de taxa sem o caixa", await tem("sem_razao", semCaixa));
   conf(`o resumo do dia vai ao Financeiro (${r1.novas} nova(s))`, !!(await um("select 1 x from public.notifications where user_id = $1 and title = 'Conferência das taxas: divergência nova'", [P.financeiro])));
   const n1 = n((await um("select count(*) n from public.notifications where title = 'Conferência das taxas: divergência nova'")).n);
   await c.query("select public._franchise_reconcile_run()");
@@ -211,6 +243,8 @@ try {
   await c.query("update public.charge_splits set excess_cents = 0 where id = $1", [cs.id]);
   await c.query("update public.payables set amount_cents = $2 where id = $1", [pay.id, pay.amount_cents]);
   await c.query("update public.payable_payments set franchise_batch_id = null where id = $1", [pp.id]);
+  await c.query("update public.split_charges set reversed = true where id = $1", [semRazao]);
+  await c.query("update public.payable_payments set reversed = true where id = $1", [semCaixa]);
   const r2 = (await um("select public._franchise_reconcile_run() j")).j;
   const sobra = await todos("select kind, amount_cents from public.reconciliation_issues where status = 'aberta'");
   conf(`desfeitos os defeitos, todas fecham sozinhas (${sobra.map((x) => x.kind + ":" + x.amount_cents).join(", ") || "nenhuma"}; ${r2.fechadas} fechada(s))`,

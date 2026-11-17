@@ -19,10 +19,44 @@ try {
   const fin = (await um("select id from profiles where email='financeiro@example.com'")).id;
   const como = async (id) => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims',$1,true)", [JSON.stringify({ sub: id, role: "authenticated" })]); await c.query("set local role authenticated"); };
   const tenta = async (id, sql, p = []) => { await como(id); await c.query("savepoint s"); try { const r = (await c.query(sql, p)).rows; await c.query("release savepoint s"); return r; } catch (e) { await c.query("rollback to savepoint s"); return "erro: " + e.message.slice(0, 60); } finally { await c.query("reset role"); await c.query("select set_config('request.jwt.claims', '', true)"); } };
-  // Uma prévia aberta em Cambé (como o Admin), para ter o que ler.
+  // Uma prévia aberta em Cambé (como o Admin), para ter o que ler. O teste de
+  // ponta a ponta de 17/11 já pagou a de outubro: dentro da transação desfeita,
+  // os lotes de Cambé de outubro saem do caminho.
+  await c.query("update franchise_monthly_batches set status = 'cancelada' where clinic_id = $1 and period = '2026-10-01'", [cambe]);
   const lote = (await tenta(adm, "select public.franchise_monthly_open($1,'2026-10-01') id", [cambe]))[0].id;
   const item = (await um("select id from franchise_monthly_items where batch_id=$1 and kind='percentual' limit 1", [lote])).id;
   const ldnLote = (await um("select id from franchise_monthly_batches where clinic_id=$1 and status<>'cancelada' limit 1", [ldn])).id;
+  // PARTE 0 (17/11/2026, pedido do dono): o Gerente com os papéis REAIS do treino
+  // (Unidade Teste, Cambé e Londrina) diante de uma unidade que ele NÃO gere.
+  const fake = (await um("select id from clinics where name='Risarte Unidade Fake'")).id;
+  const geridas = (await c.query("select clinic_id from user_clinic_roles_all where user_id=$1 and role='unit_manager'", [ger])).rows.map((x) => x.clinic_id);
+  res.push(["(papéis reais) o Gerente gere mais de uma unidade, e não a Fake", geridas.length >= 2 && !geridas.includes(fake)]);
+  await tenta(adm, "select public.franchise_billing_unit_save($1, $2::jsonb)", [fake, JSON.stringify({ finance_email: "financeiro.fake@example.com", monthly_from: "2026-10-01", example_values: true })]);
+  let fakeLote = (await tenta(adm, "select public.franchise_monthly_open($1,'2026-10-01') id", [fake]))?.[0]?.id;
+  if (!fakeLote) {
+    fakeLote = (await um(`insert into franchise_monthly_batches (clinic_id, period, status, total_cents, preview_deadline)
+                          values ($1, '2026-10-01', 'previa', 10000, public.today_br() + 5) returning id`, [fake])).id;
+  }
+  let fakeItem = (await um("select id from franchise_monthly_items where batch_id=$1 limit 1", [fakeLote]))?.id;
+  if (!fakeItem) {
+    fakeItem = (await um(`insert into franchise_monthly_items (batch_id, clinic_id, kind, fee, origin_period, amount_cents, description)
+                          values ($1, $2, 'ajuste', 'royalty', '2026-10-01', 10000, 'teste de papéis') returning id`, [fakeLote, fake])).id;
+  }
+  res.push(["(papéis reais) Gerente lê a de Cambé (uma das suas)", Array.isArray(await tenta(ger, "select public.franchise_monthly_read($1)", [lote]))]);
+  res.push(["(papéis reais) Gerente não lê a da Fake", String(await tenta(ger, "select public.franchise_monthly_read($1)", [fakeLote])).includes("NOT_ALLOWED")]);
+  res.push(["(papéis reais) Gerente não contesta a da Fake", String(await tenta(ger, "select public.franchise_monthly_contest($1,'motivo do teste')", [fakeItem])).includes("NOT_ALLOWED")]);
+  const listaG = await tenta(ger, "select public.franchise_monthly_list(null) j");
+  res.push(["(papéis reais) a lista do Gerente só tem as unidades dele", Array.isArray(listaG) && (listaG[0].j ?? []).every((x) => geridas.includes(x.clinic_id)) && !(listaG[0].j ?? []).some((x) => x.clinic_id === fake)]);
+  res.push(["(papéis reais) Gerente não lê a conferência da Fake", String(await tenta(ger, "select public.franchise_reconciliation_read(null,$1)", [fake])).includes("NOT_ALLOWED")]);
+  const confG = await tenta(ger, "select public.franchise_reconciliation_read(null, null) j");
+  res.push(["(papéis reais) a conferência do Gerente só mostra as unidades dele", Array.isArray(confG) && (confG[0].j.units ?? []).every((x) => geridas.includes(x.clinic_id))]);
+  res.push(["(papéis reais) Gerente não vê os itens da Fake pela tabela", (await tenta(ger, "select count(*) n from franchise_monthly_items where clinic_id=$1", [fake]))[0].n === "0"]);
+  const rep = await tenta(ger, "select public.franchise_payouts_read(current_date - 30, current_date, $1) j", [fake]);
+  // A porta do painel nem é liberada ao Gerente ("permission denied") ou recusa a unidade (NOT_ALLOWED).
+  res.push(["(papéis reais) Gerente não lê o Painel de repasses da Fake", typeof rep === "string" && /NOT_ALLOWED|permission denied/.test(rep)]);
+  const pedidos = await tenta(ger, "select count(*) n from refund_requests where clinic_id=$1", [fake]);
+  res.push(["(papéis reais) Gerente não vê pedidos de estorno da Fake", Array.isArray(pedidos) && pedidos[0].n === "0"]);
+
   // Gerente: só Cambé.
   await c.query("delete from user_clinic_roles_all where user_id=$1", [ger]);
   await c.query("insert into user_clinic_roles_all (user_id, clinic_id, role) values ($1,$2,'unit_manager')", [ger, cambe]);

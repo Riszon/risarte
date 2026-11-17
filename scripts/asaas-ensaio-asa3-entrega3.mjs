@@ -97,9 +97,13 @@ try {
   const e2 = await recusa(sql);
   conf("a 4010 roda duas vezes sem erro", e2 === null);
   if (e2) console.log("   ", e2);
+  // A 4018c redefine depois as duas leituras do painel (as mensalidades): o
+  // ensaio confere a versão de hoje, não a da 4010 sozinha.
+  let sql4018c = readFileSync("supabase/migrations/4018c_asa3_taxa_retida_no_razao.sql", "utf8");
+  await c.query(sql4018c);
   if (QUEBRAR === "rateio") {
-    sql = sql.replace("case when f2.rn <= coalesce(f2.leftover, 0) then 1 else 0 end", "case when f2.rn = 1 then coalesce(f2.leftover, 0) else 0 end");
-    await c.query(sql);
+    sql4018c = sql4018c.replace("case when f2.rn <= coalesce(f2.leftover, 0) then 1 else 0 end", "case when f2.rn = 1 then coalesce(f2.leftover, 0) else 0 end");
+    await c.query(sql4018c);
     console.log("   (QUEBRADO de propósito: a sobra do rateio vai para uma taxa só)");
   } else if (QUEBRAR === "resumo") {
     sql = sql.replace("f.situation in ('ok', 'absorvida', 'mensageria', 'conta_a_pagar', 'a_maior')", "f.situation in ('ok', 'absorvida', 'mensageria', 'conta_a_pagar', 'a_maior', 'a_receber')");
@@ -323,6 +327,7 @@ try {
       where ch.clinic_id = $1 and cs.status = 'liquidado' and (cs.settled_at at time zone 'America/Sao_Paulo')::date between $2 and $3`,
     [ldn, de, ate]
   )).s;
+  if (process.env.DEBUG) console.log({ liqPer, liqBanco });
   conf("parte 3: liquidado no período (pela data do Asaas) = o que o Asaas pagou", liqPer === liqBanco);
 
   // PARTE 4: divergências.
@@ -358,8 +363,18 @@ try {
     `select coalesce(sum(sc.amount_cents),0)::int s from public.split_charges sc join public.payment_receipts r on r.id = sc.receipt_id
       where r.clinic_id = $1 and r.received_at between $2 and $3 and r.reversal_of is null and not sc.reversed`,
     [ldn, de, ate]
+  )).s
+    // 4018c: e as taxas das mensalidades pagas no período (pela data do pagamento no Asaas, ou o dia em que a taxa nasceu).
+    + (await um(
+    `select coalesce(sum(sc.amount_cents),0)::int s from public.split_charges sc
+      where sc.clinic_id = $1 and sc.source_type <> 'receipt' and not sc.reversed
+        and coalesce((select max(c.paid_on) from public.charges c where c.source_type = sc.source_type and c.source_id = sc.source_id
+                       and c.status in ('paga','liquidada','em_contestacao')),
+                     ((select min(x.created_at) from public.split_charges x where x.source_type = sc.source_type and x.source_id = sc.source_id) at time zone 'America/Sao_Paulo')::date)
+            between $2 and $3`,
+    [ldn, de, ate]
   )).s;
-  conf("parte 0: devido no período = as taxas dos recebimentos do período", res && res.devido === devBanco);
+  conf("parte 0: devido no período = as taxas dos recebimentos e das mensalidades do período", res && res.devido === devBanco);
   const arRes = soma(J.cobrancas.filter((l) => l.situacao === "a_receber"), (l) => l.devido);
   conf("parte 0: a receber = o devido das cobranças do período não liquidadas", res && res.a_receber === arRes);
 
@@ -423,6 +438,7 @@ try {
   // c) o recebido pelo Asaas bate com o Painel de cobranças no mesmo período.
   const painel = await comoPessoa(P.admin, "select * from public.gateway_charges_list($1, array['paga','liquidada','em_contestacao'], null, 'pagamento', $2::date, $3::date, false)", [ldn, de, ate]);
   const recAsaas = (cat("split")?.recebido ?? 0) + (cat("asaas_sem_split")?.recebido ?? 0);
+  if (process.env.DEBUG) console.log({ recAsaas, painel: Array.isArray(painel) ? soma(painel, (p) => p.paid_cents) : painel, cats: J?.categorias ?? null });
   conf("AJUSTE 4: o recebido pelo Asaas = o pago no Painel de cobranças (mesmo período)", Array.isArray(painel) && recAsaas === soma(painel, (p) => p.paid_cents));
   conf(
     "AJUSTE 4: o recebido com split = o pago das cobranças com split no Painel de cobranças",

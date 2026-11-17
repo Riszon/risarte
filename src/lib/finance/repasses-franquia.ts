@@ -146,7 +146,7 @@ export type Repasses = {
 
 // --- os rótulos -----------------------------------------------------------------
 
-export type Categoria = "split" | "asaas_sem_split" | "dinheiro" | "permuta" | "cartao" | "deposito_pix" | "externa" | "estornado";
+export type Categoria = "split" | "asaas_sem_split" | "dinheiro" | "permuta" | "cartao" | "deposito_pix" | "externa" | "mensalidade" | "estornado";
 export const CATEGORIAS: { valor: Categoria; rotulo: string }[] = [
   { valor: "split", rotulo: "Asaas com split" },
   { valor: "asaas_sem_split", rotulo: "Asaas sem split" },
@@ -156,6 +156,8 @@ export const CATEGORIAS: { valor: Categoria; rotulo: string }[] = [
   { valor: "cartao", rotulo: "Maquininha e outros cartões" },
   { valor: "deposito_pix", rotulo: "Depósito e Pix manual" },
   { valor: "externa", rotulo: "Cobrança externa" },
+  // 4018c: a mensalidade do PPR+ e da Ortodontia paga fora do Asaas (a taxa é "a cobrar").
+  { valor: "mensalidade", rotulo: "Mensalidade (fora do Asaas)" },
   { valor: "estornado", rotulo: "Estornado (taxa mantida)" },
 ];
 export const rotuloDaCategoria = (c: string) => CATEGORIAS.find((x) => x.valor === c)?.rotulo ?? c;

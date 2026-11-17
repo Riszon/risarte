@@ -31,10 +31,10 @@ As versões do core da cobrança mensal (0.461.0, 0.462.0, 0.462.1 e 0.473.0) ex
 
 | Ordem | Migração | Conferência esperada |
 |---|---|---|
-| 0 | `4018c` (a taxa retida da mensalidade no razão), **se você aprovar a correção** (`resultado-suite-e-ensaios-17-11.md`) | a definir na construção (as linhas sem lançamento devem dar 0) |
+| 0 | `4018c_asa3_taxa_retida_no_razao.sql` | `gatilho_novo 1 · linhas_sem_razao 0` |
 | 1 | `4020a_asa4_estorno_parcial_pelo_asaas.sql` | `tabela_nova 1 · funcoes_novas 9 · limite_em_branco true · aviso_ligado true` |
 | 2 | `4021_asa6_cobranca_mensal_das_unidades.sql` | `tabelas_novas 8 · funcoes_novas 45 · configuracao_em_branco true · unidades_configuradas 0 · lotes 0 · ramos_ligados true` |
-| 3 | `4021a_asa6_conferencia_das_taxas.sql` | `tabelas_novas 2 · funcoes_novas 8 · divergencias 0` |
+| 3 | `4021a_asa6_conferencia_das_taxas.sql` | `tabelas_novas 2 · funcoes_novas 9 · divergencias 0` |
 
 **Depois das três:** publico o `main` (0.479.0) e confiro de fora a versão na tela de login e o anônimo barrado (401) nas portas novas.
 

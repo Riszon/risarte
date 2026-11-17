@@ -50,6 +50,7 @@ export const TIPO_DA_DIVERGENCIA: Record<string, { rotulo: string; caminho: stri
   split_a_mais: { rotulo: "Split a mais", caminho: "O Asaas repassou mais do que o devido (acima da tolerância). O Financeiro decide a devolução à unidade." },
   conta_desatualizada: { rotulo: "Conta a pagar desatualizada", caminho: "A conta de taxa do mês não bate com as linhas dela. O ajuste entra no mês aberto." },
   diferenca_do_mes: { rotulo: "Diferença da conta do mês", caminho: "A conta do mês não fecha em zero. Revisão do Financeiro." },
+  sem_razao: { rotulo: "Sem lançamento no razão", caminho: "Uma taxa retida, uma conta de taxa ou o pagamento dela não tem o lançamento do mesmo valor no razão (despesa da unidade, receita da franqueadora ou caixa). Revisão do Financeiro; o DRE fica errado até corrigir." },
 };
 
 const dia = (iso: string | null | undefined) => (iso ? iso.slice(0, 10).split("-").reverse().join("/") : "—");

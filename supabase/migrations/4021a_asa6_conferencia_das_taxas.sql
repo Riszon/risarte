@@ -23,7 +23,7 @@ create table if not exists public.reconciliation_issues (
   clinic_id uuid not null references public.clinics(id),
   period date not null,
   kind text not null check (kind in ('linha_dois_donos', 'linha_sem_dono', 'pago_diferente', 'caixa_diferente',
-                                     'split_a_mais', 'conta_desatualizada', 'diferenca_do_mes')),
+                                     'split_a_mais', 'conta_desatualizada', 'diferenca_do_mes', 'sem_razao')),
   ref_type text,
   ref_id uuid,
   amount_cents bigint not null default 0,
@@ -39,6 +39,11 @@ create table if not exists public.reconciliation_issues (
   reopened_at timestamptz,
   created_at timestamptz not null default now()
 );
+-- "Sem lançamento no razão" (17/11/2026): também em quem já tinha a tabela.
+alter table public.reconciliation_issues drop constraint if exists reconciliation_issues_kind_check;
+alter table public.reconciliation_issues add constraint reconciliation_issues_kind_check
+  check (kind in ('linha_dois_donos', 'linha_sem_dono', 'pago_diferente', 'caixa_diferente',
+                  'split_a_mais', 'conta_desatualizada', 'diferenca_do_mes', 'sem_razao'));
 -- Uma só por tipo, linha e mês enquanto não resolvida.
 create unique index if not exists reconciliation_issues_open_key
   on public.reconciliation_issues (issue_key) where status <> 'resolvida';
@@ -251,6 +256,61 @@ begin
 end;
 $$;
 
+-- -----------------------------------------------------------------------------
+-- SEM LANÇAMENTO NO RAZÃO (pedido do dono, 17/11/2026, depois da 4018c): a linha
+-- de taxa retida, a conta a pagar de taxa (cobrada) e o pagamento dela (paga)
+-- precisam ter o lançamento correspondente no razão, do mesmo valor. Vale para
+-- toda unidade com conta Asaas ativa ou com a cobrança mensal ligada, em
+-- qualquer mês (o defeito da 4018c foi achado pelo ensaio, não pela rotina).
+-- -----------------------------------------------------------------------------
+create or replace function public._franchise_ledger_found(p_clinic_id uuid)
+returns table (kind text, period date, ref_type text, ref_id uuid, amount_cents bigint, detail jsonb)
+language sql stable security definer set search_path = '' as $$
+  -- a linha retida pelo split: a despesa da unidade e a receita da franqueadora
+  select 'sem_razao', sc.period_month, 'split_charge', sc.id,
+         sc.retained_cents - coalesce(u.v, 0),
+         jsonb_build_object('tipo', 'retida', 'fee', sc.fee, 'retido', sc.retained_cents,
+                            'despesa_unidade', coalesce(u.v, 0), 'receita_rede', coalesce(h.v, 0))
+    from public.split_charges sc
+    left join lateral (select sum(f.amount_cents)::bigint v from public.financial_entries f
+                        where f.source_type = 'split_retained' and f.source_id = sc.id and f.status in ('open', 'settled')) u on true
+    left join lateral (select sum(f.amount_cents)::bigint v from public.financial_entries f
+                        where f.source_type = 'split_retained_revenue' and f.source_id = sc.id and f.status in ('open', 'settled')) h on true
+   where sc.clinic_id = p_clinic_id and not sc.reversed and sc.retained_cents > 0 and sc.waived_at is null
+     and (coalesce(u.v, 0) <> sc.retained_cents or coalesce(h.v, 0) <> sc.retained_cents)
+  union all
+  -- a conta a pagar de taxa (cobrada): a despesa da unidade e a receita da
+  -- franqueadora, com os ajustes de mês fechado (4021)
+  select 'sem_razao', p.fee_period, 'payable', p.id,
+         p.amount_cents - (coalesce(a.v, 0) + coalesce(adj.v, 0)),
+         jsonb_build_object('tipo', 'cobrada', 'fee', p.network_fee, 'conta', p.amount_cents,
+                            'despesa_unidade', coalesce(a.v, 0), 'receita_rede', coalesce(r.v, 0), 'ajustes', coalesce(adj.v, 0))
+    from public.payables p
+    left join lateral (select sum(f.amount_cents)::bigint v from public.financial_entries f
+                        where f.source_type = 'payable_accrual' and f.source_id = p.id and f.status in ('open', 'settled')) a on true
+    left join lateral (select sum(f.amount_cents)::bigint v from public.financial_entries f
+                        where f.source_type = 'network_fee_revenue' and f.source_id = p.id and f.status in ('open', 'settled')) r on true
+    left join lateral (select sum(x.amount_cents)::bigint v from public.franchise_accrual_adjustments x where x.payable_id = p.id) adj on true
+   where p.clinic_id = p_clinic_id and p.network_fee is not null and p.status <> 'cancelada' and p.amount_cents > 0
+     -- a taxa fixa dispensada (4021): a despesa é cancelada; o pago vira crédito.
+     and not exists (select 1 from public.network_fee_fixed_waivers w
+                      where w.clinic_id = p.clinic_id and w.fee = p.network_fee and w.period = p.fee_period)
+     and (coalesce(a.v, 0) + coalesce(adj.v, 0) <> p.amount_cents or coalesce(r.v, 0) + coalesce(adj.v, 0) <> p.amount_cents)
+  union all
+  -- o pagamento da conta de taxa (paga): a saída de caixa da unidade. A
+  -- compensação de crédito (4021, sem meio de pagamento) não tem caixa.
+  select 'sem_razao', date_trunc('month', pp.paid_at)::date, 'payable_payment', pp.id,
+         pp.amount_cents - coalesce(k.v, 0),
+         jsonb_build_object('tipo', 'paga', 'fee', p.network_fee, 'pago', pp.amount_cents, 'caixa_unidade', coalesce(k.v, 0))
+    from public.payable_payments pp
+    join public.payables p on p.id = pp.payable_id
+    left join lateral (select sum(f.amount_cents)::bigint v from public.financial_entries f
+                        where f.source_type = 'payable_cash' and f.source_id = pp.id and f.status in ('open', 'settled')) k on true
+   where p.clinic_id = p_clinic_id and p.network_fee is not null
+     and pp.reversal_of is null and not coalesce(pp.reversed, false) and pp.payment_method is not null
+     and coalesce(k.v, 0) <> pp.amount_cents;
+$$;
+
 create or replace function public._franchise_reconcile_run()
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
@@ -264,8 +324,17 @@ declare
   v_open integer;
   v_closed integer;
 begin
-  for u in select s.clinic_id from public.franchise_billing_unit_settings s where s.monthly_from is not null loop
-    for f in select * from public._franchise_reconcile_found(u.clinic_id) loop
+  -- As unidades com a cobrança mensal ligada e, para o razão, também as que têm
+  -- conta Asaas ativa (o split já retém taxa antes da cobrança mensal).
+  for u in
+    select s.clinic_id from public.franchise_billing_unit_settings s where s.monthly_from is not null
+    union
+    select g.clinic_id from public.gateway_accounts g
+     where g.status = 'active' and g.owner_type = 'unit'
+  loop
+    for f in select * from public._franchise_reconcile_found(u.clinic_id)
+             union all
+             select * from public._franchise_ledger_found(u.clinic_id) loop
       v_key := f.kind || '|' || u.clinic_id || '|' || f.period || '|' || coalesce(f.ref_id::text, '');
       v_seen := v_seen || v_key;
       select * into r from public.reconciliation_issues where issue_key = v_key and status <> 'resolvida';
@@ -393,6 +462,7 @@ revoke execute on function public._franchise_month_lines(uuid, date) from public
 revoke execute on function public._franchise_month_invoiced(uuid, date) from public, anon, authenticated;
 revoke execute on function public._franchise_month_account(uuid, date) from public, anon, authenticated;
 revoke execute on function public._franchise_reconcile_found(uuid) from public, anon, authenticated;
+revoke execute on function public._franchise_ledger_found(uuid) from public, anon, authenticated;
 revoke execute on function public._franchise_reconcile_run() from public, anon, authenticated;
 revoke execute on function public.franchise_reconciliation_run_now() from public, anon, authenticated;
 revoke execute on function public.franchise_reconciliation_ignore(uuid, text) from public, anon, authenticated;
@@ -411,5 +481,5 @@ select
   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public'
     and p.proname in ('_franchise_month_lines', '_franchise_month_invoiced', '_franchise_month_account', '_franchise_reconcile_found',
                       '_franchise_reconcile_run', 'franchise_reconciliation_run_now', 'franchise_reconciliation_ignore',
-                      'franchise_reconciliation_read')) as funcoes_novas,
+                      'franchise_reconciliation_read', '_franchise_ledger_found')) as funcoes_novas,
   (select count(*) from public.reconciliation_issues) as divergencias;

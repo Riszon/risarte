@@ -4837,6 +4837,45 @@ A resposta confirma o que já estava registrado sobre a mensageria (17.4), o Wha
   - na produção, o estorno de cartão pela API exige o token de ações críticas? (19.38, cuidado 1);
   - a repartição do estorno do parcelado entre as parcelas, que contradiz a resposta de 16/11 (19.38.1).
 
+### 19.40 A 4018c — a linha de taxa que nasce retida, e o levantamento da causa (17/11/2026; APROVADA pelo dono em 17/11/2026)
+
+**O achado:** o ensaio da 4010 (Repasses da franquia), rodado de novo depois de juntar o `main`.
+- As 16 linhas de taxa das mensalidades pagas pelo Asaas com split em Londrina (provas de 15 e 16/11, R$ 90,80) estavam retidas, mas sem o lançamento no razão.
+- Na produção nada foi afetado, porque nenhuma unidade tem conta Asaas.
+
+**A causa (a terceira vez, depois do aviso de split a mais e da marca dos R$ 90,76):**
+- O aviso do split do Asaas pode chegar **antes** da baixa que cria as linhas de taxa.
+- A conferência do split roda no aviso e, na parcela, de novo quando o recebimento é ligado à cobrança.
+- **Na mensalidade, depois que as linhas nascem, nada a roda.**
+
+**O levantamento: tudo o que depende de a linha existir no momento do aviso**
+
+| O que depende | Antes da 4018c (aviso antes da baixa) | Agora |
+|---|---|---|
+| O razão: a despesa da taxa retida na unidade e a receita na franqueadora | não lançava | **corrigido** (4018c: gatilho + as 16 linhas do treino) |
+| A passagem de "a reter" para "retida" | a linha nascia retida pelo valor cheio, mesmo quando o Asaas repassou menos | **corrigido**: a retenção fica no que o Asaas repassou |
+| A conta a pagar de taxa | a diferença do repasse menor não ia para a conta a pagar | **corrigido**: vai "a cobrar" |
+| A marca e o aviso de "split a mais" | com a linha ausente, a 4018a esperava; depois, nunca recalculava | **corrigido**: recalcula com as linhas, sem o aviso falso no meio da baixa |
+| O Painel de repasses (4010) | **não via as mensalidades em ordem nenhuma**: nem o recebido, nem o devido, nem o liquidado, nem o "a receber" | **corrigido** (4018c): as mensalidades entram pelo Asaas, e as pagas por fora entram na categoria "Mensalidade (fora do Asaas)" |
+| A Conferência das taxas (4021a) | olhava as linhas, não o razão: não acharia o defeito | **corrigido**: a divergência nova "Sem lançamento no razão" (20.17.11) |
+| A cobrança mensal (4021) | usa as linhas: a retida não é cobrada de novo | **certo** |
+| O estorno (4020a) | depende das linhas, que existem antes de qualquer estorno (só se estorna o que foi pago) | **certo** |
+| O resumo das taxas (Taxas da rede) | lê as linhas de qualquer origem | **certo** |
+| Os totais da nota fiscal (ASA8) | não existe ainda | **a fazer na ASA8**: usará as linhas e o razão; a divergência nova protege |
+
+**A correção (migração 4018c):**
+- Um gatilho **adiado**: no fim da transação, com todas as linhas da baixa presentes, a conferência do split roda para a cobrança.
+- Rodar a cada linha inserida conferiria um pedaço das linhas. A primeira congelaria, e o "split a mais" seria falso, como na 4018a. **O ensaio prova que isso não acontece.**
+- As linhas retidas que já existem sem lançamento passam pela conferência.
+  - **Na produção, a conferência deve dar `gatilho_novo 1 · linhas_sem_razao 0`.**
+- As duas leituras do Painel de repasses passam a ver as mensalidades.
+- **Desfazer:** `docs/asaas/desfazer-4018c.sql`. Tira o gatilho e volta as leituras do painel; os lançamentos no razão ficam, porque corrigem o razão.
+
+**As provas:**
+- **O ensaio novo** (`scripts/asaas-ensaio-4018c-taxa-retida-no-razao.mjs`): 24/24. Ele prova **as duas ordens com o mesmo resultado** (a baixa antes do aviso e o aviso antes da baixa), o repasse menor, o repasse maior e nenhum aviso falso.
+  - Quebrado (sem o gatilho), ele reprova 8.
+- **O ensaio da 4010:** 59/59, conferindo o painel de hoje (com a 4018c). As quebras antigas (rateio e resumo) continuam reprovando.
+
 ## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 e 4021a CONSTRUÍDAS (16/11/2026; ver 20.15 a 20.17.10)
 
 ### 20.1 O que já existe (levantado no código em 16/11/2026)
@@ -5425,6 +5464,21 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 
 - **A 4021** continua 103/103.
 
+#### 20.17.11 A divergência "Sem lançamento no razão" (17/11/2026, pedido do dono depois da 4018c)
+
+- **O pedido:** quem achou o defeito da 4018c foi o ensaio da 4010, não a rotina da noite.
+- **A divergência nova** é `sem_razao`, com três casos:
+  - a linha de taxa retida sem a despesa na unidade e a receita na franqueadora, do mesmo valor;
+  - a conta a pagar de taxa (cobrada) sem a despesa e a receita do mesmo valor, contando os ajustes de mês fechado. A taxa fixa dispensada não entra: a despesa é cancelada, e o pago vira crédito;
+  - o pagamento da conta de taxa (pago) sem o caixa. A compensação de crédito não entra, porque não tem caixa.
+- **Onde vale:** em toda unidade com conta Asaas ativa ou com a cobrança mensal ligada, em qualquer mês.
+- **O resto** é o comportamento das outras divergências: ela fecha sozinha, e o Financeiro ou o Admin ignoram com motivo.
+- **Provada plantando o defeito:**
+  - o ensaio da 4021a deu 31/31;
+  - quebrado (a rotina sem a conferência do razão), ele reprova as 3 novas;
+  - as quebras antigas continuam reprovando.
+- **Na produção, a conferência da 4021a fica** `tabelas_novas 2 · funcoes_novas 9 · divergencias 0`.
+
 ### 20.18 O teste do dono (17/11/2026, v0.462.0): achados e correções (core 0.462.1)
 
 1. **"Caixa diferente" de −R$ 800,00 em Londrina, 10/2026:**
@@ -5436,6 +5490,7 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
    - **O defeito** é de Financeiro › Taxas da rede (FIN8.1, também na produção): entrando pela franqueadora, a caixa mostrava a 1ª unidade, mas a tela gravava na clínica ativa.
    - **Corrigido:** a unidade padrão agora é a mesma que a caixa mostra. No treino, o acordo foi movido para Cambé.
    - **Consulta só de leitura para a produção:** `docs/asaas/levantamento-acordo-na-franqueadora.sql`.
+   - **Rodada na produção pelo dono em 17/11/2026:** "Success. No rows returned". Nenhum acordo gravado na clínica da franqueadora; nada a corrigir.
 3. **As fixas do mês corrente:** elas só ganham a conta a pagar no dia 1º (ou na prévia). Agora a Conferência mostra a taxa fixa **prevista** (o valor da Central) até a conta nascer, e a tela diz isso.
 4. **"Gerar taxas fixas do mês":**
    - **Ele fica:** não gera em dobro (uma conta por unidade, taxa e mês).
