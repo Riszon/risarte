@@ -741,3 +741,72 @@ describe("espelho do banco (migração 0332 — ORTO6, a tela do ortodontista)",
     expect(sql).not.toMatch(/grant execute on function public\._ortho_mirror_evolution/);
   });
 });
+
+describe("espelho do banco (migração 0417 — AP175, sessão de plano não é manutenção)", () => {
+  const sql = readFileSync(MIG("0417_ortodontia_sessao_de_plano_nao_e_manutencao.sql"), "utf8");
+  const fn = (name: string) => {
+    const from = sql.slice(sql.indexOf(`function public.${name}(`));
+    return from.slice(0, from.indexOf("$$;"));
+  };
+  it("a agenda olha as DUAS ligações com a sessão e solta a manutenção de sessão de plano", () => {
+    const s = fn("ortho_appointment_sync");
+    expect(s).toMatch(/v_plan := new\.treatment_session_id is not null\s+or exists \(select 1 from public\.treatment_sessions ts where ts\.appointment_id = new\.id\)/);
+    expect(s).toMatch(/if v_plan then[\s\S]*_ortho_release_maintenance\(v_m\.id[\s\S]*return null;/);
+    // A agenda grava o agendamento e só DEPOIS liga as sessões: o gatilho
+    // precisa ouvir a mudança da ligação.
+    expect(sql).toMatch(/after insert or update of status, provider_user_id, starts_at, type, treatment_session_id\s+on public\.appointments/);
+  });
+  it("desligar a sessão (atendimento concluído sem ela) nunca cria manutenção", () => {
+    const s = fn("ortho_appointment_sync");
+    expect(s).toMatch(/v_link_only := tg_op = 'UPDATE'/);
+    expect(s).toMatch(/if v_link_only then return null; end if;/);
+    // A ordem importa: a checagem vem ANTES de qualquer insert.
+    expect(s.indexOf("if v_link_only then return null")).toBeLessThan(s.indexOf("insert into public.ortho_maintenances"));
+  });
+  it("Q3: agendar nunca define o ortodontista; só o início concluído fora de plano ou a sessão de Ortodontia feita", () => {
+    const s = fn("ortho_appointment_sync");
+    expect(s).toMatch(/new\.type::text = 'treatment_start'\s+and new\.status::text = 'completed'\s+and v_c\.status = 'aguardando_inicio'/);
+    expect(s).not.toMatch(/new\.type::text in \('treatment_start','treatment_session'\)\s+and v_c\.status in/);
+    const i = fn("ortho_session_sync");
+    expect(i).toMatch(/p\.specialty ilike '%ortod%'/);
+    expect(i).toMatch(/c\.status = 'aguardando_inicio'/);
+    expect(i).toMatch(/coalesce\(new\.executed_by, new\.planner_provider_id\)/);
+    expect(i).toMatch(/perform public\._ortho_begin_treatment\(/);
+    expect(sql).toMatch(/after update of status on public\.treatment_sessions/);
+  });
+  it("a instalação é só a sessão do plano: um repasse só (a função da sessão não toca em manutenção)", () => {
+    const i = fn("ortho_session_sync");
+    expect(i).not.toMatch(/ortho_maintenances/);
+    expect(i).not.toMatch(/_ortho_complete_maintenance/);
+    expect(i).not.toMatch(/provider_payouts/);
+    // E a migração não mexe no repasse.
+    expect(sql).not.toMatch(/function public\.(accrue_session_payout|_payout_accrue_block)\(/);
+  });
+  it("o início do tratamento mora num lugar só (tela e sessão), com o lote do acordo", () => {
+    const b = fn("_ortho_begin_treatment");
+    expect(b).toMatch(/status = 'em_tratamento'/);
+    expect(b).toMatch(/perform public\.ortho_plan_maintenances\(p_case_id\)/);
+    expect(b).toMatch(/perform public\._ortho_emit_batch\(/);
+    expect(fn("ortho_set_status")).toMatch(/perform public\._ortho_begin_treatment\(p_case_id, v_date, p_reason\);/);
+    expect(fn("ortho_set_status")).toMatch(/if not public\.ortho_can_manage\(v_c\.clinic_id\) then raise exception 'NOT_ALLOWED'/);
+  });
+  it("soltar não deixa sobra: a que nasceu do agendamento é cancelada; a prevista volta a prevista; a realizada fica", () => {
+    const r = fn("_ortho_release_maintenance");
+    expect(r).toMatch(/v_m\.status = 'realizada' then return/);
+    expect(r).toMatch(/if v_m\.from_appointment then[\s\S]*status = 'cancelada'[\s\S]*else[\s\S]*status = 'prevista'/);
+    expect(fn("ortho_appointment_sync")).toMatch(/v_date, 'agendada', new\.id, true\)/);
+    expect(sql).not.toMatch(/delete from public\.ortho_maintenances/);
+  });
+  it("as internas não respondem à API; a porta da tela continua só para logados", () => {
+    for (const f of [
+      "_ortho_begin_treatment(uuid, date, text)",
+      "_ortho_release_maintenance(uuid, text)",
+      "ortho_session_sync()",
+      "ortho_appointment_sync()",
+    ]) {
+      expect(sql).toContain(`revoke execute on function public.${f} from public, anon, authenticated;`);
+      expect(sql).not.toContain(`grant execute on function public.${f}`);
+    }
+    expect(sql).toMatch(/grant execute on function public\.ortho_set_status\(uuid, text, text, date\) to authenticated;/);
+  });
+});

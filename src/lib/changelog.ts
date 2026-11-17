@@ -113,6 +113,28 @@ export const CHANGELOG: Versao[] = [
     ],
   },
   {
+    versao: "0.469.0",
+    data: "2026-11-17",
+    migracao: "0417",
+    titulo: "Ortodontia: sessão de outro plano não vira manutenção; concluir a instalação inicia o caso",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Uma sessão de plano (restauração, limpeza, radiografia, inclusive de um plano complementar) agendada com o ortodontista do caso não vira mais manutenção ortodôntica, e a instalação deixou de pagar dois repasses: paga só o do procedimento do plano.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Concluir a sessão de instalação do aparelho inicia o caso ortodôntico sozinho, na data da instalação, com o cronograma e o lote de mensalidades; quem fez a instalação vira o ortodontista responsável se o caso ainda não tinha um. Agendar não define mais o ortodontista.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.468.0",
     data: "2026-11-17",
     migracao: "0419",
