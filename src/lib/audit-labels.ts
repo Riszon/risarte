@@ -137,6 +137,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   treatment_plan_option: "Opção do plano",
   planning_supplement: "Complemento do planejamento",
   plan_quality_review: "Revisão de qualidade do plano",
+  treatment_closure: "Fim do tratamento (pergunta e contato)",
   protocol_change_proposal: "Proposta de mudança de protocolo",
   treatment_session: "Sessão de tratamento",
   treatment_sessions: "Sessões de tratamento",
