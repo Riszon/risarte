@@ -284,3 +284,35 @@ export function recusaDoFechamento(mensagem: string): string {
   if (m.includes("NOT_FOUND")) return "Tarefa não encontrada. Atualize a tela.";
   return "Não foi possível registrar. Atualize a tela e tente de novo.";
 }
+
+/** 0427 (D26): o resumo do dentista no Meu dia, como o banco devolve. */
+export type ResumoDoDentista = {
+  excelente: number;
+  bom: number;
+  aceitavel: number;
+  revisar: number;
+  refazer: number;
+  respostas: number;
+  satisfeitos: number;
+  queixas: number;
+};
+
+/** A satisfação dos clientes do dentista: % de notas 9 ou 10 entre quem respondeu. */
+export function satisfacaoDoDentista(r: ResumoDoDentista | null): { valor: string; dica: string } {
+  if (!r || r.respostas === 0) return { valor: "—", dica: "nenhum cliente respondeu no período" };
+  const pct = Math.round((r.satisfeitos / r.respostas) * 100);
+  const queixas = r.queixas > 0 ? `, ${r.queixas} com queixa` : "";
+  return { valor: `${pct}%`, dica: `nota 9 ou 10 · ${r.respostas} resposta(s)${queixas}` };
+}
+
+/** As notas técnicas do Coordenador (cinco níveis) para o dentista, no período. */
+export function notasDoDentista(r: ResumoDoDentista | null): { valor: string; dica: string } {
+  const total = r ? r.excelente + r.bom + r.aceitavel + r.revisar + r.refazer : 0;
+  if (!r || total === 0) return { valor: "—", dica: "nenhum procedimento avaliado no período" };
+  const aprovados = r.excelente + r.bom + r.aceitavel;
+  const pct = Math.round((aprovados / total) * 100);
+  return {
+    valor: `${pct}%`,
+    dica: `aprovados de ${total} · ${r.excelente} Excelente, ${r.bom} Bom, ${r.aceitavel} Aceitável, ${r.revisar} Revisar, ${r.refazer} Refazer`,
+  };
+}

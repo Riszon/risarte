@@ -4220,6 +4220,12 @@ quando quem responde pela equipe conferiu e enviou — o sino avisa.
   os descontos. Você vê o seu repasse; a produção (os valores de venda) fica
   com o Financeiro e o Gerente.
 
+**No Meu Dia (desde a 0.480.0)**, além da produção, dois quadros do fim do
+tratamento no período escolhido: **Clientes satisfeitos** (quantos % deram nota
+9 ou 10 no contato do Coordenador, e quantos tiveram queixa) e **Suas notas
+técnicas** (quantos % dos seus procedimentos avaliados pelo Coordenador foram
+aprovados, com a contagem de Excelente, Bom, Aceitável, Revisar e Refazer).
+
 1. **Meu Dia** → seus atendimentos.
 2. **Atendimento** → **Chamar**.
 3. Ficha do paciente → aba **Desenvolvimento Clínico** → descreva o que foi
@@ -4703,6 +4709,17 @@ registrado: o Gerente decide**, com os riscos informados. Clique em
 
 Se o cliente agendar antes da sua decisão, a tarefa some sozinha. A lista
 **Clientes sem próximo passo** (botão na Jornada) também é sua.
+
+**Tarefa parada volta a avisar (desde a 0.480.0).** Toda tarefa do fim do
+tratamento (a decisão do dentista, a do Coordenador, a reavaliação sem horário,
+o contato, o abandono) que fica parada **3 dias úteis da unidade** avisa de
+novo quem responde, e **você também recebe o aviso**. Os dias úteis pulam o fim
+de semana e os feriados nacionais, estaduais e da cidade da unidade, menos o
+feriado em que a unidade decidiu atender. O prazo muda em **Prazos**.
+
+**Indicadores para as Metas.** Quatro novos, no grupo Clínico e Clientes: taxa
+de refação, clientes satisfeitos (nota 9 ou 10), decisões do fim em até 3 dias
+úteis e clientes sem próximo passo (a fotografia do dia).
 
 Módulos: Financeiro, Estoque, Compras, Comercial, Relatórios, Planos,
 Risartanos, Empresarial.
@@ -5561,8 +5578,14 @@ mesma regra ("sobra tratamento?"); o Coordenador registra os riscos quando há
 procedimento interrompido (antes da assinatura) e é chamado depois (avaliação
 ou contato); o plano vira "Cancelado" (ver 6.2 e 6.6).
 
-**O que ainda vem** (próximas etapas do plano): os prazos por dia útil da
-unidade, os avisos de tarefa parada e os indicadores.
+**Prazos e indicadores** (desde a 0.480.0): a tarefa parada volta a avisar
+depois de 3 dias úteis da unidade, chegando também ao Gerente; o Meu dia do
+dentista mostra a satisfação dos clientes dele e as notas técnicas; as Metas
+ganham quatro indicadores do fim do tratamento (ver 6.4 e 6.6).
+
+Com isso o plano do fim do tratamento está completo. Depois dele vem a
+integração com o WhatsApp, para colher a satisfação do cliente sem depender da
+ligação do Coordenador.
 
 ### Fluxo 3 — Encerrar a sessão
 

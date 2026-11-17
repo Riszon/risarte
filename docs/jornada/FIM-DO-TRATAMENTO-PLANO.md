@@ -447,7 +447,7 @@ prioridade vira **impedir que o primeiro esquecido nasça**: o motor vem antes.
 | **3. O controle de qualidade** ✅ (0.471.0, migração 0421) | Cinco níveis por plano, o contato com satisfação e queixa, a reabertura, a saída da Fase 6, o retorno sugerido. | Rodar a migração |
 | **4. Abandono e a lista** ✅ (0.474.0, migração 0423) | Reagendar → contato → registro de abandono → decisão do Gerente; a lista "Clientes sem próximo passo" com as ações por cliente. | Rodar a migração; definir X e N |
 | **5. O cancelamento** ✅ (0.477.0, migração 0426) | Destino na efetivação, plano "Cancelado", Coordenador chamado, riscos registrados. | Rodar a migração |
-| **6. Prazos e indicadores** | Dias úteis da unidade, avisos por prazo, Meu dia, Metas. | Rodar a migração |
+| **6. Prazos e indicadores** ✅ (0.480.0, migração 0427) | Dias úteis da unidade, avisos por prazo, Meu dia, Metas. | Rodar a migração |
 
 **A triagem em lote (D20) sai do plano:** sem histórico importado, não há
 parados vindos das unidades. A lista da Etapa 4 mantém as ações **por cliente**

@@ -84,7 +84,12 @@ export type ChaveIndicador =
   | "gross_revenue"
   | "revenue_private"
   | "revenue_empresarial"
-  | "revenue_empresarial_all";
+  | "revenue_empresarial_all"
+  // 0427 (fim do tratamento, Etapa 6)
+  | "redo_rate"
+  | "client_satisfaction"
+  | "closure_decided_on_time"
+  | "clients_without_next_step";
 
 export type TipoIndicador = "sum" | "rate" | "point";
 /** Como o número aparece: centavos (R$), quantidade, percentual ou horas (guardadas em minutos). */
@@ -1110,6 +1115,75 @@ export const INDICADORES_DE_META: Indicador[] = [
     recortes: [],
     verbo: "receber",
     objeto: "de clientes do Empresarial",
+  },
+  // 0427 (fim do tratamento, Etapa 6: os indicadores, D26)
+  {
+    chave: "redo_rate",
+    rotulo: "Taxa de refação",
+    grupo: "Clínico",
+    ajuda:
+      "Dos procedimentos avaliados pelo Coordenador Clínico no período (controle de qualidade em cinco níveis), quantos % ficaram em Revisar ou Refazer. Meta típica: reduzir.",
+    onde: "Avaliação do Coordenador → controle de qualidade",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["decrease", "increase"],
+    porPessoa: true,
+    quemConta: "o dentista que executou o procedimento",
+    financeiro: false,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "de refação",
+  },
+  {
+    chave: "client_satisfaction",
+    rotulo: "Clientes satisfeitos (nota 9 ou 10)",
+    grupo: "Clientes",
+    ajuda:
+      "Dos clientes que deram nota de 0 a 10 no contato do fim do tratamento, quantos % deram 9 ou 10. Só conta quem respondeu.",
+    onde: "Ficha do cliente → contato do fim do tratamento",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase", "decrease"],
+    porPessoa: true,
+    quemConta: "o dentista que executou o tratamento",
+    financeiro: false,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "de clientes satisfeitos",
+  },
+  {
+    chave: "closure_decided_on_time",
+    rotulo: "Decisões do fim em até 3 dias úteis",
+    grupo: "Clínico",
+    ajuda:
+      "Das decisões \"necessita de reavaliação?\" respondidas no período, quantos % foram respondidas em até 3 dias úteis da unidade. O \"Sim\" automático do catálogo não conta.",
+    onde: "Ficha do cliente → decisão do fim do tratamento",
+    tipo: "rate",
+    unidade: "percent",
+    direcoes: ["increase", "decrease"],
+    porPessoa: true,
+    quemConta: "quem respondeu a decisão",
+    financeiro: false,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "das decisões no prazo",
+  },
+  {
+    chave: "clients_without_next_step",
+    rotulo: "Clientes sem próximo passo",
+    grupo: "Clientes",
+    ajuda:
+      "Clientes na Fase 5 ou 6 sem horário marcado e sem tarefa aberta (a lista da Jornada). FOTOGRAFIA: vale o número de cada dia, e o resultado é o do último dia do prazo. Meta típica: reduzir a zero.",
+    onde: "Jornada → Clientes sem próximo passo",
+    tipo: "point",
+    unidade: "count",
+    direcoes: ["decrease"],
+    porPessoa: false,
+    quemConta: "a unidade (meta coletiva)",
+    financeiro: false,
+    recortes: [],
+    verbo: "chegar a",
+    objeto: "clientes sem próximo passo",
   },
 ];
 

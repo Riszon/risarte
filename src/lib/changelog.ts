@@ -62,6 +62,35 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.480.0",
+    data: "2026-11-17",
+    migracao: "0427",
+    titulo: "Tarefa parada volta a avisar e os indicadores do fim do tratamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Tarefa do fim do tratamento parada (a decisão, a reavaliação sem horário, o contato, o abandono) volta a avisar quem responde e o Gerente depois de 3 dias úteis da unidade. Os dias úteis pulam o fim de semana e os feriados nacionais, estaduais e da cidade, menos os feriados em que a unidade decidiu atender. O prazo fica em Prazos.",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist", "dentist"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No Meu dia, dois quadros novos: os clientes satisfeitos (nota 9 ou 10 no contato do fim do tratamento) e as suas notas técnicas do controle de qualidade (Excelente a Refazer), no período escolhido.",
+        papeis: ["dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quatro indicadores novos para as Metas: taxa de refação, clientes satisfeitos, decisões do fim em até 3 dias úteis e clientes sem próximo passo.",
+        papeis: ["unit_manager", "franchisor_staff"],
+        manual: "6.6. Gerente de Unidade",
+      },
+    ],
+  },
+  {
     versao: "0.478.0",
     data: "2026-11-17",
     migracao: null,

@@ -84,6 +84,8 @@ export const INACTIVITY_KEYS = [
   // 0423 (fim do tratamento, Etapa 4): o abandono e a lista de esquecidos.
   "abandon_no_schedule_days",
   "stalled_treatment_days",
+  // 0427 (fim do tratamento, Etapa 6): a tarefa parada volta a avisar.
+  "stalled_task_business_days",
 ] as const;
 
 export type InactivityKey = (typeof INACTIVITY_KEYS)[number];
@@ -100,6 +102,8 @@ export const INACTIVITY_LABELS: Record<InactivityKey, string> = {
     "Abandono: dias com sessão pendente e nada agendado até a Recepção reagendar",
   stalled_treatment_days:
     "Clientes sem próximo passo: dias sem movimento no plano complementar",
+  stalled_task_business_days:
+    "Fim do tratamento: DIAS ÚTEIS da unidade com a tarefa parada até avisar de novo (e o Gerente)",
 };
 
 export type InactivitySettingRow = {

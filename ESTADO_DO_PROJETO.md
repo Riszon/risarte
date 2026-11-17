@@ -2,6 +2,22 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## ⏱️ 0.480.0 — FIM DO TRATAMENTO, ETAPA 6: PRAZOS E INDICADORES (17/11/2026; migração 0427) — PLANO COMPLETO
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (5.8, 7.2, 8; C4, D26).
+> - ⚠️ **Dias úteis da unidade = `clinic_business_days_between`** (fim de semana,
+>   feriado nacional/estadual/da cidade, menos o que a unidade decidiu atender).
+>   O `add_business_days` antigo (só fim de semana) continua para o financeiro.
+> - ⚠️ **A rotina `end_of_treatment_reminders`** (cron `risarte-fim-lembretes-daily`,
+>   11:40 UTC, seg–sex) avisa de novo a tarefa parada há N dias úteis
+>   (`stalled_task_business_days`) a quem responde e ao Gerente; `reminded_at`.
+> - ⚠️ **`_goal_indicator_meta`/`_goal_measure_raw` recriadas na 0427** (a partir
+>   da 0365, conferida igual ao treino): ao recriar, partir dela. 4 indicadores novos.
+> - ⚠️ **A lista "sem próximo passo" mora em `_sem_proximo_passo`**; a tela
+>   (`clients_without_next_step`) e a meta usam a mesma.
+> - O Meu dia: `my_end_of_treatment_summary` (satisfação e notas técnicas do dentista).
+> - Ensaio 21/21 (`scripts/ensaio-fim-do-tratamento-0427.mjs`, provado quebrando). Não visto na tela.
+
 > ## 🛒 0.478.0 — VENDA DIRETA V3: A AGENDA E O COMERCIAL ABREM O CAIXA; D5 (17/11/2026; sem migração)
 >
 > Fecha o que o plano (§2, §5) já tinha decidido. EV-377.

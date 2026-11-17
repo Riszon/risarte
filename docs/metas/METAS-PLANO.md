@@ -175,6 +175,8 @@ venda direta e taxas da rede. Anotado como achado de passagem (seção 10).
 | P2 | **Produção do dentista (R$)** | Valor de repasse congelado das sessões concluídas | `provider_payouts.amount_cents` | ✅ | Soma | ⬆ | M2 |
 | P3 | **Planos de tratamento aprovados** | Planos aprovados pelo Coordenador no período | `treatment_plans` (`reviewed_at`) / `treatment_plan_status_events` | ✅ planner | Soma | ⬆ | M2 |
 | P4 | **Tratamentos concluídos** | Clientes que concluíram o plano (passaram à Fase 6) | `journey_phase_history` | ➖ | Soma | ⬆ | M3 |
+| P5 | **Taxa de refação** | Dos procedimentos avaliados pelo Coordenador, % em Revisar ou Refazer | `plan_quality_reviews` (`level`, `reviewed_at`) | ✅ quem executou | Taxa | ⬇ | 0427 |
+| P6 | **Decisões do fim em até 3 dias úteis** | % das decisões "necessita de reavaliação?" respondidas em até 3 dias úteis da unidade | `treatment_closures` (`answered_at`) | ✅ quem respondeu | Taxa | ⬆ | 0427 |
 
 ### 4.5 Clientes e Jornada
 
@@ -184,10 +186,12 @@ venda direta e taxas da rede. Anotado como achado de passagem (seção 10).
 | J2 | **Novos clientes que avaliaram** | J1 que tiveram avaliação concluída no período (qualidade do cadastro) | `clients` + `appointments` | ✅ | Soma | ⬆ | M2 |
 | J3 | **Conversão da Jornada (avaliação → venda)** | Clientes avaliados que fecharam venda | `journey_phase_history` | ➖ | Taxa | ⬆ | M3 |
 | J4 | **Reativação de inativos** | Clientes inativos que voltaram a ter atendimento | `clients.status` + `appointments` | ➖ | Soma | ⬆ | M3 |
+| J5 | **Clientes satisfeitos** | Dos que deram nota (0 a 10) no contato do fim do tratamento, % com 9 ou 10 | `treatment_closure_contacts` (`satisfaction`) | ✅ quem executou | Taxa | ⬆ | 0427 |
+| J6 | **Clientes sem próximo passo** | Fotografia do dia: Fase 5 ou 6 sem horário e sem tarefa (a lista da Jornada) | `_sem_proximo_passo` | ➖ | Fotografia | ⬇ | 0427 |
 
 > **Não dá para medir hoje:** *origem de marketing* do cliente (Instagram,
-> Google, indicação…) — não existe campo; e **NPS/satisfação** — decidido no
-> passado, nunca implementado. Ficam fora do catálogo até existirem.
+> Google, indicação…) — não existe campo. A **satisfação** passou a existir
+> com o fim do tratamento (0421) e entrou no catálogo na 0427 (J5).
 
 ### 4.6 Programas da Risarte
 
