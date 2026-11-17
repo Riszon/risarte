@@ -5373,6 +5373,25 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 - **Conferido de fora:** a função barra quem não está logado.
 - **A 4021:** ela redefine a mesma função com a mesma trava.
 
+**O teste de ponta a ponta em Cambé, 10/2026 (17/11/2026), pelas telas do projeto de teste:**
+1. **A prévia:** 14 linhas, R$ 727,28, conferida linha a linha pelo dono. O Admin não contesta, e aprovar antes da conferência é recusado.
+2. **O Gerente de Cambé** (pela tela):
+   - vê só Cambé;
+   - contestou "Royalty · Maquininha · 20/10" (R$ 16,46);
+   - o "Conferi" foi recusado com a contestação aberta.
+3. **O dono aceitou a contestação:** a linha foi dispensada, e o total caiu para R$ 710,82. Depois o Gerente conferiu.
+4. **O dono aprovou e emitiu**, na caixa de confirmação nova: vencimento 25/11/2026, aviso para `financeiro.cambe@example.com`.
+5. **O pagamento simulado no sandbox:**
+   - a baixa veio pelo aviso do Asaas, e a cobrança ficou liquidada;
+   - o caixa da unidade e o da franqueadora deram R$ 710,82 cada;
+   - a tarifa (R$ 1,99) ficou com a franqueadora;
+   - as seis contas de taxa de outubro ficaram pagas;
+   - a conferência de outubro fecha em R$ 0,00, sem divergência.
+
+**Dois achados no caminho:**
+- **No treino, a 4018b tinha sido aplicada depois da 4021**, e a função das contas de taxa voltou à versão sem a dispensa. Na produção, a ordem é a certa: a 4018b já, a 4021 depois, e a 4021 traz as duas regras. Reaplicada a 4021 no treino.
+- **A conta de taxa reduzida depois de paga ficava "parcial":** a situação não acompanhava o valor. Corrigido na 4021: a situação é recalculada pelo pago, e o ensaio confere (parcial ao ganhar uma linha, paga ao dispensá-la).
+
 **O teste de papéis:**
 - **Pela API:** `scripts/asaas-teste-papeis-cobranca-mensal.mjs --confirmar`, 14/14.
   - O Gerente lê e contesta só a própria unidade, mas não aprova nem decide.

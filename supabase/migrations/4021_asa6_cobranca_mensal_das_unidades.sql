@@ -1645,7 +1645,16 @@ begin
   else
     update public.payables set
       amount_cents = v_total, due_date = v_due,
-      status = case when status = 'cancelada' then 'aberta' else status end,
+      -- 4021: o valor mudou (dispensa, contestação aceita): a situação acompanha o pago.
+      status = case
+        when status = 'cancelada' then 'aberta'
+        when status in ('aberta', 'parcial', 'paga') then
+          case when paid_amount_cents + coalesce((select sum(pp.discount_cents) from public.payable_payments pp
+                                                   where pp.payable_id = v_payable and not pp.reversed and pp.reversal_of is null), 0) >= v_total
+                 then 'paga'
+               when paid_amount_cents > 0 then 'parcial'
+               else 'aberta' end
+        else status end,
       updated_at = now()
      where id = v_payable;
 

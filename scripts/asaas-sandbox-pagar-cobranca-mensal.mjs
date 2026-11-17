@@ -30,7 +30,7 @@ try {
     body: "{}",
   });
   const j = await r.json();
-  console.log(`Pagamento simulado (${r.status}): cobrança de ${String(b.period).slice(0, 7)}, R$ ${Number(b.value_cents) / 100}, situação no Asaas: ${j.status ?? JSON.stringify(j.errors ?? j)}`);
+  console.log(`Pagamento simulado (${r.status}): cobrança de ${new Date(b.period).toISOString().slice(0, 7)}, R$ ${Number(b.value_cents) / 100}, situação no Asaas: ${j.status ?? JSON.stringify(j.errors ?? j)}`);
   console.log("A baixa chega pelo aviso do Asaas em até 1 minuto (atualize a tela).");
 } catch (e) {
   console.error("ERRO:", e.message);
