@@ -37,6 +37,9 @@ export const NOTIFICATION_CATEGORIES = [
   // Levantamento de Dívidas (0408 e 0410): acordo, parcela, proposta vencendo,
   // protesto novo… Pelo LINK (`/financeiro/dividas…`), como Metas e Compras.
   { key: "dividas", label: "Dívidas da rede" },
+  // Funções de apoio, F4 (0419): "Equipe: … sem titular", "Equipe: possível
+  // sobrecarga…". Pelo LINK (`/risartanos/coberturas`), como Metas e Compras.
+  { key: "equipe", label: "Equipe e coberturas" },
   { key: "outras", label: "Outras" },
 ] as const;
 
@@ -65,6 +68,7 @@ export const NOTIFICATION_CATEGORY_CLASS: Record<NotificationCategory, string> =
   assinaturas: "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-300",
   rita: "bg-cyan-100 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300",
   dividas: "bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300",
+  equipe: "bg-lime-100 text-lime-800 dark:bg-lime-500/15 dark:text-lime-300",
   outras: "bg-muted text-muted-foreground",
 };
 
@@ -86,6 +90,7 @@ export const NOTIFICATION_CATEGORY_DOT: Record<NotificationCategory, string> = {
   assinaturas: "bg-indigo-500",
   rita: "bg-cyan-500",
   dividas: "bg-rose-500",
+  equipe: "bg-lime-500",
   outras: "bg-muted-foreground",
 };
 
@@ -195,6 +200,7 @@ export function categorizeNotification(title: string, link?: string | null): Not
   if ((link ?? "").startsWith("/assinaturas")) return "assinaturas";
   if (/^\/rita(\/|$)/.test(link ?? "")) return "rita";
   if ((link ?? "").startsWith("/financeiro/dividas")) return "dividas";
+  if ((link ?? "").startsWith("/risartanos/coberturas")) return "equipe";
   const t = (title ?? "").toLowerCase();
   if (t.includes("aniversari")) return "aniversario";
   // Programa de Prevenção Riso+ — antes do "comercial" genérico.

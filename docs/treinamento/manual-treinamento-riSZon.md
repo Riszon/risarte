@@ -500,7 +500,7 @@ quando ela foi; apurar na hora é botão do Painel da rede.
 #### O Painel da rede por área *(desde a 0.341.0, relato OC-00121)*
 
 Em **Rede → Painel da rede** (Admin Master e Financeiro da Franqueadora), no
-alto, o **mês e o ano** — valem para todas as abas — e sete abas:
+alto, o **mês e o ano** — valem para todas as abas — e oito abas:
 
 | Aba | O que mostra de cada unidade | Vermelho | Amarelo |
 |---|---|---|---|
@@ -511,6 +511,7 @@ alto, o **mês e o ano** — valem para todas as abas — e sete abas:
 | **DRE** | receita líquida, resultado e **margem** do mês | prejuízo | margem mais de 2 pontos abaixo da margem da rede |
 | **Hora clínica** *(desde a 0.362.0)* | a **hora clínica** (custo fixo por mês, horas de cadeira, ocupação esperada e real, hora real) nos **3 meses fechados** até o mês escolhido | — | hora mais de 10% acima da hora da rede |
 | **Repasses** *(desde a 0.434.0)* | o repasse dos dentistas no mês (pela finalização do procedimento): repasse, quanto ele representa da produção, descontos, pago, a pagar, vencido e o número de dentistas; **Baixar planilha** no alto | repasse com conta **vencida sem pagar** | relatório parado na aprovação ou ocorrência de falha sem decisão |
+| **Equipe e coberturas** *(desde a 0.468.0)* | quem cobre quem: coberturas agora, equipe em acúmulo, dias-pessoa, função sem titular e o tempo de quem cobre — o mesmo painel de **Risartanos → Equipe e coberturas** (seção 2.5) | função sem titular há mais de 30 dias, emenda acima de 60 dias, revisão vencida há mais de 15 dias, limite passado ou previsão de contratação vencida | cobertura em andamento |
 
 Cada aba é uma **tabela em colunas** (desde a 0.341.1, relato OC-00122). A
 primeira linha, **Rede**, traz o total nas **mesmas colunas** das unidades —
@@ -1229,6 +1230,35 @@ O que vale:
 
 Com duas funções na unidade, o bloco **"Sistema real em cada unidade"** mostra
 uma linha por função: a pessoa pode estar aberta em uma e fechada na outra.
+
+**Equipe e coberturas: o acompanhamento** *(desde a 0.468.0)*. Em
+**Risartanos**, o botão **Equipe e coberturas** (e, para a Franqueadora, a aba de
+mesmo nome no **Painel da rede**) mostra, mês a mês, se alguma unidade está
+trabalhando com a equipe **enxuta demais** ou **sobrecarregando** alguém. O
+Admin Master, a Franqueadora/Rede e o Financeiro da Franqueadora veem a rede
+inteira; o **Gerente** e o **Franqueado** veem só a própria unidade.
+
+- **Por unidade**, uma bolinha e a frase que explica a cor: coberturas agora
+  (e o limite), quantas pessoas da equipe estão em acúmulo (e o limite em %), os
+  **dias-pessoa** de cobertura no mês (a soma dos dias de todas as coberturas) e
+  os motivos. **Vermelho** quando uma função está **sem titular** (feita só por
+  apoio) há mais de 30 dias, quando temporárias **emendadas** passam de 60 dias
+  seguidos, quando um acúmulo fixo está **sem revisão** há mais de 15 dias depois
+  do vencimento, quando a unidade passa de um limite ou quando a **previsão de
+  contratação** venceu. **Amarelo** quando há cobertura em andamento.
+- **Por pessoa que cobre**, o tempo médio por dia no sistema **antes** (os 30 dias
+  anteriores à cobertura) e **durante** a cobertura, e quantos dias ela entrou
+  **fora do horário** da unidade. Tempo 30% maior que o de antes, ou 5 dias fora
+  do horário, aparecem em vermelho como **sinal de sobrecarga**.
+- ⚠️ **Não é ponto eletrônico.** O sistema vê o que acontece dentro dele: hora
+  extra se confere na folha. O painel diz **para onde olhar**; a conclusão é uma
+  conversa com a unidade. Quem trabalha em duas unidades soma o tempo das duas.
+- **Os avisos** chegam no sino, na aba **Equipe e coberturas**, para o Admin
+  Master, a Franqueadora/Rede e o Gerente e o Franqueado da unidade: função sem
+  titular há mais de 30 dias, emendada passando de 60 dias, revisão vencida
+  (de novo a cada semana depois de 15 dias), unidade acima do limite (uma vez por
+  mês) e sinal de sobrecarga (uma vez por mês, por pessoa). **Os limites só
+  avisam**: passar deles não impede a cobertura.
 
 **Admin Principal e outros Admins.** O dono do sistema é o **Admin Principal**.
 Ele pode tornar outras pessoas **Admin** — na aba **Acesso** da ficha, botão

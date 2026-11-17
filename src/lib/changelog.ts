@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.468.0",
+    data: "2026-11-17",
+    migracao: "0419",
+    titulo: "Equipe e coberturas: a Franqueadora acompanha quem cobre quem",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novo painel \"Equipe e coberturas\" (em Risartanos e no Painel da rede): por unidade, quantas coberturas há agora, quanto da equipe está em acúmulo, os dias-pessoa de cobertura no mês, a função feita só por apoio (sem titular), coberturas emendadas, acúmulos fixos sem revisão e os motivos. Por pessoa, o tempo no sistema antes e durante a cobertura e os dias com acesso fora do horário. A Franqueadora vê a rede; o Gerente e o Franqueado, a própria unidade.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff", "finance_franchisor"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O sino avisa (aba Equipe e coberturas) quando uma função fica mais de 30 dias sem titular, uma cobertura emendada passa de 60 dias, a revisão de um acúmulo fixo vence, a unidade passa do limite de coberturas ou de pessoas em acúmulo, ou alguém mostra sinal de sobrecarga. Cada aviso sai uma vez por fato.",
+        papeis: ["unit_manager", "franchisee", "franchisor_staff"],
+        manual: "2.5. Risartanos: a equipe e o acesso na mesma ficha",
+      },
+    ],
+  },
+  {
     versao: "0.465.0",
     data: "2026-11-16",
     migracao: "0415",

@@ -2,6 +2,28 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 👥 0.468.0 — FUNÇÕES DE APOIO, F4: EQUIPE E COBERTURAS (17/11/2026; migração 0419)
+>
+> Plano (D1–D15, seção 10): `docs/equipe/FUNCOES-DE-APOIO-PLANO.md`. Manual 2.5 e
+> a tabela do Painel da rede; EV-367. **As 4 entregas do plano estão feitas.**
+> - ⚠️ **Uma conta, duas telas e os avisos:** `_coverage_panel_units_raw` e
+>   `_coverage_panel_people_raw` (0419). A tela lê pelas portas (`coverage_panel_*`,
+>   quem vê = `_coverage_visible_clinics`, D12); a rotina `role_coverage_daily`
+>   chama `_coverage_network_notices`, que usa as MESMAS funções. Ao recriar
+>   `role_coverage_daily`, partir da 0419.
+> - ⚠️ **Limiares (30/60/15/30%/5) em dois lugares:** `coberturas-painel.ts` e a
+>   rotina da 0419 (régua `funcoes-de-apoio-f4.test.ts`).
+> - Avisos um por fato (`coverage_notices`, fora da auditoria), link
+>   `/risartanos/coberturas`, categoria **Equipe** no sino.
+> - Limites honestos: tempo ativo não é ponto; `access_sessions` não tem unidade;
+>   "a função principal caiu?" (10.2) **não foi feito** (a auditoria não diz com
+>   qual função a pessoa agiu); a pessoa em cobertura não vê o próprio tempo.
+> - ⚠️ A 0418 é da sessão do fim do tratamento (renumerada da 0416): por isso a
+>   minha é a 0419 e a versão 0.468.0 (0.466.0 = AP175, 0.467.0 = fim do tratamento).
+> - Ensaio no treino 29/29 (desfeito). ✅ 0419 na produção pelo dono em 17/11/2026;
+>   conferido de fora: sem login as portas e a rotina recusam, a chave de serviço
+>   para em NOT_ALLOWED, `coverage_notices` existe. Não visto na tela.
+
 > ## ✍️ 0.465.0 — VENDA DIRETA V3, VD3-2: O TERMO PELA ZAPSIGN (16/11/2026; migração 0415)
 >
 > Plano e decisões V1–V3 em `docs/comercial/VENDA-DIRETA-V3-PLANO.md` §7. EV-365.

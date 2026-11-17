@@ -16,6 +16,8 @@ import { NetworkPanelView } from "./panel-client";
 import { AbasDaRede } from "./abas-da-rede";
 import { AbaCaixa, AbaDre, AbaHora, AbaPagar, AbaReceber, AbaRepasses, AvisoDeLeitura } from "./areas";
 import { carregarRepasseDaRede } from "@/lib/finance/payout-visoes-db";
+import { carregarPainelDeCoberturas } from "@/lib/coberturas-painel-db";
+import { EquipeECoberturas } from "@/components/equipe-e-coberturas";
 import {
   carregarCaixa,
   carregarDre,
@@ -81,6 +83,18 @@ export default async function NetworkPanelPage(
         unidades={r.dados}
         ctx={ctx}
         planilha={`/financeiro/painel-da-rede/repasses/planilha?de=${mesSel}&ate=${mesSel}`}
+      />
+    ) : (
+      <AvisoDeLeitura erro={r.erro} />
+    );
+  } else if (aba === "coberturas") {
+    // Funções de apoio, F4 (0419): a mesma tela de /risartanos/coberturas.
+    const r = await carregarPainelDeCoberturas(supabase, periodo.de, periodo.ate);
+    conteudo = r.ok ? (
+      <EquipeECoberturas
+        unidades={r.unidades}
+        pessoas={r.pessoas}
+        linkDaPessoa={session.isAdminMaster ? (id) => `/risartanos/acesso/${id}` : undefined}
       />
     ) : (
       <AvisoDeLeitura erro={r.erro} />

@@ -35,6 +35,8 @@ export const NETWORK_TABS = [
   { key: "hora", label: "Hora clínica" },
   // Repasse, Etapa 5 (0401): o repasse dos dentistas, unidade a unidade.
   { key: "repasses", label: "Repasses" },
+  // Funções de apoio, F4 (0419): equipe enxuta e sobrecarga, unidade a unidade.
+  { key: "coberturas", label: "Equipe e coberturas" },
 ] as const;
 
 export type NetworkTab = (typeof NETWORK_TABS)[number]["key"];
@@ -517,6 +519,9 @@ export function destinoNaUnidade(
       return DATA.test(de) && DATA.test(ate)
         ? `/financeiro/repasses/historico?de=${de.slice(0, 7)}&ate=${ate.slice(0, 7)}`
         : "/financeiro/repasses/historico";
+    // Funções de apoio, F4: o mesmo painel, na equipe.
+    case "coberturas":
+      return "/risartanos/coberturas";
     case "visao":
       return "/financeiro";
   }

@@ -401,6 +401,15 @@ Syncthing se comportarem de forma estranha.**
 `ESTADO_DO_PROJETO.md`)*
 
 
+**17/11/2026 (funções de apoio, F4) — PC Administrador (core → 0.468.0, migração 0419)**
+
+- **O painel "Equipe e coberturas" e os avisos à Franqueadora** (bloco 0.468.0
+  no ESTADO; manual 2.5). ⚠️ Conta única nas funções `_coverage_panel_*_raw`
+  (tela e avisos); ao recriar `role_coverage_daily`, partir da 0419. ⚠️ Os
+  limiares moram também em `coberturas-painel.ts` (régua). Não visto na tela.
+- ✅ 0419 nos dois bancos (treino: ensaio 29/29, desfeito; produção pelo dono em
+  17/11/2026; conferido de fora). Publicado. As 4 entregas do plano estão feitas.
+
 **16/11/2026 (venda direta v3, VD3-2) — PC Administrador (core 0.464.0 → 0.465.0, migração 0415; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
 
 - **O termo da venda direta pela ZapSign** (bloco 0.465.0 no ESTADO). ✅ Texto
