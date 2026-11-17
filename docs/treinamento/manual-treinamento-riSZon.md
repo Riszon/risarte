@@ -3372,9 +3372,22 @@ de prótese. Ela começa e termina **na mesma janela**.
    - **Dinheiro, permuta ou maquininha:** **Recebi R$ …**. É a baixa da
      cobrança: entra no Financeiro e a venda é concluída. Só libera depois do
      termo assinado.
-   - **Pix, boleto ou cartão pelo Asaas:** a cobrança aparece depois do termo
-     assinado, e o pagamento pelo Asaas confirma sozinho. Se a unidade ainda
-     não usa o Asaas, **Confirmar que recebeu**.
+   - **Pix, boleto ou cartão pelo Asaas** *(desde a versão 0.472.0)*: depois do
+     termo assinado, a cobrança aparece na própria caixa (leva alguns
+     segundos para nascer no Asaas).
+     - **Pix:** o **QR** para o cliente apontar o celular, **Copiar Pix** e
+       **Enviar por WhatsApp**.
+     - **Boleto e cartão:** **Abrir o link para pagar** (para pagar ali no
+       balcão), **Linha digitável** (boleto) e **Enviar por WhatsApp**.
+     - Pagou, a venda fica **concluída sozinha** — não precisa recarregar.
+     - Parcelado: a janela mostra a parcela da vez; as outras ficam em
+       **Todas as cobranças da venda** e em Recebíveis.
+     - Se a unidade ainda não usa o Asaas (ou a cobrança automática está
+       desligada), **Confirmar que recebeu**.
+
+**Venda concluída** *(desde a versão 0.472.0)*: **Enviar comprovante por
+WhatsApp** abre a conversa com o cliente e o texto pronto (unidade,
+procedimentos, total, como pagou, data, código). Revise e envie.
 
 Fechou a janela no meio? A venda fica em **Para receber**; **Continuar**
 abre onde parou.

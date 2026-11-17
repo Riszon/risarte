@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.471.1",
+    versao: "0.472.1",
     data: "2026-11-17",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4018b, só o banco).
     migracao: null,
@@ -79,6 +79,36 @@ export const CHANGELOG: Versao[] = [
         texto:
           "A conta de taxa da rede cancelada à mão não volta mais sozinha (nem pelo \"Gerar taxas fixas do mês\", nem por um recebimento do mês). Só a conta que a própria apuração cancelou por falta de valor é refeita.",
         papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
+    versao: "0.472.0",
+    data: "2026-11-17",
+    // Sem migração: usa as cobranças do Asaas que já existiam (4005/4012).
+    migracao: null,
+    titulo: "Venda direta: o Pix na própria janela",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na venda direta pelo Asaas, depois do termo assinado, a caixa Pagamento mostra o QR do Pix para o cliente apontar o celular, com Copiar Pix e Enviar por WhatsApp. No boleto e no cartão, Abrir o link para pagar.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A janela confere sozinha: a cobrança aparece assim que nasce no Asaas e, quando o cliente paga, a venda fica concluída sem recarregar.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Venda concluída: Enviar comprovante por WhatsApp, com a unidade, os procedimentos, o total, como pagou, a data e o código da venda.",
+        papeis: ["receptionist", "unit_manager", "sdr"],
+        manual: "6.1a. Venda direta: o caixa da recepção",
       },
     ],
   },

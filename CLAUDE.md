@@ -400,6 +400,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (venda direta v3, VD3-3) — PC Administrador (core 0.471.0 → 0.472.0, sem migração; worktree `wt-venda-direta`, branch `feature/venda-direta-v3`)**
+
+- **O Pix na janela** (bloco 0.472.0 no ESTADO). Publicado com o "pode publicar" do dono
+  (17/11/2026). Dependência nova: `qrcode` 1.5.4.
+- ⚠️ **`sale_charges_read`**: "agendada para hoje" = a cobrança ainda vai
+  nascer; o meio da cobrança é `PIX` (maiúsculas); a leitura pode estourar o
+  tempo durante a baixa — tela que pergunta de novo tem de aguentar a falha.
+- ⚠️ **Testar o Pix no treino sem ligar a unidade**: marcar só a venda de
+  teste em `sale_auto_charges` (a cobrança automática de Londrina está
+  desligada) e aplicar o aviso com `_gateway_record_event` +
+  `_gateway_process_event` (o caminho do webhook).
+- ⚠️ **Disco**: chegou a 2,8 GB livres; o cache do npm (1 GB) foi limpo.
+
 **17/11/2026 (fim do tratamento, Etapa 3) — PC Administrador (core 0.471.0, migração 0421; worktree `wt-fim-tratamento`)**
 
 - **O controle de qualidade em cinco níveis** (bloco 0.471.0 no ESTADO).

@@ -273,3 +273,49 @@ nascendo na assinatura), D4 e D5.
   usuário, em nome de quem enviou);
 - `direct_sale_mark_paper` (anexo + marca, numa transação);
 - `select public.audit_attach_all();`.
+
+---
+
+## 8. VD3-3 — o Pix (e o boleto, o cartão) na janela (plano da etapa, 17/11/2026)
+
+**Status: aprovado (P1–P3 como recomendado) e CONSTRUÍDO em 17/11/2026 (core 0.472.0, sem migração) e publicado no mesmo dia.**
+
+### O que já existe (lido no código)
+
+- Depois do termo assinado, a caixa **Pagamento** do caixa já mostra o bloco
+  **Cobranças da venda** (4012): situação de cada parcela, **Copiar link**,
+  **WhatsApp**, **Copiar Pix** (o copia e cola guardado no banco), **Linha
+  digitável**; o aviso do Asaas dá a baixa sozinho (4005).
+- **Falta:** o QR na tela para o cliente apontar o celular; a caixa se
+  atualizar sozinha quando o Pix cai (hoje precisa reabrir); o comprovante ao
+  concluir (D4).
+
+### Como fica
+
+1. **Pix:** a caixa Pagamento mostra o **QR grande** e, embaixo, **Copiar Pix**
+   e **Enviar por WhatsApp**. O QR é desenhado na tela a partir do copia e cola
+   que já está guardado — nenhuma chamada nova ao Asaas.
+2. **Boleto e cartão:** **Abrir o link** (para o cliente pagar no balcão),
+   **Enviar por WhatsApp**, **Linha digitável** (boleto).
+3. **Ao vivo:** enquanto a cobrança está aberta, a janela confere a cada
+   poucos segundos; pagou → a caixa fica verde e a venda conclui sozinha.
+4. **Comprovante (D4):** venda concluída → botão **Enviar comprovante por
+   WhatsApp** (o cliente recebe o resumo: unidade, procedimentos, total, como
+   pagou, data). Não sai sozinho: quem está no balcão envia.
+5. **Sem Asaas na unidade** (hoje, toda a produção até a ASA7): nada muda — o
+   "Confirmar que recebeu" de sempre. Por isso a VD3-3 **pode ir à produção
+   sem esperar a ASA7**: lá ela só aparece quando o Asaas for ligado.
+
+### Decisões pedidas
+
+- **P1 — O QR.** *Recomendo:* desenhar na tela com uma biblioteca pequena e
+  conhecida (`qrcode`, sem servidor externo). Alternativa: pedir a imagem ao
+  Asaas a cada abertura (uma chamada a mais por venda).
+- **P2 — O texto do comprovante.** *Proposta:*
+  "Olá, {nome}! Sua compra na {unidade} está confirmada. {procedimentos} —
+  total {valor}, pago em {meio} em {data}. Código {VD-…}. Obrigado!"
+- **P3 — Venda direta parcelada no boleto** (as próximas parcelas): ficam em
+  Recebíveis como hoje; a janela só mostra a 1ª. *Recomendo manter.*
+
+Sem migração. Teste no treino nas unidades com Asaas de sandbox (Londrina,
+Cambé), com o pagamento simulado pelo aviso do Asaas.
