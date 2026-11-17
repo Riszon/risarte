@@ -820,6 +820,7 @@ Plano aprovado pelo Jeferson em 12/11/2026. Migração **4007**; core 0.439.0, A
 
 - **E-mail e SMS (mensageria):** preço × cobranças **pagas** estimadas (as pagas da unidade nos últimos 30 dias), **uma vez por cobrança**, se houver qualquer aviso por e-mail ou SMS ligado. Explicação: "cobrada uma vez por cobrança, só quando ela é paga".
 - **WhatsApp e ligação:** preço por disparo × avisos ligados naquele canal × cobranças emitidas nos últimos 30 dias, **paga ou não**. Explicação: "cobrado a cada envio".
+- **Sem nenhum aviso de e-mail ou SMS ligado, não há mensageria** (resposta do Asaas de 17/11/2026, 19.39). Por isso não pagam mensageria: o cadastro sem avisos do cartão parcelado e o boleto de depósito do caixa (1C).
 
 **WhatsApp sem trava (ajuste 2).** O canal fica disponível. A tela informa que a mensagem sai de um número do Asaas, que respostas não chegam à clínica e que o envio depende de saldo na conta Asaas da unidade. A unidade com WhatsApp ligado e **saldo zero** (lido de `GET /v3/finance/balance` na rotina diária das contas) ganha alerta na aba e aviso ao Gerente e ao Admin. O Asaas **não avisa falha de envio**: isso não aparece.
 
@@ -4757,6 +4758,38 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
 - **O servidor:** o pedido e a leitura.
 - **A tela:** o botão na ficha, a confirmação com a repartição do parcelado e a devolução do distrato.
 - **A prova:** o ensaio quebrado e o sandbox.
+
+### 19.39 Segunda resposta do Asaas (João Lima, suporte N1, 17/11/2026) — só o que é novo
+
+A resposta confirma o que já estava registrado sobre a mensageria (17.4), o WhatsApp (17.4), o sandbox e os avisos desligados (17.4). **Nada é construído agora.**
+
+**O que é novo:**
+1. **A mensageria com os avisos desligados.**
+   - **A regra:** se todos os avisos de e-mail e SMS do pagador (ou da cobrança) estiverem desligados, a tarifa de mensageria (R$ 0,99) **não é cobrada**.
+   - **Na tabela de custo** (17.4, "Custo na tela"), não pagam mensageria:
+     - o cartão parcelado emitido no cadastro sem avisos (19.19.3);
+     - o boleto da forma 2 no cadastro do carnê, que tem o "cobrança criada" sempre desligado, quando os outros avisos do pagador também estão desligados;
+     - o boleto de depósito do caixa (1C), que nasce no cadastro sem avisos.
+2. **O comprovante do Asaas** (`transactionReceiptUrl`) vem na cobrança paga **mesmo com os avisos desligados**.
+   - **Onde já está:** desde a 4007, ele é gravado (`charges.receipt_url`), e a ficha mostra "Ver comprovante" e "Enviar comprovante pelo WhatsApp" na parcela paga pelo Asaas (17.4, ajuste 4). Isso vale para o pagador sem avisos e para o cartão parcelado (parcela por parcela).
+   - **Onde caberia, como melhoria (sem construir agora):**
+     - (a) nas telas das **mensalidades do PPR+ e da Ortodontia** (4018), que ainda não mostram o link;
+     - (b) na **página da lista da forma 2** (`/boletos/…`), em cada boleto pago;
+     - (c) no **demonstrativo da cobrança mensal** (4021), depois de paga;
+     - (d) no **boleto de depósito do caixa** (1C), quando ele existir.
+   - **Em todos:** "Ver comprovante do Asaas", ao lado do comprovante próprio do riSZon.
+3. **WhatsApp no sandbox:** o sandbox **não dispara WhatsApp**. A prova do envio por WhatsApp entra na **lista da homologação (ASA7)**: não pode ser provada antes.
+4. **Correios** (só registro, fora do projeto):
+   - **como:** o boleto impresso pela API, com `postalService: true`;
+   - **preço:** R$ 2,91 por carta;
+   - **exige:** o endereço completo e o vencimento a mais de 15 dias.
+
+**O que continua aberto:**
+- **A mensageria no cartão parcelado:** uma vez pelo parcelamento, ou em cada parcela? Esta resposta não resolve, e a pergunta continua na lista ao Asaas. Até a resposta, o parcelado segue no cadastro sem avisos (19.19.3).
+- **As demais perguntas** técnicas e comerciais de 16/11 seguem sem resposta (19.37.2).
+- **A lista ao Asaas ganha:**
+  - na produção, o estorno de cartão pela API exige o token de ações críticas? (19.38, cuidado 1);
+  - a repartição do estorno do parcelado entre as parcelas, que contradiz a resposta de 16/11 (19.38.1).
 
 ## 20. ASA6 — Cobrança mensal às unidades e conciliação: 4021 e 4021a CONSTRUÍDAS (16/11/2026; ver 20.15 a 20.17.10)
 
