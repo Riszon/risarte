@@ -5487,6 +5487,7 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
   - quebrado (a rotina sem a conferência do razão), ele reprova as 3 novas;
   - as quebras antigas continuam reprovando.
 - **Na produção, a conferência da 4021a fica** `tabelas_novas 2 · funcoes_novas 9 · divergencias 0`.
+- **Rodada na produção pelo dono em 17/11/2026,** depois da 4021, e a conferência bateu: `2 · 9 · 0`. Desfazer: `docs/asaas/desfazer-4021a.sql`.
 
 ### 20.18 O teste do dono (17/11/2026, v0.462.0): achados e correções (core 0.462.1)
 
