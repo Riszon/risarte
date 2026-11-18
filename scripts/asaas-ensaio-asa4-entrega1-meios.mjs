@@ -234,7 +234,9 @@ try {
   let banco = await um("select id from public.bank_accounts where clinic_id = $1 and active and kind = 'corrente' order by is_default desc limit 1", [ldn]);
   if (!banco) banco = await um("insert into public.bank_accounts (clinic_id, alias, kind) values ($1, 'Banco ensaio', 'corrente') returning id", [ldn]);
   const caminho = `${ldn}/ensaio-4011.pdf`;
-  const dep = (who, extra = {}) => pessoa(P[who], "select public.cash_deposit_register($1::jsonb) as id", [JSON.stringify({ clinic_id: ldn, bank_account_id: banco.id, deposited_on: new Date().toISOString().slice(0, 10), receipt_ids: [b1[0].id, b2[0].id], amount_cents: 30000, proof_path: caminho, proof_name: "comprovante.pdf", ...extra })]);
+  // O dia de São Paulo (o do banco), não o UTC: depois das 21h o UTC já é amanhã.
+  const hojeSP = String((await um("select public.today_br()::text d")).d);
+  const dep = (who, extra = {}) => pessoa(P[who], "select public.cash_deposit_register($1::jsonb) as id", [JSON.stringify({ clinic_id: ldn, bank_account_id: banco.id, deposited_on: hojeSP, receipt_ids: [b1[0].id, b2[0].id], amount_cents: 30000, proof_path: caminho, proof_name: "comprovante.pdf", ...extra })]);
   conf("a Recepção não registra depósito", erro(await dep("recepcao"), "NOT_ALLOWED"));
   conf("depósito sem comprovante é recusado", erro(await dep("gerente"), "PROOF_REQUIRED"));
   await c.query("insert into storage.objects (bucket_id, name, metadata) values ('depositos', $1, '{\"size\": 10, \"mimetype\": \"application/pdf\"}')", [caminho]);
