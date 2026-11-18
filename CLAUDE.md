@@ -408,7 +408,8 @@ Syncthing se comportarem de forma estranha.**
   libera para o Financeiro da Franqueadora: `podeNaUnidadeOuNaRede`, nunca
   `pode(…, unidade)`. ⚠️ Ensaio que finge ser usuário: zerar
   `request.jwt.claims` antes de mexer como sistema (senão `MIRROR_READ_ONLY`).
-- ✅ 0431 no treino. ⏳ Produção com o dono. A regra nova do início do caso
+- ✅ 0431 no treino e na produção (o dono, 18/11/2026: `1 · 1 · 0`). Publicado
+  depois da migração. A regra nova do início do caso
   (AP183 D1) está em `docs/ortodontia/AP183-D1-PLANO.md`, aguarda aprovação.
 
 **18/11/2026 (ortodontia, correções do roteiro: AP178, AP179, AP181) — PC Administrador (core 0.481.0 → 0.483.0, migrações 0429 e 0430)**

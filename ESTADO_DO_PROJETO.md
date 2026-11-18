@@ -2,7 +2,7 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — AGUARDA A PRODUÇÃO
+> ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — NA PRODUÇÃO (18/11/2026)
 >
 > Decisões do dono em 18/11/2026 (planos `docs/ortodontia/AP180-PLANO.md`,
 > `AP182-PLANO.md`, `AP183-PLANO.md`).
@@ -24,7 +24,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   dono ligar as permissões na matriz (Compras: AP125).
 > - ✅ 0431 no treino (`--ate 0431`); ensaios 6/6 da porta, o gatilho (sem: prevista;
 >   com: cancelada) e as fantasmas (1 → 0). EV-390 a EV-392. Não visto na tela.
-> - ⏳ **Produção:** o dono roda a 0431; o push sai depois.
+> - ✅ **Produção:** o dono rodou a 0431 em 18/11/2026 (conferência `1 · 1 · 0`:
+>   a porta do pacote, o cancelamento seguindo a 0417, nenhuma fantasma);
+>   o push saiu depois.
 >
 > ## 🦷 0.483.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA: AP178, AP179 E AP181 (18/11/2026; migrações 0429 e 0430) — NA PRODUÇÃO (18/11/2026)
 >
