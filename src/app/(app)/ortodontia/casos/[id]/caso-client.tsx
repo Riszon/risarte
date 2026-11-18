@@ -26,6 +26,8 @@ import {
   setOrthoStatus,
   updateOrthoCase,
 } from "../../actions";
+import { updateAppointmentStatus } from "../../../agenda/actions";
+import { formatBrDateTime } from "@/lib/dates";
 
 const selectClass = "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
 const textareaClass = "w-full rounded-lg border border-input bg-transparent p-2 text-sm";
@@ -40,10 +42,13 @@ export function CaseStatusActions({
   status,
   today,
   retainer,
+  controlesAgendados = [],
 }: {
   caseId: string;
   status: OrthoStatus;
   today: string;
+  /** AP183 (item 3): controles da contenção já agendados — na alta, quem dá a alta escolhe quais cancelar (nenhum vem marcado). */
+  controlesAgendados?: { appointmentId: string; quando: string }[];
   /** A contenção combinada no caso (valor e condição) — pré-preenche a entrega. */
   retainer: { charged: boolean; feeCents: number; terms: string | null };
 }) {
@@ -55,6 +60,8 @@ export function CaseStatusActions({
   const [date, setDate] = useState(today);
   const [charge, setCharge] = useState(retainer.charged);
   const [amount, setAmount] = useState(brlText(retainer.feeCents));
+  const [cancelarControles, setCancelarControles] = useState<string[]>([]);
+  const mostraControles = open === "finalizado" && status === "contencao" && controlesAgendados.length > 0;
 
   const TITULO = {
     em_tratamento:
@@ -93,7 +100,17 @@ export function CaseStatusActions({
       const r = await setOrthoStatus(caseId, open, reason, date);
       if (!r.ok) toast.error(r.error ?? "Não foi possível mudar a situação.");
       else {
-        toast.success("Situação atualizada.");
+        // AP183 (item 3): os controles que quem deu a alta marcou para cancelar.
+        let falhas = 0;
+        if (mostraControles) {
+          for (const id of cancelarControles) {
+            const c = await updateAppointmentStatus(id, "cancelled");
+            if (!c.ok) falhas++;
+          }
+        }
+        if (falhas > 0) toast.error(`Alta registrada, mas ${falhas} controle(s) não foram cancelados. Cancele pela agenda.`);
+        else toast.success(cancelarControles.length > 0 && mostraControles ? `Situação atualizada; ${cancelarControles.length} controle(s) cancelado(s).` : "Situação atualizada.");
+        setCancelarControles([]);
         setOpen(null);
         setReason("");
         router.refresh();
@@ -189,6 +206,29 @@ export function CaseStatusActions({
               <Label htmlFor="status-reason">{open === "interrompido" || open === "suspenso" ? "Motivo (obrigatório)" : "Observação"}</Label>
               <textarea id="status-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className={textareaClass} />
             </div>
+            {mostraControles && (
+              <div className="space-y-1.5 rounded-md border p-2 text-sm">
+                <p className="font-medium">Controles já agendados</p>
+                <p className="text-xs text-muted-foreground">
+                  Ficam na agenda. Marque os que devem ser cancelados, se o dentista não precisa mais ver o paciente.
+                </p>
+                {controlesAgendados.map((ctl) => (
+                  <label key={ctl.appointmentId} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={cancelarControles.includes(ctl.appointmentId)}
+                      onChange={(e) =>
+                        setCancelarControles((atual) =>
+                          e.target.checked ? [...atual, ctl.appointmentId] : atual.filter((x) => x !== ctl.appointmentId)
+                        )
+                      }
+                    />
+                    Cancelar o controle de {formatBrDateTime(ctl.quando)}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)} disabled={isPending}>Voltar</Button>

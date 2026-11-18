@@ -2103,7 +2103,7 @@ pela tabela de repasse do procedimento de manutenção configurado.
 | **Casos** (`/ortodontia/casos`) | Todos do módulo | A lista com busca (paciente, código, ortodontista) e filtros por situação. O Dentista vê só os casos em que é o ortodontista. |
 | **Abrir o caso da venda / Caso legado** (`/ortodontia/casos/novo`) | Gerente, Coordenador, Admin | Desde a 0.366.0 **não existe "Novo caso"**: o caso nasce sozinho no fechamento da venda. Esta tela fica para dois casos: **vendas fechadas antes da 0.366.0** ainda sem caso (o Painel lista, botão "Abrir caso": tipo, meses e intervalo vêm da proposta do Planner, o dinheiro do acordo da negociação) e o **caso legado** (paciente que já estava em tratamento antes do sistema — link "Caso legado" no Painel, motivo obrigatório, enquanto o Admin deixar a porta aberta). Marcando **"O aparelho já foi instalado"**, o caso nasce **em tratamento** e o cronograma é gerado na hora. |
 | **A ficha do caso** (`/ortodontia/casos/[id]`) | Todos do módulo | Logo no alto, os **alertas da anamnese** do paciente (desde a 0.364.0, para o Dentista, o Coordenador e o Gerente). Situação e prazo (com a barra do tempo), os motivos de atenção, o **cronograma** manutenção a manutenção (prevista, agendamento ligado, situação, quem fez e a **evolução**: fio/arco, observações, próximo passo), as **mensalidades** com baixa (só para quem vê dinheiro), as **indicações** que o paciente trouxe, a origem dele e o **histórico**. Botões: **Prontuário**, **Planos de tratamento** e **Desenvolvimento clínico** (abrem a aba certa do prontuário — desde a 0.364.0), **Agendar**, **Termo** (imprimir/PDF), **Editar**; e as mudanças de situação (abaixo). |
-| **Mensalidades** (`/ortodontia/mensalidades`) | **Gerente** e **Financeiro da Franqueadora** (dão baixa), Franqueadora, Admin; **Coordenador, Recepção e Franqueado só veem** | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa, **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. A cobrança da **contenção** (quando cobrada) aparece aqui com a etiqueta "Contenção". Desde a 0.363.0 a Recepção abre a tela **sem botões**: vê a situação de cada paciente para ajudar o Gerente e o Financeiro. Desde a 0.483.0 o **Financeiro da Franqueadora** abre a tela e dá baixa também com uma unidade escolhida no seletor (antes era mandado para Atenção e a baixa era recusada). |
+| **Mensalidades** (`/ortodontia/mensalidades`) | **Gerente** e **Financeiro da Franqueadora** (dão baixa), Franqueadora, Admin; **Coordenador, Recepção e Franqueado só veem** | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa (desde a 0.485.0 pede confirmação), **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. A cobrança da **contenção** (quando cobrada) aparece aqui com a etiqueta "Contenção". Desde a 0.363.0 a Recepção abre a tela **sem botões**: vê a situação de cada paciente para ajudar o Gerente e o Financeiro. Desde a 0.483.0 o **Financeiro da Franqueadora** abre a tela e dá baixa também com uma unidade escolhida no seletor (antes era mandado para Atenção e a baixa era recusada). |
 | **Configuração** (`/ortodontia/configuracao`) | Admin (rede) e Gerente (a própria unidade) | O padrão da rede e o ajuste por unidade: mensalidade padrão, meses previstos, intervalo das manutenções, reavaliação a cada N meses, tolerância do prazo, dia de vencimento, o **procedimento da manutenção** (de onde sai o valor do repasse), **a contenção no fim do tratamento** (cobrar ou não, valor, condição especial) e, desde a 0.366.0, **o acordo comercial**: desconto por pontualidade sugerido, **pontualidade máxima** e **mensalidade mínima** (fora disso o Gerente autoriza) e, só para o Admin, a **porta do caso legado**. O que estiver aqui sai no termo do paciente. |
 
 #### A situação do caso
@@ -2128,6 +2128,9 @@ contenção** (quando cobrada) e marca o **controle da contenção** para daqui 
 um intervalo de reavaliação. O paciente passa a **Em acompanhamento**: continua
 "em ortodontia" (aparece no cartão do prontuário, pode ter manutenção extra e
 agendamento), mas **sem mensalidade**. **Dar alta** encerra o acompanhamento.
+Se houver **controles já agendados**, a janela da alta os lista *(desde a
+0.485.0)*: eles ficam na agenda, e quem dá a alta marca os que devem ser
+cancelados, se o dentista não precisa mais ver o paciente. Nenhum vem marcado.
 **Encerrar sem contenção** existe para o caso raro (mudança de cidade, por
 exemplo) e também finaliza. O Painel conta como **finalizado** quem entregou
 as contenções, na data da entrega.
@@ -2190,9 +2193,12 @@ marcada por engano (desfaz a prorrogação).
   contam a partir dela.
 - **Concluir o atendimento** marca a manutenção como **Realizada** e gera o
   **repasse** do ortodontista. **Não compareceu** marca **Faltou** (e prorroga
-  o término previsto). Cancelar o agendamento devolve a manutenção a
-  **Prevista** — mas uma falta já registrada fica como falta (só solta o
-  agendamento).
+  o término previsto). "Faltou" só aparece **depois do horário** do
+  atendimento *(desde a 0.485.0, na agenda inteira)*. Cancelar o agendamento
+  devolve a manutenção a **Prevista** — mas uma falta já registrada fica como
+  falta (só solta o agendamento). A manutenção que **nasceu do agendamento**
+  (manutenção extra, controle da contenção) é **cancelada** junto *(desde a
+  0.485.0; antes ficava uma "prevista" que ninguém tinha marcado)*.
 - Quando o profissional do agendamento não é o ortodontista do caso, ou o
   agendamento veio antes do caso, use **Vincular** (ícone de elo) na linha da
   manutenção, na ficha do caso.
@@ -4492,7 +4498,12 @@ pacotes e documentos* vê um aviso no lugar das listas.
    negociação** → **Cliente aceitou** (o botão só habilita depois de salvar).
 4. Aba **Fechamento**: **Enviar para assinatura** (ou **Imprimir orçamento
    para assinar**). Acompanhe quem assinou ali mesmo. Depois, marque
-   **Pagamento confirmado**. Desde a 0.483.0 o envio e a situação da
+   **Pagamento confirmado**. O contrato mandado pela aba Documentos da ficha,
+   com a negociação já aceita, também fecha a venda *(desde a 0.485.0)*. Se um
+   contrato já foi assinado por um pacote que não marcou a venda, o aviso
+   "Este documento já foi assinado por todos" traz **Usar este pacote no
+   fechamento**: o contrato fica marcado sem o paciente assinar de novo.
+   Desde a 0.483.0 o envio e a situação da
    assinatura aparecem também para o Consultor e o Assistente Comercial que
    moram na Franqueadora, nas unidades do acesso deles (antes a tela dizia
    *"A situação da assinatura digital não aparece para a sua função"*).

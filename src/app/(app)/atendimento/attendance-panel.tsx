@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  podeMarcarFaltou,
   APPOINTMENT_TYPE_LABELS,
   TYPE_PROVIDER_ROLES,
   type AppointmentStatus,
@@ -1097,6 +1098,8 @@ export function AttendancePanel({
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
+                              // AP183 (item 5): "Faltou" só depois do horário.
+                              disabled={!podeMarcarFaltou(a.starts_at)}
                               onClick={() =>
                                 run(
                                   () =>

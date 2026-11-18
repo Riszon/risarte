@@ -51,6 +51,8 @@ export type SendContext = {
   byRole: Record<string, StaffSignerOption[]>;
   treatment: TreatmentValues | null;
   negotiationId: string | null;
+  /** AP180: a situação da negociação ligada ("aceita" faz o pacote da ficha nascer dela). */
+  negotiationStatus: string | null;
   zapsign: { configured: boolean; fake: boolean; env: "sandbox" | "production" };
 };
 
@@ -156,6 +158,7 @@ export async function loadSendContext(input: {
       byRole,
       treatment: treatmentInfo.treatment,
       negotiationId: treatmentInfo.negotiationId,
+      negotiationStatus: treatmentInfo.negotiationStatus,
       zapsign: { configured: isZapsignConfigured() || isZapsignFake(), fake: isZapsignFake(), env: zapsignEnv() },
     },
   };
@@ -310,7 +313,7 @@ async function loadTreatment(
   origin: SendOrigin,
   clientId: string,
   clinicId: string
-): Promise<{ treatment: TreatmentValues | null; negotiationId: string | null }> {
+): Promise<{ treatment: TreatmentValues | null; negotiationId: string | null; negotiationStatus: string | null }> {
   const cols = "id, plan_id, option_id, status, adjustment_cents, final_cents, payment_method, installments, down_payment_cents, created_at";
   let negotiation: NegotiationRow | null = null;
   let planId: string | null = origin.type === "treatment_plan" ? origin.id : null;
@@ -343,7 +346,7 @@ async function loadTreatment(
       .maybeSingle<{ id: string }>();
     planId = data?.id ?? null;
   }
-  if (!planId && !negotiation) return { treatment: null, negotiationId: null };
+  if (!planId && !negotiation) return { treatment: null, negotiationId: null, negotiationStatus: null };
 
   const optionId = negotiation?.option_id ?? null;
   let optionQuery = supabase
@@ -359,7 +362,7 @@ async function loadTreatment(
       .order("is_primary", { ascending: false })
       .limit(1)
       .maybeSingle<{ id: string }>();
-    if (!opt) return { treatment: null, negotiationId: null };
+    if (!opt) return { treatment: null, negotiationId: null, negotiationStatus: null };
     optionQuery = optionQuery.eq("option_id", opt.id);
   }
   const [itemsRes, negItemsRes, rulesRes, presRes] = await Promise.all([
@@ -418,5 +421,6 @@ async function loadTreatment(
       presentationSummary: presRes.data?.summary ?? null,
     },
     negotiationId: negotiation?.id ?? null,
+    negotiationStatus: negotiation?.status ?? null,
   };
 }

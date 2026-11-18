@@ -33,6 +33,7 @@ import {
 } from "@/components/marca-comercial";
 import {
   APPOINTMENT_STATUSES,
+  situacoesParaMudar,
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_TYPE_LABELS,
   type AppointmentStatus,
@@ -438,9 +439,7 @@ export function WeekGrid({
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Status</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {APPOINTMENT_STATUSES.filter(
-                      (s) => s !== appointment.status
-                    ).map((status) => (
+                    {situacoesParaMudar(appointment.status, appointment.starts_at).map((status) => (
                       <DropdownMenuItem
                         key={status}
                         onClick={() => setStatus(appointment, status)}

@@ -46,6 +46,7 @@ export function AvisoDeDuplicidade({
   clientId,
   onTentarDeNovo,
   onEnviarComMotivo,
+  onUsarNoFechamento,
 }: {
   duplicidade: Duplicidade;
   clientId?: string | null;
@@ -53,6 +54,8 @@ export function AvisoDeDuplicidade({
   onTentarDeNovo: () => void;
   /** O mesmo documento já assinado: envia de novo com o motivo (Gerente ou Admin). */
   onEnviarComMotivo: (motivo: string) => void;
+  /** AP180: no Fechamento, o pacote já assinado marca o contrato da venda. */
+  onUsarNoFechamento?: (packageId: string) => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
@@ -190,6 +193,11 @@ export function AvisoDeDuplicidade({
           {linkDoPacote && (
             <Button size="sm" nativeButton={false} render={<Link href={linkDoPacote} target="_blank" />}>
               Abrir o {duplicidade.number}
+            </Button>
+          )}
+          {onUsarNoFechamento && duplicidade.packageId && (
+            <Button size="sm" variant="default" onClick={() => onUsarNoFechamento(duplicidade.packageId)}>
+              Usar este pacote no fechamento
             </Button>
           )}
           {duplicidade.podeLiberar && (

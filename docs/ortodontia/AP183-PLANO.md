@@ -93,3 +93,16 @@ Migração pequena nas funções que escrevem os motivos.
 
 Pequeno. Os itens 1, 3 e 7 pedem uma migração pequena (podem ir juntos numa só,
 na mesma entrega do AP182 se você quiser); o resto é só tela.
+
+## Decisões do dono e o que foi feito (18/11/2026, 0.485.0)
+
+- **Item 1 (D1):** o dono definiu uma regra nova: a 1ª mensalidade nasce na
+  assinatura do contrato, com o 1º vencimento e os seguintes configuráveis, e
+  o tratamento começa com contrato assinado, 1ª mensalidade paga e primeiro
+  atendimento ortodôntico. Plano próprio: `AP183-D1-PLANO.md`, para aprovar.
+- **Item 2:** não era defeito. O manipulador já fecha a janela; no roteiro, o
+  painel do navegador estava escondido e a animação de fechar não rodou.
+- **Item 3 (D2):** feito com a decisão do dono: a janela da alta lista os
+  controles agendados, **nenhum marcado**; quem dá a alta marca os que devem
+  ser cancelados.
+- **Itens 4, 5 (D3), 6 e 7 (D4):** feitos.

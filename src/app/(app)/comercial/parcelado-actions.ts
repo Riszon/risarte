@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionContext, pode } from "@/lib/auth";
+import { getSessionContext, podeNaUnidadeOuNaRede } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { cancelarParcelamentoNoAsaas, emitirParcelamentoNoAsaas, estornarParcelamentoNoAsaas } from "@/lib/asaas/parcelamento";
@@ -70,7 +70,7 @@ export async function gerarParcelamento(input: { negotiationId?: string | null; 
 export async function tentarDeNovoParcelamento(blockId: string): Promise<Resultado> {
   const session = await getSessionContext();
   const clinicId = await clinicaDoBloco(blockId);
-  if (!clinicId || !pode(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { error } = await supabase.rpc("charge_block_retry", { p_block: blockId });
   if (error) return { ok: false, error: mensagem(error.message) };
@@ -84,7 +84,7 @@ export async function tentarDeNovoParcelamento(blockId: string): Promise<Resulta
 export async function cancelarParcelamento(input: { blockId: string; reason: string }): Promise<Resultado> {
   const session = await getSessionContext();
   const clinicId = await clinicaDoBloco(input.blockId);
-  if (!clinicId || !pode(session, "acao.cobranca.cancelar", clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, "acao.cobranca.cancelar", clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("card_block_cancel_check", { p_block: input.blockId, p_reason: input.reason });
   if (error) return { ok: false, error: mensagem(error.message) };

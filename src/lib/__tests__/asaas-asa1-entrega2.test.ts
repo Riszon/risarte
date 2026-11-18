@@ -371,7 +371,9 @@ describe("guardas estáticas", () => {
     const funcoes = s.split(/export async function /).slice(1);
     expect(funcoes.length).toBeGreaterThanOrEqual(6);
     for (const f of funcoes) {
-      expect(f, f.slice(0, 40)).toMatch(/pode\(session, (cap|"acao\.cobranca\.)/);
+      // AP178/D5 (0.484.0): `podeNaUnidadeOuNaRede` é o `pode` que também aceita
+      // o Financeiro da Franqueadora na unidade, como o banco (`_charge_can`).
+      expect(f, f.slice(0, 40)).toMatch(/pode(NaUnidadeOuNaRede)?\(session, (cap|"acao\.cobranca\.)/);
     }
   });
 });

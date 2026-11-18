@@ -1,4 +1,4 @@
-import { hasRoleInClinic, pode, type SessionContext } from "@/lib/auth";
+import { hasRoleInClinic, pode, podeNaUnidadeOuNaRede, type SessionContext } from "@/lib/auth";
 
 // COMPRAS — quem enxerga e quem mexe.
 //
@@ -27,7 +27,7 @@ export function canManagePurchaseRequests(
   clinicId: string | null | undefined
 ): boolean {
   return (
-    pode(session, "acao.compras.requisitar", clinicId) &&
+    podeNaUnidadeOuNaRede(session, "acao.compras.requisitar", clinicId) &&
     (bancoAceitaEstoqueDaUnidade(session, clinicId) ||
       (Boolean(clinicId) &&
         hasRoleInClinic(session, clinicId as string, ["clinical_coordinator", "asb", "tsb"])))
@@ -46,7 +46,7 @@ export function canReceivePurchases(
   // Financeiro da Franqueadora e o GERENTE da unidade (`can_manage_stock`).
   // A tela segue o banco (OC-00096).
   return (
-    pode(session, "acao.compras.requisitar", clinicId) &&
+    podeNaUnidadeOuNaRede(session, "acao.compras.requisitar", clinicId) &&
     bancoAceitaEstoqueDaUnidade(session, clinicId)
   );
 }
@@ -112,7 +112,7 @@ export function canViewPurchases(
   // em consulta, com o aviso de quem monta a lista. Usar o
   // `canManagePurchaseRequests` aqui tiraria a leitura dessa pessoa.
   return (
-    pode(session, "acao.compras.requisitar", clinicId) ||
+    podeNaUnidadeOuNaRede(session, "acao.compras.requisitar", clinicId) ||
     isPurchaser(session) ||
     pode(session, "modulo.compras")
   );

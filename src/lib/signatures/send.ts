@@ -23,6 +23,7 @@ import type { ZapsignCreateDocInput, ZapsignSignerInput } from "@/lib/zapsign/ty
 import { podeNoBanco } from "./acesso-no-banco";
 import { modoDeAutenticacao, nivelDeAutenticacao } from "./auth-level";
 import { loadSendContext, type SendOrigin } from "./envio-dados";
+import { origemDoPacote } from "./origem";
 import { renderCoverPdf } from "./pdf/cover";
 import { MAX_PACKAGE_BYTES, bytesToBase64, inspectAttachment, mergePdfs } from "./pdf/merge";
 import { renderTemplatePdf } from "./pdf/render-template";
@@ -213,14 +214,21 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
     ...s,
     auth_mode_applied: modoDeAutenticacao({ level: auth.level, orderGroup: s.order_group, phone: s.phone, email: s.email }).auth_mode,
   }));
+  // AP180: o contrato mandado pela ficha, com a negociação aceita, nasce DELA —
+  // é o que faz a assinatura fechar a venda.
+  const origem = origemDoPacote({
+    origem: input.origin,
+    modelos: templates,
+    negociacao: { id: ctx.negotiationId, status: ctx.negotiationStatus },
+  });
   const itemsPayload = [
     ...templates.map((t, i) => ({
       template_id: t.id,
       title: t.name,
       sort_order: i,
       rendered_data: valoresSemNumero,
-      origin_type: input.origin.type,
-      origin_id: input.origin.id,
+      origin_type: origem.type,
+      origin_id: origem.id,
     })),
     ...input.attachments.map((a, i) => ({
       template_id: null,
@@ -234,8 +242,8 @@ export async function prepararPacote(input: PrepareInput): Promise<PrepareResult
   const { data: created, error: rpcError } = await supabase.rpc("signature_create_package", {
     p_clinic_id: input.clinicId,
     p_audience: "patient",
-    p_origin_type: input.origin.type,
-    p_origin_id: input.origin.id,
+    p_origin_type: origem.type,
+    p_origin_id: origem.id,
     p_client_id: input.clientId,
     p_linked_amount_cents: linkedAmountCents,
     p_auth_level: auth.level,

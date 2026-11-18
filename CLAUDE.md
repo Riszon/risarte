@@ -400,6 +400,18 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**18/11/2026 (ortodontia, correções do roteiro, segunda leva: AP180, AP182, AP183, D5) — PC Administrador (core 0.484.0 → 0.485.0, migração 0431; a 0.484.0 é do Asaas)**
+
+- Bloco 0.485.0 no ESTADO. ⚠️ **Fechar venda é da equipe comercial e do Admin**
+  (`commercial_can_close`), não do Gerente. ⚠️ Ao recriar
+  `ortho_appointment_sync`, partir da 0431. ⚠️ Ação de unidade que o banco
+  libera para o Financeiro da Franqueadora: `podeNaUnidadeOuNaRede`, nunca
+  `pode(…, unidade)`. ⚠️ Ensaio que finge ser usuário: zerar
+  `request.jwt.claims` antes de mexer como sistema (senão `MIRROR_READ_ONLY`).
+- ✅ 0431 no treino e na produção (o dono, 18/11/2026: `1 · 1 · 0`). Publicado
+  depois da migração. A regra nova do início do caso
+  (AP183 D1) está em `docs/ortodontia/AP183-D1-PLANO.md`, aguarda aprovação.
+
 **18/11/2026 (ortodontia, correções do roteiro: AP178, AP179, AP181) — PC Administrador (core 0.481.0 → 0.483.0, migrações 0429 e 0430)**
 
 - Bloco 0.483.0 no ESTADO; planos aprovados em `docs/ortodontia/AP17x-PLANO.md`.

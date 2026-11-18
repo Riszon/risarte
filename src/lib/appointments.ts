@@ -44,6 +44,27 @@ export const APPOINTMENT_STATUSES = [
 
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
+/**
+ * AP183 (item 5, decisão do dono 18/11/2026): "Faltou" só depois do horário de
+ * início — antes dele o paciente ainda pode chegar. Vale para a agenda inteira;
+ * o servidor confere de novo (`updateAppointmentStatus`).
+ */
+export function podeMarcarFaltou(startsAt: string, agoraMs: number = Date.now()): boolean {
+  const inicio = Date.parse(startsAt);
+  return Number.isFinite(inicio) && inicio <= agoraMs;
+}
+
+/** As situações oferecidas para mudar um agendamento (sem a atual; "Faltou" só depois do início). */
+export function situacoesParaMudar(
+  atual: AppointmentStatus,
+  startsAt: string,
+  agoraMs: number = Date.now()
+): AppointmentStatus[] {
+  return APPOINTMENT_STATUSES.filter(
+    (st) => st !== atual && (st !== "no_show" || podeMarcarFaltou(startsAt, agoraMs))
+  );
+}
+
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   scheduled: "Agendado",
   confirmed: "Confirmado",

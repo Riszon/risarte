@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionContext, pode } from "@/lib/auth";
+import { getSessionContext, podeNaUnidadeOuNaRede } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { cancelarNoAsaas, emitirNoAsaas } from "@/lib/asaas/cobranca";
@@ -59,7 +59,7 @@ export async function previaDaCobranca(input: {
 }): Promise<PreviaDaCobranca> {
   const session = await getSessionContext();
   const clinicId = await clinicaDaParcela(input.installmentId);
-  if (!clinicId || !pode(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("charge_preview", {
     p_installment_id: input.installmentId,
@@ -105,7 +105,7 @@ export async function emitirCobranca(input: {
 }): Promise<ResultadoDaCobranca> {
   const session = await getSessionContext();
   const clinicId = await clinicaDaParcela(input.installmentId);
-  if (!clinicId || !pode(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { data: chargeId, error } = await supabase.rpc("charge_prepare", {
     p_installment_id: input.installmentId,
@@ -129,7 +129,7 @@ export async function emitirCobranca(input: {
 export async function tentarDeNovo(input: { clientId: string; chargeId: string }): Promise<ResultadoDaCobranca> {
   const session = await getSessionContext();
   const clinicId = await clinicaDaCobranca(input.chargeId);
-  if (!clinicId || !pode(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, "acao.cobranca.emitir", clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { error } = await supabase.rpc("charge_retry_prepare", { p_charge_id: input.chargeId });
   if (error) return { ok: false, error: mensagemDaCobranca(error.message) };
@@ -152,7 +152,7 @@ export async function cancelarCobranca(input: {
   const session = await getSessionContext();
   const clinicId = await clinicaDaCobranca(input.chargeId);
   const cap = input.purpose === "cancel" ? "acao.cobranca.cancelar" : "acao.cobranca.ver";
-  if (!clinicId || !pode(session, cap, clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, cap, clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("charge_cancel_check", {
     p_charge_id: input.chargeId,
@@ -188,7 +188,7 @@ export async function marcarCobrancaExterna(input: {
 }): Promise<ResultadoDaCobranca> {
   const session = await getSessionContext();
   const clinicId = await clinicaDaParcela(input.installmentId);
-  if (!clinicId || !pode(session, "acao.cobranca.cancelar", clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, "acao.cobranca.cancelar", clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { error } = await supabase.rpc("charge_mark_external", {
     p_installment_id: input.installmentId,
@@ -206,7 +206,7 @@ export async function desfazerCobrancaExterna(input: {
 }): Promise<ResultadoDaCobranca> {
   const session = await getSessionContext();
   const clinicId = await clinicaDaCobranca(input.chargeId);
-  if (!clinicId || !pode(session, "acao.cobranca.cancelar", clinicId)) return SEM_PERMISSAO;
+  if (!clinicId || !podeNaUnidadeOuNaRede(session, "acao.cobranca.cancelar", clinicId)) return SEM_PERMISSAO;
   const supabase = await createClient();
   const { error } = await supabase.rpc("charge_unmark_external", {
     p_charge_id: input.chargeId,

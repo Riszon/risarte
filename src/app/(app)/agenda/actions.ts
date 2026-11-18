@@ -137,6 +137,7 @@ import {
   TYPE_PROVIDER_ROLES,
   funcoesAtendemOTipo,
   APPOINTMENT_STATUSES,
+  podeMarcarFaltou,
   APPOINTMENT_TYPES,
   type AppointmentStatus,
   type AppointmentType,
@@ -1349,11 +1350,15 @@ export async function updateAppointmentStatus(
 
   const { data: appointment } = await supabase
     .from("appointments")
-    .select("clinic_id, status, created_by")
+    .select("clinic_id, status, created_by, starts_at")
     .eq("id", appointmentId)
     .single();
 
   if (!appointment) return { ok: false, error: "Agendamento não encontrado." };
+  // AP183 (item 5): "Faltou" só depois do horário de início.
+  if (status === "no_show" && !podeMarcarFaltou(appointment.starts_at as string)) {
+    return { ok: false, error: "Só dá para marcar \"Faltou\" depois do horário do atendimento." };
+  }
   if (
     !canEditAppointment(session, appointment.clinic_id, appointment.created_by)
   ) {
