@@ -13,6 +13,7 @@ import { AbaCobrancaDaUnidade } from "../../../aba-cobranca";
 import { AbaTaxasDaUnidade } from "../../../aba-taxas";
 import { HistoricoDaAba } from "../../../conta-client";
 import { ContaETarifas } from "../../../conta-e-tarifas";
+import { CopiarNaCentral, PilotoDaContaNaCentral } from "../../../pecas-do-piloto";
 import { AvisosComErro } from "../../../avisos-com-erro";
 import { FaixaDeProntidao } from "../../../prontidao";
 
@@ -65,7 +66,9 @@ export default async function CentralDaUnidadePage({
         ) : (
           <>
             <ContaETarifas supabase={supabase} session={session} clinicId={clinicId} clinicName={clinica.name} conta={conta} />
+            {conta && <PilotoDaContaNaCentral supabase={supabase} accountId={conta.id} admin={session.isAdminMaster} />}
             {session.isAdminMaster && conta && <AvisosComErro supabase={supabase} accountId={conta.id} />}
+            {session.isAdminMaster && <CopiarNaCentral supabase={supabase} clinicId={clinicId} />}
           </>
         ))}
       {aba === "financeiro" && (

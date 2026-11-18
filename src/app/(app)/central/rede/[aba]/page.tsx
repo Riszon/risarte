@@ -15,6 +15,7 @@ import { AbaCobrancaDaRede } from "../../aba-cobranca";
 import { AbaTaxasDaRede } from "../../aba-taxas";
 import { HistoricoDaAba } from "../../conta-client";
 import { ContaETarifas } from "../../conta-e-tarifas";
+import { InterruptorNaCentral, PilotoDaContaNaCentral } from "../../pecas-do-piloto";
 import { AvisosComErro } from "../../avisos-com-erro";
 
 export const metadata: Metadata = { title: "Central de Configuração — Rede" };
@@ -80,10 +81,12 @@ async function AbaContaDaRede({
               clinicName={f.name}
               conta={conta}
             />
+            {conta && <PilotoDaContaNaCentral supabase={supabase} accountId={conta.id} admin={session.isAdminMaster} />}
             {session.isAdminMaster && conta && <AvisosComErro supabase={supabase} accountId={conta.id} />}
           </div>
         );
       })}
+      <InterruptorNaCentral />
       <Card>
         <CardHeader className="gap-1">
           <CardTitle className="text-base">Carteiras de repasse</CardTitle>

@@ -232,6 +232,19 @@ export const ITENS_DE_PRONTIDAO: Record<string, { rotulo: string; comoResolver: 
     rotulo: "Antecipação automática desligada",
     comoResolver: "Desligue a antecipação automática no painel do Asaas desta conta e use Verificar agora.",
   },
+  // ASA7 (4022)
+  debito_desabilitado: {
+    rotulo: "Débito desabilitado no painel do Asaas",
+    comoResolver: "No painel do Asaas: Minha conta › Configurações › Configurações do sistema. Depois, o Admin Master marca aqui.",
+  },
+  chave_permissoes_minimas: {
+    rotulo: "Chave de produção com as permissões mínimas",
+    comoResolver: "Crie a chave com só as permissões da spec 21.7 (sem transferência, Pix enviado nem contas). O Admin Master marca, e o riSZon confere.",
+  },
+  levantamento_feito: {
+    rotulo: "Levantamento do que já existe no Asaas",
+    comoResolver: "Use \"Levantar o que já existe no Asaas\" no quadro “Antes de ligar”.",
+  },
 };
 
 export function rotuloDoItem(item: string): string {

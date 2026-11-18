@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminMaster } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { CAPACIDADES_POR_ID, matrizPadrao } from "@/lib/permissions";
+import { CAPACIDADES_POR_ID, bancoAceita, matrizPadrao } from "@/lib/permissions";
 import { USER_ROLES, type UserRole } from "@/lib/roles";
 import { isTreino } from "@/lib/environment";
 import { SOMENTE_CONSULTA_NO_TREINO } from "@/lib/espelho";
@@ -65,9 +65,13 @@ export async function salvarPermissoes(
   const falhas: string[] = [];
   for (const a of alteracoes) {
     const cap = CAPACIDADES_POR_ID.get(a.capacidade)!;
+    // O teto do banco: papel que o banco sempre recusa não é gravado (e uma
+    // marca antiga fora do teto some na primeira gravação desta permissão).
+    const papeis = [...new Set(a.papeis)].filter((p) => bancoAceita(cap, p));
+    const descartadas = [...new Set(a.papeis)].filter((p) => !bancoAceita(cap, p));
     const { error } = await supabase.rpc("set_permission", {
       p_capability: a.capacidade,
-      p_roles: [...new Set(a.papeis)],
+      p_roles: papeis,
     });
     if (error) {
       console.error("set_permission:", error.message);
@@ -86,7 +90,7 @@ export async function salvarPermissoes(
       action: "update",
       entityType: "permission_matrix",
       entityId: a.capacidade,
-      details: { rotulo: cap.rotulo, papeis: a.papeis },
+      details: { rotulo: cap.rotulo, papeis, ...(descartadas.length ? { fora_do_teto_do_banco: descartadas } : {}) },
     });
   }
 

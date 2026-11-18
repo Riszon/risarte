@@ -8277,6 +8277,104 @@ cancelou, a previsão, o que o Asaas fez e a reabertura de parcela (com motivo).
 
 **Evidência:** EV-383; `scripts/asaas-ensaio-4020a-estorno-parcial.mjs`.
 
+### 13g.20. Antes do piloto: prontidão, produção, cópia e divergências
+
+*(desde a versão 0.482.0)*
+
+**Para que serve:** preparar a rede e cada unidade para cobrar de verdade pelo
+Asaas, e mostrar quando o riSZon e o Asaas discordam de uma cobrança.
+
+#### Antes de ligar a unidade (Central › unidade › Conta e tarifas)
+
+O quadro **Antes de ligar: débito, chave e levantamento** traz três itens da
+prontidão. Sem eles, a unidade não fica **Pronta para cobrar**.
+
+1. **Débito desabilitado.** Desabilite o débito no painel do Asaas da unidade
+   (Minha conta › Configurações › Configurações do sistema). Depois, o Admin
+   Master clica em **Marcar: o débito está desabilitado**. O Asaas não informa
+   isso pela API, por isso a marca é manual e fica com a data.
+2. **Chave com as permissões mínimas** (só na conta de produção). Crie a chave
+   de API só com as permissões da lista (sem transferência, Pix enviado nem
+   pagamento de contas). O Admin Master clica em **Marcar: a chave tem as
+   permissões mínimas**, e o riSZon confere na hora: ele pede as três leituras
+   proibidas, e as três têm de ser recusadas. A conferência se repete todo
+   domingo. Se a chave responder ao que não devia, o item cai e o Admin Master
+   recebe um aviso.
+3. **Levantamento.** O botão **Levantar o que já existe no Asaas** só lê. Ele
+   conta as cobranças em aberto, os parcelamentos e as assinaturas ativas que
+   não vieram do riSZon, com o total e as 20 mais antigas. É obrigatório antes
+   de ligar a unidade (não vale para a franqueadora).
+
+#### Produção do Asaas (Central › Rede › Conta e tarifas)
+
+O **interruptor da rede**. Desligado, o banco recusa qualquer conta de
+produção. **Ligar não liga nenhuma unidade:** cada uma continua precisando da
+própria conta de produção, da prontidão completa e do "Pronta para cobrar".
+
+- **Quem liga:** só o Admin Master, com o motivo. O Financeiro da Franqueadora
+  vê a tela, mas não liga.
+- **Só liga com a prontidão da rede completa:**
+  - a confirmação do Asaas por escrito, com o documento anexado (PDF, PNG ou
+    JPG, até 10 MB);
+  - o saldo mínimo da franqueadora definido;
+  - as permissões de cobrança na matriz (**ver, emitir e cancelar para o
+    Gerente; ver e emitir para a Recepção**);
+  - o termo de privacidade publicado;
+  - todas as migrações do Asaas no banco (a tela lista cada uma).
+- O que falta aparece na tela, item por item. Ligar e desligar ficam na
+  auditoria.
+
+#### Copiar de outra unidade (Central › unidade nova › Conta e tarifas)
+
+Para configurar uma unidade nova a partir de outra. O Admin Master escolhe a
+unidade de origem e marca os blocos:
+
+- **Comercial:** as regras e o acompanhamento;
+- **Financeiro:** inclui a multa e os juros da unidade.
+
+A tela mostra os valores de cada lado antes de gravar. O que a unidade nova tem
+nesses blocos é substituído, e o histórico registra "copiado de …".
+
+**Nunca é copiado:** a conta Asaas e a chave, os termos, as marcas da
+prontidão, as taxas da franquia, a cobrança mensal e a maquininha. A régua não
+entra porque vale para a rede inteira. A maquininha não entra porque as
+adquirentes e as taxas são do contrato de cada unidade.
+
+#### Divergências com o Asaas (Financeiro › Painel de cobranças)
+
+Toda noite, o riSZon confere com o Asaas as cobranças criadas, pagas ou
+mudadas nos últimos 3 dias. Aos domingos, confere também todas as que estão em
+aberto. A aba **Divergências com o Asaas** mostra o que não bate:
+
+| Divergência | O que fazer |
+|---|---|
+| Paga no Asaas, aberta no riSZon | O aviso do pagamento não chegou. Reprocesse o aviso em Central › Conta e tarifas, ou confira no painel do Asaas. |
+| Situação diferente | Confira no painel do Asaas e na ficha do paciente. |
+| Valor diferente | A cobrança em aberto tem outro valor no Asaas: confira se foi alterada no painel. |
+| Cancelada só no Asaas | Foi apagada no painel. Cancele no riSZon ou emita de novo. |
+| Cancelada só no riSZon | Ainda vale no Asaas e pode ser paga: cancele no painel do Asaas. |
+| Não existe no Asaas | Confira no painel e emita de novo, se precisar. |
+| Criada fora do riSZon | Feita direto no painel. Traga para o riSZon ou confirme que é de fora. |
+
+- **Nada é baixado sozinho.** A divergência mostra o caminho.
+- Cada divergência **fecha sozinha** quando o problema some.
+- **Quem vê:** o Gerente e o Franqueado (só a própria unidade), o Financeiro da
+  Franqueadora e o Admin Master.
+- **Quem ignora:** o Financeiro ou o Admin Master, com o motivo. Se o valor
+  mudar, ela reabre.
+- O Financeiro recebe um resumo por dia, só quando aparece divergência nova.
+
+#### Quem cancela cobrança
+
+- **Cancelar à mão:** o Admin Master, o Financeiro da Franqueadora e o Gerente.
+  A Recepção não cancela.
+- **Recebeu no balcão** (a Recepção também): quando o paciente paga em
+  dinheiro uma parcela que tem boleto, use **Recebeu no balcão** na cobrança. O
+  riSZon cancela o boleto no Asaas e libera a baixa em dinheiro. Enquanto o
+  boleto estiver ativo, a baixa manual é recusada.
+- **Permissões:** o painel de permissões só oferece as marcas que o banco
+  aceita. Por exemplo, "Cobranças: cancelar" não aparece para a Recepção.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

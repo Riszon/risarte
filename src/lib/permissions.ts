@@ -41,6 +41,13 @@ export type Capability = {
   dependeDoBanco: boolean;
   /** Papéis que têm a permissão hoje, no código. Vira a semente da tabela. */
   padrao: UserRole[];
+  /**
+   * O TETO DO BANCO: os únicos papéis que o banco aceita nesta ação, por mais
+   * que a matriz ligue (lista fixa numa guarda ou regra de linha). Ausente =
+   * o banco não tem lista fixa. A tela não oferece marca fora do teto, e a
+   * gravação a descarta: uma marca que o banco recusa não existe na tela.
+   */
+  teto?: UserRole[];
 };
 
 const FRANQUEADORA_RELATORIOS: UserRole[] = [
@@ -263,6 +270,7 @@ export const CAPACIDADES: Capability[] = [
       "A conta Asaas de cada unidade, as tarifas e o que falta para a unidade poder cobrar. Ligar para o Gerente mostra só a unidade dele.",
     dependeDoBanco: true,
     padrao: [],
+    teto: ["unit_manager", "finance_franchisor"],
   },
   {
     // ASA0 (4000) — colar a chave de API da conta Asaas da própria unidade.
@@ -276,6 +284,7 @@ export const CAPACIDADES: Capability[] = [
       "Colar a chave de API da conta Asaas da própria unidade. O banco só aceita depois de o termo de autorização do franqueado estar registrado.",
     dependeDoBanco: true,
     padrao: [],
+    teto: ["unit_manager"],
   },
   {
     // 4004 — Cobrança pelo Asaas (ASA1). Nascem só com o Admin Master; o BANCO
@@ -297,6 +306,7 @@ export const CAPACIDADES: Capability[] = [
       "Gerar a cobrança de uma parcela no Asaas (boleto, Pix ou cartão à vista) e enviar o link ao paciente.",
     dependeDoBanco: true,
     padrao: [],
+    teto: ["unit_manager", "receptionist", "finance_franchisor"],
   },
   {
     id: "acao.cobranca.cancelar",
@@ -306,6 +316,7 @@ export const CAPACIDADES: Capability[] = [
       "Cancelar a cobrança no Asaas, marcar parcela cobrada fora do riSZon e quitar por valor menor (este último só Gerente e Admin).",
     dependeDoBanco: true,
     padrao: [],
+    teto: ["unit_manager", "finance_franchisor"],
   },
   {
     // 4006 — Selo "Em atraso" (ASA2, entrega 2; spec 17.1). Duas etapas: nasce
@@ -320,6 +331,7 @@ export const CAPACIDADES: Capability[] = [
       "Ver o selo \"Em atraso há N dias\" na ficha, na agenda e no cockpit da avaliação, sem valores. Dentistas, auxiliares e SDR nunca veem.",
     dependeDoBanco: true,
     padrao: ["unit_manager", "franchisee"],
+    teto: ["unit_manager", "franchisee", "receptionist", "commercial_consultant", "commercial_assistant", "finance_franchisor"],
   },
   {
     // 4006 — Painel de cobranças (spec 17.2). Nasce só com o Admin Master
@@ -332,6 +344,7 @@ export const CAPACIDADES: Capability[] = [
       "Financeiro → Cobranças: o que o Asaas ainda vai creditar e a lista das cobranças emitidas, com planilha. A Recepcionista nunca vê.",
     dependeDoBanco: true,
     padrao: [],
+    teto: ["unit_manager", "franchisee", "finance_franchisor"],
   },
   {
     // 4009 — Pedir estorno (ASA3, entrega 2; spec 18.7.1). O Admin Master
@@ -346,6 +359,7 @@ export const CAPACIDADES: Capability[] = [
       "Pedir ao Asaas o estorno total de uma cobrança paga, pela ficha. Só quem a unidade indicou como titular do acesso de autorização do Asaas.",
     dependeDoBanco: true,
     padrao: ["franchisee", "unit_manager"],
+    teto: ["franchisee", "unit_manager"],
   },
   {
     // 4010 — Repasses da franquia (ASA3, entrega 3; spec 18.8). Nasce só com o
@@ -358,6 +372,7 @@ export const CAPACIDADES: Capability[] = [
       "Financeiro → Rede → Repasses da franquia: as taxas da rede pagas no split do Asaas, a receber e na conta a pagar, com divergências, dispensas e planilha. Não é o repasse dos dentistas.",
     dependeDoBanco: true,
     padrao: [],
+    teto: ["unit_manager", "franchisee", "finance_franchisor"],
   },
   {
     // 0318 — Metas SMART. Todos veem o módulo; o BANCO decide quais metas
@@ -821,4 +836,12 @@ export function podeComPapeis(
   const permitidos = matriz[capacidade];
   if (!permitidos) return false;
   return papeis.some((p) => permitidos.includes(p));
+}
+
+/**
+ * O banco aceita este papel nesta permissão? (o teto; sem teto, aceita).
+ * O Admin Master não entra na matriz.
+ */
+export function bancoAceita(cap: Pick<Capability, "teto">, papel: UserRole): boolean {
+  return !cap.teto || cap.teto.includes(papel);
 }

@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
-import type { Capability, MatrizPermissoes } from "@/lib/permissions";
+import { bancoAceita, type Capability, type MatrizPermissoes } from "@/lib/permissions";
 import { EXPLICACOES } from "@/lib/permissoes-explicacoes";
 import { formatBrDateTime } from "@/lib/dates";
 import {
@@ -382,7 +382,7 @@ export function PermissionsMatrix({
             semResultado()
           ) : (
             grupos
-              .filter((g) => filtradas.some((c) => c.grupo === g))
+              .filter((g) => filtradas.some((c) => c.grupo === g && bancoAceita(c, funcao)))
               .map((g) => (
                 <div key={g} className="overflow-hidden rounded-xl border">
                   <p className="border-b bg-muted/40 px-4 py-2 text-xs font-semibold uppercase text-muted-foreground">
@@ -390,7 +390,7 @@ export function PermissionsMatrix({
                   </p>
                   <ul className="divide-y">
                     {filtradas
-                      .filter((c) => c.grupo === g)
+                      .filter((c) => c.grupo === g && bancoAceita(c, funcao))
                       .map((cap) => {
                         const ligada = temAcesso(rascunho, cap.id, funcao);
                         const mudou = ligada !== temAcesso(atual, cap.id, funcao);
@@ -446,7 +446,9 @@ export function PermissionsMatrix({
   function verPorPermissao() {
     const cap = porId.get(permissao) ?? filtradas[0] ?? capacidades[0];
     if (!cap) return null;
-    const { com, sem } = quemTem(rascunho, cap.id, papeis);
+    const doTeto = papeis.filter((p) => bancoAceita(cap, p));
+    const foraDoTeto = papeis.filter((p) => !bancoAceita(cap, p));
+    const { com, sem } = quemTem(rascunho, cap.id, doTeto);
     const fixado = fixados[cap.id];
     const fixadoDiferenteDoOriginal = fixado && !mesmoConjunto(fixado.roles, fabrica[cap.id] ?? []);
 
@@ -546,6 +548,11 @@ export function PermissionsMatrix({
             {coluna("Têm acesso", com, true)}
             {coluna("Não têm acesso", sem, false)}
           </div>
+          {foraDoTeto.length > 0 && (
+            <p className="rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+              <strong className="text-foreground">O banco não aceita esta permissão para:</strong> {nomes(foraDoTeto)}. Por isso não há marca para essas funções.
+            </p>
+          )}
 
           <div className="space-y-1 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
             <p>
@@ -643,6 +650,13 @@ export function PermissionsMatrix({
                         </div>
                       </td>
                       {papeis.map((p) => {
+                        if (!bancoAceita(cap, p)) {
+                          return (
+                            <td key={p} className="p-1.5 text-center align-middle text-muted-foreground" title={`${ROLE_LABELS[p]} — o banco não aceita esta permissão para esta função`}>
+                              —
+                            </td>
+                          );
+                        }
                         const fora = casaForaDoPadrao(rascunho, padrao, cap.id, p);
                         return (
                           <td key={p} className="p-1.5 text-center align-middle">

@@ -51,3 +51,4 @@ next-env.d.ts
 # dados reais de importação (planilhas financeiras) — nunca no Git, seeds, migrações ou testes
 /_dados_importacao/
 scripts/.prova-atraso-mensalidades*.json
+scripts/.prova-4022*.log

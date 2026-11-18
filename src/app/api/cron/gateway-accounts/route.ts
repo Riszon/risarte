@@ -2,6 +2,7 @@ import { origemDaRotina } from "@/lib/cron-auth";
 import { comecarRodada, terminarRodada } from "@/lib/asaas/rodadas";
 import { rodarRotinaDosAvisos, rodarVerificacaoDasContas } from "@/lib/asaas/rotina";
 import { conferirSaldoDaRegua } from "@/lib/asaas/regua-servidor";
+import { rodarConciliacaoDasCobrancas } from "@/lib/asaas/pecas-do-piloto";
 import { todayInBrazil } from "@/lib/dates";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
 
@@ -34,8 +35,15 @@ export async function GET(request: Request) {
       console.error("gateway regua balance failed:", e instanceof Error ? e.message : e);
       return 0;
     });
-    await terminarRodada(rodada, { ok: true, detalhes: { ...stats } });
-    return Response.json({ ok: true, ...stats, ...avisos, saldosZerados });
+    // ASA7 (4022): a conciliação das cobranças com o Asaas (toda noite, 3 dias para
+    // trás; aos domingos, as em aberto e a sonda das chaves de produção).
+    // Banco sem a 4022 só registra o erro e segue.
+    const conciliacao = await rodarConciliacaoDasCobrancas().catch((e) => {
+      console.error("gateway charge recon routine failed:", e instanceof Error ? e.message : e);
+      return null;
+    });
+    await terminarRodada(rodada, { ok: true, detalhes: { ...stats, conciliacao } });
+    return Response.json({ ok: true, ...stats, ...avisos, saldosZerados, conciliacao });
   } catch (e) {
     // Banco sem as migrações 4000+ (o código pode ir ao ar antes): não é erro
     // da rotina — não há conta nenhuma para verificar.

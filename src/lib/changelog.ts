@@ -62,6 +62,50 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.482.0",
+    data: "2026-11-18",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4022, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Antes do piloto do Asaas: prontidão, interruptor de produção, cópia e divergências",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Central › unidade › Conta e tarifas: o quadro \"Antes de ligar\" com três itens novos da prontidão: o débito desabilitado no painel do Asaas, a chave de produção com as permissões mínimas (o riSZon confere sozinho que ela não transfere dinheiro) e o levantamento do que já existe no Asaas da unidade.",
+        papeis: ["finance_franchisor", "unit_manager"],
+        manual: "13g.20. Antes do piloto: prontidão, produção, cópia e divergências",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Central › Rede: o interruptor de produção do Asaas. Só o Admin Master liga, com o motivo, e só com a prontidão da rede completa (a confirmação do Asaas anexada, o saldo mínimo, as permissões de cobrança, o termo de privacidade e todas as migrações). Ligar não liga nenhuma unidade.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.20. Antes do piloto: prontidão, produção, cópia e divergências",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Financeiro › Painel de cobranças › Divergências com o Asaas: toda noite o riSZon confere as cobranças com o Asaas (aos domingos, todas as em aberto) e mostra o que não bate, com o caminho para resolver. Nada é baixado sozinho, e cada divergência fecha sozinha quando o problema some.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.20. Antes do piloto: prontidão, produção, cópia e divergências",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Central › unidade: copiar o Comercial e o Financeiro (com a multa e os juros) de outra unidade, vendo os valores dos dois lados antes de gravar.",
+        papeis: [],
+        manual: "13g.20. Antes do piloto: prontidão, produção, cópia e divergências",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Admin › Permissões: a tela não oferece mais marcas que o banco sempre recusa (por exemplo, \"Cobranças: cancelar\" para a Recepção). A Recepção continua cancelando o boleto pelo \"Recebeu no balcão\".",
+        papeis: [],
+        manual: "13g.20. Antes do piloto: prontidão, produção, cópia e divergências",
+      },
+    ],
+  },
+  {
     versao: "0.481.0",
     data: "2026-11-17",
     // Sem migração do CORE: as desta entrega são da integração Asaas (4018c, 4020a, 4021 e 4021a, ASAAS_MIGRATION).

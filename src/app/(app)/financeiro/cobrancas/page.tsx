@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { Receipt } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { lerDivergenciasComOAsaas } from "@/app/(app)/central/pecas-do-piloto-actions";
+import { DivergenciasComOAsaas } from "@/components/central/pecas-do-piloto";
 import { formatBRL } from "@/lib/pricing";
 import { todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -36,7 +38,7 @@ export default async function PainelDeCobrancas(props: PageProps<"/financeiro/co
   const session = await getSessionContext();
   if (!podeVerPainelDeCobrancas(session)) redirect("/financeiro");
   const sp = await props.searchParams;
-  const aba = sp.aba === "emitidas" ? "emitidas" : "receber";
+  const aba = sp.aba === "emitidas" ? "emitidas" : sp.aba === "divergencias" ? "divergencias" : "receber";
   const filtros = lerFiltros(sp);
   const supabase = await createClient();
   const hoje = todayInBrazil();
@@ -74,6 +76,8 @@ export default async function PainelDeCobrancas(props: PageProps<"/financeiro/co
         {[
           { chave: "receber", rotulo: "A receber do Asaas" },
           { chave: "emitidas", rotulo: "Cobranças emitidas" },
+          // ASA7 (4022): a conciliação das cobranças com o Asaas.
+          { chave: "divergencias", rotulo: "Divergências com o Asaas" },
         ].map((a) => (
           <Link
             key={a.chave}
@@ -149,6 +153,8 @@ export default async function PainelDeCobrancas(props: PageProps<"/financeiro/co
 
       {aba === "receber" ? (
         <AReceber unidade={filtros.unidade} hoje={hoje} />
+      ) : aba === "divergencias" ? (
+        <Divergencias unidade={filtros.unidade} />
       ) : (
         <Emitidas filtros={filtros} params={params} />
       )}
@@ -404,4 +410,11 @@ async function Emitidas({
       )}
     </div>
   );
+}
+
+/** ASA7 (4022): as divergências entre o riSZon e o Asaas, da conferência da noite. */
+async function Divergencias({ unidade }: { unidade: string | null }) {
+  const leitura = await lerDivergenciasComOAsaas(unidade);
+  if (!leitura) return <p className="text-sm text-muted-foreground">A conferência com o Asaas ainda não está disponível neste banco.</p>;
+  return <DivergenciasComOAsaas leitura={leitura} />;
 }

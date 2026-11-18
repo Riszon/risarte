@@ -5586,7 +5586,7 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
    - **O comportamento é o da 4021a:** cada divergência fecha sozinha quando o problema some, e só o Financeiro ou o Admin ignora, com motivo.
    - **Nada é baixado sozinho:** a divergência mostra o caminho (reprocessar o aviso ou conferir no painel).
 5. **Copiar de outra unidade** (9.1).
-   - Na Central da unidade nova, o Admin Master escolhe a unidade de origem e marca os blocos: régua, multa e juros, Comercial, Financeiro e maquininha.
+   - Na Central da unidade nova, o Admin Master escolhe a unidade de origem e marca os blocos. **Construído (18/11/2026): só dois blocos, Comercial e Financeiro** (o Financeiro leva a multa e os juros da unidade). A régua e a maquininha ficaram fora (21.8, item 4).
    - A tela mostra cada valor que vai ser copiado antes de gravar, e o histórico registra "copiado de …".
    - **Nunca copia:** a conta Asaas, a chave, o walletId, os termos, as marcas da prontidão, as taxas da franquia e a cobrança mensal (são do contrato de cada unidade, 20.15.6).
 6. **O roteiro da homologação** (documento, sem código): `docs/asaas/roteiro-homologacao.md`, com tudo o que só a produção prova, cada item com o valor mínimo, quem faz e como desfazer:
@@ -5728,7 +5728,7 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
    - O Admin Master **anexa o documento** (PDF ou imagem), que fica numa pasta privada, com a data e quem anexou.
    - Sem o anexo, falta o item.
 2. **O saldo mínimo da franqueadora definido** na Central (o campo que já existe, 19.37). Em branco, falta.
-3. **As permissões de ver, emitir e cancelar cobranças liberadas para o Gerente e a Recepção** (as três de "Cobranças" na matriz de permissões). O riSZon confere a matriz, e falta o item se alguma das seis não estiver liberada.
+3. **As permissões de cobrança na matriz: ver, emitir e cancelar para o Gerente; ver e emitir para a Recepção** (cinco marcas; decisão do dono em 18/11/2026, 21.8 item 2). O riSZon confere a matriz, e falta o item se alguma das cinco não estiver liberada. *(Antes: seis marcas, com cancelar para a Recepção. O banco nunca aceitou a Recepção no cancelar, desde a 4004.)*
 4. **O termo de privacidade publicado**: a declaração que já existe (4007), com a data. Sem ela, falta.
 5. **Todas as migrações do Asaas na produção** (item 1 acima).
 
@@ -5743,3 +5743,65 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
 - **O limite diário de criação de cobranças:** quanto a conta aceita por dia (`/payments/limits`), o que a tela mostra perto do limite, e o que acontece com a emissão em lote quando o limite acaba.
 
 **O resto do plano (21.2) continua como aprovado:** o levantamento obrigatório (2a), a conciliação com resumo diário (3a), quem vê (4a), a cópia sem as taxas (5a) e a lista de IPs desligada (6a).
+
+### 21.8 A construção (18/11/2026) e as decisões do dono
+
+**Situação:** a 4022 está construída e no banco de treino (conferência `3 tabelas · produção desligada · 0 migrações faltando · 11 itens`). Não está na produção.
+
+**1. As provas**
+- **Ensaio** `scripts/asaas-ensaio-4022-pecas-do-piloto.mjs`: **59/59** no treino, numa transação desfeita.
+  - Provado quebrando: `interruptor` (3 reprovam), `prontidao` (1), `fecha` (1) e `copia` (1).
+  - **A trava do treino:** o ensaio desliga gatilhos (`session_replication_role`) para transformar uma conta de sandbox em conta de produção. Por isso ele confere, antes de gravar qualquer coisa, que os dois endereços (o da API e o do banco) são do projeto de treino (`bsnptybalszjjbhxeejo`). Depois de conectar, confere que o banco tem os quatro perfis de teste e nenhuma conta de produção. Qualquer outro banco é recusado (saída 3), sem tocar em nada.
+- **Sandbox** (`asaas-4022-pecas-do-piloto.integracao.test.ts`, 18/11/2026):
+  - **O levantamento:** Londrina tem 8 cobranças em aberto fora do riSZon (R$ 345,00), 26 parcelamentos e nenhuma assinatura. Cambé não tem nada. 4 chamadas por conta.
+  - **A conciliação com o pagamento sem o aviso:** a fila de avisos de Londrina foi pausada no Asaas. Uma cobrança do riSZon foi recebida em dinheiro pelo Asaas (o que o painel faz), e outra foi criada direto no Asaas.
+    - Sem o aviso, a cobrança continuou "vencida" no riSZon. A conciliação achou "paga no Asaas" e "criada fora do riSZon" (25 chamadas) e não baixou nada.
+    - Com a fila reativada, o Asaas reenviou o aviso, e a cobrança foi liquidada em 5 s. A de fora foi apagada. Na rodada seguinte, as duas divergências fecharam sozinhas.
+- **Três defeitos achados pelo ensaio e corrigidos na migração:**
+  - o nome `sort_order` ambíguo (a leitura do interruptor quebrava para todos);
+  - o teto `_gateway_cap_ceiling`, que não cobre as permissões de cobrança e zerava os papéis (o item nunca passava);
+  - a lista da cópia (`malformed array literal`).
+- **Dois defeitos achados pela prova no sandbox e corrigidos:**
+  - **A divergência que não fechava:** a rodada só conferia o que voltava nas listas, e a cobrança apagada no painel não volta. Agora cada rodada relê, uma a uma, as cobranças das divergências abertas ou ignoradas (até 200).
+  - **O falso "valor diferente":** depois de paga, o Asaas grava o valor com o desconto de pontualidade (R$ 176,00 vira R$ 167,20). O valor agora só se compara com as duas pontas em aberto. O recebido de verdade já é conferido pela baixa. Teste novo: `asaas-conciliacao-regras.test.ts`.
+
+**2. A Recepção não cancela cobrança à mão** (decisão do dono, 18/11/2026)
+- O banco continua como está desde a 4004: cancelam o Admin Master, o Financeiro da Franqueadora e o Gerente (`_charge_can('cancel')`).
+- **O cancelamento automático continua valendo para a Recepção.** Na baixa em dinheiro, a trava da 4004 recusa a baixa manual enquanto o boleto está ativo (`CHARGE_IN_GATEWAY`). O "Recebeu no balcão" cancela o boleto pelo caminho `counter` (quem recebe pagamento, `can_receive_payment`: Gerente e Recepção) e libera a baixa. No aplicativo, esse caminho exige só "ver cobranças". **Provado no ensaio:** a Recepção é recusada no cancelar e passa no balcão, o Gerente passa no cancelar, e a baixa manual com o boleto ativo é barrada.
+- **A prontidão da rede passa a exigir cinco marcas** (21.7, item 4).
+- **O Painel de permissões não oferece marca que o banco recusa.** Cada permissão pode ter um **teto do banco** (`teto` em `src/lib/permissions.ts`):
+  - a visão por função não lista a permissão;
+  - a visão por permissão diz "o banco não aceita esta permissão para: …";
+  - a grade mostra "—";
+  - a gravação descarta o papel fora do teto e registra isso na auditoria.
+- **Os tetos gravados**, iguais às guardas do banco e presos por um teste (`permissoes-teto-do-banco.test.ts`):
+
+| Permissão | O banco aceita |
+|---|---|
+| Central de Configuração | Gerente, Financeiro |
+| Central: gravar a chave | só o Gerente |
+| Cobranças: emitir | Gerente, Recepção, Financeiro |
+| Cobranças: cancelar | Gerente, Financeiro |
+| Selo "Em atraso" | Gerente, Franqueado, Recepção, Consultor, Assistente comercial, Financeiro |
+| Painel de cobranças | Gerente, Franqueado, Financeiro |
+| Estorno | Franqueado, Gerente |
+| Repasses da franquia | Gerente, Franqueado, Financeiro |
+
+- "Cobranças: ver" não tem teto: segue quem lê a parcela.
+- **Na matriz da produção** (lida pela cópia do treino em 18/11): nenhuma marca do Asaas fora do teto. As três de cobrança ainda não estão dadas a ninguém.
+- **As outras permissões** que dependem do banco também têm tetos (Dívidas, Financeiro, Estoque, Compras, Ortodontia, Metas e Rita). O levantamento está no relatório de 18/11. Elas ainda não têm o `teto` gravado: aguarda a decisão do dono.
+
+**3. Os 11 itens da prontidão da unidade**
+1. conta validada; 2. walletId; 3. webhook ativo; 4. tarifas lidas; 5. chave Pix; 6. split habilitado; 7. termo registrado; 8. antecipação automática desligada; 9. **débito desabilitado** (novo); 10. **chave com as permissões mínimas** (novo; só na produção); 11. **levantamento feito** (novo; não vale para a franqueadora).
+
+**4. Copiar de outra unidade: só Comercial e Financeiro** (com a multa e os juros)
+- **A régua ficou fora** porque não é da unidade. As regras de aviso (`gateway_notification_rules`) e o termo de privacidade valem para a rede inteira, então não há nada da unidade para copiar.
+- **A maquininha ficou fora** porque é o contrato de cada unidade. As adquirentes, as taxas e a padrão de cada unidade (`card_acquirers`, `card_acquirer_clinics`) são do credenciamento dela. Copiar levaria as taxas de outro contrato para o fechamento da unidade nova.
+- **Nunca copia:** a conta Asaas e a chave, os termos, as marcas da prontidão, as taxas da franquia, a cobrança mensal e a maquininha.
+
+**5. O que falta**
+- O teste do dono pelas telas, no projeto de teste.
+- A 4022 na produção, só com o "pode".
+- Ligar o interruptor, só com a prontidão da rede completa e o "pode".
+- O roteiro da homologação: `docs/asaas/roteiro-homologacao.md`.
+

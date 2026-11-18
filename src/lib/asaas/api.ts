@@ -635,3 +635,87 @@ export async function getPaymentLimits(
   if (!d || typeof d.limit !== "number") return null;
   return { limite: d.limit, usado: Number(d.used ?? 0), atingido: Boolean(d.wasReached) };
 }
+
+// ---- ASA7 (4022): o levantamento, a conciliação e a sonda da chave --------------
+
+export type PaginaDoAsaas<T> = { itens: T[]; chamadas: number; truncado: boolean };
+
+/**
+ * `GET /v3/payments` com filtros, página a página (100 por página, o máximo do
+ * Asaas). `maxPaginas` limita o custo; `truncado` diz se parou antes do fim.
+ */
+export async function listPaymentsAll(
+  cred: AsaasCredential,
+  query: Record<string, string | number | undefined>,
+  maxPaginas: number,
+  opts?: Opts
+): Promise<PaginaDoAsaas<AsaasPayment>> {
+  const itens: AsaasPayment[] = [];
+  let chamadas = 0;
+  for (let p = 0; p < maxPaginas; p++) {
+    const r = await asaasRequest<Lista<AsaasPayment>>(
+      { ...cred, method: "GET", path: "/payments", query: { ...query, offset: p * 100, limit: 100 } },
+      opts
+    );
+    chamadas++;
+    for (const x of r?.data ?? []) if (x?.id) itens.push(x);
+    if (!r?.hasMore) return { itens, chamadas, truncado: false };
+  }
+  return { itens, chamadas, truncado: true };
+}
+
+export type AsaasInstallmentResumo = { id?: string | null; value?: number | null; deleted?: boolean | null; externalReference?: string | null };
+
+/** `GET /v3/installments`, página a página. */
+export async function listInstallmentsAll(cred: AsaasCredential, maxPaginas: number, opts?: Opts): Promise<PaginaDoAsaas<AsaasInstallmentResumo>> {
+  const itens: AsaasInstallmentResumo[] = [];
+  let chamadas = 0;
+  for (let p = 0; p < maxPaginas; p++) {
+    const r = await asaasRequest<Lista<AsaasInstallmentResumo>>(
+      { ...cred, method: "GET", path: "/installments", query: { offset: p * 100, limit: 100 } },
+      opts
+    );
+    chamadas++;
+    for (const x of r?.data ?? []) if (x?.id && !x.deleted) itens.push(x);
+    if (!r?.hasMore) return { itens, chamadas, truncado: false };
+  }
+  return { itens, chamadas, truncado: true };
+}
+
+export type AsaasSubscriptionResumo = { id?: string | null; value?: number | null; status?: string | null; externalReference?: string | null; deleted?: boolean | null };
+
+/** `GET /v3/subscriptions?status=ACTIVE`, página a página. */
+export async function listActiveSubscriptionsAll(cred: AsaasCredential, maxPaginas: number, opts?: Opts): Promise<PaginaDoAsaas<AsaasSubscriptionResumo>> {
+  const itens: AsaasSubscriptionResumo[] = [];
+  let chamadas = 0;
+  for (let p = 0; p < maxPaginas; p++) {
+    const r = await asaasRequest<Lista<AsaasSubscriptionResumo>>(
+      { ...cred, method: "GET", path: "/subscriptions", query: { status: "ACTIVE", offset: p * 100, limit: 100 } },
+      opts
+    );
+    chamadas++;
+    for (const x of r?.data ?? []) if (x?.id && !x.deleted) itens.push(x);
+    if (!r?.hasMore) return { itens, chamadas, truncado: false };
+  }
+  return { itens, chamadas, truncado: true };
+}
+
+/**
+ * A SONDA DA CHAVE (21.7 item 2): uma LEITURA que a chave com as permissões
+ * mínimas não pode fazer. "recusada" = 403 (sem a permissão); "respondeu" = a
+ * chave tem a permissão (demais); "erro" = não deu para saber. Nunca escreve.
+ */
+export async function sondarLeituraProibida(
+  cred: AsaasCredential,
+  path: "/transfers" | "/pix/transactions" | "/bill",
+  opts?: Opts
+): Promise<{ resultado: "recusada" | "respondeu" | "erro"; codigo?: string | null; asaas?: string[] }> {
+  try {
+    await asaasRequest<unknown>({ ...cred, method: "GET", path, query: { limit: 1 } }, { ...opts, getRetries: 0, rateLimitRetries: 1 });
+    return { resultado: "respondeu" };
+  } catch (e) {
+    const err = e as { code?: string; httpStatus?: number | null; asaasCodes?: string[] };
+    if (err?.httpStatus === 403 || err?.code === "forbidden") return { resultado: "recusada", codigo: err.code ?? null, asaas: err.asaasCodes ?? [] };
+    return { resultado: "erro", codigo: err?.code ?? null, asaas: err?.asaasCodes ?? [] };
+  }
+}
