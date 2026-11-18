@@ -5467,6 +5467,12 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
 
 - **A 4021** continua 103/103.
 
+#### 20.17.10a A 4021 na produção (17/11/2026)
+
+- O dono rodou a 4021 depois da 4018c e da 4020a, e a conferência bateu: `tabelas_novas 8 · funcoes_novas 45 · configuracao_em_branco true · unidades_configuradas 0 · lotes 0 · ramos_ligados true`.
+- Antes de mandar, foi conferido que a função do aviso do Asaas da 4021 é idêntica à da 4020a, que a apuração mantém a regra da 4018b e que a leitura da cobrança só acrescenta a unidade pagadora.
+- Desfazer: `docs/asaas/desfazer-4021.sql`.
+
 #### 20.17.11 A divergência "Sem lançamento no razão" (17/11/2026, pedido do dono depois da 4018c)
 
 - **O pedido:** quem achou o defeito da 4018c foi o ensaio da 4010, não a rotina da noite.
