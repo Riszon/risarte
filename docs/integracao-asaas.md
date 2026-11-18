@@ -5820,3 +5820,140 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
 - Ligar o interruptor, só com a prontidão da rede completa e o "pode".
 - O roteiro da homologação: `docs/asaas/roteiro-homologacao.md`.
 
+## 22. ASA5 — O Risarte Empresarial pelo Asaas: PLANO (18/11/2026; PARA APROVAÇÃO, nada construído)
+
+**O que é:** a franqueadora passa a cobrar as empresas do Empresarial pelo Asaas, pela conta raiz, com o split para a RisLife na origem e a baixa pelo aviso do Asaas. A geração das cobranças continua como hoje (na ficha da empresa e no lote).
+
+### 22.1 O que já existe (levantado em 18/11/2026, com a sessão do Empresarial)
+
+- **O Empresarial (schema `empresarial`):**
+  - `adhesion_billing` é a cobrança. `billing_type` é IMPLANTATION ou MONTHLY, com `total_amount_cents`, `due_date`, `status` (PENDING, PAID ou OVERDUE) e o cancelamento e o estorno em colunas próprias.
+  - **O pagador** é a empresa (`company_documents`: CNPJ, CPF, CAEPF, CNO ou NIF; com `billing_model = 'por_cnpj'`, sai um boleto por documento). **Desde a 1049**, os dependentes podem ser cobrados à parte (`employee_id`, `payer_name`, `payer_document`), no CPF do titular ou de outro pagador.
+  - **A geração é manual:**
+    - `generateBilling` na ficha da empresa;
+    - `gerarMensalidadesEmLote` na tela de cobranças;
+    - os dois usam a conta por vidas `computeMonthlyBreakdown`.
+    - Não há rotina mensal.
+  - **A baixa é manual:** `settle_billing`, porta sobre `_settle_billing_raw` (1041). Ela calcula o split **sobre o total**, tira a suspensão e dispara três gatilhos: o razão (1040), quem baixou (1043) e o início do contrato no 1º pagamento (1044). Aceita chamada sem usuário (o caminho do aviso).
+  - **O razão (1040):**
+    - só a mensalidade paga entra: a receita bruta na franqueadora e a parte da RisLife como custo;
+    - **`split_at_source = true`** (a marca do Asaas): o custo nasce quitado;
+    - **`split_at_source = false`**: o custo vira conta a pagar à RisLife, sem fornecedor ligado;
+    - a implantação fica fora do razão (100% RisLife).
+  - **`split_rules`:** padrão da rede e exceção por empresa. No treino, implantação 100% RisLife e mensalidade 50% RisLife.
+  - **Atraso:** o pg_cron `empresarial_overdue` (04:00) marca OVERDUE pelo vencimento e suspende a empresa com mais de 5 dias.
+  - **A implantação paga no funil** (`post_lead_implantation`) nasce já paga: o dinheiro entrou fora.
+  - **Quem cuida das cobranças:** `empresarial.pode('acao.empresarial.cobrancas')`, isto é, a equipe e o Financeiro da Franqueadora, e o Admin Master.
+- **O legado do Asaas no Empresarial (nunca usado):**
+  - `src/lib/empresarial/asaas.ts`: só `isAsaasConfigured()` é usada, para um aviso em duas telas; `createAsaasCharge` nunca é chamada;
+  - a Edge Function `supabase/functions/asaas-webhook`: nada a chama, e em 03/11 ela não estava publicada;
+  - a tabela `asaas_webhook_events` e a coluna `adhesion_billing.asaas_billing_id`, vazias no treino.
+- **A integração nova já prevê o Empresarial:**
+  - em `charges`, as origens `corporate_implementation` e `corporate_monthly` e o pagador `company`;
+  - em `gateway_customers`, o dono `company`;
+  - a conta raiz da franqueadora;
+  - as carteiras de repasse (a RisLife Teste no sandbox);
+  - o registro de origens da 4018 (`charge_source_types`: as funções de vencimento, dados, baixa, atraso e visibilidade);
+  - a conciliação da 4022 (a conta raiz entra sozinha).
+
+### 22.2 As peças (migração 4023 e telas do Empresarial)
+
+1. **O Empresarial como origem do caminho comum** (`charge_source_types`). As duas origens apontam para `adhesion_billing.id`, uma cobrança no Asaas por linha:
+   - a emissão sai pela **conta raiz**, com a clínica da franqueadora;
+   - a baixa (`settle_fn`) liga `split_at_source = true` **antes** de chamar `empresarial.settle_billing`. Assim o custo da RisLife nasce quitado, e não vira conta a pagar;
+   - o atraso e a visibilidade seguem a decisão 5.
+2. **O pagador:** um cliente do Asaas por documento (`gateway_customers`, dono `company`). Na cobrança à parte dos dependentes (1049), o cliente sai de `payer_document`/`payer_name`.
+   - E-mail e celular vêm do cadastro da empresa.
+   - **A régua de avisos ao pagador** é a da rede (4007).
+3. **O split para a carteira da RisLife**, lido de `split_rules` (exceção da empresa, senão o padrão), na hora da emissão. Os percentuais e a base seguem as decisões 1 e 2.
+4. **A emissão** (decisão 3): ao gerar a cobrança, na ficha ou no lote, ela sai no Asaas na hora, com o link, o boleto e o Pix na tela da empresa.
+5. **As travas**, como as da 4004 para a parcela. Com cobrança ativa no Asaas:
+   - editar o valor ou o vencimento, cancelar ou excluir a linha do Empresarial passa a **cancelar no Asaas primeiro**;
+   - a baixa manual é recusada; o "recebeu por fora" cancela no Asaas e dá a baixa, como o balcão da 4004;
+   - o estorno da cobrança paga sai **pelo Asaas** (o caminho da 4009 e da 4020a), com a conferência do saldo da franqueadora **e da carteira da RisLife** (19.37: o saldo mínimo, o aviso e a conferência antes do pedido).
+6. **A lista de titulares e dependentes do mês** (o pedido do dono de 15/11/2026; decisão 6):
+   - congelada na hora em que a mensalidade é gerada, a partir de `computeMonthlyBreakdown`, numa tabela nova ligada à cobrança;
+   - a empresa recebe um link seguro (página sem login, com código, como a lista da forma 2) na descrição da cobrança e na mensagem;
+   - a página mostra a lista e baixa em PDF ou planilha.
+7. **Ligar por empresa, com data de início:** "Cobrar pelo Asaas a partir de …", na Central (aba Empresarial) ou na ficha da empresa. As cobranças anteriores continuam manuais, e cada uma ganha o botão "Emitir no Asaas".
+8. **Aposentar o legado:**
+   - tirar o cliente antigo e a Edge Function do código;
+   - trocar os dois avisos das telas;
+   - ajustar o teste que lia a Edge Function (`webhook-asaas.test.ts`);
+   - a tabela `asaas_webhook_events` e a coluna `asaas_billing_id` ficam (vazias), marcadas como antigas;
+   - **o dono confere no painel do Supabase** que a função `asaas-webhook` não está publicada na produção.
+9. **A conta a pagar à RisLife que ainda nascer** (baixa manual, `split_at_source = false`) passa a apontar para o fornecedor RisLife. A duplicidade no cadastro de fornecedores é resolvida antes.
+10. **A Central, aba Empresarial** (seção 9, já prevista):
+    - os percentuais da RisLife e as exceções (hoje em `/empresarial/configuracoes`; a tela fica lá, e a Central mostra e leva a ela);
+    - a carteira da RisLife;
+    - o saldo mínimo da carteira.
+
+### 22.3 Decisões para o dono
+
+1. **A implantação com 100% para a RisLife.** O riSZon hoje não aceita split de 100% (`charge_splits` exige menos de 100), e a pergunta 20 ao comercial do Asaas está aberta.
+   - (a) **Split de 100%**, se o Asaas confirmar. A RisLife recebe o valor pago menos a tarifa, como a especificação já diz (5). **Recomendado**, se o Asaas confirmar.
+   - (b) A implantação sem split: a franqueadora recebe tudo, e a RisLife recebe por conta a pagar (como na baixa manual de hoje).
+   - Enquanto o Asaas não responde, a construção prepara as duas, e a escolha fica na Central.
+2. **A base e a tarifa da mensalidade** (D7: 50% sobre o valor pago). O split percentual do Asaas incide sobre o valor **líquido** (13, item 2).
+   - (a) **A RisLife recebe 50% do valor pago**, e a franqueadora absorve a tarifa. O riSZon soma a compensação, como na ASA3. **Recomendado:** é o que a D7 diz.
+   - (b) 50% do líquido: a tarifa fica dividida entre as duas.
+   - Nos dois casos, o razão passa a lançar o que o Asaas repassou de fato (o split real), e não o percentual sobre o total.
+3. **Quando a cobrança sai no Asaas:**
+   - (a) **Ao gerar**, na ficha ou no lote, como hoje, só que já emitida. **Recomendado:** não muda o trabalho de ninguém.
+   - (b) Numa rotina mensal automática. Exige congelar a conta do mês sem ninguém conferir; fica para depois.
+4. **O pagador com CAEPF, CNO ou NIF.** O Asaas aceita CPF e CNPJ, e a prova no sandbox vai confirmar o resto.
+   - (a) **Esses documentos continuam com cobrança manual**, e a tela avisa. **Recomendado** (o levantamento diz se existem).
+   - (b) Emitir no CPF do responsável.
+5. **Quem marca o atraso e suspende a empresa:**
+   - (a) **Continua a rotina do Empresarial** (pelo vencimento, que é o mesmo do Asaas). O aviso de vencida do Asaas não suspende nada. **Recomendado:** uma regra só.
+   - (b) Passa a ser pelo aviso do Asaas.
+6. **A lista do mês:**
+   - (a) **Congelada na geração e enviada por link seguro.** **Recomendado.**
+   - (b) A foto atual, gerada na hora de abrir: muda se alguém sair depois.
+7. **Ligar:**
+   - (a) **Por empresa, com data de início.** As abertas antigas continuam manuais, com o botão "Emitir no Asaas". **Recomendado.**
+   - (b) A rede inteira de uma vez.
+8. **A implantação paga no funil** (dinheiro que entrou fora) **nunca vai ao Asaas.** Confirmar.
+
+### 22.4 O que depende de fora
+
+- **O comercial do Asaas:** a pergunta 20 (split de 100%; decisão 1).
+- **O contador:** o parecer sobre a franqueadora emitir e repassar 100% ou 50% à RisLife, e a nota (ASA8).
+- **A RisLife:** a conta Asaas dela na produção e o walletId (a carteira se cadastra só com ele).
+
+### 22.5 Com a sessão do Empresarial
+
+- A 4023 cria funções no `public` e só **chama** as do Empresarial (`settle_billing`, `_settle_billing_raw`, `computeMonthlyBreakdown`). A trava em `adhesion_billing` é um gatilho novo, combinado antes.
+- As telas do Empresarial que mudam: a ficha da empresa (aba cobranças), `cobrancas/` (lote e baixa), `configuracoes/` (aviso) e `relatorio/` (a lista do mês). **Cada uma é avisada à sessão do Empresarial antes**, porque `version.ts` e `ESTADO_DO_PROJETO.md` são compartilhados.
+
+### 22.6 A prova
+
+- **Ensaio no treino** (transação desfeita):
+  - a emissão nas duas origens;
+  - o pagador à parte dos dependentes;
+  - a baixa pelo aviso com `split_at_source`, o razão, a suspensão tirada e o início do contrato;
+  - as travas (editar, cancelar, excluir, baixa manual);
+  - a lista congelada;
+  - o legado aposentado;
+  - tudo provado quebrando.
+- **Sandbox, pela conta raiz:**
+  - uma implantação e uma mensalidade pagas com o split certo para a RisLife Teste;
+  - uma cobrança à parte de dependentes, no CPF;
+  - o estorno com a conferência do saldo da carteira;
+  - o link da lista do mês.
+- **O teste do dono** no projeto de teste.
+
+### 22.7 Tamanho
+
+Do porte da 4018: uma migração (4023), a troca nas telas de cobrança do Empresarial, a página da lista do mês e a aba Empresarial da Central.
+
+### 22.8 Antes de aprovar
+
+Rodar na produção `docs/asaas/levantamento-asa5.sql` (só lê). Ele traz:
+- quantas empresas e cobranças existem;
+- os documentos (se há CAEPF, CNO ou NIF);
+- quem paga os dependentes;
+- as exceções de split;
+- se o legado gravou algo.
+
+No treino, ele deu: 10 empresas ativas, 15 cobranças em aberto (R$ 2.513,90), 1 exceção de split e a regra padrão 100 / 50.
