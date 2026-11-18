@@ -20,6 +20,7 @@ Somos a Risarte, uma rede de franquias odontológicas. A franqueadora é a [raz�
   - consulta de saldo, extrato, tarifas e situação da conta;
   - cadastro do webhook.
 - Cada cobrança leva **split** para a carteira da franqueadora (royalties e outras taxas da rede).
+- Do mesmo jeito, o riSZon vai operar a conta Asaas da **RisLife**, [razão social da RisLife], CNPJ [CNPJ da RisLife], parceira da rede no plano odontológico empresarial. A RisLife fatura a implantação dos planos na conta dela, com a chave gerada e autorizada por ela, e recebe parte das mensalidades por split.
 - A chave de produção será criada **só com as permissões mínimas**. Clientes, notificações, cobranças, estornos, parcelamentos e webhooks com leitura e escrita. Chargeback, chaves Pix, antecipação, extrato e dados da conta só com leitura. **Nenhuma permissão** de transferência, Pix enviado ou pagamento de contas.
 
 **O que pedimos que o Asaas confirme por escrito**

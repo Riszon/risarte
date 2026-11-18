@@ -19,6 +19,8 @@ select
      and reference_month >= date_trunc('month', current_date - interval '2 months')) as mensalidades_ultimos_3_meses,
   -- as regras do split
   (select count(*) from empresarial.split_rules where company_id is not null) as excecoes_de_split,
+  -- a implantação é faturada pela RisLife (100%): exceção com menos de 100 fica manual
+  (select count(*) from empresarial.split_rules where company_id is not null and first_payment_rislife_pct < 100) as excecoes_implantacao_abaixo_de_100,
   (select first_payment_rislife_pct || ' / ' || recurring_rislife_pct from empresarial.split_rules where company_id is null) as rislife_implantacao_mensalidade,
   -- o legado
   (select count(*) from empresarial.asaas_webhook_events) as avisos_antigos_gravados,
