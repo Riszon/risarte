@@ -410,7 +410,8 @@ Syncthing se comportarem de forma estranha.**
   partir dela. ⚠️ **Lote da ortodontia** parte da última mensalidade válida
   (0430). ⚠️ **`migrar:teste` sem `--ate` reaplicaria as 4018c/4020a/4021/4021a**
   (não estão no registro do treino): usar `--ate <número>`.
-- ✅ 0429 e 0430 no treino. ⏳ Produção com o dono; push depois. AP180,
+- ✅ 0429 e 0430 no treino e na produção (o dono, 18/11/2026: `3 · 0` e
+  `1 · 1`). Publicado depois das migrações. AP180,
   AP182 e AP183 planejados, aguardam aprovação.
 
 **17/11/2026 (fim do tratamento, Etapa 6 — plano completo) — PC Administrador (core 0.480.0, migração 0427; worktree `wt-fim-tratamento`)**
