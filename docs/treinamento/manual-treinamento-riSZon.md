@@ -2190,7 +2190,11 @@ marcada por engano (desfaz a prorrogação).
   mais próxima e, na instalação, pagava **dois repasses**.
 - **A instalação é a sessão do plano.** Concluí-la paga **um repasse só** (o
   do procedimento do plano) e **inicia o caso** sozinho; as manutenções
-  contam a partir dela.
+  contam a partir dela. Desde a 0.486.0 a instalação **só é agendada com a
+  1ª mensalidade paga** (a agenda recusa: *"A 1ª mensalidade da ortodontia
+  ainda não foi paga. Dê a baixa antes de agendar a instalação do
+  aparelho."*). Se uma instalação antiga for concluída sem a 1ª paga, o caso
+  espera e começa sozinho quando ela for paga, **com a data da instalação**.
 - **Concluir o atendimento** marca a manutenção como **Realizada** e gera o
   **repasse** do ortodontista. **Não compareceu** marca **Faltou** (e prorroga
   o término previsto). "Faltou" só aparece **depois do horário** do
@@ -2270,7 +2274,9 @@ assiduidade.
    ortodôntico"**: **mensalidade**, **quantas mensalidades** neste lote,
    **como são emitidas** (PIX recorrente, débito recorrente, cartão de
    crédito recorrente, cartão parcelado, boleto ou à vista do período), **dia
-   de vencimento**, **desconto por pontualidade** (para quem paga até o
+   de vencimento** (o das mensalidades seguintes), o **1º vencimento**
+   *(desde a 0.486.0; não pode ficar no passado; em branco vale o próximo
+   dia de vencimento)*, **desconto por pontualidade** (para quem paga até o
    vencimento) e se a **contenção é cobrada** (valor e condição). Os valores
    vêm da Configuração da Ortodontia e a proposta do Planner aparece ao lado
    como referência. O botão grava o acordo sobre a negociação salva.
@@ -2284,14 +2290,20 @@ assiduidade.
    ortodôntico nasce sozinho**, em **Aguardando início**, com tipo, meses e
    intervalo da proposta do Planner e mensalidade, lote, forma, pontualidade
    e contenção do acordo do Consultor — e sem ortodontista (quem instala
-   assume). O Gerente, o Coordenador e a Recepção recebem **"Ortodontia: caso
-   fechado — agendar a instalação"** (categoria Ortodontia no sino), além do
-   pop-up de sempre da Recepção. Venda sem ortodontia não abre nada. Se o
+   assume). **As mensalidades nascem junto** *(desde a 0.486.0)*: a 1ª no 1º
+   vencimento do acordo, as seguintes no dia de vencimento de cada mês, e
+   nenhuma nasce vencida. O Gerente, o Coordenador e a Recepção recebem
+   **"Ortodontia: caso fechado — agendar a instalação"** (categoria
+   Ortodontia no sino), dizendo quando vence a 1ª mensalidade, além do pop-up
+   de sempre da Recepção. O tratamento só começa com o **contrato assinado**,
+   a **1ª mensalidade paga** e a **instalação**. Venda sem ortodontia não abre nada. Se o
    paciente já tinha caso aberto, a venda só é ligada a ele.
 9. **Aguardando início, com ou sem horário.** O Painel ganhou o número
    **Aguardando início**: cada paciente mostra **"instalação dd/mm"** (há
    início ou sessão de tratamento marcados) ou **"sem horário"**. A tela
-   Atenção diz o mesmo, e o Início do Gerente, do Coordenador e da Recepção
+   Atenção diz o mesmo — e, enquanto a 1ª mensalidade não for paga, mostra
+   **"Aguardando início (falta pagar a 1ª mensalidade)"**; a ficha do caso
+   diz o que falta para começar *(desde a 0.486.0)* —, e o Início do Gerente, do Coordenador e da Recepção
    mostra o cartão **"Ortodontia: aguardando instalação sem horário"**.
 10. **Quem já estava em tratamento antes do sistema (Q1).** Entra como **caso
     legado**: link "Caso legado" no Painel (Gerente/Coordenador), motivo

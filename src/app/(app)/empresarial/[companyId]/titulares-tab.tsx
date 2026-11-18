@@ -58,6 +58,7 @@ import {
   type EmployeeImportRow,
   type EmpresarialCandidate,
 } from "./employee-actions";
+import { PagadorDosDependentes } from "./pagador-dos-dependentes";
 import {
   EmployeeDocumentPicker,
   EmployeeFilesDialog,
@@ -105,6 +106,10 @@ export type EmployeeView = {
   dependents: DependentView[];
   /** CNPJ (documento) da empresa a que este titular pertence. */
   companyDocumentId?: string | null;
+  /** 1049: quem paga os dependentes deste titular. */
+  dependentsPayer?: "EMPRESA" | "TITULAR" | "OUTRO";
+  dependentsPayerName?: string | null;
+  dependentsPayerDocument?: string | null;
 };
 
 type Unit = { id: string; name: string };
@@ -273,6 +278,9 @@ function EmployeeRow({
             {formatCpf(employee.cpf)} · {employee.phone}
             {employee.dependentPlan !== "NONE" &&
               ` · ${DEPENDENT_PLAN_LABELS[employee.dependentPlan as keyof typeof DEPENDENT_PLAN_LABELS]}`}
+            {(employee.dependentsPayer ?? "EMPRESA") !== "EMPRESA" &&
+              employee.dependents.some((d) => d.status === "ACTIVE") &&
+              " · dependentes pagos à parte"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -573,6 +581,15 @@ function DependentsBlock({
 
   return (
     <div className="space-y-2">
+      <PagadorDosDependentes
+        companyId={companyId}
+        employeeId={employee.id}
+        titular={employee.fullName}
+        pagador={employee.dependentsPayer ?? "EMPRESA"}
+        nome={employee.dependentsPayerName ?? null}
+        documento={employee.dependentsPayerDocument ?? null}
+        canManage={canManage && employee.status === "ACTIVE"}
+      />
       {employee.dependents.length === 0 ? (
         <p className="text-xs text-muted-foreground">Nenhum dependente.</p>
       ) : (

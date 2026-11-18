@@ -195,6 +195,7 @@ const CABECALHO_DOS_TITULARES = [
   "email",
   "plano de dependentes",
   "plano",
+  "quem paga os dependentes",
 ];
 
 const CABECALHO_DOS_DEPENDENTES = [
@@ -233,6 +234,7 @@ export function lerTitulares(celulas: Celulas): TitularesLidos {
         email: get("e-mail", "email"),
         dependentPlan: planoDaPlanilha(get("plano de dependentes", "plano")),
         planoNaPlanilha: temColunaDoPlano,
+        pagadorDosDependentes: get("quem paga os dependentes"),
       }))
       // Só a linha em branco é descartada: o resto vai à conferência, que diz
       // o que falta (AP97). O plano sozinho não conta — o modelo não o

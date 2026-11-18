@@ -1130,11 +1130,12 @@ com **Não se aplica**, para a empresa que não pediu.
 
 ## 8. O cadastro da empresa
 
-Menu **Empresarial**, clique na empresa. Sete abas:
+Menu **Empresarial**, clique na empresa. Oito abas:
 
 | Aba | O que tem |
 |---|---|
 | **Dados Gerais** | CNPJ, razão social, categoria, modelo de pagamento, vencimento, meios de pagamento, carência, **acordo de cobrança** |
+| **Regras combinadas** | tudo o que foi combinado com a empresa, num lugar só (seção 8.2) |
 | **Documentos** | os pacotes de **assinatura digital** da empresa (no alto) e os documentos da empresa |
 | **Titulares** | as pessoas do programa |
 | **Plano & Benefícios** | **outras vantagens combinadas**, mensalidade atual, simulador, preços de adesão, benefícios |
@@ -1236,7 +1237,9 @@ arquivo de novo.
 >   empresa e use a planilha própria (aba **Titulares → Importar Excel**, seção
 >   9);
 > - **não gera cobrança de implantação** — as empresas já estão no programa; a
->   mensalidade segue o ciclo normal;
+>   mensalidade segue o ciclo normal. Isso **não** marca a empresa como isenta:
+>   o **Gerar implantação** (aba Financeiro) continua cobrando a implantação
+>   inteira. Confira na aba **Regras combinadas** (seção 8.2) antes de usar;
 > - **não copia benefícios** — a empresa usa os **benefícios padrão da rede**;
 >   o que for diferente se ajusta em **Plano & Benefícios**.
 
@@ -1244,6 +1247,34 @@ arquivo de novo.
 > **Outros CNPJs** — sem ele, seria um boleto só com outro nome, e a linha é
 > recusada.
 
+
+### 8.2. Regras combinadas *(desde a 0.110.0)*
+
+A aba **Regras combinadas** mostra, só para ler, **tudo o que foi combinado**
+com a empresa, em blocos:
+
+| Bloco | O que mostra |
+|---|---|
+| **Contrato** | de onde a empresa veio (funil, com a data da assinatura, ou importação/cadastro direto), início do contrato, prazo mínimo (fidelidade), multa de saída e o "combinado na venda" |
+| **Preço** | como se cobra (por titular ou valor fixo), o preço por titular, os dependentes (por dependente ou plano familiar, com o tamanho do pacote) e as **faixas por quantidade** |
+| **Quantidade contratada** | titulares e dependentes contratados, termos de inclusão aceitos, o limite de hoje, mínimo e máximo de adesões e o que acontece acima do contratado |
+| **Implantação** | a regra (só titulares, ou titulares e dependentes) e a situação: quantas implantações, quanto, quantas pagas e quantos titulares já cobertos |
+| **Cobrança e pagamento** | quem paga, vencimento, boleto único ou um por CNPJ, formas e parcelas do tratamento |
+| **Carências** | da empresa e do colaborador |
+| **Benefícios** | procedimentos com benefício (os da empresa ou os da rede), outras vantagens e Riso+ Social |
+| **Unidades e divisão (split)** | a unidade principal, as unidades da parceria e a divisão do pagamento entre Risarte e RisLife |
+
+O selo **Padrão da rede** ao lado de um valor quer dizer que a empresa não tem
+regra própria e vale a da rede (em **Configurações**).
+
+> **Empresa importada sem implantação no sistema:** o bloco Implantação mostra
+> um aviso amarelo. A importação não gera implantação, mas isso não isenta a
+> empresa: o **Gerar implantação** cobra a implantação inteira. Confira se ela
+> já pagou fora do sistema antes de usar o botão.
+
+> Para **mudar** o que foi combinado, a revisão do contrato (com aditivo
+> assinado) está em preparação. Até lá, cada regra continua sendo alterada no
+> lugar de sempre (Dados Gerais, Plano & Benefícios, Titulares).
 
 ---
 
@@ -1277,6 +1308,14 @@ Ela tem três abas:
    Duas colunas cinza se preenchem sozinhas: **Dependentes preenchidos** e
    **Vagas** (*"1 de 3 livre(s)"*, *"Completo"*, ou *"Passou do limite"* em
    vermelho).
+
+   A última coluna, **Quem paga os dependentes** *(desde a 0.109.0)*, também
+   é uma lista: **Empresa** (ou em branco) = os dependentes entram na
+   cobrança da empresa; **Titular** = os dependentes são cobrados à parte, no
+   CPF do próprio titular. Outro valor recusa a planilha (*"Titulares, linha
+   7: quem paga os dependentes: use Empresa ou Titular"*). O **outro
+   pagador** (com CPF ou CNPJ) se escolhe depois, no sistema. A coluna só vale
+   para o titular **novo**: quem já estava cadastrado continua como estava.
 3. **Dependentes** (opcional) — na coluna **Titular**, o RH **escolhe o
    colaborador numa lista** (aparece *"João Souza — 987.654.321-00"*). A
    lista mostra **só quem tem plano com dependentes e ainda tem vaga**:
@@ -1333,6 +1372,27 @@ formato antigo (com a coluna "CPF do Titular") continuam entrando.
 
 **Dependentes:** dentro de um titular, *Adicionar dependente* (CPF +
 parentesco).
+
+**Quem paga os dependentes** *(desde a 0.109.0)*. Muitos titulares incluem
+dependentes, mas pagam por eles por fora. No alto da lista de dependentes de
+cada titular aparece a linha **Quem paga os dependentes:**, com o botão
+**Alterar** (para quem cuida dos titulares). São três escolhas, e elas valem
+para **todos** os dependentes daquele titular:
+
+| Escolha | Para onde vai a mensalidade dos dependentes |
+|---|---|
+| **A empresa, junto com o titular** (o padrão) | na cobrança da empresa, como sempre foi |
+| **O próprio titular (no CPF dele)** | numa cobrança à parte, no nome e no CPF do titular |
+| **Outro pagador (CPF ou CNPJ)** | numa cobrança à parte, no nome e no documento informados |
+
+O sistema confere o CPF ou o CNPJ do outro pagador antes de salvar. Na lista
+de titulares, quem paga à parte ganha a marca *"· dependentes pagos à
+parte"*. A escolha vale **a partir da próxima mensalidade gerada** — o que já
+foi gerado não muda (seção 12). Titular desligado não muda mais a escolha.
+
+> Titular marcado como **O próprio titular** mas **sem CPF** no cadastro:
+> não há em nome de quem emitir, e os dependentes dele continuam na cobrança
+> da empresa.
 
 > **No ambiente de TREINO**, abaixo do CPF aparece o link **Gerar CPF de
 > teste (só no treino)**: ele preenche um CPF válido inventado, como no
@@ -1544,6 +1604,26 @@ pacote para R$ 6.000,00 → a mensalidade é R$ 6.000,00 (5.000 + 1.000 do termo
 >
 > **Para corrigir uma mensalidade errada:** cancele a atual e gere de novo.
 > Cobrança cancelada não conta para a trava.
+
+> **Dependentes pagos à parte** *(desde a 0.109.0, seção 9)*. Quando um
+> titular paga os próprios dependentes (ou outro pagador paga), o mesmo
+> clique de **Gerar cobrança mensal** gera **todas** as cobranças: a da
+> empresa, **sem** aqueles dependentes, e uma cobrança à parte para cada
+> pagador, com a descrição *"… — dependentes de (titular)"*. A janela de
+> confirmação mostra todas antes de gerar (*"3 cobranças (a da empresa e as
+> dos dependentes pagos à parte)"*). A geração **em lote** faz o mesmo. A
+> trava do mês vale para cada uma: a mesma cobrança à parte também não sai
+> duas vezes no mês.
+>
+> - **Implantação:** quando a proposta combinou implantação **com
+>   dependentes** e os cadastros estão completos, os dependentes pagos à
+>   parte vão para o **mesmo pagador** da mensalidade. Com cadastros
+>   faltando (implantação pela quantidade contratada) ou na implantação dos
+>   **titulares novos**, ainda não se sabe os dependentes de quem, e ela
+>   segue inteira com a empresa.
+> - **Empresa de valor fixo:** o pacote cobre todo mundo; nada sai à parte.
+> - **Titular desligado:** os dependentes saem do programa junto com ele, e
+>   a cobrança à parte deixa de ser gerada a partir do mês seguinte.
 
 > **"Não foi possível conferir o preço e os titulares da empresa agora…"** —
 > o sistema não conseguiu ler, naquele instante, o preço combinado, as faixas,

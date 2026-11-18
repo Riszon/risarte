@@ -400,6 +400,38 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**18/11/2026 (regras combinadas) — PC Administrador (Empresarial 0.109.0 → 0.110.0, sem migração)**
+
+- Bloco "EMPRESARIAL 0.110.0" no ESTADO; plano aprovado (R1–R7) em
+  `docs/risarte-empresarial/REVISAR-CONTRATO-PLANO.md`. ⚠️ **Não existe
+  "isenta de implantação"**: a importação (1047) só não gera a cobrança.
+  ⚠️ Regra nova da empresa entra também em `montarRegras`
+  (`regras-combinadas.ts`). Próximo: Etapa 2 + R7 (1050), plano antes.
+
+**18/11/2026 (quem paga os dependentes) — PC Administrador (Empresarial 0.108.0 → 0.109.0, migração 1049)**
+
+- Bloco "EMPRESARIAL 0.109.0" no ESTADO. ⚠️ **A cobrança à parte = um
+  `adhesion_billing` com `employee_id`** (de quem são os dependentes); a
+  conta é `computeMonthlyBreakdown` → `aParte`, pela regra
+  `pagadorDaCobranca`. Caminho novo que gere mensalidade usa os itens de
+  `previewBilling`. ⚠️ Ao recriar `importar_titulares`, partir da 1049.
+  ⚠️ **`$'` no texto de substituição do `String.replace` do JS é "o resto
+  do texto"** (irmão do `$$`): uma regex com `$'` no fim duplicou a 1049
+  inteira dentro dela. SQL por script: substituir por função.
+- ⚠️ `migrar:teste --ate 1049` aplicou também a **0432** (ortodontia, sem
+  commit na pasta) no treino.
+- ✅ 1049 nos dois bancos (produção pelo dono em 18/11/2026, 3·3·2·true·true;
+  conferido de fora). Publicado depois da migração.
+
+**18/11/2026 (ortodontia, AP183 D1: o início do caso e a 1ª mensalidade) — PC Administrador (core 0.485.0 → 0.486.0, migração 0432)**
+
+- Bloco 0.486.0 no ESTADO. ⚠️ **1ª mensalidade paga = `_ortho_first_fee_paid`**;
+  o caso da venda só começa com ela (`_ortho_begin_treatment` espera, guarda
+  `installed_on`; a baixa inicia). ⚠️ A agenda confere `ortho_installation_block`
+  antes de gravar. ⚠️ `save_negotiation_ortho` tem 11 parâmetros (0432).
+- ✅ 0432 no treino e na produção (o dono, 18/11/2026: `3 · 1 · 1 · 2 · 0`).
+  Publicado depois da migração.
+
 **18/11/2026 (ortodontia, correções do roteiro, segunda leva: AP180, AP182, AP183, D5) — PC Administrador (core 0.484.0 → 0.485.0, migração 0431; a 0.484.0 é do Asaas)**
 
 - Bloco 0.485.0 no ESTADO. ⚠️ **Fechar venda é da equipe comercial e do Admin**

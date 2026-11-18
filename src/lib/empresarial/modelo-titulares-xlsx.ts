@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import { DEPENDENT_PLAN_LABELS, DEPENDENT_PLANS, RELATIONSHIP_LABELS, RELATIONSHIPS } from "./constants";
 import { LOGO_EMPRESARIAL_PNG_BASE64, LOGO_EMPRESARIAL_PROPORCAO } from "./logo-planilha";
 import { ABA_DEPENDENTES, ABA_INSTRUCOES, ABA_TITULARES, LIMITE_DO_PLANO } from "./planilha-titulares";
+import { PAGADOR_NA_PLANILHA } from "./pagador-dos-dependentes";
 
 /**
  * A PLANILHA MODELO DE TITULARES E DEPENDENTES (pedido do dono, 13/11/2026).
@@ -40,6 +41,11 @@ const ULTIMA_LINHA = PRIMEIRA_LINHA + LINHAS_PREPARADAS - 1;
 
 /** Os títulos das colunas. A leitura (`planilha-titulares.ts`) acha por eles. */
 export const COLUNAS_TITULARES = ["Nome *", "CPF *", "Telefone *", "E-mail", "Plano de Dependentes"] as const;
+/**
+ * 1049: a coluna M, DEPOIS das escondidas (as fórmulas usam E..L fixas —
+ * pôr no meio deslocaria todas). ⚠️ O mesmo título de CABECALHO_DOS_TITULARES.
+ */
+export const COLUNA_DO_PAGADOR = "Quem paga os dependentes";
 export const COLUNAS_DEPENDENTES = [
   "Titular *",
   "CPF do Dependente *",
@@ -213,6 +219,12 @@ function abaDeInstrucoes(wb: ExcelJS.Workbook, empresa: string, geradoEm: string
       "Não",
       "Escolha na lista. Individual = 1 dependente; Familiar = até 3; Familiar + extras = 4 ou mais. Em branco = sem dependentes (não aparece na aba Dependentes).",
     ],
+    [
+      ABA_TITULARES,
+      COLUNA_DO_PAGADOR,
+      "Não",
+      "Escolha na lista. Empresa (ou em branco) = os dependentes entram na cobrança da empresa. Titular = os dependentes são cobrados à parte, no CPF do próprio titular. Outro pagador (com CPF ou CNPJ) se escolhe depois, no sistema.",
+    ],
     [ABA_DEPENDENTES, "Titular", "Sim", "Escolha na lista o colaborador de quem a pessoa é dependente (só aparece quem tem plano com dependentes e vaga). Se o titular já foi cadastrado antes e não está nesta planilha, digite o CPF dele."],
     [ABA_DEPENDENTES, "CPF do Dependente", "Sim", "Os 11 números do CPF do dependente (criança também precisa de CPF)."],
     [ABA_DEPENDENTES, "Nome do Dependente", "Recomendado", "Nome completo do dependente."],
@@ -337,6 +349,8 @@ function montarTitulares(wb: ExcelJS.Workbook) {
     { width: 40, hidden: true },
     { width: 8, hidden: true },
     { width: 40, hidden: true },
+    // M: quem paga os dependentes (1049).
+    { width: 26 },
   ];
   topo(
     wb,
@@ -351,6 +365,18 @@ function montarTitulares(wb: ExcelJS.Workbook) {
     ws.getCell(`${c}${LINHA_DO_CABECALHO}`).value = ocultas[i];
   });
   linhasDeDados(ws, COLUNAS_TITULARES.length, [2, 3]);
+  // M: quem paga os dependentes (1049). Fora do bloco A..G, com o mesmo azul.
+  {
+    const m = ws.getCell(`M${LINHA_DO_CABECALHO}`);
+    m.value = COLUNA_DO_PAGADOR;
+    m.font = { bold: true, color: { argb: BRANCO }, size: 11 };
+    m.fill = { type: "pattern", pattern: "solid", fgColor: { argb: AZUL } };
+    m.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+    m.border = borda;
+    m.note =
+      "Empresa (ou em branco) = os dependentes entram na cobrança da empresa. Titular = os dependentes são cobrados à parte, no CPF do titular.";
+    for (let r = PRIMEIRA_LINHA; r <= ULTIMA_LINHA; r++) ws.getCell(`M${r}`).border = borda;
+  }
 
   const planos = DEPENDENT_PLANS.map((p) => DEPENDENT_PLAN_LABELS[p]);
   const deps = `${ABA_DEPENDENTES}!$A$${PRIMEIRA_LINHA}:$A$${ULTIMA_LINHA}`;
@@ -368,6 +394,19 @@ function montarTitulares(wb: ExcelJS.Workbook) {
     errorStyle: "stop",
     errorTitle: "Escolha na lista",
     error: `Use uma das opções: ${planos.join(", ")}.`,
+  });
+  const pagadores = [PAGADOR_NA_PLANILHA.EMPRESA, PAGADOR_NA_PLANILHA.TITULAR];
+  validarFaixa(ws, `M${i0}:M${iN}`, {
+    type: "list",
+    allowBlank: true,
+    formulae: [listaFixa(pagadores)],
+    showInputMessage: true,
+    promptTitle: "Quem paga os dependentes",
+    prompt: "Empresa = junto com a empresa. Titular = cobrança à parte no CPF do titular. Em branco = Empresa.",
+    showErrorMessage: true,
+    errorStyle: "stop",
+    errorTitle: "Escolha na lista",
+    error: `Use uma das opções: ${pagadores.join(", ")}.`,
   });
   for (let r = i0; r <= iN; r++) {
     // H: "Nome — CPF" (⚠️ mesmo formato de textoDaLista, planilha-titulares.ts).

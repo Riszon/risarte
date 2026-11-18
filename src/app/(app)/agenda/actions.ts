@@ -704,6 +704,29 @@ async function recusaDoProfissional(
   return `O profissional escolhido não atende este tipo de compromisso nesta unidade. Escolha ${quem}.`;
 }
 
+/**
+ * AP183 D1 (0432, decisão do dono E3): a instalação do aparelho (a sessão
+ * ortodôntica do plano) só é agendada com a 1ª mensalidade paga. O banco
+ * responde só sim ou não (`ortho_installation_block`) e tem a trava de
+ * segurança nos gatilhos `ortho_installation_guard`.
+ */
+async function recusaDaInstalacao(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  sessionIds: string[]
+): Promise<string | null> {
+  const ids = sessionIds.map((x) => x.trim()).filter(Boolean);
+  if (ids.length === 0) return null;
+  const { data, error } = await supabase.rpc("ortho_installation_block", { p_session_ids: ids });
+  if (error) {
+    // Sem a 0432 no banco a função não existe: segue (a trava do banco também não).
+    if (!error.message.includes("Could not find the function")) console.error("ortho_installation_block:", error.message);
+    return null;
+  }
+  return data === true
+    ? "A 1ª mensalidade da ortodontia ainda não foi paga. Dê a baixa antes de agendar a instalação do aparelho."
+    : null;
+}
+
 export async function createAppointment(
   formData: FormData
 ): Promise<ActionResult> {
@@ -766,6 +789,14 @@ export async function createAppointment(
     participantIds.length
   );
   if (chairErr) return { ok: false, error: chairErr };
+
+  // AP183 D1 (0432): a instalação do aparelho só depois da 1ª mensalidade
+  // paga. Confere ANTES de gravar, para não sobrar agendamento sem a sessão.
+  const instalacaoBarrada = await recusaDaInstalacao(supabase, [
+    ...String(formData.get("treatment_session_ids") ?? "").split(","),
+    String(formData.get("treatment_session_id") ?? ""),
+  ]);
+  if (instalacaoBarrada) return { ok: false, error: instalacaoBarrada };
 
   const { data, error } = await supabase
     .from("appointments")
@@ -830,7 +861,9 @@ export async function createAppointment(
       console.error("link_appointment_sessions failed:", linkErr.message);
       sessionWarning = linkErr.message.includes("SESSION_ALREADY_SCHEDULED")
         ? "Agendamento criado, mas uma das sessões já tinha atendimento marcado e não foi vinculada. Confira o plano do cliente."
-        : "Agendamento criado, mas não foi possível vincular as sessões do plano.";
+        : linkErr.message.includes("ORTHO_FIRST_FEE_UNPAID")
+          ? "Agendamento criado sem a sessão do aparelho: a 1ª mensalidade da ortodontia ainda não foi paga."
+          : "Agendamento criado, mas não foi possível vincular as sessões do plano.";
     }
   }
 
@@ -1231,6 +1264,11 @@ export async function updateAppointment(
     if (link.length > 0 || unlink.length > 0) {
       sessionSync = { desired, link, unlink };
       changes["treatment_sessions"] = { from: currentIds, to: desired };
+    }
+    // AP183 D1 (0432): a instalação só depois da 1ª mensalidade paga.
+    if (link.length > 0) {
+      const barrada = await recusaDaInstalacao(supabase, link);
+      if (barrada) return { ok: false, error: barrada };
     }
   }
 

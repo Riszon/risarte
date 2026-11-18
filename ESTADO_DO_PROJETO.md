@@ -2,6 +2,85 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.110.0 — AS REGRAS COMBINADAS DA EMPRESA NUM LUGAR SÓ (18/11/2026; sem migração)
+>
+> Pedido do dono: a empresa importada parecia "configurada para não pagar
+> implantação" e ele não via o que foi combinado. Plano aprovado (R1–R7) em
+> `docs/risarte-empresarial/REVISAR-CONTRATO-PLANO.md`; esta é a **Etapa 1**.
+> - **Aba "Regras combinadas"** (`[companyId]/regras-combinadas.tsx`, só
+>   leitura): contrato, preço e faixas, quantidade, implantação (regra e
+>   situação), cobrança, carências, benefícios, unidades e split, com o selo
+>   "Padrão da rede". Texto montado por `montarRegras`
+>   (`src/lib/empresarial/regras-combinadas.ts`, pura).
+> - ⚠️ **Não existe "isenta de implantação"**: a importação só não gerou a
+>   cobrança. A aba avisa na importada sem implantação (o botão cobraria
+>   inteira). A isenção/"já paga antes do sistema" é a R4, na Etapa 2.
+> - ⚠️ Falha de leitura = a aba diz que não leu (nunca "padrão da rede").
+> - Visto na tela no treino (servidor local, Admin de teste): uma importada e
+>   uma do funil; 375 px sem rolagem lateral. Régua
+>   `regras-combinadas.test.ts` (10), provada quebrando. Manual 8 e 8.2.
+> - Próximo: Etapa 2 + R7 (migração 1050), com plano detalhado antes.
+
+> ## 💼 EMPRESARIAL 0.109.0 / 1049 — QUEM PAGA OS DEPENDENTES (18/11/2026)
+>
+> Pedido do dono: "muitos titulares incluem dependentes, mas pagam por fora,
+> com a cobrança no próprio CPF do titular ou num CNPJ". Decisões dele: a
+> escolha é no TITULAR e vale para todos os dependentes dele; Empresa /
+> próprio titular / outro pagador (nome + CPF ou CNPJ); a implantação com
+> dependentes segue o mesmo pagador; a planilha de titulares ganha a coluna
+> (Empresa / Titular). Desligar o titular continua desligando os dependentes.
+> - **1049:** `employees.dependents_payer` (padrão EMPRESA) + nome/documento
+>   do OUTRO, com a regra `employees_dependents_payer_check`;
+>   `adhesion_billing.employee_id`/`payer_name`/`payer_document` (a
+>   cobrança à parte, regra `adhesion_billing_payer_check`); a trava do mês
+>   `adhesion_billing_mensalidade_unica` passa a contar o `employee_id`;
+>   `importar_titulares` recriada (de 1042) gravando a coluna da planilha.
+> - ⚠️ **A conta é do app:** `computeMonthlyBreakdown` tira os dependentes de
+>   quem paga à parte da cobrança da empresa e devolve `aParte`; a regra
+>   única é `pagadorDaCobranca` (`pagador-dos-dependentes.ts`). A
+>   mensalidade, a implantação com dependentes e a geração em lote usam os
+>   itens de `previewBilling`. Implantação pelo contratado, a dos titulares
+>   novos e o valor fixo ficam inteiros com a empresa.
+> - ⚠️ **CHECK aceita NULL:** `documento ~ regex` com documento nulo dá NULL e
+>   passa. As duas regras usam `coalesce(…, '')` — o ensaio pegou.
+> - ⚠️ **Planilha: a coluna mora em M**, depois das escondidas (as fórmulas
+>   usam E..L fixas). Título = `COLUNA_DO_PAGADOR` = o de
+>   `CABECALHO_DOS_TITULARES` (régua).
+> - Ensaio no treino 21/21 (`scripts/empresarial-ensaio-1049.mjs`,
+>   desfeito) e quebrando 3 vezes (`QUEBRA=regra|trava|planilha`); régua
+>   `pagador-dos-dependentes.test.ts` (15), provada quebrando. Manual do
+>   Empresarial 9 e 12. **Não visto na tela.**
+> - ✅ **1049 nos dois bancos** (produção pelo dono em 18/11/2026, conferência
+>   3·3·2·true·true; conferido de fora: sem login `importar_titulares` recusa
+>   com "permission denied", a de controle responde "não encontrada"; 52
+>   titulares, todos com a EMPRESA; nenhuma cobrança à parte ainda).
+
+> ## 🦷 0.486.0 — ORTODONTIA, AP183 D1: AS MENSALIDADES NO FECHAMENTO E O INÍCIO COM A 1ª PAGA (18/11/2026; migração 0432) — NA PRODUÇÃO (18/11/2026)
+>
+> Regra do dono (18/11/2026) com as decisões E1–E4 (`docs/ortodontia/AP183-D1-PLANO.md`):
+> mensalidades no fechamento da venda; início sempre na instalação; a agenda
+> não agenda a instalação sem a 1ª paga; o caso legado não muda.
+> - ⚠️ **"A 1ª mensalidade está paga?" = `_ortho_first_fee_paid`** (a de
+>   vencimento mais cedo, sem as canceladas; legado = sim). Espelho na tela:
+>   `primeiraMensalidadeEmAberto` / `faltaParaComecar` (`regras.ts`).
+> - ⚠️ Recriadas na 0432: `_ortho_emit_batch`, `_ortho_open_from_sale`,
+>   `_ortho_begin_treatment`, `ortho_set_status`, `save_negotiation_ortho`
+>   (assinatura nova, com `p_first_due_date`). Ao recriar, partir da 0432.
+> - ⚠️ O início que espera o pagamento guarda `ortho_cases.installed_on`; o
+>   gatilho `ortho_charges_first_fee_start` inicia o caso (nunca derruba a
+>   baixa — também a do Asaas). Desfazer a 1ª depois de iniciado não volta o caso.
+> - ⚠️ A agenda pergunta `ortho_installation_block` ANTES de gravar
+>   (`recusaDaInstalacao`); os gatilhos `ortho_installation_guard` são a
+>   rede de segurança. Coordenado com a sessão do Asaas (o lote leva o meio).
+> - ✅ 0432 no treino (`--ate 0432`); ensaio 12/12; ensaios do Asaas 54/54,
+>   24/24 e 64/64 depois dela. Na tela (treino): recusa da agenda, o que
+>   falta na ficha e na Atenção, a 1ª paga libera. Não visto: a instalação
+>   concluída iniciando o caso pela tela (provado no ensaio). EV-393.
+>   Resíduo: o caso ORT-000039 do paciente de teste, interrompido.
+> - ✅ **Produção:** o dono rodou a 0432 em 18/11/2026 (conferência
+>   `3 · 1 · 1 · 2 · 0`: nenhum caso da venda aguardando início ficou sem
+>   mensalidades); o push saiu depois.
+>
 > ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — NA PRODUÇÃO (18/11/2026)
 >
 > Decisões do dono em 18/11/2026 (planos `docs/ortodontia/AP180-PLANO.md`,

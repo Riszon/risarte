@@ -16,6 +16,7 @@ import {
   precoPorTitularDaImplantacao,
 } from "@/lib/empresarial/cobranca-servidor";
 import { proximoVencimento, rotuloDoMes } from "@/lib/empresarial/vencimento";
+import { descricaoDaCobrancaAParte, documentoLegivel } from "@/lib/empresarial/pagador-dos-dependentes";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -29,6 +30,14 @@ export type BillingPreview = {
     payerDoc: string;
     employees: number;
     totalCents: number;
+    /**
+     * 1049: cobrança À PARTE dos dependentes deste titular (nulo = a da
+     * empresa). Com ele vêm o documento (só números) e a descrição própria.
+     */
+    employeeId?: string | null;
+    payerDocument?: string | null;
+    description?: string;
+    dependentes?: number;
   }[];
   dueDate?: string;
   referenceMonth?: string;
@@ -458,6 +467,25 @@ export async function previewBilling(
     }
   }
 
+  // 1049: os dependentes pagos à parte viram uma cobrança própria de cada
+  // pagador, no mesmo clique (mensalidade e implantação com dependentes). Na
+  // implantação pela quantidade contratada (cadastros incompletos) não há
+  // como separar — ninguém sabe ainda os dependentes de quem — e ela segue
+  // inteira com a empresa (retorno mais acima).
+  for (const a of breakdown.aParte) {
+    items.push({
+      documentId: null,
+      employeeId: a.employeeId,
+      payerName: a.pagadorNome,
+      payerDoc: documentoLegivel(a.pagadorDocumento),
+      payerDocument: a.pagadorDocumento,
+      employees: 0,
+      dependentes: a.dependentes,
+      totalCents: a.cents,
+      description: descricaoDaCobrancaAParte(description, a.titular),
+    });
+  }
+
   if (items.length === 0 || items.every((i) => i.totalCents <= 0)) {
     return {
       ok: false,
@@ -550,7 +578,7 @@ export async function generateBilling(
     }
     const { data: jaGeradas, error: erroDaConferencia } = await db
       .from("adhesion_billing")
-      .select("company_document_id")
+      .select("company_document_id, employee_id")
       .eq("company_id", companyId)
       .eq("billing_type", "MONTHLY")
       .eq("reference_month", preview.referenceMonth)
@@ -560,8 +588,12 @@ export async function generateBilling(
     if (erroDaConferencia || !jaGeradas) {
       return { ok: false, error: naoConseguiConferir("se a mensalidade deste mês já foi gerada") };
     }
-    const docsJaCobrados = new Set(jaGeradas.map((r) => r.company_document_id ?? null));
-    if (preview.items.some((i) => docsJaCobrados.has(i.documentId ?? null))) {
+    // 1049: a chave ganhou o pagador à parte (o titular dos dependentes).
+    const chave = (doc: string | null, emp: string | null) => `${doc ?? "-"}|${emp ?? "-"}`;
+    const docsJaCobrados = new Set(
+      jaGeradas.map((r) => chave(r.company_document_id ?? null, r.employee_id ?? null))
+    );
+    if (preview.items.some((i) => docsJaCobrados.has(chave(i.documentId ?? null, i.employeeId ?? null)))) {
       return {
         ok: false,
         error: `A mensalidade de ${rotuloDoMes(preview.referenceMonth)} desta empresa já foi gerada. Para refazê-la, cancele a atual primeiro.`,
@@ -577,12 +609,16 @@ export async function generateBilling(
     total_amount_cents: i.totalCents,
     status: "PENDING",
     due_date: preview.dueDate,
-    description: preview.description,
+    description: i.description ?? preview.description,
+    // 1049: a cobrança à parte dos dependentes, no nome de quem paga.
+    employee_id: i.employeeId ?? null,
+    payer_name: i.employeeId ? i.payerName : null,
+    payer_document: i.employeeId ? (i.payerDocument ?? null) : null,
     // AP12: é isto que a PRÓXIMA implantação desconta. Quando o valor foi
     // informado à mão (sem titulares e sem contrato), não se sabe quantos ele
     // cobriu — fica nulo ("não sei"), e a próxima prévia avisa.
     holders_covered:
-      billingType === "IMPLANTATION" && !preview.precisaValor ? i.employees : null,
+      billingType === "IMPLANTATION" && !preview.precisaValor && !i.employeeId ? i.employees : null,
   }));
 
   const { error } = await db.from("adhesion_billing").insert(rows);

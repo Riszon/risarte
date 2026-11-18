@@ -302,6 +302,7 @@ describe("validações sem duplicata (16/11/2026)", () => {
       const colunas = faixas.map((f) => f.replace(/\d+/g, ""));
       expect(new Set(colunas).size, `${nome}: ${faixas.join(" ")}`).toBe(colunas.length);
     }
-    expect(medidas).toBe(3); // Plano (Titulares), Titular e Parentesco (Dependentes)
+    // Plano e Quem paga os dependentes (Titulares, 1049), Titular e Parentesco (Dependentes)
+    expect(medidas).toBe(4);
   });
 });
