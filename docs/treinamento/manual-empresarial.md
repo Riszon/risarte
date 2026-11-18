@@ -1130,11 +1130,12 @@ com **Não se aplica**, para a empresa que não pediu.
 
 ## 8. O cadastro da empresa
 
-Menu **Empresarial**, clique na empresa. Sete abas:
+Menu **Empresarial**, clique na empresa. Oito abas:
 
 | Aba | O que tem |
 |---|---|
 | **Dados Gerais** | CNPJ, razão social, categoria, modelo de pagamento, vencimento, meios de pagamento, carência, **acordo de cobrança** |
+| **Regras combinadas** | tudo o que foi combinado com a empresa, num lugar só (seção 8.2) |
 | **Documentos** | os pacotes de **assinatura digital** da empresa (no alto) e os documentos da empresa |
 | **Titulares** | as pessoas do programa |
 | **Plano & Benefícios** | **outras vantagens combinadas**, mensalidade atual, simulador, preços de adesão, benefícios |
@@ -1236,7 +1237,9 @@ arquivo de novo.
 >   empresa e use a planilha própria (aba **Titulares → Importar Excel**, seção
 >   9);
 > - **não gera cobrança de implantação** — as empresas já estão no programa; a
->   mensalidade segue o ciclo normal;
+>   mensalidade segue o ciclo normal. Isso **não** marca a empresa como isenta:
+>   o **Gerar implantação** (aba Financeiro) continua cobrando a implantação
+>   inteira. Confira na aba **Regras combinadas** (seção 8.2) antes de usar;
 > - **não copia benefícios** — a empresa usa os **benefícios padrão da rede**;
 >   o que for diferente se ajusta em **Plano & Benefícios**.
 
@@ -1244,6 +1247,34 @@ arquivo de novo.
 > **Outros CNPJs** — sem ele, seria um boleto só com outro nome, e a linha é
 > recusada.
 
+
+### 8.2. Regras combinadas *(desde a 0.110.0)*
+
+A aba **Regras combinadas** mostra, só para ler, **tudo o que foi combinado**
+com a empresa, em blocos:
+
+| Bloco | O que mostra |
+|---|---|
+| **Contrato** | de onde a empresa veio (funil, com a data da assinatura, ou importação/cadastro direto), início do contrato, prazo mínimo (fidelidade), multa de saída e o "combinado na venda" |
+| **Preço** | como se cobra (por titular ou valor fixo), o preço por titular, os dependentes (por dependente ou plano familiar, com o tamanho do pacote) e as **faixas por quantidade** |
+| **Quantidade contratada** | titulares e dependentes contratados, termos de inclusão aceitos, o limite de hoje, mínimo e máximo de adesões e o que acontece acima do contratado |
+| **Implantação** | a regra (só titulares, ou titulares e dependentes) e a situação: quantas implantações, quanto, quantas pagas e quantos titulares já cobertos |
+| **Cobrança e pagamento** | quem paga, vencimento, boleto único ou um por CNPJ, formas e parcelas do tratamento |
+| **Carências** | da empresa e do colaborador |
+| **Benefícios** | procedimentos com benefício (os da empresa ou os da rede), outras vantagens e Riso+ Social |
+| **Unidades e divisão (split)** | a unidade principal, as unidades da parceria e a divisão do pagamento entre Risarte e RisLife |
+
+O selo **Padrão da rede** ao lado de um valor quer dizer que a empresa não tem
+regra própria e vale a da rede (em **Configurações**).
+
+> **Empresa importada sem implantação no sistema:** o bloco Implantação mostra
+> um aviso amarelo. A importação não gera implantação, mas isso não isenta a
+> empresa: o **Gerar implantação** cobra a implantação inteira. Confira se ela
+> já pagou fora do sistema antes de usar o botão.
+
+> Para **mudar** o que foi combinado, a revisão do contrato (com aditivo
+> assinado) está em preparação. Até lá, cada regra continua sendo alterada no
+> lugar de sempre (Dados Gerais, Plano & Benefícios, Titulares).
 
 ---
 

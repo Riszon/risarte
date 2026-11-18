@@ -45,6 +45,7 @@ import type { PaymentModel } from "@/lib/empresarial/constants";
 import { BillingTab, type BillingView } from "./billing-tab";
 import { isAsaasConfigured } from "@/lib/empresarial/asaas";
 import { ContratosTab, type ContractView } from "./contratos-tab";
+import { RegrasCombinadas } from "./regras-combinadas";
 import { AssinaturasDaEmpresa } from "@/app/(app)/assinaturas/assinaturas-da-empresa";
 import {
   DocumentosTab,
@@ -111,6 +112,8 @@ const PONTO_DA_SITUACAO: Record<CompanyStatus, string> = {
 
 const TABS = [
   { key: "geral", label: "Dados Gerais" },
+  // Pedido do dono (18/11/2026): tudo o que foi combinado, num lugar só.
+  { key: "regras", label: "Regras combinadas" },
   { key: "documentos", label: "Documentos" },
   { key: "colaboradores", label: "Titulares" },
   { key: "plano", label: "Plano & Benefícios" },
@@ -1183,6 +1186,8 @@ export default async function CompanyDetailPage(props: {
           )}
         </div>
       )}
+
+      {aba === "regras" && <RegrasCombinadas companyId={companyId} />}
 
       {aba === "geral" && resumo && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">

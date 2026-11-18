@@ -400,6 +400,14 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**18/11/2026 (regras combinadas) — PC Administrador (Empresarial 0.109.0 → 0.110.0, sem migração)**
+
+- Bloco "EMPRESARIAL 0.110.0" no ESTADO; plano aprovado (R1–R7) em
+  `docs/risarte-empresarial/REVISAR-CONTRATO-PLANO.md`. ⚠️ **Não existe
+  "isenta de implantação"**: a importação (1047) só não gera a cobrança.
+  ⚠️ Regra nova da empresa entra também em `montarRegras`
+  (`regras-combinadas.ts`). Próximo: Etapa 2 + R7 (1050), plano antes.
+
 **18/11/2026 (quem paga os dependentes) — PC Administrador (Empresarial 0.108.0 → 0.109.0, migração 1049)**
 
 - Bloco "EMPRESARIAL 0.109.0" no ESTADO. ⚠️ **A cobrança à parte = um

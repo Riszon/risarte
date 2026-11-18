@@ -2,6 +2,25 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.110.0 — AS REGRAS COMBINADAS DA EMPRESA NUM LUGAR SÓ (18/11/2026; sem migração)
+>
+> Pedido do dono: a empresa importada parecia "configurada para não pagar
+> implantação" e ele não via o que foi combinado. Plano aprovado (R1–R7) em
+> `docs/risarte-empresarial/REVISAR-CONTRATO-PLANO.md`; esta é a **Etapa 1**.
+> - **Aba "Regras combinadas"** (`[companyId]/regras-combinadas.tsx`, só
+>   leitura): contrato, preço e faixas, quantidade, implantação (regra e
+>   situação), cobrança, carências, benefícios, unidades e split, com o selo
+>   "Padrão da rede". Texto montado por `montarRegras`
+>   (`src/lib/empresarial/regras-combinadas.ts`, pura).
+> - ⚠️ **Não existe "isenta de implantação"**: a importação só não gerou a
+>   cobrança. A aba avisa na importada sem implantação (o botão cobraria
+>   inteira). A isenção/"já paga antes do sistema" é a R4, na Etapa 2.
+> - ⚠️ Falha de leitura = a aba diz que não leu (nunca "padrão da rede").
+> - Visto na tela no treino (servidor local, Admin de teste): uma importada e
+>   uma do funil; 375 px sem rolagem lateral. Régua
+>   `regras-combinadas.test.ts` (10), provada quebrando. Manual 8 e 8.2.
+> - Próximo: Etapa 2 + R7 (migração 1050), com plano detalhado antes.
+
 > ## 💼 EMPRESARIAL 0.109.0 / 1049 — QUEM PAGA OS DEPENDENTES (18/11/2026)
 >
 > Pedido do dono: "muitos titulares incluem dependentes, mas pagam por fora,
