@@ -282,6 +282,36 @@ export function suggestedRenewalAmount(
   return { amountCents: Math.round(amountCents * (1 + annualAdjustmentPercent / 100)), adjusted: true };
 }
 
+/**
+ * AP181 (0430): o mês em que o PRÓXIMO lote de mensalidades começa — espelho
+ * de `_ortho_emit_batch`. O mês seguinte ao último mês coberto (o fim de um
+ * lote ATIVO ou a última mensalidade NÃO cancelada), nunca antes do mês atual
+ * nem do início do tratamento. Depois de uma suspensão, os lotes ficam
+ * encerrados e as mensalidades seguintes canceladas: o lote novo recomeça no
+ * mês da retomada (decisão do dono, 18/11/2026: esse mês é cobrado).
+ * Devolve o primeiro dia do mês (AAAA-MM-01).
+ */
+export function inicioDoProximoLote(input: {
+  lotes: { status: string; last_month: string }[];
+  cobrancas: { kind: string; status: string; reference_month: string }[];
+  inicioDoTratamento: string | null;
+  hoje: string;
+}): string {
+  const candidatos: string[] = [monthStart(input.hoje)];
+  if (input.inicioDoTratamento) candidatos.push(monthStart(input.inicioDoTratamento.slice(0, 10)));
+  const cobertos = [
+    ...input.lotes.filter((l) => l.status === "ativo").map((l) => l.last_month.slice(0, 10)),
+    ...input.cobrancas
+      .filter((c) => c.kind === "mensalidade" && c.status !== "cancelada")
+      .map((c) => c.reference_month.slice(0, 10)),
+  ];
+  if (cobertos.length > 0) {
+    const ultimo = cobertos.reduce((a, b) => (a > b ? a : b));
+    candidatos.push(addMonths(monthStart(ultimo), 1));
+  }
+  return candidatos.reduce((a, b) => (a > b ? a : b));
+}
+
 /** R1/Q6: o desconto de pontualidade de uma cobrança paga até o vencimento. */
 export function punctualityDiscount(
   amountCents: number,

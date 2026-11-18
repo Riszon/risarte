@@ -62,7 +62,7 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.482.0",
+    versao: "0.484.0",
     data: "2026-11-18",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4022, ASAAS_MIGRATION).
     migracao: null,
@@ -102,6 +102,41 @@ export const CHANGELOG: Versao[] = [
           "Admin › Permissões: a tela não oferece mais marcas que o banco sempre recusa (por exemplo, \"Cobranças: cancelar\" para a Recepção). A Recepção continua cancelando o boleto pelo \"Recebeu no balcão\".",
         papeis: [],
         manual: "13g.20. Antes do piloto: prontidão, produção, cópia e divergências",
+      },
+    ],
+  },
+  {
+    versao: "0.483.0",
+    data: "2026-11-18",
+    migracao: "0430",
+    titulo: "O contrato e a baixa da ortodontia para a equipe da Franqueadora, sessões sem repetir e o lote depois da suspensão",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O Consultor e o Assistente Comercial que moram na Franqueadora passam a ver e usar o envio do contrato no Fechamento do cockpit e na ficha, nas unidades do acesso deles. Antes a tela dizia \"A situação da assinatura digital não aparece para a sua função\", embora o sistema permitisse.",
+        papeis: ["commercial_consultant", "commercial_assistant"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O Financeiro da Franqueadora volta a abrir Ortodontia → Mensalidades e a dar baixa também com uma unidade escolhida no seletor. Antes era mandado para a tela Atenção, e a baixa era recusada.",
+        papeis: ["finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ao abrir a ficha logo depois de fechar a venda, cada procedimento do plano podia ganhar duas sessões iguais, e a cópia segurava o repasse do dentista. Agora as sessões nascem uma vez só; as cópias que ficaram, sem uso, foram removidas, e o repasse que estava preso foi lançado.",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager"],
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ortodontia: depois de suspender e retomar o tratamento, o lote novo de mensalidades começa no mês da retomada (e esse mês é cobrado). Antes ele começava depois do lote que a suspensão tinha cancelado, e o paciente ficava meses sem mensalidade. A janela \"Emitir novas mensalidades\" passa a dizer em que mês o lote começa.",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
       },
     ],
   },

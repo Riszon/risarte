@@ -2103,7 +2103,7 @@ pela tabela de repasse do procedimento de manutenção configurado.
 | **Casos** (`/ortodontia/casos`) | Todos do módulo | A lista com busca (paciente, código, ortodontista) e filtros por situação. O Dentista vê só os casos em que é o ortodontista. |
 | **Abrir o caso da venda / Caso legado** (`/ortodontia/casos/novo`) | Gerente, Coordenador, Admin | Desde a 0.366.0 **não existe "Novo caso"**: o caso nasce sozinho no fechamento da venda. Esta tela fica para dois casos: **vendas fechadas antes da 0.366.0** ainda sem caso (o Painel lista, botão "Abrir caso": tipo, meses e intervalo vêm da proposta do Planner, o dinheiro do acordo da negociação) e o **caso legado** (paciente que já estava em tratamento antes do sistema — link "Caso legado" no Painel, motivo obrigatório, enquanto o Admin deixar a porta aberta). Marcando **"O aparelho já foi instalado"**, o caso nasce **em tratamento** e o cronograma é gerado na hora. |
 | **A ficha do caso** (`/ortodontia/casos/[id]`) | Todos do módulo | Logo no alto, os **alertas da anamnese** do paciente (desde a 0.364.0, para o Dentista, o Coordenador e o Gerente). Situação e prazo (com a barra do tempo), os motivos de atenção, o **cronograma** manutenção a manutenção (prevista, agendamento ligado, situação, quem fez e a **evolução**: fio/arco, observações, próximo passo), as **mensalidades** com baixa (só para quem vê dinheiro), as **indicações** que o paciente trouxe, a origem dele e o **histórico**. Botões: **Prontuário**, **Planos de tratamento** e **Desenvolvimento clínico** (abrem a aba certa do prontuário — desde a 0.364.0), **Agendar**, **Termo** (imprimir/PDF), **Editar**; e as mudanças de situação (abaixo). |
-| **Mensalidades** (`/ortodontia/mensalidades`) | **Gerente** e **Financeiro da Franqueadora** (dão baixa), Franqueadora, Admin; **Coordenador, Recepção e Franqueado só veem** | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa, **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. A cobrança da **contenção** (quando cobrada) aparece aqui com a etiqueta "Contenção". Desde a 0.363.0 a Recepção abre a tela **sem botões**: vê a situação de cada paciente para ajudar o Gerente e o Financeiro. |
+| **Mensalidades** (`/ortodontia/mensalidades`) | **Gerente** e **Financeiro da Franqueadora** (dão baixa), Franqueadora, Admin; **Coordenador, Recepção e Franqueado só veem** | **Gerar mensalidades do mês** (uma por caso em tratamento, não duplica), **Dar baixa** (com a forma de pagamento), desfazer a baixa, **Marcar atrasadas** e, para o Gerente/Coordenador, cancelar com motivo. A cobrança da **contenção** (quando cobrada) aparece aqui com a etiqueta "Contenção". Desde a 0.363.0 a Recepção abre a tela **sem botões**: vê a situação de cada paciente para ajudar o Gerente e o Financeiro. Desde a 0.483.0 o **Financeiro da Franqueadora** abre a tela e dá baixa também com uma unidade escolhida no seletor (antes era mandado para Atenção e a baixa era recusada). |
 | **Configuração** (`/ortodontia/configuracao`) | Admin (rede) e Gerente (a própria unidade) | O padrão da rede e o ajuste por unidade: mensalidade padrão, meses previstos, intervalo das manutenções, reavaliação a cada N meses, tolerância do prazo, dia de vencimento, o **procedimento da manutenção** (de onde sai o valor do repasse), **a contenção no fim do tratamento** (cobrar ou não, valor, condição especial) e, desde a 0.366.0, **o acordo comercial**: desconto por pontualidade sugerido, **pontualidade máxima** e **mensalidade mínima** (fora disso o Gerente autoriza) e, só para o Admin, a **porta do caso legado**. O que estiver aqui sai no termo do paciente. |
 
 #### A situação do caso
@@ -2316,6 +2316,9 @@ assiduidade.
     **sugerido com o reajuste anual** (percentual da Configuração) quando o
     tratamento já passou de 12 meses, e pode ser alterado; **"Não será
     necessário"** registra que o tratamento está finalizando neste lote.
+    A janela diz **em que mês o lote novo começa** *(desde a 0.483.0)*: o mês
+    seguinte ao último já coberto (o fim do lote em andamento ou a última
+    mensalidade que não foi cancelada), nunca antes do mês atual.
 14. **A pontualidade na baixa.** Dar baixa pede a **data do pagamento**.
     Pago até o vencimento, o **desconto de pontualidade** do acordo entra
     sozinho (a tela mostra o líquido antes de confirmar); depois do
@@ -2336,7 +2339,10 @@ assiduidade.
     ou o Coordenador clica **Suspender** e escreve o motivo. As manutenções
     previstas param, as mensalidades dos meses seguintes saem e o caso fica
     **Suspenso** (continua "em ortodontia", parado). **Retomar** volta a
-    tratamento e completa o cronograma — aí a ficha pede um lote novo.
+    tratamento e completa o cronograma — aí a ficha pede um lote novo, que
+    começa **no mês da retomada**, e esse mês é cobrado *(desde a 0.483.0;
+    antes o lote novo começava depois do lote que a suspensão cancelou, e o
+    paciente ficava meses sem mensalidade)*.
     **Interromper** continua possível. Em Atenção o caso aparece como
     "Tratamento suspenso".
 16. **No termo.** Quantas mensalidades por lote e por qual forma; que novas
@@ -4486,7 +4492,10 @@ pacotes e documentos* vê um aviso no lugar das listas.
    negociação** → **Cliente aceitou** (o botão só habilita depois de salvar).
 4. Aba **Fechamento**: **Enviar para assinatura** (ou **Imprimir orçamento
    para assinar**). Acompanhe quem assinou ali mesmo. Depois, marque
-   **Pagamento confirmado**.
+   **Pagamento confirmado**. Desde a 0.483.0 o envio e a situação da
+   assinatura aparecem também para o Consultor e o Assistente Comercial que
+   moram na Franqueadora, nas unidades do acesso deles (antes a tela dizia
+   *"A situação da assinatura digital não aparece para a sua função"*).
 
 > **A regra de ouro:** só é venda com os dois. O banco recusa receber dinheiro
 > de venda não fechada.
@@ -8279,7 +8288,7 @@ cancelou, a previsão, o que o Asaas fez e a reabertura de parcela (com motivo).
 
 ### 13g.20. Antes do piloto: prontidão, produção, cópia e divergências
 
-*(desde a versão 0.482.0)*
+*(desde a versão 0.484.0)*
 
 **Para que serve:** preparar a rede e cada unidade para cobrar de verdade pelo
 Asaas, e mostrar quando o riSZon e o Asaas discordam de uma cobrança.

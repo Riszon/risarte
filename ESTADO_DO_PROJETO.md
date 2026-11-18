@@ -2,6 +2,47 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🦷 0.483.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA: AP178, AP179 E AP181 (18/11/2026; migrações 0429 e 0430) — NA PRODUÇÃO (18/11/2026)
+>
+> Os três defeitos de prioridade alta achados no roteiro de teste da
+> ortodontia (resultado em `docs/ortodontia/ROTEIRO-RESULTADO-2026-11-17.md`),
+> com os planos aprovados pelo dono em 18/11/2026 (`docs/ortodontia/AP17x-PLANO.md`).
+> - **AP178 (sem migração):** a tela barrava a equipe da Franqueadora numa
+>   unidade, porque `pode(session, capacidade, unidade)` só olha a função NA
+>   unidade. ⚠️ **Assinatura de paciente = perguntar ao banco**
+>   (`podeNoBanco` → `signature_can`): Fechamento do cockpit e da
+>   apresentação, ficha, `envio-dados.ts` e `send.ts`. ⚠️ **Baixa da
+>   ortodontia** (`canSettleOrtho`): rede e Financeiro da Franqueadora valem em
+>   qualquer unidade, matriz conferida pelas funções que eles têm. Régua
+>   `franqueadora-na-unidade.test.ts`. **Ficou para o dono decidir** (mesma
+>   raiz, varredura de 18/11/2026): **Compras** (`purchases-access.ts`,
+>   requisitar e receber: o banco aceita o Financeiro da Franqueadora, a tela
+>   não) e **Cobrança** (`acao.cobranca.*`, latente: hoje a matriz não dá a
+>   ninguém além do Admin). Os outros pontos de `pode(…, unidade)` batem com
+>   o banco.
+> - **AP179 (0429):** ⚠️ **trava por paciente** (`pg_advisory_xact_lock`) em
+>   `ensure_treatment_sessions`, `topup_treatment_sessions` e
+>   `_generate_complement_sessions`: ao recriar uma delas, partir da 0429.
+>   A migração remove (DESTRUTIVO declarado, autorizado pelo dono) as cópias
+>   criadas no mesmo instante e nunca usadas, e refaz `_payout_accrue_block`.
+>   No treino: 16 cópias em 4 pacientes desde 01/10/2026.
+> - **AP181 (0430):** ⚠️ o lote novo começa no mês seguinte ao último
+>   coberto (fim de lote ATIVO ou última mensalidade não cancelada), nunca
+>   antes do mês atual; `ortho_decide_batch` passa `null` e deixa a conta
+>   para `_ortho_emit_batch`. Ao recriar uma das duas, partir da 0430.
+>   Espelho na tela: `inicioDoProximoLote`.
+> - ✅ 0429 e 0430 no treino (`migrar:teste -- --ate 0430`: o registro do
+>   treino não tem as 4018c/4020a/4021/4021a do Asaas, e o script sem limite
+>   reaplicaria essas). Ensaios: corrida das duas rotinas (antes passava
+>   direto, depois espera), a arrumação (16 cópias, 0 pares sobrando), o lote
+>   depois da suspensão (sem: 05/2028; com: 12/2026) e a renovação normal
+>   igual. Na tela (treino): o Consultor de teste vê o contrato no Fechamento
+>   e abre o envio na ficha; o Financeiro de teste dá baixa com a Unidade
+>   Teste ativa (e desfaz). EV-386 a EV-388.
+> - ✅ **Produção:** o dono rodou a 0429 (conferência `3 · 0`: as três rotinas
+>   com a trava, nenhuma sessão repetida sobrando) e a 0430 (`1 · 1`) em
+>   18/11/2026; o push saiu depois.
+>
 > ## 💳 0.481.0 — ASA3: A TAXA RETIDA DA MENSALIDADE NO RAZÃO E O PAINEL DE REPASSES COM AS MENSALIDADES (17/11/2026; Asaas 0.21.0, migração 4018c) — MIGRAÇÃO NA PRODUÇÃO (17/11/2026, conferida `1 · 0`)
 >
 > O aviso do split do Asaas pode chegar antes da baixa da mensalidade. Um gatilho adiado roda a conferência do split com todas as linhas presentes: o razão, a retenção pelo repassado, a conta a pagar e a marca do "split a mais" dão o mesmo resultado nas duas ordens. O Painel de repasses passa a ver as mensalidades. A Conferência das taxas (4021a) ganha "Sem lançamento no razão". Ensaio 24/24, provado quebrando. Spec 19.40 e 20.17.11; EV-384. Na produção, a sequência 0427 → 4018c → 4020a → 4021 → 4021a foi rodada e conferida uma a uma em 17/11/2026; o código (0.481.0) foi publicado em 17/11/2026 (`main` c1996b75), conferido de fora (anônimo barrado).

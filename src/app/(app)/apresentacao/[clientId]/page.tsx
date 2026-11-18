@@ -7,7 +7,7 @@ import {
   hasRoleInClinic,
   hasRoleWithScopeForClinic,
 } from "@/lib/auth";
-import { canSendSignatures } from "@/lib/signatures/access";
+import { podeNoBanco } from "@/lib/signatures/acesso-no-banco";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { PresentationView } from "./presentation-view";
@@ -34,6 +34,9 @@ export default async function PresentationPage(
   const session = await getSessionContext();
   const supabase = await createClient();
   const clinicId = loaded.clinicId;
+  // AP178: perguntado ao banco (`signature_can`), que conta a função da
+  // Franqueadora com acesso à unidade.
+  const podeEnviarAssinatura = await podeNoBanco(supabase, "acao.assinaturas.enviar", clinicId);
   const { data: phaseRow } = await supabase
     .from("clients")
     .select("journey_phase")
@@ -104,7 +107,7 @@ export default async function PresentationPage(
           clientId={clientId}
           negotiationId={negotiationBlock.negotiation.id}
           sale={negotiationBlock.sale}
-                  assinatura={canSendSignatures(session, clinicId) ? { clinicId } : null}
+                  assinatura={podeEnviarAssinatura ? { clinicId } : null}
           // OC-00158 (0348): sem o resumo, o contrato não é enviado.
           resumoFaltando={!negotiationBlock.presentationSummary?.trim()}
           canClose={isCommercialTeam}

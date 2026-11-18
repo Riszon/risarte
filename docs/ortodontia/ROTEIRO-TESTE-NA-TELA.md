@@ -66,8 +66,8 @@ Telas usadas: `/agenda`, `/atendimento`, `/avaliacao/[cliente]`,
 
 | # | Quem | Ação | Esperado | Conferência no banco |
 |---|---|---|---|---|
-| P1 | — | Subir `npm run servidor:treino` | Log mostra o banco do treino | — |
-| P2 | — | Conferir que o Planner, o Consultor e o Financeiro da Franqueadora Teste alcançam a Unidade Teste | Sim (senão, parar e avisar o dono). ⚠️ Em 17/11/2026 o Consultor de teste não alcançava nenhuma unidade; o acesso se dá em Risartanos, na ficha da conta de teste (o dono decide) | `providers_with_access(<Unidade Teste>, 'commercial_consultant')` traz o consultor de teste; idem Planner |
+| P1 | — | Subir `npm run servidor:treino` **com `ZAPSIGN_WEBHOOK_SECRET=<qualquer>` no ambiente** (sem ele o simulador do B6 é recusado) | Log mostra o banco do treino | — |
+| P2 | — | Conferir que o Planner, o Consultor e o Financeiro da Franqueadora Teste alcançam a Unidade Teste | Sim (senão, parar e avisar o dono). ⚠️ Em 17/11/2026 o Consultor de teste não alcançava nenhuma unidade; o acesso se dá em Risartanos, na ficha da conta de teste (o dono decide). A lista de unidades não basta: o papel precisa do escopo "específicas" (`unit_scope = 'specific'`), senão o cockpit manda o Consultor para a ficha | `providers_with_access(<Unidade Teste>, 'commercial_consultant')` traz o consultor de teste; idem Planner; `user_full_access_clinic_ids()` dele inclui a Unidade Teste |
 | P3 | Admin | `/ortodontia/configuracao` → **criar ajuste da Unidade Teste**: mensalidade R$ 200,00, 12 parcelas, dia 10, intervalo 30 dias, 24 meses, procedimento de manutenção "Manutenção de aparelho ortodôntico - aparelho removível", pontualidade 5%, limite de pontualidade 10%, mensalidade mínima R$ 150,00, reajuste 5% | Bloco "Risarte Unidade Teste" aparece, separado do padrão da rede | `ortho_settings` com `clinic_id` = Unidade Teste e os valores digitados; a linha da rede **inalterada** |
 | P4 | Recepção | `/prontuarios/novo` → cadastrar "Paciente Roteiro Ortodontia", com CPF de teste (gerador do treino), nascimento 01/01/2000, telefone e endereço completos | Ficha abre, sem "Cadastro incompleto" | `clients` com o nome, `registration_complete = true`, unidade = Unidade Teste |
 | P5 | Recepção | Agendar **Avaliação** com o Coordenador de teste, hoje, no próximo horário livre | Agendamento aparece na agenda | `appointments` tipo `evaluation`, `scheduled` |
@@ -85,7 +85,8 @@ Telas usadas: `/agenda`, `/atendimento`, `/avaliacao/[cliente]`,
 | A6 | Planner | Bloco **Proposta ortodôntica** da opção: aparelho fixo, 24 meses, manutenção a cada 30 dias, contenção "ambas" | Bloco salvo | `treatment_plan_ortho` da opção com os valores |
 | A7 | Planner | Diagnóstico, objetivos, pilar, prioridade dos itens, **Atendimentos e sequência → Confirmar**, **Odontograma — diagnóstico por dente → Finalizar diagnóstico** (o envio recusa sem ele) e enviar ao Coordenador | "Plano … enviado para aprovação." | `treatment_plans.status` enviado |
 | A8 | Coordenador | Prontuário, aba Plano → **Aprovar opção** | Plano aprovado; a fase **continua** Centro de Planejamento | status `approved` |
-| A9 | Planner ou Admin | Aba Plano → **Enviar para apresentação** (regra R3) | "Situação atualizada…" | `lifecycle = aguardando_apresentacao`. A fase muda para Conversão Comercial na apresentação comercial (B1) |
+| A9 | Planner ou Admin | Aba Plano → **Enviar para apresentação** (regra R3) | "Situação atualizada…" | `lifecycle = aguardando_apresentacao` |
+| A10 | Planner | Aba Plano → "Plano liberado pelo Coordenador. Você pode enviar ao Comercial." → **Enviar ao Comercial (Fase 4)** | Fase Conversão Comercial | `clients.journey_phase = commercial_conversion`. Sem este passo o cockpit do Consultor manda para a ficha e o paciente não aparece no funil |
 
 ## 4. Do Comercial ao caso — ORTO8 (B)
 
@@ -94,15 +95,15 @@ Telas usadas: `/agenda`, `/atendimento`, `/avaliacao/[cliente]`,
 | B1 | Recepção | Agendar **Apresentação comercial** com o Consultor de teste; chegada | Agendamento e espera | `appointments` tipo `commercial_presentation` |
 | B2 | Consultor | `/apresentacao/[cliente]` → negociação da opção A → bloco **Acordo ortodôntico**: mensalidade **R$ 140,00** (abaixo do mínimo), 12 parcelas, boleto, dia 10, pontualidade 5% 📸 | Aviso de regra: abaixo do mínimo; negociação vai para "aguardando autorização" | `plan_negotiation_ortho` gravado; `plan_negotiations.status = aguardando_autorizacao` |
 | B3 | Consultor | Corrigir para **R$ 200,00** | A trava sai; volta a "em negociação" | `evaluate_negotiation_rules` sem violação de ortodontia |
-| B4 | Consultor | Aceitar a negociação; registrar o resumo da apresentação | Aceite gravado | negociação aceita |
-| B5 | Consultor | Enviar o contrato para assinatura (ZapSign **falsa** do servidor local) | Pacote criado | `signature_packages` do cliente |
+| B4 | Consultor | Registrar o resumo da apresentação (aba Apresentação) **antes**; salvar a negociação; "Cliente aceitou" | Aceite gravado | negociação aceita |
+| B5 | Consultor | Fechamento → **Enviar para assinatura** (ZapSign **falsa** do servidor local), testemunhas = contas de teste. ⚠️ Enviar **pelo Fechamento**, não pela aba Documentos da ficha: o pacote da ficha não fecha a venda (AP180). Em 18/11/2026 o botão não aparecia para o Consultor da Franqueadora (AP178): quem enviou foi o Gerente, por `/apresentacao/[cliente]` | Pacote criado | `signature_packages` do cliente, `origin_type = plan_negotiation` |
 | B6 | — | Simular a assinatura: `node scripts/zapsign-simular-webhook.mjs` no pacote | Contrato assinado | `commercial_sales.contract_signed_at` preenchido |
 | B7 | Recepção | Receber a entrada (dinheiro) na aba Financeiro do prontuário | Parcela paga | `payment_installments` paga |
 | B8 | — | Fechamento: venda fecha sozinha (contrato + pagamento) | **Caso ortodôntico nasce** em "Aguardando início" | `ortho_cases` do cliente, `status = aguardando_inicio`, `origin = venda`, **sem ortodontista**; `ortho_case_terms` com R$ 200,00 / 12 / boleto / 5% |
-| B9 | Gerente, Coordenador, Recepção | `/notificacoes` → aviso **"Ortodontia: caso fechado — agendar a instalação"** (aba Ortodontia) 📸 | Aviso presente para os três | `notifications` com o título, link `/ortodontia/casos/<id>`, 3 destinatários de teste (+ o Coordenador real, se D1 = sim) |
+| B9 | Gerente, Coordenador, Recepção | `/notificacoes` → aviso **"Ortodontia: caso fechado — agendar a instalação"** (aba Ortodontia) 📸 | Aviso presente para os três, **menos quem fechou a venda** (a regra não avisa quem fez: se foi a Recepção que recebeu o pagamento, ela não recebe) | `notifications` com o título, link `/ortodontia/casos/<id>` (+ o Coordenador real, se D1 = sim) |
 | B10 | Gerente | `/ortodontia` (Painel) → "Aguardando início" com **"sem horário"**; Início mostra o cartão "Ortodontia: aguardando instalação sem horário" | Os dois | — |
 | B11 | Admin | `/ortodontia/casos` → **não existe** botão "Novo caso" | Ausente | — |
-| B12 | — | Sessões do plano nasceram (instalação + restauração) | Duas sessões "a agendar" | `treatment_sessions` do cliente, 2 linhas, `pending` |
+| B12 | — | Sessões do plano nasceram (aparelho + limpeza) | Duas sessões "a agendar" | `treatment_sessions` do cliente, 2 linhas, `pending` (em 17/11/2026 vieram 4, duplicadas: AP179) |
 
 ## 5. A instalação — AP175 (C)
 
@@ -138,16 +139,16 @@ Telas usadas: `/agenda`, `/atendimento`, `/avaliacao/[cliente]`,
 | # | Quem | Ação | Esperado | Conferência |
 |---|---|---|---|---|
 | E1 | Recepção | `/ortodontia/mensalidades` → vê as cobranças, **sem** o botão de baixa | Só leitura | — |
-| E2 | Financeiro | Dar baixa na 1ª mensalidade com data **até o vencimento** 📸 | Prévia mostra o desconto de 5% (R$ 10,00); pago R$ 190,00 | `ortho_charges.discount_cents = 1000`, `paid_amount_cents = 19000`; lançamento no razão 1.1.04 pelo líquido |
-| E3 | Financeiro | Desfazer a baixa | Volta a "em aberto" | razão volta ao cheio |
+| E2 | Financeiro | Dar baixa numa mensalidade que ainda não venceu, com data **até o vencimento** (a 1ª pode já nascer vencida: AP183) 📸. Em 18/11/2026 a baixa do Financeiro da Franqueadora foi recusada pela tela (AP178); feita pelo Gerente | Prévia mostra o desconto de 5% (R$ 10,00); pago R$ 190,00 | `ortho_charges.discount_cents = 1000`, `paid_amount_cents = 19000`; lançamento no razão 1.1.04 pelo líquido |
+| E3 | Financeiro | Desfazer a baixa (ícone "Desfazer a baixa" na linha da mensalidade) | Volta a "em aberto" | razão volta ao cheio |
 | E4 | Gerente | Dar baixa com data **depois** do vencimento | Sem desconto; R$ 200,00 | `discount_cents = 0` |
 | E5 | — | **[ATALHO DE DATA]** pôr o vencimento de uma mensalidade em aberto no passado; rodar a rotina (E8) | Ela fica "Atrasada"; selo de atraso na ficha e no prontuário | `status = atrasada` |
-| E6 | — | **[ATALHO DE DATA]** pôr a última parcela do lote a 30 dias de hoje; rodar a rotina | Aviso "lote terminando" ao Gerente e ao Financeiro; Atenção mostra o motivo | `ortho_notices` d30 do lote; `notifications` |
-| E7 | Gerente | Ficha → **Renovar** o lote (6 parcelas, valor sugerido com o reajuste de 5% = R$ 210,00) | Lote 2 começa no mês seguinte ao fim do 1º | `ortho_billing_batches` seq 2 com R$ 210,00 |
-| E8 | — | Rotina diária à mão: `ortho_daily_alerts(<Unidade Teste>)` como Admin | Roda sem erro | retorno da função |
+| E6 | — | **[ATALHO DE DATA]** pôr **todas** as parcelas em aberto do lote com vencimento até 30 dias de hoje (a rotina mede pela maior data de vencimento do lote); rodar a rotina | Aviso "lote terminando" ao Gerente e ao Financeiro; Atenção mostra o motivo | `ortho_notices` d30 do lote; `notifications` |
+| E7 | Gerente | Ficha → **Emitir novas mensalidades** (6 parcelas). O valor sugerido só leva o reajuste de 5% depois de 12 meses de tratamento: num caso novo, sugere o mesmo valor | Lote 2 começa no mês seguinte ao fim do 1º | `ortho_billing_batches` seq 2; lote 1 `encerrado`, decisão `renovar` |
+| E8 | — | Rotina diária à mão: `ortho_daily_alerts(<Unidade Teste>)` como Admin ou como o Gerente de teste (quem dá baixa na unidade pode rodar só a unidade) | Roda sem erro | retorno da função |
 | E9 | Gerente | **Suspender** o caso com motivo | "Suspenso"; mensalidades futuras canceladas; lote encerrado | `status = suspenso`; cobranças futuras `cancelada` |
 | E10 | Gerente | **Retomar** | "Em tratamento"; **sem** lote novo automático (emitir à mão) | `status = em_tratamento`; nenhum lote novo |
-| E11 | Gerente | **Emitir lote** à mão | Lote novo | `ortho_billing_batches` novo |
+| E11 | Gerente | **Emitir lote** à mão | Lote novo a partir do mês seguinte (não depois do lote cancelado: AP181) | `ortho_billing_batches` novo |
 
 ## 8. Avisos da rotina — ORTO2 (F)
 
@@ -155,9 +156,9 @@ Todos com **[ATALHO DE DATA]** no caso de teste e a rotina rodada à mão (E8).
 
 | # | Situação montada | Esperado no sino | Conferência |
 |---|---|---|---|
-| F1 | Manutenção prevista há 10 dias, sem agendamento | "manutenção vencida" para Recepção e Gerente, **uma** | `ortho_case_notices` kind `manutencao_vencida` |
+| F1 | Manutenção prevista há 10 dias, sem agendamento **e nenhuma manutenção agendada à frente** (se houver, cancelar o agendamento dela pela agenda) | "manutenção vencida" para Recepção e Gerente, **uma** | `ortho_case_notices` kind `manutencao_vencida` |
 | F2 | Rodar a rotina de novo | **Nenhum** aviso novo | contagem igual |
-| F3 | Última manutenção marcada **Faltou** (agenda: "Não compareceu"), nada à frente | "faltou" para Recepção e Gerente; término prorrogado em 30 dias | `extension_days` +30; aviso `faltou` |
+| F3 | Última manutenção marcada **Faltou** (agenda → "Ver informações" → "Faltou"), com o horário **até hoje** (a rotina não olha falta em data futura), nada à frente | "faltou" para Recepção e Gerente; término prorrogado em 30 dias | `extension_days` +30; aviso `faltou` |
 | F4 | Reavaliação do caso ontem | "reavaliação vencida" para o Coordenador e a ortodontista | aviso `reavaliacao_vencida` |
 | F5 | Mensalidade atrasada (E5) | "mensalidade atrasada" para Gerente e Financeiro | aviso `mensalidade_atrasada` |
 | F6 | Agendar a manutenção vencida | Não reaparece | — |
@@ -169,7 +170,7 @@ Todos com **[ATALHO DE DATA]** no caso de teste e a rotina rodada à mão (E8).
 | G1 | Gerente | Ficha → **Desfazer falta** (F3) | Prorrogação some | `extension_days` volta |
 | G2 | Gerente | **Entregar contenções**, cobrada R$ 300,00 📸 | "Em acompanhamento"; mensalidades dos meses seguintes canceladas; previstas canceladas; cobrança da contenção | `status = contencao`, `retainer_delivered_at`; `ortho_charges` kind `contencao` |
 | G3 | — | Jornada reage (gatilho da 0418): fechamento da ortodontia aberto | Pergunta ao ortodontista / tarefa do Coordenador, conforme a Jornada | `treatment_closures` scope `ortodontia` |
-| G4 | Recepção | Agendar **Manutenção ortodôntica** (controle da contenção) | Tipo oferecido em acompanhamento; liga ao caso | manutenção ligada |
+| G4 | Recepção | Agendar **Manutenção ortodôntica** (controle da contenção). O Gerente não tem "Novo agendamento" na agenda | Tipo oferecido em acompanhamento; liga ao caso | manutenção ligada, `from_appointment = true` |
 | G5 | Gerente | **Dar alta** | "Alta" | `status = finalizado` |
 | G6 | — | Prontuário: cartão da ortodontia mostra "Alta"; o tipo "Manutenção ortodôntica" **some** da agenda | — | — |
 

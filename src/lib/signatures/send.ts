@@ -20,7 +20,7 @@ import {
   zapsignEnv,
 } from "@/lib/zapsign";
 import type { ZapsignCreateDocInput, ZapsignSignerInput } from "@/lib/zapsign/types";
-import { canSendSignatures } from "./access";
+import { podeNoBanco } from "./acesso-no-banco";
 import { modoDeAutenticacao, nivelDeAutenticacao } from "./auth-level";
 import { loadSendContext, type SendOrigin } from "./envio-dados";
 import { renderCoverPdf } from "./pdf/cover";
@@ -461,7 +461,7 @@ export async function enviarPacote(input: { session: SessionContext; packageId: 
     .maybeSingle();
   if (error || !pkg) return { ok: false, error: "Pacote não encontrado." };
   const podeEnviar =
-    canSendSignatures(input.session, pkg.clinic_id) ||
+    (await podeNoBanco(await createClient(), "acao.assinaturas.enviar", pkg.clinic_id as string)) ||
     (pkg.origin_type === "direct_sale" && !!pkg.origin_id && (await quemFechaAVenda(pkg.origin_id as string)));
   if (pkg.created_by !== input.session.userId || !podeEnviar) {
     return { ok: false, error: "Só quem preparou o pacote pode enviá-lo." };

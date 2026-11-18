@@ -5799,7 +5799,7 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
 - **A maquininha ficou fora** porque é o contrato de cada unidade. As adquirentes, as taxas e a padrão de cada unidade (`card_acquirers`, `card_acquirer_clinics`) são do credenciamento dela. Copiar levaria as taxas de outro contrato para o fechamento da unidade nova.
 - **Nunca copia:** a conta Asaas e a chave, os termos, as marcas da prontidão, as taxas da franquia, a cobrança mensal e a maquininha.
 
-**5. O teste pelas telas** (projeto de teste, 0.482.0, com o dono logado; 18/11/2026)
+**5. O teste pelas telas** (projeto de teste, construída como 0.482.0 e publicada como 0.484.0, com o dono logado; 18/11/2026)
 - **Central › Rede › Conta e tarifas:** o interruptor está desligado, e o botão "Ligar a produção" fica desabilitado enquanto falta a prontidão da rede (2 itens: a confirmação do Asaas e as cinco marcas). As 28 migrações aparecem "neste banco". O quadro "Antes de ligar" da franqueadora mostra só a chave (no sandbox, não se aplica).
 - **Central › Londrina:** o quadro "Antes de ligar" mostra o débito faltando e o levantamento feito (8 cobranças, R$ 345,00; 26 parcelamentos). A cópia mostra a prévia dos dois lados, e "Copiar" só se habilita com um bloco marcado.
 - **Painel de cobranças › Divergências com o Asaas:** as divergências de Londrina, com o caminho de cada uma e os botões "Ver a ficha" e "Ignorar".

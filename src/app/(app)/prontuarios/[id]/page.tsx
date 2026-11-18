@@ -49,7 +49,7 @@ import {
   pode,
   sdrAccessibleClientIds,
 } from "@/lib/auth";
-import { canSendSignatures, canViewSignaturePackages } from "@/lib/signatures/access";
+import { podeNoBanco } from "@/lib/signatures/acesso-no-banco";
 import { EnviarParaAssinaturaDialog } from "@/app/(app)/assinaturas/enviar-dialog";
 import { unidadeDoEnvio } from "@/lib/signatures/unidade-do-envio";
 import { AssinaturasDoCliente } from "@/app/(app)/assinaturas/assinaturas-do-cliente";
@@ -2289,8 +2289,15 @@ export default async function ClientDetailPage(
     ]);
   const canViewDocuments = canEmitDocuments || canViewClinical;
   // ZS2: assinatura digital — enviar e ver os pacotes do paciente (matriz).
-  const canSendSignature = client.status === "active" && canSendSignatures(session, signatureClinicId);
-  const canSeeSignatures = canViewSignaturePackages(session, signatureClinicId);
+  // AP178: perguntado ao banco (`signature_can`), que conta a função da
+  // Franqueadora com acesso à unidade.
+  const [podeEnviarNaUnidade, canSeeSignatures] = signatureClinicId
+    ? await Promise.all([
+        podeNoBanco(supabase, "acao.assinaturas.enviar", signatureClinicId),
+        podeNoBanco(supabase, "acao.assinaturas.visualizar", signatureClinicId),
+      ])
+    : [false, false];
+  const canSendSignature = client.status === "active" && podeEnviarNaUnidade;
   let documentItems: ClinicalDocumentItem[] = [];
   let documentTemplates: DocumentTemplate[] = [];
   if (canViewDocuments) {

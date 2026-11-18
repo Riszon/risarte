@@ -24,8 +24,9 @@ describe("item 1 — a assinatura sai pela unidade do paciente", () => {
 
   it("a ficha usa essa unidade nos três botões e nas permissões", () => {
     const s = ler("src/app/(app)/prontuarios/[id]/page.tsx");
-    expect(s).toContain("canSendSignatures(session, signatureClinicId)");
-    expect(s).toContain("canViewSignaturePackages(session, signatureClinicId)");
+    // AP178 (0.483.0): as permissões passaram a ser perguntadas ao banco, na mesma unidade.
+    expect(s).toContain('podeNoBanco(supabase, "acao.assinaturas.enviar", signatureClinicId)');
+    expect(s).toContain('podeNoBanco(supabase, "acao.assinaturas.visualizar", signatureClinicId)');
     expect(s.match(/clinicId=\{signatureClinicId\}/g)?.length).toBe(3);
     expect(s).not.toMatch(/<EnviarParaAssinaturaDialog\s+clientId=\{client\.id\}\s+clinicId=\{scheduleClinicId\}/);
   });
