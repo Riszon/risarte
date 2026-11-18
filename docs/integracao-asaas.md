@@ -5799,7 +5799,22 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
 - **A maquininha ficou fora** porque é o contrato de cada unidade. As adquirentes, as taxas e a padrão de cada unidade (`card_acquirers`, `card_acquirer_clinics`) são do credenciamento dela. Copiar levaria as taxas de outro contrato para o fechamento da unidade nova.
 - **Nunca copia:** a conta Asaas e a chave, os termos, as marcas da prontidão, as taxas da franquia, a cobrança mensal e a maquininha.
 
-**5. O que falta**
+**5. O teste pelas telas** (projeto de teste, 0.482.0, com o dono logado; 18/11/2026)
+- **Central › Rede › Conta e tarifas:** o interruptor está desligado, e o botão "Ligar a produção" fica desabilitado enquanto falta a prontidão da rede (2 itens: a confirmação do Asaas e as cinco marcas). As 28 migrações aparecem "neste banco". O quadro "Antes de ligar" da franqueadora mostra só a chave (no sandbox, não se aplica).
+- **Central › Londrina:** o quadro "Antes de ligar" mostra o débito faltando e o levantamento feito (8 cobranças, R$ 345,00; 26 parcelamentos). A cópia mostra a prévia dos dois lados, e "Copiar" só se habilita com um bloco marcado.
+- **Painel de cobranças › Divergências com o Asaas:** as divergências de Londrina, com o caminho de cada uma e os botões "Ver a ficha" e "Ignorar".
+- **Admin › Permissões:**
+  - na visão por função, a Recepcionista não tem "Cobranças: cancelar";
+  - na visão por permissão, "Cobranças: cancelar" oferece só o Gerente e o Financeiro e lista as outras 13 funções em "o banco não aceita";
+  - na grade, essas funções aparecem com "—".
+- **Três defeitos de apresentação, corrigidos:**
+  - a prontidão da rede listava o nome técnico da permissão (`acao.cobranca.ver · Gerente`), e agora usa o nome da tela;
+  - o detalhe da divergência vinha cru (`asaas: CONFIRMED, criada: 2026-11-16, referencia: null`), e agora vem em palavras;
+  - a tela citava números de migração ("4019"), e agora não cita mais.
+- **Os dois falsos "valor diferente"** fecharam sozinhos na rodada seguinte, com a regra corrigida.
+- **⚠️ Um efeito da 4022 que precisa de decisão antes da produção:** com os itens novos, toda unidade marcada como "Pronta para cobrar" perde a marca até ter o débito marcado e o levantamento feito. No treino, Londrina perdeu a marca às 11:09.
+
+**6. O que falta**
 - O teste do dono pelas telas, no projeto de teste.
 - A 4022 na produção, só com o "pode".
 - Ligar o interruptor, só com a prontidão da rede completa e o "pode".
