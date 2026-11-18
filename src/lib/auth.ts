@@ -423,6 +423,33 @@ export function pode(
   return podeComPapeis(session.permissoes, capacidade, papeis);
 }
 
+/**
+ * Como `pode(…, unidade)`, mas a equipe da REDE que mora na Franqueadora vale
+ * em qualquer unidade — o que o banco já faz em `can_manage_stock`,
+ * `_charge_can`, `can_receive_payment` e `ortho_can_settle`. A matriz é
+ * conferida pelas funções que a pessoa TEM na Franqueadora, nunca pelas da
+ * unidade (onde ela não tem nenhuma).
+ *
+ * AP178 (18/11/2026): `pode(session, capacidade, unidade)` olha só a função
+ * NA unidade, e barrava o Financeiro da Franqueadora numa ação que o banco
+ * permitia. `funcoesDaRede` diz quais funções da Franqueadora o banco aceita
+ * naquela ação (padrão: o Financeiro da Franqueadora).
+ */
+export function podeNaUnidadeOuNaRede(
+  session: SessionContext,
+  capacidade: string,
+  clinicId: string | null | undefined,
+  funcoesDaRede: UserRole[] = ["finance_franchisor"]
+): boolean {
+  if (pode(session, capacidade, clinicId)) return true;
+  if (!clinicId) return false;
+  const daRede = session.clinics
+    .filter((c) => c.type === "franchisor")
+    .flatMap((c) => session.rolesByClinic[c.id] ?? [])
+    .filter((r) => funcoesDaRede.includes(r));
+  return daRede.length > 0 && podeComPapeis(session.permissoes, capacidade, daRede);
+}
+
 /** Guard for Admin Master-only pages and server actions. */
 export async function requireAdminMaster(): Promise<SessionContext> {
   const session = await getSessionContext();

@@ -47,6 +47,7 @@ import {
   isDentistRestricted,
   isSdrRestricted,
   pode,
+  podeNaUnidadeOuNaRede,
   sdrAccessibleClientIds,
 } from "@/lib/auth";
 import { podeNoBanco } from "@/lib/signatures/acesso-no-banco";
@@ -4067,10 +4068,10 @@ export default async function ClientDetailPage(
               unidadesProntas={receivables.cobrancaDisponivel ? receivables.unidadesProntas : null}
               waivers={receivables.waivers}
               cobranca={{
-                ver: pode(session, "acao.cobranca.ver", client.clinic_id),
-                emitir: pode(session, "acao.cobranca.emitir", client.clinic_id),
-                cancelar: pode(session, "acao.cobranca.cancelar", client.clinic_id),
-                receber: canReceivePayment && pode(session, "acao.cobranca.ver", client.clinic_id),
+                ver: podeNaUnidadeOuNaRede(session, "acao.cobranca.ver", client.clinic_id, ["finance_franchisor", "franchisor_staff"]),
+                emitir: podeNaUnidadeOuNaRede(session, "acao.cobranca.emitir", client.clinic_id),
+                cancelar: podeNaUnidadeOuNaRede(session, "acao.cobranca.cancelar", client.clinic_id),
+                receber: canReceivePayment && podeNaUnidadeOuNaRede(session, "acao.cobranca.ver", client.clinic_id, ["finance_franchisor", "franchisor_staff"]),
               }}
               canWaive={canAuthorizeRenegotiation}
               surpluses={receivables.surpluses}

@@ -23,6 +23,7 @@ import {
   concluirEnvio,
   descartarEnvio,
   prepararEnvio,
+  usarPacoteNoFechamento,
   type DialogContext,
   type DialogOrigin,
 } from "./envio-actions";
@@ -61,6 +62,8 @@ export function EnviarParaAssinaturaDialog({
   variant?: "outline" | "default" | "secondary";
 }) {
   const router = useRouter();
+  // AP180: "Usar este pacote no fechamento" (o já assinado vale para a venda).
+  const [, startUso] = useTransition();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState<Step>(1);
@@ -415,6 +418,23 @@ export function EnviarParaAssinaturaDialog({
               clientId={clientId}
               onTentarDeNovo={() => preparar()}
               onEnviarComMotivo={(motivo) => preparar(motivo)}
+              onUsarNoFechamento={
+                origin.type === "plan_negotiation" && origin.id && duplicidade.tipo === "assinado"
+                  ? (packageId) => {
+                      const negotiationId = origin.id as string;
+                      startUso(async () => {
+                        const r = await usarPacoteNoFechamento({ negotiationId, packageId, clientId });
+                        if (!r.ok) {
+                          toast.error(r.error);
+                          return;
+                        }
+                        toast.success(`Contrato marcado como assinado pelo ${duplicidade.number}.`);
+                        onOpenChange(false);
+                        router.refresh();
+                      });
+                    }
+                  : undefined
+              }
             />
           )}
 

@@ -95,7 +95,7 @@ export function OrthoChargeRow({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [open, setOpen] = useState<null | "pagar" | "cancelar">(null);
+  const [open, setOpen] = useState<null | "pagar" | "cancelar" | "desfazer">(null);
   const [method, setMethod] = useState<string>("pix");
   const [paidOn, setPaidOn] = useState<string>(today ?? "");
   const [reason, setReason] = useState("");
@@ -119,6 +119,7 @@ export function OrthoChargeRow({
       if (!r.ok) toast.error(r.error ?? "Não foi possível desfazer.");
       else {
         toast.success("Baixa desfeita.");
+        setOpen(null);
         router.refresh();
       }
     });
@@ -138,7 +139,7 @@ export function OrthoChargeRow({
   return (
     <div className="inline-flex items-center gap-1">
       {paid ? (
-        <Button size="sm" variant="ghost" disabled={isPending} onClick={undo} title="Desfazer a baixa">
+        <Button size="sm" variant="ghost" disabled={isPending} onClick={() => setOpen("desfazer")} title="Desfazer a baixa">
           <Undo2 className="size-3.5" />
         </Button>
       ) : (
@@ -195,6 +196,22 @@ export function OrthoChargeRow({
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(null)} disabled={isPending}>Voltar</Button>
             <Button variant="destructive" onClick={cancel} disabled={isPending || reason.trim().length < 5}>Cancelar mensalidade</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AP183 (item 6): desfazer a baixa pergunta antes. */}
+      <Dialog open={open === "desfazer"} onOpenChange={(o) => !o && setOpen(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Desfazer a baixa?</DialogTitle>
+            <DialogDescription>
+              A cobrança volta para &quot;em aberto&quot;{dueDate ? `, com vencimento em ${dueDate.split("-").reverse().join("/")}` : ""}, e o valor recebido sai do caixa.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(null)} disabled={isPending}>Voltar</Button>
+            <Button variant="destructive" onClick={undo} disabled={isPending}>Desfazer a baixa</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

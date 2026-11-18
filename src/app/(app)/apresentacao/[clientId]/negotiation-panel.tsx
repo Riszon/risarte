@@ -1,6 +1,7 @@
 "use client";
 
 import { comConfirmacaoDeBoletos } from "@/lib/confirmar-boletos";
+import { dinheiroNoTexto } from "@/lib/dinheiro-no-texto";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -831,7 +832,7 @@ export function NegotiationPanel({
               Fora da regra comercial — aguardando autorização do Gerente
             </p>
             {negotiation?.ruleViolations && (
-              <p className="text-xs text-amber-900">{negotiation.ruleViolations}</p>
+              <p className="text-xs text-amber-900">{dinheiroNoTexto(negotiation.ruleViolations)}</p>
             )}
             {canAuthorize && (
               <div className="space-y-2 border-t border-amber-200 pt-2">

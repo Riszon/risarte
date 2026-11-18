@@ -2,6 +2,30 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — AGUARDA A PRODUÇÃO
+>
+> Decisões do dono em 18/11/2026 (planos `docs/ortodontia/AP180-PLANO.md`,
+> `AP182-PLANO.md`, `AP183-PLANO.md`).
+> - **AP180:** ⚠️ o pacote da ficha com contrato/orçamento e negociação aceita
+>   nasce da negociação (`origemDoPacote`). Porta nova
+>   `commercial_use_signed_package` (0431): quem fecha a venda
+>   (`commercial_can_close` = equipe comercial + Admin; o Gerente NÃO) usa um
+>   pacote já assinado no fechamento.
+> - **AP182:** ⚠️ recriada `ortho_appointment_sync` (0431, a partir da 0425):
+>   cancelar cancela a manutenção `from_appointment`. Ao recriar, partir da 0431.
+> - **AP183:** item 2 não era defeito (painel escondido não roda a animação de
+>   fechar). Itens 3–7 feitos: controles na alta (nenhum marcado — decisão
+>   do dono), `podeMarcarFaltou` (agenda inteira, conferido no servidor),
+>   confirmação ao desfazer a baixa, "cobrança em atraso", `dinheiroNoTexto`.
+>   **O item 1 virou regra nova** (início do caso e 1ª mensalidade):
+>   `docs/ortodontia/AP183-D1-PLANO.md`, aguarda aprovação.
+> - **D5:** ⚠️ `podeNaUnidadeOuNaRede` (`src/lib/auth.ts`): Compras e Cobrança
+>   seguem o banco para o Financeiro da Franqueadora. Sem efeito visível até o
+>   dono ligar as permissões na matriz (Compras: AP125).
+> - ✅ 0431 no treino (`--ate 0431`); ensaios 6/6 da porta, o gatilho (sem: prevista;
+>   com: cancelada) e as fantasmas (1 → 0). EV-390 a EV-392. Não visto na tela.
+> - ⏳ **Produção:** o dono roda a 0431; o push sai depois.
+>
 > ## 🦷 0.483.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA: AP178, AP179 E AP181 (18/11/2026; migrações 0429 e 0430) — NA PRODUÇÃO (18/11/2026)
 >
 > Os três defeitos de prioridade alta achados no roteiro de teste da

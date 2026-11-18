@@ -76,7 +76,7 @@ import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBRL } from "@/lib/pricing";
-import { formatBrDateTime, formatIsoDateBr, formatIsoMonthBr, todayInBrazil } from "@/lib/dates";
+import { brazilInputValue, formatBrDateTime, formatIsoDateBr, formatIsoMonthBr, todayInBrazil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { textoDaBaixa } from "@/lib/finance/quem-fez";
 import { OrthoChargeRow } from "../../mensalidades/billing-client";
@@ -376,6 +376,16 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
                 status={c.status}
                 today={today}
                 retainer={{ charged: c.retainer_charged, feeCents: c.retainer_fee_cents, terms: c.retainer_terms }}
+                controlesAgendados={maintenances
+                  .filter(
+                    (m) =>
+                      m.status === "agendada" &&
+                      m.appointment_id &&
+                      m.appointment &&
+                      ["scheduled", "confirmed"].includes(m.appointment.status) &&
+                      brazilInputValue(m.appointment.starts_at).slice(0, 10) >= today
+                  )
+                  .map((m) => ({ appointmentId: m.appointment_id as string, quando: (m.appointment as { starts_at: string }).starts_at }))}
               />
             )}
           </CardContent>

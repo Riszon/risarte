@@ -108,7 +108,8 @@ export function OrthoClientCard({ badge }: { badge: OrthoClientBadge | null }) {
       {badge.moneyVisible && badge.lateCharges > 0 && (
         <p className={cn("flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs", TOM.vermelho)}>
           <TriangleAlert className="size-3.5" />
-          {badge.lateCharges} mensalidade{badge.lateCharges === 1 ? "" : "s"} em atraso.
+          {/* AP183 (item 4): mensalidade OU contenção — o texto não chama tudo de mensalidade. */}
+          {badge.lateCharges} cobrança{badge.lateCharges === 1 ? "" : "s"} em atraso.
         </p>
       )}
     </MiniCartao>

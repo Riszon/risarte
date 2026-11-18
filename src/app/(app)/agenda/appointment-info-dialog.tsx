@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   APPOINTMENT_STATUSES,
+  situacoesParaMudar,
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_TYPE_LABELS,
   type AppointmentStatus,
@@ -260,9 +261,7 @@ export function AppointmentInfoDialog({
                 Alterar situação (ex.: cancelar, faltou)
               </p>
               <div className="flex flex-wrap gap-1">
-                {APPOINTMENT_STATUSES.filter(
-                  (st) => st !== appointment.status
-                ).map((st) => (
+                {situacoesParaMudar(appointment.status, appointment.starts_at).map((st) => (
                   <Button
                     key={st}
                     size="sm"

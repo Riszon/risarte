@@ -62,6 +62,42 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.485.0",
+    data: "2026-11-18",
+    migracao: "0431",
+    titulo: "Contrato da ficha que fecha a venda, \"Faltou\" só depois do horário e ajustes da ortodontia",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O contrato mandado pela aba Documentos da ficha, com a negociação já aceita, também fecha a venda quando todos assinam. E quando um contrato já assinado não marcou a venda, o aviso \"Este documento já foi assinado por todos\" traz o botão \"Usar este pacote no fechamento\": o contrato fica marcado sem o paciente assinar de novo.",
+        papeis: ["commercial_consultant", "commercial_assistant", "unit_manager"],
+        manual: "6.5. Consultor Comercial",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na agenda e no Atendimento, \"Faltou\" só aparece depois do horário do atendimento: antes dele o paciente ainda pode chegar.",
+        papeis: ["receptionist", "sdr", "unit_manager", "dentist", "clinical_coordinator"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ortodontia: cancelar o agendamento de uma manutenção extra ou do controle da contenção cancela também essa manutenção. Antes ficava no cronograma uma manutenção \"prevista\" que ninguém tinha marcado.",
+        papeis: ["receptionist", "unit_manager", "clinical_coordinator", "dentist"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ortodontia: a janela \"Dar alta\" lista os controles já agendados. Eles ficam na agenda, e quem dá a alta marca os que devem ser cancelados. Desfazer a baixa de uma mensalidade passa a pedir confirmação. O cartão do prontuário diz \"cobrança em atraso\", porque pode ser a contenção. E o motivo da regra comercial mostra o valor em reais (R$ 140,00).",
+        papeis: ["unit_manager", "clinical_coordinator", "finance_franchisor", "commercial_consultant"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.484.0",
     data: "2026-11-18",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4022, ASAAS_MIGRATION).

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   APPOINTMENT_STATUSES,
+  situacoesParaMudar,
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_TYPE_LABELS,
   type AppointmentStatus,
@@ -699,9 +700,7 @@ export function DayRoomGrid({
                     <DropdownMenuGroup>
                       <DropdownMenuLabel>Status</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      {APPOINTMENT_STATUSES.filter(
-                        (st) => st !== appointment.status
-                      ).map((st) => (
+                      {situacoesParaMudar(appointment.status, appointment.starts_at).map((st) => (
                         <DropdownMenuItem
                           key={st}
                           onClick={() => setStatus(appointment, st)}

@@ -8,6 +8,8 @@ import { candidatosDoRepresentante } from "@/lib/signatures/signers";
 import type { PackageOriginType } from "@/lib/signatures/types";
 import { lerAnexosEnviados, lerReferencias } from "@/lib/signatures/anexos-enviados";
 import { isValidCpf } from "@/lib/masks";
+import { createClient } from "@/lib/supabase/server";
+import { mensagemDoUsoDoPacote } from "@/lib/signatures/origem";
 
 /**
  * AS AÇÕES DA JANELA "ENVIAR PARA ASSINATURA" (ZS2). O trabalho de verdade
@@ -151,6 +153,30 @@ export async function concluirEnvio(input: { packageId: string; clientId: string
     revalidatePath("/assinaturas");
   }
   return r;
+}
+
+/**
+ * AP180: o contrato já assinado (por exemplo, enviado pela ficha) vale para o
+ * fechamento sem o paciente assinar de novo. Quem decide é o banco
+ * (`commercial_use_signed_package`: quem fecha a venda, pacote assinado, do
+ * paciente, desta negociação, com contrato ou orçamento).
+ */
+export async function usarPacoteNoFechamento(input: {
+  negotiationId: string;
+  packageId: string;
+  clientId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  await getSessionContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("commercial_use_signed_package", {
+    p_negotiation_id: input.negotiationId,
+    p_package_id: input.packageId,
+  });
+  if (error) return { ok: false, error: mensagemDoUsoDoPacote(error.message) };
+  revalidatePath(`/comercial/${input.clientId}`);
+  revalidatePath(`/apresentacao/${input.clientId}`);
+  revalidatePath(`/prontuarios/${input.clientId}`);
+  return { ok: true };
 }
 
 export async function descartarEnvio(input: { packageId: string }): Promise<{ ok: true } | { ok: false; error: string }> {
