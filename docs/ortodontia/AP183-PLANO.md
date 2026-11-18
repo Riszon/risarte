@@ -18,8 +18,8 @@ pontualidade.
 - **B:** o primeiro mês continua, mas vence alguns dias depois da emissão (por
   exemplo, 5 dias).
 
-**Correção:** migração pequena na rotina do lote (junto com a AP181, que mexe
-na mesma rotina) e a régua com os dois casos.
+**Correção:** migração pequena na rotina do lote, partindo da 0430 (a do
+AP181, já na produção), e a régua com os dois casos.
 
 ## 2. A janela "Emitir novas mensalidades" não fecha depois de emitir
 
@@ -91,5 +91,5 @@ Migração pequena nas funções que escrevem os motivos.
 
 ## Tamanho
 
-Pequeno. Os itens 1, 3 e 7 entram nas migrações das outras correções da
-ortodontia, quando couber; o resto é só tela.
+Pequeno. Os itens 1, 3 e 7 pedem uma migração pequena (podem ir juntos numa só,
+na mesma entrega do AP182 se você quiser); o resto é só tela.
