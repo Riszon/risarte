@@ -55,10 +55,18 @@ export function canEvolveOrtho(
  */
 export function canSettleOrtho(session: SessionContext, clinicId: string | null): boolean {
   if (session.isAdminMaster) return true;
-  if (!pode(session, "acao.ortodontia.financeiro", clinicId)) return false;
-  if (clinicId && hasRoleInClinic(session, clinicId, ORTHO_SETTLE_ROLES)) return true;
-  // Franqueadora/Rede e Financeiro da Franqueadora vivem na Franqueadora.
-  return ehRede(session);
+  if (
+    clinicId &&
+    hasRoleInClinic(session, clinicId, ORTHO_SETTLE_ROLES) &&
+    pode(session, "acao.ortodontia.financeiro", clinicId)
+  ) {
+    return true;
+  }
+  // Franqueadora/Rede e Financeiro da Franqueadora vivem na Franqueadora e
+  // não têm função na unidade. Como o banco (`ortho_can_settle`), valem em
+  // qualquer unidade; a matriz é conferida pelas funções que eles TÊM, nunca
+  // pelas da unidade (AP178: `pode(…, unidade)` dava vazio e barrava a baixa).
+  return ehRede(session) && pode(session, "acao.ortodontia.financeiro");
 }
 
 /**

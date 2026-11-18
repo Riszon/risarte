@@ -35,6 +35,7 @@ export function BatchActions({
   batch,
   suggested,
   defaults,
+  proximoInicio,
 }: {
   caseId: string;
   /** O lote ativo (nulo = sem lote). */
@@ -42,10 +43,14 @@ export function BatchActions({
   /** O valor sugerido para o lote novo e se o reajuste anual entrou (Q2). */
   suggested: { amountCents: number; adjusted: boolean; adjustmentPercent: number };
   defaults: { count: number; method: string | null; punctuality: number };
+  /** AP181: o primeiro dia do mês em que o lote novo começa (AAAA-MM-01). */
+  proximoInicio: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState<null | "renovar" | "nao_renovar" | "emitir">(null);
+  // "12/2026" a partir de "2026-12-01".
+  const mesDoInicio = `${proximoInicio.slice(5, 7)}/${proximoInicio.slice(0, 4)}`;
   const [count, setCount] = useState<number>(batch?.installmentsCount ?? defaults.count);
   const [amount, setAmount] = useState(brlText(suggested.amountCents));
   const [method, setMethod] = useState<string>(batch?.method ?? defaults.method ?? "boleto");
@@ -122,8 +127,8 @@ export function BatchActions({
             <DialogTitle>{open === "emitir" ? "Emitir o lote de mensalidades" : "Emitir novas mensalidades"}</DialogTitle>
             <DialogDescription>
               {open === "emitir"
-                ? "As mensalidades são emitidas de uma vez, uma por mês a partir deste mês (competência mês a mês na DRE)."
-                : `O lote ${batch?.seq ?? ""} termina em ${batch ? batch.lastDue.split("-").reverse().join("/") : ""}. O lote novo começa no mês seguinte ao último deste.`}
+                ? `As mensalidades são emitidas de uma vez, uma por mês a partir de ${mesDoInicio} (competência mês a mês na DRE).`
+                : `O lote ${batch?.seq ?? ""} termina em ${batch ? batch.lastDue.split("-").reverse().join("/") : ""}. O lote novo começa em ${mesDoInicio}.`}
             </DialogDescription>
           </DialogHeader>
           {formulario}

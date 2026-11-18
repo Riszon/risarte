@@ -12,7 +12,7 @@ import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isZapsignConfigured, isZapsignFake, zapsignEnv } from "@/lib/zapsign/env";
-import { canSendSignatures } from "./access";
+import { podeNoBanco } from "./acesso-no-banco";
 import { loadSignatureSettings } from "./settings";
 import type { GuardianForSigning } from "./signers";
 import type { PackageOriginType, SignatureKit, SignatureTemplate, StaffSignerOption } from "./types";
@@ -63,10 +63,11 @@ export async function loadSendContext(input: {
   origin: SendOrigin;
 }): Promise<LoadResult> {
   const { session, clientId, clinicId } = input;
-  if (!canSendSignatures(session, clinicId)) {
+  const supabase = await createClient();
+  // AP178: o banco decide (`signature_can`), contando a Franqueadora com acesso à unidade.
+  if (!(await podeNoBanco(supabase, "acao.assinaturas.enviar", clinicId))) {
     return { ok: false, error: "Você não tem permissão para enviar documentos para assinatura nesta unidade." };
   }
-  const supabase = await createClient();
 
   const [clientRes, guardiansRes, clinicRes, templatesRes, kitsRes, kitItemsRes, settings] = await Promise.all([
     supabase

@@ -400,6 +400,19 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**18/11/2026 (ortodontia, correções do roteiro: AP178, AP179, AP181) — PC Administrador (core 0.481.0 → 0.483.0, migrações 0429 e 0430)**
+
+- Bloco 0.483.0 no ESTADO; planos aprovados em `docs/ortodontia/AP17x-PLANO.md`.
+  ⚠️ **`pode(session, capacidade, unidade)` não conta a Franqueadora**: tela
+  de assinatura de paciente pergunta ao banco (`podeNoBanco`). Compras e
+  Cobrança têm a mesma raiz e esperam a decisão do dono. ⚠️ **Sessões do
+  plano: trava por paciente** (0429); ao recriar ensure/topup/complemento,
+  partir dela. ⚠️ **Lote da ortodontia** parte da última mensalidade válida
+  (0430). ⚠️ **`migrar:teste` sem `--ate` reaplicaria as 4018c/4020a/4021/4021a**
+  (não estão no registro do treino): usar `--ate <número>`.
+- ✅ 0429 e 0430 no treino. ⏳ Produção com o dono; push depois. AP180,
+  AP182 e AP183 planejados, aguardam aprovação.
+
 **17/11/2026 (fim do tratamento, Etapa 6 — plano completo) — PC Administrador (core 0.480.0, migração 0427; worktree `wt-fim-tratamento`)**
 
 - **Prazos e indicadores** (bloco 0.480.0 no ESTADO). ⚠️ Prazo em dias úteis

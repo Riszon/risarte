@@ -56,7 +56,7 @@ import {
   nextMaintenance,
   originOf,
   progressPercent,
-  suggestedRenewalAmount,
+  inicioDoProximoLote, suggestedRenewalAmount,
   type MaintenanceLike,
 } from "@/lib/ortodontia/regras";
 import {
@@ -143,6 +143,13 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
   // R8 (0335): o lote de mensalidades que vale hoje, e o valor sugerido para o próximo (Q2).
   const lote = activeBatch(batchesByCase.get(c.id));
   const sugestao = suggestedRenewalAmount(lote?.amount_cents ?? c.monthly_fee_cents, c.start_date, today, settings?.annual_adjustment_percent ?? 0);
+  // AP181 (0430): em que mês o próximo lote começa (espelho de _ortho_emit_batch).
+  const proximoInicio = inicioDoProximoLote({
+    lotes: batchesByCase.get(c.id) ?? [],
+    cobrancas: charges,
+    inicioDoTratamento: c.start_date,
+    hoje: today,
+  });
 
   // R12: os alertas da anamnese (os mesmos do prontuário e do cockpit do
   // Planner) na tela do ortodontista. Só para quem já pode ler a anamnese
@@ -355,6 +362,7 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
                     batch={lote ? { id: lote.id, seq: lote.seq, installmentsCount: lote.installments_count, amountCents: lote.amount_cents, method: lote.billing_method, punctuality: lote.punctuality_discount_percent, decision: lote.decision, lastDue: lote.last_due_date } : null}
                     suggested={{ amountCents: sugestao.amountCents, adjusted: sugestao.adjusted, adjustmentPercent: settings?.annual_adjustment_percent ?? 0 }}
                     defaults={{ count: c.installments_count, method: c.billing_method, punctuality: c.punctuality_discount_percent }}
+                    proximoInicio={proximoInicio}
                   />
                 )}
               </>

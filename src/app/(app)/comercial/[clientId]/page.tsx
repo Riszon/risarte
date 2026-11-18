@@ -17,7 +17,9 @@ import {
   hasRoleInClinic,
   hasRoleWithScopeForClinic,
 } from "@/lib/auth";
-import { canSendSignatures, canViewSignaturePackages } from "@/lib/signatures/access";
+// AP178: a permissão das assinaturas é perguntada ao BANCO (`signature_can`),
+// que conta a função da Franqueadora com acesso à unidade; `pode()` não conta.
+import { podeNoBanco } from "@/lib/signatures/acesso-no-banco";
 import { PACKAGE_STATUS_CLASS, PACKAGE_STATUS_LABEL, SIGNER_STATUS_LABEL, isWaiting } from "@/lib/signatures/status";
 import type { PackageStage, PackageStatus, SignerStatus, SignerType } from "@/lib/signatures/types";
 import {
@@ -327,7 +329,10 @@ export default async function CommercialCockpitPage(
   // OC-00158: o envio digital do contrato do aceite (quem assinou, quem falta).
   // Lê pela RLS da assinatura — quem não tem "Ver pacotes" não vê, e a tela diz.
   const negociacao = negotiationBlock?.negotiation ?? null;
-  const veAssinaturas = canViewSignaturePackages(session, clinicId);
+  const [veAssinaturas, podeEnviarAssinatura] = await Promise.all([
+    podeNoBanco(supabase, "acao.assinaturas.visualizar", clinicId),
+    podeNoBanco(supabase, "acao.assinaturas.enviar", clinicId),
+  ]);
   let contratoPacote: EntradaDoCockpit["contrato"] = null;
   if (negociacao && veAssinaturas) {
     const { data: pacotesRows } = await supabase
@@ -657,7 +662,7 @@ export default async function CommercialCockpitPage(
                   clientId={clientId}
                   negotiationId={negotiationBlock.negotiation.id}
                   sale={negotiationBlock.sale}
-                  assinatura={canSendSignatures(session, clinicId) ? { clinicId } : null}
+                  assinatura={podeEnviarAssinatura ? { clinicId } : null}
                   contrato={contratoDoFechamento}
                   resumoFaltando={!temResumo}
                   canClose={canClose && !depoisDoComercial}

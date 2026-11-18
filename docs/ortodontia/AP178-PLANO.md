@@ -95,3 +95,22 @@ Se aparecer `franchisor` para o Consultor, a produção está com o defeito.
 ## Tamanho
 
 Médio. Só código e teste, sem migração. Publica sem esperar o banco.
+
+## Feito em 18/11/2026 (0.483.0)
+
+Itens 1 a 3 entregues, sem migração; provado na tela do treino (EV-386).
+
+### A varredura do item 4 (só leitura, nada mudado)
+
+| Onde | Permissão | O banco aceita a Franqueadora na unidade? | Situação |
+|---|---|---|---|
+| Compras (`purchases-access.ts`: requisitar e receber) | `acao.compras.requisitar` | Sim: `can_request_purchase` e `receive_purchase_order` → `can_manage_stock` aceitam o Financeiro da Franqueadora | **A tela barra hoje.** O padrão da matriz nem dá a permissão ao Financeiro da Franqueadora; e, se der, `pode(…, unidade)` ainda barra |
+| Cobrança (`cobranca-actions.ts`, `parcelado-actions.ts`, ficha) | `acao.cobranca.ver/emitir/cancelar` | Sim: `_charge_can` e `can_receive_payment` aceitam o Financeiro da Franqueadora | **Latente:** hoje a matriz não dá essas permissões a ninguém além do Admin. Quando o dono ligar, o Financeiro da Franqueadora será barrado |
+| Relatórios e Planos no menu, Central, Financeiro (lançar), Dívidas, Metas, Estoque | — | — | A tela e o banco batem |
+
+Observação: as regras do banco de Cobrança, Financeiro e Estoque aceitam o
+Financeiro da Franqueadora em **qualquer** unidade, não só nas do escopo dele;
+a de Assinaturas olha o escopo.
+
+**Decisão do dono:** corrigir Compras (e preparar Cobrança) do mesmo jeito,
+num item próprio?
