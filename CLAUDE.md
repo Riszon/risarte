@@ -421,7 +421,8 @@ Syncthing se comportarem de forma estranha.**
   o caso da venda só começa com ela (`_ortho_begin_treatment` espera, guarda
   `installed_on`; a baixa inicia). ⚠️ A agenda confere `ortho_installation_block`
   antes de gravar. ⚠️ `save_negotiation_ortho` tem 11 parâmetros (0432).
-- ✅ 0432 no treino. ⏳ Produção com o dono; push depois.
+- ✅ 0432 no treino e na produção (o dono, 18/11/2026: `3 · 1 · 1 · 2 · 0`).
+  Publicado depois da migração.
 
 **18/11/2026 (ortodontia, correções do roteiro, segunda leva: AP180, AP182, AP183, D5) — PC Administrador (core 0.484.0 → 0.485.0, migração 0431; a 0.484.0 é do Asaas)**
 

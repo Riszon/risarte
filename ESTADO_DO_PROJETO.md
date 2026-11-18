@@ -36,7 +36,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   com "permission denied", a de controle responde "não encontrada"; 52
 >   titulares, todos com a EMPRESA; nenhuma cobrança à parte ainda).
 
-> ## 🦷 0.486.0 — ORTODONTIA, AP183 D1: AS MENSALIDADES NO FECHAMENTO E O INÍCIO COM A 1ª PAGA (18/11/2026; migração 0432) — AGUARDA A PRODUÇÃO
+> ## 🦷 0.486.0 — ORTODONTIA, AP183 D1: AS MENSALIDADES NO FECHAMENTO E O INÍCIO COM A 1ª PAGA (18/11/2026; migração 0432) — NA PRODUÇÃO (18/11/2026)
 >
 > Regra do dono (18/11/2026) com as decisões E1–E4 (`docs/ortodontia/AP183-D1-PLANO.md`):
 > mensalidades no fechamento da venda; início sempre na instalação; a agenda
@@ -58,7 +58,9 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   falta na ficha e na Atenção, a 1ª paga libera. Não visto: a instalação
 >   concluída iniciando o caso pela tela (provado no ensaio). EV-393.
 >   Resíduo: o caso ORT-000039 do paciente de teste, interrompido.
-> - ⏳ **Produção:** o dono roda a 0432; o push sai depois.
+> - ✅ **Produção:** o dono rodou a 0432 em 18/11/2026 (conferência
+>   `3 · 1 · 1 · 2 · 0`: nenhum caso da venda aguardando início ficou sem
+>   mensalidades); o push saiu depois.
 >
 > ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — NA PRODUÇÃO (18/11/2026)
 >
