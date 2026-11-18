@@ -239,7 +239,7 @@ export const ITENS_DE_PRONTIDAO: Record<string, { rotulo: string; comoResolver: 
   },
   chave_permissoes_minimas: {
     rotulo: "Chave de produção com as permissões mínimas",
-    comoResolver: "Crie a chave com só as permissões da spec 21.7 (sem transferência, Pix enviado nem contas). O Admin Master marca, e o riSZon confere.",
+    comoResolver: "Crie a chave de API só com as permissões mínimas: nenhuma permissão de transferência, Pix enviado ou pagamento de contas. O Admin Master marca, e o riSZon confere.",
   },
   levantamento_feito: {
     rotulo: "Levantamento do que já existe no Asaas",

@@ -127,7 +127,7 @@ export function PilotoDaConta({
               variant="outline"
               disabled={pendente}
               onClick={() => {
-                if (!window.confirm("Confirma que a chave de produção foi criada com SÓ as permissões mínimas (spec 21.7)? O riSZon confere em seguida.")) return;
+                if (!window.confirm("Confirma que a chave de produção foi criada com SÓ as permissões mínimas (nenhuma permissão de transferência, Pix enviado ou pagamento de contas)? O riSZon confere em seguida.")) return;
                 rodar(() => declararPermissoesDaChave(accountId), "Marcado e conferido.");
               }}
             >
