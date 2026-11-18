@@ -5488,6 +5488,7 @@ Uma rotina por noite, pelo cron das cobranças, grava em `reconciliation_issues`
   - as quebras antigas continuam reprovando.
 - **Na produção, a conferência da 4021a fica** `tabelas_novas 2 · funcoes_novas 9 · divergencias 0`.
 - **Rodada na produção pelo dono em 17/11/2026,** depois da 4021, e a conferência bateu: `2 · 9 · 0`. Desfazer: `docs/asaas/desfazer-4021a.sql`.
+- **Publicado (17/11/2026):** com o "pode" do dono, o código da 4018c, da 4020a, da 4021 e da 4021a subiu na 0.481.0 (`main` c1996b75). Conferido de fora: as portas novas barram quem não está logado (401) e as tabelas novas não mostram nada a ele.
 
 ### 20.18 O teste do dono (17/11/2026, v0.462.0): achados e correções (core 0.462.1)
 
