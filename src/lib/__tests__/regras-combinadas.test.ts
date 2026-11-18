@@ -170,7 +170,7 @@ describe("as regras combinadas", () => {
   it("a aba existe na ficha da empresa e lê o banco sem fingir regra quando a leitura falha", () => {
     const pagina = ler("src/app/(app)/empresarial/[companyId]/page.tsx");
     expect(pagina).toContain(`{ key: "regras", label: "Regras combinadas" }`);
-    expect(pagina).toContain(`{aba === "regras" && <RegrasCombinadas companyId={companyId} />}`);
+    expect(pagina).toContain(`{aba === "regras" && <RegrasCombinadas companyId={companyId} podeRevisar={canEdit} />}`);
     const tela = ler("src/app/(app)/empresarial/[companyId]/regras-combinadas.tsx");
     expect(tela).toContain("Não foi possível ler as regras combinadas");
   });

@@ -400,6 +400,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**18/11/2026 (revisar contrato) — PC Administrador (Empresarial 0.110.0 → 0.111.0, migração 1050)**
+
+- Bloco "EMPRESARIAL 0.111.0" no ESTADO. ⚠️ **As regras combinadas da
+  empresa têm TRAVA NO BANCO** (CONTRACT_TERMS_LOCKED): mudam pela revisão
+  (`apply_contract_revision`), na criação (10 min) ou pela proposta
+  reassinada (1041). Regra nova = gatilho + `_termos_da_empresa` +
+  `_aplicar_termos` + formulário. ⚠️ Implantação de dependente = sempre
+  com cobertura em `dependents_implantation_coverage`.
+- ⏳ 1050 só no treino; o dono roda na produção antes do push.
+
 **18/11/2026 (regras combinadas) — PC Administrador (Empresarial 0.109.0 → 0.110.0, sem migração)**
 
 - Bloco "EMPRESARIAL 0.110.0" no ESTADO; plano aprovado (R1–R7) em

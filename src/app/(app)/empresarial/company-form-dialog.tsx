@@ -393,11 +393,43 @@ export function CompanyFormDialog({
           <p className="text-xs font-medium uppercase text-muted-foreground">
             Programa e pagamento
           </p>
+          {isEdit && company && (
+            <>
+              {/* 1050 (R1): as regras combinadas mudam só pela revisão do
+                  contrato. Os campos aparecem travados; os valores de hoje
+                  seguem escondidos, e o servidor ignora esses campos. */}
+              <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                Modelo de pagamento, subsídio, vencimento, parcelamento, carências e meios de pagamento
+                são regras combinadas: mudam pela aba <strong>Regras combinadas → Revisar contrato</strong>.
+              </p>
+              <input type="hidden" name="payment_model" value={company.paymentModel} />
+              <input type="hidden" name="company_subsidy_type" value={company.companySubsidyType ?? ""} />
+              <input
+                type="hidden"
+                name="company_subsidy_value"
+                value={
+                  company.companySubsidyValue != null
+                    ? company.companySubsidyType === "AMOUNT"
+                      ? (company.companySubsidyValue / 100).toString()
+                      : company.companySubsidyValue.toString()
+                    : ""
+                }
+              />
+              <input type="hidden" name="due_day" value={String(company.dueDay ?? 5)} />
+              <input type="hidden" name="default_max_installments" value={String(company.defaultMaxInstallments ?? 24)} />
+              <input type="hidden" name="grace_period_days" value={String(company.gracePeriodDays ?? 0)} />
+              <input type="hidden" name="employee_grace_period_days" value={String(company.employeeGracePeriodDays ?? 0)} />
+              {company.paymentMethods.map((m) => (
+                <input key={m} type="hidden" name="payment_methods" value={m} />
+              ))}
+            </>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="payment_model">Modelo de pagamento *</Label>
               <select
                 id="payment_model"
+                disabled={isEdit}
                 name="payment_model"
                 required
                 value={paymentModel}
@@ -417,6 +449,7 @@ export function CompanyFormDialog({
                   <Label htmlFor="company_subsidy_type">Subsídio</Label>
                   <select
                     id="company_subsidy_type"
+                    disabled={isEdit}
                     name="company_subsidy_type"
                     defaultValue={company?.companySubsidyType ?? "PERCENT"}
                     className={selectClass}
@@ -429,6 +462,7 @@ export function CompanyFormDialog({
                   <Label htmlFor="company_subsidy_value">Quanto</Label>
                   <Input
                     id="company_subsidy_value"
+                    disabled={isEdit}
                     name="company_subsidy_value"
                     defaultValue={
                       company?.companySubsidyValue != null
@@ -445,6 +479,7 @@ export function CompanyFormDialog({
               <Label htmlFor="due_day">Dia de vencimento (1–28)</Label>
               <Input
                 id="due_day"
+                disabled={isEdit}
                 name="due_day"
                 type="number"
                 min={1}
@@ -458,6 +493,7 @@ export function CompanyFormDialog({
               </Label>
               <Input
                 id="default_max_installments"
+                disabled={isEdit}
                 name="default_max_installments"
                 type="number"
                 min={1}
@@ -494,6 +530,7 @@ export function CompanyFormDialog({
               <Label htmlFor="grace_period_days">Carência da empresa (dias)</Label>
               <Input
                 id="grace_period_days"
+                disabled={isEdit}
                 name="grace_period_days"
                 type="number"
                 min={0}
@@ -506,6 +543,7 @@ export function CompanyFormDialog({
               </Label>
               <Input
                 id="employee_grace_period_days"
+                disabled={isEdit}
                 name="employee_grace_period_days"
                 type="number"
                 min={0}
@@ -521,6 +559,7 @@ export function CompanyFormDialog({
                   <input
                     type="checkbox"
                     name="payment_methods"
+                    disabled={isEdit}
                     value={m}
                     defaultChecked={
                       company

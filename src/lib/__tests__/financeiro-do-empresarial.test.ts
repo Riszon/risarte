@@ -89,7 +89,9 @@ describe("a tela segue o banco: botão de cobrança só para quem cobra", () => 
   it("a ficha da empresa diz à aba quem pode cobrar", () => {
     expect(ficha).toContain("const podeCobrar = isProgramFinance(session);");
     expect(ficha).toMatch(/<BillingTab[\s\S]*?podeCobrar=\{podeCobrar\}[\s\S]*?\/>/);
-    expect(ficha).toContain("podeEditar={podeCobrar}");
+    // 1050 (R1): o acordo de cobrança é regra combinada e passou a mudar só
+    // pela revisão do contrato — o cartão ficou só de leitura para todos.
+    expect(ficha).toMatch(/<AcordoDeCobranca[\s\S]*?podeEditar=\{false\}[\s\S]*?\/>/);
   });
 
   it("os botões de gerar e os de cada cobrança dependem disso", () => {

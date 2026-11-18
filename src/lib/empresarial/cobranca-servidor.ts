@@ -147,6 +147,8 @@ export async function computeMonthlyBreakdown(
    * `byDocument` — a cobrança da empresa não leva esses dependentes.
    */
   aParte: CobrancaAParte[];
+  /** 1050 (R7): os dependentes ativos de cada titular ativo (para a cobertura da implantação). */
+  dependentesPorTitular: { employeeId: string; dependentes: number }[];
 } | null> {
   // ⚠️ AP13: QUALQUER leitura que falhe devolve nulo. Antes, cada falha virava
   // um número "razoável": preço padrão no lugar do combinado, ZERO dependentes
@@ -279,6 +281,7 @@ export async function computeMonthlyBreakdown(
     limite,
     byDocument,
     aParte,
+    dependentesPorTitular: (emps ?? []).map((e) => ({ employeeId: e.id, dependentes: depCount.get(e.id) ?? 0 })),
   };
 }
 

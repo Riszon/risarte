@@ -30,10 +30,7 @@ import {
   loadProcedures,
   loadSplit,
 } from "../configuracoes/data";
-import {
-  AdhesionPricingForm,
-  SplitRulesForm,
-} from "../configuracoes/pricing-forms";
+import { SplitRulesForm } from "../configuracoes/pricing-forms";
 import { BenefitsEditor, type BenefitView } from "../configuracoes/benefits-editor";
 import { SocialTab, type SocialView } from "./social-tab";
 import {
@@ -265,10 +262,10 @@ export default async function CompanyDetailPage(props: {
   const { data: row } = await db
     .from("companies")
     .select(
-      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, special_agreements, created_at, category, billing_model, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone"
+      "id, cnpj, legal_name, trade_name, state_registration, address, employee_count, status, payment_model, company_subsidy_type, company_subsidy_value, due_day, assigned_consultant_id, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, notes, special_agreements, created_at, category, billing_model, responsible_name, responsible_role, responsible_cpf, responsible_email, responsible_phone, implantation_includes_dependents"
     )
     .eq("id", companyId)
-    .maybeSingle<CompanyRow>();
+    .maybeSingle<CompanyRow & { implantation_includes_dependents: boolean | null }>();
   if (!row) notFound();
   const company = toCompany(row);
 
@@ -1187,7 +1184,7 @@ export default async function CompanyDetailPage(props: {
         </div>
       )}
 
-      {aba === "regras" && <RegrasCombinadas companyId={companyId} />}
+      {aba === "regras" && <RegrasCombinadas companyId={companyId} podeRevisar={canEdit} />}
 
       {aba === "geral" && resumo && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -1352,10 +1349,12 @@ export default async function CompanyDetailPage(props: {
               )}
             </CardContent>
           </Card>
+          {/* 1050 (R1): o acordo de cobrança é regra combinada — muda pela
+              revisão do contrato (aba Regras combinadas). */}
           <AcordoDeCobranca
             companyId={companyId}
             acordo={acordo}
-            podeEditar={podeCobrar}
+            podeEditar={false}
           />
         </div>
       )}
@@ -1471,19 +1470,22 @@ export default async function CompanyDetailPage(props: {
                     Preços de adesão{" "}
                     {plano.hasPricingOverride ? "(próprios desta empresa)" : "(padrão da rede)"}
                   </CardTitle>
-                  {plano.hasPricingOverride && (
-                    <RemoveOverrideButton
-                      table="adhesion_pricing"
-                      companyId={company.id}
-                      label="Voltar ao padrão da rede"
-                    />
-                  )}
                 </CardHeader>
-                <CardContent>
-                  <AdhesionPricingForm
-                    companyId={company.id}
-                    pricing={plano.effectivePricing}
-                  />
+                <CardContent className="space-y-1 text-sm">
+                  {/* 1050 (R1): o preço é regra combinada — muda pela revisão do contrato. */}
+                  <p>
+                    Titular {formatBRL(plano.effectivePricing.holderFeeCents)} · 1 dependente{" "}
+                    {formatBRL(plano.effectivePricing.dependentIndividualFeeCents)} · pacote familiar{" "}
+                    {formatBRL(plano.effectivePricing.dependentFamilyFeeCents)} · extra{" "}
+                    {formatBRL(plano.effectivePricing.dependentFamilyExtraFeeCents)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    O preço é uma regra combinada: muda pela aba{" "}
+                    <Link href={`/empresarial/${company.id}?aba=regras`} className="underline">
+                      Regras combinadas → Revisar contrato
+                    </Link>
+                    , com o aditivo assinado.
+                  </p>
                 </CardContent>
               </Card>
 
@@ -1553,6 +1555,7 @@ export default async function CompanyDetailPage(props: {
             asaasConfigured={isAsaasConfigured()}
             isAdminMaster={session.isAdminMaster}
             podeCobrar={podeCobrar}
+            implantacaoComDependentes={row.implantation_includes_dependents === true}
           />
         </div>
       )}

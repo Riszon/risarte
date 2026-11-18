@@ -70,6 +70,8 @@ export const COMPANY_FILE_TYPES = [
   "cartao_cnpj",
   "procuracao",
   "contrato_programa",
+  // 1050: o aditivo assinado da revisão do contrato.
+  "aditivo",
   "outro",
 ] as const;
 export type CompanyFileType = (typeof COMPANY_FILE_TYPES)[number];
@@ -79,6 +81,7 @@ export const COMPANY_FILE_TYPE_LABELS: Record<CompanyFileType, string> = {
   cartao_cnpj: "Cartão CNPJ",
   procuracao: "Procuração",
   contrato_programa: "Contrato do programa",
+  aditivo: "Aditivo do contrato",
   outro: "Outro",
 };
 

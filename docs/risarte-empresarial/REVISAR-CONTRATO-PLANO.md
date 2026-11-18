@@ -8,7 +8,7 @@ ter uma opção de revisar contrato, para revisar todas as regras e benefícios
 contratados, onde pode ser feito alterações nos combinados — o que
 necessitaria de anexos ou mudança no contrato assinado."*
 
-**Situação: aprovado pelo dono em 18/11/2026 (R1–R6 como recomendado; R7 com os ajustes dele). Etapa 1 entregue na Empresarial 0.110.0.**
+**Situação: aprovado pelo dono em 18/11/2026 (R1–R6 como recomendado; R7 com os ajustes dele). Etapa 1 entregue na Empresarial 0.110.0; Etapa 2 + R7 na 0.111.0 (migração 1050), sem benefícios, vantagens, unidades e split na revisão (próxima entrega). Etapa 3 (aditivo pela ZapSign) a fazer.**
 
 ## O que o levantamento achou
 

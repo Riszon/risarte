@@ -23,6 +23,12 @@ export type ActionResult = { ok: boolean; error?: string };
 export type BillingPreview = {
   ok: boolean;
   error?: string;
+  /**
+   * 1050 (R7): a implantação COM dependentes (cadastros completos) cobre os
+   * dependentes de hoje de cada titular — gravado em
+   * `dependents_implantation_coverage` junto com a cobrança.
+   */
+  coberturaDosDependentes?: { employeeId: string; dependentes: number }[];
   /** Uma linha por boleto que será gerado (mais de uma no modelo por documento). */
   items?: {
     documentId: string | null;
@@ -114,7 +120,7 @@ export async function previewBilling(
   const { data: company } = await db
     .from("companies")
     .select(
-      "legal_name, trade_name, cnpj, due_day, billing_model, contracted_holders, billing_basis, fixed_monthly_cents, implantation_includes_dependents, implantation_dependents_cents"
+      "legal_name, trade_name, cnpj, due_day, billing_model, contracted_holders, billing_basis, fixed_monthly_cents, implantation_includes_dependents, implantation_dependents_cents, implantation_status, implantation_prepaid_holders"
     )
     .eq("id", companyId)
     .maybeSingle<{
@@ -128,8 +134,22 @@ export async function previewBilling(
       fixed_monthly_cents: number | null;
       implantation_includes_dependents: boolean;
       implantation_dependents_cents: number | null;
+      implantation_status: string | null;
+      implantation_prepaid_holders: number | null;
     }>();
   if (!company) return { ok: false, error: "Empresa não encontrada." };
+  // ⚠️ 1050 (R4): A IMPLANTAÇÃO COMBINADA NA REVISÃO DO CONTRATO. Isenta não
+  // cobra; "já paga antes do sistema" conta como uma implantação anterior (os
+  // titulares informados, ou o 1º mês do valor fixo) — o botão cobra só quem
+  // entrar depois. Antes, a importada sem implantação era cobrada inteira.
+  if (billingType === "IMPLANTATION" && company.implantation_status === "ISENTA") {
+    return {
+      ok: false,
+      error:
+        "Esta empresa é isenta de implantação (combinado na revisão do contrato; veja a aba Regras combinadas). Nada foi gerado.",
+    };
+  }
+  const jaPagaAntes = company.implantation_status === "JA_PAGA";
   const contratado = company.contracted_holders;
   // ⚠️ A IMPLANTAÇÃO SEGUE A REGRA COMBINADA (1032, dono em 26/10/2026).
   // Antes dependia do caminho: com todos cadastrados o boleto somava os
@@ -241,7 +261,11 @@ export async function previewBilling(
     if (erroDasAnteriores || !anteriores) {
       return { ok: false, error: naoConseguiConferir("as implantações já cobradas desta empresa") };
     }
-    const impl = implantacaoDoFixo(mensal, anteriores.map((a) => a.total_amount_cents));
+    const impl = implantacaoDoFixo(mensal, [
+      ...anteriores.map((a) => a.total_amount_cents),
+      // R4: paga antes do sistema = o 1º mês do fixo já foi cobrado.
+      ...(jaPagaAntes ? [fixoCents] : []),
+    ]);
     if (impl.tipo === "nada") {
       return {
         ok: false,
@@ -345,7 +369,10 @@ export async function previewBilling(
     const decisao = decidirImplantacao({
       limite,
       ativos: breakdown.totalEmployees,
-      anteriores,
+      // R4: os titulares que pagaram antes do sistema contam como cobertos.
+      anteriores: jaPagaAntes
+        ? [...anteriores, { holders_covered: Math.max(0, company.implantation_prepaid_holders ?? 0) }]
+        : anteriores,
     });
 
     if (decisao.tipo === "nada") {
@@ -512,6 +539,10 @@ export async function previewBilling(
     titularesCadastrados: breakdown.totalEmployees,
     dependentesNaImplantacao:
       billingType === "IMPLANTATION" ? { inclui: implantacaoComDependentes } : undefined,
+    coberturaDosDependentes:
+      billingType === "IMPLANTATION" && implantacaoComDependentes
+        ? breakdown.dependentesPorTitular.filter((d) => d.dependentes > 0)
+        : undefined,
   };
 }
 
@@ -621,7 +652,11 @@ export async function generateBilling(
       billingType === "IMPLANTATION" && !preview.precisaValor && !i.employeeId ? i.employees : null,
   }));
 
-  const { error } = await db.from("adhesion_billing").insert(rows);
+  const { data: gravadas, error } = await db
+    .from("adhesion_billing")
+    .insert(rows)
+    .select("id, employee_id")
+    .returns<{ id: string; employee_id: string | null }[]>();
   if (error) {
     // 23505 = a trava da 1022. Chega aqui quando duas pessoas geram a mesma
     // mensalidade ao mesmo tempo (a conferência acima não vê a outra): o banco
@@ -635,6 +670,27 @@ export async function generateBilling(
     }
     console.error("generateBilling failed:", error.message);
     return { ok: false, error: "Não foi possível gerar a cobrança." };
+  }
+  // 1050 (R7): a implantação com dependentes cobriu os dependentes de hoje —
+  // a "implantação dos dependentes novos" cobra só quem entrar depois. A
+  // cobrança à parte (1049) cobre os do titular dela; a da empresa, o resto.
+  // Falhar aqui não desfaz a cobrança: a tela de dependentes novos mostraria
+  // esses dependentes, e quem cobra marca como já cobertos.
+  if (billingType === "IMPLANTATION" && preview.coberturaDosDependentes?.length && gravadas?.length) {
+    const daEmpresa = gravadas.find((g) => !g.employee_id)?.id ?? null;
+    const cobertura = preview.coberturaDosDependentes
+      .map((c) => ({
+        company_id: companyId,
+        employee_id: c.employeeId,
+        dependents_covered: c.dependentes,
+        billing_id: gravadas.find((g) => g.employee_id === c.employeeId)?.id ?? daEmpresa,
+        created_by: session.userId,
+      }))
+      .filter((c) => c.billing_id);
+    if (cobertura.length) {
+      const { error: erroDaCobertura } = await db.from("dependents_implantation_coverage").insert(cobertura);
+      if (erroDaCobertura) console.error("cobertura da implantação dos dependentes:", erroDaCobertura.message);
+    }
   }
   // OC-00090: a mensalidade saiu com cadastros faltando → o sino dos gestores
   // avisa, para alguém cobrar os dados da empresa. Depois de gravar, e sem

@@ -64,6 +64,12 @@ export type EmpresaDasRegras = {
   implantation_includes_dependents: boolean | null;
   implantation_dependents_cents: number | null;
   social_participates: boolean | null;
+  /** 1050 (R4): COBRAR / JA_PAGA / ISENTA. */
+  implantation_status?: string | null;
+  implantation_prepaid_holders?: number | null;
+  /** 1050 (R5): na empresa; antes só no lead. */
+  min_term_months?: number | null;
+  early_exit_fee_cents?: number | null;
 };
 
 export type DadosDasRegras = {
@@ -147,12 +153,12 @@ function blocoOrigem(d: DadosDasRegras): BlocoDeRegras {
     });
   }
   linhas.push({ rotulo: "Início do contrato", valor: dataBr(e.contract_started_at) ?? "Nasce no 1º pagamento" });
-  const prazo = d.proposta?.prazoMinimoMeses;
+  const prazo = e.min_term_months ?? d.proposta?.prazoMinimoMeses;
   linhas.push({
     rotulo: "Prazo mínimo (fidelidade)",
     valor: prazo ? `${prazo} meses` : NAO_COMBINADO,
   });
-  const multa = d.proposta?.multaDeSaidaCents;
+  const multa = e.early_exit_fee_cents ?? d.proposta?.multaDeSaidaCents;
   linhas.push({ rotulo: "Multa de saída antecipada", valor: multa ? formatBRL(multa) : NAO_COMBINADO });
   if (e.special_agreements?.trim()) {
     linhas.push({ rotulo: "Combinado na venda", valor: e.special_agreements.trim() });
@@ -276,13 +282,21 @@ function blocoImplantacao(d: DadosDasRegras): BlocoDeRegras {
   }
   const vivas = d.implantacoes;
   let aviso: string | undefined;
+  if (e.implantation_status === "ISENTA") {
+    linhas.push({ rotulo: "Combinado", valor: "Isenta (combinado com a empresa): o Gerar implantação não cobra" });
+  } else if (e.implantation_status === "JA_PAGA") {
+    linhas.push({
+      rotulo: "Combinado",
+      valor: `Já paga antes do sistema${e.implantation_prepaid_holders != null ? ` (${pessoas(e.implantation_prepaid_holders, "titular", "titulares")})` : ""}: cobra só quem entrar depois`,
+    });
+  }
   if (vivas.length === 0) {
     linhas.push({ rotulo: "Situação", valor: "Nenhuma implantação gerada no sistema" });
-    if (origemDaEmpresa(d) === "sem_proposta") {
+    if (origemDaEmpresa(d) === "sem_proposta" && (e.implantation_status ?? "COBRAR") === "COBRAR") {
       aviso =
         "Empresa importada ou cadastrada direto: a importação não gera implantação. Antes de usar " +
         "Gerar implantação (aba Financeiro), confira se ela já pagou fora do sistema — o botão cobra " +
-        "a implantação inteira.";
+        "a implantação inteira. Se já pagou (ou é isenta), registre pela revisão do contrato.";
     }
   } else {
     const pagas = vivas.filter((i) => i.status === "PAID");
