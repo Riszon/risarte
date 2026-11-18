@@ -400,6 +400,13 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**17/11/2026 (fim do tratamento, Etapa 6 — plano completo) — PC Administrador (core 0.480.0, migração 0427; worktree `wt-fim-tratamento`)**
+
+- **Prazos e indicadores** (bloco 0.480.0 no ESTADO). ⚠️ Prazo em dias úteis
+  DA UNIDADE: `clinic_business_days_between`. ⚠️ `_goal_indicator_meta` e
+  `_goal_measure_raw` foram recriadas na 0427: a próxima recriação parte dela.
+  ⚠️ A lista "sem próximo passo" é `_sem_proximo_passo` (tela e meta).
+
 **17/11/2026 (venda direta v3, portas e D5) — PC Administrador (core 0.477.0 → 0.478.0, sem migração; worktree `wt-venda-direta`)**
 
 - Agenda e Comercial abrem o caixa; desmarcar o termo é só do Gerente, com

@@ -18,6 +18,11 @@ import {
 } from "@/lib/appointments";
 import { WeeklyForecastNotifier } from "./weekly-forecast-notifier";
 import {
+  notasDoDentista,
+  satisfacaoDoDentista,
+  type ResumoDoDentista,
+} from "@/lib/fim-do-tratamento";
+import {
   BRAZIL_TIME_ZONE,
   addDaysIso,
   formatBrDate,
@@ -302,6 +307,20 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
       .in("status", ["scheduled", "confirmed"]),
   ]);
 
+  // 0427 (D26): a satisfação dos clientes e as notas técnicas do dentista no
+  // período. Sem a migração num banco, os quadros ficam com "—".
+  const resumoFim: ResumoDoDentista | null = await supabase
+    .rpc("my_end_of_treatment_summary", {
+      p_clinic_id: clinicId,
+      p_from: start.toISOString(),
+      p_to: end.toISOString(),
+    })
+    .then(({ data, error }) =>
+      error ? null : (((Array.isArray(data) ? data[0] : data) as ResumoDoDentista | undefined) ?? null)
+    );
+  const satisfacao = satisfacaoDoDentista(resumoFim);
+  const notas = notasDoDentista(resumoFim);
+
   const today = todayRows ?? [];
   const upcoming = upcomingRows ?? [];
   const pending = pendingRows ?? [];
@@ -475,10 +494,16 @@ export default async function MeuDiaPage(props: PageProps<"/meu-dia">) {
               value={String(futureCount ?? 0)}
             />
             <StatTile
-              label="NPS do seu atendimento"
-              value="—"
-              hint="ainda não disponível"
-              muted
+              label="Clientes satisfeitos"
+              value={satisfacao.valor}
+              hint={satisfacao.dica}
+              muted={satisfacao.valor === "—"}
+            />
+            <StatTile
+              label="Suas notas técnicas"
+              value={notas.valor}
+              hint={notas.dica}
+              muted={notas.valor === "—"}
             />
           </div>
         </CardContent>

@@ -1,10 +1,10 @@
 # As cinco respostas antes do "pode" da 4021 e da 4021a (17/11/2026)
 
-Tudo abaixo está no treino e no projeto de teste (**0.479.0**, Asaas 0.20.0). **Nada disso está na produção.**
+Tudo abaixo está no treino e no projeto de teste (**0.481.0**, Asaas 0.20.0). **Nada disso está na produção.**
 
 ## 1. O que entrou em cada versão
 
-As versões do core da cobrança mensal (0.461.0, 0.462.0, 0.462.1 e 0.473.0) existiram só no projeto de teste. Ao juntar o `main`, que andou com as outras sessões, viraram **uma entrega só: 0.479.0**. A produção nunca viu essas versões.
+As versões do core da cobrança mensal (0.461.0, 0.462.0, 0.462.1 e 0.473.0) existiram só no projeto de teste. Ao juntar o `main`, que andou com as outras sessões, viraram **uma entrega só: 0.481.0**. A produção nunca viu essas versões.
 
 | Peça | Versão do Asaas | Migração | O que faz |
 |---|---|---|---|
@@ -36,7 +36,7 @@ As versões do core da cobrança mensal (0.461.0, 0.462.0, 0.462.1 e 0.473.0) ex
 | 2 | `4021_asa6_cobranca_mensal_das_unidades.sql` | `tabelas_novas 8 · funcoes_novas 45 · configuracao_em_branco true · unidades_configuradas 0 · lotes 0 · ramos_ligados true` |
 | 3 | `4021a_asa6_conferencia_das_taxas.sql` | `tabelas_novas 2 · funcoes_novas 9 · divergencias 0` |
 
-**Depois das três:** publico o `main` (0.479.0) e confiro de fora a versão na tela de login e o anônimo barrado (401) nas portas novas.
+**Depois das três:** publico o `main` (0.481.0) e confiro de fora a versão na tela de login e o anônimo barrado (401) nas portas novas.
 
 **Sobre a ordem e o "funcoes_novas 45":**
 - A 4020a e a 4021 rodam em qualquer ordem entre si: cada uma liga o ramo da outra só se ele existir. A 4021a precisa da 4021.

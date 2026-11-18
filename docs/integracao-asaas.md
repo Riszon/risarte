@@ -4771,7 +4771,7 @@ O dono aprovou com **1a, 2a, 3a e 4a** e três cuidados:
 
 Decidido também: o parcial na ficha e no distrato, sempre com motivo; o cartão em processamento avisa o Financeiro depois de 5 dias úteis; quem pede = os papéis do estorno total, o Financeiro da Franqueadora e o Admin Master. As duas perguntas novas ao Asaas estão na 19.39.
 
-#### 19.38.7 Construção (17/11/2026; core 0.479.0, Asaas 0.20.0, migração 4020a)
+#### 19.38.7 Construção (17/11/2026; core 0.481.0, Asaas 0.20.0, migração 4020a)
 
 **O banco (4020a):**
 - `gateway_split_settings.card_refund_confirm_above_cents` (em branco = todo estorno de cartão) e `card_refund_limit_save`/`card_refund_limit_read` (Admin Master e Financeiro da Franqueadora).

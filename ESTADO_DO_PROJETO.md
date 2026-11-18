@@ -2,15 +2,19 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
-> ## 💳 0.479.0 — ASA4: O ESTORNO DE PARTE PELO ASAAS (17/11/2026; Asaas 0.20.0, migração 4020a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.481.0 — ASA3: A TAXA RETIDA DA MENSALIDADE NO RAZÃO E O PAINEL DE REPASSES COM AS MENSALIDADES (17/11/2026; Asaas 0.21.0, migração 4018c) — MIGRAÇÃO NA PRODUÇÃO (17/11/2026, conferida `1 · 0`)
+>
+> O aviso do split do Asaas pode chegar antes da baixa da mensalidade. Um gatilho adiado roda a conferência do split com todas as linhas presentes: o razão, a retenção pelo repassado, a conta a pagar e a marca do "split a mais" dão o mesmo resultado nas duas ordens. O Painel de repasses passa a ver as mensalidades. A Conferência das taxas (4021a) ganha "Sem lançamento no razão". Ensaio 24/24, provado quebrando. Spec 19.40 e 20.17.11; EV-384. Na produção, a sequência 0427 → 4018c → 4020a → 4021 → 4021a foi rodada e conferida uma a uma em 17/11/2026; o código (0.481.0) sobe com o "pode" do dono.
+
+> ## 💳 0.481.0 — ASA4: O ESTORNO DE PARTE PELO ASAAS (17/11/2026; Asaas 0.20.0, migração 4020a) — MIGRAÇÃO NA PRODUÇÃO (17/11/2026, conferida); O CÓDIGO SOBE COM A 0.481.0
 >
 > "Estornar parte" na ficha (Pix, cartão e cartão parcelado) e no distrato, sempre com motivo. Cartão com a confirmação reforçada (valor, paciente, repartição prevista, "sai na hora e não pode ser desfeito"); acima do valor da Central (em branco = todos), o Gerente ou o franqueado confirma. O riSZon grava o que o Asaas fez e avisa se diferir da previsão. Parcela estornada inteira fica "Estornada" (só o Gerente reabre). A taxa da rede continua devida. Ensaio 38/38, provado quebrando. Spec 19.38.6 e 19.38.7; manual 13g.19; EV-383. **Falta:** a prova do sandbox em 18/11 (o Asaas recusa o parcial do cartão no dia da aprovação), o teste do dono e a produção (só com o "pode").
 
-> ## 💳 0.479.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.481.0 — ASA6: A CONFERÊNCIA DAS TAXAS (16/11/2026; Asaas 0.19.0, migração 4021a) — MIGRAÇÃO NA PRODUÇÃO (17/11/2026, conferida); O CÓDIGO SOBE COM A 0.481.0
 >
 > Aba "Conferência das taxas" em Cobrança da rede: a conta do mês por unidade (devido = retido + a reter + faturado + dispensado + ainda a cobrar, diferença zero) e as divergências da rotina da noite (dois donos, sem dono, pago e caixa diferentes, split a mais acima de R$ 0,10, conta desatualizada, diferença do mês). Cada uma fecha sozinha. Ignorar só Financeiro ou Admin, com motivo, e reabre se o valor mudar; as ignoradas numa lista própria. Resumo do dia ao Financeiro só com divergência nova. Só confere: não muda lançamento. Antes, a **4018a** (a marca do split a mais, falso alarme nas mensalidades) foi **para a produção** (conferência true|0|0). Ensaio 27/27, provado quebrando; spec 20.17 a 20.17.10; manual 13g.18; EV-382.
 
-> ## 💳 0.479.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — CONSTRUÍDA, NÃO ESTÁ NA PRODUÇÃO
+> ## 💳 0.481.0 — ASA6: A COBRANÇA MENSAL DA REDE ÀS UNIDADES (16/11/2026; Asaas 0.18.0, migração 4021) — MIGRAÇÃO NA PRODUÇÃO (17/11/2026, conferida); O CÓDIGO SOBE COM A 0.481.0
 >
 > - **A prévia** do mês que fechou, por unidade: as taxas fixas (proporcionais no mês incompleto) e o "a cobrar" das percentuais, linha a linha, com a origem e o paciente abreviado. Cada linha entra pelo **delta** (o que vale hoje menos o já faturado): nunca duas vezes, e o "a reter" nunca entra.
 > - **A unidade** confere ou contesta; o silêncio leva à aprovação (avisos na abertura e 1 dia útil antes do fim). O Financeiro decide; depois da emissão, a contestação aceita vira **crédito** no mês seguinte (compensação, sem caixa).
@@ -19,6 +23,23 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > - **A configuração nasce em branco** (Central › Rede › Taxas da franquia); exemplo só no treino e no sandbox, marcado.
 >
 > Ensaio 103/103, provado quebrando (dobro, fora, reter, baixa); sandbox 4/4 pela conta raiz. Spec 20.15 e 20.16; manual 13g.18; EV-381; relatório `docs/asaas/relatorio-4021-cobranca-mensal.md`. **Falta:** o teste do dono, a 4021 na produção (só com o "pode") e a 4021a (a conciliação).
+> ## ⏱️ 0.480.0 — FIM DO TRATAMENTO, ETAPA 6: PRAZOS E INDICADORES (17/11/2026; migração 0427) — PLANO COMPLETO
+>
+> Plano: `docs/jornada/FIM-DO-TRATAMENTO-PLANO.md` (5.8, 7.2, 8; C4, D26).
+> - ⚠️ **Dias úteis da unidade = `clinic_business_days_between`** (fim de semana,
+>   feriado nacional/estadual/da cidade, menos o que a unidade decidiu atender).
+>   O `add_business_days` antigo (só fim de semana) continua para o financeiro.
+> - ⚠️ **A rotina `end_of_treatment_reminders`** (cron `risarte-fim-lembretes-daily`,
+>   11:40 UTC, seg–sex) avisa de novo a tarefa parada há N dias úteis
+>   (`stalled_task_business_days`) a quem responde e ao Gerente; `reminded_at`.
+> - ⚠️ **`_goal_indicator_meta`/`_goal_measure_raw` recriadas na 0427** (a partir
+>   da 0365, conferida igual ao treino): ao recriar, partir dela. 4 indicadores novos.
+> - ⚠️ **A lista "sem próximo passo" mora em `_sem_proximo_passo`**; a tela
+>   (`clients_without_next_step`) e a meta usam a mesma.
+> - O Meu dia: `my_end_of_treatment_summary` (satisfação e notas técnicas do dentista).
+> - Ensaio 21/21 (`scripts/ensaio-fim-do-tratamento-0427.mjs`, provado quebrando). Não visto na tela.
+> - ✅ **0427 aplicada na produção (17/11/2026)** e conferida de fora, só lendo: o prazo de 3 dias úteis, o reminded_at nas duas tarefas e as 3 portas fechadas para quem não está logado.
+
 > ## 🛒 0.478.0 — VENDA DIRETA V3: A AGENDA E O COMERCIAL ABREM O CAIXA; D5 (17/11/2026; sem migração)
 >
 > Fecha o que o plano (§2, §5) já tinha decidido. EV-377.

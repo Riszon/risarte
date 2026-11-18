@@ -62,9 +62,9 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
-    versao: "0.479.0",
+    versao: "0.481.0",
     data: "2026-11-17",
-    // Sem migração do CORE: as desta entrega são da integração Asaas (4020a, 4021 e 4021a, ASAAS_MIGRATION).
+    // Sem migração do CORE: as desta entrega são da integração Asaas (4018c, 4020a, 4021 e 4021a, ASAAS_MIGRATION).
     migracao: null,
     titulo: "Cobrança mensal da rede, Conferência das taxas e estorno de parte pelo Asaas",
     mudancas: [
@@ -136,6 +136,56 @@ export const CHANGELOG: Versao[] = [
           "Parcela estornada inteira fica \"Estornada\": a baixa é desfeita e ela não volta a ser cobrada sozinha. Só o Gerente reabre, com motivo. No distrato, a devolução pode sair como estorno pelo Asaas, escolhendo a cobrança. A taxa da rede continua devida.",
         papeis: ["unit_manager", "franchisee", "finance_franchisor"],
         manual: "13g.19. Estorno de parte (cartão e Pix)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Mensalidade do PPR+ e da Ortodontia paga pelo Asaas com split: a taxa da rede retida passa a entrar no razão (a despesa na unidade e a receita na franqueadora), qualquer que seja a ordem dos avisos do Asaas; se o Asaas repassar menos, a diferença fica \"a cobrar\".",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.16. Mensalidades do PPR+ e da Ortodontia pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Repasses da franquia: as mensalidades do PPR+ e da Ortodontia entram no recebido, no devido, no liquidado e no \"a receber\"; as pagas fora do Asaas aparecem como \"Mensalidade (fora do Asaas)\".",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.8. Repasses da franquia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Conferência das taxas: a divergência \"Sem lançamento no razão\" (taxa retida, conta de taxa ou pagamento sem o lançamento do mesmo valor), em toda unidade com conta Asaas ou com a cobrança mensal ligada.",
+        papeis: ["finance_franchisor", "unit_manager", "franchisee"],
+        manual: "13g.18. Cobrança mensal da rede",
+      },
+    ],
+  },
+  {
+    versao: "0.480.0",
+    data: "2026-11-17",
+    migracao: "0427",
+    titulo: "Tarefa parada volta a avisar e os indicadores do fim do tratamento",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Tarefa do fim do tratamento parada (a decisão, a reavaliação sem horário, o contato, o abandono) volta a avisar quem responde e o Gerente depois de 3 dias úteis da unidade. Os dias úteis pulam o fim de semana e os feriados nacionais, estaduais e da cidade, menos os feriados em que a unidade decidiu atender. O prazo fica em Prazos.",
+        papeis: ["unit_manager", "clinical_coordinator", "receptionist", "dentist"],
+        manual: "6.6. Gerente de Unidade",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No Meu dia, dois quadros novos: os clientes satisfeitos (nota 9 ou 10 no contato do fim do tratamento) e as suas notas técnicas do controle de qualidade (Excelente a Refazer), no período escolhido.",
+        papeis: ["dentist"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Quatro indicadores novos para as Metas: taxa de refação, clientes satisfeitos, decisões do fim em até 3 dias úteis e clientes sem próximo passo.",
+        papeis: ["unit_manager", "franchisor_staff"],
+        manual: "6.6. Gerente de Unidade",
       },
     ],
   },
