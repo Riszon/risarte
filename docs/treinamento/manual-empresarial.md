@@ -1277,6 +1277,14 @@ Ela tem três abas:
    Duas colunas cinza se preenchem sozinhas: **Dependentes preenchidos** e
    **Vagas** (*"1 de 3 livre(s)"*, *"Completo"*, ou *"Passou do limite"* em
    vermelho).
+
+   A última coluna, **Quem paga os dependentes** *(desde a 0.109.0)*, também
+   é uma lista: **Empresa** (ou em branco) = os dependentes entram na
+   cobrança da empresa; **Titular** = os dependentes são cobrados à parte, no
+   CPF do próprio titular. Outro valor recusa a planilha (*"Titulares, linha
+   7: quem paga os dependentes: use Empresa ou Titular"*). O **outro
+   pagador** (com CPF ou CNPJ) se escolhe depois, no sistema. A coluna só vale
+   para o titular **novo**: quem já estava cadastrado continua como estava.
 3. **Dependentes** (opcional) — na coluna **Titular**, o RH **escolhe o
    colaborador numa lista** (aparece *"João Souza — 987.654.321-00"*). A
    lista mostra **só quem tem plano com dependentes e ainda tem vaga**:
@@ -1333,6 +1341,27 @@ formato antigo (com a coluna "CPF do Titular") continuam entrando.
 
 **Dependentes:** dentro de um titular, *Adicionar dependente* (CPF +
 parentesco).
+
+**Quem paga os dependentes** *(desde a 0.109.0)*. Muitos titulares incluem
+dependentes, mas pagam por eles por fora. No alto da lista de dependentes de
+cada titular aparece a linha **Quem paga os dependentes:**, com o botão
+**Alterar** (para quem cuida dos titulares). São três escolhas, e elas valem
+para **todos** os dependentes daquele titular:
+
+| Escolha | Para onde vai a mensalidade dos dependentes |
+|---|---|
+| **A empresa, junto com o titular** (o padrão) | na cobrança da empresa, como sempre foi |
+| **O próprio titular (no CPF dele)** | numa cobrança à parte, no nome e no CPF do titular |
+| **Outro pagador (CPF ou CNPJ)** | numa cobrança à parte, no nome e no documento informados |
+
+O sistema confere o CPF ou o CNPJ do outro pagador antes de salvar. Na lista
+de titulares, quem paga à parte ganha a marca *"· dependentes pagos à
+parte"*. A escolha vale **a partir da próxima mensalidade gerada** — o que já
+foi gerado não muda (seção 12). Titular desligado não muda mais a escolha.
+
+> Titular marcado como **O próprio titular** mas **sem CPF** no cadastro:
+> não há em nome de quem emitir, e os dependentes dele continuam na cobrança
+> da empresa.
 
 > **No ambiente de TREINO**, abaixo do CPF aparece o link **Gerar CPF de
 > teste (só no treino)**: ele preenche um CPF válido inventado, como no
@@ -1544,6 +1573,26 @@ pacote para R$ 6.000,00 → a mensalidade é R$ 6.000,00 (5.000 + 1.000 do termo
 >
 > **Para corrigir uma mensalidade errada:** cancele a atual e gere de novo.
 > Cobrança cancelada não conta para a trava.
+
+> **Dependentes pagos à parte** *(desde a 0.109.0, seção 9)*. Quando um
+> titular paga os próprios dependentes (ou outro pagador paga), o mesmo
+> clique de **Gerar cobrança mensal** gera **todas** as cobranças: a da
+> empresa, **sem** aqueles dependentes, e uma cobrança à parte para cada
+> pagador, com a descrição *"… — dependentes de (titular)"*. A janela de
+> confirmação mostra todas antes de gerar (*"3 cobranças (a da empresa e as
+> dos dependentes pagos à parte)"*). A geração **em lote** faz o mesmo. A
+> trava do mês vale para cada uma: a mesma cobrança à parte também não sai
+> duas vezes no mês.
+>
+> - **Implantação:** quando a proposta combinou implantação **com
+>   dependentes** e os cadastros estão completos, os dependentes pagos à
+>   parte vão para o **mesmo pagador** da mensalidade. Com cadastros
+>   faltando (implantação pela quantidade contratada) ou na implantação dos
+>   **titulares novos**, ainda não se sabe os dependentes de quem, e ela
+>   segue inteira com a empresa.
+> - **Empresa de valor fixo:** o pacote cobre todo mundo; nada sai à parte.
+> - **Titular desligado:** os dependentes saem do programa junto com ele, e
+>   a cobrança à parte deixa de ser gerada a partir do mês seguinte.
 
 > **"Não foi possível conferir o preço e os titulares da empresa agora…"** —
 > o sistema não conseguiu ler, naquele instante, o preço combinado, as faixas,

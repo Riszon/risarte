@@ -439,6 +439,9 @@ export default async function CompanyDetailPage(props: {
       dependent_plan: string;
       client_id: string | null;
       company_document_id: string | null;
+      dependents_payer: string | null;
+      dependents_payer_name: string | null;
+      dependents_payer_document: string | null;
       dependents: {
         id: string;
         cpf: string;
@@ -455,7 +458,7 @@ export default async function CompanyDetailPage(props: {
         db
           .from("employees")
           .select(
-            "id, cpf, full_name, phone, email, status, registration_stage, dependent_plan, client_id, company_document_id, dependents ( id, cpf, full_name, phone, relationship, status, client_id )"
+            "id, cpf, full_name, phone, email, status, registration_stage, dependent_plan, client_id, company_document_id, dependents_payer, dependents_payer_name, dependents_payer_document, dependents ( id, cpf, full_name, phone, relationship, status, client_id )"
           )
           .eq("company_id", companyId)
           .order("full_name")
@@ -526,6 +529,9 @@ export default async function CompanyDetailPage(props: {
       dependentPlan: e.dependent_plan,
       clientId: e.client_id,
       companyDocumentId: e.company_document_id,
+      dependentsPayer: (e.dependents_payer ?? "EMPRESA") as EmployeeView["dependentsPayer"],
+      dependentsPayerName: e.dependents_payer_name,
+      dependentsPayerDocument: e.dependents_payer_document,
       dependents: (e.dependents ?? []).map((d) => ({
         id: d.id,
         cpf: d.cpf,

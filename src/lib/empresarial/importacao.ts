@@ -31,6 +31,8 @@ export type LinhaDaPlanilha = {
    * a coluna, não é recusada por um plano que ninguém escolheu.
    */
   planoNaPlanilha?: boolean;
+  /** 1049: "Empresa" / "Titular" (a coluna "Quem paga os dependentes"). Vazio = Empresa. */
+  pagadorDosDependentes?: string;
   /** A linha na planilha (a 1 é o cabeçalho). Sem ela, a posição na lista. */
   linha?: number;
 };
@@ -62,6 +64,8 @@ export type TitularConferido = {
   fullName: string;
   phone: string;
   email: string | null;
+  /** 1049: quem paga os dependentes (a planilha só conhece EMPRESA e TITULAR). */
+  dependentsPayer: "EMPRESA" | "TITULAR";
 };
 
 export type DependenteConferido = {
@@ -117,6 +121,16 @@ export function conferirPlanilha(
     if (!telefoneValido(r.phone)) {
       faltas.push(soDigitos(r.phone) ? "telefone incompleto" : "sem telefone");
     }
+    // 1049: "Quem paga os dependentes" — Empresa (ou vazio) ou Titular.
+    // "Outro pagador" pede nome e documento: só pela tela.
+    const pagadorTexto = String(r.pagadorDosDependentes ?? "").trim().toLowerCase();
+    const pagador: "EMPRESA" | "TITULAR" | null =
+      !pagadorTexto || pagadorTexto === "empresa"
+        ? "EMPRESA"
+        : pagadorTexto === "titular"
+          ? "TITULAR"
+          : null;
+    if (!pagador) faltas.push("quem paga os dependentes: use Empresa ou Titular");
     if (cpf.length === 11) {
       const repetida = linhaDoCpf.get(cpf);
       if (repetida != null) faltas.push(`CPF repetido (já está na linha ${repetida})`);
@@ -133,6 +147,7 @@ export function conferirPlanilha(
       fullName: nome,
       phone: formatPhone(String(r.phone)),
       email: String(r.email ?? "").trim() || null,
+      dependentsPayer: pagador ?? "EMPRESA",
     });
   });
 

@@ -2,6 +2,37 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.109.0 / 1049 — QUEM PAGA OS DEPENDENTES (18/11/2026)
+>
+> Pedido do dono: "muitos titulares incluem dependentes, mas pagam por fora,
+> com a cobrança no próprio CPF do titular ou num CNPJ". Decisões dele: a
+> escolha é no TITULAR e vale para todos os dependentes dele; Empresa /
+> próprio titular / outro pagador (nome + CPF ou CNPJ); a implantação com
+> dependentes segue o mesmo pagador; a planilha de titulares ganha a coluna
+> (Empresa / Titular). Desligar o titular continua desligando os dependentes.
+> - **1049:** `employees.dependents_payer` (padrão EMPRESA) + nome/documento
+>   do OUTRO, com a regra `employees_dependents_payer_check`;
+>   `adhesion_billing.employee_id`/`payer_name`/`payer_document` (a
+>   cobrança à parte, regra `adhesion_billing_payer_check`); a trava do mês
+>   `adhesion_billing_mensalidade_unica` passa a contar o `employee_id`;
+>   `importar_titulares` recriada (de 1042) gravando a coluna da planilha.
+> - ⚠️ **A conta é do app:** `computeMonthlyBreakdown` tira os dependentes de
+>   quem paga à parte da cobrança da empresa e devolve `aParte`; a regra
+>   única é `pagadorDaCobranca` (`pagador-dos-dependentes.ts`). A
+>   mensalidade, a implantação com dependentes e a geração em lote usam os
+>   itens de `previewBilling`. Implantação pelo contratado, a dos titulares
+>   novos e o valor fixo ficam inteiros com a empresa.
+> - ⚠️ **CHECK aceita NULL:** `documento ~ regex` com documento nulo dá NULL e
+>   passa. As duas regras usam `coalesce(…, '')` — o ensaio pegou.
+> - ⚠️ **Planilha: a coluna mora em M**, depois das escondidas (as fórmulas
+>   usam E..L fixas). Título = `COLUNA_DO_PAGADOR` = o de
+>   `CABECALHO_DOS_TITULARES` (régua).
+> - Ensaio no treino 21/21 (`scripts/empresarial-ensaio-1049.mjs`,
+>   desfeito) e quebrando 3 vezes (`QUEBRA=regra|trava|planilha`); régua
+>   `pagador-dos-dependentes.test.ts` (15), provada quebrando. Manual do
+>   Empresarial 9 e 12. **Não visto na tela.**
+> - ⏳ **1049 só no treino**; o dono roda na produção antes do push.
+
 > ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — NA PRODUÇÃO (18/11/2026)
 >
 > Decisões do dono em 18/11/2026 (planos `docs/ortodontia/AP180-PLANO.md`,

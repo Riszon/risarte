@@ -9,6 +9,7 @@ import "server-only";
 // Não é "use server" de propósito: arquivo de ação exporta ENDPOINTS, e estas
 // funções não têm guarda de permissão — quem as chama (a action) é que tem.
 
+import { pagadorDaCobranca } from "./pagador-dos-dependentes";
 import type { empresarialDb } from "./db";
 import { carregarFaixasParaCobrar } from "./faixas-da-empresa";
 import {
@@ -140,6 +141,12 @@ export async function computeMonthlyBreakdown(
   /** O limite da empresa (contratado + termos aceitos); nulo = sem contrato de quantidade. */
   limite: number | null;
   byDocument: Map<string, { employees: number; cents: number }>;
+  /**
+   * 1049: os DEPENDENTES pagos à parte (o titular, ou outro pagador, paga os
+   * dependentes dele numa cobrança própria). Já saíram de `totalCents` e de
+   * `byDocument` — a cobrança da empresa não leva esses dependentes.
+   */
+  aParte: CobrancaAParte[];
 } | null> {
   // ⚠️ AP13: QUALQUER leitura que falhe devolve nulo. Antes, cada falha virava
   // um número "razoável": preço padrão no lugar do combinado, ZERO dependentes
@@ -158,15 +165,22 @@ export async function computeMonthlyBreakdown(
         .returns<AdhesionPricingRow[]>(),
       db
         .from("employees")
-        .select("id, dependent_plan, status, company_document_id")
+        .select(
+          "id, full_name, cpf, dependent_plan, status, company_document_id, dependents_payer, dependents_payer_name, dependents_payer_document"
+        )
         .eq("company_id", companyId)
         .eq("status", "ACTIVE")
         .returns<
           {
             id: string;
+            full_name: string;
+            cpf: string | null;
             dependent_plan: DependentPlan;
             status: "ACTIVE";
             company_document_id: string | null;
+            dependents_payer: string | null;
+            dependents_payer_name: string | null;
+            dependents_payer_document: string | null;
           }[]
         >(),
       db.from("dependents").select("employee_id, status").eq("status", "ACTIVE"),
@@ -211,6 +225,7 @@ export async function computeMonthlyBreakdown(
   };
 
   const byDocument = new Map<string, { employees: number; cents: number }>();
+  const aParte: CobrancaAParte[] = [];
   let totalCents = 0;
   for (const e of emps ?? []) {
     const conta = computeMonthlyCents(precoComFaixa, [
@@ -220,7 +235,23 @@ export async function computeMonthlyBreakdown(
         activeDependentCount: depCount.get(e.id) ?? 0,
       },
     ]);
-    const one = opcoes.soTitulares ? conta.holdersCents : conta.totalCents;
+    let one = opcoes.soTitulares ? conta.holdersCents : conta.totalCents;
+    // 1049: os dependentes deste titular são pagos à parte? Saem da cobrança
+    // da empresa e viram a cobrança própria do pagador. Sem dependentes na
+    // conta (só titulares, ou nenhum dependente ativo), não há o que separar.
+    const pagador = pagadorDaCobranca(e);
+    const dependentesCents = opcoes.soTitulares ? 0 : conta.dependentsCents;
+    if (pagador && dependentesCents > 0) {
+      one -= dependentesCents;
+      aParte.push({
+        employeeId: e.id,
+        titular: e.full_name,
+        pagadorNome: pagador.nome,
+        pagadorDocumento: pagador.documento,
+        dependentes: depCount.get(e.id) ?? 0,
+        cents: dependentesCents,
+      });
+    }
     totalCents += one;
     const key = e.company_document_id ?? "__none__";
     const cur = byDocument.get(key) ?? { employees: 0, cents: 0 };
@@ -247,5 +278,17 @@ export async function computeMonthlyBreakdown(
     faltamCadastrar,
     limite,
     byDocument,
+    aParte,
   };
 }
+
+/** Uma cobrança à parte: os dependentes de um titular, no nome de quem paga. */
+export type CobrancaAParte = {
+  employeeId: string;
+  titular: string;
+  pagadorNome: string;
+  /** 11 (CPF) ou 14 (CNPJ) números. */
+  pagadorDocumento: string;
+  dependentes: number;
+  cents: number;
+};

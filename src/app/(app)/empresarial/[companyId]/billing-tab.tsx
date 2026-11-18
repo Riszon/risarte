@@ -300,7 +300,9 @@ export function BillingTab({
               <div className="space-y-2">
                 <p className="text-xs uppercase text-muted-foreground">
                   {preview.items.length > 1
-                    ? `${preview.items.length} boletos (um por documento)`
+                    ? preview.items.some((i) => i.employeeId)
+                      ? `${preview.items.length} cobranças (a da empresa e as dos dependentes pagos à parte)`
+                      : `${preview.items.length} boletos (um por documento)`
                     : "Pagador"}
                 </p>
                 {preview.items.map((i, idx) => (
@@ -311,8 +313,14 @@ export function BillingTab({
                     <div>
                       <p className="font-medium">{i.payerName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {i.payerDoc} · {i.employees} titular(es)
+                        {i.payerDoc} ·{" "}
+                        {i.employeeId
+                          ? `${i.dependentes ?? 0} dependente(s) pagos à parte`
+                          : `${i.employees} titular(es)`}
                       </p>
+                      {i.employeeId && i.description && (
+                        <p className="text-xs text-muted-foreground">{i.description}</p>
+                      )}
                     </div>
                     <p className="text-lg font-semibold text-gold-tinta">
                       {formatBRL(i.totalCents)}

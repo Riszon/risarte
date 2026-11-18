@@ -24,6 +24,7 @@ import {
   isProgramManager,
 } from "@/lib/empresarial/access";
 import { LEFT_REASONS, RELATIONSHIPS } from "@/lib/empresarial/constants";
+import { conferirPagador } from "@/lib/empresarial/pagador-dos-dependentes";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -727,6 +728,8 @@ export async function importEmployees(
       full_name: t.fullName,
       phone: t.phone,
       email: t.email,
+      // 1049: "Quem paga os dependentes" da planilha (Empresa / Titular).
+      dependents_payer: t.dependentsPayer,
     })),
     p_dependentes: conferida.dependentes.map((d) => ({
       holder_cpf: formatCpf(d.holderCpf),
@@ -828,4 +831,55 @@ export async function lookupClientByCpf(
     birthDate: client.birth_date,
     clinicName: hit.clinic_name ?? null,
   };
+}
+
+/**
+ * 1049 — QUEM PAGA OS DEPENDENTES deste titular (pedido do dono, 18/11/2026):
+ * a empresa (junto com o titular), o próprio titular (no CPF dele) ou outro
+ * pagador (nome + CPF ou CNPJ). Vale para todos os dependentes dele, a partir
+ * da próxima mensalidade gerada. O banco confere de novo (regra da 1049).
+ */
+export async function salvarPagadorDosDependentes(
+  companyId: string,
+  employeeId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canManageEmployees(session)) {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const conferido = conferirPagador({
+    pagador: formData.get("dependents_payer"),
+    nome: formData.get("dependents_payer_name"),
+    documento: formData.get("dependents_payer_document"),
+  });
+  if (!conferido.ok) return { ok: false, error: conferido.motivo };
+  const v = conferido.valor;
+
+  const db = await empresarialDb();
+  const { data, error } = await db
+    .from("employees")
+    .update({
+      dependents_payer: v.pagador,
+      dependents_payer_name: v.nome,
+      dependents_payer_document: v.documento,
+    })
+    .eq("id", employeeId)
+    .eq("company_id", companyId)
+    .select("id");
+  if (error) {
+    console.error("salvarPagadorDosDependentes failed:", error.message);
+    return { ok: false, error: "Não foi possível salvar quem paga os dependentes." };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Titular não encontrado nesta empresa. Nada foi salvo." };
+  }
+  await logAudit({
+    action: "update",
+    entityType: "empresarial_employee",
+    entityId: employeeId,
+    details: { dependents_payer: v.pagador },
+  });
+  revalidatePath(`/empresarial/${companyId}`);
+  return { ok: true };
 }

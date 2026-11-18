@@ -206,7 +206,11 @@ export async function gerarMensalidadesEmLote(
       total_amount_cents: i.totalCents,
       status: "PENDING",
       due_date: preview.dueDate,
-      description: preview.description,
+      description: i.description ?? preview.description,
+      // 1049: a cobrança à parte dos dependentes, no nome de quem paga.
+      employee_id: i.employeeId ?? null,
+      payer_name: i.employeeId ? i.payerName : null,
+      payer_document: i.employeeId ? (i.payerDocument ?? null) : null,
     }));
 
     const { error } = await db.from("adhesion_billing").insert(rows);

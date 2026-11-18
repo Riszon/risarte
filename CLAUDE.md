@@ -400,6 +400,20 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**18/11/2026 (quem paga os dependentes) — PC Administrador (Empresarial 0.108.0 → 0.109.0, migração 1049)**
+
+- Bloco "EMPRESARIAL 0.109.0" no ESTADO. ⚠️ **A cobrança à parte = um
+  `adhesion_billing` com `employee_id`** (de quem são os dependentes); a
+  conta é `computeMonthlyBreakdown` → `aParte`, pela regra
+  `pagadorDaCobranca`. Caminho novo que gere mensalidade usa os itens de
+  `previewBilling`. ⚠️ Ao recriar `importar_titulares`, partir da 1049.
+  ⚠️ **`$'` no texto de substituição do `String.replace` do JS é "o resto
+  do texto"** (irmão do `$$`): uma regex com `$'` no fim duplicou a 1049
+  inteira dentro dela. SQL por script: substituir por função.
+- ⚠️ `migrar:teste --ate 1049` aplicou também a **0432** (ortodontia, sem
+  commit na pasta) no treino.
+- ⏳ 1049 só no treino; o dono roda na produção antes do push.
+
 **18/11/2026 (ortodontia, correções do roteiro, segunda leva: AP180, AP182, AP183, D5) — PC Administrador (core 0.484.0 → 0.485.0, migração 0431; a 0.484.0 é do Asaas)**
 
 - Bloco 0.485.0 no ESTADO. ⚠️ **Fechar venda é da equipe comercial e do Admin**
