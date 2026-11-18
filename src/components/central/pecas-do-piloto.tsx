@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatBRL } from "@/lib/pricing";
+import { CAPACIDADES_POR_ID } from "@/lib/permissions";
 import {
   anexarConfirmacaoDoAsaas,
   copiarDeOutraUnidade,
@@ -167,7 +168,7 @@ export function PilotoDaConta({
               </ul>
             </details>
           )}
-          <p className="mt-2 text-xs text-muted-foreground">Elas entram pela reemissão da cobrança externa (4019) e pelas assinaturas antigas (4019b).</p>
+          <p className="mt-2 text-xs text-muted-foreground">Elas entram no riSZon pela reemissão da cobrança externa e, as assinaturas, pela troca das assinaturas antigas (as duas ainda por construir).</p>
         </div>
       )}
     </div>
@@ -207,7 +208,7 @@ export function InterruptorDeProducao({ producao }: { producao: Producao }) {
               {ITEM_DA_REDE[p.item] ?? p.item}
               {p.item === "confirmacao_asaas" && typeof p.detalhe.arquivo === "string" && p.detalhe.arquivo && ` — ${p.detalhe.arquivo}, anexado em ${quando(String(p.detalhe.em ?? ""))}.`}
               {p.item === "permissoes_cobranca" && Array.isArray(p.detalhe.faltam) && p.detalhe.faltam.length > 0 && (
-                <span className="block text-xs text-muted-foreground">Falta: {(p.detalhe.faltam as string[]).join("; ")}</span>
+                <span className="block text-xs text-muted-foreground">Falta: {(p.detalhe.faltam as string[]).map(nomeDaMarca).join("; ")}</span>
               )}
             </Marca>
           ))}
@@ -364,6 +365,30 @@ export function CopiarDeOutraUnidade({ destinoId, unidades }: { destinoId: strin
 
 // ---- as divergências com o Asaas (Painel de cobranças) -------------------------------------------
 
+/** "acao.cobranca.ver · Gerente" → "Cobranças: ver · Gerente" (o nome da tela). */
+function nomeDaMarca(m: string): string {
+  const [cap, papel] = m.split(" · ");
+  return `${CAPACIDADES_POR_ID.get(cap)?.rotulo ?? cap}${papel ? ` · ${papel}` : ""}`;
+}
+
+const SITUACAO_ASAAS: Record<string, string> = {
+  PENDING: "aguardando pagamento", OVERDUE: "vencida", RECEIVED: "recebida", CONFIRMED: "confirmada",
+  RECEIVED_IN_CASH: "recebida em dinheiro", REFUNDED: "estornada", DELETED: "apagada", AWAITING_RISK_ANALYSIS: "em análise",
+};
+
+/** O detalhe da divergência em palavras: sem nomes técnicos nem "null". */
+function detalheLegivel(d: Record<string, unknown> | null): string {
+  if (!d) return "";
+  const partes: string[] = [];
+  if (typeof d.asaas === "string") partes.push(`no Asaas: ${SITUACAO_ASAAS[d.asaas] ?? d.asaas.toLowerCase()}`);
+  if (typeof d.riszon === "string") partes.push(`no riSZon: ${d.riszon}`);
+  if (typeof d.valor_asaas === "number") partes.push(`valor no Asaas: ${formatBRL(d.valor_asaas)}`);
+  if (typeof d.valor_riszon === "number") partes.push(`no riSZon: ${formatBRL(d.valor_riszon)}`);
+  if (typeof d.criada === "string" && /^\d{4}-\d{2}-\d{2}/.test(d.criada)) partes.push(`criada em ${d.criada.slice(8, 10)}/${d.criada.slice(5, 7)}/${d.criada.slice(0, 4)}`);
+  if (typeof d.referencia === "string" && d.referencia) partes.push(`referência: ${d.referencia}`);
+  return partes.length ? `(${partes.join("; ")})` : "";
+}
+
 const TIPO: Record<string, { rotulo: string; caminho: string }> = {
   paga_no_asaas: { rotulo: "Paga no Asaas, aberta no riSZon", caminho: "O aviso do pagamento não chegou. Reprocesse o aviso em Central › Conta e tarifas, ou confira no painel do Asaas." },
   situacao_diferente: { rotulo: "Situação diferente", caminho: "Confira a cobrança no painel do Asaas e na ficha do paciente." },
@@ -371,7 +396,7 @@ const TIPO: Record<string, { rotulo: string; caminho: string }> = {
   cancelada_so_no_asaas: { rotulo: "Cancelada só no Asaas", caminho: "Foi apagada no painel do Asaas. Cancele no riSZon ou emita de novo." },
   cancelada_so_no_riszon: { rotulo: "Cancelada só no riSZon", caminho: "Ainda vale no Asaas: o paciente pode pagar. Cancele no painel do Asaas." },
   sem_no_asaas: { rotulo: "Não existe no Asaas", caminho: "O Asaas não acha esta cobrança. Confira no painel e emita de novo se precisar." },
-  fora_do_riszon: { rotulo: "Criada fora do riSZon", caminho: "Cobrança feita direto no painel do Asaas. Traga para o riSZon (4019) ou confirme que é de fora." },
+  fora_do_riszon: { rotulo: "Criada fora do riSZon", caminho: "Cobrança feita direto no painel do Asaas. Confira no painel se ela é mesmo de fora; se for da unidade, ela entra pela reemissão da cobrança externa." },
 };
 
 export function DivergenciasComOAsaas({ leitura }: { leitura: LeituraDasDivergencias }) {
@@ -385,7 +410,7 @@ export function DivergenciasComOAsaas({ leitura }: { leitura: LeituraDasDivergen
         <span className="text-xs text-muted-foreground"> · desde {quando(d.desde)} · Asaas {d.asaas ?? "—"}</span>
       </p>
       <p className="text-xs text-muted-foreground">
-        {TIPO[d.tipo]?.caminho} {d.detalhe && Object.keys(d.detalhe).length > 0 && `(${Object.entries(d.detalhe).map(([k, v]) => `${k}: ${String(v)}`).join(", ")})`}
+        {TIPO[d.tipo]?.caminho} {detalheLegivel(d.detalhe)}
       </p>
       {d.status === "ignorada" && <p className="text-xs">Ignorada por {d.ignorada_por ?? "—"} em {quando(d.ignorada_em)}: “{d.motivo}”</p>}
       <span className="flex flex-wrap gap-2">
