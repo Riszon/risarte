@@ -31,7 +31,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   desfeito) e quebrando 3 vezes (`QUEBRA=regra|trava|planilha`); régua
 >   `pagador-dos-dependentes.test.ts` (15), provada quebrando. Manual do
 >   Empresarial 9 e 12. **Não visto na tela.**
-> - ⏳ **1049 só no treino**; o dono roda na produção antes do push.
+> - ✅ **1049 nos dois bancos** (produção pelo dono em 18/11/2026, conferência
+>   3·3·2·true·true; conferido de fora: sem login `importar_titulares` recusa
+>   com "permission denied", a de controle responde "não encontrada"; 52
+>   titulares, todos com a EMPRESA; nenhuma cobrança à parte ainda).
 
 > ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — NA PRODUÇÃO (18/11/2026)
 >

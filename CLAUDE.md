@@ -412,7 +412,8 @@ Syncthing se comportarem de forma estranha.**
   inteira dentro dela. SQL por script: substituir por função.
 - ⚠️ `migrar:teste --ate 1049` aplicou também a **0432** (ortodontia, sem
   commit na pasta) no treino.
-- ⏳ 1049 só no treino; o dono roda na produção antes do push.
+- ✅ 1049 nos dois bancos (produção pelo dono em 18/11/2026, 3·3·2·true·true;
+  conferido de fora). Publicado depois da migração.
 
 **18/11/2026 (ortodontia, correções do roteiro, segunda leva: AP180, AP182, AP183, D5) — PC Administrador (core 0.484.0 → 0.485.0, migração 0431; a 0.484.0 é do Asaas)**
 
