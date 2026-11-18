@@ -4803,6 +4803,8 @@ Decidido também: o parcial na ficha e no distrato, sempre com motivo; o cartão
   - A mensagem agora explica em palavras de quem pede: "peça de novo amanhã".
   - **A prova é repetida em 18/11** (`asaas-4020a-estorno-parcial.integracao.test.ts`).
 
+**Na produção (17/11/2026):** o dono rodou a 4020a no SQL Editor depois da 4018c, e a conferência bateu: `tabela_nova 1 · funcoes_novas 9 · limite_em_branco true · aviso_ligado true`. Desfazer: `docs/asaas/desfazer-4020a.sql`. O código só sobe com a publicação do `main`, depois da 4021a.
+
 **Fato novo do Asaas (sandbox):** no cartão, o estorno **parcial** não é aceito no mesmo dia da aprovação da transação. (O total no mesmo dia não foi provado.) Não contradiz a especificação; entra no manual (13g.19).
 
 ### 19.39 Segunda resposta do Asaas (João Lima, suporte N1, 17/11/2026) — só o que é novo
