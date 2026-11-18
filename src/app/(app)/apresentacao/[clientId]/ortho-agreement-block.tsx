@@ -59,6 +59,8 @@ export function OrthoAgreementBlock({
   const [retainerFee, setRetainerFee] = useState(reais(a?.retainerFeeCents ?? d.retainerFeeCents));
   const [retainerTerms, setRetainerTerms] = useState(a?.retainerTerms ?? d.retainerTerms ?? "");
   const [notes, setNotes] = useState(a?.notes ?? "");
+  // AP183 D1 (0432): a data do 1º vencimento (as seguintes seguem o dia de vencimento).
+  const [firstDue, setFirstDue] = useState(a?.firstDueDate ?? "");
 
   const monthlyCents = parseBRLToCents(monthly) ?? 0;
   const punctNum = Number.parseFloat(punct.replace(",", ".")) || 0;
@@ -84,6 +86,7 @@ export function OrthoAgreementBlock({
         retainerFeeCents: retainerCharged ? (parseBRLToCents(retainerFee) ?? 0) : 0,
         retainerTerms: retainerCharged ? retainerTerms : "",
         notes,
+        firstDueDate: firstDue || null,
       });
       if (!r.ok) {
         toast.error(r.error ?? "Não foi possível salvar o acordo ortodôntico.");
@@ -144,6 +147,11 @@ export function OrthoAgreementBlock({
           </select>
         </div>
         <div className="space-y-1">
+          <Label htmlFor="ortho-first-due">1º vencimento</Label>
+          <Input id="ortho-first-due" type="date" value={firstDue} onChange={(e) => setFirstDue(e.target.value)} disabled={locked || isPending} />
+          <p className="text-[11px] text-muted-foreground">A 1ª mensalidade nasce no fechamento da venda e vence nesta data. Em branco: o próximo dia de vencimento.</p>
+        </div>
+        <div className="space-y-1">
           <Label htmlFor="ortho-day">Dia de vencimento</Label>
           <Input id="ortho-day" type="number" min={1} max={28} value={day} onChange={(e) => setDay(Number(e.target.value))} disabled={locked || isPending} />
         </div>
@@ -188,7 +196,7 @@ export function OrthoAgreementBlock({
       )}
       {locked && a && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Acordo fechado: {formatBRL(a.monthlyFeeCents)}/mês × {a.installmentsCount} · {ORTHO_BILLING_METHOD_LABELS[a.billingMethod as OrthoBillingMethod] ?? a.billingMethod} · dia {a.billingDay}
+          Acordo fechado: {formatBRL(a.monthlyFeeCents)}/mês × {a.installmentsCount} · {ORTHO_BILLING_METHOD_LABELS[a.billingMethod as OrthoBillingMethod] ?? a.billingMethod} · dia {a.billingDay}{a.firstDueDate ? ` · 1º vencimento ${a.firstDueDate.split("-").reverse().join("/")}` : ""}
           {a.punctualityDiscountPercent > 0 ? ` · ${a.punctualityDiscountPercent}% de pontualidade` : ""} · contenção {a.retainerCharged ? `cobrada (${formatBRL(a.retainerFeeCents)})` : "incluída"}.
         </p>
       )}

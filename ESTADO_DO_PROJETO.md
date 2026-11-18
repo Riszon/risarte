@@ -36,6 +36,30 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   com "permission denied", a de controle responde "não encontrada"; 52
 >   titulares, todos com a EMPRESA; nenhuma cobrança à parte ainda).
 
+> ## 🦷 0.486.0 — ORTODONTIA, AP183 D1: AS MENSALIDADES NO FECHAMENTO E O INÍCIO COM A 1ª PAGA (18/11/2026; migração 0432) — AGUARDA A PRODUÇÃO
+>
+> Regra do dono (18/11/2026) com as decisões E1–E4 (`docs/ortodontia/AP183-D1-PLANO.md`):
+> mensalidades no fechamento da venda; início sempre na instalação; a agenda
+> não agenda a instalação sem a 1ª paga; o caso legado não muda.
+> - ⚠️ **"A 1ª mensalidade está paga?" = `_ortho_first_fee_paid`** (a de
+>   vencimento mais cedo, sem as canceladas; legado = sim). Espelho na tela:
+>   `primeiraMensalidadeEmAberto` / `faltaParaComecar` (`regras.ts`).
+> - ⚠️ Recriadas na 0432: `_ortho_emit_batch`, `_ortho_open_from_sale`,
+>   `_ortho_begin_treatment`, `ortho_set_status`, `save_negotiation_ortho`
+>   (assinatura nova, com `p_first_due_date`). Ao recriar, partir da 0432.
+> - ⚠️ O início que espera o pagamento guarda `ortho_cases.installed_on`; o
+>   gatilho `ortho_charges_first_fee_start` inicia o caso (nunca derruba a
+>   baixa — também a do Asaas). Desfazer a 1ª depois de iniciado não volta o caso.
+> - ⚠️ A agenda pergunta `ortho_installation_block` ANTES de gravar
+>   (`recusaDaInstalacao`); os gatilhos `ortho_installation_guard` são a
+>   rede de segurança. Coordenado com a sessão do Asaas (o lote leva o meio).
+> - ✅ 0432 no treino (`--ate 0432`); ensaio 12/12; ensaios do Asaas 54/54,
+>   24/24 e 64/64 depois dela. Na tela (treino): recusa da agenda, o que
+>   falta na ficha e na Atenção, a 1ª paga libera. Não visto: a instalação
+>   concluída iniciando o caso pela tela (provado no ensaio). EV-393.
+>   Resíduo: o caso ORT-000039 do paciente de teste, interrompido.
+> - ⏳ **Produção:** o dono roda a 0432; o push sai depois.
+>
 > ## 🦷 0.485.0 — CORREÇÕES DO ROTEIRO DA ORTODONTIA, SEGUNDA LEVA: AP180, AP182, AP183 (itens 2–7) E D5 (18/11/2026; migração 0431) — NA PRODUÇÃO (18/11/2026)
 >
 > Decisões do dono em 18/11/2026 (planos `docs/ortodontia/AP180-PLANO.md`,

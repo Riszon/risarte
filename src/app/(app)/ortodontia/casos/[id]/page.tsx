@@ -56,7 +56,7 @@ import {
   nextMaintenance,
   originOf,
   progressPercent,
-  inicioDoProximoLote, suggestedRenewalAmount,
+  faltaParaComecar, inicioDoProximoLote, suggestedRenewalAmount,
   type MaintenanceLike,
 } from "@/lib/ortodontia/regras";
 import {
@@ -143,6 +143,12 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
   // R8 (0335): o lote de mensalidades que vale hoje, e o valor sugerido para o próximo (Q2).
   const lote = activeBatch(batchesByCase.get(c.id));
   const sugestao = suggestedRenewalAmount(lote?.amount_cents ?? c.monthly_fee_cents, c.start_date, today, settings?.annual_adjustment_percent ?? 0);
+  // AP183 D1 (0432): o que falta para o caso da venda começar.
+  const faltaParaIniciar = faltaParaComecar({
+    status: c.status,
+    installedOn: c.installed_on,
+    charges: canMoney ? charges : null,
+  });
   // AP181 (0430): em que mês o próximo lote começa (espelho de _ortho_emit_batch).
   const proximoInicio = inicioDoProximoLote({
     lotes: batchesByCase.get(c.id) ?? [],
@@ -302,6 +308,12 @@ export default async function OrtoCasoPage(props: PageProps<"/ortodontia/casos/[
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground">{ORTHO_STATUS_HINTS[c.status]}.</p>
+            {faltaParaIniciar.length > 0 && (
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                Para o tratamento começar, falta {faltaParaIniciar.join(" e ")}.
+                {c.installed_on ? ` Instalação feita em ${formatIsoDateBr(c.installed_on)}: o início fica nesta data.` : ""}
+              </p>
+            )}
             {pct !== null && c.status === "em_tratamento" && (
               <div className="h-2 w-full rounded bg-muted" title={`${pct}% do prazo previsto`}>
                 <div className={cn("h-2 rounded", timeliness === "atrasado" ? "bg-rose-500" : "bg-primary/70")} style={{ width: `${pct}%` }} />

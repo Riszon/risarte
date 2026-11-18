@@ -415,6 +415,14 @@ Syncthing se comportarem de forma estranha.**
 - ✅ 1049 nos dois bancos (produção pelo dono em 18/11/2026, 3·3·2·true·true;
   conferido de fora). Publicado depois da migração.
 
+**18/11/2026 (ortodontia, AP183 D1: o início do caso e a 1ª mensalidade) — PC Administrador (core 0.485.0 → 0.486.0, migração 0432)**
+
+- Bloco 0.486.0 no ESTADO. ⚠️ **1ª mensalidade paga = `_ortho_first_fee_paid`**;
+  o caso da venda só começa com ela (`_ortho_begin_treatment` espera, guarda
+  `installed_on`; a baixa inicia). ⚠️ A agenda confere `ortho_installation_block`
+  antes de gravar. ⚠️ `save_negotiation_ortho` tem 11 parâmetros (0432).
+- ✅ 0432 no treino. ⏳ Produção com o dono; push depois.
+
 **18/11/2026 (ortodontia, correções do roteiro, segunda leva: AP180, AP182, AP183, D5) — PC Administrador (core 0.484.0 → 0.485.0, migração 0431; a 0.484.0 é do Asaas)**
 
 - Bloco 0.485.0 no ESTADO. ⚠️ **Fechar venda é da equipe comercial e do Admin**

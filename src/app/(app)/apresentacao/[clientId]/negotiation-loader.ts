@@ -56,6 +56,8 @@ export type NegotiationOrthoData = {
   retainerFeeCents: number;
   retainerTerms: string | null;
   notes: string | null;
+  /** AP183 D1 (0432): o 1º vencimento combinado (AAAA-MM-DD); nulo = o próximo dia de vencimento depois do fechamento. */
+  firstDueDate: string | null;
 };
 
 /** ORTO8: o que a tela da negociação precisa saber sobre ortodontia. */
@@ -476,7 +478,7 @@ export async function loadNegotiationBlock(
         ? supabase
             .from("plan_negotiation_ortho")
             .select(
-              "monthly_fee_cents, installments_count, billing_method, billing_day, punctuality_discount_percent, retainer_charged, retainer_fee_cents, retainer_terms, notes"
+              "monthly_fee_cents, installments_count, billing_method, billing_day, punctuality_discount_percent, retainer_charged, retainer_fee_cents, retainer_terms, notes, first_due_date"
             )
             .eq("negotiation_id", n.id)
             .maybeSingle()
@@ -536,6 +538,7 @@ export async function loadNegotiationBlock(
               retainerFeeCents: Number(a.retainer_fee_cents ?? 0),
               retainerTerms: (a.retainer_terms as string | null) ?? null,
               notes: (a.notes as string | null) ?? null,
+              firstDueDate: (a.first_due_date as string | null) ?? null,
             }
           : null,
         defaults: {

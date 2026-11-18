@@ -62,6 +62,28 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.486.0",
+    data: "2026-11-18",
+    migracao: "0432",
+    titulo: "Ortodontia: as mensalidades nascem no fechamento da venda e o tratamento começa com a 1ª paga",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "No acordo ortodôntico, o Consultor escolhe o 1º vencimento. As mensalidades nascem no fechamento da venda, junto com o caso: a 1ª nessa data e as seguintes no dia de vencimento de cada mês. Nenhuma nasce vencida.",
+        papeis: ["commercial_consultant", "unit_manager"],
+        manual: "2.8. Ortodontia",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A instalação do aparelho só é agendada depois de paga a 1ª mensalidade. O tratamento começa com o contrato assinado, a 1ª mensalidade paga e a instalação, e a data de início é a da instalação. A ficha do caso e a tela Atenção dizem o que falta para começar.",
+        papeis: ["receptionist", "sdr", "unit_manager", "clinical_coordinator", "finance_franchisor"],
+        manual: "2.8. Ortodontia",
+      },
+    ],
+  },
+  {
     versao: "0.485.0",
     data: "2026-11-18",
     migracao: "0431",

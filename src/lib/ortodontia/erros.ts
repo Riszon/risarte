@@ -7,6 +7,10 @@ const MENSAGENS: Record<string, string> = {
   NOT_ALLOWED: "Você não tem permissão para esta ação na ortodontia.",
   NOT_FOUND: "Este registro não existe mais.",
   CLIENT_NOT_FOUND: "Paciente não encontrado.",
+  // AP183 D1 (0432): o caso da venda só começa com a 1ª mensalidade paga.
+  // O código mais longo antes: "ORTHO_FIRST_FEE_UNPAID" contém "FIRST_FEE_UNPAID".
+  ORTHO_FIRST_FEE_UNPAID: "A 1ª mensalidade da ortodontia ainda não foi paga. Dê a baixa antes de agendar a instalação do aparelho.",
+  FIRST_FEE_UNPAID: "O tratamento só começa com a 1ª mensalidade paga. Dê a baixa dela antes de iniciar.",
   CASE_ALREADY_OPEN: "Este paciente já tem um caso ortodôntico aberto. Finalize ou interrompa o atual antes de abrir outro.",
   CASE_CLOSED: "O caso está finalizado ou interrompido: reabra antes de mexer no cronograma.",
   INVALID_STATUS: "Situação inválida.",

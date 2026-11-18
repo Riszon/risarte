@@ -1,6 +1,7 @@
 "use server";
 
 import { lerComplemento } from "@/lib/complemento-comercial";
+import { todayInBrazil } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
 import {
   getSessionContext,
@@ -356,6 +357,8 @@ export async function saveNegotiationOrtho(
     retainerFeeCents: number;
     retainerTerms: string;
     notes: string;
+    /** AP183 D1: AAAA-MM-DD ou vazio (vale o próximo dia de vencimento). */
+    firstDueDate?: string | null;
   }
 ): Promise<NegotiationActionResult> {
   await getSessionContext();
@@ -367,6 +370,9 @@ export async function saveNegotiationOrtho(
   if (!Number.isFinite(day) || day < 1 || day > 28) return { ok: false, error: "Dia de vencimento: entre 1 e 28." };
   const punct = Number(input.punctualityDiscountPercent);
   if (!Number.isFinite(punct) || punct < 0 || punct > 100) return { ok: false, error: "Desconto por pontualidade: entre 0 e 100%." };
+  const primeiro = (input.firstDueDate ?? "").trim();
+  if (primeiro && !/^d{4}-d{2}-d{2}$/.test(primeiro)) return { ok: false, error: "1º vencimento: escolha uma data." };
+  if (primeiro && primeiro < todayInBrazil()) return { ok: false, error: "O 1º vencimento não pode ficar no passado." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("save_negotiation_ortho", {
     p_negotiation_id: negotiationId,
@@ -379,6 +385,7 @@ export async function saveNegotiationOrtho(
     p_retainer_fee_cents: Math.max(0, Math.round(input.retainerFeeCents)),
     p_retainer_terms: input.retainerTerms.trim() || null,
     p_notes: input.notes.trim() || null,
+    p_first_due_date: primeiro || null,
   });
   if (error) {
     const m = error.message;
@@ -386,6 +393,7 @@ export async function saveNegotiationOrtho(
       return { ok: false, error: "A negociação já foi aceita ou encerrada — o acordo ortodôntico não muda mais." };
     if (m.includes("NOT_ALLOWED"))
       return { ok: false, error: "Só o Consultor Comercial (ou o Gerente) fecha o acordo ortodôntico." };
+    if (m.includes("FIRST_DUE_IN_PAST")) return { ok: false, error: "O 1º vencimento não pode ficar no passado." };
     console.error("save_negotiation_ortho failed:", m);
     return { ok: false, error: "Não foi possível salvar o acordo ortodôntico." };
   }

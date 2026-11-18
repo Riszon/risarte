@@ -217,6 +217,7 @@ export type AttentionReason =
   | "mensalidade_atrasada"
   | "pedido_clinico_aberto"
   | "aguardando_inicio"
+  | "falta_primeira_mensalidade"
   | "lote_terminando"
   | "lote_encerrado"
   | "suspenso";
@@ -230,6 +231,7 @@ export const ATTENTION_LABELS: Record<AttentionReason, string> = {
   mensalidade_atrasada: "Mensalidade atrasada",
   pedido_clinico_aberto: "Pedido clínico em aberto",
   aguardando_inicio: "Aguardando início (agendar instalação)",
+  falta_primeira_mensalidade: "Aguardando início (falta pagar a 1ª mensalidade)",
   lote_terminando: "Lote de mensalidades terminando (renovar ou encerrar?)",
   lote_encerrado: "Sem mensalidades assumidas (lote terminou)",
   suspenso: "Tratamento suspenso",
@@ -330,6 +332,35 @@ export const MAINTENANCE_GRACE_DAYS = 7;
  * Por que este caso precisa de atenção hoje. Vazio = está em dia.
  * A ordem da lista é a ordem de urgência para a recepção.
  */
+/**
+ * AP183 D1 (0432): a 1ª mensalidade (a de vencimento mais cedo, sem as
+ * canceladas) ainda não foi paga? Sem cobranças à vista (quem não vê dinheiro),
+ * não dá para dizer: devolve falso.
+ */
+export function primeiraMensalidadeEmAberto(charges: ChargeLike[] | undefined): boolean {
+  const primeira = (charges ?? [])
+    .filter((c) => c.status !== "cancelada")
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+  return Boolean(primeira) && primeira.status !== "paga";
+}
+
+/**
+ * AP183 D1 (0432): o que falta para o caso da venda começar (para a ficha):
+ * a 1ª mensalidade paga e a instalação. `charges` nulo = quem olha não vê
+ * dinheiro (a pendência do pagamento não aparece para ele).
+ */
+export function faltaParaComecar(input: {
+  status: OrthoStatus;
+  installedOn: string | null;
+  charges: ChargeLike[] | null;
+}): string[] {
+  if (input.status !== "aguardando_inicio") return [];
+  const falta: string[] = [];
+  if (input.charges && primeiraMensalidadeEmAberto(input.charges)) falta.push("a 1ª mensalidade paga");
+  if (!input.installedOn) falta.push("a instalação do aparelho");
+  return falta;
+}
+
 export function attentionReasons(input: {
   caso: OrthoCaseLike;
   maintenances: MaintenanceLike[];
@@ -357,7 +388,10 @@ export function attentionReasons(input: {
   const inTreatment = caso.status === "em_tratamento";
   const active = inTreatment || caso.status === "contencao";
 
-  if (caso.status === "aguardando_inicio") {
+  if (caso.status === "aguardando_inicio" && primeiraMensalidadeEmAberto(input.includeMoney !== false ? input.charges : undefined)) {
+    // AP183 D1 (0432): sem a 1ª mensalidade paga a instalação nem é agendada.
+    reasons.push("falta_primeira_mensalidade");
+  } else if (caso.status === "aguardando_inicio") {
     const scheduled =
       input.startScheduled === true ||
       maintenances.some(

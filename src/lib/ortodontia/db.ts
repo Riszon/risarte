@@ -71,6 +71,8 @@ export type OrthoCaseRow = {
   /** R9/Q5 (0335): suspenso — quando e por quê. */
   suspended_at: string | null;
   suspend_reason: string | null;
+  /** AP183 D1 (0432): a instalação concluída que espera a 1ª mensalidade paga. */
+  installed_on: string | null;
   notes: string | null;
   created_at: string;
   client: OrthoClientLite | null;
@@ -143,7 +145,7 @@ type TermsEmbed = {
 };
 
 const CASE_SELECT =
-  `id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, origin, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_delivered_at, discharged_at, extension_days, suspended_at, suspend_reason, notes, created_at, ${CASE_TERMS_EMBED}, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )`;
+  `id, code, clinic_id, client_id, orthodontist_id, treatment_kind, status, origin, start_date, planned_months, planned_end_date, maintenance_interval_days, next_reevaluation_date, maintenance_procedure_id, plan_id, negotiation_id, finished_at, finish_reason, interrupted_at, interrupt_reason, retainer_delivered_at, discharged_at, extension_days, suspended_at, suspend_reason, installed_on, notes, created_at, ${CASE_TERMS_EMBED}, client:clients!ortho_cases_client_id_fkey ( id, full_name, code, phone, ppr_membership_id, ppr_active, empresarial_company_id, referred_by_client_id, origin_program ), clinic:clinics!ortho_cases_clinic_id_fkey ( name ), orthodontist:profiles!ortho_cases_orthodontist_id_fkey ( full_name )`;
 
 function toCase(r: Record<string, unknown>): OrthoCaseRow {
   const t = one(r.terms as TermsEmbed | TermsEmbed[] | null);
@@ -167,6 +169,7 @@ function toCase(r: Record<string, unknown>): OrthoCaseRow {
     extension_days: Number(r.extension_days ?? 0),
     suspended_at: (r.suspended_at as string | null) ?? null,
     suspend_reason: (r.suspend_reason as string | null) ?? null,
+    installed_on: (r.installed_on as string | null) ?? null,
     client: one(r.client as OrthoClientLite | OrthoClientLite[] | null),
     clinic: one(r.clinic as { name: string } | { name: string }[] | null),
     orthodontist: one(r.orthodontist as { full_name: string } | { full_name: string }[] | null),
