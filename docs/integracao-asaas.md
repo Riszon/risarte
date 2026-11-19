@@ -6086,7 +6086,7 @@ No treino, ele deu: 10 empresas ativas, 15 cobranças em aberto (R$ 2.513,90), 1
 
 **Falta:**
 - o teste do dono no projeto de teste;
-- a 4023 na produção, só com o "pode", com a consulta prévia e o desfazer;
+- ~~a 4023 na produção~~ **feita pelo dono em 19/11/2026** (consulta prévia ok; conferência `3 · true · true · true · 0`; conferida de fora);
 - da RisLife: a conta de produção, a chave mínima e o termo;
 - a cláusula dos dois emissores no modelo de contrato (texto do dono, nos dois ambientes).
 - **antes do commit que leva ao main:** chamar a sessão do Empresarial, que escreve o manual do Empresarial (seções 9 e 12 e o funil, a partir da 13g.21), regera o .docx e confirma a versão do Empresarial; e a linha "⚠️ Ao recriar guard_lead_signatures, partir da 4023" no ESTADO e no CLAUDE.md.

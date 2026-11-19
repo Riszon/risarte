@@ -2,6 +2,18 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.112.0 — O EMPRESARIAL COBRADO PELO ASAAS (ASA5, 19/11/2026; migração 4023, da faixa do Asaas)
+>
+> Entrega da sessão do Asaas (estado em `docs/asaas/ESTADO.md`, spec 22.9).
+> `EMPRESARIAL_MIGRATION` segue 1050. Manual do Empresarial: seção 5
+> (*Envio e selos*, o 1º pagamento pelo Asaas), 9 (e-mail ou celular do outro
+> pagador), 12 (*A cobrança pelo Asaas*, o split) e 18.
+> - ⚠️ Ao recriar guard_lead_signatures, partir da 4023 (a baixa do Asaas sela o 1º pagamento)
+> - ⚠️ Outro pagador dos dependentes exige `dependents_payer_email` ou
+>   `dependents_payer_phone` (4023); com o Asaas ligado, o funil emite a
+>   implantação por `public.corporate_lead_implantation_issue` e
+>   `registerImplantationPayment` recusa.
+
 > ## 💼 EMPRESARIAL 0.111.0 / 1050 — REVISAR CONTRATO, A IMPLANTAÇÃO DA IMPORTADA E A DOS DEPENDENTES NOVOS (18/11/2026)
 >
 > Etapa 2 + R7 do plano aprovado pelo dono (R1–R7,

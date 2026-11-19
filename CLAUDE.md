@@ -400,6 +400,15 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**19/11/2026 (Asaas — ASA5, o Empresarial pelo Asaas) — PC Administrador (core 0.486.0 → 0.487.0, Asaas 0.23.0, Empresarial 0.111.0 → 0.112.0, migração 4023; worktree `wt-asaas`)**
+
+- **O Empresarial pelo Asaas** (estado em `docs/asaas/ESTADO.md`; spec seção 22). A mensalidade sai pela conta raiz, com split PERCENTUAL para a carteira da RisLife (50% do LÍQUIDO; a tarifa fica dividida, decisão 2b). A implantação é faturada pela RisLife, na conta `recipient` dela, sem split. Ligar: Central › Rede › Empresarial (a data vale para a rede inteira).
+- ⚠️ **Ao recriar `empresarial.guard_lead_signatures`, partir da 4023** (a baixa do Asaas sela o 1º pagamento do lead: a condição `risarte.baixa_do_asaas`). A 4023 inseriu o trecho com âncora, sem reescrever a função; o mesmo vale para o ramo do Empresarial em `_gateway_apply_event`.
+- ⚠️ **A trava `_corporate_billing_lock` em `adhesion_billing`:** com cobrança viva no Asaas, a linha não muda de valor, vencimento ou pagador, nem é baixada, cancelada ou excluída. O servidor cancela no Asaas antes (`liberarDoAsaas`). Paga pelo Asaas, só o estorno pelo Asaas desfaz a baixa.
+- ⚠️ **A geração no Empresarial nunca falha por causa do Asaas:** `corporate_charge_prepare` devolve o motivo, e a emissão roda DEPOIS do insert (e da cobertura da 1050). O que não sai vira aviso, com "Emitir no Asaas" ou "Tentar de novo".
+- ⚠️ A implantação é 100% RisLife (regra `split_rules_implantacao_rislife_check`); o outro pagador dos dependentes exige e-mail ou celular. O legado (`src/lib/empresarial/asaas.ts`, a Edge Function `asaas-webhook`, `asaas_webhook_events`, `asaas_billing_id`) saiu.
+- ✅ 4023 no treino e na produção (o dono, 19/11/2026: `3 · true · true · true · 0`; conferido de fora: 401 nas funções, as tabelas sem leitura). Ensaio 64/64; sandbox 10/10.
+
 **18/11/2026 (revisar contrato) — PC Administrador (Empresarial 0.110.0 → 0.111.0, migração 1050)**
 
 - Bloco "EMPRESARIAL 0.111.0" no ESTADO. ⚠️ **As regras combinadas da

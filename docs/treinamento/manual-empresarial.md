@@ -342,6 +342,20 @@ pela proposta. O cartão diz onde o pagamento está:
 > cobrança nas cobranças da empresa — o funil não muda um pagamento que já
 > está no financeiro (o banco recusa).
 
+**Com a cobrança pelo Asaas ligada** *(desde a Empresarial 0.112.0, seção
+12)*, o 1º pagamento **não se registra mais à mão** como "pago por fora". O
+cartão muda:
+
+- **Empresa ainda não criada** — *A cobrança da implantação sai pelo Asaas,
+  no nome da empresa: crie a empresa primeiro (aba Fechamento).*
+- **Empresa criada** — informe o **Valor da implantação** (vem sugerido pela
+  proposta) e o **Vencimento** e clique em **Emitir a cobrança no Asaas**. Ela
+  sai em nome da **RisLife** (100% dela), com boleto e Pix.
+- **Emitida** — *aguardando o pagamento*, com **abrir a fatura** e **ver
+  cobranças**. Quando o Asaas avisa o pagamento, **o 1º pagamento se registra
+  sozinho** no lead, e o selo fica marcado. Se ela ficou em *Não saiu no
+  Asaas*, use **Tentar de novo** nas cobranças da empresa.
+
 > **A implantação continua fora do razão da Franqueadora** (ela é da RisLife,
 > decisão de 09/11/2026): aparece nas cobranças da empresa, não na DRE.
 
@@ -1423,7 +1437,12 @@ para **todos** os dependentes daquele titular:
 | **O próprio titular (no CPF dele)** | numa cobrança à parte, no nome e no CPF do titular |
 | **Outro pagador (CPF ou CNPJ)** | numa cobrança à parte, no nome e no documento informados |
 
-O sistema confere o CPF ou o CNPJ do outro pagador antes de salvar. Na lista
+O sistema confere o CPF ou o CNPJ do outro pagador antes de salvar. Para o
+**outro pagador**, informe também o **E-mail de quem paga** ou o **Celular de
+quem paga** — **pelo menos um** *(desde a Empresarial 0.112.0)*: com a
+cobrança pelo Asaas ligada (seção 12), é para lá que o Asaas manda a cobrança
+e os lembretes. Sem nenhum dos dois, o sistema não salva. (O titular que paga
+os próprios dependentes usa o contato do cadastro dele.) Na lista
 de titulares, quem paga à parte ganha a marca *"· dependentes pagos à
 parte"*. A escolha vale **a partir da próxima mensalidade gerada** — o que já
 foi gerado não muda (seção 12). Titular desligado não muda mais a escolha.
@@ -1628,7 +1647,8 @@ pacote para R$ 6.000,00 → a mensalidade é R$ 6.000,00 (5.000 + 1.000 do termo
 >
 > **O valor pode ser ajustado depois de gerar.** A cobrança nasce Pendente e o
 > **Editar** troca valor, vencimento e descrição enquanto ela não for paga.
-> Hoje nenhum boleto é emitido ao gerar (seção 18).
+> Com o Asaas ligado, editar cancela a cobrança no Asaas e emite de novo, já
+> corrigida (ver *A cobrança pelo Asaas*, abaixo).
 
 > **A mesma mensalidade não sai duas vezes.** Se a mensalidade do mês já foi
 > gerada — por esta tela ou pela cobrança de todas as empresas —, o sistema
@@ -1770,11 +1790,78 @@ vencimento e nome.
   pulada**, e o aviso diz quais.
 - **Imprimir a lista** manda a tabela para o papel.
 
+### A cobrança pelo Asaas *(desde a Empresarial 0.112.0)*
+
+Quem liga é o Admin Master, em **Central de Configuração › Rede ›
+Empresarial**: escolhe a conta Asaas da RisLife, corrige o que a lista
+**"Antes de ligar: o cadastro das empresas"** mostrar e informa **"Cobrar pelo
+Asaas a partir de"**. Vale para a rede inteira. A aba Financeiro da empresa
+diz no alto se está ligado: *"Asaas ligado: a cobrança gerada sai no Asaas na
+hora…"* ou *"Asaas desligado — a cobrança fica registrada aqui e a baixa é
+manual."*
+
+**Quem emite:**
+
+- **A mensalidade** sai pela conta Asaas da **franqueadora**, e **50% do
+  valor líquido** (o que sobra depois da tarifa do Asaas) vai direto para a
+  carteira da RisLife. A tarifa fica dividida entre as duas.
+- **A implantação** é emitida pela **RisLife**, na conta Asaas dela: 100% da
+  RisLife, sem divisão.
+
+**A cobrança sai na hora em que é gerada** — em **Gerar cobrança mensal**, em
+**Gerar implantação**, na **Implantação dos dependentes novos** e na geração
+**em lote** —, com link da fatura, boleto e Pix. **A baixa vem sozinha**
+quando o Asaas avisa o pagamento; a parte da RisLife já nasce quitada no
+razão (não vira conta a pagar).
+
+**Em nome de quem:**
+
+- da empresa, no CNPJ do documento da cobrança;
+- empresa com **CAEPF, CNO ou NIF**: no **CNPJ da matriz**; sem matriz, no
+  **CPF do responsável**;
+- **dependentes pagos à parte** (seção 9): no CPF do titular ou no documento
+  do outro pagador, que recebe a cobrança no e-mail ou no celular informado.
+
+**Na linha de cada cobrança** aparece a situação no Asaas (*No Asaas*,
+*Vencida no Asaas*, *Paga no Asaas*, *Não saiu no Asaas*, *Cancelada no
+Asaas*, *Estornada no Asaas*), quem emitiu (*emitida pela RisLife* ou *pela
+Franqueadora*) e os atalhos **Abrir a fatura**, **Boleto (PDF)**, **Copiar a
+linha** e **Copiar o Pix**.
+
+- **Emitir no Asaas** — para a cobrança em aberto que não está no Asaas (por
+  exemplo, gerada antes da data de início).
+- **Tentar de novo** — quando a cobrança ficou em *Não saiu no Asaas*. Ela
+  já está gravada no Empresarial; só falta sair lá. Na geração em lote, o
+  resultado lista as que ficaram assim (*"Geradas, mas não saíram no
+  Asaas"*).
+- **Editar, cancelar ou excluir** — o sistema cancela a cobrança **no Asaas
+  primeiro**; se o Asaas não cancelar, nada muda aqui. Ao **editar**, a
+  cobrança é emitida de novo, já corrigida.
+- **Recebeu por fora** — com a cobrança viva no Asaas, o botão **Marcar
+  pago** vira **Recebeu por fora**: o sistema avisa, cancela a do Asaas e
+  faz a baixa aqui. A **Dar baixa** em lote (Empresarial → Cobranças) faz o
+  mesmo: cancela no Asaas antes de dar a baixa; se o Asaas não cancelar, a
+  cobrança fica de fora, com o motivo.
+- **Estornar** uma cobrança paga pelo Asaas — o estorno sai **pelo Asaas**:
+  antes, o sistema confere o saldo da conta da franqueadora e o da RisLife.
+
+**O Relatório do mês.** Na mensalidade, o link **Relatório do mês** abre a
+foto do Relatório detalhado (titulares e dependentes) **do dia em que a
+mensalidade foi gerada**. O mesmo link vai na cobrança que a empresa recebe:
+ela abre sem login e pode imprimir em PDF.
+
+**O atraso** continua sendo da rotina do Empresarial (seção *Inadimplência*):
+é ela que marca em atraso e suspende. Se o Asaas disser outra coisa, a
+divergência aparece na aba Empresarial da Central.
+
 ### O split
 
 Ao dar baixa, o pagamento é dividido **Risarte / RisLife**. O padrão da rede é
 **0% / 100% no primeiro pagamento** e **50% / 50% nas mensalidades**
-(Configurações → Split de pagamento).
+(Configurações → Split de pagamento). **Com o Asaas ligado**, a implantação é
+sempre **100% da RisLife** (o campo do primeiro pagamento não muda mais) e a
+mensalidade continua configurável, com exceção por empresa; a divisão é feita
+pelo próprio Asaas, sobre o valor líquido.
 
 ### A mensalidade no Financeiro da Franqueadora *(desde a Empresarial 0.98.0, AP69)*
 
@@ -2053,12 +2140,13 @@ daquela empresa.
 Dizer isso é parte do manual: quem não sabe o que falta descobre no pior
 momento, na frente do cliente.
 
-- **Boleto pelo ASAAS não é emitido.** O sistema registra valor, vencimento e
-  pagador; **a baixa é manual**. A função existe no código e não é chamada por
-  lugar nenhum. Quando a emissão for ligada, o link entra na mesma tela.
-  **Combinado para a integração:** o boleto será emitido num passo próprio
-  (**Emitir boleto**), depois de a cobrança ser conferida e, se preciso,
-  editada — gerar a cobrança não vai emitir o boleto sozinho.
+- **A cobrança pelo Asaas** está pronta desde a Empresarial 0.112.0 (seção
+  12), mas só vale depois que o Admin Master a liga na Central de
+  Configuração. Enquanto estiver desligada, o sistema registra valor,
+  vencimento e pagador e **a baixa é manual**, como antes. Ligada, a cobrança
+  sai no Asaas **na hora em que é gerada** (o combinado antigo de um passo
+  **Emitir boleto** separado mudou; para corrigir, use **Editar**, que emite de
+  novo).
 - **Assinatura pela ZapSign** está ligada desde a ZS5 (seção 6.10.1). Os
   botões antigos **Enviar** e **Marcar assinado** (simulação) da aba Contratos
   saíram. **Reenviar como novo pacote** ainda vale só para pacientes; para a
