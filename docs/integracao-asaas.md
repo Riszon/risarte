@@ -5820,7 +5820,7 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
 - Ligar o interruptor, só com a prontidão da rede completa e o "pode".
 - O roteiro da homologação: `docs/asaas/roteiro-homologacao.md`.
 
-## 22. ASA5 — O Risarte Empresarial pelo Asaas: PLANO (18/11/2026; PARA APROVAÇÃO, nada construído)
+## 22. ASA5 — O Risarte Empresarial pelo Asaas: CONSTRUÍDA (18/11/2026; plano e decisões aprovados; ver 22.9)
 
 **O que é:** as empresas do Empresarial passam a ser cobradas pelo Asaas, com a baixa pelo aviso do Asaas. A geração das cobranças continua como hoje (na ficha da empresa e no lote).
 - **A mensalidade** sai pela conta raiz da franqueadora, com o split para a RisLife na origem.
@@ -6020,3 +6020,68 @@ No treino, ele deu: 10 empresas ativas, 15 cobranças em aberto (R$ 2.513,90), 1
 - 0 exceções de split (a decisão 9 não tem nada a ajustar) e a regra padrão 100 / 50;
 - o legado vazio: 0 avisos e 0 códigos antigos (a decisão 11b pode apagar a tabela e a coluna);
 - 0 carteiras de repasse: a RisLife ainda não está cadastrada; ela entra com o vínculo da conta (peça 0).
+
+### 22.9 A construção (18/11/2026; core 0.487.0, Asaas 0.23.0, Empresarial 0.112.0, migração 4023)
+
+**O banco (4023):**
+- **As tabelas novas:**
+  - `corporate_gateway_settings`: a data de início e a conta da RisLife;
+  - `corporate_charges`: o pagador, o split e o relatório de cada cobrança, como valiam na emissão;
+  - `corporate_monthly_reports`: a foto do relatório do mês, aberta por um código de 64 caracteres.
+- **A emissão (`corporate_charge_prepare`):** nunca levanta erro por regra de negócio; devolve o motivo, e a geração no Empresarial nunca falha por causa do Asaas.
+  - A mensalidade sai pela conta raiz, com split percentual para a carteira da RisLife.
+  - A implantação sai pela conta `recipient` da RisLife, sem split.
+  - Ligado = `enabled_from` até hoje. A linha gerada antes da data só sai pelo botão (`p_manual`).
+- **O pagador (`_corporate_payer_of`):** o documento da linha; CAEPF, CNO ou NIF vão para a matriz, senão para o CPF do responsável; os dependentes à parte (1049) usam o contato do titular ou do outro pagador.
+- **A baixa (`_corporate_event`, ramo inserido em `_gateway_apply_event` sem reescrevê-la):**
+  - Na mensalidade, liga `split_at_source` antes de `_settle_billing_raw` e grava a parte da RisLife que o Asaas repassou. É o `totalValue` do split do aviso; sem ele, 50% do líquido, arredondado para baixo.
+  - A tarifa da mensalidade vai para 2.4.02 da franqueadora; a da implantação fica fora do razão.
+  - A implantação do funil sela o 1º pagamento do lead. A trava `guard_lead_signatures` ganhou a exceção da marca `risarte.baixa_do_asaas`, inserida com âncora (combinado com a sessão do Empresarial: quem recriar a função parte da 4023).
+  - O aviso de vencida só marca a cobrança (5c). O de apagada deixa a linha em aberto, para emitir de novo.
+- **As travas (`_corporate_billing_lock` em `adhesion_billing`):**
+  - Com cobrança viva, a linha não muda de valor, vencimento ou pagador, nem é baixada, cancelada ou excluída. Só passa de PENDING para OVERDUE e de volta.
+  - Paga pelo Asaas, a baixa só se desfaz depois do estorno pelo Asaas (`CHARGE_PAID_IN_GATEWAY`).
+- **As outras peças:**
+  - **O funil:** `corporate_lead_implantation_issue`, uma implantação por lead.
+  - **A Central:** `corporate_settings_read` e `_save`, com as pendências do cadastro e as divergências de atraso.
+  - **O estorno:** `corporate_refund_check`.
+  - **A leitura das cobranças:** `charges_select_corporate`.
+  - **O legado:** removido; a migração para com erro se ele tiver dado.
+  - **A implantação:** travada em 100% RisLife.
+  - **O outro pagador:** o e-mail e o celular, com pelo menos um obrigatório.
+  - **A lista das migrações:** a 4023 entrou.
+
+**O código:**
+- `src/lib/asaas/empresarial.ts`: a emissão (o pagador com os avisos do Asaas ligados e o split percentual), "Emitir no Asaas", "Tentar de novo", o cancelamento antes de mexer e o estorno com a conferência dos dois saldos.
+- **O Empresarial:**
+  - a geração na ficha, no lote e nos dependentes novos (1050) emite depois de gravar;
+  - editar, cancelar, excluir e a baixa manual cancelam no Asaas primeiro;
+  - o estorno sai pelo Asaas;
+  - a aba Cobranças mostra a situação, o emissor, a fatura, o boleto, o Pix e o relatório;
+  - o funil emite a implantação, e o "pago por fora" é recusado com o Asaas ligado;
+  - o formulário do pagador dos dependentes pede o e-mail e o celular;
+  - o campo da implantação fica fixo em 100%.
+- **A página pública `/relatorio-do-mes/[código]`:** sem login, fora dos buscadores e sem cache.
+- **A aba Empresarial da Central** (só no nível da rede).
+- **O legado:** `src/lib/empresarial/asaas.ts` e `supabase/functions/asaas-webhook` saíram.
+
+**A prova:**
+- **O ensaio** `scripts/asaas-ensaio-4023-empresarial.mjs`: 64/64. Quebrado de propósito: split 3 falhas, trava 6, pagador 3, data 1.
+- **O sandbox** `asaas-asa5-empresarial.integracao.test.ts`: 6/6.
+  - A mensalidade de R$ 100,00 pela conta raiz, com split de 50% para a RisLife Teste: líquido R$ 98,01, RisLife R$ 49,00, franqueadora R$ 51,00, sem conta a pagar.
+  - A implantação de R$ 50,00 pela conta da RisLife Teste, sem split, fora do razão.
+  - Os dependentes à parte no CPF do outro pagador.
+  - A cobrança cancelada no Asaas e depois no Empresarial.
+- **A suíte:** 4974.
+
+**O que não foi provado no sandbox:**
+- o estorno pelo riSZon (a conferência dos dois saldos), que só tem o ensaio;
+- o link do relatório na descrição (precisa da sessão da tela): fica para o teste do dono.
+
+**Diferença do plano:** as duas origens não entraram em `charge_source_types`. Aquele caminho é o do paciente (cliente e responsável financeiro); o Empresarial seguiu o modelo da ASA6 (4021), com um ramo próprio no aviso.
+
+**Falta:**
+- o teste do dono no projeto de teste;
+- a 4023 na produção, só com o "pode", com a consulta prévia e o desfazer;
+- da RisLife: a conta de produção, a chave mínima e o termo;
+- a cláusula dos dois emissores no modelo de contrato (texto do dono, nos dois ambientes).

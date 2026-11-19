@@ -8407,6 +8407,41 @@ aberto. A aba **Divergências com o Asaas** mostra o que não bate:
 - **Permissões:** o painel de permissões só oferece as marcas que o banco
   aceita. Por exemplo, "Cobranças: cancelar" não aparece para a Recepção.
 
+### 13g.21. O Risarte Empresarial pelo Asaas
+
+**Para quem:** o Financeiro da Franqueadora, o gestor do programa Empresarial e o Admin Master. O consultor do funil emite a implantação do lead.
+
+**Como funciona:**
+- **A mensalidade** sai pela conta Asaas da franqueadora, com 50% do valor líquido (depois da tarifa do Asaas) indo direto para a carteira da RisLife.
+- **A implantação** é faturada pela **RisLife**, na conta Asaas dela: 100% da RisLife, sem split.
+- A cobrança sai **na hora em que é gerada** (na ficha da empresa, no lote de mensalidades ou na implantação dos dependentes novos), com link, boleto e Pix.
+- A **baixa vem sozinha** pelo aviso do Asaas. A parte da RisLife já nasce quitada no razão (não vira conta a pagar).
+
+**Ligar (Central de Configuração › Rede › Empresarial):**
+1. Escolha a conta da RisLife (ela precisa estar ativa, com a chave de API, a carteira e o webhook — aba Conta e tarifas).
+2. Confira a lista **"Antes de ligar: o cadastro das empresas"** e corrija o que aparecer (documento aceito, e-mail ou celular).
+3. Informe **"Cobrar pelo Asaas a partir de"** e salve. Vale para a rede inteira.
+
+**Na ficha da empresa (aba Financeiro):** cada cobrança mostra se está no Asaas, quem emitiu (RisLife ou Franqueadora), o link da fatura, o boleto, o Pix e, na mensalidade, o **Relatório do mês**.
+- **Emitir no Asaas:** para a cobrança em aberto gerada antes da data de início.
+- **Tentar de novo:** quando a cobrança não saiu no Asaas.
+- **Editar, cancelar ou excluir:** o riSZon cancela no Asaas primeiro (e, ao editar, emite de novo já corrigida).
+- **Recebeu por fora:** com a cobrança no Asaas, o botão "Marcar pago" vira "Recebeu por fora": a cobrança do Asaas é cancelada e a baixa é feita aqui.
+- **Estornar uma cobrança paga pelo Asaas:** o estorno sai pelo Asaas (o saldo da conta e o da RisLife são conferidos antes).
+
+**Quem paga:**
+- A empresa, no CNPJ do documento da cobrança.
+- Empresa com **CAEPF, CNO ou NIF:** a cobrança sai no **CNPJ da matriz**; sem matriz, no **CPF do responsável**.
+- **Dependentes pagos à parte:** no CPF do titular ou de outro pagador. Para o outro pagador, informe o **e-mail ou o celular** (é para lá que o Asaas manda a cobrança).
+
+**O relatório do mês:** a foto do "Relatório detalhado" (titulares e dependentes) do dia em que a mensalidade foi gerada. O link vai na própria cobrança; a empresa abre sem login e imprime em PDF.
+
+**No funil:** com o Asaas ligado, o 1º pagamento não é mais registrado como "pago por fora". Com a empresa criada, informe o valor e o vencimento e clique em **"Emitir a cobrança no Asaas"**. Quando o Asaas avisar o pagamento, o 1º pagamento se registra sozinho no lead.
+
+**O atraso:** quem marca a empresa em atraso e suspende continua sendo a rotina do Empresarial. Se o Asaas disser outra coisa, a divergência aparece na aba Empresarial da Central.
+
+**Os percentuais:** a implantação é sempre 100% da RisLife (o campo em Empresarial › Configurações não muda mais). A mensalidade continua configurável, com exceção por empresa.
+
 ## 14. Checklists
 
 ### 14.1. Primeiro acesso

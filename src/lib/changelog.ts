@@ -62,6 +62,50 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.487.0",
+    data: "2026-11-18",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4023, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "O Risarte Empresarial pelo Asaas: a cobrança sai com boleto e Pix, e a baixa vem sozinha",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Com o Empresarial ligado ao Asaas (Central › Rede › Empresarial), a cobrança gerada sai no Asaas na hora, com link, boleto e Pix: a mensalidade pela franqueadora, com a parte da RisLife indo direto para ela, e a implantação pela própria RisLife. A baixa vem sozinha quando a empresa paga.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.21. O Risarte Empresarial pelo Asaas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Na ficha da empresa, cada cobrança mostra se está no Asaas, quem emitiu, o link da fatura, o boleto, o Pix e o Relatório do mês (os titulares e dependentes do dia em que a mensalidade foi gerada, que a empresa abre pelo link da cobrança). Os botões \"Emitir no Asaas\" e \"Tentar de novo\" resolvem o que não saiu.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.21. O Risarte Empresarial pelo Asaas",
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Com a cobrança no Asaas, editar, cancelar ou excluir cancela lá primeiro, e \"Marcar pago\" vira \"Recebeu por fora\". A cobrança paga pelo Asaas só se desfaz pelo estorno, que sai pelo Asaas.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.21. O Risarte Empresarial pelo Asaas",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No funil, com o Asaas ligado, o 1º pagamento é emitido pelo Asaas (\"Emitir a cobrança no Asaas\") e se registra sozinho quando a empresa paga.",
+        papeis: ["commercial_consultant", "finance_franchisor"],
+        manual: "13g.21. O Risarte Empresarial pelo Asaas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quem paga os dependentes por fora (outro pagador) agora tem e-mail e celular no cadastro do titular: é para lá que o Asaas manda a cobrança. A implantação passa a ser sempre 100% da RisLife.",
+        papeis: ["finance_franchisor"],
+        manual: "13g.21. O Risarte Empresarial pelo Asaas",
+      },
+    ],
+  },
+  {
     versao: "0.486.0",
     data: "2026-11-18",
     migracao: "0432",
