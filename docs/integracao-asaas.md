@@ -76,7 +76,7 @@ Vinte e duas decisões definem o desenho, fechadas entre 9 e 10 de novembro de 2
 | D4 | Base de cálculo | **Valor efetivamente pago pelo cliente** — com desconto, sobre o valor com desconto; com multa e juros, sobre o valor com multa e juros —, liquidado sempre no próprio split, sem acerto posterior. Percentuais configurados por unidade, com vigência. |
 | D5 | Taxas fixas | SDR e tecnologia (sistema) são **valor fixo mensal por unidade**. Ficam fora do split e entram na cobrança mensal da franqueadora para a unidade. |
 | D6 | Fundo de marketing | Por enquanto vai para a carteira da franqueadora; a carteira de destino é configurável para quando o fundo tiver conta própria. |
-| D7 | Risarte Empresarial | A franqueadora emite as cobranças das empresas. **Implantação: 100% RisLife. Mensalidade: 50% RisLife e 50% Risarte**, sobre o valor pago. Percentuais configuráveis, com exceção por empresa. A unidade não recebe parte; a RisLife repassa ao consultor. |
+| D7 | Risarte Empresarial | A franqueadora emite as mensalidades das empresas. **Implantação: 100% RisLife, faturada pela própria RisLife na conta Asaas dela, sem split (dono, 18/11/2026). Mensalidade: 50% RisLife e 50% Risarte**, sobre o valor líquido da tarifa do Asaas quando paga pelo Asaas (dono, 18/11/2026; a baixa manual continua sobre o total). Percentuais configuráveis, com exceção por empresa. A unidade não recebe parte; a RisLife repassa ao consultor. |
 | D8 | Pagador | A cobrança sai no CPF do responsável financeiro quando houver. Para menor, o responsável é obrigatório. Adulto pode ter um pagador opcional (cônjuge, pai, mãe). Exatamente um responsável fica marcado como financeiro. |
 | D9 | Multa, juros e descontos | Vêm do que o riSZon já tem: multa, juros e arredondamento nas configurações financeiras; desconto à vista nas Regras Comerciais; pontualidade como benefício de programa, perdido no atraso; vouchers do Indica. **Carência fixa em zero** (11/11/2026): o Asaas não aplica carência, e o banco recusa outro valor (seção 14). |
 | D10 | Cartão parcelado | A unidade absorve a tarifa. O máximo de parcelas vem das Regras Comerciais e das condições do programa do cliente. |
@@ -5883,11 +5883,9 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
    - o estorno da cobrança paga sai **pelo Asaas** (o caminho da 4009 e da 4020a), na conta que emitiu:
      - a mensalidade: com a conferência do saldo da franqueadora **e da carteira da RisLife** (19.37: o saldo mínimo, o aviso e a conferência antes do pedido);
      - a implantação: na conta da RisLife, com a conferência do saldo dela. A franqueadora não entra.
-6. **A lista de titulares e dependentes do mês** (o pedido do dono de 15/11/2026; decisão 6):
-   - congelada na hora em que a mensalidade é gerada, a partir de `computeMonthlyBreakdown`, numa tabela nova ligada à cobrança;
-   - a empresa recebe um link seguro (página sem login, com código, como a lista da forma 2) na descrição da cobrança e na mensagem;
-   - a página mostra a lista e baixa em PDF ou planilha.
-7. **Ligar por empresa, com data de início:** "Cobrar pelo Asaas a partir de …", na Central (aba Empresarial) ou na ficha da empresa. As cobranças anteriores continuam manuais, e cada uma ganha o botão "Emitir no Asaas".
+6. **O Relatório detalhado do mês** (o pedido do dono de 15/11/2026; decisão 6): o relatório da aba Titulares, guardado como foto quando a mensalidade é gerada e enviado à empresa por link seguro, junto com o boleto.
+7. **Ligar a rede inteira, com data de início** (decisão 7), na Central, aba Empresarial. As cobranças anteriores continuam manuais, e cada uma ganha o botão "Emitir no Asaas".
+7b. **O funil e a inclusão de vidas** (decisão 8): a implantação do funil e a do termo de inclusão saem no Asaas, na conta da RisLife. `post_lead_implantation` deixa de criar a cobrança já paga quando o Asaas está ligado.
 8. **Aposentar o legado:**
    - tirar o cliente antigo e a Edge Function do código;
    - trocar os dois avisos das telas;
@@ -5900,34 +5898,45 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
     - a conta da RisLife (vínculo, chave, webhook, prontidão) e a carteira dela;
     - o saldo mínimo da carteira.
 
-### 22.3 Decisões para o dono
+### 22.3 Decisões do dono (18/11/2026)
 
-1. **A implantação com 100% para a RisLife — DECIDIDA pelo dono (18/11/2026):** a implantação é **faturada pela RisLife**, na conta Asaas dela, e a RisLife recebe 100% direto, **sem contar como split de 100%**.
-   - O riSZon opera a conta da RisLife como opera a de uma unidade (peça 0): a chave mínima, o termo, o webhook e a prontidão.
-   - A tarifa do Asaas da implantação fica com a RisLife (é a conta dela que recebe).
-   - A franqueadora não recebe nem repassa a implantação: ela continua fora do razão da franqueadora, e não nasce conta a pagar.
-   - **A nota da implantação** é da RisLife.
-   - Caem: a pergunta 20 ao Asaas (o split de 100%) e as saídas (a) e (b) de antes.
-2. **A base e a tarifa da mensalidade** (D7: 50% sobre o valor pago). O split percentual do Asaas incide sobre o valor **líquido** (13, item 2).
-   - (a) **A RisLife recebe 50% do valor pago**, e a franqueadora absorve a tarifa. O riSZon soma a compensação, como na ASA3. **Recomendado:** é o que a D7 diz.
-   - (b) 50% do líquido: a tarifa fica dividida entre as duas.
-   - Nos dois casos, o razão passa a lançar o que o Asaas repassou de fato (o split real), e não o percentual sobre o total.
-3. **Quando a cobrança sai no Asaas:**
-   - (a) **Ao gerar**, na ficha ou no lote, como hoje, só que já emitida. **Recomendado:** não muda o trabalho de ninguém.
-   - (b) Numa rotina mensal automática. Exige congelar a conta do mês sem ninguém conferir; fica para depois.
-4. **O pagador com CAEPF, CNO ou NIF.** O Asaas aceita CPF e CNPJ, e a prova no sandbox vai confirmar o resto.
-   - (a) **Esses documentos continuam com cobrança manual**, e a tela avisa. **Recomendado** (o levantamento diz se existem).
-   - (b) Emitir no CPF do responsável.
-5. **Quem marca o atraso e suspende a empresa:**
-   - (a) **Continua a rotina do Empresarial** (pelo vencimento, que é o mesmo do Asaas). O aviso de vencida do Asaas não suspende nada. **Recomendado:** uma regra só.
-   - (b) Passa a ser pelo aviso do Asaas.
-6. **A lista do mês:**
-   - (a) **Congelada na geração e enviada por link seguro.** **Recomendado.**
-   - (b) A foto atual, gerada na hora de abrir: muda se alguém sair depois.
-7. **Ligar:**
-   - (a) **Por empresa, com data de início.** As abertas antigas continuam manuais, com o botão "Emitir no Asaas". **Recomendado.**
-   - (b) A rede inteira de uma vez.
-8. **A implantação paga no funil** (dinheiro que entrou fora) **nunca vai ao Asaas.** Confirmar.
+Respondidas pelo dono em 18/11/2026, menos a 11, que espera a explicação do legado. O detalhe de cada opção está em `docs/asaas/decisoes-asa5.md`.
+
+1. **A implantação é faturada pela RisLife,** na conta Asaas dela (peça 0). A RisLife recebe 100% direto, sem split. A pergunta 20 ao Asaas caiu.
+   - **1.1 Os dois emissores (opção c):** a empresa fica sabendo **só pelo contrato**: a implantação vem da RisLife, e as mensalidades vêm da franqueadora. Nem a mensagem nem a descrição da cobrança explicam isso.
+     - A cláusula entra no modelo de contrato do Empresarial. É combinada com a sessão do Empresarial, porque o contrato é dela.
+2. **A tarifa da mensalidade (opção b):** a RisLife recebe **50% do valor depois da tarifa**, e a tarifa fica dividida entre as duas. É o split percentual puro do Asaas, sem compensação.
+   - **Muda a D7** ("50% sobre o valor pago"): a D7 passa a dizer "50% do líquido".
+   - O razão lança o que o Asaas repassou de fato.
+   - A baixa manual (fora do Asaas, sem tarifa) continua com 50% do total.
+3. **A emissão sai ao gerar a cobrança (opção a),** na ficha ou no lote, já com link, boleto e Pix.
+4. **O pagador com CAEPF, CNO ou NIF:**
+   - a cobrança sai no **CNPJ da matriz** (o documento principal da empresa, `company_documents.is_primary`);
+   - sem matriz com CNPJ, sai no **CPF do responsável** (`responsible_cpf`);
+   - sem nenhum dos dois, a emissão é recusada, e a tela diz o que falta no cadastro.
+   - A descrição da cobrança cita o documento original (CAEPF, CNO ou NIF) a que ela se refere.
+5. **Atraso e suspensão (opção c):**
+   - a rotina do Empresarial continua marcando o atraso pelo vencimento e suspendendo depois de 5 dias;
+   - o aviso de vencida do Asaas só confirma;
+   - se os dois não baterem (a rotina diz vencida e o Asaas diz paga, ou o contrário), a conciliação da 4022 mostra a divergência nova "Atraso diferente no Empresarial".
+6. **O relatório do mês:** é o **"Relatório detalhado"** que já existe na aba Titulares da empresa (`/empresarial/[companyId]/relatorio`: a empresa, os titulares e os dependentes). Ele vai à empresa **todo mês, junto com o boleto**:
+   - uma foto do relatório é guardada quando a mensalidade é gerada, para mostrar o que foi cobrado naquele mês;
+   - o link seguro vai na descrição da cobrança e na mensagem;
+   - a página abre sem login, com código, e baixa em PDF.
+7. **Ligar a rede inteira de uma vez (opção b):** um interruptor só, na Central (aba Empresarial), com a data de início.
+   - Dali em diante, toda cobrança gerada sai no Asaas.
+   - As cobranças em aberto de antes continuam manuais, e cada uma ganha o botão "Emitir no Asaas".
+   - Ficam fora as empresas que não têm documento aceito (decisão 4).
+8. **A implantação vai pelo Asaas também no funil e na inclusão de vidas** (muda o que o plano dizia):
+   - **No funil:** hoje o comercial registra que a implantação foi paga por fora, e `post_lead_implantation` cria a cobrança já paga. Com o Asaas ligado, o funil **emite a implantação na conta da RisLife**, e a baixa vem pelo aviso do Asaas. O fechamento do lead segue o fluxo do funil (combinado com a sessão do Empresarial).
+   - **Na inclusão de titular ou dependente** (o termo de inclusão e a "implantação do acréscimo"): a cobrança sai no Asaas, na conta da RisLife, como qualquer implantação.
+   - **O que já foi pago por fora antes de ligar** continua registrado como hoje.
+9. **A regra própria abaixo de 100% na implantação acaba (opção b):** toda implantação vai 100% para a RisLife.
+   - A 4023 trava o campo da implantação em 100% nas regras próprias.
+   - A exceção existente é ajustada com o seu "pode" (o levantamento mostra quantas existem).
+   - As regras próprias da mensalidade continuam.
+10. **A conta a pagar à RisLife da baixa manual aponta para o fornecedor RisLife (opção a),** depois de resolver a duplicidade do cadastro.
+11. **O legado: espera a resposta do dono.** O que é cada peça está em `decisoes-asa5.md`, na decisão 11.
 
 ### 22.4 O que depende de fora
 
