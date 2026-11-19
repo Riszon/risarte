@@ -5872,7 +5872,18 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
    - o atraso e a visibilidade seguem a decisão 5.
 2. **O pagador:** um cliente do Asaas por documento **em cada conta** (`gateway_customers`, dono `company`): a mesma empresa vira um cliente na conta da RisLife (implantação) e outro na conta raiz (mensalidade). Na cobrança à parte dos dependentes (1049), o cliente sai de `payer_document`/`payer_name`.
    - **A empresa recebe cobranças de dois emissores:** a implantação em nome da RisLife e as mensalidades em nome da franqueadora. A mensagem de boas-vindas e a régua avisam isso.
-   - E-mail e celular vêm do cadastro da empresa.
+   - **A inclusão de dependentes segue a regra de hoje (1049, confirmada pelo dono em 18/11/2026).** Quem paga os dependentes é escolhido no titular e vale para todos os dependentes dele:
+     - a **empresa**;
+     - o **próprio titular**, no CPF dele;
+     - **outro** pagador, com nome e CPF ou CNPJ.
+   - **A cobrança vai ao mesmo pagador** tanto na implantação quanto na mensalidade dos dependentes:
+     - a implantação dos dependentes incluídos sai na **conta da RisLife**;
+     - a mensalidade sai na **conta raiz**, com o split;
+     - quando quem paga não é a empresa, cada pagador recebe uma cobrança própria, no mesmo clique de hoje.
+   - **O contato para os avisos do Asaas:**
+     - empresa: o e-mail e o celular da empresa;
+     - titular: o e-mail e o celular do titular (o celular é obrigatório no cadastro, e o e-mail não);
+     - outro pagador: hoje o cadastro não tem e-mail nem celular (ver a decisão 12).
    - **A régua de avisos ao pagador** é a da rede (4007).
 3. **O split da mensalidade para a carteira da RisLife**, lido de `split_rules` (exceção da empresa, senão o padrão), na hora da emissão. A base segue a decisão 2. **A implantação não tem split.**
    - Se uma exceção de split der à RisLife **menos de 100% da implantação**, a emissão pelo Asaas é recusada para aquela empresa (a implantação dela continua manual) até o dono decidir. O levantamento mostra se isso existe.
@@ -5939,6 +5950,9 @@ Respondidas pelo dono em 18/11/2026, menos a 11, que espera a explicação do le
    - A exceção existente é ajustada com o seu "pode" (o levantamento mostra quantas existem).
    - As regras próprias da mensalidade continuam.
 10. **A conta a pagar à RisLife da baixa manual aponta para o fornecedor RisLife (opção a),** depois de resolver a duplicidade do cadastro.
+12. **O contato do "outro pagador" dos dependentes (EM ABERTO):** o cadastro guarda só o nome e o documento.
+   - (a) **Recomendado:** o titular ganha os campos de e-mail e celular do outro pagador, obrigatório pelo menos um. Muda o schema do Empresarial, então é combinado com a sessão do Empresarial.
+   - (b) A cobrança sai sem avisos do Asaas, e a empresa repassa o link.
 11. **O legado sai inteiro (opção b):**
    - o cliente antigo (`src/lib/empresarial/asaas.ts`) e a Edge Function `asaas-webhook` saem do código;
    - os dois avisos das telas passam a ler a integração nova;
