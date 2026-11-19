@@ -8,6 +8,13 @@ select
   (select count(*) from empresarial.company_documents where doc_type = 'CPF') as docs_cpf,
   (select count(*) from empresarial.company_documents where doc_type in ('CAEPF', 'CNO', 'NIF')) as docs_caepf_cno_nif,
   (select count(*) from empresarial.companies where billing_model = 'por_cnpj') as empresas_um_boleto_por_cnpj,
+  -- decisão 4: empresa com CAEPF, CNO ou NIF sem CNPJ da matriz e sem CPF do responsável (a cobrança não sairia)
+  (select count(distinct d.company_id) from empresarial.company_documents d
+     join empresarial.companies c on c.id = d.company_id
+    where d.doc_type in ('CAEPF', 'CNO', 'NIF')
+      and not exists (select 1 from empresarial.company_documents m
+                       where m.company_id = d.company_id and m.is_primary and m.doc_type = 'CNPJ')
+      and nullif(btrim(coalesce(c.responsible_cpf, '')), '') is null) as empresas_sem_documento_aceito,
   -- quem paga os dependentes (1049)
   (select count(*) from empresarial.employees where status = 'ACTIVE' and dependents_payer = 'TITULAR') as titulares_pagam_dependentes,
   (select count(*) from empresarial.employees where status = 'ACTIVE' and dependents_payer = 'OUTRO') as outro_paga_dependentes,
