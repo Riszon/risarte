@@ -6067,16 +6067,20 @@ No treino, ele deu: 10 empresas ativas, 15 cobranças em aberto (R$ 2.513,90), 1
 
 **A prova:**
 - **O ensaio** `scripts/asaas-ensaio-4023-empresarial.mjs`: 64/64. Quebrado de propósito: split 3 falhas, trava 6, pagador 3, data 1.
-- **O sandbox** `asaas-asa5-empresarial.integracao.test.ts`: 6/6.
+- **O sandbox** `asaas-asa5-empresarial.integracao.test.ts`: 10/10 (19/11/2026: o roteiro do dono, pelo servidor, porque o login das telas ficou no celular).
   - A mensalidade de R$ 100,00 pela conta raiz, com split de 50% para a RisLife Teste: líquido R$ 98,01, RisLife R$ 49,00, franqueadora R$ 51,00, sem conta a pagar.
   - A implantação de R$ 50,00 pela conta da RisLife Teste, sem split, fora do razão.
   - Os dependentes à parte no CPF do outro pagador.
   - A cobrança cancelada no Asaas e depois no Empresarial.
+  - Recebeu por fora: cancelada no Asaas e baixada à mão; a parte da RisLife virou conta a pagar de R$ 50,00 (50% do total).
+  - Editar: a antiga apagada no Asaas e a nova emitida com R$ 120,00.
+  - O relatório do mês: o link na descrição da cobrança no Asaas e a página pública aberta (200).
+  - O funil: a implantação de R$ 70,00 pela RisLife Teste, paga, selou o 1º pagamento do lead sozinha.
 - **A suíte:** 4974.
 
 **O que não foi provado no sandbox:**
 - o estorno pelo riSZon (a conferência dos dois saldos), que só tem o ensaio;
-- o link do relatório na descrição (precisa da sessão da tela): fica para o teste do dono.
+- as telas em si (a Central, a aba Cobranças, o cartão do funil): a conferência visual fica para o dono, logado no projeto de teste.
 
 **Diferença do plano:** as duas origens não entraram em `charge_source_types`. Aquele caminho é o do paciente (cliente e responsável financeiro); o Empresarial seguiu o modelo da ASA6 (4021), com um ramo próprio no aviso.
 

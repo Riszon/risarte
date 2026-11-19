@@ -235,4 +235,98 @@ describe.skipIf(!LIGADO)("ASA5 4023 — o Empresarial pelo Asaas (sandbox)", () 
     expect((await comoAdmin("select empresarial.cancel_billing($1, 'prova 4023: cancelar')", [linha.d])).error).toBeNull();
     log("cancelada no Asaas e depois no Empresarial");
   }, 180_000);
+
+  it("recebeu por fora: cancela no Asaas e dá a baixa manual (a parte da RisLife vira conta a pagar)", async () => {
+    linha.f = await novaLinha("MONTHLY", { mes: "2026-12-01" });
+    ch.f = await emitir(linha.f);
+    expect((await comoAdmin("select empresarial.settle_billing($1, now())", [linha.f])).error?.message ?? "").toContain("CHARGE_IN_GATEWAY");
+    const c = (await pg.query("select asaas_payment_id from public.charges where id = $1", [ch.f])).rows[0];
+    const { cancelarNoAsaas } = await import("@/lib/asaas/cobranca");
+    expect(await cancelarNoAsaas({ chargeId: ch.f, accountId: root, asaasPaymentId: c.asaas_payment_id as string, actorId: adm, reason: "Recebida por fora do Asaas" })).toEqual({ ok: true });
+    expect((await comoAdmin("select empresarial.settle_billing($1, now())", [linha.f])).error).toBeNull();
+    const b = (await pg.query("select status, split_at_source, split_rislife_cents from empresarial.adhesion_billing where id = $1", [linha.f])).rows[0];
+    expect(b.status).toBe("PAID");
+    expect(b.split_at_source).toBe(false);
+    expect(Number(b.split_rislife_cents)).toBe(5000);
+    const pay = (await pg.query("select amount_cents from public.payables where empresarial_billing_id = $1", [linha.f])).rows[0];
+    expect(Number(pay?.amount_cents)).toBe(5000);
+    expect((await asaas(root, `/payments/${c.asaas_payment_id}`)).deleted).toBe(true);
+    log("recebeu por fora · cancelada no Asaas · baixa manual · conta a pagar à RisLife de R$ 50,00 (50% do total)");
+  }, 180_000);
+
+  it("editar: cancela no Asaas e emite de novo, já com o valor novo", async () => {
+    linha.e = await novaLinha("MONTHLY", { mes: "2027-01-01" });
+    ch.e = await emitir(linha.e);
+    const c = (await pg.query("select asaas_payment_id from public.charges where id = $1", [ch.e])).rows[0];
+    expect((await comoAdmin("update empresarial.adhesion_billing set total_amount_cents = 12000 where id = $1", [linha.e])).error?.message ?? "").toContain("CHARGE_IN_GATEWAY");
+    const { cancelarNoAsaas } = await import("@/lib/asaas/cobranca");
+    expect(await cancelarNoAsaas({ chargeId: ch.e, accountId: root, asaasPaymentId: c.asaas_payment_id as string, actorId: adm, reason: "Cobrança editada no Empresarial" })).toEqual({ ok: true });
+    expect((await comoAdmin("update empresarial.adhesion_billing set total_amount_cents = 12000 where id = $1", [linha.e])).error).toBeNull();
+    const nova = await emitir(linha.e);
+    expect(nova).not.toBe(ch.e);
+    const c2 = (await pg.query("select asaas_payment_id from public.charges where id = $1", [nova])).rows[0];
+    const p = await asaas(root, `/payments/${c2.asaas_payment_id}`);
+    expect(Math.round(Number(p.value) * 100)).toBe(12000);
+    ch.e = nova;
+    log(`editada · a antiga apagada no Asaas · a nova ${p.id} com R$ 120,00`);
+  }, 240_000);
+
+  it("o relatório do mês: a foto guardada, o link na descrição da cobrança e a página pública", async () => {
+    linha.r = await novaLinha("MONTHLY", { mes: "2027-02-01" });
+    const prep = await comoAdmin("select public.corporate_charge_prepare($1, true) j", [linha.r]);
+    const chargeId = (prep.rows[0].j as { charge_id: string }).charge_id;
+    // A foto no formato do "Relatório detalhado" (CompanyReport), como a emissão guarda.
+    const { DEFAULT_ADHESION_PRICING } = await import("@/lib/empresarial/pricing");
+    const foto = {
+      company: {
+        id: emp, cnpj: CNPJ, legalName: "Prova ASA5 (sandbox) LTDA", tradeName: "Prova ASA5 (sandbox)", stateRegistration: null,
+        address: null, employeeCount: 1, status: "ACTIVE", paymentModel: "COMPANY_PAYS", paymentMethods: ["BOLETO"], dueDay: 10,
+        defaultMaxInstallments: 1, contractStartedAt: null, gracePeriodDays: 0, employeeGracePeriodDays: 0, notes: null, consultantName: null,
+      },
+      pricing: DEFAULT_ADHESION_PRICING,
+      pricingScope: "rede",
+      employees: [{
+        id: "00000000-0000-0000-0000-000000000001", fullName: "Titular da Prova", cpf: "86288366757", phone: "43999990001", email: null,
+        status: "ACTIVE", registrationStage: "COMPLETED", dependentPlan: "FAMILY", joinedAt: "2026-11-01", leftAt: null, leftReason: null,
+        clinicName: null, linked: false, monthlyCents: 10000,
+        dependents: [{ id: "00000000-0000-0000-0000-000000000002", fullName: "Dependente da Prova", cpf: "52998224725", phone: null, relationship: "SPOUSE", status: "ACTIVE", linked: false }],
+      }],
+      filter: "ACTIVE",
+      filterLabel: "Somente ativos",
+      totals: { employeesActive: 1, employeesInactive: 0, employeesDeleted: 0, dependentsActive: 1, linkedClients: 0, pendingRegistration: 0, monthlyCents: 10000, savedCents: 0, benefitUses: 0 },
+      generatedAt: new Date().toISOString(),
+    };
+    const rep = (await pg.query("select public._corporate_report_save($1, $2, $3) j", [linha.r, JSON.stringify(foto), adm])).rows[0].j as { id: string; code: string };
+    const link = `https://risarte-asaas.vercel.app/relatorio-do-mes/${rep.code}`;
+    await pg.query("select public._corporate_charge_report($1, $2, $3)", [chargeId, rep.id, ` — Titulares e dependentes do mês: ${link}`]);
+    const { emitirCobrancaEmpresarial } = await import("@/lib/asaas/empresarial");
+    expect(await emitirCobrancaEmpresarial(chargeId, adm)).toEqual({ ok: true });
+    ch.r = chargeId;
+    const c = (await pg.query("select asaas_payment_id from public.charges where id = $1", [chargeId])).rows[0];
+    const p = await asaas(root, `/payments/${c.asaas_payment_id}`);
+    expect(String(p.description)).toContain(rep.code);
+    const pagina = await fetch(link);
+    expect(pagina.status).toBe(200);
+    const html = await pagina.text();
+    expect(html).not.toContain("Link não encontrado");
+    expect(html).toContain("como estavam no dia em que a cobrança foi gerada");
+    log(`relatório do mês · link na cobrança ${p.id} · página pública 200`);
+  }, 240_000);
+
+  it("o funil: a implantação emitida pelo funil sai pela RisLife e, paga, sela o 1º pagamento do lead", async () => {
+    const lead = (await pg.query(
+      `insert into empresarial.commercial_leads (company_name, cnpj, contact_name, contact_phone, stage, company_id)
+       values ('Prova ASA5 lead', $1, 'Contato da Prova', '43999990002', 'PROPOSAL_SENT', $2) returning id`, [CNPJ, emp])).rows[0].id as string;
+    const iss = await comoAdmin("select public.corporate_lead_implantation_issue($1, 7000, public.today_br() + 3) id", [lead]);
+    expect(iss.error).toBeNull();
+    linha.l = iss.rows[0].id as string;
+    ch.l = await emitir(linha.l);
+    const c = (await pg.query("select gateway_account_id, asaas_payment_id from public.charges where id = $1", [ch.l])).rows[0];
+    expect(c.gateway_account_id).toBe(rislife);
+    await asaas(rislife, `/sandbox/payment/${c.asaas_payment_id}/confirm`, "POST", {});
+    expect(await ate(async () => Boolean((await pg.query("select implantation_paid_at from empresarial.commercial_leads where id = $1", [lead])).rows[0].implantation_paid_at))).toBe(true);
+    const l = (await pg.query("select implantation_paid_cents, implantation_payment_method from empresarial.commercial_leads where id = $1", [lead])).rows[0];
+    expect(Number(l.implantation_paid_cents)).toBe(7000);
+    log(`funil · implantação de R$ 70,00 pela RisLife Teste · paga · lead selado (${l.implantation_payment_method})`);
+  }, 240_000);
 });
