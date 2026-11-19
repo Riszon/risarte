@@ -5883,7 +5883,7 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
    - **O contato para os avisos do Asaas:**
      - empresa: o e-mail e o celular da empresa;
      - titular: o e-mail e o celular do titular (o celular é obrigatório no cadastro, e o e-mail não);
-     - outro pagador: hoje o cadastro não tem e-mail nem celular (ver a decisão 12).
+     - outro pagador: o e-mail e o celular novos do cadastro do titular (decisão 12).
    - **A régua de avisos ao pagador** é a da rede (4007).
 3. **O split da mensalidade para a carteira da RisLife**, lido de `split_rules` (exceção da empresa, senão o padrão), na hora da emissão. A base segue a decisão 2. **A implantação não tem split.**
    - Se uma exceção de split der à RisLife **menos de 100% da implantação**, a emissão pelo Asaas é recusada para aquela empresa (a implantação dela continua manual) até o dono decidir. O levantamento mostra se isso existe.
@@ -5950,9 +5950,10 @@ Respondidas pelo dono em 18/11/2026, menos a 11, que espera a explicação do le
    - A exceção existente é ajustada com o seu "pode" (o levantamento mostra quantas existem).
    - As regras próprias da mensalidade continuam.
 10. **A conta a pagar à RisLife da baixa manual aponta para o fornecedor RisLife (opção a),** depois de resolver a duplicidade do cadastro.
-12. **O contato do "outro pagador" dos dependentes (EM ABERTO):** o cadastro guarda só o nome e o documento.
-   - (a) **Recomendado:** o titular ganha os campos de e-mail e celular do outro pagador, obrigatório pelo menos um. Muda o schema do Empresarial, então é combinado com a sessão do Empresarial.
-   - (b) A cobrança sai sem avisos do Asaas, e a empresa repassa o link.
+12. **O contato do "outro pagador" dos dependentes (opção a, dono em 18/11/2026):**
+   - o titular ganha os campos de e-mail e celular do outro pagador (`dependents_payer_email` e `dependents_payer_phone`), com pelo menos um dos dois obrigatório quando o pagador é "outro";
+   - quem já está cadastrado como "outro" sem contato aparece na lista de pendências antes de ligar (decisão 7);
+   - é uma mudança no schema do Empresarial (migração da faixa 10xx ou dentro da 4023): é combinada com a sessão do Empresarial antes.
 11. **O legado sai inteiro (opção b):**
    - o cliente antigo (`src/lib/empresarial/asaas.ts`) e a Edge Function `asaas-webhook` saem do código;
    - os dois avisos das telas passam a ler a integração nova;
