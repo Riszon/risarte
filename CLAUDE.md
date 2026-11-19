@@ -408,7 +408,7 @@ Syncthing se comportarem de forma estranha.**
   reassinada (1041). Regra nova = gatilho + `_termos_da_empresa` +
   `_aplicar_termos` + formulário. ⚠️ Implantação de dependente = sempre
   com cobertura em `dependents_implantation_coverage`.
-- ⏳ 1050 só no treino; o dono roda na produção antes do push.
+- ✅ 1050 nos dois bancos (produção pelo dono em 18/11/2026, 4·2·3·5; conferido de fora: sem login a revisão recusa, as tabelas novas existem, as 12 empresas em COBRAR). Publicado depois da migração. A emissão da implantação pelo Asaas (ASA5) é da sessão do Asaas: funil e post_lead_implantation são dela.
 
 **18/11/2026 (regras combinadas) — PC Administrador (Empresarial 0.109.0 → 0.110.0, sem migração)**
 

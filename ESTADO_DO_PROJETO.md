@@ -40,7 +40,7 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   375 px; a revisão de teste RV-00010 foi cancelada. **Não visto na tela:**
 >   aplicar com aditivo e a implantação dos dependentes novos (nenhuma empresa
 >   do treino combinou dependentes). Manual 8.3 e 12.
-> - ⏳ **1050 só no treino**; o dono roda na produção antes do push.
+> - ✅ 1050 nos dois bancos (produção pelo dono em 18/11/2026, 4·2·3·5; conferido de fora: sem login a revisão recusa, as tabelas novas existem, as 12 empresas em COBRAR). Publicado depois da migração. A emissão da implantação pelo Asaas (ASA5) é da sessão do Asaas: funil e post_lead_implantation são dela.
 
 > ## 💼 EMPRESARIAL 0.110.0 — AS REGRAS COMBINADAS DA EMPRESA NUM LUGAR SÓ (18/11/2026; sem migração)
 >
