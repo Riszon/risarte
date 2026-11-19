@@ -5890,7 +5890,7 @@ Se o Asaas não respeitar a restrição na produção (por exemplo, a chave resp
    - tirar o cliente antigo e a Edge Function do código;
    - trocar os dois avisos das telas;
    - ajustar o teste que lia a Edge Function (`webhook-asaas.test.ts`);
-   - a tabela `asaas_webhook_events` e a coluna `asaas_billing_id` ficam (vazias), marcadas como antigas;
+   - a tabela `asaas_webhook_events` e a coluna `asaas_billing_id` são apagadas, só se estiverem vazias (decisão 11);
    - **o dono confere no painel do Supabase** que a função `asaas-webhook` não está publicada na produção.
 9. **A conta a pagar à RisLife que ainda nascer** (baixa manual, `split_at_source = false`) passa a apontar para o fornecedor RisLife. A duplicidade no cadastro de fornecedores é resolvida antes.
 10. **A Central, aba Empresarial** (seção 9, já prevista):
@@ -5936,7 +5936,12 @@ Respondidas pelo dono em 18/11/2026, menos a 11, que espera a explicação do le
    - A exceção existente é ajustada com o seu "pode" (o levantamento mostra quantas existem).
    - As regras próprias da mensalidade continuam.
 10. **A conta a pagar à RisLife da baixa manual aponta para o fornecedor RisLife (opção a),** depois de resolver a duplicidade do cadastro.
-11. **O legado: espera a resposta do dono.** O que é cada peça está em `decisoes-asa5.md`, na decisão 11.
+11. **O legado sai inteiro (opção b):**
+   - o cliente antigo (`src/lib/empresarial/asaas.ts`) e a Edge Function `asaas-webhook` saem do código;
+   - os dois avisos das telas passam a ler a integração nova;
+   - o teste `webhook-asaas.test.ts` é ajustado;
+   - **a 4023 apaga a tabela `empresarial.asaas_webhook_events` e a coluna `adhesion_billing.asaas_billing_id`**, só se as duas estiverem vazias. A migração confere antes e para com erro se houver qualquer linha;
+   - antes, o levantamento na produção mostra se estão vazias, e o dono confere no painel do Supabase que a função não está publicada.
 
 ### 22.4 O que depende de fora
 
