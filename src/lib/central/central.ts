@@ -114,6 +114,13 @@ export const ABAS_DA_CENTRAL: AbaDaCentral[] = [
     niveis: ["rede", "unidade"],
     fase: "ASA3",
   },
+  {
+    id: "empresarial",
+    rotulo: "Empresarial",
+    descricao: "O Risarte Empresarial pelo Asaas: a data de início, a conta da RisLife, as pendências do cadastro e a divergência de atraso.",
+    niveis: ["rede"],
+    fase: "ASA5",
+  },
 ];
 
 export function abasDoNivel(nivel: NivelDaCentral): AbaDaCentral[] {
@@ -153,6 +160,10 @@ export function podeVerAba(
       // veem a da própria unidade, só leitura (o banco decide de novo).
       if (canConfigureFinanceNetwork(session)) return true;
       return nivel === "unidade" && (temPapel(session, "unit_manager", clinicId!) || temPapel(session, "franchisee", clinicId!));
+    case "empresarial":
+      // ASA5 (4023): só a Rede; quem configura a rede (Admin Master e Financeiro
+      // da Franqueadora). O banco decide de novo (`corporate_settings_save`).
+      return canConfigureFinanceNetwork(session);
     default:
       return false;
   }

@@ -104,7 +104,6 @@ export function SplitRulesForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [firstRisarte, setFirstRisarte] = useState(split.firstPaymentRisartePct);
   const [recRisarte, setRecRisarte] = useState(split.recurringRisartePct);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -128,20 +127,22 @@ export function SplitRulesForm({
         <div className="mt-2 grid grid-cols-2 gap-3">
           <div>
             <Label htmlFor="first_payment_risarte_pct">Risarte (%)</Label>
+            {/* ASA5 (4023, decisão 9b): a implantação é faturada pela RisLife
+                (100%, na conta Asaas dela) — o campo não muda mais. */}
             <Input
               id="first_payment_risarte_pct"
               name="first_payment_risarte_pct"
               type="number"
-              min={0}
-              max={100}
-              value={firstRisarte}
-              onChange={(e) => setFirstRisarte(Number(e.target.value))}
+              value={0}
+              readOnly
+              disabled
+              title="A implantação é 100% da RisLife (faturada pela RisLife)."
             />
           </div>
           <div>
             <Label>RisLife (%)</Label>
             <p className="flex h-9 items-center text-sm text-muted-foreground">
-              {100 - (firstRisarte || 0)}%
+              100%
             </p>
           </div>
         </div>

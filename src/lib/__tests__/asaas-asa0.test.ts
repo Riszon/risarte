@@ -491,8 +491,8 @@ describe("réguas da ASA0 (segredo fora do navegador, do código e dos registros
     const quemLe = fontes.filter((f) => ler(f).includes("_gateway_read_key"));
     expect(quemLe).toEqual(["src/lib/asaas/account.ts"]);
     const quemUsaEnv = fontes.filter((f) => ler(f).includes("ASAAS_API_KEY"));
-    // Só o cliente ANTIGO do Empresarial (nunca chamado; aposentado na ASA5).
-    expect(quemUsaEnv).toEqual(["src/lib/empresarial/asaas.ts"]);
+    // O cliente ANTIGO do Empresarial saiu na ASA5 (4023): ninguém mais lê a variável.
+    expect(quemUsaEnv).toEqual([]);
   });
 
   it("nenhuma chave de API escrita no repositório (código, roteiros, migrações, documentos)", () => {

@@ -54,7 +54,7 @@ describe("as ações de cobrança usam a régua do financeiro", () => {
   const cobrancasEmLote = ler("src/app/(app)/empresarial/cobrancas/actions.ts");
 
   it("gerar, prévia, editar, cancelar, dar baixa e checar inadimplência", () => {
-    expect(cobrancaDaEmpresa.match(/if \(!isProgramFinance\(session\)\) return \{ ok: false, error: "Sem permissão\." \};/g)).toHaveLength(6);
+    expect(cobrancaDaEmpresa.match(/if \(!isProgramFinance\(session\)\) return \{ ok: false, error: "Sem permissão\." \};/g)).toHaveLength(8); // + "Emitir no Asaas" e "Tentar de novo" (ASA5, 4023)
     expect(cobrancaDaEmpresa).not.toMatch(/isProgramManager/);
   });
 

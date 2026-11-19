@@ -12,7 +12,8 @@ import { NextResponse, type NextRequest } from "next/server";
 // valida o PRÓPRIO segredo (`ZAPSIGN_WEBHOOK_SECRET`; `CRON_SECRET`, que a
 // Vercel manda como `Authorization: Bearer`) e responde 401 sem ele.
 // 4015: /boletos/ é a lista pública da forma 2 (sem login; o código decide).
-const PUBLIC_PATHS = ["/login", "/auth", "/i/", "/c/", "/e/", "/boletos/", "/robots.txt", "/api/webhooks/", "/api/cron/"];
+// 4023: /relatorio-do-mes/ é a foto do relatório do mês do Empresarial (sem login; o código decide).
+const PUBLIC_PATHS = ["/login", "/auth", "/i/", "/c/", "/e/", "/boletos/", "/relatorio-do-mes/", "/robots.txt", "/api/webhooks/", "/api/cron/"];
 
 export async function proxy(request: NextRequest) {
   // Before Supabase is configured (.env.local), let everything through so

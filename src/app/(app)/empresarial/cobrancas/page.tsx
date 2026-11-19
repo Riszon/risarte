@@ -4,7 +4,7 @@ import { Receipt } from "lucide-react";
 import { getSessionContext } from "@/lib/auth";
 import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramFinance } from "@/lib/empresarial/access";
-import { isAsaasConfigured } from "@/lib/empresarial/asaas";
+import { createClient } from "@/lib/supabase/server";
 import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { FilterForm } from "@/components/filter-form";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,12 +34,11 @@ export const metadata: Metadata = { title: "Cobranças do programa" };
  * relatórios. O painel entregue tinha empresas, funil, titulares e
  * economia, e nenhuma dimensão financeira. Faltava metade da fase.
  *
- * ⚠️ E A TELA NÃO DIZ "BOLETO", DE PROPÓSITO. Quem relatou pediu para
- * "visualizar, imprimir e dar baixa nos boletos" — mas **o sistema não emite
- * boleto**. `createAsaasCharge` existe no código e nunca é chamada; a geração
- * só grava a linha da cobrança. Chamar isto de boleto faria a tela prometer um
- * documento que não existe, e alguém iria procurar o botão de imprimir. O
- * aviso no alto declara isso em vez de esconder.
+ * ⚠️ O AVISO NO ALTO DIZ A VERDADE SOBRE O BOLETO. Até a ASA5 o sistema não
+ * emitia boleto (a geração só gravava a linha). Com a ASA5 (4023), quando a rede
+ * cobra pelo Asaas (Central › Empresarial), a cobrança gerada sai no Asaas na
+ * hora, e o link, o boleto e o Pix aparecem na ficha da empresa. O aviso lê a
+ * integração nova — nunca mais uma variável de ambiente.
  */
 
 const STATUS_FILTRO = ["", "PENDING", "OVERDUE", "PAID", "CANCELLED"] as const;
@@ -73,6 +72,11 @@ export default async function CobrancasPage(
   // enxerga a rede inteira — a unidade vê as empresas dela pela ficha.
   if (!isProgramFinance(session)) notFound();
 
+  // ASA5 (4023): se a rede cobra pelo Asaas (sem a 4023, "desligado").
+  const { data: cfgAsaas } = await (await createClient()).rpc("corporate_settings_read");
+  const asaasLigado = Boolean((cfgAsaas as { ligado?: boolean } | null)?.ligado);
+
+  // A frase do alto muda junto: com o Asaas ligado, é boleto de verdade.
   const params = await props.searchParams;
   const pick = (k: string) => {
     const v = params[k];
@@ -196,17 +200,19 @@ export default async function CobrancasPage(
           procurar boleto; descobrir só no fim que ele não existe é pior do que
           ler no começo. Ver o comentário no alto do arquivo. */}
       <div className="rounded-xl border border-gold/40 bg-gold/5 p-4 text-sm leading-relaxed">
-        <p>
-          <strong className="text-foreground">
-            Estas são as cobranças do programa, não boletos.
-          </strong>{" "}
-          O sistema registra o valor, o vencimento e o pagador, e a baixa é{" "}
-          <strong className="text-foreground">manual</strong>.
-        </p>
-        <p className="mt-2 border-t border-gold/30 pt-2 text-muted-foreground">
-          {isAsaasConfigured()
-            ? "A chave do ASAAS está configurada, mas a emissão automática ainda não foi ligada: nenhuma cobrança daqui vira boleto sozinha."
-            : "A emissão de boleto pelo ASAAS ainda não foi ligada. Quando for, o link do boleto aparece nesta mesma tela."}
+        {!asaasLigado && (
+          <p>
+            <strong className="text-foreground">
+              Estas são as cobranças do programa, não boletos.
+            </strong>{" "}
+            O sistema registra o valor, o vencimento e o pagador, e a baixa é{" "}
+            <strong className="text-foreground">manual</strong>.
+          </p>
+        )}
+        <p className={asaasLigado ? "text-muted-foreground" : "mt-2 border-t border-gold/30 pt-2 text-muted-foreground"}>
+          {asaasLigado
+            ? "O Asaas está ligado: a cobrança gerada desde a data de início sai no Asaas na hora (a implantação pela RisLife, a mensalidade pela franqueadora), e a baixa vem do Asaas. O link, o boleto e o Pix ficam na ficha da empresa."
+            : "A emissão pelo Asaas ainda não foi ligada (Central › Empresarial): nenhuma cobrança daqui vira boleto sozinha."}
         </p>
       </div>
 

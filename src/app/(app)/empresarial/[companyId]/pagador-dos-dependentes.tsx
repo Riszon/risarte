@@ -32,6 +32,8 @@ export function PagadorDosDependentes({
   pagador,
   nome,
   documento,
+  email = null,
+  celular = null,
   canManage,
 }: {
   companyId: string;
@@ -40,6 +42,8 @@ export function PagadorDosDependentes({
   pagador: Pagador;
   nome: string | null;
   documento: string | null;
+  email?: string | null;
+  celular?: string | null;
   canManage: boolean;
 }) {
   const quem =
@@ -63,6 +67,8 @@ export function PagadorDosDependentes({
           pagador={pagador}
           nome={nome}
           documento={documento}
+          email={email}
+          celular={celular}
         />
       )}
     </div>
@@ -76,6 +82,8 @@ function EscolherPagador({
   pagador,
   nome,
   documento,
+  email,
+  celular,
 }: {
   companyId: string;
   employeeId: string;
@@ -83,6 +91,8 @@ function EscolherPagador({
   pagador: Pagador;
   nome: string | null;
   documento: string | null;
+  email: string | null;
+  celular: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -147,6 +157,24 @@ function EscolherPagador({
                   required
                 />
               </div>
+              {/* ASA5 (4023, decisão 12a): para onde o Asaas manda a cobrança. */}
+              <div className="space-y-1">
+                <Label htmlFor="dependents_payer_email">E-mail de quem paga</Label>
+                <Input id="dependents_payer_email" name="dependents_payer_email" type="email" defaultValue={email ?? ""} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="dependents_payer_phone">Celular de quem paga</Label>
+                <Input
+                  id="dependents_payer_phone"
+                  name="dependents_payer_phone"
+                  defaultValue={celular ?? ""}
+                  inputMode="tel"
+                  placeholder="(43) 99999-0000"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground sm:col-span-2">
+                Informe o e-mail ou o celular (pelo menos um): é para lá que o Asaas manda a cobrança e os lembretes.
+              </p>
             </div>
           )}
           <p className="text-xs text-muted-foreground">

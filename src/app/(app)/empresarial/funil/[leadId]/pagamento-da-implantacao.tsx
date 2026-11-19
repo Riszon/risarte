@@ -18,6 +18,7 @@ import {
 } from "@/lib/empresarial/alteracao-da-proposta";
 import {
   clearImplantationPayment,
+  emitirImplantacaoDoFunil,
   postImplantationToCompany,
   registerImplantationPayment,
 } from "./actions";
@@ -33,6 +34,11 @@ export type PagamentoDaImplantacaoView = {
   companyId: string | null;
   /** A cobrança que nasceu deste registro, nas cobranças da empresa. */
   cobranca: { status: string; pagaEm: string | null } | null;
+  /** ASA5 (4023, decisão 8): a rede cobra o Empresarial pelo Asaas. */
+  asaasLigado?: boolean;
+  /** A fatura da implantação no Asaas (conta da RisLife), se já emitida. */
+  faturaAsaas?: string | null;
+  situacaoAsaas?: string | null;
 };
 
 const SITUACAO_DA_COBRANCA: Record<string, string> = {
@@ -94,6 +100,77 @@ export function PagamentoDaImplantacao({
         ? (v.sugeridoCents / 100).toFixed(2).replace(".", ",")
         : "";
   const dataInicial = v.pagoEm ? v.pagoEm.slice(0, 10) : hoje;
+
+  // ASA5 (4023, decisão 8): com o Asaas ligado, a implantação é EMITIDA pelo
+  // Asaas (conta da RisLife) e o pagamento se registra sozinho no aviso.
+  if (v.asaasLigado && !registrado) {
+    const emAberto = v.cobranca != null && (v.cobranca.status === "PENDING" || v.cobranca.status === "OVERDUE");
+    return (
+      <div className="space-y-2 rounded-md border p-2.5">
+        <p className="text-sm">1º pagamento (implantação)</p>
+        {emAberto ? (
+          <p className="text-xs">
+            Cobrança emitida pelo Asaas, em nome da <strong>RisLife</strong>: aguardando o pagamento. Ele se
+            registra aqui sozinho quando o Asaas avisar.
+            {v.faturaAsaas && (
+              <>
+                {" · "}
+                <a href={v.faturaAsaas} target="_blank" rel="noreferrer" className="underline">
+                  abrir a fatura
+                </a>
+              </>
+            )}
+            {v.situacaoAsaas === "erro_emissao" && (
+              <span className="block text-amber-700 dark:text-amber-400">
+                Não saiu no Asaas. Nas cobranças da empresa, use “Tentar de novo”.
+              </span>
+            )}
+            {v.companyId && (
+              <>
+                {" · "}
+                <Link href={`/empresarial/${v.companyId}?aba=financeiro`} className="underline">
+                  ver cobranças
+                </Link>
+              </>
+            )}
+          </p>
+        ) : !v.companyId ? (
+          <p className="text-xs text-muted-foreground">
+            A cobrança da implantação sai pelo Asaas, no nome da empresa: crie a empresa primeiro (aba Fechamento).
+          </p>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              rodar(() => emitirImplantacaoDoFunil(leadId, fd), "Cobrança da implantação emitida no Asaas (RisLife).");
+            }}
+            className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          >
+            <div>
+              <Label htmlFor="imp-valor" className="text-xs">
+                Valor da implantação (R$)
+              </Label>
+              <Input id="imp-valor" name="valor" inputMode="decimal" defaultValue={valorInicial} placeholder="0,00" required />
+            </div>
+            <div>
+              <Label htmlFor="imp-venc" className="text-xs">
+                Vencimento
+              </Label>
+              <Input id="imp-venc" name="vencimento" type="date" min={hoje} defaultValue={hoje} required />
+            </div>
+            <Button type="submit" size="sm" className="h-9 text-xs" disabled={isPending}>
+              Emitir a cobrança no Asaas
+            </Button>
+            <p className="text-xs text-muted-foreground sm:col-span-3">
+              Sai em nome da RisLife (100% dela), com boleto e Pix.
+              {v.sugeridoCents != null ? ` Pela proposta, o 1º pagamento é ${formatBRL(v.sugeridoCents)}.` : ""}
+            </p>
+          </form>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

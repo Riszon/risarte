@@ -110,6 +110,9 @@ export type EmployeeView = {
   dependentsPayer?: "EMPRESA" | "TITULAR" | "OUTRO";
   dependentsPayerName?: string | null;
   dependentsPayerDocument?: string | null;
+  /** ASA5 (4023): o contato do outro pagador dos dependentes. */
+  dependentsPayerEmail?: string | null;
+  dependentsPayerPhone?: string | null;
 };
 
 type Unit = { id: string; name: string };
@@ -588,6 +591,8 @@ function DependentsBlock({
         pagador={employee.dependentsPayer ?? "EMPRESA"}
         nome={employee.dependentsPayerName ?? null}
         documento={employee.dependentsPayerDocument ?? null}
+        email={employee.dependentsPayerEmail ?? null}
+        celular={employee.dependentsPayerPhone ?? null}
         canManage={canManage && employee.status === "ACTIVE"}
       />
       {employee.dependents.length === 0 ? (

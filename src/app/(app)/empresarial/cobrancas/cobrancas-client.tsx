@@ -133,6 +133,23 @@ function AvisoDoLote({
             </ul>
           </div>
         )}
+        {/* ASA5 (4023): gerada no Empresarial, mas não saiu no Asaas. */}
+        {(resultado.avisosDoAsaas ?? []).length > 0 && (
+          <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-2 text-sm">
+            <p>
+              <strong>Geradas, mas não saíram no Asaas.</strong> A cobrança está
+              no Empresarial; na ficha da empresa, use “Emitir no Asaas” ou “Tentar de novo”:
+            </p>
+            <ul className="max-h-40 space-y-1 overflow-y-auto">
+              {(resultado.avisosDoAsaas ?? []).map((a, i) => (
+                <li key={`${a.empresa}-${i}`} className="flex justify-between gap-3">
+                  <span className="font-medium">{a.empresa}</span>
+                  <span className="text-muted-foreground">{a.motivo}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="flex justify-end">
           <Button size="sm" onClick={onClose}>
             Entendi

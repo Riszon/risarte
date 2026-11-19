@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { segredoConfere } from "@/lib/segredo-de-webhook";
@@ -26,32 +26,14 @@ describe("comparação de segredo em tempo constante", () => {
   });
 });
 
-describe("webhook do ASAAS (Edge Function)", () => {
-  const fonte = ler("supabase", "functions", "asaas-webhook", "index.ts");
-
-  it("sem ASAAS_WEBHOOK_TOKEN recusa tudo, em vez de aceitar tudo", () => {
-    // A brecha era exatamente esta forma: só conferia QUANDO havia segredo.
-    expect(fonte).not.toMatch(/if\s*\(\s*expected\s*\)\s*\{/);
-    expect(fonte).toMatch(/if\s*\(\s*!expected\s*\)/);
-    expect(fonte).toContain("ASAAS_WEBHOOK_TOKEN não configurado");
-  });
-
-  it("confere o segredo ANTES de ler o corpo", () => {
-    const conferencia = fonte.indexOf("segredoConfere(got, expected)");
-    const corpo = fonte.indexOf("await req.json()");
-    expect(conferencia).toBeGreaterThan(-1);
-    expect(corpo).toBeGreaterThan(-1);
-    expect(conferencia).toBeLessThan(corpo);
-  });
-
-  it("compara em tempo constante, não com !==", () => {
-    expect(fonte).not.toMatch(/got\s*!==\s*expected/);
-    expect(fonte).toContain('crypto.subtle.digest("SHA-256"');
-  });
-
-  it("não inventa id de evento: sem id, 400 (a idempotência depende dele)", () => {
-    expect(fonte).not.toContain("crypto.randomUUID()");
-    expect(fonte).toContain("sem id do evento");
+// ASA5 (4023, decisão 11b): a Edge Function antiga do ASAAS (o webhook do
+// Empresarial, nunca publicado) saiu. O aviso do Asaas chega só pela rota da
+// integração nova (/api/webhooks/asaas/[ref]), com a fila e a conferência do
+// token. A régua reprova a volta do caminho paralelo de baixa.
+describe("webhook antigo do ASAAS (Edge Function do Empresarial)", () => {
+  it("não existe mais (nem o cliente antigo que lia ASAAS_API_KEY)", () => {
+    expect(existsSync(join(process.cwd(), "supabase", "functions", "asaas-webhook"))).toBe(false);
+    expect(existsSync(join(process.cwd(), "src", "lib", "empresarial", "asaas.ts"))).toBe(false);
   });
 });
 

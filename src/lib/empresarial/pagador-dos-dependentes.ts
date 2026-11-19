@@ -37,6 +37,13 @@ export type PagadorDoTitular = {
   nome: string | null;
   /** Só OUTRO: 11 (CPF) ou 14 (CNPJ) números. */
   documento: string | null;
+  /**
+   * Só OUTRO (ASA5, 4023, decisão 12a): o contato de quem paga, para os avisos
+   * do Asaas. E-mail ou celular — pelo menos um.
+   */
+  email: string | null;
+  /** Só OUTRO: o celular, só os números (DDD + número). */
+  celular: string | null;
 };
 
 const soDigitos = (s: unknown) => String(s ?? "").replace(/\D/g, "");
@@ -56,12 +63,14 @@ export function conferirPagador(entrada: {
   pagador: unknown;
   nome?: unknown;
   documento?: unknown;
+  email?: unknown;
+  celular?: unknown;
 }): { ok: true; valor: PagadorDoTitular } | { ok: false; motivo: string } {
   const p = String(entrada.pagador ?? "EMPRESA").trim().toUpperCase() as Pagador;
   if (!(PAGADORES as readonly string[]).includes(p)) {
     return { ok: false, motivo: "Escolha quem paga os dependentes." };
   }
-  if (p !== "OUTRO") return { ok: true, valor: { pagador: p, nome: null, documento: null } };
+  if (p !== "OUTRO") return { ok: true, valor: { pagador: p, nome: null, documento: null, email: null, celular: null } };
   const nome = String(entrada.nome ?? "").trim();
   const doc = soDigitos(entrada.documento);
   if (!nome) return { ok: false, motivo: "Informe o nome de quem paga os dependentes." };
@@ -72,7 +81,18 @@ export function conferirPagador(entrada: {
   } else {
     return { ok: false, motivo: "Informe o CPF (11 números) ou o CNPJ (14 números) de quem paga os dependentes." };
   }
-  return { ok: true, valor: { pagador: p, nome, documento: doc } };
+  const email = String(entrada.email ?? "").trim().toLowerCase();
+  const celular = soDigitos(entrada.celular);
+  if (!email && !celular) {
+    return { ok: false, motivo: "Informe o e-mail ou o celular de quem paga os dependentes: é para lá que o Asaas manda a cobrança." };
+  }
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { ok: false, motivo: "O e-mail de quem paga os dependentes não é válido." };
+  }
+  if (celular && (celular.length < 10 || celular.length > 11)) {
+    return { ok: false, motivo: "O celular de quem paga os dependentes precisa do DDD e do número (10 ou 11 números)." };
+  }
+  return { ok: true, valor: { pagador: p, nome, documento: doc, email: email || null, celular: celular || null } };
 }
 
 /**

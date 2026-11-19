@@ -271,6 +271,33 @@ export function createUnitCustomer(
 }
 
 /**
+ * ASA5 (4023): o PAGADOR DO EMPRESARIAL (a empresa, o titular ou quem paga os
+ * dependentes), com o contato e os avisos do Asaas LIGADOS (a régua do Asaas).
+ */
+export function createCompanyCustomer(
+  cred: AsaasCredential,
+  input: { name: string; cpfCnpj: string; email?: string; mobilePhone?: string; externalReference: string },
+  opts?: Opts
+): Promise<AsaasCustomer> {
+  return asaasRequest<AsaasCustomer>(
+    {
+      ...cred,
+      method: "POST",
+      path: "/customers",
+      body: {
+        name: input.name,
+        cpfCnpj: input.cpfCnpj,
+        ...(input.email ? { email: input.email } : {}),
+        ...(input.mobilePhone ? { mobilePhone: input.mobilePhone } : {}),
+        notificationDisabled: false,
+        externalReference: input.externalReference,
+      },
+    },
+    opts
+  );
+}
+
+/**
  * `POST /v3/customers` — até a ASA2, SÓ nome e CPF/CNPJ e as notificações do
  * Asaas desligadas (o riSZon é quem avisa o paciente).
  */

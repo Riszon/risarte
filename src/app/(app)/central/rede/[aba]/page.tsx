@@ -13,6 +13,7 @@ import { AbaComercialDaRede } from "../../aba-comercial";
 import { AbaFinanceiroDaRede } from "../../aba-financeiro";
 import { AbaCobrancaDaRede } from "../../aba-cobranca";
 import { AbaTaxasDaRede } from "../../aba-taxas";
+import { AbaEmpresarialDaRede } from "../../aba-empresarial";
 import { HistoricoDaAba } from "../../conta-client";
 import { ContaETarifas } from "../../conta-e-tarifas";
 import { InterruptorNaCentral, PilotoDaContaNaCentral } from "../../pecas-do-piloto";
@@ -51,8 +52,10 @@ export default async function CentralDaRedePage({ params, searchParams }: PagePr
       {aba === "comercial" && <AbaComercialDaRede supabase={supabase} />}
       {aba === "cobranca" && <AbaCobrancaDaRede supabase={supabase} session={session} />}
       {aba === "taxas" && <AbaTaxasDaRede supabase={supabase} session={session} params={await searchParams} />}
+      {aba === "empresarial" && <AbaEmpresarialDaRede supabase={supabase} />}
 
-      <HistoricoDaAba aba={aba} clinicId={null} />
+      {/* A aba Empresarial (4023) não tem histórico próprio: as mudanças ficam na auditoria. */}
+      {aba !== "empresarial" && <HistoricoDaAba aba={aba} clinicId={null} />}
     </div>
   );
 }

@@ -17,8 +17,10 @@ import {
 } from "@/lib/empresarial/cobranca-servidor";
 import { proximoVencimento, rotuloDoMes } from "@/lib/empresarial/vencimento";
 import { descricaoDaCobrancaAParte, documentoLegivel } from "@/lib/empresarial/pagador-dos-dependentes";
+import { emitirEmpresarialSeLigado, liberarDoAsaas, tentarDeNovoEmpresarial } from "@/lib/asaas/empresarial";
 
-export type ActionResult = { ok: boolean; error?: string };
+/** `aviso`: a cobrança foi gravada, mas algo do Asaas não saiu (ASA5, 4023). */
+export type ActionResult = { ok: boolean; error?: string; aviso?: string };
 
 export type BillingPreview = {
   ok: boolean;
@@ -621,7 +623,7 @@ export async function generateBilling(
       billingType === "IMPLANTATION" && !preview.precisaValor && !i.employeeId ? i.employees : null,
   }));
 
-  const { error } = await db.from("adhesion_billing").insert(rows);
+  const { data: inseridas, error } = await db.from("adhesion_billing").insert(rows).select("id");
   if (error) {
     // 23505 = a trava da 1022. Chega aqui quando duas pessoas geram a mesma
     // mensalidade ao mesmo tempo (a conferência acima não vê a outra): o banco
@@ -648,8 +650,14 @@ export async function generateBilling(
     entityId: companyId,
     details: { type: billingType, count: rows.length },
   });
+  // ASA5 (4023): com o Asaas ligado, cada linha sai no Asaas agora (decisão 3a).
+  // A cobrança do Empresarial já está gravada: o que não sair vira aviso.
+  const asaas = await emitirEmpresarialSeLigado(
+    ((inseridas ?? []) as { id: string }[]).map((r) => r.id),
+    { actorId: session.userId }
+  );
   revalidatePath(`/empresarial/${companyId}`);
-  return { ok: true };
+  return { ok: true, aviso: asaas.avisos.length ? asaas.avisos.join(" ") : undefined };
 }
 
 /** Edita uma cobrança ainda não paga (valor, vencimento e descrição). */
@@ -684,6 +692,10 @@ export async function updateBilling(
   const dueDate = String(formData.get("due_date") ?? "").trim();
   if (!dueDate) return { ok: false, error: "Informe o vencimento." };
 
+  // ASA5: no Asaas, a cobrança é cancelada lá antes e sai de novo, já corrigida.
+  const lib = await liberarDoAsaas(billingId, session.userId, "Cobrança editada no Empresarial (valor ou vencimento)");
+  if (!lib.ok) return { ok: false, error: lib.error };
+
   const { error } = await db
     .from("adhesion_billing")
     .update({
@@ -702,8 +714,9 @@ export async function updateBilling(
     entityId: billingId,
     details: { total: cents, due_date: dueDate },
   });
+  const asaas = lib.cancelou ? await emitirEmpresarialSeLigado([billingId], { actorId: session.userId, manual: true }) : null;
   revalidatePath(`/empresarial/${companyId}`);
-  return { ok: true };
+  return { ok: true, aviso: asaas?.avisos.length ? asaas.avisos.join(" ") : undefined };
 }
 
 /** Cancela a cobrança — o motivo é obrigatório (validado também no banco). */
@@ -718,6 +731,9 @@ export async function cancelBilling(
     return { ok: false, error: "Informe o motivo do cancelamento." };
   }
 
+  // ASA5: no Asaas, cancela lá primeiro (a trava do banco recusa o contrário).
+  const lib = await liberarDoAsaas(billingId, session.userId, reason.trim());
+  if (!lib.ok) return { ok: false, error: lib.error };
   const db = await empresarialDb();
   const { error } = await db.rpc("cancel_billing", {
     p_billing_id: billingId,
@@ -743,8 +759,8 @@ export async function cancelBilling(
 }
 
 /**
- * Baixa manual (simula o webhook do ASAAS) — liquida a cobrança e grava o split.
- * Quando o ASAAS estiver ligado, a Edge Function chama a mesma RPC settle_billing.
+ * Baixa manual — liquida a cobrança e grava o split. Com o Asaas (ASA5, 4023),
+ * a baixa vem do aviso (`_corporate_event`); aqui fica o "recebeu por fora".
  */
 export async function markBillingPaid(
   companyId: string,
@@ -752,6 +768,10 @@ export async function markBillingPaid(
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
+  // ASA5: recebeu por fora com a cobrança no Asaas → cancela lá antes da baixa
+  // (como o balcão da 4004). Paga pelo Asaas, recusa: a baixa vem do aviso.
+  const lib = await liberarDoAsaas(billingId, session.userId, "Recebida por fora do Asaas (baixa manual no Empresarial)");
+  if (!lib.ok) return { ok: false, error: lib.error };
   const db = await empresarialDb();
   const { error } = await db.rpc("settle_billing", {
     p_billing_id: billingId,
@@ -787,6 +807,8 @@ export async function deleteBilling(
   if (!session.isAdminMaster) {
     return { ok: false, error: "Só o Admin Master pode excluir uma cobrança." };
   }
+  const lib = await liberarDoAsaas(billingId, session.userId, "Cobrança excluída no Empresarial");
+  if (!lib.ok) return { ok: false, error: lib.error };
   const db = await empresarialDb();
   const { error } = await db.rpc("delete_billing", {
     p_billing_id: billingId,
@@ -824,4 +846,23 @@ export async function runOverdueCheck(companyId: string): Promise<ActionResult> 
   revalidatePath(`/empresarial/${companyId}`);
   revalidatePath("/empresarial");
   return { ok: true };
+}
+
+/** ASA5 (4023): o botão "Emitir no Asaas" (a linha em aberto gerada antes da data de início). */
+export async function emitirNoAsaas(companyId: string, billingId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
+  const r = await emitirEmpresarialSeLigado([billingId], { actorId: session.userId, manual: true });
+  revalidatePath(`/empresarial/${companyId}`);
+  if (r.emitidas === 0) return { ok: false, error: r.avisos.join(" ") || "A cobrança não saiu no Asaas." };
+  return { ok: true };
+}
+
+/** ASA5 (4023): "Tentar de novo" a emissão que deu erro. */
+export async function tentarDeNovoNoAsaas(companyId: string, chargeId: string): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!isProgramFinance(session)) return { ok: false, error: "Sem permissão." };
+  const r = await tentarDeNovoEmpresarial(chargeId, session.userId);
+  revalidatePath(`/empresarial/${companyId}`);
+  return r.ok ? { ok: true } : { ok: false, error: r.error };
 }

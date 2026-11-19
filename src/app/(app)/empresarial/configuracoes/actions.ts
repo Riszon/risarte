@@ -126,7 +126,9 @@ export async function saveSplitRules(
   if (companyId === null ? !canConfigureProgram(session) : !isProgramManager(session)) {
     return { ok: false, error: "Sem permissão." };
   }
-  const fr = num(field(formData, "first_payment_risarte_pct")) ?? 0;
+  // ASA5 (4023, decisão 9b): a implantação é 100% RisLife (faturada pela RisLife,
+  // na conta Asaas dela). O banco trava; aqui não se aceita outro número.
+  const fr = 0;
   const rr = num(field(formData, "recurring_risarte_pct")) ?? 0;
   if (fr < 0 || fr > 100 || rr < 0 || rr > 100) {
     return { ok: false, error: "Os percentuais devem ficar entre 0 e 100." };

@@ -240,12 +240,17 @@ declare
   v_charge uuid;
   v_desc text;
 begin
-  if not public._corporate_can_manage() then raise exception 'NOT_ALLOWED'; end if;
+  select * into b from empresarial.adhesion_billing where id = p_billing_id for update;
+  -- Quem cobra no Empresarial; e, na implantação que nasceu no funil (decisão 8),
+  -- também quem atende o lead.
+  if not (public._corporate_can_manage()
+          or (b.origin_lead_id is not null and b.billing_type = 'IMPLANTATION' and empresarial.can_access_lead(b.origin_lead_id))) then
+    raise exception 'NOT_ALLOWED';
+  end if;
   select * into s from public.corporate_gateway_settings where id;
   if s.enabled_from is null or s.enabled_from > public.today_br() then
     return jsonb_build_object('motivo', 'desligado');
   end if;
-  select * into b from empresarial.adhesion_billing where id = p_billing_id for update;
   if b.id is null then return jsonb_build_object('motivo', 'nao_encontrada'); end if;
   if b.status not in ('PENDING', 'OVERDUE') then return jsonb_build_object('motivo', 'nao_esta_em_aberto'); end if;
   if not p_manual and (b.created_at at time zone 'America/Sao_Paulo')::date < s.enabled_from then
@@ -310,6 +315,44 @@ begin
   values ((select auth.uid()), null, 'create', 'corporate_charge', v_charge::text,
           jsonb_build_object('billing_id', b.id, 'kind', v_kind, 'manual', p_manual, 'payer_source', py.source));
   return jsonb_build_object('charge_id', v_charge, 'kind', v_kind);
+end;
+$$;
+
+-- Decisão 8: com o Asaas ligado, a implantação do funil é EMITIDA pelo Asaas (e
+-- não mais registrada como paga por fora). Cria a linha de implantação em aberto,
+-- ligada ao lead; o servidor emite na conta da RisLife em seguida. Uma por lead.
+create or replace function public.corporate_lead_implantation_issue(p_lead_id uuid, p_value_cents bigint, p_due date)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  s public.corporate_gateway_settings%rowtype;
+  v_lead record;
+  v_doc uuid;
+  v_holders integer;
+  v_id uuid;
+begin
+  if not (public.is_admin_master() or empresarial.can_access_lead(p_lead_id)) then raise exception 'NOT_ALLOWED'; end if;
+  select * into s from public.corporate_gateway_settings where id;
+  if s.enabled_from is null or s.enabled_from > public.today_br() then raise exception 'ASAAS_OFF'; end if;
+  select id, company_id, implantation_paid_at into v_lead from empresarial.commercial_leads where id = p_lead_id for update;
+  if v_lead.id is null then raise exception 'LEAD_NOT_FOUND'; end if;
+  if v_lead.company_id is null then raise exception 'NO_COMPANY'; end if;
+  if v_lead.implantation_paid_at is not null then raise exception 'ALREADY_PAID'; end if;
+  if coalesce(p_value_cents, 0) < 500 then raise exception 'VALUE_BELOW_MIN'; end if;
+  if p_due is null or p_due < public.today_br() then raise exception 'DUE_DATE_INVALID'; end if;
+  select id into v_id from empresarial.adhesion_billing
+   where origin_lead_id = p_lead_id and billing_type = 'IMPLANTATION' and status <> 'CANCELLED' limit 1;
+  if v_id is not null then return v_id; end if;
+  select id into v_doc from empresarial.company_documents where company_id = v_lead.company_id and is_primary limit 1;
+  select contracted_holders into v_holders from empresarial.companies where id = v_lead.company_id;
+  insert into empresarial.adhesion_billing
+    (company_id, company_document_id, billing_type, reference_month, total_amount_cents, status, due_date,
+     description, holders_covered, origin_lead_id)
+  values (v_lead.company_id, v_doc, 'IMPLANTATION', date_trunc('month', p_due)::date, p_value_cents, 'PENDING', p_due,
+     'Implantação (1º pagamento) — emitida pelo funil', v_holders, p_lead_id)
+  returning id into v_id;
+  insert into empresarial.commercial_lead_activities (lead_id, author_id, kind, note)
+  values (p_lead_id, (select auth.uid()), 'NOTE', '1º pagamento (implantação): cobrança gerada para emitir pelo Asaas (conta da RisLife).');
+  return v_id;
 end;
 $$;
 
@@ -473,6 +516,21 @@ begin
        where id = b.id;
       update public.corporate_charges set rislife_cents = v_rl where charge_id = c.id;
     end if;
+    -- Decisão 8: a implantação emitida pelo funil, paga pelo Asaas, sela o 1º
+    -- pagamento do lead (data, valor e forma) — ninguém registra à mão.
+    if cc.kind = 'implantacao' and b.origin_lead_id is not null then
+      update empresarial.commercial_leads
+         set implantation_paid_at = (v_on::timestamp + interval '12 hours') at time zone 'America/Sao_Paulo',
+             implantation_paid_cents = v_paid,
+             implantation_payment_method = case upper(coalesce(p_payment->>'billingType', c.billing_type))
+               when 'PIX' then 'PIX' when 'CREDIT_CARD' then 'CARD' else 'BOLETO' end,
+             implantation_paid_by = null
+       where id = b.origin_lead_id and implantation_paid_at is null;
+      if found then
+        insert into empresarial.commercial_lead_activities (lead_id, author_id, kind, note)
+        values (b.origin_lead_id, null, 'NOTE', '1º pagamento (implantação) pago pelo Asaas (conta da RisLife).');
+      end if;
+    end if;
     perform set_config('risarte.baixa_do_asaas', '', true);
 
     -- A tarifa do Asaas da mensalidade é da franqueadora (a da implantação é da
@@ -547,6 +605,24 @@ begin
   if position('_corporate_event' in v_def) > 0 then return; end if;
   if position(v_anchor in v_def) = 0 then raise exception 'APPLY_EVENT_ANCHOR_NOT_FOUND'; end if;
   execute replace(v_def, v_anchor, v_branch || v_anchor);
+end;
+$$;
+
+-- A trava do funil (`guard_lead_signatures`, 1041) recusa mudar o 1º pagamento
+-- quando a implantação já está nas cobranças. O selo que vem do AVISO DO ASAAS
+-- (decisão 8) passa — só ele (a marca `risarte.baixa_do_asaas`, ligada só dentro
+-- da baixa pelo aviso). Inserido na função de hoje, sem reescrevê-la.
+do $$
+declare
+  v_def text := pg_get_functiondef('empresarial.guard_lead_signatures()'::regprocedure);
+  v_anchor text := E'  -- O 1º pagamento já lançado no financeiro não muda pelo funil.\n  if (';
+  v_novo text := E'  -- O 1º pagamento já lançado no financeiro não muda pelo funil.\n'
+    || E'  -- 4023 (ASA5): a baixa pelo aviso do Asaas sela o pagamento do lead.\n'
+    || E'  if coalesce(current_setting(''risarte.baixa_do_asaas'', true), '''') <> ''1'' and (';
+begin
+  if position('risarte.baixa_do_asaas' in v_def) > 0 then return; end if;
+  if position(v_anchor in v_def) = 0 then raise exception 'LEAD_GUARD_ANCHOR_NOT_FOUND'; end if;
+  execute replace(v_def, v_anchor, v_novo);
 end;
 $$;
 
@@ -864,6 +940,8 @@ revoke execute on function public._corporate_pending_registrations() from public
 revoke execute on function public._corporate_overdue_divergences() from public, anon, authenticated;
 revoke execute on function public.corporate_charge_prepare(uuid, boolean) from public, anon, authenticated;
 revoke execute on function public.corporate_charge_retry(uuid) from public, anon, authenticated;
+revoke execute on function public.corporate_lead_implantation_issue(uuid, bigint, date) from public, anon, authenticated;
+grant execute on function public.corporate_lead_implantation_issue(uuid, bigint, date) to authenticated;
 revoke execute on function public.corporate_live_charge(uuid) from public, anon, authenticated;
 revoke execute on function public.corporate_refund_check(uuid) from public, anon, authenticated;
 revoke execute on function public.corporate_billing_charges(uuid) from public, anon, authenticated;

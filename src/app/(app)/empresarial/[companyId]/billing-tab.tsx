@@ -14,13 +14,16 @@ import {
   type BillingType,
 } from "@/lib/empresarial/constants";
 import { Trash2 } from "lucide-react";
+import type { CobrancaDoAsaasNaTela } from "@/lib/asaas/empresarial";
 import {
   cancelBilling,
   deleteBilling,
+  emitirNoAsaas,
   generateBilling,
   markBillingPaid,
   previewBilling,
   runOverdueCheck,
+  tentarDeNovoNoAsaas,
   updateBilling,
   type BillingPreview,
 } from "./billing-actions";
@@ -65,6 +68,107 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Cancelada",
 };
 
+/** ASA5 (4023): a situação da cobrança no Asaas. */
+const ASAAS_LABEL: Record<string, string> = {
+  emitindo: "Saindo no Asaas…",
+  emitida: "No Asaas",
+  vencida: "Vencida no Asaas",
+  paga: "Paga no Asaas",
+  liquidada: "Paga no Asaas",
+  em_contestacao: "Em contestação",
+  erro_emissao: "Não saiu no Asaas",
+  cancelada: "Cancelada no Asaas",
+  estornada: "Estornada no Asaas",
+};
+const VIVA = new Set(["emitindo", "emitida", "vencida", "erro_emissao"]);
+
+function AsaasDaLinha({
+  companyId,
+  billing,
+  c,
+  ligado,
+  podeCobrar,
+  isPending,
+  run,
+}: {
+  companyId: string;
+  billing: BillingView;
+  c: CobrancaDoAsaasNaTela | undefined;
+  ligado: boolean;
+  podeCobrar: boolean;
+  isPending: boolean;
+  run: (action: () => Promise<{ ok: boolean; error?: string; aviso?: string }>, msg: string) => void;
+}) {
+  const aberta = billing.status === "PENDING" || billing.status === "OVERDUE";
+  const copiar = (texto: string, msg: string) => {
+    void navigator.clipboard.writeText(texto).then(
+      () => toast.success(msg),
+      () => toast.error("Não foi possível copiar.")
+    );
+  };
+  if (!c || c.status === "cancelada") {
+    if (!ligado || !aberta || !podeCobrar) return null;
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="mt-1 h-6 px-2 text-[10px]"
+        disabled={isPending}
+        onClick={() => run(async () => emitirNoAsaas(companyId, billing.id), "Cobrança emitida no Asaas.")}
+      >
+        Emitir no Asaas
+      </Button>
+    );
+  }
+  const viva = VIVA.has(c.status);
+  return (
+    <span className="mt-1 block space-y-0.5 text-[10px] text-muted-foreground">
+      <span className="block">
+        <strong className={c.status === "erro_emissao" ? "text-destructive" : undefined}>
+          {ASAAS_LABEL[c.status] ?? c.status}
+        </strong>
+        {" · "}emitida pela {c.emissor}
+      </span>
+      {c.invoice_url && viva && (
+        <a href={c.invoice_url} target="_blank" rel="noreferrer" className="mr-2 underline">
+          Abrir a fatura
+        </a>
+      )}
+      {c.bank_slip_url && viva && (
+        <a href={c.bank_slip_url} target="_blank" rel="noreferrer" className="mr-2 underline">
+          Boleto (PDF)
+        </a>
+      )}
+      {c.identification_field && viva && (
+        <button type="button" className="mr-2 underline" onClick={() => copiar(c.identification_field ?? "", "Linha digitável copiada.")}>
+          Copiar a linha
+        </button>
+      )}
+      {c.pix_copy_paste && viva && (
+        <button type="button" className="mr-2 underline" onClick={() => copiar(c.pix_copy_paste ?? "", "Pix copiado.")}>
+          Copiar o Pix
+        </button>
+      )}
+      {c.report_code && (
+        <a href={`/relatorio-do-mes/${c.report_code}`} target="_blank" rel="noreferrer" className="mr-2 underline">
+          Relatório do mês
+        </a>
+      )}
+      {c.status === "erro_emissao" && podeCobrar && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 px-2 text-[10px]"
+          disabled={isPending}
+          onClick={() => run(async () => tentarDeNovoNoAsaas(companyId, c.charge_id), "Cobrança emitida no Asaas.")}
+        >
+          Tentar de novo
+        </Button>
+      )}
+    </span>
+  );
+}
+
 function dateBR(iso: string | null): string {
   return iso ? formatIsoDateBr(iso) : "—";
 }
@@ -73,14 +177,15 @@ export function BillingTab({
   companyId,
   companyStatus,
   billings,
-  asaasConfigured,
+  asaas,
   isAdminMaster = false,
   podeCobrar = false,
 }: {
   companyId: string;
   companyStatus: string;
   billings: BillingView[];
-  asaasConfigured: boolean;
+  /** ASA5 (4023): se a rede cobra pelo Asaas e a cobrança do Asaas de cada linha. */
+  asaas: { ligado: boolean; porLinha: Record<string, CobrancaDoAsaasNaTela> };
   /** Só o Admin Master pode EXCLUIR uma cobrança (limpeza de teste). */
   isAdminMaster?: boolean;
   /**
@@ -114,11 +219,13 @@ export function BillingTab({
     });
   }
 
-  function run(action: () => Promise<{ ok: boolean; error?: string }>, msg: string) {
+  function run(action: () => Promise<{ ok: boolean; error?: string; aviso?: string }>, msg: string) {
     startTransition(async () => {
       const r = await action();
       if (r.ok) {
         toast.success(msg);
+        // ASA5: gravou no Empresarial, mas algo do Asaas não saiu — dito, não engolido.
+        if (r.aviso) toast.warning(r.aviso, { duration: 12000 });
         router.refresh();
       } else toast.error(r.error ?? "Erro.");
     });
@@ -164,17 +271,12 @@ export function BillingTab({
           >
             Checar inadimplência
           </Button>
-          {/* ⚠️ ESTE TEXTO DIZIA "ASAAS conectado" e MENTIA (achado em
-              10/09/2026, no relato OC-00004). Ele olhava só a variável de
-              ambiente; mas `createAsaasCharge` existe no código e **não é
-              chamada por lugar nenhum** — gerar cobrança apenas grava a linha.
-              Quem lia "conectado" concluía que o boleto tinha sido emitido e
-              ia procurar onde imprimir. A chave configurada é condição para
-              emitir, não prova de que se emitiu. */}
+          {/* ASA5 (4023): o aviso lê a integração nova (Central › Empresarial),
+              e não mais uma variável de ambiente. Cada linha diz se saiu no Asaas. */}
           <span className="ml-auto text-xs text-muted-foreground">
-            {asaasConfigured
-              ? "Chave do ASAAS configurada, mas a emissão automática ainda não foi ligada: a baixa é manual."
-              : "ASAAS não conectado — a cobrança fica registrada aqui e a baixa é manual."}
+            {asaas.ligado
+              ? "Asaas ligado: a cobrança gerada sai no Asaas na hora (a implantação pela RisLife, a mensalidade pela franqueadora), e a baixa vem do Asaas."
+              : "Asaas desligado — a cobrança fica registrada aqui e a baixa é manual."}
           </span>
         </CardContent>
       </Card>
@@ -224,6 +326,15 @@ export function BillingTab({
                     <Badge variant={STATUS_VARIANT[b.status] ?? "outline"}>
                       {STATUS_LABEL[b.status] ?? b.status}
                     </Badge>
+                    <AsaasDaLinha
+                      companyId={companyId}
+                      billing={b}
+                      c={asaas.porLinha[b.id]}
+                      ligado={asaas.ligado}
+                      podeCobrar={podeCobrar}
+                      isPending={isPending}
+                      run={run}
+                    />
                     {b.status === "CANCELLED" && b.cancelReason && (
                       <span
                         className="block text-[10px] text-muted-foreground"
@@ -247,14 +358,24 @@ export function BillingTab({
                           size="sm"
                           className="h-7 px-2 text-xs"
                           disabled={isPending}
-                          onClick={() =>
+                          onClick={() => {
+                            // ASA5: com a cobrança no Asaas, "marcar pago" é
+                            // "recebeu por fora" — a do Asaas é cancelada antes.
+                            const noAsaas = VIVA.has(asaas.porLinha[b.id]?.status ?? "");
+                            if (
+                              noAsaas &&
+                              !window.confirm(
+                                "Esta cobrança está no Asaas. Recebeu por fora? A cobrança do Asaas será cancelada e a baixa feita aqui."
+                              )
+                            )
+                              return;
                             run(
                               async () => markBillingPaid(companyId, b.id),
                               "Pagamento registrado (split gravado)."
-                            )
-                          }
+                            );
+                          }}
                         >
-                          Marcar pago
+                          {VIVA.has(asaas.porLinha[b.id]?.status ?? "") ? "Recebeu por fora" : "Marcar pago"}
                         </Button>
                         <EditBillingDialog companyId={companyId} billing={b} />
                         <CancelBillingDialog companyId={companyId} billing={b} />

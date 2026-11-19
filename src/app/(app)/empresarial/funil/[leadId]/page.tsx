@@ -599,12 +599,12 @@ export default async function FichaDoLeadPage({
         }>(),
       db
         .from("adhesion_billing")
-        .select("status, paid_at")
+        .select("id, status, paid_at")
         .eq("origin_lead_id", leadId)
         .eq("billing_type", "IMPLANTATION")
         .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle<{ status: string; paid_at: string | null }>(),
+        .maybeSingle<{ id: string; status: string; paid_at: string | null }>(),
     ]);
 
   // Nomes de quem enviou e do consultor responsável.
@@ -773,6 +773,7 @@ export default async function FichaDoLeadPage({
     sugeridoCents: implantacaoDaPropostaGravada(qual, faixasDaProposta),
     companyId: lead.company_id,
     cobranca: cobrancaRow ? { status: cobrancaRow.status, pagaEm: cobrancaRow.paid_at } : null,
+    ...(await asaasDaImplantacao(lead.company_id, cobrancaRow?.id ?? null)),
   };
 
   // 09/11/2026: o que pedir à empresa pelo WhatsApp — a régua da proposta e
@@ -1129,4 +1130,21 @@ export default async function FichaDoLeadPage({
       <AbasDaFicha abas={abas} inicial={aberta} proximo={proximo} />
     </div>
   );
+}
+
+/**
+ * ASA5 (4023, decisão 8): se a rede cobra o Empresarial pelo Asaas e, havendo a
+ * cobrança da implantação do lead, a fatura dela no Asaas (a conta da RisLife).
+ */
+async function asaasDaImplantacao(
+  companyId: string | null,
+  billingId: string | null
+): Promise<{ asaasLigado: boolean; faturaAsaas: string | null; situacaoAsaas: string | null }> {
+  const supabase = await createClient();
+  const { data: cfg, error } = await supabase.rpc("corporate_settings_read");
+  const asaasLigado = !error && Boolean((cfg as { ligado?: boolean } | null)?.ligado);
+  if (!companyId || !billingId) return { asaasLigado, faturaAsaas: null, situacaoAsaas: null };
+  const { data } = await supabase.rpc("corporate_billing_charges", { p_company_id: companyId });
+  const c = ((data ?? []) as { billing_id: string; invoice_url: string | null; status: string }[]).find((x) => x.billing_id === billingId);
+  return { asaasLigado, faturaAsaas: c?.invoice_url ?? null, situacaoAsaas: c?.status ?? null };
 }

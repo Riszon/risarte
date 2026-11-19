@@ -130,8 +130,11 @@ export type BancoDaEmissao = {
   salvarPagador: (c: CobrancaDoBanco, asaasCustomerId: string) => Promise<string>;
   /** ASA6 (4021): o pagador vem de outro jeito (a unidade, com o e-mail financeiro). */
   pagador?: (c: CobrancaDoBanco) => Promise<{ asaasId: string; localId: string }>;
-  /** ASA6 (4021): o split por valor fixo (o fundo com conta própria, decisão 5a). */
-  splitsFixos?: () => Promise<{ walletId: string; fixedValue: number }[]>;
+  /**
+   * ASA6 (4021): o split por valor fixo (o fundo com conta própria, decisão 5a).
+   * ASA5 (4023): ou percentual (a RisLife na mensalidade do Empresarial).
+   */
+  splitsFixos?: () => Promise<{ walletId: string; fixedValue?: number; percentualValue?: number }[]>;
   /** ASA2 (4007): aplica a régua do pagador, se ele estiver na fila. */
   aplicarRegua?: (gatewayCustomerId: string) => Promise<void>;
   /** ASA3 (4008): o plano do split desta cobrança (ausente = sem split). */

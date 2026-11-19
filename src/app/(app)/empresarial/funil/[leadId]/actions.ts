@@ -32,6 +32,8 @@ import { atualizarEmpresaComProposta } from "@/lib/empresarial/fechamento";
 import { recusaDoBanco } from "@/lib/empresarial/funnel";
 import { instantFromBrazil, todayInBrazil } from "@/lib/dates";
 import { formatBRL } from "@/lib/pricing";
+import { createClient } from "@/lib/supabase/server";
+import { emitirEmpresarialSeLigado } from "@/lib/asaas/empresarial";
 import { COMPANY_CATEGORIES } from "@/lib/empresarial/documents";
 import {
   IMPLEMENTATION_STEPS,
@@ -1526,6 +1528,15 @@ export async function registerImplantationPayment(
 ): Promise<ActionResult> {
   const session = await getSessionContext();
   if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  // ASA5 (4023, decisão 8): com o Asaas ligado, o 1º pagamento é cobrado pelo
+  // Asaas (na conta da RisLife) e se sela sozinho quando o Asaas avisa o
+  // pagamento. Registrar "pago por fora" aqui não vale mais.
+  if (await asaasDoEmpresarialLigado()) {
+    return {
+      ok: false,
+      error: "O Empresarial cobra pelo Asaas: a implantação é emitida pelo Asaas (conta da RisLife) e o pagamento se registra sozinho. Use “Emitir a cobrança no Asaas”.",
+    };
+  }
   const lido = lerPagamentoDaImplantacao(
     {
       data: texto(formData, "data"),
@@ -1583,6 +1594,53 @@ export async function registerImplantationPayment(
   revalidatePath(`/empresarial/funil/${leadId}`);
   revalidatePath("/empresarial/funil");
   return aviso ? { ok: false, error: aviso } : { ok: true };
+}
+
+/** ASA5 (4023): a rede cobra o Empresarial pelo Asaas? (sem a 4023, não). */
+async function asaasDoEmpresarialLigado(): Promise<boolean> {
+  const { data, error } = await (await createClient()).rpc("corporate_settings_read");
+  if (error) return false;
+  return Boolean((data as { ligado?: boolean } | null)?.ligado);
+}
+
+const RECUSA_DA_IMPLANTACAO: Record<string, string> = {
+  NOT_ALLOWED: "Sem permissão.",
+  ASAAS_OFF: "O Empresarial ainda não cobra pelo Asaas.",
+  NO_COMPANY: "Crie a empresa primeiro (aba Fechamento): a cobrança sai no nome dela.",
+  ALREADY_PAID: "O 1º pagamento deste lead já está registrado.",
+  VALUE_BELOW_MIN: "O Asaas não emite cobrança abaixo de R$ 5,00.",
+  DUE_DATE_INVALID: "O vencimento precisa ser hoje ou depois.",
+};
+
+/**
+ * ASA5 (4023, decisão 8): EMITE a implantação do lead no Asaas, na conta da
+ * RisLife (100% dela, sem split). A cobrança fica nas cobranças da empresa; o
+ * aviso de pago do Asaas dá a baixa e sela o 1º pagamento aqui.
+ */
+export async function emitirImplantacaoDoFunil(leadId: string, formData: FormData): Promise<ActionResult> {
+  const session = await getSessionContext();
+  if (!canUseFunnel(session)) return { ok: false, error: "Sem permissão." };
+  const valorCents = centavos(formData, "valor");
+  const vencimento = texto(formData, "vencimento");
+  if (!valorCents || valorCents <= 0) return { ok: false, error: "Informe o valor da implantação." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(vencimento ?? "")) return { ok: false, error: "Informe o vencimento." };
+  const { data, error } = await (await createClient()).rpc("corporate_lead_implantation_issue", {
+    p_lead_id: leadId,
+    p_value_cents: valorCents,
+    p_due: vencimento,
+  });
+  if (error) {
+    const chave = Object.keys(RECUSA_DA_IMPLANTACAO).find((k) => error.message.includes(k));
+    if (!chave) console.error("emitirImplantacaoDoFunil failed:", error.message);
+    return { ok: false, error: chave ? RECUSA_DA_IMPLANTACAO[chave] : "Não foi possível gerar a cobrança da implantação." };
+  }
+  const asaas = await emitirEmpresarialSeLigado([data as string], { actorId: session.userId, manual: true });
+  await logAudit({ action: "create", entityType: "empresarial_lead_implantation", entityId: leadId, details: { valor_cents: valorCents } });
+  revalidatePath(`/empresarial/funil/${leadId}`);
+  if (asaas.emitidas === 0) {
+    return { ok: false, error: `A cobrança foi gerada nas cobranças da empresa, mas não saiu no Asaas: ${asaas.avisos.join(" ") || "tente de novo."}` };
+  }
+  return { ok: true };
 }
 
 /** Lança nas cobranças da empresa um pagamento já registrado no funil. */

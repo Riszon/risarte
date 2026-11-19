@@ -31,20 +31,20 @@ describe("a escolha (conferirPagador)", () => {
   it("Empresa e Titular não pedem mais nada", () => {
     expect(conferirPagador({ pagador: "EMPRESA" })).toEqual({
       ok: true,
-      valor: { pagador: "EMPRESA", nome: null, documento: null },
+      valor: { pagador: "EMPRESA", nome: null, documento: null, email: null, celular: null },
     });
     expect(conferirPagador({ pagador: "titular", nome: "x", documento: "y" })).toEqual({
       ok: true,
-      valor: { pagador: "TITULAR", nome: null, documento: null },
+      valor: { pagador: "TITULAR", nome: null, documento: null, email: null, celular: null },
     });
   });
 
   it("Outro pagador exige nome e um CPF ou CNPJ válido, e grava só os números", () => {
-    expect(conferirPagador({ pagador: "OUTRO", nome: "Ana", documento: "529.982.247-25" })).toEqual({
+    expect(conferirPagador({ pagador: "OUTRO", nome: "Ana", documento: "529.982.247-25", email: "Ana@Ex.com" })).toEqual({
       ok: true,
-      valor: { pagador: "OUTRO", nome: "Ana", documento: CPF },
+      valor: { pagador: "OUTRO", nome: "Ana", documento: CPF, email: "ana@ex.com", celular: null },
     });
-    expect(conferirPagador({ pagador: "OUTRO", nome: "Loja", documento: "11.222.333/0001-81" })).toMatchObject({
+    expect(conferirPagador({ pagador: "OUTRO", nome: "Loja", documento: "11.222.333/0001-81", celular: "(43) 99999-0000" })).toMatchObject({
       ok: true,
       valor: { documento: CNPJ },
     });
@@ -59,6 +59,20 @@ describe("a escolha (conferirPagador)", () => {
     });
     expect(conferirPagador({ pagador: "OUTRO", nome: "Ana", documento: "123" })).toMatchObject({ ok: false });
     expect(conferirPagador({ pagador: "QUALQUER" })).toMatchObject({ ok: false });
+  });
+
+  // ASA5 (4023, decisão 12a): o Asaas precisa de para onde mandar a cobrança.
+  it("Outro pagador exige o e-mail ou o celular, e confere os dois", () => {
+    expect(conferirPagador({ pagador: "OUTRO", nome: "Ana", documento: CPF })).toMatchObject({
+      ok: false,
+      motivo: expect.stringContaining("e-mail ou o celular"),
+    });
+    expect(conferirPagador({ pagador: "OUTRO", nome: "Ana", documento: CPF, email: "sem-arroba" })).toMatchObject({ ok: false });
+    expect(conferirPagador({ pagador: "OUTRO", nome: "Ana", documento: CPF, celular: "9999" })).toMatchObject({ ok: false });
+    expect(conferirPagador({ pagador: "OUTRO", nome: "Ana", documento: CPF, celular: "43 99999-0000" })).toMatchObject({
+      ok: true,
+      valor: { celular: "43999990000", email: null },
+    });
   });
 });
 

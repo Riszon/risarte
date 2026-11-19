@@ -308,6 +308,42 @@ try {
   await c.query("select public._charge_mark_cancelled($1, $2, 'cancelada no ensaio')", [pv2.charge_id, P.financeiro]);
   conf("cancelada no Asaas primeiro, o Empresarial cancela a linha", passou(await pessoa(P.financeiro, "select empresarial.cancel_billing($1, 'motivo do ensaio')", [mv])));
 
+  // --- 9b) o funil (decisão 8): a implantação emitida pelo Asaas sela o 1º pagamento ----------
+  let lead = null;
+  {
+    const r = await comoServidor(`insert into empresarial.commercial_leads (company_name, cnpj, contact_name, contact_phone, stage, company_id)
+        values ('Ensaio 4023 lead', $1, 'Contato', '43999990000', 'PROPOSAL_SENT', $2) returning id`, [CNPJ, emp]);
+    lead = Array.isArray(r) ? r[0] : null;
+    conf(`o lead do ensaio nasce ligado à empresa${Array.isArray(r) ? "" : " (" + r + ")"}`, Boolean(lead?.id));
+  }
+  if (lead?.id) {
+    // O caso normal do funil: a proposta e o contrato já assinados (as travas da 1041 de pé).
+    const assinado = await comoServidor("update empresarial.commercial_leads set contract_signed_at = now() where id = $1", [lead.id]);
+    conf(`o lead do ensaio tem o contrato assinado${Array.isArray(assinado) ? "" : " (" + assinado + ")"}`, Array.isArray(assinado));
+    conf("o Gerente da unidade não emite a implantação do funil",
+      erro(await pessoa(P.gerente, "select public.corporate_lead_implantation_issue($1, 30000, public.today_br() + 3)", [lead.id]), "NOT_ALLOWED"));
+    conf("abaixo de R$ 5,00 é recusado",
+      erro(await pessoa(P.admin, "select public.corporate_lead_implantation_issue($1, 100, public.today_br() + 3)", [lead.id]), "VALUE_BELOW_MIN"));
+    const fl = await pessoa(P.admin, "select public.corporate_lead_implantation_issue($1, 30000, public.today_br() + 3) id", [lead.id]);
+    const flId = passou(fl) ? fl[0].id : null;
+    const fl2 = await pessoa(P.admin, "select public.corporate_lead_implantation_issue($1, 30000, public.today_br() + 3) id", [lead.id]);
+    conf(`o funil gera a implantação em aberto, ligada ao lead (uma só)${passou(fl) ? "" : " (" + fl + ")"}`, Boolean(flId) && passou(fl2) && fl2[0].id === flId &&
+      (await um("select origin_lead_id from empresarial.adhesion_billing where id = $1", [flId]))?.origin_lead_id === lead.id);
+    const pfR = await pessoa(P.admin, "select public.corporate_charge_prepare($1, true) j", [flId]);
+    const pf = passou(pfR) ? pfR[0].j : {};
+    conf("…e ela sai na conta da RisLife", Boolean(pf.charge_id) &&
+      (await um("select gateway_account_id from public.charges where id = $1", [pf.charge_id]))?.gateway_account_id === rislife.id);
+    if (pf.charge_id) {
+      await emitir(pf.charge_id, "pay_ensaio_funil");
+      const rfu = await aviso(rislife.id, pf.charge_id, "PAYMENT_RECEIVED", { id: "pay_ensaio_funil", value: 300, netValue: 297.01, billingType: "PIX", paymentDate: "2026-11-18" });
+      const ld = await um("select implantation_paid_at, implantation_paid_cents, implantation_payment_method from empresarial.commercial_leads where id = $1", [lead.id]);
+      conf(`paga pelo Asaas, o funil fica com o 1º pagamento selado (R$ 300,00 por Pix) [${rfu}]`,
+        rfu === "baixa" && ld.implantation_paid_at !== null && Number(ld.implantation_paid_cents) === 30000 && ld.implantation_payment_method === "PIX");
+      conf("…e emitir de novo para o mesmo lead é recusado (já pago)",
+        erro(await pessoa(P.admin, "select public.corporate_lead_implantation_issue($1, 30000, public.today_br() + 3)", [lead.id]), "ALREADY_PAID"));
+    }
+  }
+
   // --- 10) o relatório do mês, a regra da implantação e o legado -------------------------------
   const rep = (await um("select public._corporate_report_save($1, $2, $3) j", [m1, JSON.stringify({ empresa: "Ensaio 4023", titulares: 3 }), P.financeiro])).j;
   const lidoRep = (await um("select public._corporate_report_by_code($1) j", [rep.code])).j;

@@ -8,6 +8,7 @@ import { empresarialDb } from "@/lib/empresarial/db";
 import { isProgramFinance } from "@/lib/empresarial/access";
 import { avisarCadastrosPendentes } from "@/lib/empresarial/cobranca-servidor";
 import { previewBilling } from "../[companyId]/billing-actions";
+import { emitirEmpresarialSeLigado, estornarPeloAsaas, liberarDoAsaas } from "@/lib/asaas/empresarial";
 
 export type ResultadoEmLote = {
   ok: boolean;
@@ -21,6 +22,8 @@ export type ResultadoEmLote = {
    * cobrança saiu; isto volta para alguém cobrar os dados dessas empresas.
    */
   comCadastroPendente?: { empresa: string; cadastrados: number; contratados: number }[];
+  /** ASA5 (4023): geradas, mas que não saíram no Asaas (com o motivo). */
+  avisosDoAsaas?: { empresa: string; motivo: string }[];
 };
 
 /**
@@ -82,6 +85,12 @@ export async function baixarCobrancasEmLote(
       pulados.push({ empresa: nomeDe(alvo), motivo: "está cancelada" });
       continue;
     }
+    // ASA5: recebeu por fora com a cobrança no Asaas → cancela lá antes.
+    const lib = await liberarDoAsaas(alvo.id, session.userId, "Recebida por fora do Asaas (baixa em lote no Empresarial)");
+    if (!lib.ok) {
+      pulados.push({ empresa: nomeDe(alvo), motivo: lib.error });
+      continue;
+    }
     const { error } = await db.rpc("settle_billing", {
       p_billing_id: alvo.id,
       p_paid_at: agora,
@@ -136,6 +145,7 @@ export async function gerarMensalidadesEmLote(
 
   const db = await empresarialDb();
   const pulados: { empresa: string; motivo: string }[] = [];
+  const avisosDoAsaas: { empresa: string; motivo: string }[] = [];
   const comCadastroPendente: NonNullable<ResultadoEmLote["comCadastroPendente"]> = [];
   let feitas = 0;
 
@@ -213,7 +223,7 @@ export async function gerarMensalidadesEmLote(
       payer_document: i.employeeId ? (i.payerDocument ?? null) : null,
     }));
 
-    const { error } = await db.from("adhesion_billing").insert(rows);
+    const { data: inseridas, error } = await db.from("adhesion_billing").insert(rows).select("id");
     if (error) {
       // 23505 = a trava da 1022: a mensalidade foi gerada pela tela da
       // empresa entre a conferência lá de cima e esta gravação. Não é defeito
@@ -229,6 +239,12 @@ export async function gerarMensalidadesEmLote(
       continue;
     }
     feitas += rows.length;
+    // ASA5 (4023): com o Asaas ligado, sai no Asaas agora (a geração já está gravada).
+    const asaas = await emitirEmpresarialSeLigado(
+      ((inseridas ?? []) as { id: string }[]).map((r) => r.id),
+      { actorId: session.userId }
+    );
+    for (const motivo of asaas.avisos) avisosDoAsaas.push({ empresa: nomeDaEmpresa(companyId), motivo });
 
     // OC-00090: saiu pelo contratado, com cadastro faltando → avisa os
     // gestores (o banco segura a repetição) e devolve na lista do lote.
@@ -253,7 +269,7 @@ export async function gerarMensalidadesEmLote(
     revalidatePath("/empresarial");
   }
 
-  return { ok: true, feitas, pulados, comCadastroPendente };
+  return { ok: true, feitas, pulados, comCadastroPendente, avisosDoAsaas };
 }
 
 /**
@@ -286,6 +302,14 @@ export async function estornarCobranca(
     return { ok: false, error: "Escreva o motivo do estorno." };
   }
 
+  // ASA5 (4023): paga pelo Asaas → estorna no Asaas antes (o saldo é conferido);
+  // a trava do banco recusa desfazer a baixa sem isso.
+  const asaas = await estornarPeloAsaas(id, session.userId, texto);
+  if (!asaas.ok) return { ok: false, error: asaas.error };
+  const jaNoAsaas = asaas.pelo_asaas
+    ? "O estorno saiu no Asaas, mas a baixa ainda não foi desfeita no Empresarial: "
+    : "";
+
   const db = await empresarialDb();
   const { error } = await db.rpc("reverse_billing", {
     p_billing_id: id,
@@ -293,7 +317,7 @@ export async function estornarCobranca(
   });
   if (error) {
     if (error.message.includes("NOT_PAID")) {
-      return { ok: false, error: "Esta cobrança não está paga — não há baixa a estornar." };
+      return { ok: false, error: jaNoAsaas + "Esta cobrança não está paga — não há baixa a estornar." };
     }
     if (error.message.includes("REASON_REQUIRED")) {
       return { ok: false, error: "Escreva o motivo do estorno." };
@@ -307,11 +331,11 @@ export async function estornarCobranca(
       return {
         ok: false,
         error:
-          "O mês desta mensalidade já foi fechado no Financeiro da Franqueadora. Peça para reabrir o mês antes de estornar.",
+          jaNoAsaas + "O mês desta mensalidade já foi fechado no Financeiro da Franqueadora. Peça para reabrir o mês antes de estornar.",
       };
     }
     console.error("estornarCobranca falhou:", error.message);
-    return { ok: false, error: "Não foi possível estornar agora." };
+    return { ok: false, error: jaNoAsaas + "Não foi possível estornar agora." };
   }
 
   await logAudit({

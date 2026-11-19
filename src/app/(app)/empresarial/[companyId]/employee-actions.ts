@@ -852,6 +852,8 @@ export async function salvarPagadorDosDependentes(
     pagador: formData.get("dependents_payer"),
     nome: formData.get("dependents_payer_name"),
     documento: formData.get("dependents_payer_document"),
+    email: formData.get("dependents_payer_email"),
+    celular: formData.get("dependents_payer_phone"),
   });
   if (!conferido.ok) return { ok: false, error: conferido.motivo };
   const v = conferido.valor;
@@ -863,6 +865,9 @@ export async function salvarPagadorDosDependentes(
       dependents_payer: v.pagador,
       dependents_payer_name: v.nome,
       dependents_payer_document: v.documento,
+      // ASA5 (4023, decisão 12a): o contato do outro pagador (avisos do Asaas).
+      dependents_payer_email: v.email,
+      dependents_payer_phone: v.celular,
     })
     .eq("id", employeeId)
     .eq("company_id", companyId)

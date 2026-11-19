@@ -43,7 +43,7 @@ import {
 } from "@/lib/empresarial/riso-social";
 import type { PaymentModel } from "@/lib/empresarial/constants";
 import { BillingTab, type BillingView } from "./billing-tab";
-import { isAsaasConfigured } from "@/lib/empresarial/asaas";
+import { cobrancasDoAsaasDaEmpresa, type CobrancaDoAsaasNaTela } from "@/lib/asaas/empresarial";
 import { ContratosTab, type ContractView } from "./contratos-tab";
 import { RegrasCombinadas } from "./regras-combinadas";
 import { AssinaturasDaEmpresa } from "@/app/(app)/assinaturas/assinaturas-da-empresa";
@@ -445,6 +445,8 @@ export default async function CompanyDetailPage(props: {
       dependents_payer: string | null;
       dependents_payer_name: string | null;
       dependents_payer_document: string | null;
+      dependents_payer_email: string | null;
+      dependents_payer_phone: string | null;
       dependents: {
         id: string;
         cpf: string;
@@ -461,7 +463,7 @@ export default async function CompanyDetailPage(props: {
         db
           .from("employees")
           .select(
-            "id, cpf, full_name, phone, email, status, registration_stage, dependent_plan, client_id, company_document_id, dependents_payer, dependents_payer_name, dependents_payer_document, dependents ( id, cpf, full_name, phone, relationship, status, client_id )"
+            "id, cpf, full_name, phone, email, status, registration_stage, dependent_plan, client_id, company_document_id, dependents_payer, dependents_payer_name, dependents_payer_document, dependents_payer_email, dependents_payer_phone, dependents ( id, cpf, full_name, phone, relationship, status, client_id )"
           )
           .eq("company_id", companyId)
           .order("full_name")
@@ -535,6 +537,8 @@ export default async function CompanyDetailPage(props: {
       dependentsPayer: (e.dependents_payer ?? "EMPRESA") as EmployeeView["dependentsPayer"],
       dependentsPayerName: e.dependents_payer_name,
       dependentsPayerDocument: e.dependents_payer_document,
+      dependentsPayerEmail: e.dependents_payer_email,
+      dependentsPayerPhone: e.dependents_payer_phone,
       dependents: (e.dependents ?? []).map((d) => ({
         id: d.id,
         cpf: d.cpf,
@@ -1025,9 +1029,11 @@ export default async function CompanyDetailPage(props: {
     savedTotal: number;
     usageCount: number;
     billings: BillingView[];
+    /** ASA5 (4023): as cobranças do Asaas de cada linha e se a rede está ligada. */
+    asaas: { ligado: boolean; porLinha: Record<string, CobrancaDoAsaasNaTela> };
   } | null = null;
   if (aba === "financeiro") {
-    const [{ data: usage }, { data: billRows }] = await Promise.all([
+    const [{ data: usage }, { data: billRows }, asaas] = await Promise.all([
       db
         .from("benefit_usage")
         .select("amount_saved_cents")
@@ -1061,8 +1067,10 @@ export default async function CompanyDetailPage(props: {
             } | null;
           }[]
         >(),
+      cobrancasDoAsaasDaEmpresa(companyId),
     ]);
     financeiro = {
+      asaas,
       savedTotal: (usage ?? []).reduce(
         (a, u) => a + (u.amount_saved_cents ?? 0),
         0
@@ -1550,7 +1558,7 @@ export default async function CompanyDetailPage(props: {
             companyId={company.id}
             companyStatus={company.status}
             billings={financeiro.billings}
-            asaasConfigured={isAsaasConfigured()}
+            asaas={financeiro.asaas}
             isAdminMaster={session.isAdminMaster}
             podeCobrar={podeCobrar}
           />
