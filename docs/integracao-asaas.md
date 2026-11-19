@@ -6009,3 +6009,14 @@ Rodar na produção `docs/asaas/levantamento-asa5.sql` (só lê). Ele traz:
 - se o legado gravou algo.
 
 No treino, ele deu: 10 empresas ativas, 15 cobranças em aberto (R$ 2.513,90), 1 exceção de split e a regra padrão 100 / 50.
+
+**Na produção (rodado pelo dono em 18/11/2026):**
+- 12 empresas ativas e 0 suspensas;
+- documentos: 12 CNPJ, 0 CPF e 1 CAEPF, CNO ou NIF;
+- 0 empresas sem documento aceito: a que tem CAEPF, CNO ou NIF tem o CNPJ da matriz ou o CPF do responsável (decisão 4);
+- 1 empresa com um boleto por CNPJ;
+- dependentes: 2 titulares pagam os próprios dependentes, e 0 têm outro pagador (a decisão 12 não deixa pendência antiga);
+- cobranças: 3 em aberto (R$ 1.017,90), 1 paga e 3 mensalidades nos últimos 3 meses;
+- 0 exceções de split (a decisão 9 não tem nada a ajustar) e a regra padrão 100 / 50;
+- o legado vazio: 0 avisos e 0 códigos antigos (a decisão 11b pode apagar a tabela e a coluna);
+- 0 carteiras de repasse: a RisLife ainda não está cadastrada; ela entra com o vínculo da conta (peça 0).
