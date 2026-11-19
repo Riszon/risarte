@@ -1,6 +1,6 @@
 # ASA5 — O Risarte Empresarial pelo Asaas: todas as decisões (18/11/2026)
 
-**Respostas do dono (18/11/2026):** 1.1c (só no contrato) · 2b · 3a · 4: o CNPJ da matriz ou o CPF do responsável · 5c · 6: o "Relatório detalhado" da aba Titulares, enviado todo mês com o boleto · 7b · 8: a implantação vai pelo Asaas também no funil e na inclusão de titular ou dependente · 9b · 10a · **11b** (sai o código e, se vazias, a tabela e a coluna). O registro completo está na especificação, seção 22.3.
+**Respostas do dono (18/11/2026):** 1.1c (só no contrato; as empresas já cadastradas ficam sem aditivo nem comunicado) · 2b · 3a · 4: o CNPJ da matriz ou o CPF do responsável · 5c · 6: o "Relatório detalhado" da aba Titulares, enviado todo mês com o boleto · 7b · 8: a implantação vai pelo Asaas também no funil e na inclusão de titular ou dependente · 9b · 10a · **11b** (sai o código e, se vazias, a tabela e a coluna). O registro completo está na especificação, seção 22.3.
 
 Para cada decisão vão a minha recomendação e as outras opções que existem. Responda com as letras, por exemplo: "2a, 3a, 4a, …".
 

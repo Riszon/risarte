@@ -5905,6 +5905,7 @@ Respondidas pelo dono em 18/11/2026, menos a 11, que espera a explicação do le
 1. **A implantação é faturada pela RisLife,** na conta Asaas dela (peça 0). A RisLife recebe 100% direto, sem split. A pergunta 20 ao Asaas caiu.
    - **1.1 Os dois emissores (opção c):** a empresa fica sabendo **só pelo contrato**: a implantação vem da RisLife, e as mensalidades vêm da franqueadora. Nem a mensagem nem a descrição da cobrança explicam isso.
      - A cláusula entra no modelo de contrato do Empresarial. É combinada com a sessão do Empresarial, porque o contrato é dela.
+     - **As empresas já cadastradas (dono, 18/11/2026: opção c):** nada é feito. Os contratos já assinados ficam como estão, sem aditivo nem comunicado. A mensalidade delas continua vindo da franqueadora; só uma implantação nova (a inclusão de vidas) sai em nome da RisLife.
 2. **A tarifa da mensalidade (opção b):** a RisLife recebe **50% do valor depois da tarifa**, e a tarifa fica dividida entre as duas. É o split percentual puro do Asaas, sem compensação.
    - **Muda a D7** ("50% sobre o valor pago"): a D7 passa a dizer "50% do líquido".
    - O razão lança o que o Asaas repassou de fato.
@@ -5927,6 +5928,8 @@ Respondidas pelo dono em 18/11/2026, menos a 11, que espera a explicação do le
    - Dali em diante, toda cobrança gerada sai no Asaas.
    - As cobranças em aberto de antes continuam manuais, e cada uma ganha o botão "Emitir no Asaas".
    - Ficam fora as empresas que não têm documento aceito (decisão 4).
+   - **As empresas antigas e as novas emitem do mesmo jeito** depois da data de início. Na 1ª cobrança, o cliente do Asaas é criado sozinho.
+   - **Antes de ligar,** a Central mostra a lista das empresas com pendência no cadastro (sem documento aceito, sem e-mail ou sem celular) para correção.
 8. **A implantação vai pelo Asaas também no funil e na inclusão de vidas** (muda o que o plano dizia):
    - **No funil:** hoje o comercial registra que a implantação foi paga por fora, e `post_lead_implantation` cria a cobrança já paga. Com o Asaas ligado, o funil **emite a implantação na conta da RisLife**, e a baixa vem pelo aviso do Asaas. O fechamento do lead segue o fluxo do funil (combinado com a sessão do Empresarial).
    - **Na inclusão de titular ou dependente** (o termo de inclusão e a "implantação do acréscimo"): a cobrança sai no Asaas, na conta da RisLife, como qualquer implantação.
