@@ -2,6 +2,46 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 💼 EMPRESARIAL 0.111.0 / 1050 — REVISAR CONTRATO, A IMPLANTAÇÃO DA IMPORTADA E A DOS DEPENDENTES NOVOS (18/11/2026)
+>
+> Etapa 2 + R7 do plano aprovado pelo dono (R1–R7,
+> `docs/risarte-empresarial/REVISAR-CONTRATO-PLANO.md`).
+> - **1050:** `contract_revisions` (RV-00001; foto antes/depois, aditivo em
+>   `company_files` tipo `aditivo`, quem aplicou) e as portas
+>   open/save/attach/apply/cancel_contract_revision (aplicar = só o gestor e
+>   só com o aditivo, R2/R6); `companies` ganha implantation_status
+>   (COBRAR/JA_PAGA/ISENTA) + implantation_prepaid_holders (R4) e
+>   min_term_months + early_exit_fee_cents (R5, copiadas do lead no
+>   fechamento); `dependents_implantation_coverage` (R7).
+> - ⚠️ **A TRAVA (R1) é do banco:** `companies_guard_terms` e os gatilhos em
+>   `adhesion_pricing`/`company_price_tiers` recusam CONTRACT_TERMS_LOCKED.
+>   Abrem só: a revisão (`empresarial.revisao_em_curso`), os 10 primeiros
+>   minutos da empresa (criação pelo funil/importação) e a proposta reaberta e
+>   reassinada (1041) até ser levada à empresa. Coluna nova de regra = entrar
+>   no gatilho, em `_termos_da_empresa`/`_aplicar_termos` e no formulário.
+>   Fora da trava: billing_model, social_participates, special_agreements
+>   (o gatilho do fechamento grava), contract_started_at.
+> - ⚠️ **A revisão ainda NÃO muda** benefícios, vantagens, unidades e split
+>   (continuam nas telas de sempre, fora da trava) — próxima entrega.
+> - **Telas:** botão Revisar contrato e a lista na aba Regras combinadas;
+>   `/empresarial/[id]/revisao/[rv]` (formulário, "O que muda", aditivo,
+>   aplicar, cancelar). O cadastro da empresa mostra as regras travadas
+>   (`updateCompany` não as grava); o preço em Plano & Benefícios e o acordo
+>   de cobrança ficaram só de leitura.
+> - **R4:** `previewBilling` recusa a isenta e desconta a "já paga".
+>   **R7:** `implantacaoDosDependentesNovos` (pura) + botão no Financeiro
+>   (`dependentes-novos.tsx`); a 1ª implantação com dependentes grava a
+>   cobertura. ⚠️ Implantação pela estimativa (cadastros incompletos) não
+>   grava cobertura: quem cobra marca "Já coberto" com motivo.
+> - Ensaio no treino 33/33 (`scripts/empresarial-ensaio-1050.mjs`,
+>   desfeito; QUEBRA=trava|documento|gestor reprovam). Régua
+>   `revisao-do-contrato.test.ts` (16), provada quebrando. Visto na tela no
+>   treino: abrir, salvar (3 mudanças certas), aplicar travado sem aditivo,
+>   375 px; a revisão de teste RV-00010 foi cancelada. **Não visto na tela:**
+>   aplicar com aditivo e a implantação dos dependentes novos (nenhuma empresa
+>   do treino combinou dependentes). Manual 8.3 e 12.
+> - ✅ 1050 nos dois bancos (produção pelo dono em 18/11/2026, 4·2·3·5; conferido de fora: sem login a revisão recusa, as tabelas novas existem, as 12 empresas em COBRAR). Publicado depois da migração. A emissão da implantação pelo Asaas (ASA5) é da sessão do Asaas: funil e post_lead_implantation são dela.
+
 > ## 💼 EMPRESARIAL 0.110.0 — AS REGRAS COMBINADAS DA EMPRESA NUM LUGAR SÓ (18/11/2026; sem migração)
 >
 > Pedido do dono: a empresa importada parecia "configurada para não pagar

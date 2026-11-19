@@ -340,6 +340,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   empresarial_company: "Empresa (Empresarial)",
   empresarial_company_document: "Documento da empresa",
   empresarial_company_file: "Arquivo da empresa",
+  empresarial_contract_revision: "Revisão do contrato (Empresarial)",
   empresarial_company_report: "Relatório da empresa",
   empresarial_company_sheet: "Ficha da empresa",
   empresarial_contract: "Contrato (Empresarial)",

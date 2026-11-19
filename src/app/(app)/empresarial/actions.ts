@@ -253,10 +253,25 @@ export async function updateCompany(
   const parsed = parseCompanyForm(formData);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
+  // 1050 (R1): as regras combinadas mudam só pela revisão do contrato — o
+  // banco recusa (CONTRACT_TERMS_LOCKED). O formulário de edição manda os
+  // valores de hoje; aqui eles nem seguem.
+  const {
+    payment_model: _modelo,
+    company_subsidy_type: _subsidioTipo,
+    company_subsidy_value: _subsidioValor,
+    due_day: _vencimento,
+    payment_methods: _meios,
+    default_max_installments: _parcelas,
+    grace_period_days: _carencia,
+    employee_grace_period_days: _carenciaDoTitular,
+    ...cadastro
+  } = parsed.values;
+  void [_modelo, _subsidioTipo, _subsidioValor, _vencimento, _meios, _parcelas, _carencia, _carenciaDoTitular];
   const db = await empresarialDb();
   const { error } = await db
     .from("companies")
-    .update(parsed.values)
+    .update(cadastro)
     .eq("id", companyId);
   if (error) {
     if (error.code === "23505") {

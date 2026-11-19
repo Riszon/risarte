@@ -232,6 +232,9 @@ export function faltaParaProposta(d: DadosDaProposta): string[] {
 // -----------------------------------------------------------------------------
 
 export type QualificacaoDoLead = {
+  /** 1037: fidelidade e multa de saída (desde a 1050 viajam para a empresa). */
+  min_term_months?: number | null;
+  early_exit_fee_cents?: number | null;
   legal_name: string | null;
   category: string | null;
   billing_model: string | null;
@@ -356,6 +359,11 @@ export function camposDaEmpresa(
         : ["BOLETO", "PIX", "CARD"],
     default_max_installments: qual?.treatment_max_installments ?? 24,
     social_participates: qual?.social_participates ?? true,
+    // ⚠️ 1050 (R5): A FIDELIDADE E A MULTA DE SAÍDA VIAJAM JUNTO. Antes elas
+    // ficavam só na proposta (no texto do contrato), e a empresa não sabia
+    // delas — a importada nem tinha onde guardar.
+    min_term_months: qual?.min_term_months ?? null,
+    early_exit_fee_cents: qual?.early_exit_fee_cents ?? null,
     social_goals:
       qual?.social_participates === false ? null : metasParaGravar(lerMetas(qual?.social_goals)),
   };

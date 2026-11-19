@@ -52,3 +52,5 @@ next-env.d.ts
 /_dados_importacao/
 scripts/.prova-atraso-mensalidades*.json
 scripts/.prova-4022*.log
+scripts/.prova-4023*.log
+scripts/.prova-suite*.log

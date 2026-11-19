@@ -10,6 +10,9 @@ import {
   type PrecoDaAdesao,
 } from "@/lib/empresarial/regras-combinadas";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { formatBrDateTime } from "@/lib/dates";
+import { AbrirRevisao } from "./abrir-revisao";
 
 /**
  * Aba "Regras combinadas" da empresa (pedido do dono, 18/11/2026; plano
@@ -32,7 +35,7 @@ async function carregar(companyId: string): Promise<DadosDasRegras | null> {
   const { data: empresa, error: erroDaEmpresa } = await db
     .from("companies")
     .select(
-      "payment_model, company_subsidy_type, company_subsidy_value, due_day, billing_model, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, special_agreements, min_adhesions, max_adhesions, adhesion_limit_target, origin_lead_id, main_clinic_id, contracted_holders, contracted_dependents, excess_mode, excess_fixed_cents, excess_holder_fee_cents, excess_dependent_fee_cents, billing_basis, fixed_monthly_cents, implantation_includes_dependents, implantation_dependents_cents, social_participates"
+      "payment_model, company_subsidy_type, company_subsidy_value, due_day, billing_model, payment_methods, default_max_installments, contract_started_at, grace_period_days, employee_grace_period_days, special_agreements, min_adhesions, max_adhesions, adhesion_limit_target, origin_lead_id, main_clinic_id, contracted_holders, contracted_dependents, excess_mode, excess_fixed_cents, excess_holder_fee_cents, excess_dependent_fee_cents, billing_basis, fixed_monthly_cents, implantation_includes_dependents, implantation_dependents_cents, social_participates, implantation_status, implantation_prepaid_holders, min_term_months, early_exit_fee_cents"
     )
     .eq("id", companyId)
     .maybeSingle<EmpresaDasRegras & { main_clinic_id: string | null }>();
@@ -167,8 +170,33 @@ async function carregar(companyId: string): Promise<DadosDasRegras | null> {
   };
 }
 
-export async function RegrasCombinadas({ companyId }: { companyId: string }) {
-  const dados = await carregar(companyId);
+type RevisaoDaLista = {
+  id: string;
+  code: string;
+  status: "RASCUNHO" | "APLICADA" | "CANCELADA";
+  reason: string;
+  created_at: string;
+  applied_at: string | null;
+};
+
+const SITUACAO_DA_REVISAO: Record<RevisaoDaLista["status"], string> = {
+  RASCUNHO: "Em revisão",
+  APLICADA: "Aplicada",
+  CANCELADA: "Cancelada",
+};
+
+export async function RegrasCombinadas({ companyId, podeRevisar }: { companyId: string; podeRevisar: boolean }) {
+  const db = await empresarialDb();
+  const [dados, { data: revisoes }] = await Promise.all([
+    carregar(companyId),
+    db
+      .from("contract_revisions")
+      .select("id, code, status, reason, created_at, applied_at")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .returns<RevisaoDaLista[]>(),
+  ]);
+  const aberta = (revisoes ?? []).find((r) => r.status === "RASCUNHO");
   if (!dados) {
     return (
       <Card>
@@ -181,10 +209,24 @@ export async function RegrasCombinadas({ companyId }: { companyId: string }) {
   const blocos = montarRegras(dados);
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Tudo o que foi combinado com esta empresa. <span className="font-medium">Padrão da rede</span> = a
-        empresa não tem regra própria e vale a da rede.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Tudo o que foi combinado com esta empresa. <span className="font-medium">Padrão da rede</span> = a
+          empresa não tem regra própria e vale a da rede. Para mudar, use <span className="font-medium">Revisar contrato</span>:
+          a mudança vale com o aditivo assinado.
+        </p>
+        {podeRevisar &&
+          (aberta ? (
+            <Link
+              href={`/empresarial/${companyId}/revisao/${aberta.id}`}
+              className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+            >
+              Continuar a revisão {aberta.code}
+            </Link>
+          ) : (
+            <AbrirRevisao companyId={companyId} />
+          ))}
+      </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {blocos.map((b) => (
           <Card key={b.chave}>
@@ -217,6 +259,30 @@ export async function RegrasCombinadas({ companyId }: { companyId: string }) {
           </Card>
         ))}
       </div>
+      {(revisoes ?? []).length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Revisões do contrato</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y text-sm">
+              {(revisoes ?? []).map((r) => (
+                <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-2 py-1.5">
+                  <span className="min-w-0">
+                    <Link href={`/empresarial/${companyId}/revisao/${r.id}`} className="font-medium hover:underline">
+                      {r.code}
+                    </Link>{" "}
+                    <span className="text-muted-foreground">· {SITUACAO_DA_REVISAO[r.status]} · {r.reason}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatBrDateTime(r.applied_at ?? r.created_at)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

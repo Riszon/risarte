@@ -1272,9 +1272,47 @@ regra própria e vale a da rede (em **Configurações**).
 > empresa: o **Gerar implantação** cobra a implantação inteira. Confira se ela
 > já pagou fora do sistema antes de usar o botão.
 
-> Para **mudar** o que foi combinado, a revisão do contrato (com aditivo
-> assinado) está em preparação. Até lá, cada regra continua sendo alterada no
-> lugar de sempre (Dados Gerais, Plano & Benefícios, Titulares).
+### 8.3. Revisar contrato *(desde a 0.111.0)*
+
+O que foi combinado com a empresa **só muda por uma revisão do contrato**, e a
+revisão **só vale com o aditivo assinado**. Isso vale para preço e faixas,
+dependentes, quantidade contratada e limites, implantação, quem paga,
+vencimento, formas e parcelas do tratamento, carências, fidelidade, multa de
+saída e o "combinado na venda". Nas outras telas esses campos aparecem
+travados, com o aviso de onde mudar.
+
+1. Na aba **Regras combinadas**, clique em **Revisar contrato** e escreva o
+   **motivo** (ex.: *"empresa importada — acertar a implantação"*). Quem cuida
+   da empresa pode abrir (o gestor, e o consultor RisLife nas empresas dele).
+2. A revisão abre (**RV-00001**) já com as regras de hoje. Altere o que foi
+   renegociado e clique em **Salvar a revisão**. O quadro **O que muda**, no
+   alto, mostra cada regra de → para. Até aplicar, **nada muda** na empresa.
+3. Em **Aditivo assinado**, anexe o aditivo (ou o contrato novo) assinado
+   pela empresa, em PDF ou foto. Ele também fica na aba **Documentos**, como
+   *Aditivo do contrato*.
+4. O **gestor do programa** clica em **Aplicar a revisão**. As regras novas
+   valem **a partir da próxima cobrança gerada**; o que já foi gerado não muda.
+
+Uma empresa tem **uma revisão aberta por vez**. **Cancelar a revisão** pede o
+motivo e não muda nada. A lista **Revisões do contrato**, no fim da aba, guarda
+todas, com quem abriu, quem aplicou e o antes e depois.
+
+> **A implantação na revisão** tem três escolhas:
+> - **Cobrar pela regra combinada:** o **Gerar implantação** cobra como sempre.
+> - **Já paga antes do sistema:** informe quantos titulares já pagaram. O
+>   botão passa a cobrar só os titulares além desse número, e os dependentes de
+>   hoje contam como já pagos. É o caso típico da empresa importada.
+> - **Isenta:** o botão não cobra. A tela diz *"Esta empresa é isenta de
+>   implantação"*.
+
+> **O que a revisão ainda não muda:** os benefícios por procedimento, as outras
+> vantagens, as unidades da parceria e a divisão (split) continuam sendo
+> alterados em **Plano & Benefícios** e nos lugares de sempre. A empresa que
+> veio do funil também pode continuar mudando pelo caminho da proposta
+> reaberta e assinada de novo (seção 7.1).
+
+> **"As regras combinadas só mudam pela revisão do contrato"** — aparece se
+> alguém tentar mudar uma regra por fora (a trava é do banco).
 
 ---
 
@@ -1641,6 +1679,31 @@ o termo trouxe (a mensalidade de hoje menos o que as implantações anteriores j
 cobraram), e a tela mostra a conta. Se não há acréscimo novo, o sistema **não
 gera** e diz por quê. O restante desta seção vale para a empresa **por
 titular**.
+
+**Empresa isenta ou que já pagou a implantação antes do sistema** *(desde a
+0.111.0)*: a revisão do contrato registra isso (seção 8.3). Isenta, o
+**Gerar implantação** não cobra. Já paga, ele desconta os titulares
+informados (no valor fixo, o 1º mês).
+
+**A implantação dos dependentes novos** *(desde a 0.111.0)*. Na empresa que
+combinou **implantação dos titulares e dependentes**, a aba Financeiro ganha o
+botão **Implantação dos dependentes novos**. Ele lista cada titular que tem
+dependente que ainda não pagou implantação:
+
+- o valor é **um mês do pacote de dependentes de hoje**: individual, familiar
+  ou familiar + extras, pelo preço combinado. Quem passa do individual ao
+  familiar paga o **familiar inteiro**;
+- quem entra sem mudar o pacote (o 3º num familiar de até 3) não paga nada;
+- na empresa **por dependente**, cada dependente novo paga o valor dele;
+- se o titular paga os próprios dependentes (seção 9), a cobrança sai **no
+  nome dele**; os outros vão juntos numa cobrança da empresa.
+
+Escolha os titulares e clique em **Gerar a implantação dos escolhidos**. O
+sistema anota quem cada cobrança cobriu, e ninguém paga duas vezes. Cobrança
+cancelada deixa de cobrir. **Já coberto** marca um titular como pago sem
+cobrança (pago antes, coberto pela estimativa do fechamento ou dispensado), com
+motivo obrigatório. A implantação com dependentes gerada pelo **Gerar
+implantação** já cobre os dependentes daquele dia.
 
 **A implantação não espera os cadastros.** Ao clicar em **Gerar implantação**:
 

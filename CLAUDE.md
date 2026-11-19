@@ -400,6 +400,16 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**18/11/2026 (revisar contrato) — PC Administrador (Empresarial 0.110.0 → 0.111.0, migração 1050)**
+
+- Bloco "EMPRESARIAL 0.111.0" no ESTADO. ⚠️ **As regras combinadas da
+  empresa têm TRAVA NO BANCO** (CONTRACT_TERMS_LOCKED): mudam pela revisão
+  (`apply_contract_revision`), na criação (10 min) ou pela proposta
+  reassinada (1041). Regra nova = gatilho + `_termos_da_empresa` +
+  `_aplicar_termos` + formulário. ⚠️ Implantação de dependente = sempre
+  com cobertura em `dependents_implantation_coverage`.
+- ✅ 1050 nos dois bancos (produção pelo dono em 18/11/2026, 4·2·3·5; conferido de fora: sem login a revisão recusa, as tabelas novas existem, as 12 empresas em COBRAR). Publicado depois da migração. A emissão da implantação pelo Asaas (ASA5) é da sessão do Asaas: funil e post_lead_implantation são dela.
+
 **18/11/2026 (regras combinadas) — PC Administrador (Empresarial 0.109.0 → 0.110.0, sem migração)**
 
 - Bloco "EMPRESARIAL 0.110.0" no ESTADO; plano aprovado (R1–R7) em

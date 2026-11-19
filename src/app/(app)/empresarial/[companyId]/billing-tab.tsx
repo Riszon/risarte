@@ -15,6 +15,7 @@ import {
 } from "@/lib/empresarial/constants";
 import { Trash2 } from "lucide-react";
 import type { CobrancaDoAsaasNaTela } from "@/lib/asaas/empresarial";
+import { ImplantacaoDosDependentesNovos } from "./dependentes-novos";
 import {
   cancelBilling,
   deleteBilling,
@@ -180,6 +181,7 @@ export function BillingTab({
   asaas,
   isAdminMaster = false,
   podeCobrar = false,
+  implantacaoComDependentes = false,
 }: {
   companyId: string;
   companyStatus: string;
@@ -194,6 +196,8 @@ export function BillingTab({
    * ficha e respondiam "Sem permissão" no clique.
    */
   podeCobrar?: boolean;
+  /** 1050 (R7): a empresa combinou implantação dos dependentes. */
+  implantacaoComDependentes?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -258,6 +262,7 @@ export function BillingTab({
           >
             Gerar implantação
           </Button>
+          {implantacaoComDependentes && <ImplantacaoDosDependentesNovos companyId={companyId} />}
           <Button
             size="sm"
             variant="ghost"
