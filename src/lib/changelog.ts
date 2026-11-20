@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.487.1",
+    data: "2026-11-20",
+    migracao: null,
+    titulo: "Central: com a produção ligada, a conta Asaas da unidade nasce como conta real",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Na Central, com a produção do Asaas ligada, \"Abrir o cadastro da conta\" cria a conta REAL da unidade e aceita a chave de produção. Antes, a conta nascia sempre de teste e recusava a chave real. Se a unidade já tem a conta de teste, a tela orienta: desativar a de teste e abrir o cadastro de novo.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.487.0",
     data: "2026-11-18",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4023, ASAAS_MIGRATION).

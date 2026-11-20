@@ -104,6 +104,17 @@ export function faltaMigracao(error: { code?: string; message?: string } | null 
   );
 }
 
+/**
+ * O interruptor de produção da rede está ligado? (Central › Rede; 4022.) Lê
+ * pela função guardada, que só responde ao Admin Master e ao Financeiro da
+ * Franqueadora: para os demais, ou se a leitura falhar, conta como desligado.
+ */
+export async function producaoLigada(supabase: SupabaseClient): Promise<boolean> {
+  const { data, error } = await supabase.rpc("gateway_production_read");
+  if (error || !data) return false;
+  return (data as { ligada?: boolean }).ligada === true;
+}
+
 export type ContasLidas = { contas: ContaDaCentral[]; semMigracao: boolean; erro: boolean };
 
 /** As contas em uso (não desativadas) que a pessoa enxerga. */

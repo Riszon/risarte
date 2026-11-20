@@ -9,7 +9,7 @@ import {
   podeVincularContaPelaTela,
   situacaoNoAsaas,
 } from "@/lib/central/central";
-import { carregarTarifas, type ContaDaCentral, type TarifaDaCentral } from "@/lib/central/dados";
+import { carregarTarifas, producaoLigada, type ContaDaCentral, type TarifaDaCentral } from "@/lib/central/dados";
 import { formatBrDateTime, formatIsoDateBr, todayInBrazil } from "@/lib/dates";
 import { formatBRL } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ export async function ContaETarifas({
   conta: ContaDaCentral | null;
 }) {
   const admin = session.isAdminMaster;
+  const producao = admin ? await producaoLigada(supabase) : false;
 
   if (!conta) {
     return (
@@ -43,8 +44,10 @@ export async function ContaETarifas({
         <CardHeader className="gap-1">
           <CardTitle className="text-base">Conta Asaas — {clinicName}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Esta unidade ainda não tem conta Asaas cadastrada no riSZon. O cadastro nasce como conta de TESTE
-            (sandbox): as contas reais só entram quando a integração for liberada para produção.
+            Esta unidade ainda não tem conta Asaas cadastrada no riSZon.{" "}
+            {producao
+              ? "A produção está ligada: o cadastro nasce como conta REAL (produção), e a chave a colar é a de produção do Asaas."
+              : "O cadastro nasce como conta de TESTE (sandbox): as contas reais só entram quando a produção for ligada (Central › Rede)."}
           </p>
         </CardHeader>
         <CardContent>
@@ -76,6 +79,14 @@ export async function ContaETarifas({
               {conta.environment === "sandbox" ? "TESTE (sandbox) — nenhum dinheiro de verdade" : "Produção"}
             </span>
           </div>
+          {admin && producao && conta.environment === "sandbox" && (
+            <p className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              A produção está ligada, mas esta é a conta de TESTE. Para cadastrar a conta real, desative esta conta (no fim
+              desta página) e abra o cadastro de novo: ele nasce como conta de produção, e a chave de produção passa a ser
+              aceita. O termo de autorização é registrado de novo na conta real.
+            </p>
+          )}
           {conta.status === "error" && (
             <p className="flex items-start gap-1.5 text-sm text-destructive">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />

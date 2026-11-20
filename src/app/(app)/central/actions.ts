@@ -16,6 +16,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { createClient } from "@/lib/supabase/server";
+import { producaoLigada } from "@/lib/central/dados";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
 import {
   criarWebhookDaConta,
@@ -71,7 +72,11 @@ async function contaVisivel(accountId: string) {
 
 const atualizar = () => revalidatePath("/central", "layout");
 
-/** Abre o cadastro da conta Asaas de uma unidade (ou da franqueadora). Sempre de TESTE até a ASA7. */
+/**
+ * Abre o cadastro da conta Asaas de uma unidade (ou da franqueadora). Com o
+ * interruptor de produção LIGADO (Central › Rede), a conta nasce de PRODUÇÃO;
+ * desligado, de TESTE (sandbox). O banco confere de novo (`gateway_accounts_guard`, 4000).
+ */
 export async function abrirCadastroDaConta(clinicId: string): Promise<Resultado> {
   const session = await getSessionContext();
   if (!session.isAdminMaster) return { ok: false, error: SO_ADMIN };
@@ -80,12 +85,13 @@ export async function abrirCadastroDaConta(clinicId: string): Promise<Resultado>
   if (!clinica) return { ok: false, error: MENSAGENS.CLINIC_NOT_FOUND };
 
   const supabase = await createClient();
+  const producao = await producaoLigada(supabase);
   const { data, error } = await supabase.rpc("gateway_create_account", {
     p_clinic_id: clinicId,
     p_owner_type: clinica.type === "franchisor" ? "franchisor" : "unit",
     p_label: clinica.name,
     p_cnpj: null,
-    p_environment: "sandbox",
+    p_environment: producao ? "production" : "sandbox",
   });
   if (error) return { ok: false, error: mensagem(error) };
   await logAudit({ action: "create", entityType: "gateway_account", entityId: String(data), clinicId });
