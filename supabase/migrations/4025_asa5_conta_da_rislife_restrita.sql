@@ -95,6 +95,7 @@ update public.gateway_accounts
    and visible_only_to is null and created_by is not null;
 
 -- As funções que mostram contas a quem está logado (troca por âncora, sem reescrever).
+-- Cada âncora fica numa linha só: as funções da produção podem ter quebra de linha do Windows.
 do $do$
 declare d text := pg_get_functiondef('public.central_history(text,uuid)'::regprocedure); orig text;
 begin
@@ -151,23 +152,9 @@ do $do$
 declare d text := pg_get_functiondef('public.corporate_settings_save(date,uuid)'::regprocedure); orig text;
 begin
   orig := d;
-  if position($n1$  if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if;
-  -- 4025: a conta da RisLife só aparece para quem a cadastrou; quem não a enxerga não configura.
-  if public._gateway_account_hidden((select c.rislife_account_id from public.corporate_gateway_settings c where c.id))
-     or public._gateway_account_hidden(p_rislife_account_id) then
-    raise exception 'RISLIFE_ACCOUNT_HIDDEN';
-  end if;
-$n1$ in d) = 0 then
-    if position($v1$  if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if;
-$v1$ in d) = 0 then raise exception 'ANCORA_FALTANDO: corporate_settings_save (1)'; end if;
-    d := replace(d, $v1$  if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if;
-$v1$, $n1$  if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if;
-  -- 4025: a conta da RisLife só aparece para quem a cadastrou; quem não a enxerga não configura.
-  if public._gateway_account_hidden((select c.rislife_account_id from public.corporate_gateway_settings c where c.id))
-     or public._gateway_account_hidden(p_rislife_account_id) then
-    raise exception 'RISLIFE_ACCOUNT_HIDDEN';
-  end if;
-$n1$);
+  if position($n1$if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if; if public._gateway_account_hidden((select c.rislife_account_id from public.corporate_gateway_settings c where c.id)) or public._gateway_account_hidden(p_rislife_account_id) then raise exception 'RISLIFE_ACCOUNT_HIDDEN'; end if; -- 4025$n1$ in d) = 0 then
+    if position($v1$if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if;$v1$ in d) = 0 then raise exception 'ANCORA_FALTANDO: corporate_settings_save (1)'; end if;
+    d := replace(d, $v1$if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if;$v1$, $n1$if not public._corporate_can_configure() then raise exception 'NOT_ALLOWED'; end if; if public._gateway_account_hidden((select c.rislife_account_id from public.corporate_gateway_settings c where c.id)) or public._gateway_account_hidden(p_rislife_account_id) then raise exception 'RISLIFE_ACCOUNT_HIDDEN'; end if; -- 4025$n1$);
   end if;
   if d <> orig then execute d; end if;
 end;
@@ -177,15 +164,9 @@ do $do$
 declare d text := pg_get_functiondef('public.gateway_surveys_read(uuid)'::regprocedure); orig text;
 begin
   orig := d;
-  if position($n1$  if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if;
-  if public._gateway_account_hidden(p_account_id) then return '[]'::jsonb; end if;
-  return coalesce($n1$ in d) = 0 then
-    if position($v1$  if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if;
-  return coalesce($v1$ in d) = 0 then raise exception 'ANCORA_FALTANDO: gateway_surveys_read (1)'; end if;
-    d := replace(d, $v1$  if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if;
-  return coalesce($v1$, $n1$  if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if;
-  if public._gateway_account_hidden(p_account_id) then return '[]'::jsonb; end if;
-  return coalesce($n1$);
+  if position($n1$if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if; if public._gateway_account_hidden(p_account_id) then return '[]'::jsonb; end if; -- 4025$n1$ in d) = 0 then
+    if position($v1$if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if;$v1$ in d) = 0 then raise exception 'ANCORA_FALTANDO: gateway_surveys_read (1)'; end if;
+    d := replace(d, $v1$if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if;$v1$, $n1$if not (public.is_admin_master() or public.is_finance_franchisor()) then raise exception 'NOT_ALLOWED'; end if; if public._gateway_account_hidden(p_account_id) then return '[]'::jsonb; end if; -- 4025$n1$);
   end if;
   if d <> orig then execute d; end if;
 end;
