@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.489.0",
+    data: "2026-11-21",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4025, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Central: a conta Asaas da RisLife fica só com quem a cadastrou",
+    mudancas: [
+      {
+        tipo: "aviso",
+        texto:
+          "A conta Asaas da RisLife (cadastro, carteira, conferências, levantamento, histórico e auditoria) passou a aparecer só para quem a cadastrou. Os demais Admin Master e o Financeiro da Franqueadora não a veem mais, e só quem a cadastrou liga ou muda o Empresarial pelo Asaas. As cobranças do Empresarial continuam visíveis como antes.",
+        papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.488.0",
     data: "2026-11-21",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4024, ASAAS_MIGRATION).

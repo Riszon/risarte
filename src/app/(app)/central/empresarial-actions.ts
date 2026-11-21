@@ -21,6 +21,8 @@ const RECUSA: Record<string, string> = {
   RISLIFE_ACCOUNT_NOT_READY:
     "A conta da RisLife não está pronta: precisa estar ativa, com a chave de API, a carteira e o webhook (aba Conta e tarifas).",
   ROOT_ACCOUNT_MISSING: "A conta raiz da franqueadora não está ativa (aba Conta e tarifas).",
+  RISLIFE_ACCOUNT_HIDDEN:
+    "A conta da RisLife é restrita a quem a cadastrou: só essa pessoa liga ou muda o Empresarial pelo Asaas.",
 };
 
 export async function salvarEmpresarialNoAsaas(input: {

@@ -127,7 +127,14 @@ export async function abrirCadastroDaRisLife(): Promise<Resultado> {
     p_cnpj: null,
     p_environment: ambiente,
   });
-  if (error) return { ok: false, error: mensagem(error) };
+  if (error) {
+    // 4025: a conta da RisLife é restrita a quem a cadastrou; para os demais ela
+    // não aparece, mas existe (o banco recusa a segunda).
+    if ((error.message ?? "").includes("ACCOUNT_ALREADY_EXISTS")) {
+      return { ok: false, error: "A RisLife já tem uma conta cadastrada neste ambiente (restrita a quem a cadastrou)." };
+    }
+    return { ok: false, error: mensagem(error) };
+  }
   await logAudit({ action: "create", entityType: "gateway_account", entityId: String(data) });
   atualizar();
   return { ok: true };
