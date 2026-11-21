@@ -11,6 +11,7 @@ import { camposDaAlteracao, quemFez, rotuloDaTabela, type Alteracao, type Autor 
 import { formatBrDateTime } from "@/lib/dates";
 import {
   abrirCadastroDaConta,
+  abrirCadastroDaRisLife,
   carregarHistorico,
   criarWebhook,
   declararSplit,
@@ -53,7 +54,7 @@ export function BotaoDeAcao({
   sucesso,
   variante = "outline",
 }: {
-  acao: "abrir" | "verificar" | "webhook" | "split" | "pronta" | "reprocessar";
+  acao: "abrir" | "abrir_rislife" | "verificar" | "webhook" | "split" | "pronta" | "reprocessar";
   alvo: string;
   valor?: boolean;
   rotulo: string;
@@ -63,6 +64,7 @@ export function BotaoDeAcao({
   const { pendente, rodar } = useAcao();
   const chamar = () => {
     if (acao === "abrir") return abrirCadastroDaConta(alvo);
+    if (acao === "abrir_rislife") return abrirCadastroDaRisLife();
     if (acao === "verificar") return verificarAgora(alvo);
     if (acao === "webhook") return criarWebhook(alvo);
     if (acao === "split") return declararSplit(alvo, valor === true);

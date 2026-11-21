@@ -5,7 +5,7 @@ import { CabecalhoDeModulo } from "@/components/cabecalho-modulo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessionContext } from "@/lib/auth";
 import { ESTADO_DA_CONTA, abasVisiveis, podeVerAba, rotaDaRede } from "@/lib/central/central";
-import { carregarContas } from "@/lib/central/dados";
+import { carregarContas, producaoLigada } from "@/lib/central/dados";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { AbasDaCentral, AvisoSemMigracao } from "../../abas";
@@ -14,7 +14,7 @@ import { AbaFinanceiroDaRede } from "../../aba-financeiro";
 import { AbaCobrancaDaRede } from "../../aba-cobranca";
 import { AbaTaxasDaRede } from "../../aba-taxas";
 import { AbaEmpresarialDaRede } from "../../aba-empresarial";
-import { HistoricoDaAba } from "../../conta-client";
+import { BotaoDeAcao, HistoricoDaAba } from "../../conta-client";
 import { ContaETarifas } from "../../conta-e-tarifas";
 import { InterruptorNaCentral, PilotoDaContaNaCentral } from "../../pecas-do-piloto";
 import { AvisosComErro } from "../../avisos-com-erro";
@@ -71,6 +71,9 @@ async function AbaContaDaRede({
   const { contas, semMigracao } = await carregarContas(supabase);
   if (semMigracao) return <AvisoSemMigracao />;
   const carteiras = contas.filter((c) => c.ownerType === "recipient");
+  const producao = session.isAdminMaster ? await producaoLigada(supabase) : false;
+  const ambienteAtual = producao ? "production" : "sandbox";
+  const rislife = carteiras.find((c) => c.environment === ambienteAtual && c.label.toLowerCase().startsWith("rislife")) ?? null;
   return (
     <>
       {franqueadoras.map((f) => {
@@ -94,8 +97,8 @@ async function AbaContaDaRede({
         <CardHeader className="gap-1">
           <CardTitle className="text-base">Carteiras de repasse</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Contas que só recebem repasse por split (a RisLife, por exemplo). O cadastro pela tela chega com o split; por
-            enquanto aparecem aqui as carteiras de teste criadas no sandbox.
+            Contas sem unidade: recebem repasse por split e, no caso da RisLife, faturam a implantação do Empresarial
+            (ASA5). Com a produção ligada, o cadastro da RisLife nasce como conta real.
           </p>
         </CardHeader>
         <CardContent>
@@ -115,8 +118,26 @@ async function AbaContaDaRede({
               })}
             </ul>
           )}
+          {session.isAdminMaster && !rislife && (
+            <div className="mt-3">
+              <BotaoDeAcao
+                acao="abrir_rislife"
+                alvo=""
+                rotulo={producao ? "Abrir o cadastro da conta real da RisLife" : "Abrir o cadastro da conta de teste da RisLife"}
+                sucesso="Cadastro da RisLife aberto."
+                variante="default"
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
+      {carteiras.map((c) => (
+        <div key={c.id} className="space-y-4">
+          <ContaETarifas supabase={supabase} session={session} clinicId="" clinicName={c.label} conta={c} />
+          <PilotoDaContaNaCentral supabase={supabase} accountId={c.id} admin={session.isAdminMaster} />
+          {session.isAdminMaster && <AvisosComErro supabase={supabase} accountId={c.id} />}
+        </div>
+      ))}
     </>
   );
 }

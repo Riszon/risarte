@@ -62,6 +62,20 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.487.2",
+    data: "2026-11-21",
+    migracao: null,
+    titulo: "Central: o cadastro da conta Asaas da RisLife",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Em Central › Rede › Conta e tarifas, o quadro \"Carteiras de repasse\" ganhou \"Abrir o cadastro da conta real da RisLife\". A conta da RisLife passa a ter a mesma tela das outras: a chave, o webhook, as marcas do débito e da chave mínima e o levantamento. É ela que o Empresarial usa para a implantação e o split da mensalidade.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.487.1",
     data: "2026-11-20",
     migracao: null,

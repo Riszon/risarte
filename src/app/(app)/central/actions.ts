@@ -99,6 +99,40 @@ export async function abrirCadastroDaConta(clinicId: string): Promise<Resultado>
   return { ok: true };
 }
 
+/**
+ * Abre o cadastro da conta Asaas da RisLife (ASA5): uma conta `recipient`,
+ * sem unidade, que fatura a implantação do Empresarial e recebe o split da
+ * mensalidade. Nasce de PRODUÇÃO com o interruptor ligado; senão, de TESTE.
+ * Uma só por ambiente (o banco não tem índice para conta sem unidade: a
+ * conferência é aqui).
+ */
+export async function abrirCadastroDaRisLife(): Promise<Resultado> {
+  const session = await getSessionContext();
+  if (!session.isAdminMaster) return { ok: false, error: SO_ADMIN };
+  const supabase = await createClient();
+  const ambiente = (await producaoLigada(supabase)) ? "production" : "sandbox";
+  const { data: ja } = await supabase
+    .from("gateway_accounts")
+    .select("id")
+    .eq("owner_type", "recipient")
+    .eq("environment", ambiente)
+    .ilike("label", "RisLife%")
+    .neq("status", "disabled")
+    .limit(1);
+  if ((ja ?? []).length > 0) return { ok: false, error: "A RisLife já tem uma conta cadastrada neste ambiente." };
+  const { data, error } = await supabase.rpc("gateway_create_account", {
+    p_clinic_id: null,
+    p_owner_type: "recipient",
+    p_label: "RisLife",
+    p_cnpj: null,
+    p_environment: ambiente,
+  });
+  if (error) return { ok: false, error: mensagem(error) };
+  await logAudit({ action: "create", entityType: "gateway_account", entityId: String(data) });
+  atualizar();
+  return { ok: true };
+}
+
 /** Registra o termo de autorização do franqueado (data, quem assinou, observação). */
 export async function registrarTermo(formData: FormData): Promise<Resultado> {
   const session = await getSessionContext();
