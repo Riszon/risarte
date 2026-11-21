@@ -237,17 +237,19 @@ export async function ContaETarifas({
                   Chave Pix cadastrada na conta
                   {conta.pixKeyActive === false && " — cadastre uma chave Pix no painel do Asaas; sem ela, o QR Code vale só até o fim do dia."}
                 </Conferencia>
-                <Conferencia ok={conta.anticipationAutoEnabled === false} pendente={conta.anticipationAutoEnabled === null}>
-                  Antecipação automática desligada
-                  {conta.anticipationAutoEnabled === true && " — está LIGADA: ela reduz o repasse do split. Desligue no painel do Asaas."}
+                <Conferencia ok={conta.anticipationAutoEnabled !== null} pendente={conta.anticipationAutoEnabled === null}>
+                  Antecipação automática
+                  {conta.anticipationAutoEnabled === false && " — desligada."}
+                  {conta.anticipationAutoEnabled === true && " — LIGADA. Não impede a cobrança: veja o alerta abaixo."}
                   {conta.anticipationAutoEnabled === null && " — o Asaas ainda não respondeu a esta consulta."}
                 </Conferencia>
                 {/* ASA4 (4014, 19.20): o que muda com a antecipação, e quanto custa a mais. */}
                 {conta.anticipationAutoEnabled === true && (
                   <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-500/15 dark:text-amber-100">
-                    <strong>Antecipação ligada: o que muda.</strong> Na parcela antecipada, o Asaas tira a taxa da antecipação ANTES do
-                    split, e a franqueadora recebe menos que o percentual da rede. A diferença vira <strong>conta a pagar da unidade</strong>{" "}
-                    (a única exceção à regra de a taxa sair do split). Exemplo: uma parcela de R$ 250,00 do cartão parcelado, antecipada
+                    <strong>Alerta: antecipação automática ligada.</strong> A unidade continua podendo cobrar; é escolha e custo
+                    dela. O que muda: o Asaas adianta o dinheiro das vendas no cartão e cobra uma taxa por isso. Na parcela
+                    antecipada, essa taxa sai ANTES do split, e a franqueadora recebe menos que o percentual da rede. A diferença
+                    vira <strong>conta a pagar da unidade</strong> (a única exceção à regra de a taxa sair do split). Exemplo: uma parcela de R$ 250,00 do cartão parcelado, antecipada
                     6 meses a cerca de 1,15% ao mês, perde uns R$ 17,00 de base; a unidade paga cerca de R$ 3,00 a mais em taxa da rede,
                     além da taxa da antecipação. O mesmo vale para a antecipação pedida à mão no painel do Asaas.
                   </p>

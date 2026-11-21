@@ -239,9 +239,10 @@ export const ITENS_DE_PRONTIDAO: Record<string, { rotulo: string; comoResolver: 
     rotulo: "Termo de autorização do franqueado registrado",
     comoResolver: "O Admin Master registra a data e quem assinou o termo.",
   },
-  antecipacao_desligada: {
-    rotulo: "Antecipação automática desligada",
-    comoResolver: "Desligue a antecipação automática no painel do Asaas desta conta e use Verificar agora.",
+  // 4024: a antecipação ligada não trava; o item só pede a leitura no Asaas.
+  antecipacao_conferida: {
+    rotulo: "Antecipação automática conferida no Asaas",
+    comoResolver: "Use Verificar agora: o riSZon lê no Asaas se a antecipação automática está ligada. Ligada não trava; a Central mostra o alerta.",
   },
   // ASA7 (4022)
   debito_desabilitado: {

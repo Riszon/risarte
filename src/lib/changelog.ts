@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.488.0",
+    data: "2026-11-21",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4024, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Asaas: a antecipação automática ligada vira alerta e não impede mais a unidade de cobrar",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Na Central, a antecipação automática ligada no Asaas deixou de tirar a unidade de \"Pronta para cobrar\". Agora ela aparece como alerta, explicando o que muda: a taxa da antecipação sai antes do split, e a diferença da taxa da rede vira conta a pagar da unidade.",
+        papeis: [],
+      },
+    ],
+  },
+  {
     versao: "0.487.2",
     data: "2026-11-21",
     migracao: null,

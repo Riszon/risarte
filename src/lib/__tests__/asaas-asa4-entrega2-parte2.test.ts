@@ -77,7 +77,8 @@ describe("o split na aprovação (3a)", () => {
 
 describe("a antecipação (aprovada: a diferença vira a cobrar da unidade)", () => {
   it("a Central explica o que muda e quanto custa a mais", () => {
-    expect(CENTRAL).toContain("Antecipação ligada: o que muda.");
+    expect(CENTRAL).toContain("Alerta: antecipação automática ligada.");
+    expect(CENTRAL).toContain("A unidade continua podendo cobrar");
     expect(CENTRAL).toContain("conta a pagar da unidade");
   });
 });

@@ -426,13 +426,15 @@ describe("Central de Configuração", () => {
   });
 
   it("todo item de prontidão que o banco devolve tem nome e instrução em português", () => {
-    const sql = ler("supabase/migrations/4002_central_prontidao_historico_e_verificacao.sql");
-    const corpo = sql.slice(sql.indexOf("function public._central_readiness_raw"), sql.indexOf("revoke execute on function public._central_readiness_raw"));
+    // A definição em vigor da lista é a da 4024 (a antecipação vira alerta).
+    const sql = ler("supabase/migrations/4024_asa7_antecipacao_vira_alerta.sql");
+    const ini = sql.indexOf("function public._central_readiness_raw");
+    const corpo = sql.slice(ini, sql.indexOf("$$;", sql.indexOf("as $$", ini) + 5));
     const itens = [...corpo.matchAll(/select '([a-z_]+)'/g)].map((m) => m[1]);
     // A régua tem de achar os itens: zero achados é "não medi".
     expect(itens.length).toBeGreaterThanOrEqual(8);
     for (const i of itens) expect(ITENS_DE_PRONTIDAO[i], i).toBeDefined();
-    for (const esperado of ["split_habilitado", "termo_registrado", "antecipacao_desligada", "chave_pix"]) expect(itens).toContain(esperado);
+    for (const esperado of ["split_habilitado", "termo_registrado", "antecipacao_conferida", "chave_pix"]) expect(itens).toContain(esperado);
   });
 
   it("herança campo a campo: vazio herda; zero é valor", () => {
