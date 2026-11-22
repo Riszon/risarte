@@ -194,7 +194,9 @@ export function CobrancaDaParcela({
           return (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-muted-foreground">
-                Paga pelo Asaas ({MEIO_CURTO[paga.billingType ?? ""] ?? paga.billingType})
+                {paga.paidBillingType === "DEBIT_CARD"
+                  ? "Paga pelo Asaas — pago no cartão de débito"
+                  : `Paga pelo Asaas (${MEIO_CURTO[paga.billingType ?? ""] ?? paga.billingType})`}
                 {paga.status === "liquidada" ? " · dinheiro disponível" : " · aguardando o dinheiro cair"}.
               </span>
               {paga.receiptUrl && (

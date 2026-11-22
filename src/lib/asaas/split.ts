@@ -18,7 +18,9 @@
 // percentual e a MENOR parte fixa. Tarifa maior no pagamento = repasse um
 // pouco menor (a favor da unidade); a fila da entrega 2 corrige quando muda.
 
-export type MeioDoSplit = "PIX" | "BOLETO" | "CREDIT_CARD";
+// 4026: "DEBIT_CARD" não é meio de EMISSÃO: é o meio que o pagador usou numa
+// cobrança de cartão. Só a correção do split depois do pagamento o usa.
+export type MeioDoSplit = "PIX" | "BOLETO" | "CREDIT_CARD" | "DEBIT_CARD";
 
 /** Uma tarifa de `acquirer_rates` (só o que a conta usa). */
 export type TarifaVigente = {
@@ -43,6 +45,7 @@ export function modalidadesDoMeio(meio: MeioDoSplit, parcelas = 1): string[] {
   if (meio === "CREDIT_CARD" && parcelas > 1) return ["credito_parcelado"];
   if (meio === "PIX") return ["pix"];
   if (meio === "BOLETO") return ["boleto", "pix"];
+  if (meio === "DEBIT_CARD") return ["debito"];
   return ["credito_avista"];
 }
 

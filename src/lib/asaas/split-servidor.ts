@@ -21,6 +21,7 @@ import {
   decidirSplit,
   mesmasEntradas,
   reduzirAoLiquido,
+  repasseSimulado,
   splitsParaOAsaas,
   type EntradaParaGravar,
   type PlanoDoSplit,
@@ -152,6 +153,93 @@ export async function rodarFilaDoSplit(args: { clinicId?: string | null; actorId
           r.contasParadas++;
           break;
         }
+      }
+    }
+  }
+  return r;
+}
+
+// ---- 4026: O PAGAMENTO NO CARTÃO DE DÉBITO ---------------------------------------
+
+type ItemDoDebito = {
+  charge_id: string;
+  account_id: string;
+  asaas_payment_id: string;
+  plan: PlanoDoSplit;
+  current_entries: { walletId: string; percentualValue: number; fixedCents: number }[];
+};
+
+export type ResultadoDoDebito = { conferidas: number; corrigidas: number; recusadas: number; falharam: number };
+
+async function debitoFeito(chargeId: string, outcome: "corrigido" | "sem_mudanca" | "recusado" | "erro",
+  entradas: EntradaParaGravar[] | null, detalhe: { antesCents?: number; depoisCents?: number } | null, erro: string | null) {
+  const { error } = await createAdminClient().rpc("_gateway_debit_fix_done", {
+    p_charge_id: chargeId,
+    p_outcome: outcome,
+    p_entries: entradas ?? [],
+    p_detail: detalhe ?? {},
+    p_error: erro,
+  });
+  if (error) console.error("gateway debit fix done failed:", error.message);
+}
+
+/**
+ * Pago no débito numa cobrança de cartão: o split da emissão foi calculado pela
+ * tarifa do crédito e repassaria à rede MAIS do que o devido. Manda ao Asaas o
+ * split com a tarifa do débito (as mesmas taxas da emissão). Roda quando o aviso
+ * do pagamento chega (webhook) e a cada 10 minutos (cron), até o Asaas aceitar,
+ * recusar ou o dinheiro cair — o banco tira da fila o que passou do prazo, e o
+ * que não foi corrigido vira crédito da unidade (4026).
+ */
+export async function corrigirSplitsDoDebito(args: { accountId?: string | null; limite?: number } = {}): Promise<ResultadoDoDebito> {
+  const admin = createAdminClient();
+  const r: ResultadoDoDebito = { conferidas: 0, corrigidas: 0, recusadas: 0, falharam: 0 };
+  const { data, error } = await admin.rpc("_gateway_debit_fix_queue", {
+    p_account_id: args.accountId ?? null,
+    p_limit: args.limite ?? 20,
+  });
+  if (error) {
+    if (/does not exist|schema cache|Could not find the function/i.test(error.message)) return r;
+    throw new Error(`gateway debit fix queue failed: ${error.message}`);
+  }
+  for (const item of (data ?? []) as ItemDoDebito[]) {
+    r.conferidas++;
+    const decisao = decidirSplit(item.plan);
+    if (!decisao.vai) {
+      // Sem a tarifa do débito na conta, ou o teto: não dá para corrigir — o crédito cobre.
+      await debitoFeito(item.charge_id, "recusado", null, null, `sem_correcao:${decisao.motivo}`);
+      r.recusadas++;
+      continue;
+    }
+    const pago = item.plan.elegivel ? Number(item.plan.valorCents) : 0;
+    const tarifa = { a: Number(decisao.entradas[0]?.tariffPercent ?? 0) / 100, bCents: Number(decisao.entradas[0]?.tariffFixedCents ?? 0) };
+    const soma = (xs: { cents: number }[]) => xs.reduce((s, x) => s + x.cents, 0);
+    const atual = (item.current_entries ?? []).map((e) => ({
+      walletId: e.walletId, percent: 0, percentualValue: Number(e.percentualValue), fixedCents: Number(e.fixedCents),
+    }));
+    const detalhe = {
+      antesCents: soma(repasseSimulado(atual, pago, tarifa)),
+      depoisCents: soma(repasseSimulado(decisao.entradas, pago, tarifa)),
+    };
+    if (atual.length > 0 && mesmasEntradas(atual, decisao.entradas)) {
+      await debitoFeito(item.charge_id, "sem_mudanca", decisao.entradas, detalhe, null);
+      continue;
+    }
+    try {
+      const cred = await credencialDaConta(item.account_id, "split_debito", null);
+      const opts = { ...opcoesDaConta(item.account_id, "split_debito"), rateLimitRetries: 0 };
+      const p = await updatePaymentSplit(cred, item.asaas_payment_id, splitsParaOAsaas(decisao.entradas), opts);
+      await debitoFeito(item.charge_id, "corrigido", comIdsDoAsaas(decisao.entradas, p?.split), detalhe, null);
+      r.corrigidas++;
+    } catch (e) {
+      // O Asaas RECUSOU (fora da janela, antecipada, liquidada): definitivo, o crédito cobre.
+      // Qualquer outra falha (rede, limite, fora do ar): tenta de novo em 10 minutos.
+      if (e instanceof AsaasError && (e.code === "bad_request" || e.code === "not_found")) {
+        await debitoFeito(item.charge_id, "recusado", null, detalhe, `asaas:${e.asaasCodes.join(",") || e.code}`);
+        r.recusadas++;
+      } else {
+        await debitoFeito(item.charge_id, "erro", null, null, codigo(e));
+        r.falharam++;
       }
     }
   }

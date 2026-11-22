@@ -4536,7 +4536,7 @@ Preparadas no sandbox, pelo caminho do riSZon (cobranças com split). Pagador se
   - **Proposta:** antes de pedir o parcial, o riSZon lê o saldo da conta da unidade. Sem saldo, não pede, e a tela orienta a usar a devolução por Pix da conta da unidade (o caminho que já existe).
   - **O cartão parcelado:** a prova de amanhã (17/11) diz se, no parcial do parcelamento, o Asaas mexe no split. Se mexer, a conferência da proposta (b) passa a valer também para ele.
 
-**2. Cartão de débito desabilitado nas contas das unidades (decisão do dono).**
+**2. Cartão de débito desabilitado nas contas das unidades (decisão do dono).** ⚠️ **Mudou em 21/11/2026 (seção 23, migração 4026):** o débito passa a ser escolha de cada unidade; o item da prontidão vira "débito conferido".
 - **A API não permite ler essa configuração.** Procurei na documentação (`/v3/myAccount` e as rotas de conta e de configuração) e não há campo nem rota que diga se o débito está habilitado. O Asaas também não disse que há.
 - **Proposta:** vira um **item de conferência à mão**:
   - **Na Central** de cada unidade (aba Conta e tarifas), a marca **"Cartão de débito desabilitado no painel do Asaas"**, com quem conferiu e quando (Gerente ou Admin Master; na auditoria).
@@ -6090,3 +6090,48 @@ No treino, ele deu: 10 empresas ativas, 15 cobranças em aberto (R$ 2.513,90), 1
 - da RisLife: a conta de produção, a chave mínima e o termo;
 - a cláusula dos dois emissores no modelo de contrato (texto do dono, nos dois ambientes).
 - **antes do commit que leva ao main:** chamar a sessão do Empresarial, que escreve o manual do Empresarial (seções 9 e 12 e o funil, a partir da 13g.21), regera o .docx e confirma a versão do Empresarial; e a linha "⚠️ Ao recriar guard_lead_signatures, partir da 4023" no ESTADO e no CLAUDE.md.
+
+## 23. O pagamento no cartão de débito: CONSTRUÍDA (21/11/2026; core 0.490.0, Asaas 0.26.0, migração 4026)
+
+**Muda a decisão anterior (19.37, item 2):** o débito deixa de ter de ficar desabilitado. Cada unidade escolhe, e o item da prontidão vira "Cartão de débito conferido" (desabilitado ou habilitado, marcado pelo Admin Master). Na conta da franqueadora (cobrança mensal e Empresarial) o débito continua desabilitado; um pagamento no débito lá só avisa o Financeiro e o Admin Master. O débito recorrente continua fora (D20).
+
+### 23.1 O problema (a conta com as tarifas da produção)
+
+As tarifas de Cambé e Londrina: crédito à vista 2,39% + R$ 0,29; débito 1,89% + R$ 0,29 (crédito em 3 dias). Taxas da rede: 17%. O split da emissão (Método B, pelo crédito) é 17,4162% + R$ 0,05.
+
+| Valor pago | Devido (17%) | Pago no crédito | Pago no débito, sem correção | Corrigido |
+|---|---|---|---|---|
+| R$ 100,00 | R$ 17,00 | R$ 16,99 | R$ 17,08 (+0,08) | R$ 16,99 |
+| R$ 500,00 | R$ 85,00 | R$ 84,99 | R$ 85,43 (+0,43) | R$ 84,99 |
+| R$ 1.000,00 | R$ 170,00 | R$ 169,99 | R$ 170,86 (+0,86) | R$ 169,99 |
+| R$ 3.000,00 | R$ 510,00 | R$ 509,99 | R$ 512,61 (+2,61) | R$ 509,99 |
+
+Sem correção, passa da tolerância (R$ 0,10) a partir de R$ 127,00, contra a unidade.
+
+### 23.2 Decisões do dono (21/11/2026): opções 1 + 3
+
+1. **A correção sai na hora.** O aviso do pagamento com `billingType = DEBIT_CARD` grava o meio usado e põe a cobrança na fila da correção. O servidor manda o split novo ao Asaas no próprio aviso (até 3 por aviso, 4 segundos) e tenta de novo a cada 10 minutos. O split novo tem as MESMAS taxas da emissão e a tarifa do débito (17,3274% + R$ 0,05). Para quando o Asaas aceita, quando recusa (definitivo) ou no dia do crédito.
+   - **Sexta à noite:** o aviso chega na hora e a correção sai em segundos. Se falhar (rede, limite), tenta de 10 em 10 minutos durante o fim de semana. O Asaas é quem diz se ainda aceita (até 1 dia útil antes do crédito). Se recusar ou o crédito chegar, o caminho é o crédito da unidade.
+   - **Véspera de feriado:** o mesmo. O feriado só encurta ou alonga a janela do Asaas, e o riSZon não depende de calcular o dia útil: tenta até o Asaas recusar ou o dinheiro cair.
+2. **O excesso que não foi corrigido é da unidade.** Vira crédito (`split_excess_credits`), fora da receita da franqueadora e da base da nota dos royalties. A receita da franqueadora fica no devido. O razão:
+   - **no split liquidado:** unidade, saída de R$ X na 6.4.01 "Split a mais a receber da franqueadora"; franqueadora, entrada de R$ X na 6.4.02 "Split a mais a devolver às unidades". As duas fora do resultado (família 6);
+   - **na cobrança mensal paga:** a taxa paga com o crédito vira despesa da unidade e receita da franqueadora, sem caixa (o dinheiro já tinha ido no split). A 6.4.01 recebe a entrada de R$ X e a 6.4.02 a saída de R$ X: as duas zeram;
+   - **crédito maior que a cobrança:** a cobrança do mês fica "acumulada" (nada é cobrado nem usado), e tudo entra no mês seguinte.
+3. **A unidade enxerga.** Painel de repasses, parte "Pagamentos no cartão de débito": "split corrigido — pago no débito" (o que deixou de ir a mais) ou "crédito — split a mais no débito" (o valor, e se já foi creditado). No demonstrativo da cobrança mensal, a linha "Crédito — split a mais no débito". Na cobrança e na parcela: "Pago no cartão de débito".
+4. **Débito em cobrança parcelada:** trava. Não corrige nem credita sozinho; avisa o Financeiro, e a Conferência das taxas mostra o split a mais até ele tratar. Pergunta ao Asaas em `docs/asaas/perguntas-debito-asaas.txt`.
+5. **Conta da franqueadora:** o débito continua desabilitado. A Central mostra a marca para conferir; um pagamento no débito lá avisa.
+6. **Cobrança antecipada:** o split não muda depois de antecipada. A antecipada não entra na fila e, se a recusa vier do Asaas, também cai no crédito.
+
+### 23.2.1 O reconhecimento por duas formas (ajuste do dono, 21/11/2026)
+
+O riSZon reconhece o débito pelo aviso (`billingType = DEBIT_CARD`) E pelo valor líquido: a tarifa cobrada (pago − líquido) bate com a tarifa do débito da conta, e não com a do crédito à vista (tolerância de 1 centavo). Só na cobrança de cartão à vista; no parcelado vale só o aviso, e trava.
+- **As duas dizem débito**, ou o aviso diz e o valor não decide: débito, com a correção.
+- **Discordam** (só o valor diz débito, ou o aviso diz débito e o valor diz crédito): a cobrança fica marcada como débito, mas o riSZon NÃO corrige sozinho. Avisa o Financeiro e o Admin Master, e a Conferência das taxas mostra o split a mais.
+- **A Conferência do mês** não conta o crédito do débito como taxa faturada (ele é o 6.4.01), para não acusar diferença.
+
+### 23.3 A prova
+
+- **Ensaio** `scripts/asaas-ensaio-4026-debito.mjs`: 46/46 (as duas formas de reconhecer e as duas discordâncias, aceita, recusada → crédito com o razão, crédito sem mudança, parcelado travado, antecipada, erro de passagem e prazo, a cobrança mensal com o crédito usado e o acumulado, a prontidão). Provado quebrando: `gatilho` (sem o crédito: 6 falhas), `evento` (sem o reconhecimento: 7) e `valor` (só o aviso: 2).
+- **Produção simulada:** as 10 funções com quebra de linha do Windows: a 4026 aplica, roda de novo, desfaz até zero e volta a aplicar.
+- **Falta, a prova de R$ 10,00** (condições do dono): só depois da 4026 na produção e da unidade marcada; o dono digita o cartão; aviso antes e "pode"; estorno no fim. Responde como o aviso descreve o débito (`billingType`), se a correção do split é aceita e como funciona o estorno. Se a correção não for aceita, a opção 3 vira o caminho normal e a conta volta ao dono antes de seguir.
+- **O débito continua desabilitado no painel do Asaas de todas as unidades** até a 4026 estar na produção e a prova passar.

@@ -2,7 +2,7 @@ import { isCronRequestAuthorized } from "@/lib/cron-auth";
 import { comecarRodada, terminarRodada } from "@/lib/asaas/rodadas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rodarFilaDaRegua } from "@/lib/asaas/regua-servidor";
-import { conferirWebhooks, corrigirBloqueios, limparCelularesDeEstorno, rodarFilaDoSplit } from "@/lib/asaas/split-servidor";
+import { conferirWebhooks, corrigirBloqueios, corrigirSplitsDoDebito, limparCelularesDeEstorno, rodarFilaDoSplit } from "@/lib/asaas/split-servidor";
 import { conferirContestacoes, conferirSplitDosParcelamentos } from "@/lib/asaas/parcelamento";
 import { rotinaDasRenegociacoes } from "@/lib/asaas/renegociacao";
 import { isAdminClientConfigured } from "@/lib/supabase/admin";
@@ -33,6 +33,11 @@ export async function GET(request: Request) {
       return null;
     });
     const bloqueios = await corrigirBloqueios().catch(() => 0);
+    // 4026: as correções do split pago no débito que ainda não saíram (novas tentativas).
+    const debito = await corrigirSplitsDoDebito({ limite: 50 }).catch((e) => {
+      console.error("gateway debit split fix failed:", e instanceof Error ? e.message : e);
+      return null;
+    });
     const webhooks = await conferirWebhooks().catch(() => null);
     const celularesApagados = await limparCelularesDeEstorno().catch(() => 0);
     // ASA4 (4012): avisos de link não enviado e de primeira cobrança não aberta.
@@ -50,7 +55,7 @@ export async function GET(request: Request) {
     // sem assinatura é cancelado na ZapSign; o assinado que ficou sem aplicar, aplica.
     const renegociacoes = await rotinaDasRenegociacoes().catch(() => null);
     await terminarRodada(rodada, { ok: true, detalhes: { avisosDeLink, avisosDeContestacao, avisosDeVencido, splitDoParcelado, contestacoes, renegociacoes } });
-    return Response.json({ ok: true, ...r, split, bloqueios, webhooks, celularesApagados, avisosDeLink, splitDoParcelado, contestacoes, avisosDeContestacao, avisosDeVencido, renegociacoes });
+    return Response.json({ ok: true, ...r, split, bloqueios, debito, webhooks, celularesApagados, avisosDeLink, splitDoParcelado, contestacoes, avisosDeContestacao, avisosDeVencido, renegociacoes });
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
     // Banco sem a 4007 (o código pode ir ao ar antes): não há fila.

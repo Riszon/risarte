@@ -56,6 +56,8 @@ export const MEIOS_DO_PAINEL: { valor: string; rotulo: string }[] = [
 ];
 
 export function rotuloDoMeio(valor: string): string {
+  // 4026: a cobrança de cartão paga no débito mostra o meio que o pagador usou.
+  if (valor === "DEBIT_CARD") return "Pago no cartão de débito";
   return MEIOS_DO_PAINEL.find((m) => m.valor === valor)?.rotulo ?? valor;
 }
 

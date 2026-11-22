@@ -1,0 +1,14 @@
+Perguntas ao Asaas sobre o cartão de débito (21/11/2026)
+
+1. Débito na fatura de um parcelamento no cartão
+Contexto: emitimos cobranças parceladas no cartão de crédito (installmentCount). Com o débito habilitado na conta, a fatura de uma cobrança CREDIT_CARD avulsa oferece o débito.
+Pergunta: a fatura de um PARCELAMENTO no cartão também oferece o débito? Se o pagador escolher o débito, o que acontece com as parcelas: vira um pagamento só, à vista? E o split de cada parcela?
+
+2. Correção do split de uma cobrança paga no débito
+Contexto: o split vai na criação da cobrança. Pago no débito, queremos ajustar o split à tarifa do débito antes do crédito (D+3).
+Pergunta: o PUT /v3/payments/{id} com o split novo é aceito numa cobrança paga no débito, ainda não creditada? Até quando?
+
+3. Como o débito aparece no aviso
+Pergunta: no aviso PAYMENT_CONFIRMED de uma cobrança CREDIT_CARD paga no débito, o billingType vem como DEBIT_CARD?
+
+Obrigado!

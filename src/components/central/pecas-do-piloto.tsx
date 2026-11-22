@@ -17,7 +17,7 @@ import { CAPACIDADES_POR_ID } from "@/lib/permissions";
 import {
   anexarConfirmacaoDoAsaas,
   copiarDeOutraUnidade,
-  declararDebitoDesabilitado,
+  declararDebito,
   declararPermissoesDaChave,
   ignorarDivergenciaComOAsaas,
   levantarAgora,
@@ -64,6 +64,7 @@ export function PilotoDaConta({
   admin,
   ativa,
   debitoEm,
+  debitoHabilitadoEm = null,
   permissoesEm,
   sondaEm,
   sondaOk,
@@ -76,6 +77,8 @@ export function PilotoDaConta({
   admin: boolean;
   ativa: boolean;
   debitoEm: string | null;
+  /** 4026: a unidade marcou que HABILITOU o débito (a outra escolha é `debitoEm`). */
+  debitoHabilitadoEm?: string | null;
   permissoesEm: string | null;
   sondaEm: string | null;
   sondaOk: boolean | null;
@@ -87,10 +90,19 @@ export function PilotoDaConta({
   return (
     <div className="space-y-4 text-sm">
       <ul className="space-y-1.5">
-        {!ehFranqueadora && (
+        {ehFranqueadora ? (
           <Marca ok={debitoEm !== null}>
-            Débito desabilitado no painel do Asaas (Minha conta › Configurações › Configurações do sistema)
-            {debitoEm ? ` — marcado em ${quando(debitoEm)}.` : " — o Asaas não informa pela API: o Admin Master marca depois de desabilitar."}
+            Débito desabilitado no painel do Asaas da franqueadora (cobrança mensal e Empresarial; Minha conta › Configurações › Configurações do sistema)
+            {debitoEm ? ` — marcado em ${quando(debitoEm)}.` : " — confira no painel e marque. Não muda a prontidão; um pagamento no débito nesta conta avisa o Financeiro."}
+          </Marca>
+        ) : (
+          <Marca ok={debitoEm !== null || debitoHabilitadoEm !== null}>
+            Cartão de débito conferido no painel do Asaas (Minha conta › Configurações › Configurações do sistema)
+            {debitoHabilitadoEm
+              ? ` — HABILITADO, marcado em ${quando(debitoHabilitadoEm)}. Pago no débito, o riSZon corrige o split na hora; se o Asaas não aceitar, o que for a mais volta como crédito na cobrança mensal.`
+              : debitoEm
+                ? ` — desabilitado, marcado em ${quando(debitoEm)}.`
+                : " — o Asaas não informa pela API: o Admin Master marca a escolha da unidade (desabilitado ou habilitado)."}
           </Marca>
         )}
         <Marca ok={!producao || (permissoesEm !== null && sondaOk === true)}>
@@ -116,9 +128,22 @@ export function PilotoDaConta({
 
       {admin && ativa && (
         <div className="flex flex-wrap gap-2">
-          {!ehFranqueadora && debitoEm === null && (
-            <Button size="sm" variant="outline" disabled={pendente} onClick={() => rodar(() => declararDebitoDesabilitado(accountId), "Marcado.")}>
+          {debitoEm === null && (
+            <Button size="sm" variant="outline" disabled={pendente} onClick={() => rodar(() => declararDebito(accountId, false), "Marcado.")}>
               Marcar: o débito está desabilitado
+            </Button>
+          )}
+          {!ehFranqueadora && debitoHabilitadoEm === null && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pendente}
+              onClick={() => {
+                if (!window.confirm("Confirma que o débito foi HABILITADO no painel do Asaas desta unidade? Habilite só depois da prova de R$ 10,00 no débito. Pago no débito, o riSZon corrige o split na hora; o que não for corrigido volta como crédito na cobrança mensal.")) return;
+                rodar(() => declararDebito(accountId, true), "Marcado: débito habilitado.");
+              }}
+            >
+              Marcar: o débito está habilitado
             </Button>
           )}
           {producao && permissoesEm === null && (

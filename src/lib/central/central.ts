@@ -245,6 +245,11 @@ export const ITENS_DE_PRONTIDAO: Record<string, { rotulo: string; comoResolver: 
     comoResolver: "Use Verificar agora: o riSZon lê no Asaas se a antecipação automática está ligada. Ligada não trava; a Central mostra o alerta.",
   },
   // ASA7 (4022)
+  // 4026: o débito vira escolha da unidade; o item só pede a conferência.
+  debito_conferido: {
+    rotulo: "Cartão de débito conferido no painel do Asaas",
+    comoResolver: "No painel do Asaas: Minha conta › Configurações › Configurações do sistema. Depois, o Admin Master marca aqui a escolha da unidade (desabilitado ou habilitado).",
+  },
   debito_desabilitado: {
     rotulo: "Débito desabilitado no painel do Asaas",
     comoResolver: "No painel do Asaas: Minha conta › Configurações › Configurações do sistema. Depois, o Admin Master marca aqui.",

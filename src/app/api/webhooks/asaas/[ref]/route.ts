@@ -84,5 +84,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ ref
     console.error("asaas webhook: processing threw:", e instanceof Error ? e.message : e);
   }
 
+  // 4026: pago no cartão de débito → a correção do split sai NA HORA (o split só
+  // muda até 1 dia útil antes do crédito). No máximo 3 por aviso e 4 segundos,
+  // para a resposta não passar dos 10 do Asaas; o que faltar, o cron de 10 em
+  // 10 minutos tenta de novo.
+  try {
+    const { corrigirSplitsDoDebito } = await import("@/lib/asaas/split-servidor");
+    await Promise.race([
+      corrigirSplitsDoDebito({ accountId: conta.account_id, limite: 3 }),
+      new Promise((ok) => setTimeout(ok, 4000)),
+    ]);
+  } catch (e) {
+    console.error("asaas webhook: debit split fix threw:", e instanceof Error ? e.message : e);
+  }
+
   return Response.json({ ok: true, duplicate: novo !== true }, { status: 200 });
 }

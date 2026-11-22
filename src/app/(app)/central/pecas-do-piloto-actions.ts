@@ -46,12 +46,30 @@ async function contaVisivel(accountId: string) {
 // ---- a prontidão da unidade --------------------------------------------------------------
 
 export async function declararDebitoDesabilitado(accountId: string): Promise<Resultado> {
+  return declararDebito(accountId, false);
+}
+
+/**
+ * 4026: o débito vira escolha da unidade — desabilitado ou habilitado no painel
+ * do Asaas. Habilitado, o riSZon corrige o split de cada pagamento no débito.
+ * Na conta da franqueadora, só "desabilitado".
+ */
+export async function declararDebito(accountId: string, habilitado: boolean): Promise<Resultado> {
   const session = await getSessionContext();
   if (!session.isAdminMaster) return { ok: false, error: SO_ADMIN };
   if (!(await contaVisivel(accountId))) return { ok: false, error: MENSAGENS.ACCOUNT_NOT_FOUND };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("gateway_declare_debit_disabled", { p_account_id: accountId });
-  if (error) return { ok: false, error: mensagem(error) };
+  let { error } = await supabase.rpc("gateway_declare_debit", { p_account_id: accountId, p_enabled: habilitado });
+  // Banco sem a 4026: só existe a marca de desabilitado.
+  if (error && !habilitado && /gateway_declare_debit|schema cache|Could not find the function/i.test(error.message)) {
+    ({ error } = await supabase.rpc("gateway_declare_debit_disabled", { p_account_id: accountId }));
+  }
+  if (error) {
+    if ((error.message ?? "").includes("DEBIT_ONLY_UNITS")) {
+      return { ok: false, error: "Na conta da franqueadora o débito fica desabilitado (cobrança mensal e Empresarial)." };
+    }
+    return { ok: false, error: mensagem(error) };
+  }
   atualizar();
   return { ok: true };
 }

@@ -100,6 +100,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   refund_request: "Pedido de estorno (pedido, confirmação ou cancelamento)",
   card_refund_limit: "Limite da confirmação do estorno de cartão",
   gateway_debit_disabled: "Débito desabilitado no Asaas (marca da prontidão)",
+  gateway_debit_enabled: "Débito habilitado no Asaas (marca da prontidão)",
   gateway_key_permissions: "Chave do Asaas com as permissões mínimas (marca da prontidão)",
   gateway_survey: "Levantamento do que já existe no Asaas da conta",
   asaas_confirmation: "Confirmação do Asaas sobre o uso da chave da unidade (documento)",

@@ -158,6 +158,8 @@ export const TABELAS: Record<string, string> = {
   "public.gateway_charge_recon_runs": "Rodadas da conferência das cobranças com o Asaas",
   "public.charge_splits": "Split de cobrança (o que foi enviado e liquidado)",
   "public.charge_split_updates": "Split de cobrança atualizado pela fila",
+  "public.charge_debit_fixes": "Correção do split pago no cartão de débito",
+  "public.split_excess_credits": "Crédito da unidade: split a mais no débito",
   "public.charge_refunds": "Pedido de estorno",
   "public.gateway_payment_surpluses": "Pagamento em duplicidade pelo Asaas",
   "public.gateway_settings": "Asaas — interruptor de produção",

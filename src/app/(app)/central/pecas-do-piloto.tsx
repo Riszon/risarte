@@ -16,14 +16,17 @@ export async function PilotoDaContaNaCentral({
   accountId: string;
   admin: boolean;
 }) {
-  const { data, error } = await supabase
-    .from("gateway_accounts")
-    .select("owner_type, environment, status, debit_disabled_declared_at, key_min_perm_declared_at, key_perm_probe_at, key_perm_probe_ok, key_perm_probe_detail")
-    .eq("id", accountId)
-    .maybeSingle<{
-      owner_type: string; environment: string; status: string; debit_disabled_declared_at: string | null; key_min_perm_declared_at: string | null;
-      key_perm_probe_at: string | null; key_perm_probe_ok: boolean | null; key_perm_probe_detail: Record<string, string> | null;
-    }>();
+  type Linha = {
+    owner_type: string; environment: string; status: string; debit_disabled_declared_at: string | null; key_min_perm_declared_at: string | null;
+    key_perm_probe_at: string | null; key_perm_probe_ok: boolean | null; key_perm_probe_detail: Record<string, string> | null;
+    debit_enabled_declared_at?: string | null;
+  };
+  const colunas = "owner_type, environment, status, debit_disabled_declared_at, key_min_perm_declared_at, key_perm_probe_at, key_perm_probe_ok, key_perm_probe_detail";
+  // 4026: com a escolha "débito habilitado"; banco sem a 4026, sem ela.
+  let { data, error } = await supabase.from("gateway_accounts").select(`${colunas}, debit_enabled_declared_at`).eq("id", accountId).maybeSingle<Linha>();
+  if (error && /debit_enabled_declared_at/.test(error.message)) {
+    ({ data, error } = await supabase.from("gateway_accounts").select(colunas).eq("id", accountId).maybeSingle<Linha>());
+  }
   if (error || !data) return null;
   const levantamentos = admin ? await lerLevantamentos(accountId) : [];
   return (
@@ -40,6 +43,7 @@ export async function PilotoDaContaNaCentral({
           admin={admin}
           ativa={data.status === "active"}
           debitoEm={data.debit_disabled_declared_at}
+          debitoHabilitadoEm={data.debit_enabled_declared_at ?? null}
           permissoesEm={data.key_min_perm_declared_at}
           sondaEm={data.key_perm_probe_at}
           sondaOk={data.key_perm_probe_ok}

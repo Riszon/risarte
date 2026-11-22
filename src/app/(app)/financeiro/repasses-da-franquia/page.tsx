@@ -67,6 +67,15 @@ export default async function RepassesDaFranquia(props: PageProps<"/financeiro/r
   });
   const permutas = semPermutas ? null : ((permutasData ?? []) as Permuta[]);
 
+  // 4026: os pagamentos no cartão de débito do período (o split corrigido ou o
+  // crédito da unidade). Banco sem a 4026: a parte não aparece.
+  const { data: debitoData, error: semDebito } = await supabase.rpc("split_debit_cases_read", {
+    p_from: filtros.de,
+    p_to: filtros.ate,
+    p_clinic_id: unidade,
+  });
+  const debito = semDebito ? [] : ((debitoData ?? []) as CasoDoDebito[]);
+
   let unidades: { id: string; name: string }[] = [];
   if (daRede) {
     const { data: rows } = await supabase
@@ -140,7 +149,64 @@ export default async function RepassesDaFranquia(props: PageProps<"/financeiro/r
       ) : (
         <Conteudo r={data as Repasses} planilha={planilha} permutas={permutas} />
       )}
+      {debito.length > 0 && <PagosNoDebito casos={debito} varias={!unidade} />}
     </div>
+  );
+}
+
+/** 4026: um pagamento no cartão de débito (`split_debit_cases_read`). */
+type CasoDoDebito = {
+  chargeId: string;
+  clinicName: string;
+  paidOn: string | null;
+  paidCents: number | null;
+  motivo: string;
+  valorCents: number | null;
+  creditoStatus: string | null;
+  creditoUsadoCents: number | null;
+};
+
+const SITUACAO_DO_CREDITO: Record<string, string> = {
+  a_devolver: "entra na próxima cobrança mensal",
+  creditado: "creditado na cobrança mensal",
+};
+
+function PagosNoDebito({ casos, varias }: { casos: CasoDoDebito[]; varias: boolean }) {
+  return (
+    <Secao
+      titulo="Pagamentos no cartão de débito"
+      descricao="Pago no débito, a tarifa é menor e o split da emissão repassaria à rede mais do que o devido. O riSZon corrige o split na hora; quando o Asaas não aceita, o que foi a mais volta para a unidade como crédito na cobrança mensal seguinte."
+    >
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40 text-xs text-muted-foreground">
+            <tr>
+              {varias && <th className={cn(TH, "text-left")}>Unidade</th>}
+              <th className={cn(TH, "text-left")}>Pago em</th>
+              <th className={cn(TH, "text-right")}>Valor pago</th>
+              <th className={cn(TH, "text-left")}>Motivo</th>
+              <th className={cn(TH, "text-right")}>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {casos.map((c) => (
+              <tr key={c.chargeId} className="border-t">
+                {varias && <td className={TD}>{c.clinicName}</td>}
+                <td className={TD}>{fmtData(c.paidOn)}</td>
+                <td className={NUM}>{c.paidCents == null ? "—" : formatBRL(Number(c.paidCents))}</td>
+                <td className={TD}>
+                  {c.motivo}
+                  {c.creditoStatus && SITUACAO_DO_CREDITO[c.creditoStatus] && (
+                    <span className="text-xs text-muted-foreground"> · {SITUACAO_DO_CREDITO[c.creditoStatus]}</span>
+                  )}
+                </td>
+                <td className={NUM}>{c.valorCents == null ? "—" : formatBRL(Number(c.valorCents))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Secao>
   );
 }
 

@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.490.0",
+    data: "2026-11-21",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4026, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Asaas: o pagamento no cartão de débito",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A cobrança e a parcela pagas no débito passam a mostrar \"Pago no cartão de débito\", com a tarifa e o prazo do débito. O riSZon corrige na hora o split dessas cobranças, para a rede receber só o devido. Quando o Asaas não aceita a correção, o que foi a mais volta para a unidade como crédito na cobrança mensal seguinte, e aparece no Painel de repasses e no demonstrativo.",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Na Central, o item \"Débito desabilitado\" virou \"Cartão de débito conferido\": o Admin Master marca a escolha da unidade (desabilitado ou habilitado). O débito continua desabilitado no painel do Asaas até a prova de R$ 10,00.",
+        papeis: ["finance_franchisor"],
+      },
+    ],
+  },
+  {
     versao: "0.489.0",
     data: "2026-11-21",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4025, ASAAS_MIGRATION).

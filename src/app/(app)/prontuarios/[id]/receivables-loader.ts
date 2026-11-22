@@ -91,6 +91,8 @@ export type ChargeRow = {
   installmentId: string;
   status: string;
   billingType: string | null;
+  /** 4026: o meio que o pagador USOU, quando difere do emitido (hoje só "DEBIT_CARD"). */
+  paidBillingType?: string | null;
   valueCents: number | null;
   discountCents: number;
   dueDate: string | null;
@@ -503,15 +505,17 @@ async function loadChargesAndWaivers(
 ): Promise<{ charges: ChargeRow[]; waivers: WaiverRow[]; disponivel: boolean }> {
   const colunas =
     "id, payment_installment_id, status, billing_type, value_cents, discount_cents, due_date, is_overdue_reissue, is_external, external_note, invoice_url, bank_slip_url, pix_copy_paste, identification_field, error_code, payer_kind, payer_guardian_id, created_at, updated_at, cancelled_at, cancel_reason, profiles:profiles!charges_created_by_fkey ( full_name )";
-  const ler = (comComprovante: boolean) =>
+  const ler = (comComprovante: boolean, comDebito = false) =>
     supabase
       .from("charges")
-      .select(comComprovante ? `${colunas}, receipt_url` : colunas)
+      .select(comComprovante ? `${colunas}, receipt_url${comDebito ? ", paid_billing_type" : ""}` : colunas)
       .in("payment_installment_id", installmentIds)
       .order("created_at", { ascending: false })
       .returns<LinhaDaCobranca[]>();
+  // 4026: com o meio usado (o débito); banco sem a 4026, sem ele.
+  let { data: cRows, error: cErr } = await ler(true, true);
+  if (cErr && /paid_billing_type/.test(cErr.message)) ({ data: cRows, error: cErr } = await ler(true));
   // 4007: com o comprovante do Asaas; banco sem a 4007, sem ele.
-  let { data: cRows, error: cErr } = await ler(true);
   if (cErr && /receipt_url/.test(cErr.message)) ({ data: cRows, error: cErr } = await ler(false));
   type LinhaDaCobranca =
       {
@@ -537,6 +541,7 @@ async function loadChargesAndWaivers(
         cancelled_at: string | null;
         cancel_reason: string | null;
         receipt_url?: string | null;
+        paid_billing_type?: string | null;
         profiles: { full_name: string } | null;
       };
   if (cErr) return { charges: [], waivers: [], disponivel: false };
@@ -587,6 +592,7 @@ async function loadChargesAndWaivers(
       cancelledAt: r.cancelled_at,
       cancelReason: r.cancel_reason,
       receiptUrl: r.receipt_url ?? null,
+      paidBillingType: r.paid_billing_type ?? null,
     };
   });
 
