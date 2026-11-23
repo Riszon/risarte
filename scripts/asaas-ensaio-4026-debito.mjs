@@ -50,8 +50,8 @@ try {
   await c.query("begin");
   const sql = readFileSync(ARQ, "utf8");
   const r1 = [].concat(await c.query(sql)).at(-1).rows[0];
-  conf("a 4026 roda: 10 funções trocadas, 2 gatilhos, 3 contas e na lista",
-    n(r1.funcoes_trocadas) === 10 && n(r1.gatilhos) === 2 && n(r1.contas) === 3 && r1.na_lista === true);
+  conf("a 4026 roda: 11 funções trocadas, 2 gatilhos, 3 contas, na lista e os repasses liberados",
+    n(r1.funcoes_trocadas) === 11 && n(r1.gatilhos) === 2 && n(r1.contas) === 3 && r1.na_lista === true && r1.repasses_liberados === true);
   await c.query("savepoint dup");
   try { await c.query(sql); await c.query("release savepoint dup"); conf("a 4026 roda duas vezes sem erro", true); }
   catch (e) { await c.query("rollback to savepoint dup"); conf(`a 4026 roda duas vezes sem erro (${e.message})`, false); }
@@ -152,6 +152,19 @@ try {
   conf("1: o aviso de pagamento no débito dá baixa", (await avisoDoPagamento(A, "DEBIT_CARD")) === "baixa");
   const chA = await um("select paid_billing_type, status from public.charges where id = $1", [A.ch]);
   conf("1: a cobrança grava \"pago no cartão de débito\"", chA.paid_billing_type === "DEBIT_CARD");
+  // As telas, como o Admin Master as lê (com o papel do usuário logado).
+  {
+    await c.query("savepoint tela");
+    const adm = (await um("select id from public.profiles where is_admin_master and is_active limit 1")).id;
+    await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: adm, role: "authenticated" })]);
+    await c.query("set local role authenticated");
+    const rec = await um("select billing_type from public.gateway_receivables_due($1) where charge_id = $2", [ldn, A.ch]).catch((e) => ({ erro: e.message }));
+    const rep = await um("select public.franchise_payouts_read(current_date - 30, current_date, $1, null) r", [ldn]).then(() => true).catch(() => false);
+    const per = await um("select public.franchise_payouts_permutas(current_date - 30, current_date, $1) r", [ldn]).then(() => true).catch(() => false);
+    await c.query("rollback to savepoint tela");
+    conf("1: o \"A receber\" das Cobranças mostra o débito", rec?.billing_type === "DEBIT_CARD");
+    conf("o Painel de repasses volta a ler (as duas leituras com permissão)", rep && per);
+  }
   conf("1: reconhecido pelas duas formas (aviso e valor líquido)",
     (await um("select paid_debit_signal s from public.charges where id = $1", [A.ch])).s === "aviso_e_valor");
   const tarifaA = await um("select amount_cents from public.financial_entries where source_type = 'gateway_fee_charge' and source_id = $1", [A.ch]);

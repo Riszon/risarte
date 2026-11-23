@@ -788,6 +788,18 @@ begin
 end;
 $do$;
 
+do $do$
+declare d text := pg_get_functiondef('public.gateway_receivables_due(uuid)'::regprocedure); orig text;
+begin
+  orig := d;
+  if position($n1$         coalesce(ch.paid_billing_type, ch.billing_type), ch.paid_on, ch.credit_date, -- 4026: o meio usado$n1$ in d) = 0 then
+    if position($v1$         ch.billing_type, ch.paid_on, ch.credit_date,$v1$ in d) = 0 then raise exception 'ANCORA_FALTANDO: gateway_receivables_due (1)'; end if;
+    d := replace(d, $v1$         ch.billing_type, ch.paid_on, ch.credit_date,$v1$, $n1$         coalesce(ch.paid_billing_type, ch.billing_type), ch.paid_on, ch.credit_date, -- 4026: o meio usado$n1$);
+  end if;
+  if d <> orig then execute d; end if;
+end;
+$do$;
+
 create or replace function public.gateway_asaas_migrations()
 returns table (code text, label text, applied boolean, sort_order integer)
 language sql stable security definer set search_path = '' as $$
@@ -838,6 +850,12 @@ language sql stable security definer set search_path = '' as $$
          m.sort_order
     from m order by m.sort_order;
 $$;
+-- O PAINEL DE REPASSES VOLTA A LER (defeito da 4021: o fim da 4021 tirou de
+-- todos a permissão das duas leituras e não devolveu; a tela dizia "Não foi
+-- possível ler os repasses"). Quem pode ver continua decidido dentro delas.
+grant execute on function public.franchise_payouts_read(date, date, uuid, text) to authenticated;
+grant execute on function public.franchise_payouts_permutas(date, date, uuid) to authenticated;
+
 revoke execute on function public.gateway_asaas_migrations() from public, anon, authenticated;
 
 notify pgrst, 'reload schema';
@@ -847,7 +865,10 @@ select
     where n.nspname = 'public' and position('4026' in p.prosrc) > 0
       and p.proname in ('_gateway_apply_event', '_gateway_apply_fee', '_gateway_on_paid', '_gateway_split_retention',
                         '_franchise_monthly_build', '_franchise_monthly_settle', '_franchise_reconcile_found',
-                        '_central_readiness_raw', 'gateway_charges_list', '_franchise_month_invoiced')) as funcoes_trocadas,
+                        '_central_readiness_raw', 'gateway_charges_list', '_franchise_month_invoiced',
+                        'gateway_receivables_due')) as funcoes_trocadas,
   (select count(*) from pg_trigger where tgname in ('charges_debit_paid', 'charge_splits_debit_excess') and not tgisinternal) as gatilhos,
   (select count(*) from public.chart_of_accounts where code in ('6.4', '6.4.01', '6.4.02')) as contas,
-  (select applied from public.gateway_asaas_migrations() where code = '4026') as na_lista;
+  (select applied from public.gateway_asaas_migrations() where code = '4026') as na_lista,
+  (has_function_privilege('authenticated', 'public.franchise_payouts_read(date,date,uuid,text)', 'execute')
+   and has_function_privilege('authenticated', 'public.franchise_payouts_permutas(date,date,uuid)', 'execute')) as repasses_liberados;

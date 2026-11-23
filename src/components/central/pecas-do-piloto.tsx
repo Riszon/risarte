@@ -61,6 +61,7 @@ export function PilotoDaConta({
   accountId,
   producao,
   ehFranqueadora,
+  ehUnidade = true,
   admin,
   ativa,
   debitoEm,
@@ -74,6 +75,8 @@ export function PilotoDaConta({
   accountId: string;
   producao: boolean;
   ehFranqueadora: boolean;
+  /** 4026: só a conta de UNIDADE pode marcar o débito habilitado (o banco recusa nas outras: DEBIT_ONLY_UNITS). */
+  ehUnidade?: boolean;
   admin: boolean;
   ativa: boolean;
   debitoEm: string | null;
@@ -102,7 +105,9 @@ export function PilotoDaConta({
               ? ` — HABILITADO, marcado em ${quando(debitoHabilitadoEm)}. Pago no débito, o riSZon corrige o split na hora; se o Asaas não aceitar, o que for a mais volta como crédito na cobrança mensal.`
               : debitoEm
                 ? ` — desabilitado, marcado em ${quando(debitoEm)}.`
-                : " — o Asaas não informa pela API: o Admin Master marca a escolha da unidade (desabilitado ou habilitado)."}
+                : ehUnidade
+                  ? " — o Asaas não informa pela API: o Admin Master marca a escolha da unidade (desabilitado ou habilitado)."
+                  : " — o Asaas não informa pela API: confira no painel e marque. Nesta conta o débito fica desabilitado."}
           </Marca>
         )}
         <Marca ok={!producao || (permissoesEm !== null && sondaOk === true)}>
@@ -133,7 +138,7 @@ export function PilotoDaConta({
               Marcar: o débito está desabilitado
             </Button>
           )}
-          {!ehFranqueadora && debitoHabilitadoEm === null && (
+          {!ehFranqueadora && ehUnidade && debitoHabilitadoEm === null && (
             <Button
               size="sm"
               variant="outline"

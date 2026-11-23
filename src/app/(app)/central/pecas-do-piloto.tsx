@@ -40,6 +40,7 @@ export async function PilotoDaContaNaCentral({
           accountId={accountId}
           producao={data.environment === "production"}
           ehFranqueadora={data.owner_type === "franchisor"}
+          ehUnidade={data.owner_type === "unit"}
           admin={admin}
           ativa={data.status === "active"}
           debitoEm={data.debit_disabled_declared_at}

@@ -106,7 +106,8 @@ export function agendaDoAReceber(linhas: LinhaAReceber[], hoje: string): AgendaD
     { chave: "30", rotulo: "Próximos 30 dias", limite: maisDias(hoje, 30), soma: zero() },
     { chave: "60", rotulo: "Próximos 60 dias", limite: maisDias(hoje, 60), soma: zero() },
   ];
-  const porMeio = MEIOS_DO_PAINEL.map((m) => ({ ...m, soma: zero() }));
+  // 4026: o pago no débito tem a linha dele no resumo (a cobrança foi emitida como cartão).
+  const porMeio = [...MEIOS_DO_PAINEL, { valor: "DEBIT_CARD", rotulo: "Cartão de débito" }].map((m) => ({ ...m, soma: zero() }));
   const dias = new Map<string, Soma>();
   const unidades = new Map<string, { nome: string; soma: Soma }>();
 

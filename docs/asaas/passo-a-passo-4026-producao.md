@@ -14,10 +14,11 @@ No SQL Editor da produção, rode a `4026_asa4_pagamento_no_debito.sql` **inteir
 
 | Coluna | Esperado |
 |---|---|
-| `funcoes_trocadas` | **10** |
+| `funcoes_trocadas` | **11** |
 | `gatilhos` | **2** |
 | `contas` | **3** |
 | `na_lista` | **true** |
+| `repasses_liberados` | **true** |
 
 Se der erro no meio, nada fica gravado. Me mande a mensagem.
 

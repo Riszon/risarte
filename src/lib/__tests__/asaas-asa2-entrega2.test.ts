@@ -114,7 +114,7 @@ describe("o Painel de cobranças", () => {
     expect(ag.total).toEqual({ qtd: 5, bruto: 5000, taxa: 500, liquido: 4500 });
     expect(ag.porMeio.find((m) => m.valor === "CREDIT_CARD")?.soma.qtd).toBe(1);
     // Só os meios que já existem: nada de "a partir da ASA4" na tela.
-    expect(ag.porMeio.map((m) => m.rotulo)).toEqual(["Boleto", "Pix", "Cartão à vista"]);
+    expect(ag.porMeio.map((m) => m.rotulo)).toEqual(["Boleto", "Pix", "Cartão à vista", "Cartão de débito"]);
     expect(ag.porDia.map((d) => d.data)).toEqual(["2026-11-10", "2026-11-12", "2026-11-18", "2026-12-14", null]);
     expect(ag.porUnidade.map((u) => u.nome)).toEqual(["Unidade 1", "Unidade 2"]);
   });

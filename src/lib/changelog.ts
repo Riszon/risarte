@@ -80,6 +80,12 @@ export const CHANGELOG: Versao[] = [
           "Na Central, o item \"Débito desabilitado\" virou \"Cartão de débito conferido\": o Admin Master marca a escolha da unidade (desabilitado ou habilitado). O débito continua desabilitado no painel do Asaas até a prova de R$ 10,00.",
         papeis: ["finance_franchisor"],
       },
+      {
+        tipo: "correcao",
+        texto:
+          "O Painel de repasses da franquia voltou a mostrar os repasses: a tela dizia \"Não foi possível ler os repasses\". Em Cobranças, o \"A receber\" passa a mostrar o pago no débito como \"Cartão de débito\".",
+        papeis: ["unit_manager", "franchisee", "finance_franchisor"],
+      },
     ],
   },
   {

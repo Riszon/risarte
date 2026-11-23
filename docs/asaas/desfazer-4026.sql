@@ -2,6 +2,8 @@
 -- O riSZon volta a não reconhecer o pagamento no débito (o débito precisa
 -- continuar DESABILITADO no painel do Asaas de todas as unidades). As tabelas
 -- e colunas novas ficam (sem efeito), com o que tiverem; nada é apagado.
+-- A permissão das leituras do Painel de repasses (que a 4026 devolveu) fica:
+-- é a correção de um defeito da 4021, não parte do débito.
 
 drop trigger if exists charges_debit_paid on public.charges;
 drop trigger if exists charge_splits_debit_excess on public.charge_splits;
@@ -207,6 +209,17 @@ begin
 end;
 $do$;
 
+do $do$
+declare d text := pg_get_functiondef('public.gateway_receivables_due(uuid)'::regprocedure); orig text;
+begin
+  orig := d;
+  if position($n1$         coalesce(ch.paid_billing_type, ch.billing_type), ch.paid_on, ch.credit_date, -- 4026: o meio usado$n1$ in d) > 0 then
+    d := replace(d, $n1$         coalesce(ch.paid_billing_type, ch.billing_type), ch.paid_on, ch.credit_date, -- 4026: o meio usado$n1$, $v1$         ch.billing_type, ch.paid_on, ch.credit_date,$v1$);
+  end if;
+  if d <> orig then execute d; end if;
+end;
+$do$;
+
 create or replace function public.gateway_asaas_migrations()
 returns table (code text, label text, applied boolean, sort_order integer)
 language sql stable security definer set search_path = '' as $$
@@ -265,5 +278,6 @@ select
     where n.nspname = 'public' and position('4026' in p.prosrc) > 0
       and p.proname in ('_gateway_apply_event', '_gateway_apply_fee', '_gateway_on_paid', '_gateway_split_retention',
                         '_franchise_monthly_build', '_franchise_monthly_settle', '_franchise_reconcile_found',
-                        '_central_readiness_raw', 'gateway_charges_list', '_franchise_month_invoiced')) as funcoes_com_a_4026,
+                        '_central_readiness_raw', 'gateway_charges_list', '_franchise_month_invoiced',
+                        'gateway_receivables_due')) as funcoes_com_a_4026,
   (select count(*) from public.gateway_asaas_migrations()) as migracoes_na_lista;
