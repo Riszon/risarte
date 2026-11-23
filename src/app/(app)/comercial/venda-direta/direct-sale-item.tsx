@@ -214,6 +214,8 @@ export function SaleItem({
   // seguiria valendo mesmo depois de trocar para parcelado, onde não vale.
   const savedAutoDiscountCents = (() => {
     if (sale.isProgramMember || sale.programConditions) return 0;
+    // 4027: o cartão à vista da venda nova não tem o automático (tem tarifa).
+    if (ehVendaNova(sale.methodRule) && (sale.paymentMethod as string | null) === "cartao") return 0;
     const pct = automaticDiscountPercent(sale.rule, sale.installments);
     if (pct <= 0) return 0;
     return Math.round(
@@ -372,7 +374,7 @@ export function SaleItem({
     // O manual maior que o automático prevalece, igual ao servidor.
     // 4011: permuta não tem desconto à vista automático.
     const autoPercent =
-      sale.isProgramMember || (vendaNova && effectiveMethod === "permuta")
+      sale.isProgramMember || (vendaNova && (effectiveMethod === "permuta" || effectiveMethod === "cartao"))
         ? 0
         : automaticDiscountPercent(sale.rule, installmentsNum);
     const autoCents =

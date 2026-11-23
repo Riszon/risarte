@@ -20,7 +20,7 @@ import {
 export const ROTULO_DO_BOTAO: Record<MetodoVendaNova, string> = {
   pix: "Pix",
   dinheiro: "Dinheiro",
-  cartao: "Cartão",
+  cartao: "Cartão à vista",
   cartao_parcelado_asaas: "Cartão parcelado",
   cartao_parcelado: "Maquininha",
   boleto: "Boleto",
@@ -132,7 +132,7 @@ export type PreviaDoCaixa = {
 /**
  * O total que o servidor vai gravar para estas condições:
  * - PPR+: o desconto é o da faixa do plano, sobre o que não tem benefício;
- * - sem programa, à vista e fora da permuta: o automático da regra, e o manual
+ * - sem programa, à vista e fora da permuta e do cartão: o automático da regra, e o manual
  *   maior prevalece;
  * - parcelado: só o manual.
  */
@@ -154,7 +154,7 @@ export function previaDoCaixa(e: EntradaDaPrevia): PreviaDoCaixa {
   let discountCents = Math.max(0, Math.round(e.descontoManualCents));
   const surchargeCents = Math.max(0, Math.round(e.acrescimoCents));
   const autoPercent =
-    e.isProgramMember || e.meio === "permuta"
+    e.isProgramMember || e.meio === "permuta" || e.meio === "cartao" // 4027: o cartão tem tarifa
       ? 0
       : automaticDiscountPercent(e.rule, e.parcelas);
   const autoCents =
@@ -234,6 +234,9 @@ export function parcelasDoMeio(
   const opcoes: OpcaoDeParcela[] = [];
   for (let n = 1; n <= teto; n++) {
     if (!meioValeEm(meio, n, regra, q)) continue;
+    // 4027 (OC-00020): o botão "Cartão à vista" é só 1×. Parcelar é o "Cartão
+    // parcelado"; o cartão em várias cobranças, mês a mês, fica em "Ajustar parcelas".
+    if (meio === "cartao" && n > 1) continue;
     const totalCents = totalEm(n);
     const parcelaCents = Math.ceil(totalCents / n);
     // A parcela mínima só vale no parcelado (mesma regra do fechamento).

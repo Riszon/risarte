@@ -62,6 +62,27 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.491.0",
+    data: "2026-11-23",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4027, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Venda direta: o cartão à vista",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Na venda direta, o botão \"Cartão à vista\" passa a valer em 1×: o paciente paga pelo link do Asaas e escolhe crédito ou débito na fatura. O cartão à vista não tem o desconto à vista automático, porque tem tarifa; o desconto manual continua possível até o teto. Para parcelar, use \"Cartão parcelado\".",
+        papeis: ["receptionist", "unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "O cartão em várias cobranças, uma por mês, saiu do botão: continua possível em \"Ajustar parcelas\", escolhendo o meio de cada parcela.",
+        papeis: ["receptionist", "unit_manager", "franchisee"],
+      },
+    ],
+  },
+  {
     versao: "0.490.0",
     data: "2026-11-21",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4026, ASAAS_MIGRATION).

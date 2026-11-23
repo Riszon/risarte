@@ -588,7 +588,13 @@ function BlocoPagamento({
       )}
       {estado.meio && !p.opcoes.some((o) => o.parcelas === 1) && p.opcoes.length > 0 && (
         <p className="text-[11px] text-muted-foreground">
-          À vista é só Pix, dinheiro ou permuta — {ROTULO_DO_BOTAO[estado.meio]} começa em 2×.
+          À vista é Pix, cartão à vista, dinheiro ou permuta — {ROTULO_DO_BOTAO[estado.meio]} começa em 2×.
+        </p>
+      )}
+      {estado.meio === "cartao" && (
+        <p className="text-[11px] text-muted-foreground">
+          O paciente escolhe crédito ou débito na fatura do Asaas. Sem o desconto à vista automático (o cartão tem
+          tarifa). Para parcelar, use Cartão parcelado.
         </p>
       )}
 

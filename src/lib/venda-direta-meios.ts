@@ -10,7 +10,9 @@
 //     mês), criado inteiro na assinatura;
 //   - provisório: cartão parcelado na maquininha, enquanto a chave da rede
 //     estiver ligada (o Admin Master desliga na Central, depois do teste).
-// À vista (1×): Pix, dinheiro ou permuta. O dinheiro à vista tem exatamente o
+// À vista (1×): Pix, cartão à vista (4027, OC-00020: crédito ou débito, na
+// fatura do Asaas; SEM o desconto à vista automático), dinheiro ou permuta.
+// O dinheiro à vista tem exatamente o
 // desconto que o "depósito à vista" tinha (19.11 ajuste B); a permuta não tem
 // desconto à vista automático.
 // O BANCO confere tudo isso (gatilhos da 4011); aqui é para a tela oferecer só
@@ -22,7 +24,7 @@ export type MetodoVendaNova = (typeof METODOS_VENDA_NOVA)[number];
 export const ROTULO_METODO_VENDA_NOVA: Record<MetodoVendaNova, string> = {
   pix: "Pix pelo Asaas",
   boleto: "Boleto pelo Asaas",
-  cartao: "Cartão à vista pelo Asaas",
+  cartao: "Cartão à vista pelo Asaas (crédito ou débito)",
   cartao_parcelado_asaas: "Cartão parcelado pelo Asaas",
   dinheiro: "Dinheiro",
   permuta: "Permuta",
@@ -72,7 +74,7 @@ export function meiosDaVendaNova(opts: {
   };
   const base: MetodoVendaNova[] =
     opts.installments <= 1
-      ? ["pix", "dinheiro", "permuta"]
+      ? ["pix", "dinheiro", "cartao", "permuta"]
       : ["boleto", "pix", "cartao", "cartao_parcelado_asaas", "dinheiro", "permuta", "cartao_parcelado"];
   return base.filter(permitido);
 }
@@ -96,8 +98,8 @@ export function erroDoMeioDaVendaNova(m: string | null, installments: number, is
   if (!m) return null;
   if (m === "deposito_avista" || m === "credito_recorrente")
     return "Na venda direta, o pagamento é pelo Asaas (Pix, boleto ou cartão), em dinheiro ou em permuta.";
-  if (installments <= 1 && !["pix", "dinheiro", "permuta"].includes(m))
-    return "À vista (1×) o pagamento é por Pix, dinheiro ou permuta.";
+  if (installments <= 1 && !["pix", "dinheiro", "cartao", "permuta"].includes(m))
+    return "À vista (1×) o pagamento é por Pix, cartão à vista, dinheiro ou permuta.";
   if (m === "permuta" && !isManager) return "Só o Gerente da unidade ou o Admin Master registram permuta.";
   return null;
 }
@@ -133,7 +135,7 @@ export function ehPeloAsaas(m: string | null): boolean {
 
 /** Os erros do banco da 4011, em português. */
 export function mensagemDoErroDeMeio(msg: string): string | null {
-  if (msg.includes("CASH_METHOD_ONLY")) return "À vista (1×) o pagamento é por Pix, dinheiro ou permuta.";
+  if (msg.includes("CASH_METHOD_ONLY")) return "À vista (1×) o pagamento é por Pix, cartão à vista, dinheiro ou permuta.";
   if (msg.includes("PERMUTA_NOT_ALLOWED")) return "Só o Gerente da unidade ou o Admin Master registram permuta.";
   if (msg.includes("PERMUTA_DESCRIPTION_REQUIRED")) return "Descreva a permuta: o que foi trocado e com quem.";
   if (msg.includes("PERMUTA_NEEDS_METHOD_CHANGE"))

@@ -173,7 +173,13 @@ export async function setDirectSaleConditions(
       info.subtotalCents - info.programDiscountCents - coveredCents
     );
     discountCents = Math.round((base * Math.max(0, pct)) / 100);
-  } else if (!info.isProgramMember && installments <= 1 && input.paymentMethod !== "permuta") {
+  } else if (
+    !info.isProgramMember &&
+    installments <= 1 &&
+    input.paymentMethod !== "permuta" &&
+    // 4027: o cartão à vista não tem o desconto à vista automático (tem tarifa).
+    !(vendaNova && input.paymentMethod === "cartao")
+  ) {
     // I8: cliente SEM programa — à vista ganha o desconto automático da regra
     // comercial (ex.: 5%). No parcelado não há automático: vale só o manual.
     const auto = automaticDiscountPercent(rule, installments);
