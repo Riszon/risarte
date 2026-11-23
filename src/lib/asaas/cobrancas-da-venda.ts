@@ -46,6 +46,8 @@ export type ParcelamentoDaVenda = {
   primeira: string | null;
   creditadas: number;
   pode_gerar: boolean;
+  /** 4027 (OC-00183): cancelado À MÃO — não se reemite o mesmo parcelamento. */
+  cancelado_a_mao?: boolean;
   pode_tentar_de_novo: boolean;
   pode_cancelar: boolean;
   pode_estornar: boolean;

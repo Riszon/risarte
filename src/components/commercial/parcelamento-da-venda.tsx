@@ -115,6 +115,15 @@ export function ParcelamentoDaVendaBloco({
             : " O prazo dos documentos ainda vai ser lido do Asaas."}
         </p>
       )}
+      {/* OC-00183 (4027): o cancelado à mão não se reemite — de propósito, para a
+          rotina automática não recriar o que alguém cancelou. O caminho é trocar
+          o meio de cada parcela. */}
+      {p.cancelado_a_mao && (
+        <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200">
+          Este parcelamento foi cancelado à mão e não é emitido de novo. Para cobrar de outro jeito, troque o meio de cada parcela{" "}
+          (<strong>Trocar meio</strong>, nas parcelas da ficha do cliente — Pix, boleto…) e emita a nova cobrança.
+        </p>
+      )}
       <p className="text-[11px] text-muted-foreground">
         O paciente paga pelo link, no cartão, sem juros (a unidade absorve a tarifa). O Asaas não manda aviso: envie o link uma vez, por aqui.
         A venda só fecha com a aprovação do cartão.

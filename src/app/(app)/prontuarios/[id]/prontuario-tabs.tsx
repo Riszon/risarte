@@ -1,5 +1,6 @@
 "use client";
 
+import { EVENTO_ABRIR_ABA, type PedidoDeAba } from "./abrir-aba";
 import {
   Children,
   isValidElement,
@@ -94,6 +95,27 @@ export function ProntuarioTabs({
       panels[0]?.props.id ??
       ""
   );
+
+  // OC-00184: o "Ver anamnese" do painel Precisa de atenção troca de aba e
+  // rola até a seção — também quando o endereço já era o da mesma aba.
+  useEffect(() => {
+    const ids = new Set(panels.map((p) => p.props.id));
+    const abrir = (e: Event) => {
+      const pedido = (e as CustomEvent<PedidoDeAba>).detail;
+      if (!pedido || !ids.has(pedido.aba)) return;
+      pedido.atendido = true;
+      setActive(pedido.aba);
+      if (pedido.secao) {
+        const alvo = pedido.secao;
+        // Espera a aba aparecer antes de rolar.
+        window.setTimeout(() => {
+          document.getElementById(alvo)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+      }
+    };
+    window.addEventListener(EVENTO_ABRIR_ABA, abrir);
+    return () => window.removeEventListener(EVENTO_ABRIR_ABA, abrir);
+  }, [panels]);
 
   // A barra rola de lado: aberta direto numa aba do fim (Pedidos, Histórico),
   // ela ficaria fora da vista e a pessoa não veria em que aba está. Só mexe na

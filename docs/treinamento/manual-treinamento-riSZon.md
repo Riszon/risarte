@@ -2474,7 +2474,8 @@ abas. De cima para baixo:
    0.467.0: a pergunta "necessita de reavaliação?", com os botões na própria
    linha; o contato do Coordenador com o cliente; a reavaliação a agendar; a
    avaliação a agendar depois de uma urgência — ver o Fluxo 2c), os **alertas da anamnese**
-   (o que foi marcado, ex.: "Diabetes"), a **anamnese a preencher ou
+   (o que foi marcado, ex.: "Diabetes" — o botão **Ver anamnese** abre a aba
+   Clínico **já na anamnese**, desde a 0.491.0, relato OC-00184), a **anamnese a preencher ou
    atualizar**, o **controle de qualidade pendente**, as **cobranças em
    atraso** e o **cadastro incompleto** (com o botão **Completar**, que já
    abre o cadastro em edição). Sem nada a avisar, o painel não aparece.
@@ -4323,6 +4324,13 @@ pelo controle de qualidade **não** repetem a pergunta.
 > dava só *"Não foi possível atualizar o atendimento"*; se algum mês fechado
 > ainda barrar, a tela agora diz *"O mês deste lançamento já está fechado no
 > Financeiro"*.
+>
+> **Desde a 0.491.0 (relato OC-00186) isso vale para todos.** Até a 0.490.0 o
+> desvio para o dia de hoje só acontecia quando quem concluía tinha acesso ao
+> Financeiro (Admin, Gerente): o **dentista e o Coordenador** continuavam
+> recebendo *"Não foi possível concluir o atendimento"* num atendimento de mês
+> fechado. A tela do Desenvolvimento Clínico também passou a dizer quando é o
+> mês fechado.
 
 **O repasse é por procedimento, não por sessão** (desde a versão 0.386.0).
 Um procedimento de 3 sessões entra no repasse **uma vez**, com o valor da
@@ -7810,6 +7818,7 @@ Admin Master; o Admin libera em **Administração → Permissões**.
 **Quando nasce:**
 - Com a unidade ligada em **Cobranças automáticas**, o parcelamento nasce **inteiro** no Asaas na assinatura do contrato (ou quando a venda direta é marcada como assinada).
 - Venda assinada antes de ligar a unidade: **Gerar parcelamento no Asaas**, nas Cobranças da venda.
+- **Cancelou o parcelamento à mão?** Ele **não é emitido de novo** — de propósito, para a rotina automática não recriar o que alguém cancelou. Desde a 0.491.0 (relato OC-00183) o botão "Gerar parcelamento no Asaas" some e a tela diz o caminho: **Trocar meio** em cada parcela (Pix, boleto…), nas parcelas da ficha do cliente, e emitir a nova cobrança. Antes o botão ficava e o clique respondia "Esta parcela já tem uma cobrança ativa".
 
 **O link:**
 - O Asaas **não manda aviso** ao paciente no cartão parcelado.

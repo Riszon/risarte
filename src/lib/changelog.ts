@@ -62,6 +62,47 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.491.0",
+    data: "2026-11-23",
+    migracao: "0433",
+    titulo: "Relatos da equipe: concluir atendimento de mês fechado para todos, o parcelamento cancelado à mão, o Ver anamnese e a conta de coleta de resíduos",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Dentista e Coordenador voltam a concluir atendimento de um mês já fechado no Financeiro — a correção da 0.458.0 só valia para quem vê o financeiro. O kit é baixado no dia da conclusão, e a tela diz quando o mês está fechado. (OC-00186)",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Cobranças da venda: parcelamento no cartão cancelado à mão não mostra mais \"Gerar parcelamento no Asaas\" (o clique dava \"Esta parcela já tem uma cobrança ativa\"); a tela explica que é preciso trocar o meio das parcelas. (OC-00183)",
+        papeis: ["receptionist", "commercial_consultant", "unit_manager", "finance_franchisor"],
+        manual: "13g. Cobranças pelo Asaas",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ficha do cliente: o botão Ver anamnese do painel Precisa de atenção abre a aba Clínico já na anamnese — antes, no celular, parecia que nada acontecia. (OC-00184)",
+        papeis: "todos",
+        manual: "2.9. O prontuário: o que você vê primeiro",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Plano de contas: nova conta 3.2.05 Coleta de resíduos de saúde (despesa fixa, em Ocupação). (OC-00018)",
+        papeis: ["finance_franchisor", "unit_manager"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Certificação do Coordenador: o item Revisões de qualidade explica onde fica e quando aparece (só quando um plano do cliente termina), com os níveis de hoje. (OC-00013)",
+        papeis: ["clinical_coordinator"],
+      },
+    ],
+  },
+  {
     versao: "0.490.0",
     data: "2026-11-21",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4026, ASAAS_MIGRATION).

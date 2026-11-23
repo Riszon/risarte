@@ -3249,7 +3249,7 @@ export default async function ClientDetailPage(
             key={i}
             icone={HeartPulse}
             titulo={a.message}
-            acao={{ href: `/prontuarios/${client.id}?aba=clinico`, rotulo: "Ver anamnese" }}
+            acao={{ href: `/prontuarios/${client.id}?aba=clinico#anamnese`, rotulo: "Ver anamnese", aba: "clinico", secao: "anamnese" }}
           >
             {(a.itens.length > 0 || a.detalhe) && (
               <span className="flex flex-wrap items-center gap-1.5">
@@ -3542,6 +3542,10 @@ export default async function ClientDetailPage(
                 scheduleConfig={fichaConfig}
                 scheduleClinicId={scheduleClinicId}
               />
+            )}
+            {canViewAnamnesis && (
+              // OC-00184: o alvo do "Ver anamnese" do painel Precisa de atenção.
+              <div id="anamnese" className="scroll-mt-20" />
             )}
             {canViewAnamnesis && (
               <AnamnesisFill

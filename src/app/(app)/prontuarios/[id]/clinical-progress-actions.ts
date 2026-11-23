@@ -168,6 +168,16 @@ export async function concludeFromProgress(input: {
         error: "Agendamento não encontrado — atualize a tela e tente de novo.",
       };
     }
+    // OC-00186: o consumo do material cai no Financeiro; mês fechado recusa.
+    // A 0433 leva a baixa para o dia da conclusão — esta frase é a rede de
+    // segurança para o que ainda escapar.
+    if (error.message.includes("PERIOD_CLOSED")) {
+      return {
+        ok: false,
+        error:
+          "O mês deste lançamento já está fechado no Financeiro. Peça ao Financeiro para reabrir o mês ou fale com o administrador.",
+      };
+    }
     console.error("concludeFromProgress failed:", error.message);
     return {
       ok: false,
