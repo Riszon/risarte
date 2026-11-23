@@ -409,6 +409,7 @@ Syncthing se comportarem de forma estranha.**
   depende de papel roda como o papel do relato, não como Admin.**
 - ⚠️ O `migrar:teste` reaplicou no treino 9 migrações do Asaas (4018c–4026)
   que não estavam no `schema_migrations` (a sessão do Asaas aplica à mão).
+- ✅ 0433 e 4027 aplicadas nos dois bancos (produção pelo dono, 23/11/2026).
 
 **19/11/2026 (Asaas — ASA5, o Empresarial pelo Asaas) — PC Administrador (core 0.486.0 → 0.487.0, Asaas 0.23.0, Empresarial 0.111.0 → 0.112.0, migração 4023; worktree `wt-asaas`)**
 

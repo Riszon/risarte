@@ -6,6 +6,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >
 > Triagem de 12 relatos (5 produção, 7 treino); lote A corrigido, lote B
 > respondido. Feito no worktree `wt-relatos4`. **Não visto na tela.**
+> ✅ **0433 e 4027 aplicadas nos dois bancos** (produção pelo dono em
+> 23/11/2026; conferido de fora: a conta 3.2.05 existe).
 > - ⚠️ **OC-00186 — ERRO DA 0411 (OC-00181):** a 0411 decidia o mês fechado
 >   por `is_period_closed`, que termina em `can_see_clinic_finance` — para
 >   dentista/coordenador respondia "aberto" e o `fiscal_period_guard` (sem
