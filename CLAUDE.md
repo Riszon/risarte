@@ -400,7 +400,6 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
-<<<<<<< Updated upstream
 **25/11/2026 (relatos de 23 e 24/11) — PC Administrador (core 0.492.0 → 0.493.0, migração 0434; worktree `wt-relatos5`)**
 
 - Bloco 0.493.0 no ESTADO. ⚠️ **Ao recriar `transfer_client`, levar a 0434**
@@ -410,7 +409,7 @@ Syncthing se comportarem de forma estranha.**
   todo `migrar:teste` reaplica as novas (4028 desta vez). Até agora todas
   idempotentes — vale combinar com ela registrar o nome no treino.
 - ✅ 0434 aplicada nos dois bancos (produção pelo dono, 25/11/2026).
-=======
+
 **25/11/2026 (Backlogs abertos: AP186, AP171, AP193) — PC Administrador (sem versão nova, sem migração)**
 
 - **AP186:** a 4023 (já aplicada) entrou em `JA_CONFERIDAS` do
@@ -421,7 +420,6 @@ Syncthing se comportarem de forma estranha.**
   outro fuso). AP171 e AP193 descartados como "não acontece". Antes de
   registrar defeito de fuso no BANCO, medir o fuso; no app (Vercel, UTC) o
   defeito é real (`dates.ts`).
->>>>>>> Stashed changes
 
 **23/11/2026 (relatos de 13 a 21/11) — PC Administrador (core 0.490.0 → 0.491.0, migração 0433; Asaas 0.26.0 → 0.27.0, migração 4027; worktree `wt-relatos4`)**
 

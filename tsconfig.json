@@ -38,19 +38,7 @@
     ".next-verify/types/**/*.ts",
     ".next-verify/dev/types/**/*.ts",
     ".next-test/types/**/*.ts",
-    ".next-test/dev/types/**/*.ts",
-    ".next-verify-planilha/types/**/*.ts",
-    ".next-verify-planilha/dev/types/**/*.ts",
-    ".next-verify-vagas/types/**/*.ts",
-    ".next-verify-vagas/dev/types/**/*.ts",
-    ".next-verify-impl/types/**/*.ts",
-    ".next-verify-impl/dev/types/**/*.ts",
-    ".next-verify-emp/types/**/*.ts",
-    ".next-verify-emp/dev/types/**/*.ts",
-    ".next-verify-perm/types/**/*.ts",
-    ".next-verify-perm/dev/types/**/*.ts",
-    ".next-verify-1049/types/**/*.ts",
-    ".next-verify-1049/dev/types/**/*.ts"
+    ".next-test/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
