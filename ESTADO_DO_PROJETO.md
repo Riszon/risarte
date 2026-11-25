@@ -2,6 +2,18 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🦷 AP186 — O PORTÃO DO DESTRUTIVO VOLTA A PASSAR (25/11/2026; sem versão nova, sem migração)
+>
+> `npm run check:destrutivo` (e com ele o `npm run verificar`) reprovava o
+> `main` desde a 4023 (Asaas, ASA5): três comandos do legado sem o
+> `-- DESTRUTIVO:` na linha de cima. A 4023 já rodou nos dois bancos (produção
+> pelo dono em 19/11/2026), então o arquivo não se edita: a 4023 entrou na
+> lista `JA_CONFERIDAS` de `scripts/conferir-destrutivo.mjs`, com o motivo
+> (decisão 11b do dono; a própria migração para com LEGACY_NOT_EMPTY se houver
+> qualquer linha). Conferido: a régua volta a passar e conta 25 declarados.
+> ⚠️ **Migração nova que apaga: o `-- DESTRUTIVO:` vai NO ARQUIVO**, antes de
+> rodar; a lista é só para o que já rodou.
+
 > ## 🧾 0.491.0 — RELATOS DE 13 A 21/11 (23/11/2026; migrações 0433 e 4027; Asaas 0.27.0)
 >
 > Triagem de 12 relatos (5 produção, 7 treino); lote A corrigido, lote B
