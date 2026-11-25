@@ -5,7 +5,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 > ## 🧭 0.493.0 — RELATOS DE 23 E 24/11 (25/11/2026; migração 0434)
 >
 > Triagem de 9 relatos (6 produção, 3 treino). Worktree `wt-relatos5`.
-> **Não visto na tela.**
+> **Não visto na tela.** ✅ **0434 nos dois bancos** (produção pelo dono em
+> 25/11/2026; conferido de fora: a conta 3.2.06 existe, transferir sem login recusa).
 > - **OC-00190:** o Atendimento junta os `waiting` com `checked_in_at` no
 >   período (quem chegou adiantado para um horário de outro dia), ao lado da
 >   regra do OC-00091 (`in_service` de qualquer dia).

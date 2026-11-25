@@ -408,6 +408,7 @@ Syncthing se comportarem de forma estranha.**
 - ⚠️ A sessão do Asaas aplica as dela no treino À MÃO, sem `schema_migrations`:
   todo `migrar:teste` reaplica as novas (4028 desta vez). Até agora todas
   idempotentes — vale combinar com ela registrar o nome no treino.
+- ✅ 0434 aplicada nos dois bancos (produção pelo dono, 25/11/2026).
 
 **23/11/2026 (relatos de 13 a 21/11) — PC Administrador (core 0.490.0 → 0.491.0, migração 0433; Asaas 0.26.0 → 0.27.0, migração 4027; worktree `wt-relatos4`)**
 
