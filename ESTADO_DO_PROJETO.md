@@ -2,6 +2,24 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧭 0.493.0 — RELATOS DE 23 E 24/11 (25/11/2026; migração 0434)
+>
+> Triagem de 9 relatos (6 produção, 3 treino). Worktree `wt-relatos5`.
+> **Não visto na tela.**
+> - **OC-00190:** o Atendimento junta os `waiting` com `checked_in_at` no
+>   período (quem chegou adiantado para um horário de outro dia), ao lado da
+>   regra do OC-00091 (`in_service` de qualquer dia).
+> - **OC-00188 (0434):** `transfer_client` cancela também os agendamentos
+>   PASSADOS em aberto da unidade antiga (fica só o `in_service`). O cockpit
+>   de avaliação só abrir para o Coordenador da unidade atual é regra. Os
+>   presos de antes da 0434 não foram mexidos. Ensaio 3/3.
+> - **OC-00189/OC-00022:** não reproduz (as 4 telas abrem como o Admin, na
+>   0.492.0); sem `digest` = falha no navegador (troca de rede). O envio de
+>   relato trata a queda (`formulario.tsx`) e o `error.tsx` diz a origem.
+>   Achado (backlog): a ficha daquele cliente tem ~889 KB de HTML e 4–9 s.
+> - **OC-00023:** conta 3.2.06 Monitoramento e segurança (0434).
+> - ⚠️ O `migrar:teste` reaplicou no treino a 4028 do Asaas (sem registro).
+>
 > ## 🦷 AP186 — O PORTÃO DO DESTRUTIVO VOLTA A PASSAR (25/11/2026; sem versão nova, sem migração)
 >
 > `npm run check:destrutivo` (e com ele o `npm run verificar`) reprovava o

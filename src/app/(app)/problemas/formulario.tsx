@@ -140,7 +140,20 @@ export function FormularioDeRelato({
     fd.set("user_agent", navigator.userAgent);
     iniciar(async () => {
       setEtapa("Registrando…");
-      const r = await registrarProblema(fd);
+      // OC-00189 (23/11/2026, iPhone, troca de Wi-Fi para 5G): a resposta da
+      // ação se perdeu, o relato FICOU gravado, e o erro de rede subiu até a
+      // tela "Esta tela não conseguiu abrir" — sem enviar os prints. Aqui a
+      // queda vira aviso, e o texto escrito continua no formulário.
+      let r: Awaited<ReturnType<typeof registrarProblema>>;
+      try {
+        r = await registrarProblema(fd);
+      } catch {
+        setEtapa(null);
+        toast.error(
+          "A conexão caiu antes da resposta. Confira na lista se o relato foi registrado antes de enviar de novo."
+        );
+        return;
+      }
       if (r.ok && r.code) {
         // O relato vem antes dos anexos: é o id dele que dá o endereço do
         // arquivo. Se um anexo falhar, o relato continua registrado — o texto

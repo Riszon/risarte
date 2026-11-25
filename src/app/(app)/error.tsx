@@ -77,10 +77,19 @@ export default function ErroDaTela({
                 <dt className="text-muted-foreground">Versão:</dt>
                 <dd className="font-mono">{APP_VERSION}</dd>
               </div>
-              {error.digest && (
+              {error.digest ? (
                 <div className="flex gap-2">
                   <dt className="text-muted-foreground">Código do erro:</dt>
                   <dd className="font-mono">{error.digest}</dd>
+                </div>
+              ) : (
+                // OC-00189/OC-00022: sem código, a falha foi no APARELHO (o
+                // servidor sempre manda um código) — quase sempre conexão que
+                // caiu no meio (troca de Wi-Fi para 4G/5G). Dizer isso evita
+                // procurar defeito numa tela que abre normalmente.
+                <div className="flex gap-2">
+                  <dt className="text-muted-foreground">Origem:</dt>
+                  <dd>no seu aparelho — provavelmente a conexão caiu no meio. Tente de novo.</dd>
                 </div>
               )}
             </dl>
