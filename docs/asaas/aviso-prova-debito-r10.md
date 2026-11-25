@@ -9,7 +9,7 @@ Este aviso vem antes da prova. Nada começa sem o seu "pode". Você digita o car
 
 ## Onde
 - **Cambé - Centro, a unidade piloto.** Está "Pronta", com a tarifa da produção: débito 1,89% + R$ 0,29 e crédito à vista 2,39% + R$ 0,29.
-- **Hoje a produção não tem nenhuma cobrança emitida.** Esta será a primeira, e nenhum paciente pode pagar no débito sem querer enquanto ele estiver habilitado.
+- **Cambé não tem nenhuma cobrança emitida.** Esta será a primeira dela, e nenhum paciente pode pagar no débito sem querer enquanto ele estiver habilitado. (Em 25/11 a produção tem 5 boletos da mensalidade do Empresarial, todos na conta da franqueadora: o débito habilitado em Cambé não os alcança.)
 
 ## Os números esperados (R$ 10,00)
 
