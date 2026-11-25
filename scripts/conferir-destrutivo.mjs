@@ -80,6 +80,12 @@ const JA_CONFERIDAS = new Map([
     "0332_ortodontia_tela_do_ortodontista.sql",
     "derruba seis colunas de valores de ortho_cases DEPOIS de copiá-las para ortho_case_terms, no mesmo arquivo",
   ],
+  // Lida em 25/11/2026 (AP186). Rodou nos dois bancos (produção pelo dono em
+  // 19/11/2026) antes de alguém ver que faltava a declaração.
+  [
+    "4023_asa5_empresarial_pelo_asaas.sql",
+    "tira o legado do Asaas antigo (decisão 11b do dono): a tabela empresarial.asaas_webhook_events, a linha dela na lista de fora da auditoria e a coluna adhesion_billing.asaas_billing_id. A própria migração confere antes e para com erro (LEGACY_NOT_EMPTY) se houver qualquer linha ou valor",
+  ],
 ]);
 
 const alvo = process.argv[2];
