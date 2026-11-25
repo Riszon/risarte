@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IrParaSecao } from "./ir-para-secao";
 import type { ReactNode } from "react";
 import { AlertTriangle, ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -57,7 +58,8 @@ export function AtencaoItem({
   tom?: "vermelho" | "ambar";
   titulo: ReactNode;
   children?: ReactNode;
-  acao?: { href: string; rotulo: string } | null;
+  /** OC-00184: `aba`+`secao` trocam de aba e rolam até a seção (sem recarregar). */
+  acao?: { href: string; rotulo: string; aba?: string; secao?: string } | null;
 }) {
   const cor =
     tom === "ambar"
@@ -70,7 +72,9 @@ export function AtencaoItem({
         <p className={cn("font-medium", cor)}>{titulo}</p>
         {children && <div className="mt-0.5 text-xs text-foreground/80">{children}</div>}
       </div>
-      {acao && (
+      {acao && acao.aba && acao.secao ? (
+        <IrParaSecao href={acao.href} aba={acao.aba} secao={acao.secao} rotulo={acao.rotulo} />
+      ) : acao && (
         <Link
           href={acao.href}
           className="inline-flex shrink-0 items-center gap-0.5 rounded-md border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"

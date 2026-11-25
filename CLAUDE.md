@@ -400,6 +400,17 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**23/11/2026 (relatos de 13 a 21/11) — PC Administrador (core 0.490.0 → 0.491.0, migração 0433; Asaas 0.26.0 → 0.27.0, migração 4027; worktree `wt-relatos4`)**
+
+- Bloco 0.491.0 no ESTADO. ⚠️ **`is_period_closed` depende de QUEM CHAMA**
+  (termina em `can_see_clinic_finance`): em gatilho ou regra de negócio,
+  conferir `fiscal_periods` direto, como o `fiscal_period_guard` (a 0411
+  errou isto e travou o dentista; corrigido na 0433). **Ensaio de regra que
+  depende de papel roda como o papel do relato, não como Admin.**
+- ⚠️ O `migrar:teste` reaplicou no treino 9 migrações do Asaas (4018c–4026)
+  que não estavam no `schema_migrations` (a sessão do Asaas aplica à mão).
+- ✅ 0433 e 4027 aplicadas nos dois bancos (produção pelo dono, 23/11/2026).
+
 **19/11/2026 (Asaas — ASA5, o Empresarial pelo Asaas) — PC Administrador (core 0.486.0 → 0.487.0, Asaas 0.23.0, Empresarial 0.111.0 → 0.112.0, migração 4023; worktree `wt-asaas`)**
 
 - **O Empresarial pelo Asaas** (estado em `docs/asaas/ESTADO.md`; spec seção 22). A mensalidade sai pela conta raiz, com split PERCENTUAL para a carteira da RisLife (50% do LÍQUIDO; a tarifa fica dividida, decisão 2b). A implantação é faturada pela RisLife, na conta `recipient` dela, sem split. Ligar: Central › Rede › Empresarial (a data vale para a rede inteira).

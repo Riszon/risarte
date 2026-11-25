@@ -214,7 +214,7 @@ export function SaleItem({
   // seguiria valendo mesmo depois de trocar para parcelado, onde não vale.
   const savedAutoDiscountCents = (() => {
     if (sale.isProgramMember || sale.programConditions) return 0;
-    // 4027: o cartão à vista da venda nova não tem o automático (tem tarifa).
+    // 4028: o cartão à vista da venda nova não tem o automático (tem tarifa).
     if (ehVendaNova(sale.methodRule) && (sale.paymentMethod as string | null) === "cartao") return 0;
     const pct = automaticDiscountPercent(sale.rule, sale.installments);
     if (pct <= 0) return 0;

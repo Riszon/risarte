@@ -10,7 +10,7 @@
 //     mês), criado inteiro na assinatura;
 //   - provisório: cartão parcelado na maquininha, enquanto a chave da rede
 //     estiver ligada (o Admin Master desliga na Central, depois do teste).
-// À vista (1×): Pix, cartão à vista (4027, OC-00020: crédito ou débito, na
+// À vista (1×): Pix, cartão à vista (4028, OC-00020: crédito ou débito, na
 // fatura do Asaas; SEM o desconto à vista automático), dinheiro ou permuta.
 // O dinheiro à vista tem exatamente o
 // desconto que o "depósito à vista" tinha (19.11 ajuste B); a permuta não tem

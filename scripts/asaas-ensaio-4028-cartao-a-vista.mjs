@@ -1,8 +1,8 @@
-// ENSAIO DA 4027 (o cartão à vista na venda direta) NO TREINO, numa transação
-// DESFEITA (rollback). Confere: a 4027 roda duas vezes; o cartão em 1× passa;
+// ENSAIO DA 4028 (o cartão à vista na venda direta) NO TREINO, numa transação
+// DESFEITA (rollback). Confere: a 4028 roda duas vezes; o cartão em 1× passa;
 // o boleto em 1× continua recusado; o cartão em 2× continua valendo.
-// Provado quebrando: `--quebrar=sem` roda sem a 4027 (o cartão em 1× é recusado).
-// Uso: RISARTE_TREINO_POOLER=1 node scripts/asaas-ensaio-4027-cartao-a-vista.mjs --confirmar [--quebrar=sem]
+// Provado quebrando: `--quebrar=sem` roda sem a 4028 (o cartão em 1× é recusado).
+// Uso: RISARTE_TREINO_POOLER=1 node scripts/asaas-ensaio-4028-cartao-a-vista.mjs --confirmar [--quebrar=sem]
 import { readFileSync } from "node:fs";
 import { connect, testEnv } from "./test-db.mjs";
 
@@ -15,7 +15,7 @@ for (const k of ["NEXT_PUBLIC_SUPABASE_URL", "TEST_DB_URL"]) {
   if (!String(testEnv()[k] ?? "").includes(TREINO_REF)) { console.log(`RECUSADO: ${k} não é o banco de treino.`); process.exit(3); }
 }
 const Q = (process.argv.find((a) => a.startsWith("--quebrar=")) ?? "").split("=")[1] ?? "";
-const ARQ = "supabase/migrations/4027_asa4_cartao_a_vista_na_venda_direta.sql";
+const ARQ = "supabase/migrations/4028_asa4_cartao_a_vista_na_venda_direta.sql";
 const c = await connect();
 const ok = [];
 const falha = [];
@@ -37,14 +37,14 @@ async function tenta(id, parcelas, meio) {
 try {
   await c.query("begin");
   if (Q === "sem") {
-    // Sem a 4027: o banco como estava (a 4027 desfeita, se o treino já a tiver).
-    await c.query(readFileSync("docs/asaas/desfazer-4027.sql", "utf8"));
-    console.log("   (QUEBRADO de propósito: sem a 4027)");
+    // Sem a 4028: o banco como estava (a 4028 desfeita, se o treino já a tiver).
+    await c.query(readFileSync("docs/asaas/desfazer-4028.sql", "utf8"));
+    console.log("   (QUEBRADO de propósito: sem a 4028)");
   } else {
     const r1 = [].concat(await c.query(readFileSync(ARQ, "utf8"))).at(-1).rows[0];
-    conf("a 4027 roda: a função trocada e na lista", Number(r1.funcao_trocada) === 1 && r1.na_lista === true);
+    conf("a 4028 roda: a função trocada e na lista", Number(r1.funcao_trocada) === 1 && r1.na_lista === true);
     const r2 = [].concat(await c.query(readFileSync(ARQ, "utf8"))).at(-1).rows[0];
-    conf("a 4027 roda duas vezes sem erro", Number(r2.funcao_trocada) === 1);
+    conf("a 4028 roda duas vezes sem erro", Number(r2.funcao_trocada) === 1);
   }
   const venda = await um(`select id from public.direct_sales where method_rule = 'asa4' and closed_at is null order by created_at desc limit 1`);
   if (!venda) throw new Error("NÃO MEDI: nenhuma venda direta nova aberta no treino.");
@@ -64,7 +64,7 @@ try {
   await c.query("rollback").catch(() => {});
   await c.end();
 }
-console.log(`Ensaio da 4027 — ${ok.length} conferência(s) OK, ${falha.length} falha(s).`);
+console.log(`Ensaio da 4028 — ${ok.length} conferência(s) OK, ${falha.length} falha(s).`);
 for (const f of falha) console.log("  ✗", f);
 console.log("Nada ficou gravado (transação desfeita).");
 process.exitCode = falha.length ? 1 : 0;

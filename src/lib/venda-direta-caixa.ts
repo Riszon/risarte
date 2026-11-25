@@ -154,7 +154,7 @@ export function previaDoCaixa(e: EntradaDaPrevia): PreviaDoCaixa {
   let discountCents = Math.max(0, Math.round(e.descontoManualCents));
   const surchargeCents = Math.max(0, Math.round(e.acrescimoCents));
   const autoPercent =
-    e.isProgramMember || e.meio === "permuta" || e.meio === "cartao" // 4027: o cartão tem tarifa
+    e.isProgramMember || e.meio === "permuta" || e.meio === "cartao" // 4028: o cartão tem tarifa
       ? 0
       : automaticDiscountPercent(e.rule, e.parcelas);
   const autoCents =
@@ -234,7 +234,7 @@ export function parcelasDoMeio(
   const opcoes: OpcaoDeParcela[] = [];
   for (let n = 1; n <= teto; n++) {
     if (!meioValeEm(meio, n, regra, q)) continue;
-    // 4027 (OC-00020): o botão "Cartão à vista" é só 1×. Parcelar é o "Cartão
+    // 4028 (OC-00020): o botão "Cartão à vista" é só 1×. Parcelar é o "Cartão
     // parcelado"; o cartão em várias cobranças, mês a mês, fica em "Ajustar parcelas".
     if (meio === "cartao" && n > 1) continue;
     const totalCents = totalEm(n);

@@ -324,7 +324,9 @@ export const INDICADORES = [
     chave: "revisoes_qualidade",
     rotulo: "Revisões de qualidade",
     ajuda: "Conferências de plano executado que ela revisou.",
-    onde: "Cockpit de Avaliação → Controle de qualidade → Aprovado / Revisão / Reprovado em cada procedimento",
+    // OC-00013: os níveis mudaram na 0.471.0 (Excelente…Refazer) e o controle
+    // só aparece quando um plano do cliente TERMINA — o texto dizia outra coisa.
+    onde: "Cockpit de Avaliação (reavaliação, passo 3) → Controle de qualidade → nível em cada procedimento (Excelente, Bom, Aceitável, Revisar, Refazer). Só aparece quando um plano do cliente termina.",
     nivel: "complementar",
     dependeDeOutro: true,
     origem: "plan_quality_reviews.reviewed_by",

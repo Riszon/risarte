@@ -177,7 +177,7 @@ export async function setDirectSaleConditions(
     !info.isProgramMember &&
     installments <= 1 &&
     input.paymentMethod !== "permuta" &&
-    // 4027: o cartão à vista não tem o desconto à vista automático (tem tarifa).
+    // 4028: o cartão à vista não tem o desconto à vista automático (tem tarifa).
     !(vendaNova && input.paymentMethod === "cartao")
   ) {
     // I8: cliente SEM programa — à vista ganha o desconto automático da regra

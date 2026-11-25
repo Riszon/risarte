@@ -26,7 +26,7 @@ const NAV = readFileSync("src/app/(app)/financeiro/finance-nav.tsx", "utf8");
 
 describe("venda direta nova: os meios oferecidos (19.11)", () => {
   const base = { isManager: false, cardMachine: true, allowed: null };
-  it("à vista (1×): Pix, dinheiro e o cartão à vista (4027); permuta só para o Gerente", () => {
+  it("à vista (1×): Pix, dinheiro e o cartão à vista (4028); permuta só para o Gerente", () => {
     expect(meiosDaVendaNova({ ...base, installments: 1 })).toEqual(["pix", "dinheiro", "cartao"]);
     expect(meiosDaVendaNova({ ...base, installments: 1, isManager: true })).toEqual(["pix", "dinheiro", "cartao", "permuta"]);
   });
@@ -69,7 +69,7 @@ describe("as regras da venda nova (erros em português)", () => {
     expect(erroDoMeioDaVendaNova("credito_recorrente", 3, true)).toMatch(/Asaas/);
     expect(erroDoMeioDaVendaNova("boleto", 1, true)).toMatch(/À vista/);
     expect(erroDoMeioDaVendaNova("cartao_parcelado_asaas", 1, true)).toMatch(/À vista/);
-    expect(erroDoMeioDaVendaNova("cartao", 1, false)).toBeNull(); // 4027
+    expect(erroDoMeioDaVendaNova("cartao", 1, false)).toBeNull(); // 4028
     expect(erroDoMeioDaVendaNova("permuta", 1, false)).toMatch(/Gerente/);
     expect(erroDoMeioDaVendaNova("permuta", 1, true)).toBeNull();
     expect(erroDoMeioDaVendaNova("boleto", 3, false)).toBeNull();

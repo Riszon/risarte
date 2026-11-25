@@ -1,13 +1,23 @@
--- DESFAZER a 4027 (só se precisar). Roda inteiro, de uma vez, no SQL Editor.
--- O banco volta a recusar o cartão em 1× na venda direta (CASH_METHOD_ONLY).
--- Antes, volte o código para a versão anterior: senão a tela oferece o que o banco recusa.
+-- 4028 — O CARTÃO À VISTA NA VENDA DIRETA (OC-00020; decisão do dono, 23/11/2026)
+--
+-- Até aqui (19.11, ajuste B), a venda direta em 1× só aceitava Pix, dinheiro ou
+-- permuta: o cartão começava em 2×. Agora o cartão à vista pelo Asaas também
+-- vale em 1×: o paciente escolhe crédito ou débito na fatura do Asaas (4026).
+-- O cartão à vista NÃO tem o desconto à vista automático (tem tarifa); o
+-- desconto manual segue até o teto, como no parcelado. Isso é a tela e o
+-- servidor; o banco só deixa de recusar o cartão em 1× (CASH_METHOD_ONLY).
+--
+-- Uma troca por âncora (numa linha só: a produção tem quebra de linha do Windows).
+-- (Era a "4027" do branch do Asaas; renumerada em 25/11/2026: a 4027 da produção é a do OC-00183.)
+-- Roda duas vezes sem erro. Desfazer: docs/asaas/desfazer-4028.sql.
 
 do $do$
 declare d text := pg_get_functiondef('public.direct_sales_method_rule()'::regprocedure); orig text;
 begin
   orig := d;
-  if position($n1$     and new.payment_method not in ('pix', 'dinheiro', 'permuta', 'cartao') then -- 4027: o cartão à vista (crédito ou débito, na fatura do Asaas)$n1$ in d) > 0 then
-    d := replace(d, $n1$     and new.payment_method not in ('pix', 'dinheiro', 'permuta', 'cartao') then -- 4027: o cartão à vista (crédito ou débito, na fatura do Asaas)$n1$, $v1$     and new.payment_method not in ('pix', 'dinheiro', 'permuta') then$v1$);
+  if position($n1$     and new.payment_method not in ('pix', 'dinheiro', 'permuta', 'cartao') then -- 4028: o cartão à vista (crédito ou débito, na fatura do Asaas)$n1$ in d) = 0 then
+    if position($v1$     and new.payment_method not in ('pix', 'dinheiro', 'permuta') then$v1$ in d) = 0 then raise exception 'ANCORA_FALTANDO: direct_sales_method_rule (1)'; end if;
+    d := replace(d, $v1$     and new.payment_method not in ('pix', 'dinheiro', 'permuta') then$v1$, $n1$     and new.payment_method not in ('pix', 'dinheiro', 'permuta', 'cartao') then -- 4028: o cartão à vista (crédito ou débito, na fatura do Asaas)$n1$);
   end if;
   if d <> orig then execute d; end if;
 end;
@@ -48,7 +58,9 @@ language sql stable security definer set search_path = '' as $$
     ('4023', 'O Empresarial pelo Asaas', 'table', 'corporate_gateway_settings', 29),
     ('4024', 'A antecipação vira alerta', 'body', '_central_readiness_raw|antecipacao_conferida', 30),
     ('4025', 'A conta da RisLife só para quem a cadastrou', 'col', 'gateway_accounts.visible_only_to', 31),
-    ('4026', 'O pagamento no cartão de débito', 'col', 'charges.paid_billing_type', 32)
+    ('4026', 'O pagamento no cartão de débito', 'col', 'charges.paid_billing_type', 32),
+    ('4027', 'Parcelamento cancelado à mão não oferece "Gerar"', 'body', '_card_block_summary|cancelado_a_mao', 33),
+    ('4028', 'O cartão à vista na venda direta', 'body', 'direct_sales_method_rule|4028', 34)
   )
   select m.code, m.label,
          case m.kind
@@ -69,5 +81,5 @@ notify pgrst, 'reload schema';
 
 select
   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and p.proname = 'direct_sales_method_rule' and position('4027' in p.prosrc) > 0) as funcao_com_a_4027,
-  (select count(*) from public.gateway_asaas_migrations()) as migracoes_na_lista;
+    where n.nspname = 'public' and p.proname = 'direct_sales_method_rule' and position('4028' in p.prosrc) > 0) as funcao_trocada,
+  (select applied from public.gateway_asaas_migrations() where code = '4028') as na_lista;

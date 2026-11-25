@@ -147,7 +147,7 @@ describe("prévia do total (espelho do servidor)", () => {
     expect(p.origem).toBeNull();
   });
 
-  it("cartão à vista (4027): sem automático; o manual vale", () => {
+  it("cartão à vista (4028): sem automático; o manual vale", () => {
     expect(previaDoCaixa({ ...base, meio: "cartao" }).finalCents).toBe(18000);
     const p = previaDoCaixa({ ...base, meio: "cartao", descontoManualCents: 1000 });
     expect(p.finalCents).toBe(17000);
@@ -231,7 +231,7 @@ describe("meios e parcelas do caixa", () => {
     ).not.toContain("cartao_parcelado");
   });
 
-  it("o botão Cartão à vista (4027): só 1×; parcelar é o Cartão parcelado", () => {
+  it("o botão Cartão à vista (4028): só 1×; parcelar é o Cartão parcelado", () => {
     expect(meiosDoCaixa(regra, recepcao)).toContain("cartao");
     expect(parcelasDoMeio("cartao", regra, recepcao, () => 18000).map((x) => x.parcelas)).toEqual([1]);
   });

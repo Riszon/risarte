@@ -2,6 +2,30 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧾 0.491.0 — RELATOS DE 13 A 21/11 (23/11/2026; migrações 0433 e 4027; Asaas 0.27.0)
+>
+> Triagem de 12 relatos (5 produção, 7 treino); lote A corrigido, lote B
+> respondido. Feito no worktree `wt-relatos4`. **Não visto na tela.**
+> ✅ **0433 e 4027 aplicadas nos dois bancos** (produção pelo dono em
+> 23/11/2026; conferido de fora: a conta 3.2.05 existe).
+> - ⚠️ **OC-00186 — ERRO DA 0411 (OC-00181):** a 0411 decidia o mês fechado
+>   por `is_period_closed`, que termina em `can_see_clinic_finance` — para
+>   dentista/coordenador respondia "aberto" e o `fiscal_period_guard` (sem
+>   papel) recusava. O ensaio da 0411 rodou como Admin. **0433** confere
+>   direto em `fiscal_periods`. ⚠️ **Nunca usar `is_period_closed` em
+>   gatilho/regra que não seja tela do Financeiro: ela depende de quem chama.**
+>   A tela do DC traduz PERIOD_CLOSED. Ensaio como a dentista do relato 6/6.
+> - **OC-00018:** conta 3.2.05 Coleta de resíduos de saúde (0433).
+> - **OC-00183 (Asaas, 4027):** `_card_block_summary` passa a seguir
+>   `_card_block_has_charge` (cancelado à mão não se reemite): `pode_gerar`
+>   falso e `cancelado_a_mao`; a tela explica "Trocar meio".
+> - **OC-00184:** "Ver anamnese" troca de aba e rola até `#anamnese`
+>   (`ir-para-secao.tsx`, evento `abrir-aba.ts` ouvido pelo `ProntuarioTabs`).
+> - **OC-00013:** texto `onde` do `revisoes_qualidade` (níveis de hoje).
+> - ⚠️ O `migrar:teste` desta entrega também rodou de novo no treino 9
+>   migrações do Asaas (4018c–4026) que o registro do treino não listava (a
+>   sessão do Asaas aplica as dela à mão). Todas idempotentes; sem erro.
+>
 > ## 💼 EMPRESARIAL 0.112.0 — O EMPRESARIAL COBRADO PELO ASAAS (ASA5, 19/11/2026; migração 4023, da faixa do Asaas)
 >
 > Entrega da sessão do Asaas (estado em `docs/asaas/ESTADO.md`, spec 22.9).
