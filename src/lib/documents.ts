@@ -17,6 +17,15 @@ export const DOCUMENT_KIND_LABELS: Record<DocumentKind, string> = {
   guidance: "Orientações e cuidados",
 };
 
+/**
+ * OC-00192: a prescrição não tem título. O cabeçalho impresso já diz
+ * "PRESCRIÇÃO"; o título virava o 1º remédio em negrito e os outros não.
+ * Na lista da ficha ela se chama "Prescrição" (com a data ao lado).
+ */
+export function documentoTemTitulo(kind: DocumentKind): boolean {
+  return kind !== "prescription";
+}
+
 export function isDocumentKind(v: string): v is DocumentKind {
   return (DOCUMENT_KINDS as readonly string[]).includes(v);
 }

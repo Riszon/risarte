@@ -62,6 +62,50 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.496.0",
+    data: "2026-11-27",
+    migracao: "0436",
+    titulo: "Dívidas: a conta vencida entra sozinha",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Toda conta do Contas a Pagar que venceu e não foi paga entra sozinha no Levantamento de Dívidas, no dia seguinte ao vencimento: uma dívida por unidade e fornecedor, com a etiqueta \"Automática — Contas a Pagar\". Pagou ou cancelou a conta no Contas a Pagar, a dívida acompanha.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Em Configurações do Levantamento de Dívidas, o prazo \"Conta vencida vira dívida depois de (dias)\"; e em Qualidade dos dados, a lista das contas vencidas que ficaram de fora por não ter fornecedor.",
+        papeis: ["finance_franchisor"],
+        manual: "2.3. A porta do Financeiro — Levantamento de Dívidas",
+      },
+    ],
+  },
+  {
+    versao: "0.495.0",
+    data: "2026-11-27",
+    migracao: null,
+    titulo: "Relatos da equipe: a prescrição sem título e a volta ao Atendimento",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Prescrição: o campo de título saiu. O cabeçalho impresso já diz \"PRESCRIÇÃO\", e todos os remédios saem com a mesma letra (antes o 1º remédio, escrito no título, saía em negrito e os outros não). Os outros documentos continuam com título. (OC-00192)",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao concluir o atendimento pela ficha, o aviso traz o botão \"Voltar ao Atendimento\", para chamar o próximo com um toque. Você continua na ficha, caso ainda falte a prescrição ou o atestado. (OC-00191)",
+        papeis: ["dentist", "clinical_coordinator"],
+        manual: "6.4. Dentista (executor)",
+      },
+    ],
+  },
+  {
     versao: "0.494.0",
     data: "2026-11-26",
     migracao: "0435",
