@@ -11,7 +11,8 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   conta a marcação e a limpa quando há e-mail. ⚠️ Ao recriar, partir da 0435.
 > - App: caixa no formulário (novo e edição), `parseClientForm`,
 >   `missingClientFields` (`noEmail`), agenda e ficha. Ensaio 4/4 no treino.
->   **Não visto na tela.**
+>   **Não visto na tela.** ✅ 0435 nos dois bancos (produção pelo dono em
+>   27/11/2026; conferido de fora). Publicado; OC-00025 resolvido.
 >
 > ## 🧭 0.493.0 — RELATOS DE 23 E 24/11 (25/11/2026; migração 0434)
 >
