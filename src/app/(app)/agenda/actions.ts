@@ -1901,7 +1901,7 @@ async function lerOrtoNaAgenda(
 
 /** Campos que o cadastro precisa ter (I4) — mesma régua do formulário. */
 const CLIENT_FIELDS_SELECT =
-  "full_name, cpf, no_cpf, birth_date, phone, email, zip_code, address, address_number, neighborhood, city, state";
+  "full_name, cpf, no_cpf, birth_date, phone, email, no_email, zip_code, address, address_number, neighborhood, city, state";
 
 type ClientFieldsRow = {
   full_name: string | null;
@@ -1910,6 +1910,7 @@ type ClientFieldsRow = {
   birth_date: string | null;
   phone: string | null;
   email: string | null;
+  no_email: boolean | null;
   zip_code: string | null;
   address: string | null;
   address_number: string | null;
@@ -1929,6 +1930,7 @@ function toRegistrationFields(
     birthDate: row.birth_date,
     phone: row.phone,
     email: row.email,
+    noEmail: row.no_email,
     zipCode: row.zip_code,
     address: row.address,
     addressNumber: row.address_number,

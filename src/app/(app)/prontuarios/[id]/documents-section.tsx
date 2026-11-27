@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import {
   DOCUMENT_KINDS,
   DOCUMENT_KIND_LABELS,
+  documentoTemTitulo,
   type ClinicalDocumentItem,
   type DocumentKind,
   type DocumentTemplate,
@@ -208,15 +209,19 @@ export function DocumentsSection({
                 </select>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="doc-title">Título *</Label>
-              <Input
-                id="doc-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex.: Prescrição — Amoxicilina"
-              />
-            </div>
+            {/* OC-00192: a prescrição não tem título (o cabeçalho impresso
+                já diz PRESCRIÇÃO; o título saía como o 1º remédio em negrito). */}
+            {documentoTemTitulo(kind) && (
+              <div className="space-y-1.5">
+                <Label htmlFor="doc-title">Título *</Label>
+                <Input
+                  id="doc-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Ex.: Atestado odontológico"
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="doc-body">Conteúdo *</Label>
               <textarea
@@ -225,7 +230,11 @@ export function DocumentsSection({
                 onChange={(e) => setBody(e.target.value)}
                 rows={10}
                 className="w-full rounded-md border border-input bg-transparent p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="Texto do documento…"
+                placeholder={
+                  documentoTemTitulo(kind)
+                    ? "Texto do documento…"
+                    : "Um remédio por bloco: nome e dose na 1ª linha, como tomar na 2ª."
+                }
               />
             </div>
           </div>
@@ -239,7 +248,11 @@ export function DocumentsSection({
             </Button>
             <Button
               onClick={submit}
-              disabled={isPending || !title.trim() || !body.trim()}
+              disabled={
+                isPending ||
+                (documentoTemTitulo(kind) && !title.trim()) ||
+                !body.trim()
+              }
             >
               Emitir e imprimir
             </Button>

@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { DOCUMENT_KIND_LABELS, type DocumentKind } from "@/lib/documents";
+import {
+  DOCUMENT_KIND_LABELS,
+  documentoTemTitulo,
+  type DocumentKind,
+} from "@/lib/documents";
 import { PrintButton } from "./print-button";
 import { BRAZIL_TIME_ZONE } from "@/lib/dates";
 
@@ -74,9 +78,20 @@ export default async function DocumentPrintPage(
           ) : null}
         </p>
 
-        {/* Título + corpo */}
-        <h1 className="mb-2 text-base font-semibold">{doc.title}</h1>
-        <div className="whitespace-pre-wrap leading-relaxed">{doc.body}</div>
+        {/* Título + corpo. OC-00192: a prescrição não tem título (o
+            cabeçalho já diz PRESCRIÇÃO). As antigas guardavam o 1º remédio
+            no título: ele sai como a 1ª linha, com a mesma letra do resto. */}
+        {documentoTemTitulo(doc.kind) ? (
+          <h1 className="mb-2 text-base font-semibold">{doc.title}</h1>
+        ) : null}
+        <div className="whitespace-pre-wrap leading-relaxed">
+          {!documentoTemTitulo(doc.kind) &&
+          doc.title.trim() !== DOCUMENT_KIND_LABELS[doc.kind]
+            ? `${doc.title}
+`
+            : ""}
+          {doc.body}
+        </div>
 
         {/* Data + assinatura */}
         <div className="mt-12 text-center">

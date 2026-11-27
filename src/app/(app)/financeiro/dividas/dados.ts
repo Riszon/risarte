@@ -62,6 +62,8 @@ export type Regra = {
   discountRecognition: string | null;
   surchargeRecognition: string | null;
   staleCheckDays: number | null;
+  /** 0436: dias depois do vencimento para a conta a pagar virar dívida sozinha. */
+  autoOverdueDays: number | null;
 };
 
 export type BaseDasDividas = {
@@ -195,6 +197,7 @@ export async function carregarBase(): Promise<BaseDasDividas> {
       discountRecognition: s(r.discount_recognition),
       surchargeRecognition: s(r.surcharge_recognition),
       staleCheckDays: n(r.stale_check_days),
+      autoOverdueDays: n(r.auto_overdue_days),
     })),
     prazosPorTipo: ((dr.data ?? []) as Linha[]).map((r) => ({ supplierKind: r.supplier_kind as string, days: Number(r.days_to_default) })),
     cartorios: ((cartRows ?? []) as Linha[]).map((c) => ({
@@ -818,6 +821,44 @@ export type Posicao = {
   vencimentoMaisAntigo: string | null;
   acordo: { id: string; codigo: string; situacao: "aguardando_aprovacao" | "em_andamento" | "quebrado" } | null;
 };
+
+/**
+ * 0436: as contas vencidas do Contas a Pagar viram dívida (uma por unidade e
+ * fornecedor) antes de a tela ler — a mesma conta da rotina diária. Sem a 0436
+ * no banco, a tela segue como antes (nulo).
+ */
+export async function sincronizarContasVencidas(): Promise<number | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("debt_auto_overdue_refresh");
+  if (error) return null;
+  return Number(data ?? 0);
+}
+
+export type ContaSemFornecedor = {
+  payableId: string;
+  clinicId: string;
+  unidade: string;
+  descricao: string;
+  conta: string;
+  vencimento: string;
+  faltaCents: number;
+};
+
+/** 0436: conta vencida que não virou dívida por falta de fornecedor. Nulo = não deu para ler. */
+export async function carregarContasSemFornecedor(): Promise<ContaSemFornecedor[] | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("debt_auto_overdue_pending");
+  if (error) return null;
+  return ((data ?? []) as Linha[]).map((r) => ({
+    payableId: r.payable_id as string,
+    clinicId: r.clinic_id as string,
+    unidade: String(r.clinic_name ?? ""),
+    descricao: String(r.description ?? ""),
+    conta: String(r.account_code ?? ""),
+    vencimento: String(r.due_date ?? ""),
+    faltaCents: Number(r.open_cents ?? 0),
+  }));
+}
 
 /** Nulo = a porta não respondeu (sem a 0408 no banco): a tela usa a conta antiga. */
 export async function carregarPosicoes(): Promise<Map<string, Posicao> | null> {

@@ -41,6 +41,8 @@ const EVENTOS: Record<string, string> = {
   titulo_gerado: "Gerou o título no Contas a Pagar",
   titulo_atualizado: "Atualizou o título no Contas a Pagar",
   titulo_vinculado: "Vinculou títulos que já estavam no Contas a Pagar",
+  criada_automatica: "Criada sozinha: conta vencida e não paga no Contas a Pagar",
+  titulo_desvinculado: "A conta foi cancelada no Contas a Pagar e saiu da dívida",
   importada: "Entrou pela importação da planilha",
   acordo_em_andamento: "O acordo passou a valer (parcelas no Contas a Pagar)",
   acordo_aguardando_aprovacao: "Registrou um acordo que espera a aprovação do Admin Master",

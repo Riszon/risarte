@@ -589,7 +589,35 @@ sistema não entrega esses dados a mais ninguém.
 | **Acordos** | Os acordos de renegociação *(desde a 0.453.0)*: os que **esperam aprovação**, os **quebrados** e os **em andamento**, com o saldo a pagar e as parcelas dos próximos 30 dias. Veja *Renegociar dívida*, abaixo. |
 | **Credores** | Quanto se deve a cada credor e **com quem se fala**: atendente, assessoria de cobrança, advogado ou cartório. |
 | **Qualidade dos dados** | O que falta completar nas dívidas *(desde a 0.448.0; veja Importar planilha, abaixo)*. |
-| **Configurações** | A regra de inadimplência, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas, etiquetas e os cartórios de protesto. |
+| **Configurações** | A regra de inadimplência, o prazo para a **conta vencida virar dívida**, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas, etiquetas e os cartórios de protesto. |
+
+**A conta vencida vira dívida sozinha** *(desde a 0.496.0)*. Toda conta do
+**Contas a Pagar** que venceu e não foi paga entra no levantamento sem ninguém
+cadastrar, **no dia seguinte ao vencimento** (o prazo fica em Configurações →
+**Conta vencida vira dívida depois de (dias)**):
+- **Uma dívida por unidade e fornecedor** — por exemplo, "Contador · 5 contas,
+  R$ 3.750,00". A conta desse fornecedor que vencer depois entra na **mesma**
+  dívida, enquanto ela estiver aberta (sem acordo e não quitada).
+- Ela já vem com a etiqueta **Automática — Contas a Pagar**, a situação (em
+  atraso ou inadimplente, pela regra de sempre), a **categoria** tirada da
+  conta (laboratório → "Laboratório e prótese", energia → "Utilidades",
+  contador → "Serviços de terceiros") e a origem **"já está no Contas a
+  Pagar"**: **não lança nada novo** no financeiro, então não pesa duas vezes na
+  DRE nem no caixa.
+- **Pague (ou cancele) a conta no Contas a Pagar**, como sempre. Paga, a dívida
+  fica **Quitada — encerrada** sozinha; cancelada, a conta sai da dívida (e a
+  dívida sai, se não sobrar conta). A dívida automática pode ser negociada,
+  receber proposta, protesto e acordo como qualquer outra.
+- **Ficam de fora:** conta ainda **aguardando autorização**, conta já ligada a
+  uma dívida ou a um acordo, saldo de implantação, as contas internas da rede
+  (taxas da franquia, royalties e fundo, comissão, **repasse dos dentistas**) e
+  a **devolução ao paciente**.
+- Conta vencida **sem fornecedor** não vira dívida (toda dívida tem credor):
+  ela aparece em **Qualidade dos dados → Conta vencida sem fornecedor**.
+  Informe o fornecedor na conta e ela entra.
+- Excluiu uma dívida automática (por exemplo, a conta já tinha sido paga e só
+  faltava a baixa)? As contas dela **não voltam** a virar dívida.
+- **Não há aviso novo** por conta vencida: os números aparecem no Painel.
 
 **Nova dívida.** Os campos obrigatórios são só quatro: **devedor** (a unidade
 ou a franqueadora que deve), **credor**, **valor** e **vencimento**; o resto se
@@ -3204,6 +3232,13 @@ trabalha. **Duração estimada:** 60 minutos.
 2. **Comece pelo CPF.** O sistema procura antes de deixar você digitar o resto:
    se o paciente já existir na rede, ele **autopreenche** (evidência: LOTE F1).
 3. Preencha nome, nascimento, telefone, e-mail e endereço.
+   - **Paciente sem e-mail** (desde a versão 0.494.0, relato OC-00025): marque
+     **Cliente sem e-mail**, logo abaixo do campo. Ele deixa de ser
+     obrigatório, e o cadastro conta como completo. Use só quando a pessoa
+     **não tem** e-mail (muitos idosos). Se ela só não lembra, deixe sem marcar
+     e complete depois. Quando alguém preenche um e-mail, a marcação sai
+     sozinha. Vale também ao **editar** um cadastro. O **CEP e o endereço
+     continuam obrigatórios**: sem eles a agenda não marca.
 4. **Responsáveis e quem paga** (desde a versão 0.427.0):
    - **Paciente menor de 18 anos:** cadastre ao menos um responsável e marque
      **Responsável financeiro (paga as cobranças)** em um deles. Com um só
@@ -4266,6 +4301,20 @@ aprovados, com a contagem de Excelente, Bom, Aceitável, Revisar e Refazer).
 
 > **O botão de concluir só libera depois da anotação.** Não é travamento: é a
 > regra de que atendimento sem registro não encerra.
+
+> **Depois de concluir, você continua na ficha** (de propósito: ainda pode
+> faltar a prescrição ou o atestado). O aviso "Atendimento concluído" traz o
+> botão **Voltar ao Atendimento**, para chamar o próximo com um toque (desde a
+> versão 0.495.0, relato OC-00191).
+
+**Prescrição, atestado e outros documentos.** Na ficha, bloco **Documentos** →
+**Novo documento**: escolha o tipo (e um modelo, se houver), escreva e clique
+em **Emitir e imprimir**. A versão para imprimir ou salvar em PDF abre numa aba
+nova. **Na Prescrição não há campo de título** (desde a 0.495.0, relato
+OC-00192): o cabeçalho impresso já diz "PRESCRIÇÃO", e todos os remédios saem
+com a mesma letra. Escreva um remédio por bloco: nome e dose na 1ª linha, como
+tomar na 2ª. Na lista da ficha, ela aparece como "Prescrição", com a data. Os
+outros tipos (atestado, declaração, orientações) continuam com título.
 
 **Os procedimentos do cliente na ficha (desde a 0.418.0, relatos
 OC-00172/OC-00173).** Na aba **Sessões & Procedimentos** você vê a lista dos

@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { getSessionContext, hasRoleInClinic } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
-import { isDocumentKind } from "@/lib/documents";
+import {
+  DOCUMENT_KIND_LABELS,
+  documentoTemTitulo,
+  isDocumentKind,
+} from "@/lib/documents";
 
 export type CreateDocumentResult = {
   ok: boolean;
@@ -32,7 +36,10 @@ export async function createDocument(input: {
   if (!isDocumentKind(input.kind)) {
     return { ok: false, error: "Tipo de documento inválido." };
   }
-  const title = input.title.trim();
+  // OC-00192: a prescrição não tem título — na lista ela é "Prescrição".
+  const title = documentoTemTitulo(input.kind)
+    ? input.title.trim()
+    : DOCUMENT_KIND_LABELS[input.kind];
   const body = input.body.trim();
   if (!title) return { ok: false, error: "Informe um título para o documento." };
   if (!body) return { ok: false, error: "O documento está vazio." };

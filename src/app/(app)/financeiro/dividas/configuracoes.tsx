@@ -97,6 +97,7 @@ function RegraDaRede({ rede, executar }: { rede: Regra | null; executar: Executa
     discount_recognition: rede?.discountRecognition ?? "na_data_do_acordo",
     surcharge_recognition: rede?.surchargeRecognition ?? "na_data_do_acordo",
     stale_check_days: ou(rede?.staleCheckDays ?? 60),
+    auto_overdue_days: ou(rede?.autoOverdueDays ?? 1),
   });
   const muda = (p: Partial<typeof v>) => setV((x) => ({ ...x, ...p }));
   const campo = (rotulo: string, chave: keyof typeof v, ajuda?: string) => (
@@ -123,6 +124,7 @@ function RegraDaRede({ rede, executar }: { rede: Regra | null; executar: Executa
         discount_recognition: v.discount_recognition,
         surcharge_recognition: v.surcharge_recognition,
         stale_check_days: v.stale_check_days,
+        auto_overdue_days: v.auto_overdue_days,
       }), "Regra da rede salva. A situação das dívidas foi recalculada."
     );
   };
@@ -141,6 +143,7 @@ function RegraDaRede({ rede, executar }: { rede: Regra | null; executar: Executa
         {campo("Checklist de encerramento parado (dias)", "closing_stale_days")}
         {campo("Tolerância para acordo quebrado (dias úteis)", "agreement_broken_tolerance_bdays", "Cada acordo pode ter a sua, conforme o termo.")}
         {campo("Pedir nova conferência depois de (dias)", "stale_check_days", "Selo “Conferir” na dívida conferida há mais tempo.")}
+        {campo("Conta vencida vira dívida depois de (dias)", "auto_overdue_days", "Do Contas a Pagar, sozinha. 1 = no dia seguinte ao vencimento.")}
         <label className="block">
           <Label className="text-[11px]">Acordo acima de (R$) precisa de aprovação do Admin Master</Label>
           <Input className="h-9" inputMode="decimal" placeholder="vazio = desligado" value={v.limite} onChange={(e) => muda({ limite: e.target.value.replace(/[^\d.,]/g, "") })} />

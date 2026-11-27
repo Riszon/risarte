@@ -16,6 +16,8 @@ export type ClientRegistrationFields = {
   birthDate: string | null;
   phone: string | null;
   email: string | null;
+  /** Marcado quando a pessoa realmente não tem e-mail (OC-00025, 0435). */
+  noEmail?: boolean | null;
   zipCode: string | null;
   address: string | null;
   addressNumber: string | null;
@@ -55,7 +57,7 @@ export function missingClientFields(c: ClientRegistrationFields): string[] {
   if (!c.noCpf && !filled(c.cpf)) missing.push("CPF");
   if (!filled(c.birthDate)) missing.push("Data de nascimento");
   if (!filled(c.phone)) missing.push("Telefone/WhatsApp");
-  if (!filled(c.email)) missing.push("E-mail");
+  if (!c.noEmail && !filled(c.email)) missing.push("E-mail");
   if (!filled(c.zipCode)) missing.push("CEP");
   if (!filled(c.address)) missing.push("Endereço");
   if (!filled(c.addressNumber)) missing.push("Número");

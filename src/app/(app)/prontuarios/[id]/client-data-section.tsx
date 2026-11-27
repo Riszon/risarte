@@ -142,7 +142,10 @@ export function ClientDataSection({
           </SectionLabel>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <Field label="Telefone" value={client.phone} />
-            <Field label="E-mail" value={client.email} />
+            <Field
+              label="E-mail"
+              value={client.email || (client.no_email ? "Cliente sem e-mail" : null)}
+            />
           </dl>
         </div>
 

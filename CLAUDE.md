@@ -400,6 +400,32 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**27/11/2026 (Dívidas: conta vencida automática) — PC Administrador (core 0.495.0 → 0.496.0, migração 0436)**
+
+- Bloco 0.496.0 no ESTADO. ⚠️ **Qual conta a pagar vira dívida =
+  `_debt_auto_overdue_candidates`**; a sincronização (`_debt_auto_overdue_sync`)
+  roda no começo da `debt_daily_run` e ao abrir o Levantamento. Ao recriar
+  `debt_daily_run` ou `_debt_notices_daily`, partir da 0436.
+- ⚠️ O disco C: chegou a 366 MB livres: o `.next/dev` do servidor do dono
+  (parado) tinha 6,1 GB e foi apagado (é cache; o `next dev` refaz).
+- ✅ 0436 nos dois bancos (produção pelo dono em 27/11/2026; conferido de fora:
+  17 dívidas automáticas, as 24 contas vencidas ligadas, sem login recusa).
+
+**27/11/2026 (relatos OC-00191/OC-00192) — PC Administrador (core 0.494.0 → 0.495.0, sem migração)**
+
+- Bloco 0.495.0 no ESTADO. ⚠️ **Prescrição sem título = `documentoTemTitulo`**;
+  a impressão das antigas mostra o título como 1ª linha (era o 1º remédio).
+- ⚠️ Uma sessão de Dívidas trabalhava nesta pasta ao mesmo tempo (sem commit):
+  commitei só os meus arquivos.
+
+**26/11/2026 (relato OC-00025) — PC Administrador (core 0.493.0 → 0.494.0, migração 0435)**
+
+- Bloco 0.494.0 no ESTADO. ⚠️ **"Cliente sem e-mail" = `clients.no_email`**;
+  ao recriar `clients_set_registration_complete`, partir da 0435 (o e-mail
+  preenchido desfaz a marcação). O CEP continua obrigatório (decisão do dono).
+- ✅ 0435 nos dois bancos (produção pelo dono em 27/11/2026; conferido de fora:
+  a coluna existe, 0 marcados). Publicado; OC-00025 respondido como resolvido.
+
 **25/11/2026 (relatos de 23 e 24/11) — PC Administrador (core 0.492.0 → 0.493.0, migração 0434; worktree `wt-relatos5`)**
 
 - Bloco 0.493.0 no ESTADO. ⚠️ **Ao recriar `transfer_client`, levar a 0434**

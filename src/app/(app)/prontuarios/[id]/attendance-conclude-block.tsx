@@ -80,7 +80,15 @@ export function AttendanceConcludeBlock({
         reasons: notDoneReasons,
       });
       if (r.ok) {
-        toast.success("Atendimento concluído.");
+        // OC-00191: fica na ficha (pode faltar a prescrição ou o atestado),
+        // com um toque para voltar ao Atendimento e chamar o próximo.
+        toast.success("Atendimento concluído.", {
+          duration: 15000,
+          action: {
+            label: "Voltar ao Atendimento",
+            onClick: () => router.push("/atendimento"),
+          },
+        });
         router.refresh();
       } else {
         toast.error(r.error ?? "Não foi possível concluir.");
