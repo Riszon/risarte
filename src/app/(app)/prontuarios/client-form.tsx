@@ -34,6 +34,8 @@ export type ClientFormValues = {
   gender?: string | null;
   phone?: string | null;
   email?: string | null;
+  /** OC-00025 (0435): cliente realmente sem e-mail (muitos idosos). */
+  no_email?: boolean | null;
   address?: string | null;
   address_number?: string | null;
   complement?: string | null;
@@ -92,6 +94,7 @@ export function ClientForm({
   const [phone, setPhone] = useState(client?.phone ?? "");
   // Campos de contato/endereço controlados para o autopreenchimento por CPF (H1.9).
   const [email, setEmail] = useState(client?.email ?? "");
+  const [noEmail, setNoEmail] = useState(client?.no_email ?? false);
   const [address, setAddress] = useState(client?.address ?? "");
   const [addressNumber, setAddressNumber] = useState(
     client?.address_number ?? ""
@@ -203,6 +206,7 @@ export function ClientForm({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("no_cpf", String(noCpf));
+    formData.set("no_email", String(noEmail));
     // ASA1 (4003): os responsáveis vão sempre — o adulto pode ter um pagador
     // (antes, editar um adulto apagava os responsáveis de quando era menor).
     formData.set("guardians", JSON.stringify(guardians));
@@ -679,15 +683,25 @@ export function ClientForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail *</Label>
+              <Label htmlFor="email">E-mail {noEmail ? "" : "*"}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                required
-                value={email}
+                required={!noEmail}
+                disabled={noEmail}
+                value={noEmail ? "" : email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={noEmail}
+                  onChange={(e) => setNoEmail(e.target.checked)}
+                  className="size-3.5 accent-primary"
+                />
+                Cliente sem e-mail (ex.: idoso que não usa)
+              </label>
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-[1fr_110px]">

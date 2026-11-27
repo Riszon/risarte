@@ -2,6 +2,17 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🧭 0.494.0 — CLIENTE SEM E-MAIL (26/11/2026; migração 0435; relato OC-00025)
+>
+> Decisão do dono (26/11/2026): a regra do cadastro completo (27/07/2026, 0173)
+> fica; quem não tem e-mail ganha a marcação **"Cliente sem e-mail"**, igual à
+> "Cliente sem CPF". O CEP e o endereço continuam obrigatórios.
+> - `clients.no_email`; `clients_set_registration_complete` recriada (0435):
+>   conta a marcação e a limpa quando há e-mail. ⚠️ Ao recriar, partir da 0435.
+> - App: caixa no formulário (novo e edição), `parseClientForm`,
+>   `missingClientFields` (`noEmail`), agenda e ficha. Ensaio 4/4 no treino.
+>   **Não visto na tela.**
+>
 > ## 🧭 0.493.0 — RELATOS DE 23 E 24/11 (25/11/2026; migração 0434)
 >
 > Triagem de 9 relatos (6 produção, 3 treino). Worktree `wt-relatos5`.

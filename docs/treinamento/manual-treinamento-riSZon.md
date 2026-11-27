@@ -3204,6 +3204,13 @@ trabalha. **Duração estimada:** 60 minutos.
 2. **Comece pelo CPF.** O sistema procura antes de deixar você digitar o resto:
    se o paciente já existir na rede, ele **autopreenche** (evidência: LOTE F1).
 3. Preencha nome, nascimento, telefone, e-mail e endereço.
+   - **Paciente sem e-mail** (desde a versão 0.494.0, relato OC-00025): marque
+     **Cliente sem e-mail**, logo abaixo do campo. Ele deixa de ser
+     obrigatório, e o cadastro conta como completo. Use só quando a pessoa
+     **não tem** e-mail (muitos idosos). Se ela só não lembra, deixe sem marcar
+     e complete depois. Quando alguém preenche um e-mail, a marcação sai
+     sozinha. Vale também ao **editar** um cadastro. O **CEP e o endereço
+     continuam obrigatórios**: sem eles a agenda não marca.
 4. **Responsáveis e quem paga** (desde a versão 0.427.0):
    - **Paciente menor de 18 anos:** cadastre ao menos um responsável e marque
      **Responsável financeiro (paga as cobranças)** em um deles. Com um só

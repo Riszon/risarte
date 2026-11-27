@@ -350,7 +350,7 @@ export default async function ClientDetailPage(
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, no_cpf, registration_complete, birth_date, gender, phone, email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, empresarial_company_id, empresarial_company_name, empresarial_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
+      "id, code, clinic_id, preferred_clinic_id, full_name, cpf, no_cpf, registration_complete, birth_date, gender, phone, email, no_email, address, address_number, complement, neighborhood, city, state, zip_code, notes, status, created_at, created_by, journey_phase, journey_status, phase_entered_at, methodology_pillar, staff_member_id, risartano_active, empresarial_company_id, empresarial_company_name, empresarial_active, creator:profiles!clients_created_by_fkey ( full_name ), clinic:clinics!clients_clinic_id_fkey ( name )"
     )
     .eq("id", id)
     .single();
@@ -603,6 +603,7 @@ export default async function ClientDetailPage(
     birthDate: client.birth_date,
     phone: client.phone,
     email: client.email,
+    noEmail: client.no_email,
     zipCode: client.zip_code,
     address: client.address,
     addressNumber: client.address_number,

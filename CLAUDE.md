@@ -400,6 +400,12 @@ Syncthing se comportarem de forma estranha.**
 *(atualizado ao fim de cada sessão — o estado do PRODUTO fica na §7 e em
 `ESTADO_DO_PROJETO.md`)*
 
+**26/11/2026 (relato OC-00025) — PC Administrador (core 0.493.0 → 0.494.0, migração 0435)**
+
+- Bloco 0.494.0 no ESTADO. ⚠️ **"Cliente sem e-mail" = `clients.no_email`**;
+  ao recriar `clients_set_registration_complete`, partir da 0435 (o e-mail
+  preenchido desfaz a marcação). O CEP continua obrigatório (decisão do dono).
+
 **25/11/2026 (relatos de 23 e 24/11) — PC Administrador (core 0.492.0 → 0.493.0, migração 0434; worktree `wt-relatos5`)**
 
 - Bloco 0.493.0 no ESTADO. ⚠️ **Ao recriar `transfer_client`, levar a 0434**

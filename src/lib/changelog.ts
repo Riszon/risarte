@@ -62,6 +62,21 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.494.0",
+    data: "2026-11-26",
+    migracao: "0435",
+    titulo: "Cadastro: cliente sem e-mail",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Cadastro do cliente: a marcação \"Cliente sem e-mail\", igual à de \"Cliente sem CPF\", para quem não tem e-mail (muitos idosos). Marcada, o e-mail deixa de ser obrigatório e o cadastro conta como completo para agendar. O CEP e o endereço continuam obrigatórios. (OC-00025)",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+    ],
+  },
+  {
     versao: "0.493.0",
     data: "2026-11-25",
     migracao: "0434",

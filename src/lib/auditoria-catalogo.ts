@@ -405,6 +405,7 @@ export const CAMPOS: Record<string, string> = {
   cpf: "CPF",
   cnpj: "CNPJ",
   no_cpf: "Sem CPF",
+  no_email: "Sem e-mail",
   birth_date: "Data de nascimento",
   gender: "Gênero",
   marital_status: "Estado civil",

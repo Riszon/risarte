@@ -141,11 +141,20 @@ function parseClientForm(formData: FormData) {
     }
   }
 
+  // OC-00025 (0435): e-mail may be omitted only when the client has none —
+  // checkbox "Cliente sem e-mail", same idea as "Cliente sem CPF".
+  const email = field(formData, "email");
+  const noEmail = !email && formData.get("no_email") === "true";
+  if (!email && !noEmail) {
+    return {
+      error: "Preencha o campo obrigatório: E-mail (ou marque 'cliente sem e-mail')." as const,
+    };
+  }
+
   // Owner rule: full registration is mandatory (complement is optional).
   const requiredFields: [string, string][] = [
     ["birth_date", "Data de nascimento"],
     ["phone", "Telefone/WhatsApp"],
-    ["email", "E-mail"],
     ["address", "Endereço"],
     ["address_number", "Número"],
     ["neighborhood", "Bairro"],
@@ -190,7 +199,8 @@ function parseClientForm(formData: FormData) {
         return g && (GENDERS as readonly string[]).includes(g) ? g : null;
       })(),
       phone: phone ? formatPhone(phone) : null,
-      email: field(formData, "email"),
+      email,
+      no_email: noEmail,
       address: field(formData, "address"),
       address_number: field(formData, "address_number"),
       complement: field(formData, "complement"),
