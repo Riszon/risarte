@@ -62,6 +62,45 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.494.0",
+    data: "2026-11-27",
+    // Sem migração do CORE: a desta entrega é da integração Asaas (4029, ASAAS_MIGRATION).
+    migracao: null,
+    titulo: "Venda direta: o fecho sem informação errada, e Débito ou Crédito à vista",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Venda direta: na unidade que cobra pelo Asaas, o botão \"Confirmar que recebeu\" saiu — ele concluía a venda sem pagamento nenhum. Quem confirma é o Asaas: pagou, a venda conclui sozinha. Recebeu no balcão? Troque a forma de pagamento. A marca \"Pagamento confirmado\" da tela Comercial → Venda direta segue a mesma regra.",
+        papeis: ["receptionist", "unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Venda direta: quando a criação automática de cobranças está desligada na unidade, a janela não fica mais esperando. Ela avisa e mostra o botão \"Gerar a cobrança agora\", que cria a cobrança e já mostra o link de pagamento.",
+        papeis: ["receptionist", "unit_manager", "franchisee"],
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Venda direta: o cartão à vista virou dois botões, \"Débito\" e \"Crédito à vista\". Os dois geram a mesma cobrança no Asaas (a fatura mostra as duas opções); a escolha fica registrada na venda como o combinado, e depois de pago a tela mostra também o meio que o paciente usou.",
+        papeis: ["receptionist", "unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Venda direta: o quadro final diz o estado real do dinheiro — quanto foi recebido e por qual meio, o que falta, ou um aviso quando a venda está concluída sem recebimento registrado. Enquanto espera, a janela diz se o link já foi enviado.",
+        papeis: ["receptionist", "unit_manager", "franchisee", "finance_franchisor"],
+      },
+      {
+        tipo: "aviso",
+        texto:
+          "Na unidade que não cobra pelo Asaas, \"Confirmar que recebeu\" agora pede confirmação. No Pix, a baixa entra no Financeiro na hora; nos outros meios a baixa continua sendo feita em Recebíveis.",
+        papeis: ["receptionist", "unit_manager", "franchisee"],
+      },
+    ],
+  },
+  {
     versao: "0.493.0",
     data: "2026-11-25",
     migracao: "0434",

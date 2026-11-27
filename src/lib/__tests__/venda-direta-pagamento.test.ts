@@ -128,7 +128,8 @@ describe("réguas da VD3-3 na tela", () => {
     expect(pagamento).not.toMatch(/pixQrCode|getPixPayload/);
   });
   it("a janela espera a cobrança nascer por um tempo limitado", () => {
-    expect(pagamento).toMatch(/cobrancaParaNascer\(parcelas, todayInBrazil\(\)\) && voltas < MAX_ESPERA_DO_NASCIMENTO/);
+    // 4029: só espera quando a cobrança VAI nascer (automática ligada), e por tempo limitado.
+    expect(pagamento).toMatch(/cobrancaParaNascer\(parcelas, todayInBrazil\(\)\)\s*\? semCobrancaOQueFazer\(\{ pronta, automatica, voltas, maxVoltas: MAX_ESPERA_DO_NASCIMENTO \}\)/);
   });
   it("a janela confere sozinha e relê a venda quando a baixa entra", () => {
     expect(pagamento).toMatch(/setInterval\(\(\) => \{[\s\S]*?void carregar\(\);[\s\S]*?\}, ESPERA_MS\)/);

@@ -291,6 +291,13 @@ export async function closeDirectSaleStep(
     }
   }
 
+  // 4029: o pagamento do Asaas não se confirma à mão (concluía a venda sem dinheiro).
+  if (step === "payment_confirmed" && value) {
+    const { recusaDaConfirmacaoAMao } = await import("@/lib/venda-direta-confirmacao");
+    const recusa = await recusaDaConfirmacaoAMao(saleId);
+    if (recusa) return { ok: false, error: recusa };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("direct_sale_close_step", {
     p_sale_id: saleId,

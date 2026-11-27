@@ -438,6 +438,8 @@ export function comprovanteDaVenda(v: {
   /** 'aaaa-mm-dd' ou ISO. */
   data: string;
   codigo: string | null;
+  /** 4029: o Asaas informou que o cartão à vista foi pago no DÉBITO. */
+  pagoNoDebito?: boolean;
 }): string {
   const primeiro = (v.nome ?? "").trim().split(/\s+/)[0] || "tudo bem";
   const lista =
@@ -445,7 +447,12 @@ export function comprovanteDaVenda(v: {
       ? (v.procedimentos[0] ?? "Procedimento")
       : `${v.procedimentos.slice(0, -1).join(", ")} e ${v.procedimentos[v.procedimentos.length - 1]}`;
   const total = (v.totalCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  const meio = v.totalCents <= 0 ? "sem custo (coberto pelo programa)" : (MEIO_NO_COMPROVANTE[v.meio ?? ""] ?? v.meio ?? "—");
+  const meio =
+    v.totalCents <= 0
+      ? "sem custo (coberto pelo programa)"
+      : v.meio === "cartao" && v.pagoNoDebito
+        ? "cartão de débito"
+        : (MEIO_NO_COMPROVANTE[v.meio ?? ""] ?? v.meio ?? "—");
   const forma = v.totalCents > 0 && v.parcelas > 1 ? `${meio}, em ${v.parcelas}×` : meio;
   const [y, m, d] = v.data.slice(0, 10).split("-");
   const pago = v.totalCents <= 0 ? `${forma}` : `pago em ${forma}`;
@@ -475,4 +482,148 @@ export function proximoIntervalo(agora: Date): { data: string; time: string } {
   }).formatToParts(alvo);
   const v = (t: string) => partes.find((p) => p.type === t)?.value ?? "00";
   return { data: `${v("year")}-${v("month")}-${v("day")}`, time: `${v("hour")}:${v("minute")}` };
+}
+
+// ---------------------------------------------------------------------------
+// 4029 — o fecho da venda direta sem informação errada (relato do dono,
+// 27/11/2026: a janela esperou uma cobrança que não ia nascer, e o "Confirmar
+// que recebeu" concluiu a venda sem dinheiro nenhum).
+// ---------------------------------------------------------------------------
+
+/** O combinado no cartão à vista: a fatura do Asaas oferece os dois; aqui fica o que se combinou. */
+export type EscolhaDoCartao = "debito" | "credito";
+
+export const ROTULO_DA_ESCOLHA: Record<EscolhaDoCartao, string> = {
+  debito: "Débito",
+  credito: "Crédito à vista",
+};
+
+export function ehEscolhaDoCartao(x: unknown): x is EscolhaDoCartao {
+  return x === "debito" || x === "credito";
+}
+
+/** O meio da cobrança no Asaas para o meio da parcela (nulo = não é cobrança avulsa do Asaas). */
+export function meioDaCobrancaNoAsaas(meio: string | null | undefined): "PIX" | "BOLETO" | "CREDIT_CARD" | null {
+  if (meio === "pix") return "PIX";
+  if (meio === "boleto") return "BOLETO";
+  if (meio === "cartao") return "CREDIT_CARD";
+  return null;
+}
+
+/**
+ * A parcela é do Asaas e ainda não tem cobrança: o que a janela faz.
+ *  - `fora_do_asaas`: a unidade não cobra pelo Asaas — quem confirma é a pessoa;
+ *  - `esperar`: a criação automática está ligada e a cobrança está nascendo;
+ *  - `gerar`: a automática está desligada (ou demorou demais) — o botão
+ *    "Gerar a cobrança agora", sem espera nenhuma.
+ */
+export function semCobrancaOQueFazer(e: {
+  pronta: boolean;
+  automatica: boolean;
+  voltas: number;
+  maxVoltas: number;
+}): "fora_do_asaas" | "esperar" | "gerar" {
+  if (!e.pronta) return "fora_do_asaas";
+  if (e.automatica && e.voltas < e.maxVoltas) return "esperar";
+  return "gerar";
+}
+
+/**
+ * "Confirmar que recebeu" (a pessoa atesta o recebimento) só existe onde o
+ * Asaas não confirma: venda sem valor, ou unidade que não cobra pelo Asaas.
+ * Na unidade pronta, o meio do Asaas é confirmado pelo Asaas — e mais ninguém.
+ */
+export function podeConfirmarAMao(e: { finalCents: number; meio: string | null | undefined; pronta: boolean }): boolean {
+  if (e.finalCents <= 0) return true;
+  if (recebidoNoBalcao(e.meio)) return false; // tem o botão próprio ("Recebi…")
+  return !e.pronta;
+}
+
+/**
+ * A marca "pagamento confirmado" feita À MÃO, no servidor: a mensagem da
+ * recusa, ou nulo quando é legítima. Recusa só o caso do relato: unidade que
+ * cobra pelo Asaas, meio do Asaas, nada recebido e nada pago por fora.
+ */
+export function confirmacaoAMaoRecusada(e: {
+  finalCents: number;
+  meio: string | null | undefined;
+  pronta: boolean;
+  recebidoCents: number;
+  pagaPorFora: boolean;
+}): string | null {
+  if (e.finalCents <= 0 || e.recebidoCents > 0 || e.pagaPorFora) return null;
+  if (recebidoNoBalcao(e.meio) || !e.pronta) return null;
+  return "Nesta unidade quem confirma este pagamento é o Asaas: gere a cobrança e envie o link. Se recebeu no balcão, troque a forma de pagamento.";
+}
+
+// Espaço comum depois do "R$" (o Intl devolve um espaço que não quebra a linha).
+const reais = (c: number) =>
+  (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }).replace(/ /g, " ");
+
+const COMO_PELO_ASAAS: Record<string, string> = {
+  DEBIT_CARD: "no cartão de débito, pelo Asaas",
+  CREDIT_CARD: "no cartão de crédito, pelo Asaas",
+  PIX: "por Pix, pelo Asaas",
+  BOLETO: "por boleto, pelo Asaas",
+};
+const COMO_NO_BALCAO: Record<string, string> = {
+  dinheiro: "em dinheiro",
+  permuta: "em permuta",
+  cartao_parcelado: "no cartão (maquininha)",
+  cartao_parcelado_asaas: "no cartão parcelado, pelo Asaas",
+  pix: "por Pix",
+  boleto: "por boleto",
+  cartao: "no cartão",
+};
+
+export type PagamentoDaVenda = {
+  /** O combinado no cartão à vista (4029); nulo nos outros meios. */
+  escolhaDoCartao: EscolhaDoCartao | null;
+  /** Soma do que já entrou nas parcelas. */
+  recebidoCents: number;
+  /** Soma do que falta nas parcelas abertas. */
+  abertoCents: number;
+  parcelasAbertas: number;
+  /** O meio que o Asaas informou na cobrança paga (`DEBIT_CARD`, `CREDIT_CARD`, `PIX`, `BOLETO`); nulo = não foi pelo Asaas. */
+  meioPagoNoAsaas: string | null;
+};
+
+/**
+ * O QUADRO FINAL da venda concluída: o estado REAL do dinheiro, lido das
+ * parcelas — não a marca "pagamento confirmado". `atencao` = a venda está
+ * concluída mas o Financeiro não tem recebimento (não deveria existir; a tela
+ * não esconde).
+ */
+export function fechoDaVenda(v: { finalCents: number; meio: string | null; pagamento: PagamentoDaVenda | null }): {
+  tom: "ok" | "atencao";
+  texto: string;
+} {
+  if (v.finalCents <= 0) return { tom: "ok", texto: "Venda concluída — sem valor a pagar (coberto pelo programa)." };
+  const p = v.pagamento;
+  // Sem a leitura das parcelas, a tela não afirma o que não viu.
+  if (!p) return { tom: "ok", texto: "Venda concluída — termo assinado e pagamento confirmado." };
+  if (p.recebidoCents <= 0) {
+    return {
+      tom: "atencao",
+      texto: `Venda concluída, mas SEM recebimento registrado: ${reais(p.abertoCents || v.finalCents)} seguem em aberto no Financeiro.`,
+    };
+  }
+  let como = p.meioPagoNoAsaas ? (COMO_PELO_ASAAS[p.meioPagoNoAsaas] ?? "pelo Asaas") : (COMO_NO_BALCAO[v.meio ?? ""] ?? "");
+  const pagoNoCartao = p.meioPagoNoAsaas === "DEBIT_CARD" ? "debito" : p.meioPagoNoAsaas === "CREDIT_CARD" ? "credito" : null;
+  if (p.escolhaDoCartao && pagoNoCartao && p.escolhaDoCartao !== pagoNoCartao) {
+    como += ` (o combinado era ${p.escolhaDoCartao === "debito" ? "débito" : "crédito"})`;
+  }
+  const recebido = `${reais(p.recebidoCents)} recebidos${como ? ` ${como}` : ""}`;
+  if (p.abertoCents <= 0) return { tom: "ok", texto: `Venda concluída — ${recebido}.` };
+  return {
+    tom: "ok",
+    texto: `Venda concluída — ${recebido}. Faltam ${reais(p.abertoCents)} em ${p.parcelasAbertas} ${p.parcelasAbertas === 1 ? "parcela" : "parcelas"}, em Recebíveis.`,
+  };
+}
+
+/** O rótulo do meio no resumo: o cartão à vista mostra o combinado. */
+export function rotuloDoMeioComEscolha(meio: string | null, escolha: EscolhaDoCartao | null | undefined): string | null {
+  if (!meio) return null;
+  if (meio === "cartao" && escolha) return escolha === "debito" ? "Cartão de débito" : "Cartão de crédito à vista";
+  return ROTULO_DO_BOTAO[meio as MetodoVendaNova] ?? meio;
 }

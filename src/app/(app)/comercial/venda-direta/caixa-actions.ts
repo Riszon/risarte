@@ -22,8 +22,12 @@ import { buildSchedule, type ScheduleEntry } from "@/lib/payments";
 import { isoDateIn, todayInBrazil } from "@/lib/dates";
 import {
   atendidoAntesDaVenda,
+  ehEscolhaDoCartao,
   etapaDoCaixa,
+  meioDaCobrancaNoAsaas,
   recebidoNoBalcao,
+  type EscolhaDoCartao,
+  type PagamentoDaVenda,
 } from "@/lib/venda-direta-caixa";
 import {
   loadClientDirectSales,
@@ -48,6 +52,19 @@ export type DadosDoCaixa = {
   vendas: DirectSaleRow[];
   /** VD3-2 (0415): o termo de cada venda (vazio sem a 0415 no banco). */
   termos: Record<string, TermoDaVenda>;
+  /** 4029: como a unidade cobra pelo Asaas (decide o que a caixa Pagamento oferece). */
+  asaas: AsaasDaUnidade;
+  /** 4029: o dinheiro REAL de cada venda (lido das parcelas) e o combinado no cartão. */
+  pagamentos: Record<string, PagamentoDaVenda>;
+};
+
+export type AsaasDaUnidade = {
+  /** A unidade está "Pronta" na Central: as cobranças saem pelo Asaas. */
+  pronta: boolean;
+  /** A criação automática está ligada: a cobrança nasce sozinha na assinatura. */
+  automatica: boolean;
+  /** A marca do débito na Central: habilitado, desabilitado ou sem marca. */
+  debito: "habilitado" | "desabilitado" | null;
 };
 
 export type TermoDaVenda = {
@@ -91,8 +108,77 @@ export async function carregarCaixa(
       vendidos,
       vendas: [...doCliente.sales].sort((a, b) => aberta(a) - aberta(b)),
       termos: await termosDasVendas(doCliente.sales.map((s) => s.id)),
+      asaas: await asaasDaUnidade(clinicId),
+      pagamentos: await pagamentosDasVendas(doCliente.sales.map((s) => s.id)),
     },
   };
+}
+
+/**
+ * 4029: como a unidade cobra pelo Asaas. Lido sem a regra de linha (são
+ * funções internas): só três sim/não, nada sensível. Banco sem as migrações:
+ * tudo falso — a janela se comporta como numa unidade sem Asaas.
+ */
+async function asaasDaUnidade(clinicId: string): Promise<AsaasDaUnidade> {
+  const admin = createAdminClient();
+  const [pronta, automatica, conta] = await Promise.all([
+    admin.rpc("central_is_ready", { p_clinic_id: clinicId }),
+    admin.rpc("_auto_charge_unit_on", { p_clinic_id: clinicId }),
+    admin
+      .from("gateway_accounts")
+      .select("debit_enabled_declared_at, debit_disabled_declared_at")
+      .eq("clinic_id", clinicId)
+      .eq("status", "active")
+      .maybeSingle(),
+  ]);
+  const c = conta.data as { debit_enabled_declared_at: string | null; debit_disabled_declared_at: string | null } | null;
+  return {
+    pronta: pronta.data === true,
+    automatica: automatica.data === true,
+    debito: c?.debit_enabled_declared_at ? "habilitado" : c?.debit_disabled_declared_at ? "desabilitado" : null,
+  };
+}
+
+/**
+ * 4029: o dinheiro REAL de cada venda. As vendas vieram pela regra de linha (a
+ * pessoa as vê); as parcelas e o meio que o Asaas informou são lidos sem ela —
+ * só somas e o meio, para o quadro final dizer a verdade.
+ */
+async function pagamentosDasVendas(saleIds: string[]): Promise<Record<string, PagamentoDaVenda>> {
+  if (saleIds.length === 0) return {};
+  const admin = createAdminClient();
+  const { data: parcelas, error } = await admin
+    .from("payment_installments")
+    .select("id, direct_sale_id, amount_cents, paid_amount_cents, status")
+    .in("direct_sale_id", saleIds);
+  if (error || !parcelas) return {};
+  // A coluna é da 4029: sem ela no banco, a escolha fica vazia (nada quebra).
+  const { data: escolhas } = await admin.from("direct_sales").select("id, card_choice").in("id", saleIds);
+  const ids = parcelas.map((p) => p.id as string);
+  const { data: pagas } = ids.length
+    ? await admin
+        .from("charges")
+        .select("payment_installment_id, billing_type, paid_billing_type, paid_on")
+        .in("payment_installment_id", ids)
+        .in("status", ["paga", "liquidada"])
+        .order("paid_on", { ascending: false })
+    : { data: [] as { payment_installment_id: string; billing_type: string; paid_billing_type: string | null }[] };
+  const out: Record<string, PagamentoDaVenda> = {};
+  for (const id of saleIds) {
+    const dela = parcelas.filter((p) => p.direct_sale_id === id);
+    const vivas = dela.filter((p) => !["cancelada", "renegociada"].includes(p.status as string));
+    const abertas = vivas.filter((p) => ["em_aberto", "parcial"].includes(p.status as string));
+    const paga = (pagas ?? []).find((c) => dela.some((p) => p.id === c.payment_installment_id));
+    const escolha = ((escolhas ?? []) as { id: string; card_choice?: unknown }[]).find((e) => e.id === id)?.card_choice;
+    out[id] = {
+      escolhaDoCartao: ehEscolhaDoCartao(escolha) ? escolha : null,
+      recebidoCents: vivas.reduce((s, p) => s + Number(p.paid_amount_cents ?? 0), 0),
+      abertoCents: abertas.reduce((s, p) => s + Math.max(0, Number(p.amount_cents) - Number(p.paid_amount_cents ?? 0)), 0),
+      parcelasAbertas: abertas.length,
+      meioPagoNoAsaas: paga ? ((paga.paid_billing_type as string | null) ?? (paga.billing_type as string)) : null,
+    };
+  }
+  return out;
 }
 
 /**
@@ -163,6 +249,8 @@ export type PagamentoDoCaixa = {
   installments: number;
   discountReais: string;
   surchargeReais: string;
+  /** 4029: o combinado no cartão à vista (a fatura do Asaas oferece os dois). */
+  cardChoice?: EscolhaDoCartao | null;
   /**
    * Parcelas ajustadas à mão ("Ajustar parcelas"). Sem isso, o servidor monta
    * parcelas iguais a partir de hoje, com o total que o banco gravou.
@@ -179,6 +267,8 @@ export type ResultadoDoCaixa = {
   saleId?: string;
   precisaConfirmar?: number;
   closed?: boolean;
+  /** 4029: a venda concluiu, mas a baixa da parcela ainda é do Financeiro. */
+  baixaPendente?: boolean;
 };
 
 /** Grava as condições e as parcelas de uma venda aberta. */
@@ -194,6 +284,16 @@ async function gravarPagamento(
     surchargeReais: pagamento.surchargeReais,
   });
   if (!cond.ok) return { ok: false, error: cond.error, saleId };
+
+  // 4029: o combinado no cartão à vista fica na venda, pela porta do banco (o
+  // app não grava direto na venda direta). Outro meio limpa. Banco sem a 4029:
+  // a porta não existe, o erro é ignorado e a venda segue como antes.
+  {
+    const escolha =
+      pagamento.paymentMethod === "cartao" && ehEscolhaDoCartao(pagamento.cardChoice) ? pagamento.cardChoice : null;
+    const { error: ec } = await (await createClient()).rpc("direct_sale_set_card_choice", { p_sale_id: saleId, p_choice: escolha });
+    if (ec && !/does not exist|schema cache|Could not find/i.test(ec.message)) console.error("card_choice save failed:", ec.message);
+  }
 
   // O total é o que o BANCO gravou (desconto automático, faixa do plano) —
   // nunca o que a tela calculou.
@@ -433,18 +533,115 @@ export async function receberNoBalcao(input: {
 }
 
 /**
- * "Confirmar que recebeu" — para o que é pago pelo Asaas enquanto a baixa
- * automática não chega (unidade sem Asaas ligado). Marca a cobrança emitida e
- * o pagamento confirmado de uma vez; o banco conclui a venda se o termo já
- * estiver assinado.
+ * "Confirmar que recebeu" — a pessoa atesta um recebimento que o Asaas não vai
+ * confirmar: venda sem valor, ou unidade que não cobra pelo Asaas.
+ *
+ * 4029 (relato do dono, 27/11/2026): antes este botão concluía a venda mesmo
+ * na unidade com Asaas, sem dinheiro nenhum. Agora:
+ *  - na unidade pronta, o meio do Asaas é recusado (quem confirma é o Asaas:
+ *    gere a cobrança, ou troque o meio se recebeu no balcão) — a recusa mora
+ *    em `closeDirectSaleStep`, e vale também para a tela antiga;
+ *  - fora dela, conclui a venda e, no PIX, já dá a baixa da parcela (entra no
+ *    Financeiro). Nos outros meios a baixa segue no Financeiro, que escolhe a
+ *    maquininha e a conta: o resultado avisa, e o quadro final mostra "sem
+ *    recebimento registrado" até ela entrar.
+ * A ordem é do banco (0203): só se recebe por venda fechada.
  */
-export async function confirmarRecebimento(saleId: string): Promise<ResultadoDoCaixa> {
+export async function confirmarRecebimento(saleId: string, clientToken?: string): Promise<ResultadoDoCaixa> {
+  const supabase = await createClient();
+  const { data: venda } = await supabase
+    .from("direct_sales")
+    .select("id, client_id, final_cents, payment_method, contract_signed, cancelled, closed_at")
+    .eq("id", saleId)
+    .maybeSingle();
+  if (!venda) return { ok: false, error: "Venda não encontrada.", saleId };
+  if (venda.cancelled) return { ok: false, error: "Venda cancelada.", saleId };
+  if (venda.closed_at) return { ok: true, saleId, closed: true };
+  const finalCents = Number(venda.final_cents ?? 0);
+  if (finalCents > 0 && !venda.contract_signed)
+    return { ok: false, saleId, error: "Assine o termo da venda antes de receber." };
+
   const emitida = await closeDirectSaleStep(saleId, "payment_issued", true);
   if (!emitida.ok) return { ok: false, error: emitida.error, saleId };
-  if (emitida.closed) return { ok: true, saleId, closed: true };
-  const confirmada = await closeDirectSaleStep(saleId, "payment_confirmed", true);
-  if (!confirmada.ok) return { ok: false, error: confirmada.error, saleId };
-  return { ok: true, saleId, closed: confirmada.closed };
+  let fechou = Boolean(emitida.closed);
+  if (!fechou) {
+    const confirmada = await closeDirectSaleStep(saleId, "payment_confirmed", true);
+    if (!confirmada.ok) {
+      // A recusa não pode deixar a marca "cobrança emitida" para trás.
+      await closeDirectSaleStep(saleId, "payment_issued", false);
+      return { ok: false, error: confirmada.error, saleId };
+    }
+    fechou = Boolean(confirmada.closed);
+  }
+  if (finalCents <= 0 || !fechou) return { ok: true, saleId, closed: fechou };
+
+  // A baixa da parcela da vez, quando o meio não pede mais nada (Pix).
+  const { data: parcelas } = await supabase
+    .from("payment_installments")
+    .select("id, amount_cents, paid_amount_cents, payment_method")
+    .eq("direct_sale_id", saleId)
+    .in("status", ["em_aberto", "parcial"])
+    .order("seq")
+    .limit(1);
+  const parcela = (parcelas ?? [])[0] as
+    | { id: string; amount_cents: number; paid_amount_cents: number | null; payment_method: string | null }
+    | undefined;
+  const meio = parcela?.payment_method ?? (venda.payment_method as string | null);
+  if (!parcela) return { ok: true, saleId, closed: true };
+  if (meio !== "pix") return { ok: true, saleId, closed: true, baixaPendente: true };
+  const r = await registerReceipt({
+    clientId: venda.client_id as string,
+    installmentId: parcela.id,
+    amountCents: Math.max(0, parcela.amount_cents - (parcela.paid_amount_cents ?? 0)),
+    receivedAt: todayInBrazil(),
+    paymentMethod: "pix",
+    reference: "",
+    notes: "Recebido fora do Asaas (confirmado no caixa da venda direta).",
+    clientToken: clientToken ?? crypto.randomUUID(),
+  });
+  if (!r.ok) {
+    console.error("direct sale pix receipt failed:", r.error);
+    return { ok: true, saleId, closed: true, baixaPendente: true };
+  }
+  return { ok: true, saleId, closed: true };
+}
+
+/**
+ * 4029: "Gerar a cobrança agora" — a parcela da vez é do Asaas e não tem
+ * cobrança (a criação automática está desligada na unidade, ou demorou). É a
+ * MESMA emissão da ficha (`emitirCobranca`: mesma permissão, mesmas travas).
+ */
+export async function gerarCobrancaDaVez(saleId: string): Promise<ResultadoDoCaixa> {
+  const supabase = await createClient();
+  const { data: venda } = await supabase
+    .from("direct_sales")
+    .select("id, client_id, payment_method, contract_signed, cancelled")
+    .eq("id", saleId)
+    .maybeSingle();
+  if (!venda) return { ok: false, error: "Venda não encontrada.", saleId };
+  if (venda.cancelled) return { ok: false, error: "Venda cancelada.", saleId };
+  if (!venda.contract_signed) return { ok: false, error: "A cobrança sai depois do termo assinado.", saleId };
+  const { data: parcelas } = await supabase
+    .from("payment_installments")
+    .select("id, payment_method")
+    .eq("direct_sale_id", saleId)
+    .in("status", ["em_aberto", "parcial"])
+    .order("seq")
+    .limit(1);
+  const parcela = (parcelas ?? [])[0] as { id: string; payment_method: string | null } | undefined;
+  if (!parcela) return { ok: false, error: "Esta venda não tem parcela em aberto.", saleId };
+  const billingType = meioDaCobrancaNoAsaas(parcela.payment_method ?? (venda.payment_method as string | null));
+  if (!billingType)
+    return { ok: false, error: 'Este meio não gera cobrança avulsa no Asaas. Veja "Todas as cobranças da venda".', saleId };
+  const { emitirCobranca } = await import("../../prontuarios/[id]/cobranca-actions");
+  const r = await emitirCobranca({
+    clientId: venda.client_id as string,
+    installmentId: parcela.id,
+    billingType,
+    dueDate: null,
+  });
+  if (!r.ok) return { ok: false, error: r.error, saleId };
+  return { ok: true, saleId };
 }
 
 // ---------------------------------------------------------------------------

@@ -48,17 +48,22 @@ import {
   type MetodoVendaNova,
 } from "@/lib/venda-direta-meios";
 import {
+  ROTULO_DA_ESCOLHA,
   ROTULO_DO_BOTAO,
   atalhosDoCaixa,
   atendidoAntesDaVenda,
   atendimentoPadrao,
   etapaDoCaixa,
+  fechoDaVenda,
   meioInicial,
   meiosDoCaixa,
   parcelasAoTrocarDeMeio,
   parcelasDoMeio,
+  podeConfirmarAMao,
   previaDoCaixa,
   recebidoNoBalcao,
+  rotuloDoMeioComEscolha,
+  type EscolhaDoCartao,
 } from "@/lib/venda-direta-caixa";
 import {
   carregarCaixa,
@@ -67,6 +72,7 @@ import {
   finalizarVendaDireta,
   receberNoBalcao,
   salvarPagamentoDaVenda,
+  type AsaasDaUnidade,
   type DadosDoCaixa,
   type PagamentoDoCaixa,
 } from "@/app/(app)/comercial/venda-direta/caixa-actions";
@@ -337,10 +343,14 @@ type BasesDoPagamento = {
   isProgramMember: boolean;
   isManager: boolean;
   cardMachine: boolean;
+  /** 4029: a marca do débito da unidade na Central (avisa quando o débito não vai aparecer na fatura). */
+  debito?: AsaasDaUnidade["debito"];
 };
 
 type EstadoDoPagamento = {
   meio: MetodoVendaNova | "";
+  /** 4029: o combinado no cartão à vista — a fatura do Asaas oferece os dois. */
+  cartao: EscolhaDoCartao;
   parcelas: number;
   ajuste: Ajuste;
   ajusteValor: string;
@@ -359,6 +369,7 @@ function usePagamento(bases: BasesDoPagamento, inicial?: Partial<EstadoDoPagamen
       inicial?.meio && meios.includes(inicial.meio as MetodoVendaNova)
         ? (inicial.meio as MetodoVendaNova)
         : meioInicial(meios),
+    cartao: inicial?.cartao ?? "credito",
     parcelas: inicial?.parcelas ?? 1,
     ajuste: inicial?.ajuste ?? "none",
     ajusteValor: inicial?.ajusteValor ?? "",
@@ -446,6 +457,7 @@ function usePagamento(bases: BasesDoPagamento, inicial?: Partial<EstadoDoPagamen
     installments: parcelas,
     discountReais: previa.discountCents > 0 ? centsToInput(previa.discountCents) : "",
     surchargeReais: previa.surchargeCents > 0 ? centsToInput(previa.surchargeCents) : "",
+    cardChoice: estado.meio === "cartao" ? estado.cartao : null,
     entries: estado.custom?.sig === sig ? estado.custom.entries : undefined,
   };
 
@@ -523,23 +535,33 @@ function BlocoPagamento({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Meio de pagamento">
-        {p.meios.map((m) => (
-          <button
-            key={m}
-            type="button"
-            role="radio"
-            aria-checked={estado.meio === m}
-            onClick={() => trocarMeio(m)}
-            className={cn(
-              "h-10 rounded-lg border px-3.5 text-sm font-medium transition-colors",
-              estado.meio === m
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-background hover:bg-muted"
-            )}
-          >
-            {ROTULO_DO_BOTAO[m]}
-          </button>
-        ))}
+        {p.meios.flatMap((m): { m: MetodoVendaNova; e: EscolhaDoCartao | null; chave: string; rotulo: string }[] =>
+          // 4029: o cartão à vista são DOIS botões (o combinado fica na venda);
+          // os dois geram a mesma cobrança de cartão no Asaas.
+          m === "cartao"
+            ? (["debito", "credito"] as const).map((e) => ({ m, e, chave: `cartao-${e}`, rotulo: ROTULO_DA_ESCOLHA[e] }))
+            : [{ m, e: null, chave: m as string, rotulo: ROTULO_DO_BOTAO[m] }]
+        ).map(({ m, e, chave, rotulo }) => {
+          const marcado = estado.meio === m && (e === null || estado.cartao === e);
+          return (
+            <button
+              key={chave}
+              type="button"
+              role="radio"
+              aria-checked={marcado}
+              onClick={() => {
+                trocarMeio(m);
+                if (e) setEstado((s) => ({ ...s, cartao: e }));
+              }}
+              className={cn(
+                "h-10 rounded-lg border px-3.5 text-sm font-medium transition-colors",
+                marcado ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+              )}
+            >
+              {rotulo}
+            </button>
+          );
+        })}
       </div>
 
       {p.opcoes.length === 0 ? (
@@ -588,14 +610,24 @@ function BlocoPagamento({
       )}
       {estado.meio && !p.opcoes.some((o) => o.parcelas === 1) && p.opcoes.length > 0 && (
         <p className="text-[11px] text-muted-foreground">
-          À vista é Pix, cartão à vista, dinheiro ou permuta — {ROTULO_DO_BOTAO[estado.meio]} começa em 2×.
+          À vista é Pix, débito, crédito à vista, dinheiro ou permuta — {ROTULO_DO_BOTAO[estado.meio]} começa em 2×.
         </p>
       )}
       {estado.meio === "cartao" && (
-        <p className="text-[11px] text-muted-foreground">
-          O paciente escolhe crédito ou débito na fatura do Asaas. Sem o desconto à vista automático (o cartão tem
-          tarifa). Para parcelar, use Cartão parcelado.
-        </p>
+        <>
+          <p className="text-[11px] text-muted-foreground">
+            Fica registrado o combinado: <strong>{estado.cartao === "debito" ? "débito" : "crédito à vista"}</strong>. O
+            paciente paga pelo link do Asaas, que mostra as duas opções — oriente a escolher{" "}
+            {estado.cartao === "debito" ? "o débito" : "o crédito"}. Sem o desconto à vista automático (o cartão tem
+            tarifa). Para parcelar, use Cartão parcelado.
+          </p>
+          {estado.cartao === "debito" && bases.debito !== "habilitado" && (
+            <p className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900">
+              O débito {bases.debito === "desabilitado" ? "está marcado como desabilitado" : "ainda não foi conferido"} no
+              Asaas desta unidade (Central): a fatura pode oferecer só o crédito.
+            </p>
+          )}
+        </>
       )}
 
       {/* O desconto automático se explica em uma linha. */}
@@ -810,8 +842,9 @@ function VendaNova({
       isProgramMember: ctx.programActive,
       isManager: ctx.isManager,
       cardMachine: ctx.cardMachine,
+      debito: dados.asaas?.debito ?? null,
     };
-  }, [linhas, ctx]);
+  }, [linhas, ctx, dados.asaas?.debito]);
   const p = usePagamento(bases);
 
   const semValor = p.aPagar <= 0;
@@ -1116,6 +1149,9 @@ function VendaLancada({
     paymentConfirmed: venda.paymentConfirmed,
   });
   const brindes = venda.items.filter((i) => i.giftLabel);
+  // 4029: o dinheiro REAL da venda (parcelas) e o combinado no cartão.
+  const pagamento = dados.pagamentos?.[venda.id] ?? null;
+  const escolha = pagamento?.escolhaDoCartao ?? null;
 
   const itens =
     venda.items.length === 0 ? (
@@ -1155,12 +1191,28 @@ function VendaLancada({
   if (etapa === "concluida") {
     return (
       <>
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-emerald-900">
-          <PartyPopper className="size-5 shrink-0" />
-          <span className="text-sm font-medium">
-            Venda concluída — termo assinado e pagamento confirmado.
-          </span>
-        </div>
+        {(() => {
+          // 4029: o quadro final diz o estado REAL do dinheiro (lido das parcelas).
+          const fecho = fechoDaVenda({ finalCents: venda.finalCents, meio: venda.paymentMethod, pagamento });
+          return (
+            <div
+              role="status"
+              className={cn(
+                "flex items-center gap-2 rounded-lg border p-3",
+                fecho.tom === "ok"
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                  : "border-amber-400 bg-amber-50 text-amber-900"
+              )}
+            >
+              {fecho.tom === "ok" ? (
+                <PartyPopper className="size-5 shrink-0" />
+              ) : (
+                <TriangleAlert className="size-5 shrink-0" />
+              )}
+              <span className="text-sm font-medium">{fecho.texto}</span>
+            </div>
+          );
+        })()}
         {brindes.length > 0 && (
           <ul className="rounded-lg border border-gold/40 bg-gold/5 p-2.5 text-sm">
             {brindes.map((b, i) => (
@@ -1171,7 +1223,7 @@ function VendaLancada({
           </ul>
         )}
         <Secao titulo="O que">{itens}</Secao>
-        <ResumoFechado venda={venda} />
+        <ResumoFechado venda={venda} escolha={escolha} />
         <BotaoComprovante venda={venda} dados={dados} />
         {venda.clientId && (
           <details className="text-xs">
@@ -1198,7 +1250,7 @@ function VendaLancada({
     return (
       <>
         <Secao titulo="O que">{itens}</Secao>
-        <ResumoFechado venda={venda} />
+        <ResumoFechado venda={venda} escolha={escolha} />
         <p className="flex items-center gap-1.5 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
           <Wallet className="size-4" />
           Aguardando a recepção ou o Gerente definir o pagamento e fechar.
@@ -1215,6 +1267,8 @@ function VendaLancada({
         isPending={isPending}
         startTransition={startTransition}
         podeVoltar={trocandoPagamento && etapa !== "pagamento"}
+        debito={dados.asaas?.debito ?? null}
+        escolha={pagamento?.escolhaDoCartao ?? null}
         voltar={() => setTrocandoPagamento(false)}
         depois={async () => {
           setTrocandoPagamento(false);
@@ -1227,9 +1281,11 @@ function VendaLancada({
   return (
     <>
       <Secao titulo="O que">{itens}</Secao>
-      <ResumoFechado venda={venda} />
+      <ResumoFechado venda={venda} escolha={escolha} />
       <Fechamento
         venda={venda}
+        asaas={dados.asaas ?? { pronta: false, automatica: false, debito: null }}
+        escolha={escolha}
         clientName={dados.clientName}
         clientPhone={dados.clientPhone ?? null}
         termo={dados.termos?.[venda.id]}
@@ -1244,10 +1300,8 @@ function VendaLancada({
   );
 }
 
-function ResumoFechado({ venda }: { venda: DirectSaleRow }) {
-  const meio = venda.paymentMethod
-    ? (ROTULO_DO_BOTAO[venda.paymentMethod as MetodoVendaNova] ?? venda.paymentMethod)
-    : null;
+function ResumoFechado({ venda, escolha }: { venda: DirectSaleRow; escolha?: EscolhaDoCartao | null }) {
+  const meio = rotuloDoMeioComEscolha(venda.paymentMethod, escolha);
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2">
       <span className="text-xs text-muted-foreground">
@@ -1275,6 +1329,8 @@ function DefinirPagamento({
   podeVoltar,
   voltar,
   depois,
+  debito,
+  escolha,
 }: {
   venda: DirectSaleRow;
   itens: React.ReactNode;
@@ -1283,6 +1339,8 @@ function DefinirPagamento({
   podeVoltar: boolean;
   voltar: () => void;
   depois: () => Promise<void>;
+  debito: AsaasDaUnidade["debito"];
+  escolha: EscolhaDoCartao | null;
 }) {
   const bases: BasesDoPagamento = useMemo(
     () => ({
@@ -1296,11 +1354,13 @@ function DefinirPagamento({
       isProgramMember: venda.isProgramMember,
       isManager: venda.isManager,
       cardMachine: venda.cardMachine ?? true,
+      debito,
     }),
-    [venda]
+    [venda, debito]
   );
   const p = usePagamento(bases, {
     meio: (venda.paymentMethod as MetodoVendaNova | null) ?? undefined,
+    cartao: escolha ?? undefined,
     parcelas: Math.max(1, venda.installments),
     ajuste: venda.surchargeCents > 0 ? "acresc" : "none",
     ajusteValor: venda.surchargeCents > 0 ? centsToInput(venda.surchargeCents) : "",
@@ -1396,6 +1456,8 @@ function Caixa({
 
 function Fechamento({
   venda,
+  asaas,
+  escolha,
   clientName,
   clientPhone,
   termo,
@@ -1407,6 +1469,9 @@ function Fechamento({
   trocarPagamento,
 }: {
   venda: DirectSaleRow;
+  /** 4029: como a unidade cobra pelo Asaas. */
+  asaas: AsaasDaUnidade;
+  escolha: EscolhaDoCartao | null;
   clientName: string;
   clientPhone: string | null;
   /** VD3-2: ausente quando o banco ainda não tem a 0415 (vale o jeito antigo). */
@@ -1428,17 +1493,24 @@ function Fechamento({
   // D5: desmarcar o termo pede o motivo.
   const [desmarcando, setDesmarcando] = useState(false);
   const [motivo, setMotivo] = useState("");
+  // 4029: "Confirmar que recebeu" pede a confirmação antes de dar a baixa.
+  const [confirmando, setConfirmando] = useState(false);
+  // A venda antiga nunca passa pelo Asaas: segue confirmada à mão.
+  const confirmaAMao =
+    !ehVendaNova(venda.methodRule) ||
+    podeConfirmarAMao({ finalCents: venda.finalCents, meio: meioDaVez, pronta: asaas.pronta });
   // Um token por janela aberta: duplo clique não vira dois recebimentos.
   const [token] = useState(() => crypto.randomUUID());
 
   const agir = (
-    fazer: () => Promise<{ ok: boolean; error?: string; closed?: boolean }>,
+    fazer: () => Promise<{ ok: boolean; error?: string; closed?: boolean; baixaPendente?: boolean }>,
     okMsg: string
   ) =>
     startTransition(async () => {
       const r = await fazer();
       if (r.ok) {
-        toast.success(r.closed ? "Venda direta CONCLUÍDA! 🎉" : okMsg);
+        if (r.baixaPendente) toast.warning("Venda concluída. A baixa desta parcela é feita no Financeiro (Recebíveis).");
+        else toast.success(r.closed ? "Venda direta CONCLUÍDA! 🎉" : okMsg);
         await depois();
       } else toast.error(r.error ?? "Algo deu errado.");
     });
@@ -1576,20 +1648,50 @@ function Fechamento({
                   clientName={clientName}
                   clientPhone={clientPhone}
                   atualizar={atualizar}
+                  pronta={asaas.pronta}
+                  automatica={asaas.automatica}
+                  debito={asaas.debito}
+                  escolha={meioDaVez === "cartao" ? escolha : null}
                 />
               )}
-              <p className="text-[11px] text-muted-foreground">
-                Pago pelo Asaas, a confirmação chega sozinha. Se a unidade
-                ainda não usa o Asaas, confirme aqui quando receber.
-              </p>
-              <Button
-                variant="outline"
-                className="h-9 w-full"
-                disabled={isPending}
-                onClick={() => agir(() => confirmarRecebimento(venda.id), "Pagamento confirmado.")}
-              >
-                Confirmar que recebeu {formatBRL(valorDaVez)}
-              </Button>
+              {!confirmaAMao ? (
+                // 4029: na unidade com Asaas, quem confirma é o Asaas — e mais ninguém.
+                <p className="text-[11px] text-muted-foreground">
+                  Quem confirma este pagamento é o Asaas: pagou, a venda conclui sozinha. Recebeu no balcão? Use
+                  &ldquo;Trocar a forma de pagamento&rdquo;, em Mais.
+                </p>
+              ) : confirmando ? (
+                <div className="space-y-1.5 rounded-lg border border-amber-300 bg-amber-50 p-2">
+                  <p className="text-xs text-amber-900">
+                    Confirma que recebeu <strong>{formatBRL(valorDaVez)}</strong> ({rotuloDoMeioComEscolha(meioDaVez, escolha) ?? "—"}),
+                    fora do Asaas? Isto conclui a venda.{" "}
+                    {meioDaVez === "pix"
+                      ? "A baixa entra no Financeiro agora."
+                      : "A baixa da parcela é feita depois, no Financeiro (Recebíveis)."}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button size="sm" variant="outline" disabled={isPending} onClick={() => setConfirmando(false)}>
+                      Voltar
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => agir(() => confirmarRecebimento(venda.id, token), "Recebimento registrado.")}
+                    >
+                      Sim, recebi {formatBRL(valorDaVez)}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    Esta unidade não cobra pelo Asaas: confirme aqui quando receber.
+                  </p>
+                  <Button variant="outline" className="h-9 w-full" disabled={isPending} onClick={() => setConfirmando(true)}>
+                    Confirmar que recebeu {formatBRL(valorDaVez)}
+                  </Button>
+                </>
+              )}
             </>
           )}
         </Caixa>
@@ -1686,6 +1788,7 @@ function BotaoComprovante({ venda, dados }: { venda: DirectSaleRow; dados: Dados
     // A data da conclusão (reabrir outro dia não muda o comprovante).
     data: venda.closedAt ? isoDateIn(new Date(venda.closedAt)) : todayInBrazil(),
     codigo: venda.code,
+    pagoNoDebito: dados.pagamentos?.[venda.id]?.meioPagoNoAsaas === "DEBIT_CARD",
   });
   const url =
     whatsappLink(dados.clientPhone ?? null, texto) ??
