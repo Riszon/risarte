@@ -405,6 +405,8 @@ Syncthing se comportarem de forma estranha.**
 - Bloco 0.494.0 no ESTADO. ⚠️ **"Cliente sem e-mail" = `clients.no_email`**;
   ao recriar `clients_set_registration_complete`, partir da 0435 (o e-mail
   preenchido desfaz a marcação). O CEP continua obrigatório (decisão do dono).
+- ✅ 0435 nos dois bancos (produção pelo dono em 27/11/2026; conferido de fora:
+  a coluna existe, 0 marcados). Publicado; OC-00025 respondido como resolvido.
 
 **25/11/2026 (relatos de 23 e 24/11) — PC Administrador (core 0.492.0 → 0.493.0, migração 0434; worktree `wt-relatos5`)**
 
