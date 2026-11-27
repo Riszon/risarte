@@ -3322,7 +3322,13 @@ tratamento"** (a venda fechou) e **"Agendar apresentação comercial"**.
 4. **Quem chama é o profissional**, não a recepção.
 
 > **O Atendimento mostra os atendimentos de HOJE** (e as pendências de dias
-> anteriores). A confirmação feita na véspera continua pela **Agenda**: clique
+> anteriores). **Cliente que chegou adiantado** — o horário era de outro dia —
+> aparece **em espera no dia em que chegou**, com o selo "Marcado para …"
+> (desde a 0.493.0, relato OC-00190; antes ele só aparecia quando era chamado).
+> **Cliente transferido de unidade:** a transferência cancela os agendamentos
+> da unidade antiga que ainda estavam em aberto — os futuros e, desde a
+> 0.493.0 (relato OC-00188), também os que já passaram sem ninguém resolver.
+> Assim eles não viram pendência numa unidade que não atende mais o cliente. A confirmação feita na véspera continua pela **Agenda**: clique
 > no agendamento → **Confirmado**. Não confunda **Confirmar** (o paciente disse
 > que vem) com **Confirmar chegada** (o paciente está na sua frente).
 
@@ -5756,6 +5762,14 @@ formulário preenchido com esses dados) e *Voltar ao Início*.
 
 > **Isso não é culpa de quem está olhando, e nada do que já estava salvo se
 > perde.** Se acontecer duas vezes seguidas, registre — é o botão do meio.
+
+> **Sem "Código do erro", a falha foi no seu aparelho** (desde a 0.493.0,
+> relatos OC-00189/OC-00022): quase sempre a conexão caiu no meio — por
+> exemplo, ao trocar do Wi-Fi para o 4G/5G no celular. A caixa diz isso em
+> "Origem"; tente de novo. E, se a conexão cair enquanto você envia um
+> relato, o sistema avisa *"A conexão caiu antes da resposta. Confira na lista
+> se o relato foi registrado antes de enviar de novo"* — o texto que você
+> escreveu continua no formulário.
 
 ### 9.2. Antes de chamar o suporte — 6 verificações
 

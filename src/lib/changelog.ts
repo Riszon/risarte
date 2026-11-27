@@ -62,6 +62,40 @@ export type Versao = {
  */
 export const CHANGELOG: Versao[] = [
   {
+    versao: "0.493.0",
+    data: "2026-11-25",
+    migracao: "0434",
+    titulo: "Relatos da equipe: o cliente adiantado no dia da chegada, a transferência sem pendência velha, a conexão que cai e a conta de monitoramento",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Atendimento: o cliente que chega antes do dia marcado aparece em espera no dia da chegada (com \"Marcado para …\"). Antes ficava invisível na visão do dia até ser chamado. (OC-00190)",
+        papeis: ["receptionist", "dentist", "clinical_coordinator", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Transferência de unidade: os agendamentos da unidade antiga que já passaram e ficaram em aberto também são cancelados — antes viravam pendência numa unidade que não atende mais o cliente. (OC-00188)",
+        papeis: ["receptionist", "sdr", "unit_manager"],
+        manual: "6.1. Recepcionista",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quando a conexão cai no meio (troca de Wi-Fi para 4G/5G), a tela diz que a falha foi no aparelho; e o envio de relato avisa para conferir na lista se ele foi registrado. (OC-00189, OC-00022)",
+        papeis: "todos",
+        manual: "9.1. Como reconhecer",
+      },
+      {
+        tipo: "novidade",
+        texto: "Plano de contas: nova conta 3.2.06 Monitoramento e segurança (despesa fixa, em Ocupação). (OC-00023)",
+        papeis: ["finance_franchisor", "unit_manager"],
+      },
+    ],
+  },
+  {
     versao: "0.492.0",
     data: "2026-11-25",
     // Sem migração do CORE: a desta entrega é da integração Asaas (4028, ASAAS_MIGRATION).

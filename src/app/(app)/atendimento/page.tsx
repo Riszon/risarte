@@ -505,6 +505,25 @@ export default async function AtendimentoPage(
     rows = [...rows, ...(emAndamento ?? []).filter((r) => !jaNaLista.has(r.id))];
   }
 
+  // OC-00190: quem CHEGOU no período para um horário de OUTRO dia (adiantou a
+  // consulta) aparece em espera no dia da chegada. Antes ficava invisível na
+  // visão do dia até alguém chamar — só aí entrava pela regra do OC-00091.
+  {
+    let chegaram = supabase
+      .from("appointments")
+      .select(SELECT)
+      .eq("attendance", "waiting")
+      .gte("checked_in_at", start.toISOString())
+      .lt("checked_in_at", end.toISOString())
+      .order("starts_at");
+    chegaram = consultantView
+      ? chegaram.eq("provider_user_id", session.userId)
+      : chegaram.eq("clinic_id", clinicId!);
+    const { data: emEspera } = await chegaram.returns<Row[]>();
+    const jaNaLista = new Set(rows.map((r) => r.id));
+    rows = [...rows, ...(emEspera ?? []).filter((r) => !jaNaLista.has(r.id))];
+  }
+
   // H3.4b: pendências de dias anteriores (a chegar / em espera / em atendimento)
   // são CARREGADAS para o painel de hoje até serem resolvidas — sem precisar
   // caçar em que dia ficaram. (Só na visão da unidade.)
