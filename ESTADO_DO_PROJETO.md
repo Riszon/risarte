@@ -2,6 +2,28 @@
 
 _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não teve migração do core; Rita 0.7.0 / **3006**, aplicada no treino e na produção em 10/11/2026 (o dono rodou; conferido de fora: funções respondem, anon barrado, `modulo.rita` semeada)) · Última migração: **0374** (0374 aplicada no treino e na produção — o dono informou em 10/11/2026, depois do push do código; não conferido de fora; 0373 aplicada no treino e na produção — o dono informou em 09/11/2026, não conferido de fora; 0372 aplicada na produção e no treino em 09/11/2026; 0371 aplicada na produção pelo dono em 09/11/2026; 0318 a 0352 aplicadas na produção e no treino; o dono informou 0351 e 0352 em 03/11/2026; 0354 aplicada na produção pelo dono em 03/11/2026; 0355 aplicada na produção pelo dono em 03/11/2026; 0357 aplicada na produção pelo dono em 03/11/2026; 0358 aplicada na produção pelo dono em 04/11/2026; 0360 aplicada na produção pelo dono em 04/11/2026; 0362 e 0364 aplicadas na produção pelo dono em 04/11/2026; 0353 e 0356 aplicadas na produção pelo dono em 03/11/2026) · Empresarial **0.96.0** / migração **1039** (aplicada na produção e no treino)_
 
+> ## 🏦 0.496.0 — DÍVIDAS: A CONTA VENCIDA ENTRA SOZINHA (27/11/2026; migração 0436)
+>
+> Pedido do dono (imagem do Painel de Cambé zerado com 17 contas vencidas no
+> Contas a Pagar): "isto deve ser automático". Plano aprovado como
+> recomendado. Manual 2.3; EV-399.
+> - ⚠️ **Qual conta entra = `_debt_auto_overdue_candidates`** (uma regra: a
+>   sincronização e a Qualidade dos dados leem ela). Fora: aguardando
+>   autorização, já ligada a dívida/acordo, saldo de implantação,
+>   `network_fee`, 1.x (devolução ao paciente), 2.1, 2.5, 2.6.
+> - ⚠️ **`_debt_auto_overdue_sync`**: uma dívida por unidade + fornecedor
+>   (`debts.auto_overdue`, origem C, título `vinculado`); roda no começo da
+>   `debt_daily_run` e ao abrir o Levantamento (porta
+>   `debt_auto_overdue_refresh`). Ao recriar `debt_daily_run` ou
+>   `_debt_notices_daily`, partir da 0436 (a automática fica fora do
+>   "prestes a virar inadimplente").
+> - ⚠️ Dívida automática excluída não recebe a conta de novo
+>   (`debt_auto_links`). Paga → quitada e encerrada sozinha.
+> - Ensaio no treino 35/35 (`scripts/dividas-ensaio-0436.mjs`, quebra provada).
+>   Visto na tela pelo servidor local de teste: lista, Painel, Qualidade dos
+>   dados e Configurações. Achado na tela: a devolução ao paciente (1.9.03)
+>   aparecia como "sem fornecedor" — saiu da regra.
+
 > ## 🧭 0.495.0 — RELATOS DE 26/11 (27/11/2026; sem migração)
 >
 > - **OC-00192:** a prescrição não tem título (`documentoTemTitulo`,

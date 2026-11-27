@@ -589,7 +589,35 @@ sistema não entrega esses dados a mais ninguém.
 | **Acordos** | Os acordos de renegociação *(desde a 0.453.0)*: os que **esperam aprovação**, os **quebrados** e os **em andamento**, com o saldo a pagar e as parcelas dos próximos 30 dias. Veja *Renegociar dívida*, abaixo. |
 | **Credores** | Quanto se deve a cada credor e **com quem se fala**: atendente, assessoria de cobrança, advogado ou cartório. |
 | **Qualidade dos dados** | O que falta completar nas dívidas *(desde a 0.448.0; veja Importar planilha, abaixo)*. |
-| **Configurações** | A regra de inadimplência, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas, etiquetas e os cartórios de protesto. |
+| **Configurações** | A regra de inadimplência, o prazo para a **conta vencida virar dívida**, a data de implantação do riSZon em cada CNPJ, categorias e subcategorias, naturezas, etiquetas e os cartórios de protesto. |
+
+**A conta vencida vira dívida sozinha** *(desde a 0.496.0)*. Toda conta do
+**Contas a Pagar** que venceu e não foi paga entra no levantamento sem ninguém
+cadastrar, **no dia seguinte ao vencimento** (o prazo fica em Configurações →
+**Conta vencida vira dívida depois de (dias)**):
+- **Uma dívida por unidade e fornecedor** — por exemplo, "Contador · 5 contas,
+  R$ 3.750,00". A conta desse fornecedor que vencer depois entra na **mesma**
+  dívida, enquanto ela estiver aberta (sem acordo e não quitada).
+- Ela já vem com a etiqueta **Automática — Contas a Pagar**, a situação (em
+  atraso ou inadimplente, pela regra de sempre), a **categoria** tirada da
+  conta (laboratório → "Laboratório e prótese", energia → "Utilidades",
+  contador → "Serviços de terceiros") e a origem **"já está no Contas a
+  Pagar"**: **não lança nada novo** no financeiro, então não pesa duas vezes na
+  DRE nem no caixa.
+- **Pague (ou cancele) a conta no Contas a Pagar**, como sempre. Paga, a dívida
+  fica **Quitada — encerrada** sozinha; cancelada, a conta sai da dívida (e a
+  dívida sai, se não sobrar conta). A dívida automática pode ser negociada,
+  receber proposta, protesto e acordo como qualquer outra.
+- **Ficam de fora:** conta ainda **aguardando autorização**, conta já ligada a
+  uma dívida ou a um acordo, saldo de implantação, as contas internas da rede
+  (taxas da franquia, royalties e fundo, comissão, **repasse dos dentistas**) e
+  a **devolução ao paciente**.
+- Conta vencida **sem fornecedor** não vira dívida (toda dívida tem credor):
+  ela aparece em **Qualidade dos dados → Conta vencida sem fornecedor**.
+  Informe o fornecedor na conta e ela entra.
+- Excluiu uma dívida automática (por exemplo, a conta já tinha sido paga e só
+  faltava a baixa)? As contas dela **não voltam** a virar dívida.
+- **Não há aviso novo** por conta vencida: os números aparecem no Painel.
 
 **Nova dívida.** Os campos obrigatórios são só quatro: **devedor** (a unidade
 ou a franqueadora que deve), **credor**, **valor** e **vencimento**; o resto se

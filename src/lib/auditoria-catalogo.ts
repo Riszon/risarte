@@ -711,6 +711,8 @@ export const CAMPOS: Record<string, string> = {
   received_on: "Recebida em",
   last_checked_on: "Última conferência",
   stale_check_days: "Prazo para conferir (dias)",
+  auto_overdue: "Criada sozinha (conta vencida)",
+  auto_overdue_days: "Conta vencida vira dívida depois de (dias)",
 };
 
 /**

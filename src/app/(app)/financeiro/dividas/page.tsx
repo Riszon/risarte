@@ -9,6 +9,7 @@ import { podeConfigurarDividas, podeImportarDividas, podeLancarDividas, podeVerD
 import {
   carregarAcordos,
   carregarBase,
+  carregarContasSemFornecedor,
   carregarDividas,
   carregarDreDosDevedores,
   carregarFotografias,
@@ -17,6 +18,7 @@ import {
   carregarTitulosDasDividas,
   linhasDaLista,
   prazosDosSelos,
+  sincronizarContasVencidas,
 } from "./dados";
 import { AcordosDaRede } from "./acordos-da-rede";
 import { PainelDasDividas } from "./painel";
@@ -49,7 +51,10 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
   // O Painel abre primeiro (plano, seção 3).
   const aba: Aba = ABAS.some((a) => a.id === abaPedida) ? (abaPedida as Aba) : "painel";
 
-  const [base, lista, fase2, doFinanceiro, posicoes, acordos, fotos] = await Promise.all([
+  // 0436: a conta vencida do Contas a Pagar vira dívida antes de ler (a rotina
+  // diária faz o mesmo; aqui é para o número nunca ficar atrasado).
+  await sincronizarContasVencidas();
+  const [base, lista, fase2, doFinanceiro, posicoes, acordos, fotos, semFornecedor] = await Promise.all([
     carregarBase(),
     carregarDividas(),
     carregarResumoDaFase2(),
@@ -57,6 +62,7 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
     carregarPosicoes(),
     aba === "acordos" || aba === "painel" ? carregarAcordos() : Promise.resolve({ ok: true, acordos: [] }),
     aba === "painel" ? carregarFotografias() : Promise.resolve(null),
+    aba === "qualidade" ? carregarContasSemFornecedor() : Promise.resolve(null),
   ]);
   const linhas = linhasDaLista(lista.dividas, base, fase2, doFinanceiro.titulos, posicoes);
   // Fase 7: a DRE dos 3 meses fechados de cada CNPJ com dívida (só no Painel).
@@ -189,7 +195,7 @@ export default async function DividasPage({ searchParams }: { searchParams: Prom
             <AcordosDaRede acordos={acordos.acordos} ok={acordos.ok && posicoes !== null} base={base} codigos={codigos} hoje={todayInBrazil()} />
           )}
           {aba === "credores" && <Credores base={base} linhas={linhas} podeLancar={podeLancarDividas(session)} />}
-          {aba === "qualidade" && <Qualidade base={base} dividas={lista.dividas} hoje={todayInBrazil()} prazoDaConferencia={prazos.conferencia} />}
+          {aba === "qualidade" && <Qualidade base={base} dividas={lista.dividas} hoje={todayInBrazil()} prazoDaConferencia={prazos.conferencia} semFornecedor={semFornecedor} />}
           {aba === "configuracoes" && <Configuracoes base={base} podeConfigurar={podeConfigurarDividas(session)} />}
         </>
       )}
