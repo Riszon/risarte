@@ -408,7 +408,8 @@ Syncthing se comportarem de forma estranha.**
   `debt_daily_run` ou `_debt_notices_daily`, partir da 0436.
 - ⚠️ O disco C: chegou a 366 MB livres: o `.next/dev` do servidor do dono
   (parado) tinha 6,1 GB e foi apagado (é cache; o `next dev` refaz).
-- ⏳ 0436 só no treino (ensaio 35/35); falta o dono rodar na produção.
+- ✅ 0436 nos dois bancos (produção pelo dono em 27/11/2026; conferido de fora:
+  17 dívidas automáticas, as 24 contas vencidas ligadas, sem login recusa).
 
 **27/11/2026 (relatos OC-00191/OC-00192) — PC Administrador (core 0.494.0 → 0.495.0, sem migração)**
 

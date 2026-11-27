@@ -23,6 +23,10 @@ _Atualizado em: 10/11/2026 · Versão do sistema: **0.413.0** (a 0.413.0 não te
 >   Visto na tela pelo servidor local de teste: lista, Painel, Qualidade dos
 >   dados e Configurações. Achado na tela: a devolução ao paciente (1.9.03)
 >   aparecia como "sem fornecedor" — saiu da regra.
+> - ✅ 0436 na produção (o dono, 27/11/2026; conferido de fora): 17 dívidas
+>   automáticas (Cambé 11, R$ 19.333,33; Londrina 6, R$ 3.538,85), as 24
+>   contas vencidas ligadas, 0 sem fornecedor, prazo da rede 1; sem login as
+>   quatro funções recusam (42501).
 
 > ## 🧭 0.495.0 — RELATOS DE 26/11 (27/11/2026; sem migração)
 >
